@@ -440,11 +440,15 @@ public class SAMTextHeaderCodec {
     }
 
     private void writeRGLine(final SAMReadGroupRecord readGroup) {
-        final String[] fields = new String[2 + readGroup.getAttributes().size()];
-        fields[0] = HEADER_LINE_START + HeaderRecordType.RG;
-        fields[1] = SAMReadGroupRecord.READ_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + readGroup.getReadGroupId();
-        encodeTags(readGroup, fields, 2);
-        println(StringUtil.join(FIELD_SEPARATOR, fields));
+        println(getRGLine(readGroup));
+    }
+    
+    protected String getRGLine(final SAMReadGroupRecord readGroup) {
+      final String[] fields = new String[2 + readGroup.getAttributes().size()];
+      fields[0] = HEADER_LINE_START + HeaderRecordType.RG;
+      fields[1] = SAMReadGroupRecord.READ_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + readGroup.getReadGroupId();
+      encodeTags(readGroup, fields, 2);
+      return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
     private void writeHDLine(final boolean keepExistingVersionNumber) {

@@ -163,5 +163,13 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
+
+    /**
+     Returns the record in the SAM line-based text format.  Fields are
+     separated by '\t' characters. The String is NOT terminated by '\n'.
+     */
+    public String getSAMString() {
+      return new SAMTextHeaderCodec().getRGLine(this);
+    }
 }
 
