@@ -23,12 +23,12 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.StringUtil;
+
 import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import htsjdk.samtools.util.StringUtil;
 
 /**
  * this class enables creation of a SAMRecord object from a String in SAM text format.

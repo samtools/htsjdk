@@ -23,13 +23,12 @@
  */
 package htsjdk.samtools;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
+import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
-
-import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * @author alecw@broadinstitute.org

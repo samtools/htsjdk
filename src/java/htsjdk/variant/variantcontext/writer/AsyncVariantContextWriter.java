@@ -1,8 +1,8 @@
 package htsjdk.variant.variantcontext.writer;
 
-import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.samtools.util.AbstractAsyncWriter;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFHeader;
 
 /**
  * AsyncVariantContextWriter that can be wrapped around an underlying AsyncVariantContextWriter to provide asynchronous output. Records

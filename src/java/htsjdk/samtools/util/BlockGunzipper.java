@@ -25,11 +25,11 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFormatException;
 
-import java.util.zip.Inflater;
-import java.util.zip.CRC32;
-import java.util.zip.DataFormatException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.zip.CRC32;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 
 /**
  * Alternative to GZIPInputStream, for decompressing GZIP blocks that are already loaded into a byte[].

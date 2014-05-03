@@ -26,7 +26,12 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.AsciiWriter;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.StringWriter;
+import java.io.Writer;
 
 /**
  * Writer for text-format SAM files.

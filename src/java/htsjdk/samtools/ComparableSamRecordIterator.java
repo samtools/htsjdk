@@ -23,11 +23,10 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.PeekableIterator;
 
 import java.util.Comparator;
-
-import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Iterator for SAM records that implements comparable to enable sorting of iterators.

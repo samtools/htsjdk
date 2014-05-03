@@ -24,8 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileReader;
-import htsjdk.samtools.util.CoordMath;
-import htsjdk.samtools.util.SamLocusIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

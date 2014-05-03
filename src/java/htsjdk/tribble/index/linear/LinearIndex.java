@@ -20,15 +20,19 @@ package htsjdk.tribble.index.linear;
 
 import htsjdk.tribble.index.AbstractIndex;
 import htsjdk.tribble.index.Block;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.LittleEndianInputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Index defined by dividing the genome by chromosome, then each chromosome into bins of fixed width (in

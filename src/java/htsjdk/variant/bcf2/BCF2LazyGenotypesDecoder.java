@@ -26,14 +26,15 @@
 package htsjdk.variant.bcf2;
 
 import com.google.java.contract.Requires;
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
-import htsjdk.tribble.TribbleException;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Lazy version of genotypes decoder for BCF2 genotypes

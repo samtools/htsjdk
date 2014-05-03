@@ -23,8 +23,8 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;

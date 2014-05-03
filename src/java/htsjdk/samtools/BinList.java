@@ -23,8 +23,8 @@
  */
 package htsjdk.samtools;
 
-import java.util.Iterator;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**

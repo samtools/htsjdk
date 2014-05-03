@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
+import htsjdk.samtools.util.Lazy;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
@@ -35,11 +36,17 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-import htsjdk.samtools.util.Lazy;
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class VariantContextUtils {
     private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<String>();

@@ -32,7 +32,10 @@ import htsjdk.variant.bcf2.BCF2Utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * See #BCFWriter for documentation on this classes role in encoding BCF2 files

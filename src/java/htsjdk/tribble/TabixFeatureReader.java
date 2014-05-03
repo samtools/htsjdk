@@ -23,12 +23,12 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.readers.LineReader;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.readers.TabixIteratorLineReader;
 import htsjdk.tribble.readers.TabixReader;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;

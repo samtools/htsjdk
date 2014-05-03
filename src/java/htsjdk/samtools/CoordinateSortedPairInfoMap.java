@@ -23,14 +23,22 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.FileAppendStreamLRUCache;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.FileAppendStreamLRUCache;
 import htsjdk.samtools.util.IOUtil;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * Holds info about a mate pair for use when processing a coordinate sorted file.  When one read of a pair is encountered,

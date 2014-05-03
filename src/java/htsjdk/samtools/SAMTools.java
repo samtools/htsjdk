@@ -25,7 +25,8 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.CloseableIterator;
-import java.io.*;
+
+import java.io.File;
 
 
 /**

@@ -26,8 +26,17 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 
-import java.io.*;
-import java.util.concurrent.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * Utility class that will execute sub processes via Runtime.getRuntime().exec(...) and read

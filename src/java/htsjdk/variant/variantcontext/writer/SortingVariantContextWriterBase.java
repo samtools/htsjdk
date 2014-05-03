@@ -28,7 +28,10 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 
-import java.util.*;
+import java.util.Comparator;
+import java.util.Queue;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**

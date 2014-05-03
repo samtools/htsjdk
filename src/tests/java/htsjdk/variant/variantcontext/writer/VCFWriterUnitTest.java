@@ -25,7 +25,13 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.TestUtil;
+import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -36,12 +42,6 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.TestUtil;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.Tribble;
-import htsjdk.tribble.util.TabixUtils;
-import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -49,7 +49,14 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author aaron

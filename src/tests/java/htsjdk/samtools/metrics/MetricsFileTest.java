@@ -24,17 +24,16 @@
 
 package htsjdk.samtools.metrics;
 
-import org.testng.annotations.Test;
-import org.testng.Assert;
-
-import java.util.Date;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.FileReader;
-
-import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.FormatUtil;
+import htsjdk.samtools.util.Histogram;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.util.Date;
 
 /**
  * Tests for the various classes in the metrics package.  Constructs a MetricsFile,

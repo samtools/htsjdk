@@ -23,11 +23,11 @@
  */
 package htsjdk.samtools.filter;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
-import org.testng.Assert;
-import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Basic test for the SolexaNoiseFilter

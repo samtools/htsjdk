@@ -25,14 +25,13 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Iterator;
-
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
-import org.testng.Assert;
 
 /**
  * Test the fasta sequence index reader.

@@ -25,14 +25,14 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
+import htsjdk.variant.variantcontext.VariantContext;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**

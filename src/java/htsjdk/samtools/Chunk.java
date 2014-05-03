@@ -3,7 +3,9 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A [start,stop) file pointer pairing into the BAM file, stored

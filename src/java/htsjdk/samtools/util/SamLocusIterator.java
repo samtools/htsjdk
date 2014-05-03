@@ -23,11 +23,24 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.AlignmentBlock;
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.filter.*;
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.filter.AggregateFilter;
+import htsjdk.samtools.filter.DuplicateReadFilter;
+import htsjdk.samtools.filter.FilteringIterator;
+import htsjdk.samtools.filter.SamRecordFilter;
+import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Iterator that traverses a SAM File, accumulating information on a per-locus basis.

@@ -18,9 +18,9 @@
 
 package htsjdk.tribble.index.interval;
 
-import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;

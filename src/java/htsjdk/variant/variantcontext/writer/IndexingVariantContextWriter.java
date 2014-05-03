@@ -27,16 +27,16 @@ package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.TribbleIndexCreator;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.LocationAware;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.io.IOException;

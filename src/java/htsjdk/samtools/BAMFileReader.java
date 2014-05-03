@@ -26,7 +26,11 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileReader.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.*;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.StringLineReader;
 
 import java.io.DataInputStream;
 import java.io.File;

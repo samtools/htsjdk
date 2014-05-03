@@ -2,12 +2,10 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.CollectionUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
-import org.testng.annotations.*;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.util.Arrays;

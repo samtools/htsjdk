@@ -29,10 +29,10 @@ import com.google.java.contract.Ensures;
 import com.google.java.contract.Invariant;
 import com.google.java.contract.Requires;
 import htsjdk.variant.bcf2.BCF2Type;
+import htsjdk.variant.bcf2.BCF2Utils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
-import htsjdk.variant.bcf2.BCF2Utils;
 
 import java.io.IOException;
 import java.util.ArrayList;

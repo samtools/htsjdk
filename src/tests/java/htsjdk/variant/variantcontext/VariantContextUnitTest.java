@@ -29,13 +29,19 @@ package htsjdk.variant.variantcontext;
 // the imports for unit testing.
 
 import htsjdk.variant.VariantBaseTest;
-import org.testng.annotations.BeforeSuite;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.testng.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 public class VariantContextUnitTest extends VariantBaseTest {

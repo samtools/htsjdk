@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

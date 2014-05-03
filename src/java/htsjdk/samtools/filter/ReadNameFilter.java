@@ -23,14 +23,15 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.IOUtil;
 
 /**
  * Filter by a set of specified readnames

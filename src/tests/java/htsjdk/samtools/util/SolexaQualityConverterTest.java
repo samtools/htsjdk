@@ -1,9 +1,8 @@
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.util.SolexaQualityConverter;
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.util.Arrays;
 

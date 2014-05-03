@@ -23,12 +23,6 @@
  */
 package htsjdk.tribble.index.tabix;
 
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.index.Block;
-import htsjdk.tribble.index.Index;
-import htsjdk.tribble.util.LittleEndianInputStream;
-import htsjdk.tribble.util.LittleEndianOutputStream;
-import htsjdk.tribble.util.TabixUtils;
 import htsjdk.samtools.Bin;
 import htsjdk.samtools.BinningIndexContent;
 import htsjdk.samtools.Chunk;
@@ -37,6 +31,12 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.util.LittleEndianInputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.TabixUtils;
 
 import java.io.EOFException;
 import java.io.File;
@@ -44,7 +44,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class represent a Tabix index that has been built in memory or read from a file.  It can be queried or

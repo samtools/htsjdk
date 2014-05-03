@@ -23,9 +23,9 @@
  */
 package htsjdk.tribble.dbsnp;
 
+import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
-import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.readers.LineIterator;
 
 

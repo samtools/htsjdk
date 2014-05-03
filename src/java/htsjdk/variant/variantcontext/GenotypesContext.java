@@ -28,7 +28,16 @@ package htsjdk.variant.variantcontext;
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an ordered collection of Genotype objects

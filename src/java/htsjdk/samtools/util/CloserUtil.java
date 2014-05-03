@@ -23,10 +23,10 @@
  */
 package htsjdk.samtools.util;
 
-import java.util.List;
-import java.util.Arrays;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Utility to close things that implement Closeable

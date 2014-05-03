@@ -23,11 +23,11 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMException;
-
-import java.util.*;
-
 import htsjdk.samtools.util.CloseableIterator;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.PriorityQueue;
 
 /**
  * Provides an iterator interface for merging multiple underlying iterators into a single

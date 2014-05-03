@@ -1,14 +1,14 @@
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.samtools.util.LocationAware;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

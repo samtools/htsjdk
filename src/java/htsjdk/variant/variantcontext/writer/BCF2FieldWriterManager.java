@@ -27,12 +27,12 @@ package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 import java.util.HashMap;

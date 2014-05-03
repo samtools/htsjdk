@@ -23,15 +23,15 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.samtools.util.DateParser;
 
 import java.lang.reflect.Array;
-import java.util.Map;
-import java.util.Date;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * Converter between SAM text representation of a tag, and in-memory Object representation.

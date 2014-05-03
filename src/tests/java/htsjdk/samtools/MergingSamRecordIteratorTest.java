@@ -23,13 +23,15 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.*;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Tests for MultiIterator

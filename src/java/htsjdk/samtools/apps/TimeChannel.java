@@ -24,8 +24,8 @@ package htsjdk.samtools.apps;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.channels.FileChannel;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * @author alecw@broadinstitute.org

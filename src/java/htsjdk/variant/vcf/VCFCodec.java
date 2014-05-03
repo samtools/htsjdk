@@ -28,7 +28,11 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * A feature codec for the VCF 4 specification

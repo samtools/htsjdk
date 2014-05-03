@@ -24,11 +24,11 @@
 package htsjdk.tribble.util;
 
 
-import htsjdk.tribble.readers.TabixReader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.TabixReader;
 
 import java.io.File;
 import java.util.ArrayList;

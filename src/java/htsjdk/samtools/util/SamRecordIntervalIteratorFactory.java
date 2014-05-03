@@ -23,10 +23,10 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.filter.IntervalFilter;
-import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.filter.IntervalFilter;
+import htsjdk.samtools.filter.SamRecordFilter;
 
 import java.util.Iterator;
 import java.util.List;

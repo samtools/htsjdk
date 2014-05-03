@@ -25,6 +25,8 @@
 
 package htsjdk.variant.bcf2;
 
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFFilterHeaderLine;
 import htsjdk.variant.vcf.VCFFormatHeaderLine;
@@ -32,17 +34,18 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.VariantBaseTest;
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFIDHeaderLine;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-
-import java.util.*;
-
 import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 /**
  * Tests for BCF2Utils

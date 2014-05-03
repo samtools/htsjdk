@@ -21,7 +21,11 @@ package htsjdk.tribble.index.interval;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /** An implementation of an interval tree, following the explanation.
  * from CLR. For efficiently finding all intervals which overlap a given

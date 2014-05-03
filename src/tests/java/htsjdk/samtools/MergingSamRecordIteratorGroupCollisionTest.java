@@ -23,15 +23,13 @@
  */
 package htsjdk.samtools;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import htsjdk.samtools.*;
-
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Tests for MultiIterator relating to group collision.

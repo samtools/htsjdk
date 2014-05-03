@@ -25,14 +25,27 @@
 package htsjdk.samtools.metrics;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.StringUtil;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Contains a set of metrics that can be written to a file and parsed back

@@ -25,8 +25,13 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
+import htsjdk.tribble.NameAwareCodec;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -34,17 +39,21 @@ import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.tribble.NameAwareCodec;
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.variant.utils.GeneralUtils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
 

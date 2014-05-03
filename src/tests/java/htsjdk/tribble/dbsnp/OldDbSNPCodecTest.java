@@ -1,9 +1,9 @@
 package htsjdk.tribble.dbsnp;
 
-import htsjdk.tribble.FeatureReader;
-import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import org.testng.Assert;

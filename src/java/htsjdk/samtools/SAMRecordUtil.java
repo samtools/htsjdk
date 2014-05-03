@@ -23,8 +23,8 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.StringUtil;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
 /**
  * @author alecw@broadinstitute.org

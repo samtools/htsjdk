@@ -23,17 +23,17 @@
  */
 package htsjdk.tribble.example;
 
-import htsjdk.tribble.Feature;
-import htsjdk.tribble.dbsnp.OldDbSNPCodec;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.dbsnp.OldDbSNPCodec;
 import htsjdk.tribble.gelitext.GeliTextCodec;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
 import java.io.FileOutputStream;

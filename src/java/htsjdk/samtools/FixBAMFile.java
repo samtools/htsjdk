@@ -23,7 +23,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileReader.ValidationStringency;
-import java.io.*;
+
+import java.io.File;
 
 public class FixBAMFile
 {

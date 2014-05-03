@@ -25,7 +25,11 @@
 
 package htsjdk.variant.utils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Constants and utility methods used throughout the VCF/BCF/VariantContext classes

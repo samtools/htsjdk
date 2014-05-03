@@ -27,9 +27,15 @@ package htsjdk.variant.bcf2;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
+import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
@@ -42,12 +48,6 @@ import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.tribble.BinaryFeatureCodec;
-import htsjdk.tribble.FeatureCodecHeader;
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
-import htsjdk.tribble.readers.PositionalBufferedStream;
-import htsjdk.variant.utils.GeneralUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;

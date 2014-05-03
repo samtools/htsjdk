@@ -25,8 +25,8 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Line-oriented InputStream reader that uses one buffer for disk buffering and line-termination-finding,

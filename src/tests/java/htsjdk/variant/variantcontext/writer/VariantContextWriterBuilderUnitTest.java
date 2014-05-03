@@ -25,21 +25,24 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-
-import htsjdk.tribble.Tribble;
-import htsjdk.variant.VariantBaseTest;
-import htsjdk.tribble.util.TabixUtils;
-import org.testng.Assert;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.Test;
-
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.VariantBaseTest;
+import org.testng.Assert;
+import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.Test;
+
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     private SAMSequenceDictionary dictionary;

@@ -24,14 +24,18 @@
 package htsjdk.samtools.liftover;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.OverlapDetector;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.OverlapDetector;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**

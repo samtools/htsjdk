@@ -26,8 +26,8 @@ package htsjdk.samtools.reference;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Factory class for creating ReferenceSequenceFile instances for reading reference

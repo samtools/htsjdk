@@ -1,7 +1,7 @@
 package htsjdk.tribble.gelitext;
 
-import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;

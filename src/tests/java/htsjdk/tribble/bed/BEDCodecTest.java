@@ -24,10 +24,10 @@
 
 package htsjdk.tribble.bed;
 
-import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;

@@ -25,18 +25,24 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.tribble.readers.PositionalBufferedStream;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.VariantContext;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringBufferInputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

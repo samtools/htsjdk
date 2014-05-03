@@ -24,8 +24,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.IOUtil;
-import org.testng.annotations.Test;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;

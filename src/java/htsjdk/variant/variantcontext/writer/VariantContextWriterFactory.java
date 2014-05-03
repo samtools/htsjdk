@@ -25,16 +25,19 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.index.IndexCreator;
-import htsjdk.tribble.index.tabix.TabixFormat;
-import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndexCreator;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.util.EnumSet;
 
 /**

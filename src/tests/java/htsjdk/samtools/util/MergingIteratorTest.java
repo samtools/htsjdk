@@ -23,8 +23,6 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.MergingIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

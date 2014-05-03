@@ -19,7 +19,12 @@ package htsjdk.tribble.readers;
 
 import htsjdk.tribble.TribbleException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 /**
  * A wrapper around an {@code InputStream} which performs it's own buffering, and keeps track of the position.

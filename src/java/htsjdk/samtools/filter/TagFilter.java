@@ -23,10 +23,10 @@
  */
 package htsjdk.samtools.filter;
 
-import java.util.List;
-import java.util.Arrays;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Filter class for matching tag attributes in SAMRecords

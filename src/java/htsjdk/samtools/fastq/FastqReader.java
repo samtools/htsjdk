@@ -27,9 +27,12 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 
+import java.io.BufferedReader;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.io.*;
 
 /**
  * Reads a fastq file.

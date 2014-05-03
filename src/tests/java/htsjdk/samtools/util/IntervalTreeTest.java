@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.util.IntervalTree;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

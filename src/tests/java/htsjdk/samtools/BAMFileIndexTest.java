@@ -27,14 +27,20 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.StopWatch;
 import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
-import static org.testng.Assert.*;
-
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import static org.testng.Assert.*;
 
 /**
  * Test BAM file indexing.

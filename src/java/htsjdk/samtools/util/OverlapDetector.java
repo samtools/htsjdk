@@ -23,7 +23,14 @@
  */
 package htsjdk.samtools.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Utility class to efficiently do in memory overlap detection between a large

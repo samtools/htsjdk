@@ -26,9 +26,9 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.variant.VariantBaseTest;
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.testng.Assert;
 
 import java.util.ArrayList;
 import java.util.Collections;

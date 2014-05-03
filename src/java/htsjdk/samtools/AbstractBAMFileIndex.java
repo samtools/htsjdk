@@ -23,15 +23,21 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.*;
-import java.nio.channels.FileChannel;
-import java.nio.MappedByteBuffer;
-import java.nio.ByteOrder;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 
 /**
  * Provides basic, generic capabilities to be used reading BAM index files.  Users can

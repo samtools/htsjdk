@@ -27,7 +27,10 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A class for translating between vcf header versions

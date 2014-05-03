@@ -23,9 +23,9 @@
  */
 package htsjdk.samtools.filter;
 
-import java.util.List;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.List;
 
 /**
  * Aggregates multiple filters and provides a method for applying them all to a given record with

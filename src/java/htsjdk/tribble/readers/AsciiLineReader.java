@@ -20,7 +20,12 @@ package htsjdk.tribble.readers;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.TribbleException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * A simple class that provides {@link #readLine()} functionality around a PositionalBufferedStream

@@ -23,12 +23,12 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.tribble.index.Block;
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;

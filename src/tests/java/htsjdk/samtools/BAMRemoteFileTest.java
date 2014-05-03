@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -33,6 +32,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+
+import static org.testng.Assert.*;
 
 /**
  * Test BAM file indexing.

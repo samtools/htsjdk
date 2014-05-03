@@ -28,7 +28,8 @@ package htsjdk.variant.variantcontext;
 
 import com.google.java.contract.Requires;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class encompasses all the basic information about a genotype.  It is immutable.

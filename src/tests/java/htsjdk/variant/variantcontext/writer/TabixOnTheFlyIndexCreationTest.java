@@ -23,14 +23,14 @@
  */
 package htsjdk.variant.variantcontext.writer;
 
-import htsjdk.tribble.FeatureReader;
-import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCF3Codec;
+import htsjdk.variant.vcf.VCFHeader;
 import org.testng.annotations.Test;
 
 import java.io.File;

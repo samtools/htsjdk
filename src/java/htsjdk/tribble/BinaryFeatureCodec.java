@@ -1,8 +1,8 @@
 package htsjdk.tribble;
 
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 
 import java.io.IOException;
 import java.io.InputStream;

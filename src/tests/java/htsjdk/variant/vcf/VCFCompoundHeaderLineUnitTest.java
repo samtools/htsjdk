@@ -26,8 +26,8 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.variant.VariantBaseTest;
-import org.testng.annotations.Test;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 
 /**

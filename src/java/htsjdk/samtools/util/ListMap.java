@@ -24,9 +24,9 @@
 
 package htsjdk.samtools.util;
 
-import java.util.List;
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * A Map class that holds a list of entries under each key instead of a single entry, and

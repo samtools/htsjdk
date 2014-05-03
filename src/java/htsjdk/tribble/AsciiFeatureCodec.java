@@ -18,14 +18,14 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.tribble.readers.PositionalBufferedStream;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.LocationAware;
 
 import java.io.IOException;
 import java.io.InputStream;

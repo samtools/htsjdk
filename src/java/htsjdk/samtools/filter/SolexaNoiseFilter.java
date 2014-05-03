@@ -23,8 +23,8 @@
  */
 package htsjdk.samtools.filter;
 
-import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Filter to determine whether a read is "noisy" due to a poly-A run that is a sequencing artifact.

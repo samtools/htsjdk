@@ -24,12 +24,12 @@
 
 package htsjdk.samtools.reference;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
-import java.io.File;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.util.Random;
 

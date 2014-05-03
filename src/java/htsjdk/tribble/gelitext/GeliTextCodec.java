@@ -23,10 +23,10 @@
  */
 package htsjdk.tribble.gelitext;
 
+import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.exception.CodecLineParsingException;
-import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.tribble.readers.LineIterator;
 
 import java.util.Arrays;

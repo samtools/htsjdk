@@ -23,10 +23,13 @@
  */
 package htsjdk.tribble.index.tabix;
 
+import htsjdk.samtools.BinningIndexBuilder;
+import htsjdk.samtools.BinningIndexContent;
+import htsjdk.samtools.Chunk;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.Feature;
-import htsjdk.tribble.index.IndexCreator;
-import htsjdk.samtools.*;
 import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexCreator;
 
 import java.util.ArrayList;
 import java.util.HashSet;

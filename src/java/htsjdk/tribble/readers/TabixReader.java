@@ -23,18 +23,19 @@
  */
 package htsjdk.tribble.readers;
 
-import java.io.*;
-import java.nio.*;
-import java.util.HashMap;
-import java.util.Arrays;
-import java.lang.StringBuffer;
-
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * @author Heng Li <hengli@broadinstitute.org>

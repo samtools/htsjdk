@@ -1,10 +1,10 @@
 package htsjdk.samtools.util;
 
 import java.io.IOException;
-import java.net.URLConnection;
-import java.net.URL;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 
 /**
  * User: jrobinso

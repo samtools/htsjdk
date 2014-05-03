@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -33,7 +34,6 @@ import htsjdk.variant.vcf.VCFEncoder;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;

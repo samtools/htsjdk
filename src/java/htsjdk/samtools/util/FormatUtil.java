@@ -27,10 +27,15 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 
 import java.io.File;
-import java.security.InvalidParameterException;
-import java.text.*;
-import java.util.Date;
 import java.math.RoundingMode;
+import java.security.InvalidParameterException;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Simple class used to format object values into a standard format for printing.

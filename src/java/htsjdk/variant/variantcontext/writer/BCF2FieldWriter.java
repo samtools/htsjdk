@@ -29,10 +29,10 @@ import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
+import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.variantcontext.Allele;
 
 import java.io.IOException;
 import java.util.ArrayList;

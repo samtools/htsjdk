@@ -1,11 +1,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecordSetBuilder;
-import htsjdk.samtools.util.FastqQualityFormat;
-import htsjdk.samtools.util.QualityEncodingDetector;
+import htsjdk.samtools.fastq.FastqReader;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

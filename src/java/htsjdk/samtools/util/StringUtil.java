@@ -24,9 +24,9 @@
 
 package htsjdk.samtools.util;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Arrays;
 
 /**
  * Grab-bag of stateless String-oriented utilities.

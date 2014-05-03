@@ -25,8 +25,8 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFHeader;
 
 /**
  * this class writes VCF files

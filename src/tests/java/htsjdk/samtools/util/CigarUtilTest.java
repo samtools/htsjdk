@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.CigarUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

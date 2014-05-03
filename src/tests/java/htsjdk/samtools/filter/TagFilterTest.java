@@ -24,15 +24,14 @@
 package htsjdk.samtools.filter;
 
 import htsjdk.samtools.ReservedTagConstants;
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
-import org.testng.Assert;
-
-import java.util.List;
-import java.util.Arrays;
-
-import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests for the TagFilter class

@@ -32,7 +32,13 @@ import com.google.java.contract.Requires;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * This class encompasses all the basic information about a genotype.  It is immutable.

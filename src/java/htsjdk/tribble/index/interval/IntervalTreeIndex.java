@@ -20,8 +20,8 @@ package htsjdk.tribble.index.interval;
 
 import htsjdk.tribble.index.AbstractIndex;
 import htsjdk.tribble.index.Block;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,10 +1,10 @@
 package htsjdk.variant.variantcontext;
 
-import org.apache.commons.jexl2.JexlContext;
-import org.apache.commons.jexl2.MapContext;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
 import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.jexl2.JexlContext;
+import org.apache.commons.jexl2.MapContext;
 
 import java.util.Collection;
 import java.util.HashMap;

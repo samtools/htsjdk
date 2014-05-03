@@ -25,17 +25,17 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.variant.variantcontext.writer.Options;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 

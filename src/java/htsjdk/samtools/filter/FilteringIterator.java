@@ -23,13 +23,13 @@
  */
 package htsjdk.samtools.filter;
 
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.util.PeekableIterator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.PeekableIterator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

@@ -26,7 +26,11 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.Iso8601Date;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Header information about a read group.

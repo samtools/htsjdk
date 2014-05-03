@@ -26,9 +26,9 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMException;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 
 /**
  * LRU cache of FileOutputStreams to handle situation in which it is necessary to have more FileOuputStreams

@@ -26,7 +26,9 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 /**

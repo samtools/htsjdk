@@ -23,8 +23,8 @@
  */
 package htsjdk.tribble.index;
 
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.IOException;
 import java.util.List;

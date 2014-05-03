@@ -23,7 +23,10 @@
  */
 package htsjdk.samtools.example;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 

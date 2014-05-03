@@ -25,8 +25,11 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.WeakHashMap;
 
 /**
  * Class for reading BAM file indices, caching each contig as it's loaded and
