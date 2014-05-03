@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -351,7 +351,7 @@ public class BinaryCodec {
     /**
      * Read a byte array from the input stream.
      *
-     * @throws net.sf.samtools.util.RuntimeEOFException if fewer than buffer.length bytes to read
+     * @throws htsjdk.samtools.util.RuntimeEOFException if fewer than buffer.length bytes to read
      */
     public void readBytes(final byte[] buffer) {
         readBytes(buffer, 0, buffer.length);

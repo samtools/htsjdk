@@ -23,17 +23,17 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import org.broad.tribble.index.IndexCreator;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
-import org.broadinstitute.variant.vcf.VCFConstants;
-import org.broadinstitute.variant.vcf.VCFEncoder;
-import org.broadinstitute.variant.vcf.VCFHeader;
-import org.broadinstitute.variant.vcf.VCFHeaderLine;
-import org.broadinstitute.variant.vcf.VCFHeaderVersion;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFEncoder;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;

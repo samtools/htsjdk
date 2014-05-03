@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.bed.BEDCodec;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.bed.BEDCodec;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import java.util.Iterator;
 import java.util.List;

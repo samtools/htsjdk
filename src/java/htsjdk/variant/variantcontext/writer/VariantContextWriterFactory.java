@@ -23,16 +23,16 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import net.sf.samtools.util.IOUtil;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.index.IndexCreator;
-import org.broad.tribble.index.tabix.TabixFormat;
-import org.broad.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.*;
 import java.util.EnumSet;
@@ -43,7 +43,7 @@ import java.util.EnumSet;
  * @author depristo
  * @since 5/12
  *
- * @deprecated Replaced by {@link org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder}
+ * @deprecated Replaced by {@link VariantContextWriterBuilder}
  */
 @Deprecated
 public class VariantContextWriterFactory {

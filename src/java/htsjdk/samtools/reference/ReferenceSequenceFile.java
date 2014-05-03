@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.io.IOException;
 

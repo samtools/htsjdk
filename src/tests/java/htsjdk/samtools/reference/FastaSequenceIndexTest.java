@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
+import htsjdk.samtools.SAMException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +38,7 @@ import org.testng.Assert;
  * Test the fasta sequence index reader.
  */
 public class FastaSequenceIndexTest {
-    private static File TEST_DATA_DIR = new File("testdata/net/sf/picard/reference");
+    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/reference");
 
     @DataProvider(name="homosapiens")
     public Object[][] provideHomoSapiens() throws FileNotFoundException {
@@ -140,7 +140,7 @@ public class FastaSequenceIndexTest {
         Assert.assertFalse(sequenceIndex.hasIndexEntry("invalid"),"Found an invalid entry");
     }
 
-    @Test(dataProvider="homosapiens",expectedExceptions=PicardException.class)
+    @Test(dataProvider="homosapiens",expectedExceptions=SAMException.class)
     public void testGetInvalidEntry(FastaSequenceIndex sequenceIndex) {
         sequenceIndex.getIndexEntry("invalid");
     }

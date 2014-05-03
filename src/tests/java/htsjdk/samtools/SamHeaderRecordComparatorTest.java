@@ -1,4 +1,4 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 /**
  * The MIT License

@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.util.List;
 
-import static net.sf.samtools.GenomicIndexUtil.MAX_BINS;
+import static htsjdk.samtools.GenomicIndexUtil.MAX_BINS;
 
 /**
  * Builder for a BinningIndexContent object.

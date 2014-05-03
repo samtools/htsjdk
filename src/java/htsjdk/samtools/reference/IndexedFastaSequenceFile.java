@@ -22,12 +22,12 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -69,12 +69,12 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         super(file);
         if (index == null) throw new IllegalArgumentException("Null index for fasta " + file);
         this.index = index;
-        IoUtil.assertFileIsReadable(file);
+        IOUtil.assertFileIsReadable(file);
         final FileInputStream in;
         try {
             in = new FileInputStream(file);
         } catch (FileNotFoundException e) {
-            throw new PicardException("Fasta file should be readable but is not: " + file, e);
+            throw new SAMException("Fasta file should be readable but is not: " + file, e);
         }
         channel = in.getChannel();
         reset();
@@ -127,7 +127,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
                                                             final FastaSequenceIndex index) {
         // Make sure dictionary and index are the same size.
         if( sequenceDictionary.getSequences().size() != index.size() )
-            throw new PicardException("Sequence dictionary and index contain different numbers of contigs");
+            throw new SAMException("Sequence dictionary and index contain different numbers of contigs");
 
         Iterator<SAMSequenceRecord> sequenceIterator = sequenceDictionary.getSequences().iterator();
         Iterator<FastaSequenceIndexEntry> indexIterator = index.iterator();
@@ -137,13 +137,13 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
             FastaSequenceIndexEntry indexEntry = indexIterator.next();
 
             if(!sequenceEntry.getSequenceName().equals(indexEntry.getContig())) {
-                throw new PicardException(String.format("Mismatch between sequence dictionary fasta index for %s, sequence '%s' != '%s'.",
+                throw new SAMException(String.format("Mismatch between sequence dictionary fasta index for %s, sequence '%s' != '%s'.",
                         fastaFile, sequenceEntry.getSequenceName(),indexEntry.getContig()));
             }
 
             // Make sure sequence length matches index length.
             if( sequenceEntry.getSequenceLength() != indexEntry.getSize())
-                throw new PicardException("Index length does not match dictionary length for contig: " + sequenceEntry.getSequenceName() );            
+                throw new SAMException("Index length does not match dictionary length for contig: " + sequenceEntry.getSequenceName() );
         }
     }
 
@@ -173,12 +173,12 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      */
     public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
         if(start > stop + 1)
-            throw new PicardException(String.format("Malformed query; start point %d lies after end point %d",start,stop));
+            throw new SAMException(String.format("Malformed query; start point %d lies after end point %d",start,stop));
 
         FastaSequenceIndexEntry indexEntry = index.getIndexEntry(contig);
 
         if(stop > indexEntry.getSize())
-            throw new PicardException("Query asks for data past end of contig");
+            throw new SAMException("Query asks for data past end of contig");
 
         int length = (int)(stop - start + 1);
 
@@ -202,7 +202,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
                  startOffset += channel.read(channelBuffer,indexEntry.getLocation()+startOffset);
             }
             catch(IOException ex) {
-                throw new PicardException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
+                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
             }
 
             // Reset the buffer for outbound transfers.

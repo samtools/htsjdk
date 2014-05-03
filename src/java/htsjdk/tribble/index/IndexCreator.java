@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import org.broad.tribble.Feature;
+import htsjdk.tribble.Feature;
 
 /**
  *

@@ -1,7 +1,6 @@
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.SAMRecord;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

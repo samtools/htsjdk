@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
 
 import java.io.*;
 import java.util.concurrent.*;
@@ -62,7 +61,7 @@ public class ProcessExecutor {
             final Process process = Runtime.getRuntime().exec(command);
             return readStreamsAndWaitFor(process);
         } catch (Throwable t) {
-            throw new PicardException("Unexpected exception executing [" + net.sf.samtools.util.StringUtil.join(" ", command) + "]", t);
+            throw new SAMException("Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", command) + "]", t);
         }
     }
 
@@ -100,7 +99,7 @@ public class ProcessExecutor {
             }
             return readStreamsAndWaitFor(process);
         } catch (Throwable t) {
-            throw new PicardException("Unexpected exception executing [" + net.sf.samtools.util.StringUtil.join(" ", commandParts) + "]", t);
+            throw new SAMException("Unexpected exception executing [" + htsjdk.samtools.util.StringUtil.join(" ", commandParts) + "]", t);
         }
     }
 
@@ -116,7 +115,7 @@ public class ProcessExecutor {
             final int result = process.waitFor();
             return result == 0 ? stdout.getOutput() : err.getOutput();
         } catch (Throwable t) {
-            throw new PicardException("Unexpected exception executing [" + command + "]", t);
+            throw new SAMException("Unexpected exception executing [" + command + "]", t);
         }
 
     }
@@ -144,7 +143,7 @@ public class ProcessExecutor {
             return interleaveProcessOutput(process);
 
         } catch (Throwable t) {
-            throw new PicardException("Unexpected exception executing [" + command + "]", t);
+            throw new SAMException("Unexpected exception executing [" + command + "]", t);
         }
     }
 
@@ -158,7 +157,7 @@ public class ProcessExecutor {
             return interleaveProcessOutput(process);
 
         } catch (Throwable t) {
-            throw new PicardException("Unexpected exception executing [" + StringUtil.join(" ", commandArray) + "]", t);
+            throw new SAMException("Unexpected exception executing [" + StringUtil.join(" ", commandArray) + "]", t);
         }
     }
 
@@ -207,7 +206,7 @@ public class ProcessExecutor {
                     write(line);
                 }
             } catch (IOException e) {
-                throw new PicardException("Unexpected exception reading from process stream", e);
+                throw new SAMException("Unexpected exception reading from process stream", e);
             }
         }
         

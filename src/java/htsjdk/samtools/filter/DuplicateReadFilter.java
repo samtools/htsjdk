@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.filter;
-import net.sf.samtools.SAMRecord;
+package htsjdk.samtools.filter;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Filter out SAMRecords with DuplicateRead flag set

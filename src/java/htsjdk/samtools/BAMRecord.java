@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

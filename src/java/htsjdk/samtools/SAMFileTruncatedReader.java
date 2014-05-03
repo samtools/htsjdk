@@ -1,4 +1,4 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import java.io.File;
 import java.util.NoSuchElementException;

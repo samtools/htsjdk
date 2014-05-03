@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 
 public class SAMFileReaderTest {
-    private static final File TEST_DATA_DIR = new File("testdata/net/sf/samtools");
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
 
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void variousFormatReaderTest(final String inputFile) {

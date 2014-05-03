@@ -23,16 +23,23 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.bcf2.BCF2Utils;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
+import htsjdk.variant.vcf.VCFFilterHeaderLine;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.vcf.VCFIDHeaderLine;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 import java.util.*;
 
-import org.broadinstitute.variant.vcf.VCFSimpleHeaderLine;
+import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -154,7 +161,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     private static boolean expectedConsistent(final VCFHeader combinationHeader, final int minCounterForInputLines) {
         final List<Integer> ids = new ArrayList<Integer>();
         for ( final VCFHeaderLine line : combinationHeader.getMetaDataInInputOrder() ) {
-            if ( line instanceof VCFIDHeaderLine ) {
+            if ( line instanceof VCFIDHeaderLine) {
                 ids.add(Integer.valueOf(((VCFIDHeaderLine) line).getID()));
             }
         }

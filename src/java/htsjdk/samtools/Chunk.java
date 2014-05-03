@@ -1,6 +1,6 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.Serializable;
 import java.util.*;

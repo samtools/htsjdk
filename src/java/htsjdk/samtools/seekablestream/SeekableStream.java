@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import java.io.EOFException;
 import java.io.IOException;

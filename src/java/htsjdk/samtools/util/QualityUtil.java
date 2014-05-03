@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Utility class for working with quality scores and error probabilities.

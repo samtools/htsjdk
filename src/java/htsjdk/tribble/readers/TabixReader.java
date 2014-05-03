@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
 import java.io.*;
 import java.nio.*;
@@ -29,13 +29,12 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.lang.StringBuffer;
 
-import net.sf.samtools.seekablestream.ISeekableStreamFactory;
-import net.sf.samtools.seekablestream.SeekableStream;
-import net.sf.samtools.util.BlockCompressedInputStream;
-import net.sf.samtools.seekablestream.SeekableStreamFactory;
-import org.broad.tribble.Tribble;
-import org.broad.tribble.util.ParsingUtils;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
 
 /**
  * @author Heng Li <hengli@broadinstitute.org>

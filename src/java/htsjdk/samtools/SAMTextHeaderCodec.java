@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.DateParser;
-import net.sf.samtools.util.LineReader;
-import net.sf.samtools.util.RuntimeIOException;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.DateParser;
+import htsjdk.samtools.util.LineReader;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

@@ -16,7 +16,7 @@
  * SHALL KNOW OF THE POSSIBILITY OF THE FOREGOING.
  */
 
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import java.io.IOException;
 import java.net.URL;

@@ -22,10 +22,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble.example;
+package htsjdk.tribble.example;
 
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
 
 public class ProfileIndexReading {
 

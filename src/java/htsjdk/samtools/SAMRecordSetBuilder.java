@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CoordMath;
-import net.sf.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;

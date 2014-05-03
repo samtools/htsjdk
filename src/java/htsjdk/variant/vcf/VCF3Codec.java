@@ -23,13 +23,11 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.readers.LineIterator;
-import org.broad.tribble.readers.LineReader;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.LineIterator;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

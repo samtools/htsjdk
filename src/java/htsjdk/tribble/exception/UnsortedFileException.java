@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.exception;
+package htsjdk.tribble.exception;
 
 /**
  * an exception for when we've discovered that an input file is unsorted; sorted files are required by Tribble

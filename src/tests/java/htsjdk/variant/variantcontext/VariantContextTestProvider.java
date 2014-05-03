@@ -23,20 +23,29 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
-import org.broad.tribble.FeatureCodec;
-import org.broad.tribble.FeatureCodecHeader;
-import org.broad.tribble.readers.LineIterator;
-import org.broad.tribble.readers.LineIteratorImpl;
-import org.broad.tribble.readers.LineReaderUtil;
-import org.broad.tribble.readers.PositionalBufferedStream;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.bcf2.BCF2Codec;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.writer.Options;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
+import htsjdk.variant.vcf.VCFFilterHeaderLine;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import org.testng.Assert;
 
 import java.io.*;

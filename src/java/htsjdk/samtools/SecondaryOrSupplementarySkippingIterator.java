@@ -1,7 +1,7 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.PeekIterator;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.PeekIterator;
 
 /**
  * Wrapper around SAMRecord iterator that skips over secondary and supplementary elements.

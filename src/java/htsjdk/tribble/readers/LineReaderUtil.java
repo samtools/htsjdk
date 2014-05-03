@@ -1,8 +1,8 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.util.CloserUtil;
-import org.broad.tribble.TribbleException;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.tribble.TribbleException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,8 +19,8 @@ public class LineReaderUtil {
     }
 
     /**
-     * Like {@link #fromBufferedStream(java.io.InputStream, org.broad.tribble.readers.LineReaderUtil.LineReaderOption)}, but the synchronicity
-     * option is determined by {@link net.sf.samtools.Defaults}: if asynchronous I/O is enabled, an asynchronous line reader will be
+     * Like {@link #fromBufferedStream(java.io.InputStream, LineReaderUtil.LineReaderOption)}, but the synchronicity
+     * option is determined by {@link htsjdk.samtools.Defaults}: if asynchronous I/O is enabled, an asynchronous line reader will be
      * returned.
      */
     public static LineReader fromBufferedStream(final InputStream stream) {

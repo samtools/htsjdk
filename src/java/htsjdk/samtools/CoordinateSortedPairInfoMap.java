@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.util.FileAppendStreamLRUCache;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CloserUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.FileAppendStreamLRUCache;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.*;
 import java.util.*;
@@ -48,7 +48,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     /**
      * directory where files will go
      */
-    private final File workDir = IoUtil.createTempDir("CSPI.", null);
+    private final File workDir = IOUtil.createTempDir("CSPI.", null);
     private int sequenceIndexOfMapInRam = INVALID_SEQUENCE_INDEX;
     private Map<KEY, REC> mapInRam = null;
     private final FileAppendStreamLRUCache outputStreams;
@@ -61,7 +61,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     // internal state.
     private boolean iterationInProgress = false;
 
-    CoordinateSortedPairInfoMap(int maxOpenFiles, Codec<KEY, REC> elementCodec) {
+    public CoordinateSortedPairInfoMap(int maxOpenFiles, Codec<KEY, REC> elementCodec) {
         this.elementCodec = elementCodec;
         workDir.deleteOnExit();
         outputStreams = new FileAppendStreamLRUCache(maxOpenFiles);
@@ -121,18 +121,18 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
                     for (int i = 0; i < numRecords; ++i) {
                         final Map.Entry<KEY, REC> keyAndRecord = elementCodec.decode();
                         if (mapInRam.containsKey(keyAndRecord.getKey()))
-                            throw new PicardException("Value was put into PairInfoMap more than once.  " +
+                            throw new SAMException("Value was put into PairInfoMap more than once.  " +
                                     sequenceIndex + ": " + keyAndRecord.getKey());
                         mapInRam.put(keyAndRecord.getKey(), keyAndRecord.getValue());
                     }
                 } finally {
                     CloserUtil.close(is);
                 }
-                net.sf.samtools.util.IOUtil.deleteFiles(mapOnDisk);
+                htsjdk.samtools.util.IOUtil.deleteFiles(mapOnDisk);
             } else if (numRecords != null && numRecords > 0)
                 throw new IllegalStateException("Non-zero numRecords but " + mapOnDisk + " does not exist");
         } catch (IOException e) {
-            throw new PicardException("Error loading new map from disk.", e);
+            throw new SAMException("Error loading new map from disk.", e);
         }
     }
 

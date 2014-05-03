@@ -23,7 +23,7 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 /**
  * Available writer options for VariantContextWriters

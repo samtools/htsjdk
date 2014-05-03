@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
 import java.util.*;
 

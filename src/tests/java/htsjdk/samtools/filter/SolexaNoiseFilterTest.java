@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.filter;
+package htsjdk.samtools.filter;
 
 import org.testng.annotations.Test;
 import org.testng.annotations.DataProvider;
 import org.testng.Assert;
-import net.sf.samtools.SAMRecordSetBuilder;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Basic test for the SolexaNoiseFilter

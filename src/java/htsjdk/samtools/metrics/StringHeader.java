@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.metrics;
+package htsjdk.samtools.metrics;
 
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.StringUtil;
 
 /**
  * A simple header who's data type is a single String.  Should not be used for anything other

@@ -23,22 +23,27 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import net.sf.samtools.SAMSequenceDictionary;
-import org.broad.tribble.index.IndexCreator;
-import org.broadinstitute.variant.bcf2.BCF2Codec;
-import org.broadinstitute.variant.bcf2.BCF2Type;
-import org.broadinstitute.variant.bcf2.BCF2Utils;
-import org.broadinstitute.variant.bcf2.BCFVersion;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.VCFConstants;
-import org.broadinstitute.variant.vcf.VCFContigHeaderLine;
-import org.broadinstitute.variant.vcf.VCFHeader;
-import org.broadinstitute.variant.variantcontext.*;
-import org.broadinstitute.variant.vcf.VCFUtils;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.variant.bcf2.BCFVersion;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCF2Type;
+import htsjdk.variant.bcf2.BCF2Utils;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.*;
 import java.util.*;

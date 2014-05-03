@@ -23,16 +23,20 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.index.*;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.tribble.index.DynamicIndexCreator;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.TribbleIndexCreator;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.variant.variantcontext.VariantContext;
 
 import java.io.File;
 import java.io.IOException;

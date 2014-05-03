@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.bed;
+package htsjdk.tribble.bed;
 
-import org.broad.tribble.annotation.Strand;
+import htsjdk.tribble.annotation.Strand;
 
 import java.util.ArrayList;
 

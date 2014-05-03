@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.util.BufferedLineReader;
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
 import java.io.InputStream;

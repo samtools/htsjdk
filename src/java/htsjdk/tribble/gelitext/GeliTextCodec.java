@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.gelitext;
+package htsjdk.tribble.gelitext;
 
-import net.sf.samtools.util.CollectionUtil;
-import org.broad.tribble.AsciiFeatureCodec;
-import org.broad.tribble.Feature;
-import org.broad.tribble.exception.CodecLineParsingException;
-import org.broad.tribble.readers.LineIterator;
+import htsjdk.tribble.AsciiFeatureCodec;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.exception.CodecLineParsingException;
+import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.tribble.readers.LineIterator;
 
 import java.util.Arrays;
 

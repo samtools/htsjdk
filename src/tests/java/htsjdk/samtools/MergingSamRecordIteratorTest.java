@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.*;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -206,7 +206,7 @@ public class MergingSamRecordIteratorTest {
     }
 
 
-    @Test(expectedExceptions = PicardException.class)
+    @Test(expectedExceptions = SAMException.class)
     public void filesNotSortedCorrectly() throws Exception {
         final SAMRecordSetBuilder builder1 = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
         builder1.addFrag("read_28833_29006_6945", 20, 28833, false); // ok

@@ -15,10 +15,10 @@
  * BE ADVISED, SHALL HAVE OTHER REASON TO KNOW, OR IN FACT SHALL KNOW OF THE POSSIBILITY OF THE
  * FOREGOING.
  */
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.TribbleException;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.TribbleException;
 
 import java.io.*;
 
@@ -26,7 +26,7 @@ import java.io.*;
  * A simple class that provides {@link #readLine()} functionality around a PositionalBufferedStream
  *
  * {@link BufferedReader} and its {@link java.io.BufferedReader#readLine()} method should be used in preference to this class (when the
- * {@link net.sf.samtools.util.LocationAware} functionality is not required) because it offers greater performance.
+ * {@link htsjdk.samtools.util.LocationAware} functionality is not required) because it offers greater performance.
  * 
  * @author jrobinso
  */

@@ -16,9 +16,9 @@
  * FOREGOING.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.util.LocationAware;
+import htsjdk.samtools.util.LocationAware;
 
 import java.io.IOException;
 import java.io.InputStream;

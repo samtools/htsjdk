@@ -23,11 +23,11 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
 // the imports for unit testing.
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.variantcontext.writer.BCF2Encoder;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.writer.BCF2Encoder;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;

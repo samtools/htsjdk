@@ -1,4 +1,4 @@
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 /**
  * The MIT License
@@ -24,7 +24,7 @@ package net.sf.samtools.util;
  * THE SOFTWARE.
  */
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * An interface defining the record() methods of the Picard-public ProgressLogger implementation.

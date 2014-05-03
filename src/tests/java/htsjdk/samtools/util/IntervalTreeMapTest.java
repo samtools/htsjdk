@@ -21,13 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.IntervalTreeMap;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Iterator;
-import java.util.Set;
 
 public class IntervalTreeMapTest {
     @Test

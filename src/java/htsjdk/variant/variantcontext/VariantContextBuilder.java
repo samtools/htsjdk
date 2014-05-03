@@ -23,10 +23,10 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 import com.google.java.contract.*;
-import org.broadinstitute.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.*;
 

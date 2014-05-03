@@ -16,14 +16,13 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index.linear;
+package htsjdk.tribble.index.linear;
 
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.index.AbstractIndex;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.util.LittleEndianInputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.index.AbstractIndex;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.util.LittleEndianInputStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -102,7 +101,7 @@ public class LinearIndex extends AbstractIndex {
         if (!super.isCurrentVersion()) return false;
 
         // todo fixme nasty hack to determine if this is an old style V3 linear index (without nFeaturesPerBin)
-        for (final org.broad.tribble.index.ChrIndex chrIndex : chrIndices.values())
+        for (final htsjdk.tribble.index.ChrIndex chrIndex : chrIndices.values())
             if (((ChrIndex) chrIndex).OLD_V3_INDEX)
                 return false;
 
@@ -145,7 +144,7 @@ public class LinearIndex extends AbstractIndex {
      * contains all records that have starting position > (i * binWidth) and
      * <= ((i + 1) * binWidth))
      */
-    public static class ChrIndex implements org.broad.tribble.index.ChrIndex {
+    public static class ChrIndex implements htsjdk.tribble.index.ChrIndex {
         private String name = "";
         private int binWidth;
         private int longestFeature;

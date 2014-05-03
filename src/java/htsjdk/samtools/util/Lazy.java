@@ -1,4 +1,4 @@
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 /**
  * Simple utility for building an on-demand (lazy) object-initializer.

@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import org.broad.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.File;
 

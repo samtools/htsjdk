@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.*;
 import java.util.ArrayList;

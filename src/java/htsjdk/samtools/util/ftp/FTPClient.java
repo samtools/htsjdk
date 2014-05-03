@@ -16,9 +16,9 @@
  * SHALL KNOW OF THE POSSIBILITY OF THE FOREGOING.
  */
 
-package net.sf.samtools.util.ftp;
+package htsjdk.samtools.util.ftp;
 
-import net.sf.samtools.SAMException;
+import htsjdk.samtools.SAMException;
 
 import java.io.*;
 import java.net.Socket;

@@ -23,12 +23,12 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.utils.GeneralUtils;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.utils.GeneralUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

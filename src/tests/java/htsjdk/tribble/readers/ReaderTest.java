@@ -1,4 +1,4 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
 
 import org.testng.Assert;

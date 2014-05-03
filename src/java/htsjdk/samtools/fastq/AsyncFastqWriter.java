@@ -1,6 +1,6 @@
-package net.sf.picard.fastq;
+package htsjdk.samtools.fastq;
 
-import net.sf.samtools.util.AbstractAsyncWriter;
+import htsjdk.samtools.util.AbstractAsyncWriter;
 
 /**
  * Implementation of a FastqWriter that provides asynchronous output.

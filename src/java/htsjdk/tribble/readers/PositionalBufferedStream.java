@@ -15,9 +15,9 @@
  * BE ADVISED, SHALL HAVE OTHER REASON TO KNOW, OR IN FACT SHALL KNOW OF THE POSSIBILITY OF THE
  * FOREGOING.
  */
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import org.broad.tribble.TribbleException;
+import htsjdk.tribble.TribbleException;
 
 import java.io.*;
 

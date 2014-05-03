@@ -23,18 +23,18 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import net.sf.samtools.util.IOUtil;
-import net.sf.samtools.util.Md5CalculatingOutputStream;
-import net.sf.samtools.util.RuntimeIOException;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.index.IndexCreator;
-import org.broad.tribble.index.tabix.TabixFormat;
-import org.broad.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndexCreator;
 
 import java.io.File;
 import java.io.FileNotFoundException;

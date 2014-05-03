@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index.tabix;
+package htsjdk.tribble.index.tabix;
 
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.tribble.util.TabixUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -33,8 +33,8 @@ import org.testng.annotations.Test;
 import java.io.File;
 
 public class TabixIndexTest {
-    private static final File SMALL_TABIX_FILE = new File("testdata/tribble/tabix/trioDup.vcf.gz.tbi");
-    private static final File BIGGER_TABIX_FILE = new File("testdata/tribble/tabix/bigger.vcf.gz.tbi");
+    private static final File SMALL_TABIX_FILE = new File("testdata/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
+    private static final File BIGGER_TABIX_FILE = new File("testdata/htsjdk/tribble/tabix/bigger.vcf.gz.tbi");
 
     /**
      * Read an existing index from disk, write it to a temp file, read that in, and assert that both in-memory

@@ -50,7 +50,7 @@ rm -rf $builddir
 mkdir -p $builddir
 
 # Create JNI C header file
-javah -jni -classpath $rootdir/classes -d $builddir net.sf.samtools.util.zip.IntelDeflater
+javah -jni -classpath $rootdir/classes -d $builddir htsjdk.samtools.util.zip.IntelDeflater
 
 # Compile source and create library.
 gcc -I$builddir -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +75,7 @@ public abstract class AbstractSAMHeaderRecord {
 
     /**
      * Returns the ID tag (or equivalent) for this header record. The
-     * default implementation throws a PicardException to indicate "not implemented".
+     * default implementation throws a SAMException to indicate "not implemented".
      */
     public String getId() {
         throw new UnsupportedOperationException("Method not implemented for: " + this.getClass());

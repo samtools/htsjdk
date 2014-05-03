@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index.tabix;
+package htsjdk.tribble.index.tabix;
 
-import net.sf.samtools.*;
-import org.broad.tribble.Feature;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexCreator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.index.IndexCreator;
+import htsjdk.samtools.*;
+import htsjdk.tribble.index.Index;
 
 import java.util.ArrayList;
 import java.util.HashSet;

@@ -22,13 +22,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import org.broad.tribble.Feature;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.index.interval.IntervalIndexCreator;
-import org.broad.tribble.index.linear.LinearIndexCreator;
-import org.broad.tribble.util.MathUtils;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.interval.IntervalIndexCreator;
+import htsjdk.tribble.index.linear.LinearIndexCreator;
+import htsjdk.tribble.util.MathUtils;
 
 import java.io.File;
 import java.util.HashMap;

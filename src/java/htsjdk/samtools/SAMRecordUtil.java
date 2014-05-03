@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.StringUtil;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * @author alecw@broadinstitute.org

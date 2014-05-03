@@ -23,13 +23,17 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
-import org.broad.tribble.Feature;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.util.ParsingUtils;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.tribble.Feature;
+import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.utils.GeneralUtils;
 
 import java.util.*;
 

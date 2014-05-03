@@ -1,11 +1,11 @@
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import org.broad.tribble.bed.BEDCodec;
-import org.broad.tribble.bed.BEDFeature;
-import org.broad.tribble.readers.LineIterator;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCFCodec;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFCodec;
 import org.testng.annotations.Test;
 
 import java.io.IOException;

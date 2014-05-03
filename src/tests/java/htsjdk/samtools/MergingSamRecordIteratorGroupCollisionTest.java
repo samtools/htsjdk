@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import net.sf.samtools.*;
+import htsjdk.samtools.*;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;

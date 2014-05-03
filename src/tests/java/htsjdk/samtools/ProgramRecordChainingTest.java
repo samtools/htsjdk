@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMProgramRecord;
-import net.sf.samtools.SAMUtils;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMProgramRecord;
+import htsjdk.samtools.SAMUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

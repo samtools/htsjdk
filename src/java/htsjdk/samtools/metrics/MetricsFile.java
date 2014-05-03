@@ -22,13 +22,13 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.metrics;
+package htsjdk.samtools.metrics;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.util.FormatUtil;
-import net.sf.picard.util.Histogram;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.FormatUtil;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -125,7 +125,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
             write(w);
         }
         catch (IOException ioe) {
-            throw new PicardException("Could not write metrics to file: " + f.getAbsolutePath(), ioe);
+            throw new SAMException("Could not write metrics to file: " + f.getAbsolutePath(), ioe);
         }
         finally {
             if (w != null) {
@@ -158,7 +158,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
             out.flush();
         }
         catch (IOException ioe) {
-            throw new PicardException("Could not write metrics file.", ioe);
+            throw new SAMException("Could not write metrics file.", ioe);
         }
     }
 
@@ -213,7 +213,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                     }
                 }
                 catch (IllegalAccessException iae) {
-                    throw new PicardException("Could not read property " + fields[i].getName()
+                    throw new SAMException("Could not read property " + fields[i].getName()
                             + " from class of type " + bean.getClass());
                 }
             }
@@ -302,7 +302,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                         header = (Header) loadClass(className, true).newInstance();
                     }
                     catch (final Exception e) {
-                        throw new PicardException("Error load and/or instantiating an instance of " + className, e);
+                        throw new SAMException("Error load and/or instantiating an instance of " + className, e);
                     }
                 }
                 else if (line.startsWith(MINOR_HEADER_PREFIX)) {
@@ -314,7 +314,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                     header = null;
                 }
                 else {
-                    throw new PicardException("Illegal state. Found following string in metrics file header: " + line);
+                    throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
                 }
             }
 
@@ -336,7 +336,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                         type = loadClass(className, true);
                     }
                     catch (final ClassNotFoundException cnfe) {
-                        throw new PicardException("Could not locate class with name " + className, cnfe);
+                        throw new SAMException("Could not locate class with name " + className, cnfe);
                     }
 
                     // Read the next line with the column headers
@@ -348,7 +348,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                             fields[i] = type.getField(fieldNames[i]);
                         }
                         catch (final Exception e) {
-                            throw new PicardException("Could not get field with name " + fieldNames[i] +
+                            throw new SAMException("Could not get field with name " + fieldNames[i] +
                                 " from class " + type.getName());
                         }
                     }
@@ -363,7 +363,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                             BEAN bean = null;
 
                             try { bean = (BEAN) type.newInstance(); }
-                            catch (final Exception e) { throw new PicardException("Error instantiating a " + type.getName(), e); }
+                            catch (final Exception e) { throw new SAMException("Error instantiating a " + type.getName(), e); }
 
                             for (int i=0; i<fields.length; ++i) {
                                 Object value = null;
@@ -373,7 +373,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
 
                                 try { fields[i].set(bean, value); }
                                 catch (final Exception e) {
-                                    throw new PicardException("Error setting field " + fields[i].getName() +
+                                    throw new SAMException("Error setting field " + fields[i].getName() +
                                             " on class of type " + type.getName(), e);
                                 }
                             }
@@ -394,7 +394,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 Class<?> keyClass = null;
 
                 try { keyClass = loadClass(keyClassName, true); }
-                catch (final ClassNotFoundException cnfe) { throw new PicardException("Could not load class with name " + keyClassName); }
+                catch (final ClassNotFoundException cnfe) { throw new SAMException("Could not load class with name " + keyClassName); }
 
                 // Read the next line with the bin and value labels
                 final String[] labels = in.readLine().split(SEPARATOR);
@@ -415,7 +415,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
             }
         }
         catch (final IOException ioe) {
-            throw new PicardException("Could not read metrics from reader.", ioe);
+            throw new SAMException("Could not read metrics from reader.", ioe);
         }
         finally{
             CloserUtil.close(in);
@@ -433,10 +433,10 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 "edu.mit.broad.picard.jumping",
                 "edu.mit.broad.picard.quality",
                 "edu.mit.broad.picard.samplevalidation",
-                "net.sf.picard.analysis",
-                "net.sf.picard.analysis.directed",
-                "net.sf.picard.sam",
-                "net.sf.picard.metrics"
+                "htsjdk.samtools.analysis",
+                "htsjdk.samtools.analysis.directed",
+                "htsjdk.samtools.sam",
+                "htsjdk.samtools.metrics"
         };
 
         try { return Class.forName(className); }
@@ -515,7 +515,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
             metricsFile.read(new FileReader(file));
             return metricsFile.getMetrics();
         } catch (FileNotFoundException e) {
-            throw new PicardException(e.getMessage(), e);
+            throw new SAMException(e.getMessage(), e);
         }
     }
 }

@@ -21,16 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.util.CoordMath;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.StringUtil;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 
@@ -1129,7 +1128,7 @@ public class SAMRecord implements Cloneable
     }
 
     /**
-     * @see net.sf.samtools.SAMRecord#setAttribute(java.lang.String, java.lang.Object)
+     * @see htsjdk.samtools.SAMRecord#setAttribute(java.lang.String, java.lang.Object)
      * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
      */
     protected void setAttribute(final short tag, final Object value) {
@@ -1277,7 +1276,7 @@ public class SAMRecord implements Cloneable
      *
      * @return String representation of this.
      * @deprecated This method is not guaranteed to return a valid SAM text representation of the SAMRecord.
-     * To get standard SAM text representation, use net.sf.samtools.SAMRecord#getSAMString().
+     * To get standard SAM text representation, use htsjdk.samtools.SAMRecord#getSAMString().
      */
     public String format() {
         final StringBuilder buffer = new StringBuilder();

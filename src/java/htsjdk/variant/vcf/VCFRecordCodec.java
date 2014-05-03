@@ -1,7 +1,7 @@
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.util.SortingCollection;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.samtools.util.SortingCollection;
 
 import java.io.BufferedReader;
 import java.io.IOException;

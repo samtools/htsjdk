@@ -22,13 +22,13 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.FastLineReader;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.FastLineReader;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.File;
 
@@ -50,7 +50,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     public FastaSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
         super(file);
         this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
-        this.in = new FastLineReader(IoUtil.openFileForReading(file));
+        this.in = new FastLineReader(IOUtil.openFileForReading(file));
     }
 
     /**
@@ -80,7 +80,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     public void reset() {
         this.sequenceIndex = -1;
         this.in.close();
-        this.in = new FastLineReader(IoUtil.openFileForReading(file));
+        this.in = new FastLineReader(IOUtil.openFileForReading(file));
 
     }
 
@@ -91,7 +91,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         }
         final byte b = in.getByte();
         if (b != '>') {
-            throw new PicardException("Format exception reading FASTA " + file + ".  Expected > but saw chr(" +
+            throw new SAMException("Format exception reading FASTA " + file + ".  Expected > but saw chr(" +
             b + ") at start of sequence with index " + this.sequenceIndex);
         }
         final byte[] nameBuffer = new byte[4096];
@@ -102,11 +102,11 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             }
             nameLength += in.readToEndOfOutputBufferOrEoln(nameBuffer, nameLength);
             if (nameLength == nameBuffer.length && !in.atEoln()) {
-                throw new PicardException("Sequence name too long in FASTA " + file);
+                throw new SAMException("Sequence name too long in FASTA " + file);
             }
         } while (!in.atEoln());
         if (nameLength == 0) {
-            throw new PicardException("Missing sequence name in FASTA " + file);
+            throw new SAMException("Missing sequence name in FASTA " + file);
         }
         String name = StringUtil.bytesToString(nameBuffer, 0, nameLength).trim();
         if (truncateNamesAtWhitespace) {

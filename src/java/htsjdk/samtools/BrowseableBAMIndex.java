@@ -1,4 +1,4 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 /**
  * An index interface with additional functionality for querying and inspecting the structure of a BAM index.

@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.filter;
+package htsjdk.samtools.filter;
 
-import net.sf.samtools.util.SequenceUtil;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Filter to determine whether a read is "noisy" due to a poly-A run that is a sequencing artifact.

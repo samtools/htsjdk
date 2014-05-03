@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.util.Histogram.Bin;
+import htsjdk.samtools.util.Histogram.Bin;
 
 import java.util.*;
 

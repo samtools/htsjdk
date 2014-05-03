@@ -1,4 +1,4 @@
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
 
 import org.testng.Assert;

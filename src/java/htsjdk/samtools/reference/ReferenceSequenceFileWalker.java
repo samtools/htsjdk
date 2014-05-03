@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,11 +57,11 @@ public class ReferenceSequenceFileWalker {
         get(sequenceIndex);
         if (!referenceSequence.getName().equals(sequenceName)) {
             // Sanity check the sequence names against the sequence dictionary while scanning through.
-            throw new PicardException("Sequence name mismatch at sequence index (" + referenceSequence.getContigIndex() +
+            throw new SAMException("Sequence name mismatch at sequence index (" + referenceSequence.getContigIndex() +
                     ", " + referenceSequence.getName() + ") != " + sequenceName);
         }
         if (referenceSequence.getBases().length != length) {
-            throw new PicardException("Sequence length mismatch for (" + sequenceIndex + ", " + sequenceName +
+            throw new SAMException("Sequence length mismatch for (" + sequenceIndex + ", " + sequenceName +
             ").  expected " + length + " but found " + referenceSequence.getBases().length);
         }
         return referenceSequence;
@@ -76,7 +76,7 @@ public class ReferenceSequenceFileWalker {
             return referenceSequence;
         }
         if (referenceSequence != null && referenceSequence.getContigIndex() > sequenceIndex) {
-            throw new PicardException("Requesting earlier reference sequence: " + sequenceIndex + " < " +
+            throw new SAMException("Requesting earlier reference sequence: " + sequenceIndex + " < " +
             referenceSequence.getContigIndex());
         }
         referenceSequence = null;
@@ -85,7 +85,7 @@ public class ReferenceSequenceFileWalker {
                 referenceSequence = referenceSequenceFile.nextSequence()) {
         }
         if (referenceSequence == null || referenceSequence.getContigIndex() != sequenceIndex) {
-            throw new PicardException("Reference sequence (" + sequenceIndex +
+            throw new SAMException("Reference sequence (" + sequenceIndex +
             ") not found in " + referenceSequenceFile.toString());
         }
         return referenceSequence;

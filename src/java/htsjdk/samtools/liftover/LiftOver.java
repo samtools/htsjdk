@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.liftover;
+package htsjdk.samtools.liftover;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.util.Interval;
-import net.sf.picard.util.Log;
-import net.sf.picard.util.OverlapDetector;
-import net.sf.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.OverlapDetector;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class LiftOver {
      * Load UCSC chain file in order to lift over Intervals.
      */
     public LiftOver(File chainFile) {
-        IoUtil.assertFileIsReadable(chainFile);
+        IOUtil.assertFileIsReadable(chainFile);
         chains = Chain.loadChains(chainFile);
     }
 
@@ -62,7 +62,7 @@ public class LiftOver {
     public void validateToSequences(final SAMSequenceDictionary sequenceDictionary) {
         for (final Chain chain : chains.getAll()) {
             if (sequenceDictionary.getSequence(chain.toSequenceName) == null) {
-                throw new PicardException("Sequence " + chain.toSequenceName + " from chain file is not found in sequence dictionary.");
+                throw new SAMException("Sequence " + chain.toSequenceName + " from chain file is not found in sequence dictionary.");
             }
         }
 
@@ -145,7 +145,7 @@ public class LiftOver {
         int toStart = targetIntersection.chain.getBlock(targetIntersection.firstBlockIndex).toStart + targetIntersection.startOffset;
         int toEnd = targetIntersection.chain.getBlock(targetIntersection.lastBlockIndex).getToEnd() - targetIntersection.offsetFromEnd;
         if (toEnd <= toStart || toStart < 0) {
-            throw new PicardException("Something strange lifting over interval " + intervalName);
+            throw new SAMException("Something strange lifting over interval " + intervalName);
         }
 
         if (targetIntersection.chain.toNegativeStrand) {
@@ -198,7 +198,7 @@ public class LiftOver {
             }
             int thisIntersection = Math.min(end, block.getFromEnd()) - Math.max(start, block.fromStart);
             if (thisIntersection <= 0) {
-                throw new PicardException("Should have been some intersection.");
+                throw new SAMException("Should have been some intersection.");
             }
             intersectionLength += thisIntersection;
         }

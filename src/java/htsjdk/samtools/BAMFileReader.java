@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.seekablestream.SeekableStream;
-import net.sf.samtools.util.*;
+import htsjdk.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.*;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -387,7 +387,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * @param contained If true, the alignments for the SAMRecords must be completely contained in the interval
      * specified by start and end.  If false, the SAMRecords need only overlap the interval.
      * @return Iterator for the matching SAMRecords
-     * @see net.sf.samtools.SAMFileReader.QueryInterval#optimizeIntervals(net.sf.samtools.SAMFileReader.QueryInterval[])
+     * @see htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
      */
     CloseableIterator<SAMRecord> query(final SAMFileReader.QueryInterval[] intervals, final boolean contained) {
         if (mStream == null) {
@@ -687,7 +687,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * @throws java.lang.IllegalArgumentException if the intervals are not optimized
-     * @see net.sf.samtools.SAMFileReader.QueryInterval#optimizeIntervals(net.sf.samtools.SAMFileReader.QueryInterval[])
+     * @see htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
      */
     private void assertIntervalsOptimized(final SAMFileReader.QueryInterval[] intervals) {
         if (intervals.length == 0) return;

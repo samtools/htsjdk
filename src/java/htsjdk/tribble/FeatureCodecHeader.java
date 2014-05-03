@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble;
+package htsjdk.tribble;
 
 /**
  * A class to represent a header of a feature containing file.  Specific to a codec.  All

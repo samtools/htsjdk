@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;

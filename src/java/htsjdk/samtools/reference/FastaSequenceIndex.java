@@ -22,11 +22,11 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.IOUtil;
 
 import java.util.Scanner;
 import java.util.Map;
@@ -51,7 +51,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @throws FileNotFoundException if the index file cannot be found.
      */
     public FastaSequenceIndex( File indexFile ) {
-        IoUtil.assertFileIsReadable(indexFile);
+        IOUtil.assertFileIsReadable(indexFile);
         parseIndexFile(indexFile);
     }
 
@@ -67,7 +67,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     protected void add(FastaSequenceIndexEntry indexEntry) {
         final FastaSequenceIndexEntry ret = sequenceEntries.put(indexEntry.getContig(),indexEntry);
         if (ret != null) {
-            throw new PicardException("Contig '" + indexEntry.getContig() + "' already exists in fasta index.");
+            throw new SAMException("Contig '" + indexEntry.getContig() + "' already exists in fasta index.");
         }
     }
 
@@ -122,10 +122,10 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
                 // Tokenize and validate the index line.
                 String result = scanner.findInLine("(.+)\\t+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
                 if( result == null )
-                    throw new PicardException("Found invalid line in index file:" + scanner.nextLine());
+                    throw new SAMException("Found invalid line in index file:" + scanner.nextLine());
                 MatchResult tokens = scanner.match();
                 if( tokens.groupCount() != 5 )
-                    throw new PicardException("Found invalid line in index file:" + scanner.nextLine());
+                    throw new SAMException("Found invalid line in index file:" + scanner.nextLine());
 
                 // Skip past the line separator
                 scanner.nextLine();
@@ -143,7 +143,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
             }
             scanner.close();
         } catch (FileNotFoundException e) {
-            throw new PicardException("Fasta index file should be found but is not: " + indexFile, e);
+            throw new SAMException("Fasta index file should be found but is not: " + indexFile, e);
         }
     }
 
@@ -160,11 +160,11 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * Retrieve the index entry associated with the given contig.
      * @param contigName Name of the contig for which to search.
      * @return Index entry associated with the given contig.
-     * @throws PicardException if the associated index entry can't be found.
+     * @throws SAMException if the associated index entry can't be found.
      */
     public FastaSequenceIndexEntry getIndexEntry( String contigName ) {
         if( !hasIndexEntry(contigName) )
-            throw new PicardException("Unable to find entry for contig: " + contigName);
+            throw new SAMException("Unable to find entry for contig: " + contigName);
 
         return sequenceEntries.get(contigName);
     }

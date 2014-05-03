@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.io;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.util.CloserUtil;
+import htsjdk.samtools.SAMException;
 
 import java.io.InputStream;
 import java.io.IOException;
@@ -164,7 +163,7 @@ public class FastLineReader {
             atEof = (numBytes < 1);
             return !atEof;
         } catch (IOException e) {
-            throw new PicardException("Exception reading InputStream", e);
+            throw new SAMException("Exception reading InputStream", e);
         }
     }
 

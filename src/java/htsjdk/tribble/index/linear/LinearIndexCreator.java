@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index.linear;
+package htsjdk.tribble.index.linear;
 
-import org.broad.tribble.Feature;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.TribbleIndexCreator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.TribbleIndexCreator;
 
 import java.io.File;
 import java.util.ArrayList;

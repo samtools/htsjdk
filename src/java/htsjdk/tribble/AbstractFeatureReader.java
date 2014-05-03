@@ -16,11 +16,11 @@
  * FOREGOING.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import org.broad.tribble.index.Index;
-import org.broad.tribble.util.ParsingUtils;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
 
 import java.io.File;
 import java.io.IOException;

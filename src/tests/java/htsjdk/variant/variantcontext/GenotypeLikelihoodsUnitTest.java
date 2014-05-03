@@ -23,15 +23,15 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 
 // the imports for unit testing.
 
 
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.utils.GeneralUtils;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.utils.GeneralUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

@@ -21,17 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import org.testng.annotations.Test;
 import org.testng.Assert;
 
 import java.util.Arrays;
-
-import net.sf.samtools.Cigar;
-import net.sf.samtools.TextCigarCodec;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.BinaryCigarCodec;
 
 public class CigarCodecTest {
 

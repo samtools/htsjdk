@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.*;
-import net.sf.samtools.util.CoordMath;
+import htsjdk.samtools.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -189,7 +188,7 @@ public class CigarUtil {
         }
     
         if (rec.getReadLength() != cigar.getReadLength()){
-            // throw new PicardException(
+            // throw new SAMException(
             log.error( rec.getReadLength() +
                " read length does not = cigar length " + cigar.getReferenceLength() +
                (isOldCigar? " oldCigar " : " ") +

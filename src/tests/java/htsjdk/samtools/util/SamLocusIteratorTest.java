@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.util.CoordMath;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.SamLocusIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

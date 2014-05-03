@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
 /**
  * Represents a contiguous block of bytes in a file, defined by a start position and size (in bytes)

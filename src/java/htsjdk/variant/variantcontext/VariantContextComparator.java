@@ -1,8 +1,8 @@
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
-import org.broadinstitute.variant.vcf.VCFContigHeaderLine;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
 
 import java.util.*;
 

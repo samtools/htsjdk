@@ -21,15 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.PicardException;
+import htsjdk.samtools.SAMException;
 
 import java.util.*;
-import java.lang.reflect.Constructor;
 
-import net.sf.samtools.*;
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Provides an iterator interface for merging multiple underlying iterators into a single
@@ -72,10 +70,10 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
 
         for (final SAMFileReader reader : readers) {
             if(!samHeaderMerger.getHeaders().contains(reader.getFileHeader()))
-                throw new PicardException("All iterators to be merged must be accounted for in the SAM header merger");
+                throw new SAMException("All iterators to be merged must be accounted for in the SAM header merger");
             if (!assumeSorted && this.sortOrder != SAMFileHeader.SortOrder.unsorted &&
                     reader.getFileHeader().getSortOrder() != this.sortOrder){
-                throw new PicardException("Files are not compatible with sort order");
+                throw new SAMException("Files are not compatible with sort order");
             }
         }
     }

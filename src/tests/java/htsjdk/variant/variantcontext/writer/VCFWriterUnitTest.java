@@ -23,17 +23,25 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.TestUtil;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.Tribble;
-import org.broad.tribble.util.TabixUtils;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.variantcontext.*;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.GenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLine;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.TestUtil;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

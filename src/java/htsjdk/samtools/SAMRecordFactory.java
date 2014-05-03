@@ -1,4 +1,4 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 /**
  * Factory interface which allows plugging in of different classes for generating instances of

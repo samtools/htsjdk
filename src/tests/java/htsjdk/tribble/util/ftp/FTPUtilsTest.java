@@ -1,6 +1,6 @@
-package org.broad.tribble.util.ftp;
+package htsjdk.tribble.util.ftp;
 
-import net.sf.samtools.util.ftp.FTPUtils;
+import htsjdk.samtools.util.ftp.FTPUtils;
 import org.testng.annotations.Test;
 
 import java.net.URL;

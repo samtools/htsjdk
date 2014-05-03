@@ -21,14 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.fastq;
+package htsjdk.samtools.fastq;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.Defaults;
-import net.sf.samtools.util.IOUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.IOUtil;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -66,7 +63,7 @@ public class BasicFastqWriter implements FastqWriter {
         writer.println(rec.getBaseQualityHeader() == null ? "" : rec.getBaseQualityHeader());
         writer.println(rec.getBaseQualityString());
         if (writer.checkError()) {
-            throw new PicardException("Error in writing fastq file " + path);
+            throw new SAMException("Error in writing fastq file " + path);
         }
     }
 
@@ -80,9 +77,9 @@ public class BasicFastqWriter implements FastqWriter {
 
     private static OutputStream maybeMd5Wrap(final File file, final boolean createMd5) {
         if (createMd5) {
-            return IoUtil.openFileForMd5CalculatingWriting(file);
+            return IOUtil.openFileForMd5CalculatingWriting(file);
         } else {
-            return IoUtil.openFileForWriting(file);
+            return IOUtil.openFileForWriting(file);
         }
     }
 }

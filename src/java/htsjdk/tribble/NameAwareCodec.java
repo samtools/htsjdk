@@ -22,7 +22,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
 /**
  * Created by IntelliJ IDEA.

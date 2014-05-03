@@ -23,19 +23,19 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.CloseableTribbleIterator;
-import org.broad.tribble.Tribble;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.writer.Options;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.variant.variantcontext.writer.Options;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 

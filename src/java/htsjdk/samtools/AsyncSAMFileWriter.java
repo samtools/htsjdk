@@ -1,7 +1,7 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.AbstractAsyncWriter;
-import net.sf.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.util.AbstractAsyncWriter;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 /**
  * SAMFileWriter that can be wrapped around an underlying SAMFileWriter to provide asynchronous output. Records

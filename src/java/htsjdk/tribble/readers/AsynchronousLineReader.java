@@ -1,7 +1,7 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.util.CloserUtil;
-import org.broad.tribble.TribbleException;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.tribble.TribbleException;
 
 import java.io.Reader;
 import java.util.concurrent.BlockingQueue;

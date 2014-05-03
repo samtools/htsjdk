@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.util.LocationAware;
+import htsjdk.samtools.util.LocationAware;
 
 import java.io.IOException;
 

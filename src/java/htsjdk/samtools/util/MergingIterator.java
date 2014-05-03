@@ -21,9 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
-
-import net.sf.samtools.util.CloseableIterator;
+package htsjdk.samtools.util;
 
 import java.util.Collection;
 import java.util.Comparator;

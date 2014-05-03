@@ -1,7 +1,7 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;

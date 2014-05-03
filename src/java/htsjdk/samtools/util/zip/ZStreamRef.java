@@ -22,7 +22,7 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package net.sf.samtools.util.zip;
+package htsjdk.samtools.util.zip;
 
 /**
  * Copied from OpenJDK 7.  Only change is package name, because IntelDeflater needs this and

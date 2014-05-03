@@ -21,18 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.seekablestream.SeekableBufferedStream;
-import net.sf.samtools.util.*;
-import net.sf.samtools.seekablestream.SeekableHTTPStream;
-import net.sf.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableBufferedStream;
+import htsjdk.samtools.util.*;
+import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.net.URL;
@@ -441,7 +440,7 @@ public class SAMFileReader implements Iterable<SAMRecord>, Closeable {
      *
      * @param intervals  Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
      *                   and abutting intervals merged.  This can be done with
-     *                   net.sf.samtools.SAMFileReader.QueryInterval#optimizeIntervals(net.sf.samtools.SAMFileReader.QueryInterval[])
+     *                   htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
      * @param contained If true, each SAMRecord returned is will have its alignment completely contained in one of the
      *                  intervals of interest.  If false, the alignment of the returned SAMRecords need only overlap one of
      *                  the intervals of interest.
@@ -468,7 +467,7 @@ public class SAMFileReader implements Iterable<SAMRecord>, Closeable {
      *
      * @param intervals  Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
      *                   and abutting intervals merged.  This can be done with
-     *                   net.sf.samtools.SAMFileReader.QueryInterval#optimizeIntervals(net.sf.samtools.SAMFileReader.QueryInterval[])
+     *                   htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
      * @return Iterator over the SAMRecords overlapping any of the intervals.
      */
     public SAMRecordIterator queryOverlapping(final QueryInterval[] intervals) {
@@ -492,7 +491,7 @@ public class SAMFileReader implements Iterable<SAMRecord>, Closeable {
      *
      * @param intervals  Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
      *                   and abutting intervals merged.  This can be done with
-     *                   net.sf.samtools.SAMFileReader.QueryInterval#optimizeIntervals(net.sf.samtools.SAMFileReader.QueryInterval[])
+     *                   htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
      * @return Iterator over the SAMRecords contained in any of the intervals.
      */
     public SAMRecordIterator queryContained(final QueryInterval[] intervals) {

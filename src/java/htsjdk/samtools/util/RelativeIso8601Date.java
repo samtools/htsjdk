@@ -1,4 +1,4 @@
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 import java.util.Date;
 

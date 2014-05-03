@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index.tabix;
+package htsjdk.tribble.index.tabix;
 
-import org.broad.tribble.TribbleException;
+import htsjdk.tribble.TribbleException;
 
 /**
  * The values in a Tabix header that define the format of the file being indexed, e.g. gff, bed, vcf

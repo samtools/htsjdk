@@ -1,9 +1,9 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.util.AbstractIterator;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.LocationAware;
-import net.sf.samtools.util.Tuple;
+import htsjdk.samtools.util.AbstractIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.Tuple;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -12,13 +12,13 @@ import java.io.IOException;
  * A class that iterates over the lines and line positions in an {@link AsciiLineReader}.
  * 
  * This class is slower than other {@link LineIterator}s because it is driven by {@link AsciiLineReader}, but offers the benefit of 
- * implementing {@link net.sf.samtools.util.LocationAware}, which is required for indexing.  If you do not require {@link net.sf.samtools.util.LocationAware}, consider using
+ * implementing {@link htsjdk.samtools.util.LocationAware}, which is required for indexing.  If you do not require {@link htsjdk.samtools.util.LocationAware}, consider using
  * {@link LineIteratorImpl} as an alternative to this class.
  * 
  * Note an important distinction in the way this class and its inner iterator differ: in the inner iterator, the position stored with
  * a line is the position at the start of that line.  However, {@link #getPosition()} of the outer class must return the position at the
  * end of the most-recently-returned line (or the start of the underlying {@link AsciiLineReader}, if no line has been read).  The latter
- * bit of logic here is required to conform with the interface described by {@link net.sf.samtools.util.LocationAware#getPosition()}.
+ * bit of logic here is required to conform with the interface described by {@link htsjdk.samtools.util.LocationAware#getPosition()}.
  * 
  * @author mccowan
  */
@@ -68,7 +68,7 @@ public class AsciiLineReaderIterator implements LocationAware, LineIterator, Clo
     }
 
     /**
-     * This is stored internally since it iterates over {@link net.sf.samtools.util.Tuple}, not {@link String} (and the outer 
+     * This is stored internally since it iterates over {@link htsjdk.samtools.util.Tuple}, not {@link String} (and the outer
      * class can't do both).
      */
     private class TupleIterator extends AbstractIterator<Tuple<String, Long>> implements LocationAware {

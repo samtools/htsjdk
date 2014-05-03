@@ -22,9 +22,9 @@
  * or visit www.oracle.com if you need additional information or have any
  * questions.
  */
-package net.sf.samtools.util.zip;
+package htsjdk.samtools.util.zip;
 
-import net.sf.samtools.Defaults;
+import htsjdk.samtools.Defaults;
 
 import java.io.File;
 import java.net.URL;

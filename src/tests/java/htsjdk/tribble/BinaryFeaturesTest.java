@@ -1,9 +1,8 @@
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import org.broad.tribble.bed.BEDCodec;
-import org.broad.tribble.example.ExampleBinaryCodec;
-import org.broad.tribble.readers.LineIterator;
-import org.broad.tribble.readers.LineReader;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.example.ExampleBinaryCodec;
+import htsjdk.tribble.readers.LineIterator;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

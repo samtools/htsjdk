@@ -23,14 +23,14 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Invariant;
 import com.google.java.contract.Requires;
-import org.broad.tribble.util.ParsingUtils;
-import org.broadinstitute.variant.vcf.VCFConstants;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.*;
 

@@ -1,11 +1,11 @@
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.fastq.FastqReader;
-import net.sf.picard.fastq.FastqRecord;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.fastq.FastqReader;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
 
 import java.util.*;
 
@@ -190,7 +190,7 @@ public class QualityEncodingDetector {
         final EnumSet<FastqQualityFormat> candidateFormats = EnumSet.allOf(FastqQualityFormat.class);
         final Set<Integer> observedAsciiQualities = this.qualityAggregator.getObservedAsciiQualities();
         if (observedAsciiQualities.isEmpty())
-            throw new PicardException("Cannot determine candidate qualities: no qualities found.");
+            throw new SAMException("Cannot determine candidate qualities: no qualities found.");
 
         for (final QualityScheme scheme : QualityScheme.values()) {
             final Iterator<Integer> qualityBinIterator = observedAsciiQualities.iterator();
@@ -303,7 +303,7 @@ public class QualityEncodingDetector {
     /**
      * Reads through the records in the provided SAM reader and uses their quality scores to sanity check the expected
      * quality passed in. If the expected quality format is sane we just hand this back otherwise we throw a
-     * {@link PicardException}.
+     * {@link SAMException}.
      */
     public static FastqQualityFormat detect(final SAMFileReader reader, final FastqQualityFormat expectedQualityFormat) {
         //sanity check expectedQuality
@@ -325,7 +325,7 @@ public class QualityEncodingDetector {
             if (possibleFormats.contains(expectedQuality)) {
                 return expectedQuality;
             } else {
-                throw new PicardException(
+                throw new SAMException(
                         String.format("The quality values do not fall in the range appropriate for the expected quality of %s.",
                                 expectedQuality.name()));
             }
@@ -346,13 +346,13 @@ public class QualityEncodingDetector {
                         }
                     } else if (possibleFormats.equals(EnumSet.of(FastqQualityFormat.Standard, FastqQualityFormat.Solexa))) {
                         return FastqQualityFormat.Standard;
-                    } else throw new PicardException("Unreachable code.");
+                    } else throw new SAMException("Unreachable code.");
                 case 3:
-                    throw new PicardException("The quality format cannot be determined: no formats were excluded.");
+                    throw new SAMException("The quality format cannot be determined: no formats were excluded.");
                 case 0:
-                    throw new PicardException("The quality format cannot be determined: all formats were excluded.");
+                    throw new SAMException("The quality format cannot be determined: all formats were excluded.");
                 default:
-                    throw new PicardException("Unreachable code.");
+                    throw new SAMException("Unreachable code.");
             }
         }
     }

@@ -22,9 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
-
-import net.sf.picard.PicardException;
+package htsjdk.samtools.reference;
 
 import java.io.File;
 import java.io.FileNotFoundException;

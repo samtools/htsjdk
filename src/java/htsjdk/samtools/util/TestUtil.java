@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMException;
+import htsjdk.samtools.SAMException;
 
 import java.io.File;
 import java.io.IOException;

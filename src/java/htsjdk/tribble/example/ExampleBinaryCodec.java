@@ -21,12 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.example;
+package htsjdk.tribble.example;
 
-import org.broad.tribble.*;
-import org.broad.tribble.readers.AsciiLineReader;
-import org.broad.tribble.readers.LineIterator;
-import org.broad.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.BasicFeature;
+import htsjdk.tribble.BinaryFeatureCodec;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.LineIterator;
 
 import java.io.*;
 import java.util.ArrayList;

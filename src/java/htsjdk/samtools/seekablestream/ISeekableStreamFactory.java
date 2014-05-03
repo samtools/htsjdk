@@ -1,4 +1,4 @@
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import java.io.IOException;
 import java.net.URL;

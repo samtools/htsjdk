@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.metrics;
+package htsjdk.samtools.metrics;
 
 /**
  * A header for a metrics file.  A header simply consists of a type and some arbitrary

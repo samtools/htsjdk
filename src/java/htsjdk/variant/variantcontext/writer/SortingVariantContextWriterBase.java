@@ -23,10 +23,10 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import org.broadinstitute.variant.vcf.VCFHeader;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFHeader;
 
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;

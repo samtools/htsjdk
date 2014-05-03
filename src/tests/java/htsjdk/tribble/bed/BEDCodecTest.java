@@ -22,16 +22,16 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble.bed;
+package htsjdk.tribble.bed;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.Feature;
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.annotation.Strand;
-import org.broad.tribble.bed.FullBEDFeature.Exon;
-import org.broad.tribble.index.IndexFactory;
-import org.broad.tribble.index.linear.LinearIndex;
-import org.broad.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.bed.FullBEDFeature.Exon;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.util.LittleEndianOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

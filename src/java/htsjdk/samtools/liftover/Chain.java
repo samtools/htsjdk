@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.liftover;
+package htsjdk.samtools.liftover;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.util.Interval;
-import net.sf.picard.util.OverlapDetector;
-import net.sf.samtools.util.BufferedLineReader;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.OverlapDetector;
+import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -212,48 +212,48 @@ class Chain {
         validatePositive("from length", fromLength);
         int toLength = toChainEnd - toChainStart;
         validatePositive("to length", toLength);
-        if (fromLength > fromSequenceSize) throw new PicardException("From chain length (" + fromLength +
+        if (fromLength > fromSequenceSize) throw new SAMException("From chain length (" + fromLength +
                 ") < from sequence length (" + fromSequenceSize + ") for chain " + id);
-        if (toLength > toSequenceSize) throw new PicardException("To chain length (" + toLength +
+        if (toLength > toSequenceSize) throw new SAMException("To chain length (" + toLength +
                 ") < to sequence length (" + toSequenceSize + ") for chain " + id);
-        if (fromSequenceName.isEmpty()) throw new PicardException("Chain " + id + "has empty from sequence name.");
-        if (toSequenceName.isEmpty()) throw new PicardException("Chain " + id + "has empty to sequence name.");
-        if (blockList.isEmpty()) throw new PicardException("Chain " + id + " has empty block list.");
+        if (fromSequenceName.isEmpty()) throw new SAMException("Chain " + id + "has empty from sequence name.");
+        if (toSequenceName.isEmpty()) throw new SAMException("Chain " + id + "has empty to sequence name.");
+        if (blockList.isEmpty()) throw new SAMException("Chain " + id + " has empty block list.");
         final ContinuousBlock firstBlock = blockList.get(0);
         if (firstBlock.fromStart != fromChainStart) {
-            throw new PicardException("First block from start != chain from start for chain " + id);
+            throw new SAMException("First block from start != chain from start for chain " + id);
         }
         if (firstBlock.toStart != toChainStart) {
-            throw new PicardException("First block to start != chain to start for chain " + id);
+            throw new SAMException("First block to start != chain to start for chain " + id);
         }
         final ContinuousBlock lastBlock = blockList.get(blockList.size() - 1);
         if (lastBlock.getFromEnd() != fromChainEnd) {
-            throw new PicardException("Last block from end != chain from end for chain " + id);
+            throw new SAMException("Last block from end != chain from end for chain " + id);
         }
         if (lastBlock.getToEnd() != toChainEnd) {
-            throw new PicardException("Last block to end < chain to end for chain " + id);
+            throw new SAMException("Last block to end < chain to end for chain " + id);
         }
         for (int i = 1; i < blockList.size(); ++i) {
             final ContinuousBlock thisBlock = blockList.get(i);
             final ContinuousBlock prevBlock = blockList.get(i-1);
             if (thisBlock.fromStart < prevBlock.getFromEnd()) {
-                throw new PicardException("Continuous block " + i + " from starts before previous block ends for chain " + id);
+                throw new SAMException("Continuous block " + i + " from starts before previous block ends for chain " + id);
             }
             if (thisBlock.toStart < prevBlock.getToEnd()) {
-                throw new PicardException("Continuous block " + i + " to starts before previous block ends for chain " + id);
+                throw new SAMException("Continuous block " + i + " to starts before previous block ends for chain " + id);
             }
         }
     }
 
     private void validatePositive(final String attributeName, final int attribute) {
         if (attribute <= 0) {
-            throw new PicardException(attributeName + " is not positive: " + attribute + " for chain " + id);
+            throw new SAMException(attributeName + " is not positive: " + attribute + " for chain " + id);
         }
     }
 
     private void validateNonNegative(final String attributeName, final int attribute) {
         if (attribute < 0) {
-            throw new PicardException(attributeName + " is negative: " + attribute + " for chain " + id);
+            throw new SAMException(attributeName + " is negative: " + attribute + " for chain " + id);
         }
     }
 
@@ -311,12 +311,12 @@ class Chain {
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
         final Set<Integer> ids = new HashSet<Integer>();
-        BufferedLineReader reader = new BufferedLineReader(IoUtil.openFileForReading(chainFile));
+        BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
         final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
         Chain chain;
         while ((chain = Chain.loadChain(reader, chainFile.toString())) != null) {
             if (ids.contains(chain.id)) {
-                throw new PicardException("Chain id " + chain.id + " appears more than once in chain file.");
+                throw new SAMException("Chain id " + chain.id + " appears more than once in chain file.");
             }
             ids.add(chain.id);
             ret.addLhs(chain, chain.interval);
@@ -405,6 +405,6 @@ class Chain {
     }
 
     private static void throwChainFileParseException(final String message, final String chainFile, final int lineNumber) {
-        throw new PicardException(message + " in chain file " + chainFile + " at line " + lineNumber);
+        throw new SAMException(message + " in chain file " + chainFile + " at line " + lineNumber);
     }
 }

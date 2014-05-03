@@ -1,10 +1,10 @@
-package org.broad.tribble.gelitext;
+package htsjdk.tribble.gelitext;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;

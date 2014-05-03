@@ -21,17 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.*;
-import net.sf.samtools.util.CollectionUtil;
-import net.sf.samtools.util.SequenceUtil;
-import net.sf.samtools.util.StringLineReader;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCFFileReader;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.*;
 
 import java.io.*;
 import java.util.*;
@@ -155,7 +148,7 @@ public class IntervalList implements Iterable<Interval> {
 
     //NO SIDE EFFECTS HERE!
     /**
-     * Merges list of intervals and reduces them like net.sf.picard.util.IntervalList#getUniqueIntervals()
+     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames) {
@@ -197,12 +190,12 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Merges list of intervals and reduces them like net.sf.picard.util.IntervalList#getUniqueIntervals()
+     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     @Deprecated //use uniqued(concatenateNames).getIntervals() or the static version instead to avoid changing the underlying object.
     /**
-     * Merges list of intervals and reduces them like net.sf.picard.util.IntervalList#getUniqueIntervals()
+     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public List<Interval> getUniqueIntervals(final boolean concatenateNames) {
@@ -249,46 +242,6 @@ public class IntervalList implements Iterable<Interval> {
         return this.intervals.size();
     }
 
-    /**
-     * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
-     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     * @param file
-     * @return
-     */
-    public static IntervalList fromVcf(final File file){
-        final VCFFileReader vcfFileReader = new VCFFileReader(file, false);
-        final IntervalList intervalList = IntervalList.fromVcf(vcfFileReader);
-        vcfFileReader.close();
-        return intervalList;
-    }
-
-    /**
-     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
-     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     * @param vcf the vcfReader to be used for the conversion
-     * @return an IntervalList constructed from input vcf
-     */
-    public static IntervalList fromVcf(final VCFFileReader vcf){
-
-        //grab the dictionary from the VCF and use it in the IntervalList
-        final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        samFileHeader.setSequenceDictionary(dict);
-        final IntervalList list = new IntervalList( samFileHeader);
-
-        int intervals=0;
-        for(final VariantContext vc : vcf){
-            if(!vc.isFiltered()){
-                String name = vc.getID();
-                if(".".equals(name) || name == null)
-                    name = "interval-" + (++intervals);
-                list.add(new Interval(vc.getChr(), vc.getStart(), vc.getEnd(), false, name));
-            }
-        }
-
-        return list;
-    }
-
     /** creates a independent copy of the given IntervalList
      *
      * @param list
@@ -306,12 +259,12 @@ public class IntervalList implements Iterable<Interval> {
      * @return an IntervalList object that contains the headers and intervals from the file
      */
     public static IntervalList fromFile(final File file) {
-        final BufferedReader reader=IoUtil.openFileForBufferedReading(file);
+        final BufferedReader reader= IOUtil.openFileForBufferedReading(file);
         final IntervalList list = fromReader(reader);
         try {
             reader.close();
         } catch (final IOException e) {
-            throw new PicardException(String.format("Failed to close file %s after reading",file));
+            throw new SAMException(String.format("Failed to close file %s after reading",file));
         }
 
         return list;
@@ -357,7 +310,7 @@ public class IntervalList implements Iterable<Interval> {
                 // Make sure we have the right number of fields
                 final String[] fields = line.split("\t");
                 if (fields.length != 5) {
-                    throw new PicardException("Invalid interval record contains " +
+                    throw new SAMException("Invalid interval record contains " +
                                               fields.length + " fields: " + line);
                 }
 
@@ -386,7 +339,7 @@ public class IntervalList implements Iterable<Interval> {
             return list;
         }
         catch (final IOException ioe) {
-            throw new PicardException("Error parsing interval list.", ioe);
+            throw new SAMException("Error parsing interval list.", ioe);
         }
         finally {
             try { in.close(); } catch (final Exception e) { /* do nothing */ }
@@ -399,7 +352,7 @@ public class IntervalList implements Iterable<Interval> {
      */
     public void write(final File file) {
         try {
-            final BufferedWriter out = IoUtil.openFileForBufferedWriting(file);
+            final BufferedWriter out = IOUtil.openFileForBufferedWriting(file);
             final FormatUtil format = new FormatUtil();
 
             // Write out the header
@@ -431,7 +384,7 @@ public class IntervalList implements Iterable<Interval> {
             out.close();
         }
         catch (final IOException ioe) {
-            throw new PicardException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
+            throw new SAMException("Error writing out interval list to file: " + file.getAbsolutePath(), ioe);
         }
     }
 
@@ -502,7 +455,7 @@ public class IntervalList implements Iterable<Interval> {
      */
     public static IntervalList concatenate(final Collection<IntervalList> lists) {
         if(lists.isEmpty()){
-            throw new PicardException("Cannot concatenate an empty list of IntervalLists.");
+            throw new SAMException("Cannot concatenate an empty list of IntervalLists.");
         }
 
         // Ensure that all the sequence dictionaries agree and merge the lists

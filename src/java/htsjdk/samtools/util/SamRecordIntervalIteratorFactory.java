@@ -21,15 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.filter.FilteringIterator;
-import net.sf.picard.filter.IntervalFilter;
-import net.sf.picard.filter.SamRecordFilter;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CloserUtil;
+import htsjdk.samtools.filter.IntervalFilter;
+import htsjdk.samtools.filter.SamRecordFilter;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.Iterator;
 import java.util.List;

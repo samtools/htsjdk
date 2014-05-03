@@ -23,14 +23,14 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.util.ParsingUtils;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.VariantContextComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.variantcontext.VariantContextComparator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -187,7 +187,7 @@ public class VCFHeader {
 
 	/**
 	 * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
-	 * not present in the header. Throws PicardException if one or more contig lines do not have length
+	 * not present in the header. Throws SAMException if one or more contig lines do not have length
 	 * information.
 	 */
 	public SAMSequenceDictionary getSequenceDictionary() {

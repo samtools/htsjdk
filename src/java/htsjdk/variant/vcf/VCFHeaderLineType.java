@@ -23,7 +23,7 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
 /**
  * the type encodings we use for fields in VCF header lines

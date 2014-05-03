@@ -1,14 +1,14 @@
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Implements common methods of {@link FeatureCodec}s that read from {@link PositionalBufferedStream}s.
+ * Implements common methods of {@link FeatureCodec}s that read from {@link htsjdk.tribble.readers.PositionalBufferedStream}s.
  * @author mccowan
  */
 abstract public class BinaryFeatureCodec<T extends Feature> implements FeatureCodec<T, PositionalBufferedStream> {

@@ -23,24 +23,23 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.broad.tribble.Tribble;
-import org.broad.tribble.index.tabix.TabixIndex;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.tribble.Tribble;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.tribble.util.TabixUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broadinstitute.variant.VariantBaseTest;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.tribble.AbstractFeatureReader;
 
 public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     private SAMSequenceDictionary dictionary;

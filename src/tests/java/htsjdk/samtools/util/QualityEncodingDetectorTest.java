@@ -1,9 +1,11 @@
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.fastq.FastqReader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.fastq.FastqReader;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.util.FastqQualityFormat;
+import htsjdk.samtools.util.QualityEncodingDetector;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -26,15 +28,15 @@ public class QualityEncodingDetectorTest {
 
     final static List<Testcase> FASTQ_TESTCASES = Arrays.asList(
             // Need to use full-range quality here, as Solexa and Illumina are near indistinguishable
-            new Testcase(new File("./testdata/net/sf/picard/sam/fastq2bam/fastq-solexa/solexa_full_range_as_solexa.fastq"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./testdata/net/sf/picard/sam/fastq2bam/fastq-illumina/s_1_sequence.txt"), FastqQualityFormat.Illumina),
-            new Testcase(new File("./testdata/net/sf/picard/sam/fastq2bam/fastq-sanger/5k-30BB2AAXX.3.aligned.sam.fastq"), FastqQualityFormat.Standard)
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa_full_range_as_solexa.fastq"), FastqQualityFormat.Solexa),
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/s_1_sequence.txt"), FastqQualityFormat.Illumina),
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/5k-30BB2AAXX.3.aligned.sam.fastq"), FastqQualityFormat.Standard)
     );
     final static List<Testcase> BAM_TESTCASES = Arrays.asList(
-            new Testcase(new File("./testdata/net/sf/picard/sam/unmapped.sam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./testdata/net/sf/samtools/BAMFileIndexTest/index_test.bam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./testdata/net/sf/picard/util/QualityEncodingDetectorTest/solexa-as-standard.bam"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./testdata/net/sf/picard/util/QualityEncodingDetectorTest/illumina-as-standard.bam"), FastqQualityFormat.Illumina)
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/unmapped.sam"), FastqQualityFormat.Standard),
+            new Testcase(new File("./testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam"), FastqQualityFormat.Standard),
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa-as-standard.bam"), FastqQualityFormat.Solexa),
+            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"), FastqQualityFormat.Illumina)
 
     );
 
@@ -85,7 +87,7 @@ public class QualityEncodingDetectorTest {
                 FastqQualityFormat.Standard), FastqQualityFormat.Standard);
     }
 
-    @Test (expectedExceptions = PicardException.class)
+    @Test (expectedExceptions = SAMException.class)
     public void testQualitySanity() {
         final SAMRecordSetBuilder samRecordSetBuilder = createSmallUnmappedSam();
         QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(),

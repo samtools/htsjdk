@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.Cigar;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.TextCigarCodec;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.util.CigarUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -54,7 +55,7 @@ public class CigarUtilTest {
           Collections.reverse(copiedList);
           cigar = copiedList;
       }
-      List<CigarElement> result = CigarUtil.softClipEndOfRead( clipPosition, cigar);
+      List<CigarElement> result = CigarUtil.softClipEndOfRead(clipPosition, cigar);
        Cigar newCigar = new Cigar(result);
        Cigar oldCigar = new Cigar(cigar);
        if (negativeStrand){

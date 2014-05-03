@@ -23,7 +23,7 @@
  **/
 
 
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
 import static org.testng.Assert.assertEquals;
 
@@ -35,16 +35,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.SequenceUtil;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.MergingSamRecordIterator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamFileHeaderMerger;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -62,16 +64,16 @@ import org.testng.annotations.Test;
  */
 public class SamFileHeaderMergerTest {
 
-    private static File TEST_DATA_DIR = new File("testdata/net/sf/picard/sam");
+    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
 
-    /** tests that if we've set the merging to false, we get a PicardException for bam's with different dictionaries. */
+    /** tests that if we've set the merging to false, we get a SAMException for bam's with different dictionaries. */
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
     public void testMergedException() {
-        File INPUT[] = {new File(TEST_DATA_DIR, "Chromosome1to10.bam"),
-                        new File(TEST_DATA_DIR, "Chromosome5to9.bam")};
+        File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
         for (final File inFile : INPUT) {
-            IoUtil.assertFileIsReadable(inFile);
+            IOUtil.assertFileIsReadable(inFile);
             final SAMFileReader in = new SAMFileReader(inFile);
             headers.add(in.getFileHeader());
         }
@@ -81,12 +83,12 @@ public class SamFileHeaderMergerTest {
     /** Tests that we can successfully merge two files with */
     @Test
     public void testMerging() {
-        File INPUT[] = {new File(TEST_DATA_DIR, "Chromosome1to10.bam"),
-                        new File(TEST_DATA_DIR, "Chromosome5to9.bam")};
+        File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
         final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
         for (final File inFile : INPUT) {
-            IoUtil.assertFileIsReadable(inFile);
+            IOUtil.assertFileIsReadable(inFile);
             final SAMFileReader in = new SAMFileReader(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
             in.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
@@ -163,7 +165,7 @@ public class SamFileHeaderMergerTest {
         final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
         for (final File inFile : inputFiles) {
-            IoUtil.assertFileIsReadable(inFile);
+            IOUtil.assertFileIsReadable(inFile);
             final SAMFileReader in = new SAMFileReader(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
             in.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
@@ -211,22 +213,21 @@ public class SamFileHeaderMergerTest {
             {
 
             new File[] {
-                    new File(TEST_DATA_DIR, "MergeSamFiles/case1/chr11sub_file1.sam"),
-                    new File(TEST_DATA_DIR, "MergeSamFiles/case1/chr11sub_file2.sam") },
-            new File(TEST_DATA_DIR, "MergeSamFiles/case1/expected_output.sam")
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file1.sam"),
+                    new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/chr11sub_file2.sam") },
+            new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case1/expected_output.sam")
             }, {
                 new File[] {
-                        new File(TEST_DATA_DIR, "MergeSamFiles/case2/chr11sub_file1.sam"),
-                        new File(TEST_DATA_DIR, "MergeSamFiles/case2/chr11sub_file2.sam"),
-                        new File(TEST_DATA_DIR, "MergeSamFiles/case2/chr11sub_file3.sam"),
-                        new File(TEST_DATA_DIR, "MergeSamFiles/case2/chr11sub_file4.sam") },
-                new File(TEST_DATA_DIR, "MergeSamFiles/case2/expected_output.sam")
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file1.sam"),
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file2.sam"),
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file3.sam"),
+                        new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/chr11sub_file4.sam") },
+                new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/case2/expected_output.sam")
             }
         };
     }
 
-
-    @Test(expectedExceptions = {PicardException.class})
+    @Test(expectedExceptions = {SAMException.class})
     public void testUnmergeableSequenceDictionary() {
         final String sd1 = sq1 + sq2 + sq5;
         final String sd2 = sq2 + sq3 + sq4 + sq1;

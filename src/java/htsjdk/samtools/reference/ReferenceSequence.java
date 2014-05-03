@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
 /**
  * Wrapper around a reference sequence that has been read from a reference file.

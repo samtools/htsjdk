@@ -23,7 +23,7 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
 import java.io.IOException;
 import java.io.InputStream;

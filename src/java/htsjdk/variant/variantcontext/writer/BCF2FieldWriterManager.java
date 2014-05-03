@@ -23,12 +23,17 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFormatHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 import java.util.HashMap;
 import java.util.Map;

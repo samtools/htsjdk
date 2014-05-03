@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.annotation;
+package htsjdk.tribble.annotation;
 
 /**
  * Enum for strand, which can be encoded as string

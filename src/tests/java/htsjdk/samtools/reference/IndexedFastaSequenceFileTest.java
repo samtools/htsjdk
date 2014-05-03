@@ -22,12 +22,11 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,7 +38,7 @@ import java.io.FileNotFoundException;
  * Test the indexed fasta sequence file reader.
  */
 public class IndexedFastaSequenceFileTest{
-    private static File TEST_DATA_DIR = new File("testdata/net/sf/picard/reference");
+    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/reference");
     private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
     private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
 
@@ -164,7 +163,7 @@ public class IndexedFastaSequenceFileTest{
         System.err.printf("testFirstCompleteContigRead runtime: %dms%n", (endTime - startTime)) ;
     }
 
-    @Test(dataProvider="homosapiens",expectedExceptions=PicardException.class)
+    @Test(dataProvider="homosapiens",expectedExceptions=SAMException.class)
     public void testReadThroughEndOfContig(IndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         try {
@@ -179,7 +178,7 @@ public class IndexedFastaSequenceFileTest{
         }
     }
 
-    @Test(dataProvider="homosapiens",expectedExceptions=PicardException.class)
+    @Test(dataProvider="homosapiens",expectedExceptions=SAMException.class)
     public void testReadPastEndOfContig(IndexedFastaSequenceFile sequenceFile) {
          long startTime = System.currentTimeMillis();
          try {

@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import net.sf.samtools.util.IOUtil;
-import net.sf.samtools.util.Md5CalculatingOutputStream;
-import net.sf.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.*;
 
@@ -119,7 +119,7 @@ public class SAMFileWriterFactory {
 
     /**
      * Controls size of write buffer.
-     * Default value: [[net.sf.samtools.Defaults#BUFFER_SIZE]]
+     * Default value: [[htsjdk.samtools.Defaults#BUFFER_SIZE]]
      *
      */
     public SAMFileWriterFactory setBufferSize(final int bufferSize) {

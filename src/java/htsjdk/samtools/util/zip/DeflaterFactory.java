@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util.zip;
+package htsjdk.samtools.util.zip;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.SAMException;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMException;
 
 import java.lang.reflect.Constructor;
 import java.util.zip.Deflater;
@@ -48,7 +48,7 @@ public class DeflaterFactory {
     static {
         try {
             if (Defaults.TRY_USE_INTEL_DEFLATER) {
-                final Class<IntelDeflater> clazz = (Class<IntelDeflater>) Class.forName("net.sf.samtools.util.zip.IntelDeflater");
+                final Class<IntelDeflater> clazz = (Class<IntelDeflater>) Class.forName("htsjdk.samtools.util.zip.IntelDeflater");
                 intelDeflaterConstructor = clazz.getConstructor(Integer.TYPE, Boolean.TYPE);
             }
         } catch (ClassNotFoundException e) {

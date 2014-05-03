@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 
 import java.io.ByteArrayOutputStream;
@@ -34,12 +34,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import net.sf.samtools.FileTruncatedException;
-import net.sf.samtools.SAMException;
-import net.sf.samtools.seekablestream.SeekableBufferedStream;
-import net.sf.samtools.seekablestream.SeekableFileStream;
-import net.sf.samtools.seekablestream.SeekableHTTPStream;
-import net.sf.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.FileTruncatedException;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.seekablestream.SeekableBufferedStream;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 /*
  * Utility class for reading BGZF block compressed files.  The caller can treat this file like any other InputStream.

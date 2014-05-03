@@ -21,11 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.util.Iterator;
 
@@ -62,12 +61,12 @@ public class IntervalUtil {
         while (intervals.hasNext()) {
             final Interval interval = intervals.next();
             if (prevInterval.intersects(interval)) {
-                throw new PicardException("Intervals should not overlap: " + prevInterval + "; " + interval);
+                throw new SAMException("Intervals should not overlap: " + prevInterval + "; " + interval);
             }
             final int thisSequenceIndex = sequenceDictionary.getSequenceIndex(interval.getSequence());
             if (prevSequenceIndex > thisSequenceIndex ||
                 (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
-                throw new PicardException("Intervals not in order: " + prevInterval + "; " + interval);
+                throw new SAMException("Intervals not in order: " + prevInterval + "; " + interval);
             }
             prevInterval = interval;
             prevSequenceIndex = thisSequenceIndex;

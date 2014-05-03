@@ -10,7 +10,7 @@
 * 
 */
 
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;

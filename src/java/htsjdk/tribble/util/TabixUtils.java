@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.BlockCompressedInputStream;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.readers.TabixReader;
+import htsjdk.tribble.readers.TabixReader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.TribbleException;
 
 import java.io.File;
 import java.util.ArrayList;

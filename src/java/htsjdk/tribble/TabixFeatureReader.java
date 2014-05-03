@@ -21,11 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.util.BlockCompressedInputStream;
-import org.broad.tribble.readers.*;
-import org.broad.tribble.util.ParsingUtils;
+import htsjdk.tribble.readers.LineReader;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.TabixIteratorLineReader;
+import htsjdk.tribble.readers.TabixReader;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;
 import java.io.InputStream;

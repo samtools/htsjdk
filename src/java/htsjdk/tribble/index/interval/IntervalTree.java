@@ -16,7 +16,7 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index.interval;
+package htsjdk.tribble.index.interval;
 
 
 import java.io.DataOutputStream;

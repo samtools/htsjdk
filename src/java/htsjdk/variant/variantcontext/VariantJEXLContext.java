@@ -23,17 +23,12 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 import org.apache.commons.jexl2.JexlContext;
-import org.apache.commons.jexl2.MapContext;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.VCFConstants;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *

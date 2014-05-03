@@ -1,4 +1,4 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
 /**
  * Default factory for creating SAM and BAM records used by the SAMFileReader classes.

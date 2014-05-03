@@ -20,9 +20,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.SAMFileReader.ValidationStringency;
 import java.io.*;
 
 public class FixBAMFile

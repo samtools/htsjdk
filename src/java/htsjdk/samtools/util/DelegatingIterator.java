@@ -1,6 +1,4 @@
-package net.sf.samtools.util;
-
-import net.sf.samtools.util.CloseableIterator;
+package htsjdk.samtools.util;
 
 import java.util.Iterator;
 

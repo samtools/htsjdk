@@ -23,12 +23,12 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.GenotypeLikelihoods;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;

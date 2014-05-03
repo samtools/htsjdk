@@ -22,19 +22,17 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.metrics.MetricBase;
-import net.sf.picard.metrics.MetricsFile;
-import net.sf.picard.reference.ReferenceSequence;
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.reference.ReferenceSequenceFileWalker;
-import net.sf.picard.util.*;
-import net.sf.samtools.*;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-import net.sf.samtools.SAMValidationError.Type;
-import net.sf.samtools.util.*;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.metrics.MetricBase;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.ReferenceSequence;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
+import htsjdk.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.SAMValidationError.Type;
+import htsjdk.samtools.util.*;
 
 import java.io.*;
 import java.util.*;
@@ -161,7 +159,7 @@ public class SamFileValidator {
 
             }
         } catch (IOException e) {
-            throw new PicardException("IOException", e);
+            throw new SAMException("IOException", e);
         } finally {
             if (inputStream != null) {
                 CloserUtil.close(inputStream);
@@ -275,7 +273,7 @@ public class SamFileValidator {
                         addError(new SAMValidationError(Type.INVALID_QUALITY_FORMAT, String.format("Detected %s quality score encoding, but expected %s.", format, FastqQualityFormat.Standard), null));
                     }
                 }
-            } catch (PicardException e) {
+            } catch (SAMException e) {
                 addError(new SAMValidationError(Type.INVALID_QUALITY_FORMAT, e.getMessage(), null));
             }
         } catch (SAMFormatException e) {
@@ -283,7 +281,7 @@ public class SamFileValidator {
             // reads one record ahead so we will get this failure one record ahead
             final String msg = "SAMFormatException on record " + progress.getCount() + 1;
             out.println(msg);
-            throw new PicardException(msg, e);
+            throw new SAMException(msg, e);
         } catch (FileTruncatedException e) {
             addError(new SAMValidationError(Type.TRUNCATED_FILE, "File is truncated", null));
         } finally {
@@ -667,7 +665,7 @@ public class SamFileValidator {
     /**
      * Thrown in addError indicating that maxVerboseOutput has been exceeded and processing should stop
      */
-    private static class MaxOutputExceededException extends PicardException {
+    private static class MaxOutputExceededException extends SAMException {
         MaxOutputExceededException() {
             super("maxVerboseOutput exceeded.");
         }
@@ -726,7 +724,7 @@ public class SamFileValidator {
                     out.writeBoolean(record.firstOfPairFlag);
                     out.writeLong(record.recordNumber);
                 } catch (IOException e) {
-                    throw new PicardException("Error spilling PairInfo to disk", e);
+                    throw new SAMException("Error spilling PairInfo to disk", e);
                 }
             }
 
@@ -757,7 +755,7 @@ public class SamFileValidator {
                             firstOfPairFlag, recordNumber);
                     return new AbstractMap.SimpleEntry(key, rec);
                 } catch (IOException e) {
-                    throw new PicardException("Error reading PairInfo from disk", e);
+                    throw new SAMException("Error reading PairInfo from disk", e);
                 }
             }
         }

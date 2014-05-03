@@ -23,19 +23,19 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 
 // the imports for unit testing.
 
 
-import net.sf.samtools.SAMSequenceDictionary;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.bcf2.BCF2Codec;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.VariantContextTestProvider;
-import org.broadinstitute.variant.vcf.VCFCodec;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextTestProvider;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

@@ -23,7 +23,7 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.utils;
+package htsjdk.variant.utils;
 
 import java.util.*;
 

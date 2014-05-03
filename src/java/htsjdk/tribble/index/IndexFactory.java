@@ -21,25 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import net.sf.samtools.Defaults;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.BlockCompressedInputStream;
-import org.broad.tribble.*;
-import org.broad.tribble.index.interval.IntervalIndexCreator;
-import org.broad.tribble.index.interval.IntervalTreeIndex;
-import org.broad.tribble.index.linear.LinearIndex;
-import org.broad.tribble.index.linear.LinearIndexCreator;
-import org.broad.tribble.index.tabix.TabixFormat;
-import org.broad.tribble.index.tabix.TabixIndex;
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.index.tabix.TabixIndexCreator;
-import org.broad.tribble.readers.PositionalBufferedStream;
-import org.broad.tribble.util.LittleEndianInputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
-import org.broad.tribble.util.ParsingUtils;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.interval.IntervalIndexCreator;
+import htsjdk.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.index.linear.LinearIndexCreator;
+import htsjdk.tribble.index.tabix.TabixIndexCreator;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.index.interval.IntervalTreeIndex;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.util.LittleEndianInputStream;
 
 import java.io.*;
 import java.lang.reflect.Constructor;

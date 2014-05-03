@@ -16,12 +16,12 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import org.broad.tribble.Tribble;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.util.LittleEndianInputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.util.LittleEndianInputStream;
 
 import java.io.File;
 import java.io.FileOutputStream;

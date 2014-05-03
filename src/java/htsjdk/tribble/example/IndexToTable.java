@@ -22,10 +22,10 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble.example;
+package htsjdk.tribble.example;
 
-import org.broad.tribble.index.IndexFactory;
-import org.broad.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.linear.LinearIndex;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,7 +40,7 @@ public class IndexToTable {
      *  1) checks to see that the feature file exists
      *  2) loads an index from disk, if one doesn't exist, it creates it and writes it to disk
      *  3) Converts the index to a human readable table
-     *  @see LinearIndex#writeTable(java.io.PrintStream)
+     *  @see htsjdk.tribble.index.linear.LinearIndex#writeTable(java.io.PrintStream)
      *
      * @param args 2 parameters:
      *             1) The path of the file to index
@@ -53,7 +53,7 @@ public class IndexToTable {
             printUsage();
 
         //LinearIndex.enableAdaptiveIndexing = false;
-        LinearIndex idx = (LinearIndex)IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
+        LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
         try {
             idx.writeTable(new PrintStream(new FileOutputStream(new File(args[1]))));
         } catch ( FileNotFoundException e ) {

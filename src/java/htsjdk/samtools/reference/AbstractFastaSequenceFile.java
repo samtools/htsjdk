@@ -22,14 +22,14 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMTextHeaderCodec;
-import net.sf.samtools.util.BufferedLineReader;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTextHeaderCodec;
+import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -51,7 +51,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         final File dictionary = findSequenceDictionary(file);
 
         if (dictionary != null) {
-            IoUtil.assertFileIsReadable(dictionary);
+            IOUtil.assertFileIsReadable(dictionary);
 
             try {
                 final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
@@ -64,7 +64,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
                 reader.close();
             }
             catch (Exception e) {
-                throw new PicardException("Could not open sequence dictionary file: " + dictionary, e);
+                throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
             }
         }
     }

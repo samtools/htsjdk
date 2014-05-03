@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.ProgressLoggerInterface;
-import net.sf.samtools.util.SortingCollection;
+import htsjdk.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
 import java.io.StringWriter;

@@ -23,7 +23,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.broad.tribble.util.popgen;
+package htsjdk.tribble.util.popgen;
 
 /**
 * The Broad Institute

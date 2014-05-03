@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.util.Iso8601Date;
+import htsjdk.samtools.SAMException;
 
 import java.io.File;
 import java.security.InvalidParameterException;
@@ -139,7 +138,7 @@ public class FormatUtil {
             return this.dateFormat.parse(value);
         }
         catch (ParseException pe) {
-            throw new PicardException("Could not parse value as date: " + value, pe);
+            throw new SAMException("Could not parse value as date: " + value, pe);
         }
     }
 

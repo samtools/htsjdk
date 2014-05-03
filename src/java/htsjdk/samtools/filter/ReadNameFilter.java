@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.filter;
+package htsjdk.samtools.filter;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
-import net.sf.picard.PicardException;
-import net.sf.picard.io.IoUtil;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.IOUtil;
 
 /**
  * Filter by a set of specified readnames
@@ -44,11 +44,11 @@ public class ReadNameFilter implements SamRecordFilter {
 
     public ReadNameFilter(final File readNameFilterFile, final boolean includeReads) {
 
-        IoUtil.assertFileIsReadable(readNameFilterFile);
-        IoUtil.assertFileSizeNonZero(readNameFilterFile);
+        IOUtil.assertFileIsReadable(readNameFilterFile);
+        IOUtil.assertFileSizeNonZero(readNameFilterFile);
 
         try {
-            final BufferedReader in = IoUtil.openFileForBufferedReading(readNameFilterFile);
+            final BufferedReader in = IOUtil.openFileForBufferedReading(readNameFilterFile);
 
             String line = null;
 
@@ -60,7 +60,7 @@ public class ReadNameFilter implements SamRecordFilter {
 
             in.close();
         } catch (IOException e) {
-            throw new PicardException(e.getMessage(), e);
+            throw new SAMException(e.getMessage(), e);
         }
 
         this.includeReads = includeReads;

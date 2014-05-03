@@ -21,15 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.seekablestream.SeekableStream;
-import net.sf.samtools.seekablestream.SeekableStreamFactory;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
-import org.broad.tribble.readers.PositionalBufferedStream;
-import org.broad.tribble.util.ParsingUtils;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;

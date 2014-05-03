@@ -1,11 +1,11 @@
-package org.broad.tribble.dbsnp;
+package htsjdk.tribble.dbsnp;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.annotation.Strand;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;

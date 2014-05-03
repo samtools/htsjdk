@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.metrics;
+package htsjdk.samtools.metrics;
 
 import org.testng.annotations.Test;
 import org.testng.Assert;
@@ -32,9 +32,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.FileReader;
 
-import net.sf.picard.util.Histogram;
-import net.sf.picard.util.FormatUtil;
-import net.sf.picard.PicardException;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.FormatUtil;
+import htsjdk.samtools.SAMException;
 
 /**
  * Tests for the various classes in the metrics package.  Constructs a MetricsFile,
@@ -65,7 +65,7 @@ public class MetricsFileTest {
 
         public TestMetric clone()  {
             try { return (TestMetric) super.clone(); }
-            catch (CloneNotSupportedException cnse) { throw new PicardException("That's Unpossible!"); }
+            catch (CloneNotSupportedException cnse) { throw new SAMException("That's Unpossible!"); }
         }
     }
 

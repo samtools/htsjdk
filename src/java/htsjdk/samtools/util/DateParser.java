@@ -70,14 +70,13 @@ webmaster
 
  */
 
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMException;
+import htsjdk.samtools.SAMException;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 

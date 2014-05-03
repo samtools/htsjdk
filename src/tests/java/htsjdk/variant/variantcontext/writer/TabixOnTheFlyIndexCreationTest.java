@@ -21,23 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.CloseableTribbleIterator;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.index.tabix.TabixIndex;
-import org.broad.tribble.util.TabixUtils;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCF3Codec;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCF3Codec;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.util.EnumSet;
 
 public class TabixOnTheFlyIndexCreationTest {
-    private static final File SMALL_VCF = new File("testdata/tribble/tabix/trioDup.vcf.gz");
+    private static final File SMALL_VCF = new File("testdata/htsjdk/tribble/tabix/trioDup.vcf.gz");
     @Test
     public void simpleTest() throws Exception {
         final VCF3Codec codec = new VCF3Codec();

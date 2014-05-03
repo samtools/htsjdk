@@ -1,6 +1,6 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import org.broad.tribble.TestUtils;
+import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

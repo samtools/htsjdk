@@ -21,19 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
 import java.util.*;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.AbstractSAMHeaderRecord;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMProgramRecord;
-import net.sf.samtools.SAMReadGroupRecord;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Merges SAMFileHeaders that have the same sequences into a single merged header
@@ -211,7 +204,7 @@ public class SamFileHeaderMerger {
             for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
                 //verify that there are no existing id collisions in this input file
                 if(!idsThatAreAlreadyTaken.add(readGroup.getId()))
-                    throw new PicardException("Input file: " + header + " contains more than one RG with the same id (" + readGroup.getId() + ")");
+                    throw new SAMException("Input file: " + header + " contains more than one RG with the same id (" + readGroup.getId() + ")");
 
                 readGroupsToProcess.add(new HeaderRecordAndFileHeader<SAMReadGroupRecord>(readGroup, header));
             }
@@ -250,7 +243,7 @@ public class SamFileHeaderMerger {
             for (final SAMProgramRecord programGroup : header.getProgramRecords()) {
                 //verify that there are no existing id collisions in this input file
                 if(!idsThatAreAlreadyTaken.add(programGroup.getId()))
-                    throw new PicardException("Input file: " + header + " contains more than one PG with the same id (" + programGroup.getId() + ")");
+                    throw new SAMException("Input file: " + header + " contains more than one PG with the same id (" + programGroup.getId() + ")");
 
                 programGroupsLeftToProcess.add(new HeaderRecordAndFileHeader<SAMProgramRecord>(programGroup, header));
             }
@@ -318,7 +311,7 @@ public class SamFileHeaderMerger {
                 final SAMProgramRecord record = pair.getHeaderRecord();
                 errorMsg.append("@PG ID:"+record.getProgramGroupId()+" PN:"+record.getProgramName()+" PP:"+record.getPreviousProgramGroupId() +"\n");
             }
-            throw new PicardException(errorMsg.toString());
+            throw new SAMException(errorMsg.toString());
         }
 
         //sort the result list by record id
@@ -581,7 +574,7 @@ public class SamFileHeaderMerger {
             } else if (prevloc > loc) {
                 // If sequenceRecord already exists in resultingDict, but prior to the previous one
                 // from mergeIntoDict that already existed, cannot merge.
-                throw new PicardException("Cannot merge sequence dictionaries because sequence " +
+                throw new SAMException("Cannot merge sequence dictionaries because sequence " +
                         sequenceRecord.getSequenceName() + " and " + previouslyMerged.getSequenceName() +
                 " are in different orders in two input sequence dictionaries.");
             } else {
@@ -726,12 +719,12 @@ public class SamFileHeaderMerger {
     public Integer getMergedSequenceIndex(final SAMFileHeader header, final Integer oldReferenceSequenceIndex) {
         final Map<Integer, Integer> mapping = this.samSeqDictionaryIdTranslationViaHeader.get(header);
         if (mapping == null) {
-            throw new PicardException("No sequence dictionary mapping available for header: " + header);
+            throw new SAMException("No sequence dictionary mapping available for header: " + header);
         }
 
         final Integer newIndex = mapping.get(oldReferenceSequenceIndex);
         if (newIndex == null) {
-            throw new PicardException("No mapping for reference index " + oldReferenceSequenceIndex + " from header: " + header);
+            throw new SAMException("No mapping for reference index " + oldReferenceSequenceIndex + " from header: " + header);
         }
 
         return newIndex;

@@ -23,9 +23,9 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.util.Arrays;
 import java.util.Collection;

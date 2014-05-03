@@ -21,22 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.index.tabix;
+package htsjdk.tribble.index.tabix;
 
-import net.sf.samtools.Bin;
-import net.sf.samtools.BinningIndexContent;
-import net.sf.samtools.Chunk;
-import net.sf.samtools.LinearIndex;
-import net.sf.samtools.util.BlockCompressedInputStream;
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.StringUtil;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.util.LittleEndianInputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
-import org.broad.tribble.util.TabixUtils;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.util.LittleEndianInputStream;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.samtools.Bin;
+import htsjdk.samtools.BinningIndexContent;
+import htsjdk.samtools.Chunk;
+import htsjdk.samtools.LinearIndex;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.EOFException;
 import java.io.File;

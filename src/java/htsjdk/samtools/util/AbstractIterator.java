@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

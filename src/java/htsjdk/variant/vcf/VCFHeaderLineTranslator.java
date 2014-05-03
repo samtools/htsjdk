@@ -23,9 +23,9 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broad.tribble.TribbleException;
+import htsjdk.tribble.TribbleException;
 
 import java.util.*;
 

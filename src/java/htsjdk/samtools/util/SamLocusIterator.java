@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.filter.*;
-import net.sf.samtools.*;
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.filter.*;
+import htsjdk.samtools.*;
 
 import java.util.*;
 
@@ -188,7 +187,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             LOG.warn("SamLocusIterator constructed with samReader that has SortOrder == unsorted.  ", "" +
                     "Assuming SAM is coordinate sorted, but exceptions may occur if it is not.");
         } else if (samReader.getFileHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            throw new PicardException("SamLocusIterator cannot operate on a SAM file that is not coordinate sorted.");
+            throw new SAMException("SamLocusIterator cannot operate on a SAM file that is not coordinate sorted.");
         }
         this.samReader = samReader;
         this.useIndex = useIndex;
@@ -295,7 +294,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                     return complete.removeFirst();
                 }
                 if (!accumulator.isEmpty() && first == accumulator.getFirst()) {
-                    throw new PicardException("Stuck in infinite loop");
+                    throw new SAMException("Stuck in infinite loop");
                 }
             }
 

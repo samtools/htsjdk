@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.fastq;
+package htsjdk.samtools.fastq;
 
-import net.sf.picard.PicardException;
-import net.sf.samtools.util.RuntimeIOException;
-import net.sf.samtools.util.StringUtil;
-import net.sf.picard.io.IoUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.StringUtil;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.io.*;
@@ -52,7 +52,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     public FastqReader(final File file, final boolean skipBlankLines) {
         this.skipBlankLines=skipBlankLines;
         fastqFile = file;
-        reader = IoUtil.openFileForBufferedReading(fastqFile);
+        reader = IOUtil.openFileForBufferedReading(fastqFile);
         nextRecord = readNextRecord();
     }
 
@@ -74,10 +74,10 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             final String seqHeader = readLineConditionallySkippingBlanks();
             if (seqHeader == null) return null ;
             if (StringUtil.isBlank(seqHeader)) {
-                throw new PicardException(error("Missing sequence header"));
+                throw new SAMException(error("Missing sequence header"));
             }
             if (!seqHeader.startsWith(FastqConstants.SEQUENCE_HEADER)) {
-                throw new PicardException(error("Sequence header must start with "+ FastqConstants.SEQUENCE_HEADER+": "+seqHeader));
+                throw new SAMException(error("Sequence header must start with "+ FastqConstants.SEQUENCE_HEADER+": "+seqHeader));
             }
 
             // Read sequence line
@@ -88,7 +88,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             final String qualHeader = readLineConditionallySkippingBlanks();
             checkLine(qualHeader,"quality header");
             if (!qualHeader.startsWith(FastqConstants.QUALITY_HEADER)) {
-                throw new PicardException(error("Quality header must start with "+ FastqConstants.QUALITY_HEADER+": "+qualHeader));
+                throw new SAMException(error("Quality header must start with "+ FastqConstants.QUALITY_HEADER+": "+qualHeader));
             }
 
             // Read quality line
@@ -97,7 +97,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
 
             // Check sequence and quality lines are same length
             if (seqLine.length() != qualLine.length()) {
-                throw new PicardException(error("Sequence and quality line must be the same length"));
+                throw new SAMException(error("Sequence and quality line must be the same length"));
             }
 
             final FastqRecord frec = new FastqRecord(seqHeader.substring(1, seqHeader.length()), seqLine,
@@ -106,7 +106,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             return frec ;
 
         } catch (IOException e) {
-            throw new PicardException(String.format("Error reading fastq '%s'", getAbsolutePath()), e);
+            throw new SAMException(String.format("Error reading fastq '%s'", getAbsolutePath()), e);
         }
     }
 
@@ -142,16 +142,16 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         try {
             reader.close();
         } catch (IOException e) {
-            throw new PicardException("IO problem in fastq file "+getAbsolutePath(), e);
+            throw new SAMException("IO problem in fastq file "+getAbsolutePath(), e);
         }
     }
 
     private void checkLine(final String line, final String kind) {
         if (line == null) {
-            throw new PicardException(error("File is too short - missing "+kind+" line"));
+            throw new SAMException(error("File is too short - missing "+kind+" line"));
         }
         if (StringUtil.isBlank(line)) {
-            throw new PicardException(error("Missing "+kind));
+            throw new SAMException(error("Missing "+kind));
         }
     }
 

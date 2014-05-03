@@ -23,13 +23,13 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.vcf.VCFConstants;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.Arrays;
 import java.util.EnumMap;

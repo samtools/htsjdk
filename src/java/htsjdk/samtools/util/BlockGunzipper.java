@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.SAMFormatException;
+import htsjdk.samtools.SAMFormatException;
 
 import java.util.zip.Inflater;
 import java.util.zip.CRC32;

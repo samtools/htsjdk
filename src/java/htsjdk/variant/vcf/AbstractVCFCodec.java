@@ -23,18 +23,23 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.util.BlockCompressedInputStream;
-import org.broad.tribble.AsciiFeatureCodec;
-import org.broad.tribble.Feature;
-import org.broad.tribble.NameAwareCodec;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.util.ParsingUtils;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.*;
+import htsjdk.tribble.AsciiFeatureCodec;
+import htsjdk.tribble.Feature;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.GenotypeLikelihoods;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.NameAwareCodec;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.utils.GeneralUtils;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;

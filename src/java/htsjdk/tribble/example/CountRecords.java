@@ -21,19 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.example;
+package htsjdk.tribble.example;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.Feature;
-import org.broad.tribble.FeatureCodec;
-import org.broad.tribble.Tribble;
-import org.broad.tribble.bed.BEDCodec;
-import org.broad.tribble.dbsnp.OldDbSNPCodec;
-import org.broad.tribble.gelitext.GeliTextCodec;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
-import org.broad.tribble.index.linear.LinearIndex;
-import org.broad.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.dbsnp.OldDbSNPCodec;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.gelitext.GeliTextCodec;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.index.linear.LinearIndex;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -79,7 +79,7 @@ public class CountRecords {
 
     /**
      *
-     * @see org.broad.tribble.index.linear.LinearIndex#optimize(double)
+     * @see htsjdk.tribble.index.linear.LinearIndex#optimize(double)
      * @param featureInput  File containing features
      * @param codec  Codec used to read the features
      * @param optimizeThreshold Threshold used to optimize the linear index

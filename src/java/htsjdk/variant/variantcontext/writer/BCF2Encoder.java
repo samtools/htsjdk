@@ -23,12 +23,12 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import org.broadinstitute.variant.bcf2.BCF2Type;
-import org.broadinstitute.variant.bcf2.BCF2Utils;
+import htsjdk.variant.bcf2.BCF2Type;
+import htsjdk.variant.bcf2.BCF2Utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

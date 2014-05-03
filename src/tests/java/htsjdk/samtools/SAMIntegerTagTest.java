@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import org.testng.annotations.Test;
 import org.testng.Assert;
@@ -37,7 +37,7 @@ import java.util.Map;
  * @author alecw@broadinstitute.org
  */
 public class SAMIntegerTagTest {
-    private static final File TEST_DATA_DIR = new File("testdata/net/sf/samtools/SAMIntegerTagTest");
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/SAMIntegerTagTest");
 
     private static final String BYTE_TAG = "BY";
     private static final String SHORT_TAG = "SH";

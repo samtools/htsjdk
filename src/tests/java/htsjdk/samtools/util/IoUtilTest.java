@@ -21,29 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.io;
+package htsjdk.samtools.util;
 
-import net.sf.picard.util.ProcessExecutor;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.CollectionUtil;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.testng.Assert;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
 
 public class IoUtilTest {
 
-    private static final File SLURP_TEST_FILE = new File("testdata/net/sf/picard/io/slurptest.txt");
-    private static final File EMPTY_FILE = new File("testdata/net/sf/picard/io/empty.txt");;
-    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("testdata/net/sf/picard/io/5newline5.txt");
+    private static final File SLURP_TEST_FILE = new File("testdata/htsjdk/samtools/io/slurptest.txt");
+    private static final File EMPTY_FILE = new File("testdata/htsjdk/samtools/io/empty.txt");;
+    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("testdata/htsjdk/samtools/io/5newline5.txt");
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ","for breakfast  ","wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "foo";
     private static final String TEST_FILE_EXTENSIONS[] = { ".txt", ".txt.gz", ".txt.bz2" };
     private static final String TEST_STRING = "bar!";
+    private File existingTempFile;
+    private String systemTempDir;
+
+    @BeforeClass
+    public void setUp() throws IOException {
+        existingTempFile = File.createTempFile("FiletypeTest.", ".tmp");
+        existingTempFile.deleteOnExit();
+        systemTempDir = System.getProperty("java.io.tmpdir");
+        final File tmpDir = new File(systemTempDir);
+        if (!tmpDir.isDirectory()) tmpDir.mkdir();
+        if (!tmpDir.isDirectory())
+            throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
+    }
 
     @Test
     public void testFileReadingAndWriting() throws IOException
@@ -53,12 +64,12 @@ public class IoUtilTest {
         {
             File f = File.createTempFile(TEST_FILE_PREFIX, ext);
 
-            OutputStream os = IoUtil.openFileForWriting(f);
+            OutputStream os = IOUtil.openFileForWriting(f);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
             writer.write(randomizedTestString);
             writer.close();
 
-            InputStream is = IoUtil.openFileForReading(f);
+            InputStream is = IOUtil.openFileForReading(f);
             BufferedReader reader = new BufferedReader(new InputStreamReader(is));
             String line = reader.readLine();
             Assert.assertEquals(randomizedTestString, line);
@@ -87,7 +98,7 @@ public class IoUtilTest {
 
         File files [] = { actual, symlink, lnToActual, lnToSymlink };
         for (File f : files) {
-            Assert.assertEquals(IoUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
+            Assert.assertEquals(IOUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
         }
 
         actual.delete();
@@ -104,11 +115,11 @@ public class IoUtilTest {
             final File f = File.createTempFile(TEST_FILE_PREFIX, ext);
             f.deleteOnExit();
 
-            final BufferedWriter writer = IoUtil.openFileForBufferedUtf8Writing(f);
+            final BufferedWriter writer = IOUtil.openFileForBufferedUtf8Writing(f);
             writer.write(utf8);
             CloserUtil.close(writer);
 
-            final BufferedReader reader = IoUtil.openFileForBufferedUtf8Reading(f);
+            final BufferedReader reader = IOUtil.openFileForBufferedUtf8Reading(f);
             final String line = reader.readLine();
             Assert.assertEquals(utf8, line, f.getAbsolutePath());
 
@@ -119,21 +130,51 @@ public class IoUtilTest {
 
     @Test
     public void slurpLinesTest() throws FileNotFoundException {
-        Assert.assertEquals(IoUtil.slurpLines(SLURP_TEST_FILE), SLURP_TEST_LINES);
+        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE), SLURP_TEST_LINES);
     }
 
     @Test
     public void slurpWhitespaceOnlyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IoUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
+        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
     }
     
     @Test
     public void slurpEmptyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IoUtil.slurp(EMPTY_FILE), "");
+        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE), "");
     }
     
     @Test
     public void slurpTest() throws FileNotFoundException {
-        Assert.assertEquals(IoUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+    }
+
+    @Test(dataProvider = "fileTypeTestCases")
+    public void testFileType(final String path, boolean expectedIsRegularFile) {
+        final File file = new File(path);
+        Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
+    }
+
+    @Test(dataProvider = "unixFileTypeTestCases", groups={"unix"})
+    public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
+        final File file = new File(path);
+        Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
+    }
+
+    @DataProvider(name = "fileTypeTestCases")
+    private Object[][] fileTypeTestCases() {
+        return new Object[][] {
+                {existingTempFile.getAbsolutePath(), Boolean.TRUE},
+                {systemTempDir, Boolean.FALSE}
+
+        };
+    }
+
+    @DataProvider(name = "unixFileTypeTestCases")
+    private Object[][] unixFileTypeTestCases() {
+        return new Object[][] {
+                {"/dev/null",   Boolean.FALSE},
+                {"/dev/stdout", Boolean.FALSE},
+                {"/non/existent/file", Boolean.TRUE},
+        };
     }
 }

@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
-import net.sf.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.BufferedLineReader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -41,7 +41,7 @@ public class SeekableFileStreamTest {
     @Test
     public void testSeek() throws Exception {
         String expectedLine = "ccccccccc";
-        File testFile = new File("testdata/tribble/seekTest.txt");
+        File testFile = new File("testdata/htsjdk/samtools/seekablestream/seekTest.txt");
         SeekableFileStream is = new SeekableFileStream(testFile);
         is.seek(20);
         BufferedLineReader reader = new BufferedLineReader(is);

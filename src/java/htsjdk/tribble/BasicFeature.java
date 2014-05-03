@@ -1,4 +1,4 @@
-package org.broad.tribble;
+package htsjdk.tribble;
 
 /*
  * Copyright (c) 2012, The Broad Institute

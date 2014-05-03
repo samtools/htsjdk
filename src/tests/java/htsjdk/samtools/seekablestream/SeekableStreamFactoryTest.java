@@ -1,4 +1,4 @@
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;

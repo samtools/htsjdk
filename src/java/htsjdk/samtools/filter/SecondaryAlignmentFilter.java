@@ -1,6 +1,6 @@
-package net.sf.picard.filter;
+package htsjdk.samtools.filter;
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * SamRecordFilter that filters out secondary alignments, but not supplemental alignments.

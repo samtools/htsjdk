@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.samtools.*;
+import htsjdk.samtools.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -37,7 +37,7 @@ import java.io.File;
  * @author alecw@broadinstitute.org
  */
 public class SequenceNameTruncationAndValidationTest {
-    private static File TEST_DATA_DIR = new File("testdata/net/sf/picard/sam");
+    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
     @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")
     public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {
         new SAMSequenceRecord(sequenceName, 123);

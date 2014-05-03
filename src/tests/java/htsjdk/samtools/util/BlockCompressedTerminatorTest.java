@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
 import org.testng.annotations.Test;
 import org.testng.Assert;
@@ -32,7 +32,7 @@ import java.io.File;
  * @author alecw@broadinstitute.org
  */
 public class BlockCompressedTerminatorTest {
-    private static final File TEST_DATA_DIR = new File("testdata/net/sf/samtools/util");
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/util");
 
     @Test
     public void testFileWithTerminator() throws Exception {

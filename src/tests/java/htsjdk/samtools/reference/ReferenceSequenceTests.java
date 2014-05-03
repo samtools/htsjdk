@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.reference;
+package htsjdk.samtools.reference;
 
 import org.testng.annotations.Test;
 import org.testng.annotations.DataProvider;

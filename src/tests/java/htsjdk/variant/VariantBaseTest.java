@@ -23,10 +23,10 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant;
+package htsjdk.variant;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.Assert;
 
 import java.io.File;
@@ -38,7 +38,7 @@ import java.util.*;
  */
 public class VariantBaseTest {
 
-    public static final String variantTestDataRoot = new File("testdata/variant/").getAbsolutePath() + "/";
+    public static final String variantTestDataRoot = new File("testdata/htsjdk/variant/").getAbsolutePath() + "/";
 
     /**
      * Creates a temp file that will be deleted on exit after tests are complete.

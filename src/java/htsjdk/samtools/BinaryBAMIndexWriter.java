@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BinaryCodec;
 
 import java.io.*;
 import java.util.List;

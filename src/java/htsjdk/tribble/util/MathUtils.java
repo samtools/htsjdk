@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
 /**
  * a collection of functions and classes for various common calculations

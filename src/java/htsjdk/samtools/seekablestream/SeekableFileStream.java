@@ -15,7 +15,7 @@
  * BE ADVISED, SHALL HAVE OTHER REASON TO KNOW, OR IN FACT SHALL KNOW OF THE POSSIBILITY OF THE
  * FOREGOING.
  */
-package net.sf.samtools.seekablestream;
+package htsjdk.samtools.seekablestream;
 
 import java.io.*;
 import java.util.Collection;

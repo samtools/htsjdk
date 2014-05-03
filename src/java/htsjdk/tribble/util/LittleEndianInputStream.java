@@ -9,7 +9,7 @@
 * http://www.javafaq.nu/java-example-code-1078.html
 *
 */
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
 import java.io.*;
 

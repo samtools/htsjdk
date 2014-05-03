@@ -1,5 +1,6 @@
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
+import htsjdk.samtools.util.Histogram;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

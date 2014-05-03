@@ -22,16 +22,15 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.metrics.MetricBase;
-import net.sf.picard.metrics.MetricsFile;
-import net.sf.picard.reference.ReferenceSequence;
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.util.Histogram;
-import net.sf.samtools.*;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.metrics.MetricBase;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.ReferenceSequence;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.*;
+import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -47,7 +46,7 @@ import java.util.Iterator;
  * @author Doug Voet
  */
 public class ValidateSamFileTest {
-    private static final File TEST_DATA_DIR = new File("testdata/net/sf/picard/sam/ValidateSamFileTest");
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/ValidateSamFileTest");
 
     @Test
     public void testValidSamFile() throws Exception {
@@ -293,7 +292,7 @@ public class ValidateSamFileTest {
         };
     }
 
-    @Test(expectedExceptions = PicardException.class, dataProvider = "testFatalParsingErrors")
+    @Test(expectedExceptions = SAMException.class, dataProvider = "testFatalParsingErrors")
     public void testFatalParsingErrors(final String scenario, final String inputFile) throws Exception {
         final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, inputFile));
         executeValidation(reader, null);
@@ -319,7 +318,7 @@ public class ValidateSamFileTest {
 
     @Test(enabled=false, description="File is actually valid for Standard quality scores so this test fails with an NPE.")
     public void testQualityFormatValidation() throws Exception {
-        final SAMFileReader samReader = new SAMFileReader(new File("./testdata/net/sf/picard/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
+        final SAMFileReader samReader = new SAMFileReader(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
         final Histogram<String> results = executeValidation(samReader, null);
         final Histogram<String>.Bin bin = results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
         final double value = bin.getValue();

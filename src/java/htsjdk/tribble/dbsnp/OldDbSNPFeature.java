@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.dbsnp;
+package htsjdk.tribble.dbsnp;
 
-import org.broad.tribble.Feature;
-import org.broad.tribble.annotation.Strand;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.annotation.Strand;
 
 
 /**

@@ -1,4 +1,4 @@
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
 import java.io.Closeable;
 import java.io.IOException;

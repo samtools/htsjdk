@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.liftover;
+package htsjdk.samtools.liftover;
 
-import net.sf.picard.util.Interval;
-import net.sf.picard.util.OverlapDetector;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.OverlapDetector;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -32,7 +32,6 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -41,7 +40,7 @@ import java.util.TreeMap;
  * @author alecw@broadinstitute.org
  */
 public class LiftOverTest {
-    private static final File TEST_DATA_DIR = new File("testdata/net/sf/picard/liftover");
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/liftover");
     private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
 
     private LiftOver liftOver;

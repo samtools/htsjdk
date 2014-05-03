@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 
-import net.sf.samtools.util.Iso8601Date;
+import htsjdk.samtools.util.Iso8601Date;
 
 import java.util.*;
 

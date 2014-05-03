@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
+package htsjdk.samtools.util;
 
-import net.sf.samtools.*;
+import htsjdk.samtools.*;
 
 import java.io.File;
 import java.util.List;
@@ -42,9 +42,9 @@ public class SequenceUtil {
      * @return reverse complement
      */
     public static String reverseComplement(final String sequenceData) {
-        final byte[] bases = net.sf.samtools.util.StringUtil.stringToBytes(sequenceData);
+        final byte[] bases = htsjdk.samtools.util.StringUtil.stringToBytes(sequenceData);
         reverseComplement(bases);
-        return net.sf.samtools.util.StringUtil.bytesToString(bases);
+        return htsjdk.samtools.util.StringUtil.bytesToString(bases);
     }
 
     /** Attempts to efficiently compare two bases stored as bytes for equality. */

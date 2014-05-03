@@ -1,8 +1,8 @@
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import net.sf.samtools.util.AbstractAsyncWriter;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.samtools.util.AbstractAsyncWriter;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * AsyncVariantContextWriter that can be wrapped around an underlying AsyncVariantContextWriter to provide asynchronous output. Records

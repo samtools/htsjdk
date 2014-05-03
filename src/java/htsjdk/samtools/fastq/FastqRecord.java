@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.fastq;
+package htsjdk.samtools.fastq;
 
 /**
  * Represents a fastq record, fairly literally, i.e. without any conversion.

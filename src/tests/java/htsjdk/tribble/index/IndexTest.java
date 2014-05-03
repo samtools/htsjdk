@@ -1,7 +1,7 @@
-package org.broad.tribble.index;
+package htsjdk.tribble.index;
 
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.index.linear.LinearIndex;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

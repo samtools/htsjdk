@@ -16,9 +16,9 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index.interval;
+package htsjdk.tribble.index.interval;
 
-import org.broad.tribble.index.Block;
+import htsjdk.tribble.index.Block;
 
 
 /**

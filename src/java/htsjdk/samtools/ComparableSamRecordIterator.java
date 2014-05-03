@@ -21,15 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.sam;
+package htsjdk.samtools;
 
-import net.sf.picard.util.PeekableIterator;
+import htsjdk.samtools.util.PeekableIterator;
 
 import java.util.Comparator;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Iterator for SAM records that implements comparable to enable sorting of iterators.

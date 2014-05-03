@@ -1,12 +1,11 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import org.broad.tribble.TestUtils;
+import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 
 /**

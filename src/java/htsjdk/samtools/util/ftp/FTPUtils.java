@@ -16,11 +16,11 @@
  * SHALL KNOW OF THE POSSIBILITY OF THE FOREGOING.
  */
 
-package net.sf.samtools.util.ftp;
+package htsjdk.samtools.util.ftp;
 
 
-import net.sf.samtools.SAMException;
-import net.sf.samtools.seekablestream.UserPasswordInput;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.seekablestream.UserPasswordInput;
 
 import java.io.IOException;
 import java.io.InputStream;

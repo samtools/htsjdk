@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  */
 
-package net.sf.picard.metrics;
+package htsjdk.samtools.metrics;
 
-import net.sf.picard.PicardException;
-import net.sf.picard.util.FormatUtil;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.FormatUtil;
 
 import java.lang.reflect.Field;
 
@@ -71,7 +71,7 @@ public class MetricBase {
                 }
             }
             catch (IllegalAccessException iae) {
-                throw new PicardException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
             }
         }
 
@@ -85,7 +85,7 @@ public class MetricBase {
             try {
                 result = 31 * result + f.get(this).hashCode();
             } catch (IllegalAccessException e) {
-                throw new PicardException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
             }
         }
         return result;
@@ -104,7 +104,7 @@ public class MetricBase {
                 buffer.append("\n");
             }
             catch (IllegalAccessException iae) {
-                throw new PicardException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
+                throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
             }
         }
 

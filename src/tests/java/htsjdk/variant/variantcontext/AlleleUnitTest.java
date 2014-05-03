@@ -23,12 +23,12 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 
 // the imports for unit testing.
 
-import org.broadinstitute.variant.VariantBaseTest;
+import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;

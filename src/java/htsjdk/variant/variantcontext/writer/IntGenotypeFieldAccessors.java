@@ -23,10 +23,10 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.variantcontext.writer;
+package htsjdk.variant.variantcontext.writer;
 
-import org.broadinstitute.variant.vcf.VCFConstants;
-import org.broadinstitute.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.HashMap;
 

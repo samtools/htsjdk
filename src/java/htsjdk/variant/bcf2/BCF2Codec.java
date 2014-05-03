@@ -23,21 +23,31 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
 import com.google.java.contract.Ensures;
 import com.google.java.contract.Requires;
-import org.broad.tribble.BinaryFeatureCodec;
-import org.broad.tribble.Feature;
-import org.broad.tribble.FeatureCodecHeader;
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.readers.LineIterator;
-import org.broad.tribble.readers.LineIteratorImpl;
-import org.broad.tribble.readers.LineReaderUtil;
-import org.broad.tribble.readers.PositionalBufferedStream;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.*;
-import org.broadinstitute.variant.vcf.*;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.VariantContextUtils;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFContigHeaderLine;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.tribble.BinaryFeatureCodec;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.variant.utils.GeneralUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;

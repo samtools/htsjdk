@@ -21,12 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.broad.tribble.dbsnp;
+package htsjdk.tribble.dbsnp;
 
-import org.broad.tribble.AsciiFeatureCodec;
-import org.broad.tribble.Feature;
-import org.broad.tribble.annotation.Strand;
-import org.broad.tribble.readers.LineIterator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.AsciiFeatureCodec;
+import htsjdk.tribble.readers.LineIterator;
 
 
 /**

@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.StopWatch;
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.StopWatch;
+import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
 import static org.testng.Assert.*;
 
@@ -41,7 +41,7 @@ import java.util.*;
  */
 public class BAMFileIndexTest
 {
-    private final File BAM_FILE = new File("testdata/net/sf/samtools/BAMFileIndexTest/index_test.bam");
+    private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
 
     @Test

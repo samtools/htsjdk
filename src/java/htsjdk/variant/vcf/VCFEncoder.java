@@ -1,13 +1,13 @@
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broad.tribble.util.ParsingUtils;
-import org.broadinstitute.variant.variantcontext.Allele;
-import org.broadinstitute.variant.variantcontext.Genotype;
-import org.broadinstitute.variant.variantcontext.GenotypeBuilder;
-import org.broadinstitute.variant.variantcontext.GenotypesContext;
-import org.broadinstitute.variant.variantcontext.LazyGenotypesContext;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.writer.IntGenotypeFieldAccessors;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
+import htsjdk.variant.variantcontext.writer.IntGenotypeFieldAccessors;
 
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;

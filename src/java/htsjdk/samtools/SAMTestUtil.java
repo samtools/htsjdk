@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
 import org.testng.Assert;
 
 /**
  * Misc methods for SAM-related unit tests.  These are in the src tree rather than the tests tree
- * so that they will be included in sam.jar, and therefore can be used by tests outside of net.sf.samtools.
+ * so that they will be included in sam.jar, and therefore can be used by tests outside of htsjdk.samtools.
  * These methods use org.testng.Assert methods.
  */
 public class SAMTestUtil {

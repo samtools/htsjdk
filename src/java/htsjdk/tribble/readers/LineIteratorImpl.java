@@ -1,7 +1,7 @@
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
-import net.sf.samtools.util.AbstractIterator;
-import net.sf.samtools.util.CloserUtil;
+import htsjdk.samtools.util.AbstractIterator;
+import htsjdk.samtools.util.CloserUtil;
 
 import java.io.Closeable;
 import java.io.IOException;

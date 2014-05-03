@@ -23,10 +23,10 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.SAMSequenceRecord;
-import org.broad.tribble.TribbleException;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.tribble.TribbleException;
 
 import java.util.HashMap;
 import java.util.Map;

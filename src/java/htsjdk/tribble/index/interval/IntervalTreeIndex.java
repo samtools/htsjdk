@@ -16,13 +16,12 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index.interval;
+package htsjdk.tribble.index.interval;
 
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.index.AbstractIndex;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.util.LittleEndianInputStream;
-import org.broad.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.index.AbstractIndex;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.LittleEndianInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,7 +98,7 @@ public class IntervalTreeIndex extends AbstractIndex {
         }
     }
 
-    public static class ChrIndex implements org.broad.tribble.index.ChrIndex {
+    public static class ChrIndex implements htsjdk.tribble.index.ChrIndex {
 
         IntervalTree tree;
         String name;

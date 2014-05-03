@@ -21,9 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.picard.util;
+package htsjdk.samtools.util;
 
-import net.sf.picard.PicardException;
+import htsjdk.samtools.SAMException;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,7 +60,7 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, FileOutpu
                 try {
                     return new FileOutputStream(file, true);
                 } catch (FileNotFoundException e2) {
-                    throw new PicardException(file + "not found", e2);
+                    throw new SAMException(file + "not found", e2);
                 }
             }
         }
@@ -69,7 +69,7 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, FileOutpu
             try {
                 fileOutputStream.close();
             } catch (IOException e) {
-                throw new PicardException("Exception closing FileOutputStream for " + file, e);
+                throw new SAMException("Exception closing FileOutputStream for " + file, e);
             }
         }
     }

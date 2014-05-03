@@ -23,11 +23,14 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.bcf2;
+package htsjdk.variant.bcf2;
 
 import com.google.java.contract.Requires;
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.LazyGenotypesContext;
 
 import java.io.IOException;
 import java.util.*;

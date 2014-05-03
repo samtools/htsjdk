@@ -16,7 +16,7 @@
  * FOREGOING.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
 import java.io.IOException;
 import java.util.List;

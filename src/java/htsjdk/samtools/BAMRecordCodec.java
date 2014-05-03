@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BinaryCodec;
-import net.sf.samtools.util.RuntimeEOFException;
-import net.sf.samtools.util.SortingCollection;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.SortingCollection;
 
 import java.io.InputStream;
 import java.io.OutputStream;

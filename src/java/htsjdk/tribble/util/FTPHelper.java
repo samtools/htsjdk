@@ -1,8 +1,8 @@
-package org.broad.tribble.util;
+package htsjdk.tribble.util;
 
-import net.sf.samtools.util.ftp.FTPClient;
-import net.sf.samtools.util.ftp.FTPStream;
-import net.sf.samtools.util.ftp.FTPUtils;
+import htsjdk.samtools.util.ftp.FTPClient;
+import htsjdk.samtools.util.ftp.FTPStream;
+import htsjdk.samtools.util.ftp.FTPUtils;
 
 import java.io.IOException;
 import java.io.InputStream;

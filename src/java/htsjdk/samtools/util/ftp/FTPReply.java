@@ -16,7 +16,7 @@
  * SHALL KNOW OF THE POSSIBILITY OF THE FOREGOING.
  */
 
-package net.sf.samtools.util.ftp;
+package htsjdk.samtools.util.ftp;
 
 import java.io.BufferedReader;
 import java.io.IOException;

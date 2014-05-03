@@ -1,4 +1,4 @@
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;

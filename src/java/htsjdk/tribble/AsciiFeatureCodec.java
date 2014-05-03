@@ -16,11 +16,16 @@
  * FOREGOING.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.readers.*;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.LocationAware;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +71,7 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
 
     /** 
      * Convenience method.  Decoding in ASCII files operates line-by-line, so obviate the need to call 
-     * {@link org.broad.tribble.readers.LineIterator#next()} in implementing classes and, instead, have them implement
+     * {@link htsjdk.tribble.readers.LineIterator#next()} in implementing classes and, instead, have them implement
      * {@link AsciiFeatureCodec#decode(String)}.
      */
     @Override
@@ -74,7 +79,7 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
         return decode(lineIterator.next());
     }
 
-    /** @see {@link AsciiFeatureCodec#decode(org.broad.tribble.readers.LineIterator)} */
+    /** @see {@link AsciiFeatureCodec#decode(htsjdk.tribble.readers.LineIterator)} */
     public abstract T decode(String s);
 
     @Override

@@ -1,6 +1,4 @@
-package net.sf.picard.fastq;
-
-import java.io.Closeable;
+package htsjdk.samtools.fastq;
 
 /**
  * Simple interface for a class that can write out fastq records.

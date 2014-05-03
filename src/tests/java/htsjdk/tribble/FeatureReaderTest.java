@@ -1,14 +1,14 @@
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.seekablestream.SeekableFileStream;
-import net.sf.samtools.util.CloserUtil;
-import org.broad.tribble.bed.BEDCodec;
-import org.broad.tribble.example.ExampleBinaryCodec;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
-import net.sf.samtools.util.LocationAware;
-import org.broad.tribble.util.ParsingUtils;
+import htsjdk.tribble.example.ExampleBinaryCodec;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.samtools.util.LocationAware;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

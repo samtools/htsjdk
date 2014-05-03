@@ -21,9 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools.util;
-
-import net.sf.samtools.Defaults;
+package htsjdk.samtools.util;
 
 import java.io.*;
 import java.util.*;

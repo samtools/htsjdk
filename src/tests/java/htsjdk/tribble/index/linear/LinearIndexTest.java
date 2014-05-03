@@ -16,17 +16,17 @@
  * FOREGOING.
  */
 
-package org.broad.tribble.index.linear;
+package htsjdk.tribble.index.linear;
 
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.CloseableTribbleIterator;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.TestUtils;
-import org.broad.tribble.bed.BEDCodec;
-import org.broad.tribble.bed.BEDFeature;
-import org.broad.tribble.index.Block;
-import org.broad.tribble.index.Index;
-import org.broad.tribble.index.IndexFactory;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.index.Block;
+import htsjdk.tribble.index.Index;
+import htsjdk.tribble.index.IndexFactory;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.bed.BEDCodec;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;

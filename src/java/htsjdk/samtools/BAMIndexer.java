@@ -21,7 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
+
+import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.OutputStream;
@@ -255,5 +257,38 @@ public class BAMIndexer {
             binningIndexBuilder = new BinningIndexBuilder(currentReference,
                     sequenceDictionary.getSequence(currentReference).getSequenceLength());
         }
+    }
+
+    /**
+     * Generates a BAM index file from an input BAM file
+     *
+     * @param reader SAMFileReader for input BAM file
+     * @param output  File for output index file
+     */
+    public static void createIndex(SAMFileReader reader, File output) {
+        createIndex(reader, output, null);
+    }
+
+    /**
+     * Generates a BAM index file from an input BAM file
+     *
+     * @param reader SAMFileReader for input BAM file
+     * @param output  File for output index file
+     */
+    public static void createIndex(SAMFileReader reader, File output, Log log) {
+
+        BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader());
+
+        reader.enableFileSource(true);
+        int totalRecords = 0;
+
+        // create and write the content
+        for (SAMRecord rec : reader) {
+            if (++totalRecords % 1000000 == 0) {
+                if (null != log) log.info(totalRecords + " reads processed ...");
+            }
+            indexer.processAlignment(rec);
+        }
+        indexer.finish();
     }
 }

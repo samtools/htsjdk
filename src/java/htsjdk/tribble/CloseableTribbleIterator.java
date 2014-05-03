@@ -16,9 +16,9 @@
  * FOREGOING.
  */
 
-package org.broad.tribble;
+package htsjdk.tribble;
 
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * The basic iterator we use in Tribble, which allows closing and basic iteration.

@@ -23,9 +23,9 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broadinstitute.variant.VariantBaseTest;
+import htsjdk.variant.VariantBaseTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.testng.Assert;

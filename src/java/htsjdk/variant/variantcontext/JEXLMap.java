@@ -1,10 +1,10 @@
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 
 import org.apache.commons.jexl2.JexlContext;
 import org.apache.commons.jexl2.MapContext;
-import org.broadinstitute.variant.utils.GeneralUtils;
-import org.broadinstitute.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
-import org.broadinstitute.variant.vcf.VCFConstants;
+import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.Collection;
 import java.util.HashMap;

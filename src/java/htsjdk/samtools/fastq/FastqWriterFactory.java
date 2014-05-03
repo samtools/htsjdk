@@ -1,6 +1,6 @@
-package net.sf.picard.fastq;
+package htsjdk.samtools.fastq;
 
-import net.sf.samtools.Defaults;
+import htsjdk.samtools.Defaults;
 
 import java.io.File;
 

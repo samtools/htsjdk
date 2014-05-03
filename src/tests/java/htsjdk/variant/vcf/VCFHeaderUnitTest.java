@@ -23,16 +23,16 @@
 * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import org.broad.tribble.TribbleException;
-import org.broad.tribble.readers.AsciiLineReader;
-import org.broad.tribble.readers.AsciiLineReaderIterator;
-import org.broad.tribble.readers.LineIteratorImpl;
-import org.broad.tribble.readers.LineReaderUtil;
-import org.broad.tribble.readers.PositionalBufferedStream;
-import org.broadinstitute.variant.VariantBaseTest;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

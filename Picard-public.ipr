@@ -91,6 +91,8 @@
         <inspection_tool class="LocalCanBeFinal" enabled="true" level="WARNING" enabled_by_default="true">
           <option name="REPORT_VARIABLES" value="true" />
           <option name="REPORT_PARAMETERS" value="true" />
+          <option name="REPORT_CATCH_PARAMETERS" value="true" />
+          <option name="REPORT_FOREACH_PARAMETERS" value="true" />
         </inspection_tool>
         <inspection_tool class="SqlNoDataSourceInspection" enabled="false" level="WARNING" enabled_by_default="false" />
         <inspection_tool class="UnusedDeclaration" enabled="false" level="WARNING" enabled_by_default="false">
@@ -309,9 +311,6 @@
       </words>
     </dictionary>
   </component>
-  <component name="ProjectKey">
-    <option name="state" value="https://picard.svn.sourceforge.net/svnroot/picard/trunk/Picard-public.ipr" />
-  </component>
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Picard-public.iml" filepath="$PROJECT_DIR$/Picard-public.iml" />
@@ -341,12 +340,11 @@
         </entry>
       </map>
     </option>
-    <option name="myVersion" value="124" />
     <option name="mySupportsUserInfoFilter" value="true" />
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="" />
-    <mapping directory="$PROJECT_DIR$" vcs="svn" />
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
 </project>

@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.RuntimeIOException;
-import net.sf.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
@@ -375,7 +375,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     }
 
     /**
-     * @deprecated Invoke net.sf.samtools.Chunk#optimizeChunkList(java.util.List<net.sf.samtools.Chunk>, long) directly.
+     * @deprecated Invoke htsjdk.samtools.Chunk#optimizeChunkList(java.util.List<htsjdk.samtools.Chunk>, long) directly.
      */
     protected List<Chunk> optimizeChunkList(final List<Chunk> chunks, final long minimumOffset) {
         return Chunk.optimizeChunkList(chunks, minimumOffset);

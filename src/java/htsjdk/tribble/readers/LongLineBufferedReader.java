@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package org.broad.tribble.readers;
+package htsjdk.tribble.readers;
 
 
 import java.io.IOException;

@@ -1,13 +1,16 @@
-package org.broadinstitute.variant.vcf;
+package htsjdk.variant.vcf;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CloserUtil;
-import org.broad.tribble.AbstractFeatureReader;
-import org.broad.tribble.FeatureReader;
-import org.broad.tribble.TribbleException;
-import org.broadinstitute.variant.bcf2.BCF2Codec;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.IntervalList;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.variantcontext.VariantContext;
 
 import java.io.Closeable;
 import java.io.File;
@@ -48,6 +51,46 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 						isBCF(file) ? new BCF2Codec() : new VCFCodec(),
 						requireIndex);
 	}
+
+    /**
+     * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
+     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
+     * @param file
+     * @return
+     */
+    public static IntervalList fromVcf(final File file){
+        final VCFFileReader vcfFileReader = new VCFFileReader(file, false);
+        final IntervalList intervalList = fromVcf(vcfFileReader);
+        vcfFileReader.close();
+        return intervalList;
+    }
+
+    /**
+     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
+     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
+     * @param vcf the vcfReader to be used for the conversion
+     * @return an IntervalList constructed from input vcf
+     */
+    public static IntervalList fromVcf(final VCFFileReader vcf){
+
+        //grab the dictionary from the VCF and use it in the IntervalList
+        final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
+        final SAMFileHeader samFileHeader = new SAMFileHeader();
+        samFileHeader.setSequenceDictionary(dict);
+        final IntervalList list = new IntervalList( samFileHeader);
+
+        int intervals=0;
+        for(final VariantContext vc : vcf){
+            if(!vc.isFiltered()){
+                String name = vc.getID();
+                if(".".equals(name) || name == null)
+                    name = "interval-" + (++intervals);
+                list.add(new Interval(vc.getChr(), vc.getStart(), vc.getEnd(), false, name));
+            }
+        }
+
+        return list;
+    }
 
     /** Returns the VCFHeader associated with this VCF/BCF file. */
 	public VCFHeader getFileHeader() {

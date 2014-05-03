@@ -1,13 +1,13 @@
-package net.sf.samtools;
+package htsjdk.samtools;
 
-import net.sf.samtools.util.BlockCompressedFilePointerUtil;
-import net.sf.samtools.util.BlockCompressedInputStream;
-import net.sf.samtools.util.BlockCompressedOutputStream;
-import net.sf.samtools.util.BlockCompressedStreamConstants;
-import net.sf.samtools.util.CloserUtil;
-import net.sf.samtools.util.IOUtil;
-import net.sf.samtools.util.Md5CalculatingOutputStream;
-import net.sf.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Md5CalculatingOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.FileInputStream;
