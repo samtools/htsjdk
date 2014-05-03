@@ -41,7 +41,7 @@
     <property name="javac.debug" value="true"/>
 
     <!-- Get GIT hash, if available, otherwise leave it blank.  -->
-    <exec executable="git" outputproperty="git.revision_stamp" failifexecutionfails="true" errorproperty="">
+    <exec executable="git" outputproperty="repository.revision" failifexecutionfails="true" errorproperty="">
         <arg value="log"/>
         <arg value="-1"/>
         <arg value="--pretty=format:%H_%at"/>
@@ -198,7 +198,7 @@
         <jar destfile="${dist}/htsjdk-${sam-version}.jar" compress="no">
             <fileset dir="${classes}" includes ="htsjdk/samtools/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/tribble/**/*.*"/>
-            <fileset dir="${classes}" includes="htsjdk/tribble/**/*.*"/>
+            <fileset dir="${classes}" includes="htsjdk/variant/**/*.*"/>
             <manifest>
                 <attribute name="Implementation-Version" value="${hts-version}(${repository.revision})"/>
                 <attribute name="Implementation-Vendor" value="Broad Institute"/>
@@ -214,8 +214,8 @@
                 sourcepath="${src}"
                 destdir="javadoc"
                 packagenames="htsjdk.samtools.*, htsjdk.variant.*, htsjdk.tribble.*"
-                windowtitle="SAM JDK API Documentation"
-                doctitle="&lt;h1&gt;SAM JDK API Documentation&lt;/h1&gt;"
+                windowtitle="HTS JDK API Documentation"
+                doctitle="&lt;h1&gt;HTS JDK API Documentation&lt;/h1&gt;"
                 author="true"
                 protected="true"
                 use="true"
