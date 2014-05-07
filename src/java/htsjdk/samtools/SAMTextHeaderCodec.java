@@ -57,7 +57,7 @@ public class SAMTextHeaderCodec {
     private final StringBuilder textHeader = new StringBuilder();
 
     // For error reporting when parsing
-    private SAMFileReader.ValidationStringency validationStringency = SAMFileReader.ValidationStringency.SILENT;
+    private ValidationStringency validationStringency = ValidationStringency.SILENT;
 
     // These attributes are populated when generating text
     private BufferedWriter writer;
@@ -225,7 +225,7 @@ public class SAMTextHeaderCodec {
 
     private void reportErrorParsingLine(String reason, final SAMValidationError.Type type, final Throwable nestedException) {
         reason = "Error parsing SAM header. " + reason + ". Line:\n" + mCurrentLine;
-        if (validationStringency != SAMFileReader.ValidationStringency.STRICT) {
+        if (validationStringency != ValidationStringency.STRICT) {
             final SAMValidationError error = new SAMValidationError(type, reason, null, mReader.getLineNumber());
             error.setSource(mSource);
             mFileHeader.addValidationError(error);
@@ -459,7 +459,7 @@ public class SAMTextHeaderCodec {
         }
     }
 
-    public void setValidationStringency(final SAMFileReader.ValidationStringency validationStringency) {
+    public void setValidationStringency(final ValidationStringency validationStringency) {
         if (validationStringency == null) {
             throw new IllegalArgumentException("null validationStringency not allowed");
         }

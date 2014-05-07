@@ -235,15 +235,15 @@ public class BAMFileIndexTest
     public void testMultiIntervalQuery(final boolean contained) {
         final List<String> referenceNames = getReferenceNames(BAM_FILE);
 
-        final SAMFileReader.QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random());
+        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random());
         final Set<SAMRecord> multiIntervalRecords = new HashSet<SAMRecord>();
         final Set<SAMRecord> singleIntervalRecords = new HashSet<SAMRecord>();
         final SAMFileReader reader = new SAMFileReader(BAM_FILE);
-        for (final SAMFileReader.QueryInterval interval : intervals) {
+        for (final QueryInterval interval : intervals) {
             consumeAll(singleIntervalRecords, reader.query(referenceNames.get(interval.referenceIndex), interval.start, interval.end, contained));
         }
 
-        final SAMFileReader.QueryInterval[] optimizedIntervals = SAMFileReader.QueryInterval.optimizeIntervals(intervals);
+        final QueryInterval[] optimizedIntervals = QueryInterval.optimizeIntervals(intervals);
         consumeAll(multiIntervalRecords, reader.query(optimizedIntervals, contained));
         final Iterator<SAMRecord> singleIntervalRecordIterator = singleIntervalRecords.iterator();
         boolean failed = false;
@@ -332,8 +332,8 @@ public class BAMFileIndexTest
 
     private void runRandomTest(final File bamFile, final int count, final Random generator) {
         final List<String> referenceNames = getReferenceNames(bamFile);
-        final SAMFileReader.QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), count, generator);
-        for (final SAMFileReader.QueryInterval interval : intervals) {
+        final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), count, generator);
+        for (final QueryInterval interval : intervals) {
             final String refName = referenceNames.get(interval.referenceIndex);
             final int startPos = interval.start;
             final int endPos = interval.end;
@@ -349,8 +349,8 @@ public class BAMFileIndexTest
         }
     }
 
-    private SAMFileReader.QueryInterval[] generateRandomIntervals(final int numReferences, final int count, final Random generator) {
-        final SAMFileReader.QueryInterval[] intervals = new SAMFileReader.QueryInterval[count];
+    private QueryInterval[] generateRandomIntervals(final int numReferences, final int count, final Random generator) {
+        final QueryInterval[] intervals = new QueryInterval[count];
         final int maxCoordinate = 10000000;
         for (int i = 0; i < count; i++) {
             final int referenceIndex = generator.nextInt(numReferences);
@@ -358,7 +358,7 @@ public class BAMFileIndexTest
             final int coord2 = generator.nextInt(maxCoordinate+1);
             final int startPos = Math.min(coord1, coord2);
             final int endPos = Math.max(coord1, coord2);
-            intervals[i] = new SAMFileReader.QueryInterval(referenceIndex, startPos, endPos);
+            intervals[i] = new QueryInterval(referenceIndex, startPos, endPos);
         }
 
         return intervals;

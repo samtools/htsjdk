@@ -23,23 +23,75 @@
  */
 package htsjdk.samtools.example;
 
-import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.seekablestream.SeekableStream;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class ExampleSamUsage {
+    public static SeekableStream myIndexSeekableStream() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** Example usages of {@link htsjdk.samtools.SamReaderFactory} */
+    public void openSamExamples() throws MalformedURLException {
+        /**
+         * Simplest case
+         */
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File("/my.bam"));
+
+        /**
+         * With different reader options
+         */
+        final SamReader readerFromConfiguredFactory =
+                SamReaderFactory.make()
+                        .enable(SamReaderFactory.Option.DONT_MEMORY_MAP_INDEX)
+                        .validationStringency(ValidationStringency.SILENT)
+                        .samRecordFactory(DefaultSAMRecordFactory.getInstance())
+                        .open(new File("/my.bam"));
+
+        /**
+         * With a more complicated source 
+         */
+        final SamReader complicatedReader =
+                SamReaderFactory.makeDefault()
+                        .open(
+                                SamInputResource.of(new URL("http://broadinstitute.org/my.bam")).index(myIndexSeekableStream())
+                        );
+
+        /**
+         * Broken down
+         */
+        final SamReaderFactory factory =
+                SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.VALIDATE_CRC_CHECKSUMS).validationStringency(ValidationStringency.LENIENT);
+
+        final SamInputResource resource = SamInputResource.of(new File("/my.bam")).index(new URL("http://broadinstitute.org/my.bam.bai"));
+
+        final SamReader myReader = factory.open(resource);
+
+        for (final SAMRecord samRecord : myReader) {
+            System.err.print(samRecord);
+        }
+
+    }
+
     /**
      * Read a SAM or BAM file, convert each read name to upper case, and write a new
      * SAM or BAM file.
      */
-    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile) {
+    public void convertReadNamesToUpperCase(final File inputSamOrBamFile, final File outputSamOrBamFile) throws IOException {
 
-        // Open the input file.  Automatically detects whether input is SAM or BAM
-        // and delegates to a reader implementation for the appropriate format.
-        final SAMFileReader inputSam = new SAMFileReader(inputSamOrBamFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(inputSamOrBamFile);
 
         // makeSAMorBAMWriter() writes a file in SAM text or BAM binary format depending
         // on the file extension, which must be either .sam or .bam.
@@ -51,16 +103,16 @@ public class ExampleSamUsage {
         // can be written to the output file directly rather than being written to a temporary file
         // and sorted after all records have been sent to outputSam.
 
-        final SAMFileWriter outputSam = new SAMFileWriterFactory().makeSAMOrBAMWriter(inputSam.getFileHeader(),
+        final SAMFileWriter outputSam = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(),
                 true, outputSamOrBamFile);
 
-        for (final SAMRecord samRecord : inputSam) {
+        for (final SAMRecord samRecord : reader) {
             // Convert read name to upper case.
             samRecord.setReadName(samRecord.getReadName().toUpperCase());
             outputSam.addAlignment(samRecord);
         }
 
         outputSam.close();
-        inputSam.close();
+        reader.close();
     }
 }

@@ -28,6 +28,7 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import org.apache.tools.bzip2.CBZip2InputStream;
 import org.apache.tools.bzip2.CBZip2OutputStream;
@@ -37,6 +38,13 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.URL;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -69,10 +77,11 @@ public class IOUtil {
     /**
      * @deprecated Use Defaults.NON_ZERO_BUFFER_SIZE instead.
      */
-    @Deprecated public static final int STANDARD_BUFFER_SIZE = Defaults.NON_ZERO_BUFFER_SIZE;
+    @Deprecated
+    public static final int STANDARD_BUFFER_SIZE = Defaults.NON_ZERO_BUFFER_SIZE;
 
-    public static final long ONE_GB   = 1024 * 1024 * 1024;
-    public static final long TWO_GBS  = 2 * ONE_GB;
+    public static final long ONE_GB = 1024 * 1024 * 1024;
+    public static final long TWO_GBS = 2 * ONE_GB;
     public static final long FIVE_GBS = 5 * ONE_GB;
 
     /** Possible extensions for VCF files and related formats. */
@@ -80,6 +89,7 @@ public class IOUtil {
 
     /**
      * Wrap the given stream in a BufferedInputStream, if it isn't already wrapper
+     *
      * @param stream stream to be wrapped
      * @return A BufferedInputStream wrapping stream, or stream itself if stream instanceof BufferedInputStream.
      */
@@ -140,14 +150,18 @@ public class IOUtil {
             throw new RuntimeIOException(e);
         }
     }
-    
+
+    public static SeekableStream maybeBufferedSeekableStream(final URL url) {
+        return maybeBufferedSeekableStream(new SeekableHTTPStream(url));
+    }
+
     /**
      * @return If Defaults.BUFFER_SIZE > 0, wrap is in BufferedInputStream, else return is itself.
      */
     public static InputStream maybeBufferInputStream(final InputStream is) {
         return maybeBufferInputStream(is, Defaults.BUFFER_SIZE);
     }
-    
+
     /**
      * @return If bufferSize > 0, wrap is in BufferedInputStream, else return is itself.
      */
@@ -177,6 +191,7 @@ public class IOUtil {
 
     /**
      * Delete a list of files, and write a warning message if one could not be deleted.
+     *
      * @param files Files to be deleted.
      */
     public static void deleteFiles(final File... files) {
@@ -213,8 +228,8 @@ public class IOUtil {
                                    final File[] tmpDirs, final long minBytesFree) throws IOException {
         File f = null;
 
-        for (int i=0; i<tmpDirs.length; ++i) {
-            if ( i == tmpDirs.length-1 || tmpDirs[i].getUsableSpace() > minBytesFree) {
+        for (int i = 0; i < tmpDirs.length; ++i) {
+            if (i == tmpDirs.length - 1 || tmpDirs[i].getUsableSpace() > minBytesFree) {
                 f = File.createTempFile(prefix, suffix, tmpDirs[i]);
                 f.deleteOnExit();
                 break;
