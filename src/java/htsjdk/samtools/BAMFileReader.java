@@ -960,7 +960,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     /**
      * Type returned by BAMIteratorFilter that tell BAMQueryFilteringIterator how to handle each SAMRecord.
      */
-    private enum FilteringIteratorState {
+    public enum FilteringIteratorState {
         MATCHES_FILTER, STOP_ITERATION, CONTINUE_ITERATION
 
     }
