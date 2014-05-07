@@ -36,9 +36,8 @@ public class BamFileIoUtils {
      * @param createIndex Whether or not to create an index file for the new BAM
      */
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
-        // TODO: In a future world where IoUtil and IOUtil are merged, de-comment these
-//        IoUtil.assertFileIsReadable(inputFile);
-//        IoUtil.assertFileIsWritable(outputFile);
+        IOUtil.assertFileIsReadable(inputFile);
+        IOUtil.assertFileIsWritable(outputFile);
 
         try {
             BlockCompressedInputStream.assertNonDefectiveFile(inputFile);
@@ -121,7 +120,12 @@ public class BamFileIoUtils {
         try {
             OutputStream out = new FileOutputStream(output);
             if (createMd5) out   = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
-            if (createIndex) out = new StreamInflatingIndexingOutputStream(out, new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix));
+            File indexFile = null;
+            if (createIndex) {
+                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix);
+                out = new StreamInflatingIndexingOutputStream(out, indexFile);
+            }
+
             boolean isFirstFile = true;
 
             for (final File f : bams) {
@@ -132,6 +136,15 @@ public class BamFileIoUtils {
             // And lastly add the Terminator block and close up
             out.write(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK);
             out.close();
+
+            // It is possible that the modified time on the index file is ever so slightly older than the original BAM file
+            // and this makes ValidateSamFile unhappy.
+            if (createIndex && (output.lastModified() > indexFile.lastModified())) {
+                final boolean success = indexFile.setLastModified(System.currentTimeMillis());
+                if (!success) {
+                    System.err.print(String.format("Index file is older than BAM file for %s and unable to resolve this", output.getAbsolutePath()));
+                }
+            }
         }
         catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
