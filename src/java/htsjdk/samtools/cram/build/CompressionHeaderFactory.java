@@ -44,6 +44,7 @@ import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.util.Log;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -53,8 +54,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import net.sf.picard.util.Log;
 
 public class CompressionHeaderFactory {
 	private static final Charset charset = Charset.forName("US-ASCII");

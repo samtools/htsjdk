@@ -29,12 +29,11 @@ import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CramRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import net.sf.picard.util.Log;
 
 public class CramNormalizer {
 	private SAMFileHeader header;

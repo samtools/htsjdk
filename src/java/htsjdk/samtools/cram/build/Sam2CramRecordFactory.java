@@ -35,6 +35,7 @@ import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.mask.RefMaskUtils;
 import htsjdk.samtools.cram.structure.CramRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
+import htsjdk.samtools.util.Log;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -45,8 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-
-import net.sf.picard.util.Log;
 
 public class Sam2CramRecordFactory {
 

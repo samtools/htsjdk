@@ -26,6 +26,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 
 import java.io.BufferedInputStream;
@@ -38,10 +39,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.sf.picard.util.Log;
-
-public class SAMIterator implements SAMRecordIterator {
-	private static Log log = Log.getInstance(SAMIterator.class);
+public class SAMIteratorForCRAM implements SAMRecordIterator {
+	private static Log log = Log.getInstance(SAMIteratorForCRAM.class);
 	private InputStream is;
 	private CramHeader cramHeader;
 	private ArrayList<SAMRecord> records;
@@ -71,7 +70,7 @@ public class SAMIterator implements SAMRecordIterator {
 	private long samRecordIndex;
 	private ArrayList<CramRecord> cramRecords;
 
-	public SAMIterator(InputStream is, ReferenceSource referenceSource)
+	public SAMIteratorForCRAM(InputStream is, ReferenceSource referenceSource)
 			throws IOException {
 		this.is = is;
 		this.referenceSource = referenceSource;
@@ -219,7 +218,7 @@ public class SAMIterator implements SAMRecordIterator {
 			try {
 				FileInputStream fis = new FileInputStream(cramFile);
 				BufferedInputStream bis = new BufferedInputStream(fis);
-				SAMIterator iterator = new SAMIterator(bis, referenceSource);
+				SAMIteratorForCRAM iterator = new SAMIteratorForCRAM(bis, referenceSource);
 				iterator.setValidationStringency(validationStringency);
 				return iterator;
 			} catch (IOException e) {

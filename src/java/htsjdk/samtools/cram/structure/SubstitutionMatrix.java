@@ -16,11 +16,10 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.io.IOUtils;
+import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
 import java.util.Comparator;
-
-import net.sf.picard.util.Log;
 
 public class SubstitutionMatrix {
 	public static final byte[] BASES = new byte[] { 'A', 'C', 'G', 'T', 'N' };

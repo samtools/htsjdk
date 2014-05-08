@@ -23,6 +23,7 @@ import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,8 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
-import net.sf.picard.util.Log;
 
 public class ReferenceSource {
 	private static Log log = Log.getInstance(ReferenceSource.class);

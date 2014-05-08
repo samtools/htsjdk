@@ -16,13 +16,12 @@
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.common.Utils;
+import htsjdk.samtools.util.Log;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
-
-import net.sf.picard.util.Log;
 
 public class Slice {
 	private static final Log log = Log.getInstance(Slice.class);

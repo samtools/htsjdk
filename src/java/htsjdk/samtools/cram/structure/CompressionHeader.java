@@ -17,6 +17,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.encoding.NullEncoding;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,8 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import net.sf.picard.util.Log;
 
 public class CompressionHeader {
 	private static final String RN_readNamesIncluded = "RN" ;

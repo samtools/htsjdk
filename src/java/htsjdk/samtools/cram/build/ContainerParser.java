@@ -26,6 +26,8 @@ import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramRecord;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.Log.LogLevel;
 
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
@@ -36,9 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import net.sf.picard.util.Log;
-import net.sf.picard.util.Log.LogLevel;
 
 public class ContainerParser {
 	private static Log log = Log.getInstance(ContainerParser.class);

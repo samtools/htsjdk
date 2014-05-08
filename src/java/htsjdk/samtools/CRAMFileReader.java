@@ -153,11 +153,11 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (it != null && file == null)
 			return it;
 		try {
-			SAMIterator si = null;
+			SAMIteratorForCRAM si = null;
 			if (file != null)
-				si = new SAMIterator(new FileInputStream(file), referenceSource);
+				si = new SAMIteratorForCRAM(new FileInputStream(file), referenceSource);
 			else
-				si = new SAMIterator(is, referenceSource);
+				si = new SAMIteratorForCRAM(is, referenceSource);
 
 			si.setValidationStringency(validationStringency);
 			header = si.getCramHeader();
@@ -403,10 +403,10 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} else if (is instanceof SeekableStream)
 			s = (SeekableStream) is;
 
-		SAMIterator si = null;
+		SAMIteratorForCRAM si = null;
 		try {
 			s.seek(0);
-			si = new SAMIterator(s, referenceSource);
+			si = new SAMIteratorForCRAM(s, referenceSource);
 			si.setValidationStringency(validationStringency);
 			it = si;
 		} catch (IOException e) {
@@ -454,10 +454,10 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} else if (is instanceof SeekableStream)
 			s = (SeekableStream) is;
 
-		SAMIterator si = null;
+		SAMIteratorForCRAM si = null;
 		try {
 			s.seek(0);
-			si = new SAMIterator(s, referenceSource);
+			si = new SAMIteratorForCRAM(s, referenceSource);
 			si.setValidationStringency(validationStringency);
 			s.seek(startOfLastLinearBin);
 			it = si;

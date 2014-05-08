@@ -37,6 +37,7 @@ import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.UserPasswordInput;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -61,8 +62,6 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import net.sf.picard.util.Log;
 
 public class CramIO {
 	public static int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
