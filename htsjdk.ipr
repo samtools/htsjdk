@@ -263,6 +263,7 @@
       <value>
         <option name="GENERATE_FINAL_LOCALS" value="true" />
         <option name="GENERATE_FINAL_PARAMETERS" value="true" />
+        <option name="USE_FQ_CLASS_NAMES_IN_JAVADOC" value="false" />
         <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
         <option name="RIGHT_MARGIN" value="140" />
         <option name="JD_DO_NOT_WRAP_ONE_LINE_COMMENTS" value="true" />
