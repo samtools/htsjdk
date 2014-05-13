@@ -55,12 +55,18 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     private final IndexFileBuffer mIndexBuffer;
 
     private SAMSequenceDictionary mBamDictionary = null;
+    
+    final int [] sequenceIndexes;
 
     protected AbstractBAMFileIndex(
         final SeekableStream stream, final SAMSequenceDictionary dictionary)
     {
         mBamDictionary = dictionary;
         mIndexBuffer = new IndexStreamBuffer(stream);
+        
+        seek(4);
+        sequenceIndexes = new int[readInteger() + 1];
+        Arrays.fill(sequenceIndexes, -1);
     }
 
     protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
@@ -79,6 +85,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             throw new RuntimeException("Invalid file header in BAM index " + file +
                                        ": " + new String(buffer));
         }
+        
+        sequenceIndexes = new int[readInteger() + 1];
+        Arrays.fill(sequenceIndexes, -1);
     }
 
     /**
@@ -388,6 +397,12 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     }
 
     private void skipToSequence(final int sequenceIndex) {
+    	//Use sequence position cache if available
+    	if(sequenceIndexes[sequenceIndex] != -1){
+    		seek(sequenceIndexes[sequenceIndex]);
+    		return;
+    	}
+    	
         for (int i = 0; i < sequenceIndex; i++) {
             // System.out.println("# Sequence TID: " + i);
             final int nBins = readInteger();
@@ -402,6 +417,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             // System.out.println("# nLinearBins: " + nLinearBins);
             skipBytes(8 * nLinearBins);
         }
+        
+        //Update sequence position cache
+        sequenceIndexes[sequenceIndex] = position();
     }
 
     private void readBytes(final byte[] bytes) {
@@ -423,6 +441,10 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     private void seek(final int position) {
         mIndexBuffer.seek(position);
     }
+    
+    private int position(){
+    	return mIndexBuffer.position();
+    }
 
     private abstract static class IndexFileBuffer {
         abstract void readBytes(final byte[] bytes);
@@ -430,6 +452,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         abstract long readLong();
         abstract void skipBytes(final int count);
         abstract void seek(final int position);
+        abstract int position();
         abstract void close();
     }
 
@@ -453,26 +476,37 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             }
         }
 
+        @Override
         void readBytes(final byte[] bytes) {
             mFileBuffer.get(bytes);
         }
 
+        @Override
         int readInteger() {
             return mFileBuffer.getInt();
         }
 
+        @Override
         long readLong() {
             return mFileBuffer.getLong();
         }
 
+        @Override
         void skipBytes(final int count) {
             mFileBuffer.position(mFileBuffer.position() + count);
         }
 
+        @Override
         void seek(final int position) {
             mFileBuffer.position(position);
         }
+        
+        @Override
+		int position() {
+			return mFileBuffer.position();
+		}
 
+        @Override
         void close() {
             mFileBuffer = null;
         }
@@ -516,6 +550,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             }
         }
 
+        @Override
         void readBytes(final byte[] bytes) {
             int resultOffset = 0;
             int resultLength = bytes.length;
@@ -533,6 +568,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             }
         }
 
+        @Override
         int readInteger() {
             // This takes advantage of the fact that integers in BAM index files are always 4-byte aligned.
             loadPage(mFilePointer);
@@ -544,6 +580,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                    ((mBuffer[pageOffset + 3] & 0xFF) << 24));
         }
 
+        @Override
         long readLong() {
             // BAM index files are always 4-byte aligned, but not necessrily 8-byte aligned.
             // So, rather than fooling with complex page logic we simply read the long in two 4-byte chunks.
@@ -552,14 +589,22 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             return ((upper << 32) | (lower & 0xFFFFFFFFL));
         }
 
+        @Override
         void skipBytes(final int count) {
             mFilePointer += count;
         }
         
+        @Override
         void seek(final int position) {
             mFilePointer = position;
         }
+        
+        @Override
+		int position() {
+			return mFilePointer;
+		}
 
+        @Override
         void close() {
             mFilePointer = 0;
             mCurrentPage = INVALID_PAGE;
@@ -599,20 +644,26 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             tmpBuf.order(ByteOrder.LITTLE_ENDIAN);
         }
 
-        @Override public void close() {
+        @Override
+        public void close() {
             try { in.close(); }
             catch (final IOException e) { throw new RuntimeIOException(e); }
         }
-        @Override public void readBytes(final byte[] bytes) {
+        
+        @Override
+        public void readBytes(final byte[] bytes) {
             try { in.read(bytes); }
             catch (final IOException e) { throw new RuntimeIOException(e); }
         }
-        @Override public void seek(final int position) {
+        
+        @Override
+        public void seek(final int position) {
             try { in.seek(position); }
             catch (final IOException e) { throw new RuntimeIOException(e); }
         }
 
-        @Override public int readInteger() {
+        @Override
+        public int readInteger() {
            try {
                final int r = in.read(tmpBuf.array(), 0, 4);
                if (r != 4)
@@ -620,7 +671,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
            } catch (final IOException e) { throw new RuntimeIOException(e); }
            return tmpBuf.getInt(0);
         }
-        @Override public long readLong() {
+        
+        @Override
+        public long readLong() {
             try {
                 final int r = in.read(tmpBuf.array(), 0, 8);
                 if (r != 8)
@@ -628,7 +681,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             } catch (final IOException e) { throw new RuntimeIOException(e); }
             return tmpBuf.getLong(0);
         }
-        @Override public void skipBytes(final int count) {
+        
+        @Override
+        public void skipBytes(final int count) {
             try {
                 for (int s = count; s > 0;) {
                     final int skipped = (int)in.skip(s);
@@ -638,5 +693,12 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                 }
             } catch (final IOException e) { throw new RuntimeIOException(e); }
         }
+        
+        @Override
+        public int position() {
+			try {
+				return (int) in.position();
+			} catch (final IOException e) { throw new RuntimeIOException(e); }
+		}
     }
 }
