@@ -37,6 +37,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -275,10 +276,11 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         for (int binNumber = 0; binNumber < binCount; binNumber++) {
             final int indexBin = readInteger();
             final int nChunks = readInteger();
-            final List<Chunk> chunks = new ArrayList<Chunk>(nChunks);
+            List<Chunk> chunks = null;
             // System.out.println("# bin[" + i + "] = " + indexBin + ", nChunks = " + nChunks);
             Chunk lastChunk = null;
             if (regionBins.get(indexBin)) {
+            	chunks = new ArrayList<Chunk>(nChunks);
                 for (int ci = 0; ci < nChunks; ci++) {
                     final long chunkBegin = readLong();
                     final long chunkEnd = readLong();
@@ -298,6 +300,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                 continue; // don't create a Bin
             } else {
                 skipBytes(16 * nChunks);
+                chunks = Collections.emptyList();
             }
             final Bin bin = new Bin(referenceSequence, indexBin);
             bin.setChunkList(chunks);
