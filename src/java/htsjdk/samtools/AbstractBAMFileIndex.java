@@ -287,22 +287,20 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                     lastChunk = new Chunk(chunkBegin, chunkEnd);
                     chunks.add(lastChunk);
                 }
-            } else {
-            	chunks = Collections.emptyList();
-            	if (indexBin == GenomicIndexUtil.MAX_BINS) {
-                    // meta data - build the bin so that the count of bins is correct;
-                    // but don't attach meta chunks to the bin, or normal queries will be off
-                    for (int ci = 0; ci < nChunks; ci++) {
-                        final long chunkBegin = readLong();
-                        final long chunkEnd = readLong();
-                        lastChunk = new Chunk(chunkBegin, chunkEnd);
-                        metaDataChunks.add(lastChunk);
-                    }
-                    metaDataSeen = true;
-                    continue; // don't create a Bin
-                } else {
-                    skipBytes(16 * nChunks);
+            } else if (indexBin == GenomicIndexUtil.MAX_BINS) {
+                // meta data - build the bin so that the count of bins is correct;
+                // but don't attach meta chunks to the bin, or normal queries will be off
+                for (int ci = 0; ci < nChunks; ci++) {
+                    final long chunkBegin = readLong();
+                    final long chunkEnd = readLong();
+                    lastChunk = new Chunk(chunkBegin, chunkEnd);
+                    metaDataChunks.add(lastChunk);
                 }
+                metaDataSeen = true;
+                continue; // don't create a Bin
+            } else {
+                skipBytes(16 * nChunks);
+                chunks = Collections.emptyList();
             }
             final Bin bin = new Bin(referenceSequence, indexBin);
             bin.setChunkList(chunks);
