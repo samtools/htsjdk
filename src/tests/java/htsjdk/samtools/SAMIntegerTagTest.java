@@ -189,7 +189,7 @@ public class SAMIntegerTagTest {
     @Test
     public void testBadBamLenient() {
         final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, "variousAttributes.bam"), true);
-        reader.setValidationStringency(SAMFileReader.ValidationStringency.LENIENT);
+        reader.setValidationStringency(ValidationStringency.LENIENT);
         final SAMRecord rec = reader.iterator().next();
         final Map<String, Number> expectedTags = new HashMap<String, Number>();
         expectedTags.put("SB", -128);

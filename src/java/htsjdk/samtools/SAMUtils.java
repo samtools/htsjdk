@@ -443,15 +443,15 @@ public final class SAMUtils
      */
     static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                         final long samRecordIndex,
-                                        final SAMFileReader.ValidationStringency validationStringency) {
+                                        final ValidationStringency validationStringency) {
         if (validationErrors != null && validationErrors.size() > 0) {
             for (final SAMValidationError validationError : validationErrors) {
                 validationError.setRecordNumber(samRecordIndex);
             }
-            if (validationStringency == SAMFileReader.ValidationStringency.STRICT) {
+            if (validationStringency == ValidationStringency.STRICT) {
                 throw new SAMFormatException("SAM validation error: " + validationErrors.get(0));
             }
-            else if (validationStringency == SAMFileReader.ValidationStringency.LENIENT) {
+            else if (validationStringency == ValidationStringency.LENIENT) {
                 for (final SAMValidationError error : validationErrors) {
                     System.err.println("Ignoring SAM validation error: " + error);
                 }
@@ -460,11 +460,11 @@ public final class SAMUtils
     }
 
     public static void processValidationError(final SAMValidationError validationError,
-                                       final SAMFileReader.ValidationStringency validationStringency) {
-        if (validationStringency == SAMFileReader.ValidationStringency.STRICT) {
+                                       final ValidationStringency validationStringency) {
+        if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException("SAM validation error: " + validationError);
         }
-        else if (validationStringency == SAMFileReader.ValidationStringency.LENIENT) {
+        else if (validationStringency == ValidationStringency.LENIENT) {
             System.err.println("Ignoring SAM validation error: " + validationError);
         }
         
@@ -752,7 +752,7 @@ public final class SAMUtils
         Cigar mateCigar = null;
         if (mateCigarString != null) {
             mateCigar = TextCigarCodec.getSingleton().decode(mateCigarString);
-            if (withValidation && rec.getValidationStringency() != SAMFileReader.ValidationStringency.SILENT) {
+            if (withValidation && rec.getValidationStringency() != ValidationStringency.SILENT) {
                 final List<AlignmentBlock> alignmentBlocks = getAlignmentBlocks(mateCigar, rec.getMateAlignmentStart(), "mate cigar");
                 SAMUtils.processValidationErrors(validateCigar(rec, mateCigar, rec.getMateReferenceIndex(), alignmentBlocks, -1, "Mate CIGAR"), -1L, rec.getValidationStringency());
             }
@@ -887,7 +887,7 @@ public final class SAMUtils
     public static List<SAMValidationError> validateMateCigar(final SAMRecord rec, final long recordNumber) {
         List<SAMValidationError> ret = null;
 
-        if (rec.getValidationStringency() != SAMFileReader.ValidationStringency.SILENT) {
+        if (rec.getValidationStringency() != ValidationStringency.SILENT) {
             if (rec.getReadPairedFlag() && !rec.getMateUnmappedFlag()) {      // The mateCigar will be defined if the mate is mapped
                 if (getMateCigarString(rec) != null) {
                     ret = SAMUtils.validateCigar(rec, getMateCigar(rec), rec.getMateReferenceIndex(), getMateAlignmentBlocks(rec), recordNumber, "Mate CIGAR");

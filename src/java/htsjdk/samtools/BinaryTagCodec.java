@@ -267,7 +267,7 @@ class BinaryTagCodec {
      * @param length How many bytes in binaryRep are tag storage.
      */
     static SAMBinaryTagAndValue readTags(final byte[] binaryRep, final int offset,
-                                         final int length, final SAMFileReader.ValidationStringency validationStringency) {
+                                         final int length, final ValidationStringency validationStringency) {
         final ByteBuffer byteBuffer = ByteBuffer.wrap(binaryRep, offset, length);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
@@ -312,7 +312,7 @@ class BinaryTagCodec {
      * @return Value in in-memory Object form.
      */
     private static  Object readSingleValue(final byte tagType, final ByteBuffer byteBuffer,
-                                           final SAMFileReader.ValidationStringency validationStringency) {
+                                           final ValidationStringency validationStringency) {
         switch (tagType) {
             case 'Z':
                 return readNullTerminatedString(byteBuffer);
@@ -358,7 +358,7 @@ class BinaryTagCodec {
      * @return CVO containing the value in in-memory Object form, and a flag indicating whether it is unsigned or not.
      */
     private static TagValueAndUnsignedArrayFlag readArray(final ByteBuffer byteBuffer,
-                                                          final SAMFileReader.ValidationStringency validationStringency) {
+                                                          final ValidationStringency validationStringency) {
         final byte arrayType = byteBuffer.get();
         final boolean isUnsigned = Character.isUpperCase(arrayType);
         final int length = byteBuffer.getInt();

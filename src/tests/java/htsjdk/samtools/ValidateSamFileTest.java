@@ -56,8 +56,8 @@ public class ValidateSamFileTest {
 
     @Test
     public void testValidSamFile() throws Exception {
-        final SAMFileReader.ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
-        SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        final ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
+        SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
         try {
             final SAMFileReader samReader = new SAMFileReader(new File(TEST_DATA_DIR, "valid.sam"));
             final Histogram<String> results = executeValidation(samReader, null);
@@ -361,8 +361,8 @@ public class ValidateSamFileTest {
 
     @Test
     public void testHeaderValidation() throws Exception {
-        final SAMFileReader.ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
-        SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        final ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
+        SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
         try {
             final SAMFileReader samReader = new SAMFileReader(new File(TEST_DATA_DIR, "buggyHeader.sam"));
             final Histogram<String> results = executeValidation(samReader, null);
@@ -375,8 +375,8 @@ public class ValidateSamFileTest {
 
     @Test
     public void testPlatformMissing() throws Exception {
-        final SAMFileReader.ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
-        SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        final ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
+        SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
         try {
             final SAMFileReader samReader = new SAMFileReader(new File(TEST_DATA_DIR, "missing_platform_unit.sam"));
             final Histogram<String> results = executeValidation(samReader, null);
@@ -388,8 +388,8 @@ public class ValidateSamFileTest {
 
     @Test
     public void testDuplicateRGIDs() throws Exception {
-        final SAMFileReader.ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
-        SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        final ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
+        SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
         try {
             final SAMFileReader samReader = new SAMFileReader(new File(TEST_DATA_DIR, "duplicate_rg.sam"));
             final Histogram<String> results = executeValidation(samReader, null);
@@ -401,8 +401,8 @@ public class ValidateSamFileTest {
 
     @Test
     public void testIndexFileValidation() throws Exception {
-        final SAMFileReader.ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
-        SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        final ValidationStringency saveStringency = SAMFileReader.getDefaultValidationStringency();
+        SAMFileReader.setDefaultValidationStringency(ValidationStringency.SILENT);
         try {
             final SAMFileReader samReader = new SAMFileReader(new File(TEST_DATA_DIR, "bad_index.bam"));
             samReader.enableIndexCaching(true);

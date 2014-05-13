@@ -24,7 +24,7 @@
 
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;

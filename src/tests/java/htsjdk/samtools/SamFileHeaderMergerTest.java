@@ -85,7 +85,7 @@ public class SamFileHeaderMergerTest {
             IOUtil.assertFileIsReadable(inFile);
             final SAMFileReader in = new SAMFileReader(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
-            in.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+            in.setValidationStringency(ValidationStringency.SILENT);
             readers.add(in);
             headers.add(in.getFileHeader());
         }
@@ -162,7 +162,7 @@ public class SamFileHeaderMergerTest {
             IOUtil.assertFileIsReadable(inFile);
             final SAMFileReader in = new SAMFileReader(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
-            in.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+            in.setValidationStringency(ValidationStringency.SILENT);
             readers.add(in);
             headers.add(in.getFileHeader());
         }

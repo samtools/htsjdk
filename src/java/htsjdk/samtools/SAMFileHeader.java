@@ -348,7 +348,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
     public final SAMFileHeader clone() {
         final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-        codec.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        codec.setValidationStringency(ValidationStringency.SILENT);
         final StringWriter stringWriter = new StringWriter();
         codec.encode(stringWriter, this);
         return codec.decode(new StringLineReader(stringWriter.toString()), "SAMFileHeader.clone");

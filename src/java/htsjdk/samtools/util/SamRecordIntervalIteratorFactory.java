@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.IntervalFilter;
@@ -66,7 +67,7 @@ public class SamRecordIntervalIteratorFactory {
             final IntervalFilter intervalFilter = new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
             return new StopAfterFilteringIterator(samReader.iterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
         } else {
-            final SAMFileReader.QueryInterval[] queryIntervals = new SAMFileReader.QueryInterval[uniqueIntervals.size()];
+            final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
             for (int i = 0; i < queryIntervals.length; ++i) {
                 final Interval inputInterval = uniqueIntervals.get(i);
                 queryIntervals[i] = samReader.makeQueryInterval(inputInterval.getSequence(),

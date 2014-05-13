@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 
-import htsjdk.samtools.SAMFileReader.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
@@ -65,7 +64,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     private CloseableIterator<SAMRecord> mCurrentIterator = null;
 
     // If true, all SAMRecords are fully decoded as they are read.
-    private final boolean eagerDecode;
+    private boolean eagerDecode;
 
     // For error-checking.
     private ValidationStringency mValidationStringency;
@@ -86,7 +85,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     /**
      * Add information about the origin (reader and position) to SAM records.
      */
-    private SAMFileReader mFileReader = null;
+    private SamReader mReader = null;
 
     /**
      * Prepare to read BAM from a stream (not seekable)
@@ -122,7 +121,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(file), indexFile!=null ? indexFile : findIndexFile(file), eagerDecode, file.getAbsolutePath(), validationStringency, factory);
+        this(new BlockCompressedInputStream(file), indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, file.getAbsolutePath(), validationStringency, factory);
         if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified()) {
             System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() +
                     " is older than BAM " + file.getAbsolutePath());
@@ -197,8 +196,8 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * If true, writes the source of every read into the source SAMRecords.
      * @param enabled true to write source information into each SAMRecord.
      */
-    void enableFileSource(final SAMFileReader reader, final boolean enabled) {
-        this.mFileReader = enabled ? reader : null;
+    void enableFileSource(final SamReader reader, final boolean enabled) {
+        this.mReader = enabled ? reader : null;
     }
 
     /**
@@ -229,18 +228,23 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
 
     @Override void setSAMRecordFactory(final SAMRecordFactory factory) { this.samRecordFactory = factory; }
 
+    @Override
+    public SamReader.Type type() {
+        return SamReader.Type.BAM_TYPE;
+    }
+
     /**
      * @return true if ths is a BAM file, and has an index
      */
-    protected boolean hasIndex() {
-        return (mIndexFile != null) || (mIndexStream != null);
+    public boolean hasIndex() {
+        return mIsSeekable && ((mIndexFile != null) || (mIndexStream != null));
     }
 
     /**
      * Retrieves the index for the given file type.  Ensure that the index is of the specified type.
      * @return An index of the given type.
      */
-    protected BAMIndex getIndex() {
+    public BAMIndex getIndex() {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
@@ -254,7 +258,9 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         return mIndex;
     }
 
-    void close() {
+    public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
+    
+    public void close() {
         if (mStream != null) {
             mStream.close();
         }
@@ -266,18 +272,18 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         mIndex = null;
     }
 
-    SAMFileHeader getFileHeader() {
+    public SAMFileHeader getFileHeader() {
         return mFileHeader;
     }
 
     /**
      * Set error-checking level for subsequent SAMRecord reads.
      */
-    void setValidationStringency(final SAMFileReader.ValidationStringency validationStringency) {
+    void setValidationStringency(final ValidationStringency validationStringency) {
         this.mValidationStringency = validationStringency;
     }
 
-    SAMFileReader.ValidationStringency getValidationStringency() {
+    public ValidationStringency getValidationStringency() {
         return this.mValidationStringency;
     }
 
@@ -289,7 +295,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * getIterator() begins its iteration where the last one left off.  That is the best that can be
      * done in that situation.
      */
-    CloseableIterator<SAMRecord> getIterator() {
+    public CloseableIterator<SAMRecord> getIterator() {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
@@ -308,7 +314,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
     }
 
     @Override
-    CloseableIterator<SAMRecord> getIterator(final SAMFileSpan chunks) {
+    public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan chunks) {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
@@ -331,7 +337,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * @return An unbounded pointer to the first record in the BAM file.
      */
     @Override
-    SAMFileSpan getFilePointerSpanningReads() {
+    public SAMFileSpan getFilePointerSpanningReads() {
         return new BAMFileSpan(new Chunk(mFirstRecordPointer,Long.MAX_VALUE));
     }
 
@@ -369,7 +375,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         if (referenceIndex == -1) {
             mCurrentIterator = new EmptyBamIterator();
         } else {
-            final SAMFileReader.QueryInterval[] queryIntervals = {new SAMFileReader.QueryInterval(referenceIndex, start, end)};
+            final QueryInterval[] queryIntervals = {new QueryInterval(referenceIndex, start, end)};
             mCurrentIterator = createIndexIterator(queryIntervals, contained);
         }
         return mCurrentIterator;
@@ -391,9 +397,9 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * @param contained If true, the alignments for the SAMRecords must be completely contained in the interval
      * specified by start and end.  If false, the SAMRecords need only overlap the interval.
      * @return Iterator for the matching SAMRecords
-     * @see htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
+     * @see QueryInterval#optimizeIntervals(QueryInterval[])
      */
-    CloseableIterator<SAMRecord> query(final SAMFileReader.QueryInterval[] intervals, final boolean contained) {
+    public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals, final boolean contained) {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
@@ -423,7 +429,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * @param start Alignment start sought.
      * @return Iterator for the matching SAMRecords.
      */
-    CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
+    public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
@@ -654,8 +660,8 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
             final SAMRecord next = bamRecordCodec.decode();
             final long stopCoordinate = mCompressedInputStream.getFilePointer();
 
-            if(mFileReader != null && next != null)
-                next.setFileSource(new SAMFileSource(mFileReader,new BAMFileSpan(new Chunk(startCoordinate,stopCoordinate))));
+            if(mReader != null && next != null)
+                next.setFileSource(new SAMFileSource(mReader,new BAMFileSpan(new Chunk(startCoordinate,stopCoordinate))));
 
             return next;
         }
@@ -691,13 +697,13 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * @throws java.lang.IllegalArgumentException if the intervals are not optimized
-     * @see htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
+     * @see QueryInterval#optimizeIntervals(QueryInterval[])
      */
-    private void assertIntervalsOptimized(final SAMFileReader.QueryInterval[] intervals) {
+    private void assertIntervalsOptimized(final QueryInterval[] intervals) {
         if (intervals.length == 0) return;
         for (int i = 1; i < intervals.length; ++i) {
-        final SAMFileReader.QueryInterval prev = intervals[i-1];
-        final SAMFileReader.QueryInterval thisInterval = intervals[i];
+        final QueryInterval prev = intervals[i-1];
+        final QueryInterval thisInterval = intervals[i];
             if (prev.compareTo(thisInterval) >= 0) {
                 throw new IllegalArgumentException(String.format("List of intervals is not sorted: %s >= %s", prev, thisInterval));
             }
@@ -710,7 +716,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         }
     }
 
-    private CloseableIterator<SAMRecord> createIndexIterator(final SAMFileReader.QueryInterval[] intervals,
+    private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
                                                              final boolean contained) {
 
         assertIntervalsOptimized(intervals);
@@ -719,7 +725,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         final BAMFileSpan[] inputSpans = new BAMFileSpan[intervals.length];
         final BAMIndex fileIndex = getIndex();
         for (int i = 0; i < intervals.length; ++i) {
-            final SAMFileReader.QueryInterval interval = intervals[i];
+            final QueryInterval interval = intervals[i];
             final BAMFileSpan span = fileIndex.getSpanOverlapping(interval.referenceIndex, interval.start, interval.end);
             inputSpans[i] = span;
         }
@@ -736,36 +742,6 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
         // Add some preprocessing filters for edge-case reads that don't fit into this
         // query type.
         return new BAMQueryFilteringIterator(iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
-    }
-
-
-
-
-    /**
-     * Look for BAM index file according to standard naming convention.
-     *
-     * @param dataFile BAM file name.
-     * @return Index file name, or null if not found.
-     */
-    private static File findIndexFile(final File dataFile) {
-        // If input is foo.bam, look for foo.bai
-        File indexFile;
-        final String fileName = dataFile.getName();
-        if (fileName.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION)) {
-            final String bai = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAMIndexSuffix;
-            indexFile = new File(dataFile.getParent(), bai);
-            if (indexFile.exists()) {
-                return indexFile;
-            }
-        }
-
-        // If foo.bai doesn't exist look for foo.bam.bai
-        indexFile = new File(dataFile.getParent(), dataFile.getName() + BAMIndex.BAMIndexSuffix);
-        if (indexFile.exists()) {
-            return indexFile;
-        } else {
-            return null;
-        }
     }
 
     /**
@@ -925,12 +901,12 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
      * Filters out records that do not match any of the given intervals and query type.
      */
     private class BAMQueryMultipleIntervalsIteratorFilter implements BAMIteratorFilter {
-        final SAMFileReader.QueryInterval[] intervals;
+        final QueryInterval[] intervals;
         final boolean contained;
         int intervalIndex = 0;
 
 
-        public BAMQueryMultipleIntervalsIteratorFilter(final SAMFileReader.QueryInterval[] intervals,
+        public BAMQueryMultipleIntervalsIteratorFilter(final QueryInterval[] intervals,
                                                        final boolean contained) {
             this.contained = contained;
             this.intervals = intervals;
@@ -956,7 +932,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
             return FilteringIteratorState.STOP_ITERATION;
         }
 
-        private IntervalComparison compareIntervalToRecord(final SAMFileReader.QueryInterval interval, final SAMRecord record) {
+        private IntervalComparison compareIntervalToRecord(final QueryInterval interval, final SAMRecord record) {
             // interval.end <= 0 implies the end of the reference sequence.
             final int intervalEnd = (interval.end <= 0? Integer.MAX_VALUE: interval.end);
             final int alignmentEnd;

@@ -242,7 +242,7 @@ public class BAMRecord extends SAMRecord {
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             super.initializeCigar(BinaryCigarCodec.getSingleton().decode(byteBuffer));
             mCigarDecoded = true;
-            if (getValidationStringency() != SAMFileReader.ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
+            if (getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
                 // Don't know line number, and don't want to force read name to be decoded.
                 SAMUtils.processValidationErrors(validateCigar(-1L), -1, getValidationStringency());
             }
