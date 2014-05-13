@@ -37,6 +37,7 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -275,29 +276,33 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         for (int binNumber = 0; binNumber < binCount; binNumber++) {
             final int indexBin = readInteger();
             final int nChunks = readInteger();
-            final List<Chunk> chunks = new ArrayList<Chunk>(nChunks);
+            List<Chunk> chunks = null;
             // System.out.println("# bin[" + i + "] = " + indexBin + ", nChunks = " + nChunks);
             Chunk lastChunk = null;
             if (regionBins.get(indexBin)) {
+            	chunks = new ArrayList<Chunk>(nChunks);
                 for (int ci = 0; ci < nChunks; ci++) {
                     final long chunkBegin = readLong();
                     final long chunkEnd = readLong();
                     lastChunk = new Chunk(chunkBegin, chunkEnd);
                     chunks.add(lastChunk);
                 }
-            } else if (indexBin == GenomicIndexUtil.MAX_BINS) {
-                // meta data - build the bin so that the count of bins is correct;
-                // but don't attach meta chunks to the bin, or normal queries will be off
-                for (int ci = 0; ci < nChunks; ci++) {
-                    final long chunkBegin = readLong();
-                    final long chunkEnd = readLong();
-                    lastChunk = new Chunk(chunkBegin, chunkEnd);
-                    metaDataChunks.add(lastChunk);
-                }
-                metaDataSeen = true;
-                continue; // don't create a Bin
             } else {
-                skipBytes(16 * nChunks);
+            	chunks = Collections.emptyList();
+            	if (indexBin == GenomicIndexUtil.MAX_BINS) {
+                    // meta data - build the bin so that the count of bins is correct;
+                    // but don't attach meta chunks to the bin, or normal queries will be off
+                    for (int ci = 0; ci < nChunks; ci++) {
+                        final long chunkBegin = readLong();
+                        final long chunkEnd = readLong();
+                        lastChunk = new Chunk(chunkBegin, chunkEnd);
+                        metaDataChunks.add(lastChunk);
+                    }
+                    metaDataSeen = true;
+                    continue; // don't create a Bin
+                } else {
+                    skipBytes(16 * nChunks);
+                }
             }
             final Bin bin = new Bin(referenceSequence, indexBin);
             bin.setChunkList(chunks);
