@@ -25,8 +25,10 @@ package htsjdk.samtools;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.OutputStream;
+
 
 public class SAMFileWriterFactoryTest {
 
@@ -36,7 +38,7 @@ public class SAMFileWriterFactoryTest {
         createSmallBam(new File("/dev/null"));
     }
 
-    @Test
+    @Test()
     public void ordinaryFileWriterTest() throws Exception {
         final File outputFile = File.createTempFile("tmp.", BamFileIoUtils.BAM_FILE_EXTENSION);
         outputFile.delete();
@@ -53,6 +55,29 @@ public class SAMFileWriterFactoryTest {
         Assert.assertTrue(md5File.length() > 0);
     }
 
+    @Test(description="create a BAM in memory,  should start with GZipInputStream.GZIP_MAGIC")
+    public void inMemoryBam()  throws Exception  {
+    	ByteArrayOutputStream os=new ByteArrayOutputStream();
+    	createSmallBamToOutputStream(os,true);
+    	os.flush();
+    	os.close();
+    	byte blob[]=os.toByteArray();
+        Assert.assertTrue(blob.length > 2);
+        int head = ((int) blob[0] & 0xff) | ((blob[1] << 8 ) & 0xff00 );
+        Assert.assertTrue(java.util.zip.GZIPInputStream.GZIP_MAGIC == head);
+    }
+
+    @Test(description="create a SAM in memory,  should start with '@HD'")
+    public void inMemorySam()  throws Exception  {
+    	ByteArrayOutputStream os=new ByteArrayOutputStream();
+    	createSmallBamToOutputStream(os,false);
+    	os.flush();
+    	os.close();
+    	String sam=new String(os.toByteArray());
+        Assert.assertFalse(sam.isEmpty());
+        Assert.assertTrue(sam.startsWith("@HD\t"),"SAM: bad prefix");
+    }
+    
     private void createSmallBam(final File outputFile) {
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         factory.setCreateIndex(true);
@@ -62,9 +87,31 @@ public class SAMFileWriterFactoryTest {
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         header.addSequence(new SAMSequenceRecord("chr1", 123));
         final SAMFileWriter writer = factory.makeBAMWriter(header, false, outputFile);
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-        builder.addUnmappedFragment("HiMom!");
-        for (final SAMRecord rec: builder.getRecords()) writer.addAlignment(rec);
+        fillSmallBam(writer);
         writer.close();
     }
+    
+    
+   private void createSmallBamToOutputStream(final OutputStream outputStream,boolean binary) {
+        final SAMFileWriterFactory factory = new SAMFileWriterFactory();
+        factory.setCreateIndex(false);
+        factory.setCreateMd5File(false);
+        final SAMFileHeader header = new SAMFileHeader();
+        // index only created if coordinate sorted
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 123));
+        final SAMFileWriter writer = (binary?
+        			factory.makeBAMWriter(header, false, outputStream):
+        			factory.makeSAMWriter(header, false, outputStream)
+        			);
+        fillSmallBam(writer);
+        writer.close();
+    }
+   
+   private void fillSmallBam(SAMFileWriter writer) {
+       final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+       builder.addUnmappedFragment("HiMom!");
+       for (final SAMRecord rec: builder.getRecords()) writer.addAlignment(rec);
+   }    
+   
 }
