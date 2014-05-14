@@ -252,6 +252,7 @@ public class SAMFileWriterFactory {
      * 
      * @param header entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
+     * @param binary do we want to generate a BAM or a SAM
      * @param stream the stream to write records to.  Note that this method does not buffer the stream, so the
      *               caller must buffer if desired.  Note that PrintStream is buffered.
      */
@@ -267,10 +268,6 @@ public class SAMFileWriterFactory {
         if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
         else return ret;
     }
-
-    
-    
-    
 
     /**
      * Create either a SAM or a BAM writer based on examination of the outputFile extension.
@@ -289,5 +286,4 @@ public class SAMFileWriterFactory {
         }
         return makeBAMWriter(header, presorted, outputFile);
     }
-
 }
