@@ -251,12 +251,13 @@ public class Allele implements Comparable<Allele> {
      * @return true if the bases represent a symbolic allele
      */
     public static boolean wouldBeSymbolicAllele(byte[] bases) {
-        if ( bases.length <= 2 )
+    	if ( bases.length <= 1 )
             return false;
         else {
             final String strBases = new String(bases);
-            return (bases[0] == '<' && bases[bases.length-1] == '>') ||
-                    (strBases.contains("[") || strBases.contains("]"));
+            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic
+            		(bases[0] == '.' || bases[bases.length-1] == '.') || // single breakend
+                    (strBases.contains("[") || strBases.contains("]")); // mated breakend
         }
     }
 
