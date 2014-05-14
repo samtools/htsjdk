@@ -449,7 +449,12 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 "htsjdk.samtools.analysis",
                 "htsjdk.samtools.analysis.directed",
                 "htsjdk.samtools.sam",
-                "htsjdk.samtools.metrics"
+                "htsjdk.samtools.metrics",
+                "picard.sam",
+                "picard.metrics",
+                "picard.illumina",
+                "picard.analysis",
+                "picard.analysis.directed"
         };
 
         try { return Class.forName(className); }
