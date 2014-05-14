@@ -253,7 +253,11 @@ public class VariantContextBuilder {
     private void makeAttributesModifiable() {
         if ( ! attributesCanBeModified ) {
             this.attributesCanBeModified = true;
-            this.attributes = new HashMap<String, Object>(attributes);
+            if (attributes == null) {
+            	this.attributes = new HashMap<String, Object>();
+            } else {
+            	this.attributes = new HashMap<String, Object>(attributes);
+            }
         }
     }
 
