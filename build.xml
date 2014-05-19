@@ -58,7 +58,6 @@
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
 
     <property environment="env"/>
-    <property name="java6.home" value="${env.JAVA6_HOME}"/>
 
     <condition  property="isUnix">
         <os family="unix"/>
@@ -90,10 +89,6 @@
         <path  id="metrics.classpath">
             <pathelement path="${classpath}"/>
             <pathelement location="${classes}"/>
-        </path>
-
-        <path id="java6.lib.ref">
-            <fileset dir="${java6.home}/lib" includes="*.jar"/>
         </path>
     </target>
 
