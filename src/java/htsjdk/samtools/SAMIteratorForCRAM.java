@@ -16,7 +16,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2BamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;

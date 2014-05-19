@@ -18,8 +18,9 @@ package htsjdk.samtools;
 import htsjdk.samtools.BAMFileReader.BAMIteratorFilter;
 import htsjdk.samtools.BAMFileReader.FilteringIteratorState;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileReader.QueryInterval;
-import htsjdk.samtools.SAMFileReader.ValidationStringency;
+import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.SamReader.Type;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -89,11 +90,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	void enableFileSource(SAMFileReader reader, boolean enabled) {
-		// throw new RuntimeException("Not implemented.");
-	}
-
-	@Override
 	void enableIndexCaching(boolean enabled) {
 		// throw new RuntimeException("Not implemented.");
 	}
@@ -113,12 +109,12 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	boolean hasIndex() {
+	public boolean hasIndex() {
 		return mIndex != null || mIndexFile != null || mIndexStream != null;
 	}
 
 	@Override
-	BAMIndex getIndex() {
+	public BAMIndex getIndex() {
 		if (!hasIndex())
 			throw new SAMException("No index is available for this BAM file.");
 		if (mIndex == null) {
@@ -138,7 +134,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	SAMFileHeader getFileHeader() {
+	public SAMFileHeader getFileHeader() {
 		try {
 			if (header == null)
 				readHeader();
@@ -149,7 +145,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	SAMRecordIterator getIterator() {
+	public SAMRecordIterator getIterator() {
 		if (it != null && file == null)
 			return it;
 		try {
@@ -169,135 +165,13 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	CloseableIterator<SAMRecord> getIterator(SAMFileSpan fileSpan) {
+	public CloseableIterator<SAMRecord> getIterator(SAMFileSpan fileSpan) {
 		throw new RuntimeException("Not implemented.");
 	}
 
 	@Override
-	SAMFileSpan getFilePointerSpanningReads() {
+	public SAMFileSpan getFilePointerSpanningReads() {
 		throw new RuntimeException("Not implemented.");
-	}
-
-	@Override
-	public CloseableIterator<SAMRecord> query(String sequence, int start,
-			int end, boolean contained) {
-		CloseableIterator<SAMRecord> iterator = queryAlignmentStart(sequence,
-				start);
-		int seqIndex = header.samFileHeader.getSequenceIndex(sequence);
-		BAMIteratorFilter filter = new BAMStartingAtIteratorFilter(seqIndex,
-				start);
-		return new BAMQueryFilteringIterator(iterator, filter);
-	}
-
-	/**
-	 * Pull SAMRecords from a coordinate-sorted iterator, and filter out any
-	 * that do not match the filter.
-	 */
-	private class BAMQueryFilteringIterator extends AbstractBamIterator {
-		/**
-		 * The wrapped iterator.
-		 */
-		protected final CloseableIterator<SAMRecord> wrappedIterator;
-		/**
-		 * The next record to be returned. Will be null if no such record
-		 * exists.
-		 */
-		protected SAMRecord mNextRecord;
-		private final BAMIteratorFilter iteratorFilter;
-
-		public BAMQueryFilteringIterator(
-				final CloseableIterator<SAMRecord> iterator,
-				final BAMIteratorFilter iteratorFilter) {
-			this.wrappedIterator = iterator;
-			this.iteratorFilter = iteratorFilter;
-			mNextRecord = advance();
-		}
-
-		/**
-		 * Returns true if a next element exists; false otherwise.
-		 */
-		public boolean hasNext() {
-			assertOpen();
-			return mNextRecord != null;
-		}
-
-		/**
-		 * Gets the next record from the given iterator.
-		 * 
-		 * @return The next SAM record in the iterator.
-		 */
-		public SAMRecord next() {
-			if (!hasNext())
-				throw new NoSuchElementException(
-						"BAMQueryFilteringIterator: no next element available");
-			final SAMRecord currentRead = mNextRecord;
-			mNextRecord = advance();
-			return currentRead;
-		}
-
-		SAMRecord advance() {
-			while (true) {
-				// Pull next record from stream
-				if (!wrappedIterator.hasNext())
-					return null;
-
-				final SAMRecord record = wrappedIterator.next();
-				switch (iteratorFilter.compareToFilter(record)) {
-				case MATCHES_FILTER:
-					return record;
-				case STOP_ITERATION:
-					return null;
-				case CONTINUE_ITERATION:
-					break; // keep looping
-				default:
-					throw new SAMException(
-							"Unexpected return from compareToFilter");
-				}
-			}
-		}
-	}
-
-	/**
-	 * Encapsulates the restriction that only one iterator may be open at a
-	 * time.
-	 */
-	private abstract class AbstractBamIterator implements
-			CloseableIterator<SAMRecord> {
-
-		private boolean isClosed = false;
-
-		public void close() {
-			if (!isClosed) {
-				if (it != null && this != it) {
-					throw new IllegalStateException(
-							"Attempt to close non-current iterator");
-				}
-				it = null;
-				isClosed = true;
-			}
-		}
-
-		protected void assertOpen() {
-			if (isClosed)
-				throw new AssertionError("Iterator has been closed");
-		}
-
-		public void remove() {
-			throw new UnsupportedOperationException("Not supported: remove");
-		}
-
-	}
-
-	private class EmptyBamIterator extends AbstractBamIterator {
-		@Override
-		public boolean hasNext() {
-			return false;
-		}
-
-		@Override
-		public SAMRecord next() {
-			throw new NoSuchElementException("next called on empty iterator");
-		}
 	}
 
 	/**
@@ -469,7 +343,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	void close() {
+	public void close() {
 		if (it != null)
 			it.close();
 		if (is != null)
@@ -488,7 +362,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	ValidationStringency getValidationStringency() {
+	public ValidationStringency getValidationStringency() {
 		return validationStringency;
 	}
 
@@ -504,7 +378,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	}
 
 	@Override
-	CloseableIterator<SAMRecord> query(QueryInterval[] intervals,
+	public CloseableIterator<SAMRecord> query(QueryInterval[] intervals,
 			boolean contained) {
 		if (is == null) {
 			throw new IllegalStateException("File reader is closed");
@@ -517,5 +391,16 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 					"Cannot query stream-based BAM file");
 		}
 		throw new SAMException("Multiple interval queries not implemented.");
+	}
+
+	@Override
+	public Type type() {
+		return Type.CRAM_TYPE;
+	}
+
+	@Override
+	void enableFileSource(SamReader reader, boolean enabled) {
+		// TODO Auto-generated method stub
+		
 	}
 }

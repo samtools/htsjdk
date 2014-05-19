@@ -23,6 +23,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.TagValueAndUnsignedArrayFlag;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -372,7 +373,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
 	public static Object readSingleValue(final byte tagType,
 			final ByteBuffer byteBuffer,
-			final SAMFileReader.ValidationStringency validationStringency) {
+			final ValidationStringency validationStringency) {
 		switch (tagType) {
 		case 'Z':
 			return readNullTerminatedString(byteBuffer);
@@ -422,7 +423,7 @@ public class ReadTag implements Comparable<ReadTag> {
 	 */
 	private static TagValueAndUnsignedArrayFlag readArray(
 			final ByteBuffer byteBuffer,
-			final SAMFileReader.ValidationStringency validationStringency) {
+			final ValidationStringency validationStringency) {
 		final byte arrayType = byteBuffer.get();
 		final boolean isUnsigned = Character.isUpperCase(arrayType);
 		final int length = byteBuffer.getInt();
