@@ -259,8 +259,6 @@
                    target="${javac.target}">
                 <classpath refid="@{compile.classpath}"/>
                 <compilerarg line="@{compiler.args}" />
-                <!-- ensure that Java 6 bootclasspath is used -->
-                <compilerarg value="-Xbootclasspath/p:${toString:java6.lib.ref}"/>
             </javac>
         </sequential>
     </macrodef>
@@ -285,8 +283,6 @@
                     <pathelement location="${classes}"/>
                 </classpath>
                 <compilerarg line="@{compiler.args}"/>
-                <!-- ensure that Java 6 bootclasspath is used -->
-                <compilerarg value="-Xbootclasspath/p:${toString:java6.lib.ref}"/>
             </javac>
         </sequential>
     </macrodef>
