@@ -29,6 +29,8 @@ package htsjdk.variant.variantcontext;
 // the imports for unit testing.
 
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.Allele;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -121,6 +123,62 @@ public class AlleleUnitTest extends VariantBaseTest {
         Assert.assertTrue(a1.equals(a3));
         Assert.assertFalse(a1.equals(a4));
     }
+    
+    @Test
+    public void testVCF42Breakend() {
+        Allele a;
+        
+        a = Allele.create("A.");
+        Assert.assertTrue(a.isSymbolic());
+        Assert.assertEquals("A.", a.getDisplayString());
+        
+        a = Allele.create(".A");
+        Assert.assertTrue(a.isSymbolic());
+        Assert.assertEquals(".A", a.getDisplayString());
+        
+        Assert.assertTrue(Allele.create("AA.").isSymbolic());
+        Assert.assertTrue(Allele.create(".AA").isSymbolic());
+    }
+    
+    @Test
+    public void testBreakpoint() {
+        Allele a = Allele.create("A[chr1:1[");
+
+        Assert.assertTrue(a.isSymbolic());
+        Assert.assertEquals("A[chr1:1[", a.getDisplayString());
+        
+        Assert.assertTrue(Allele.create("]chr1:1]A").isSymbolic());
+        Assert.assertTrue(Allele.create("[chr1:1[A").isSymbolic());
+        Assert.assertTrue(Allele.create("A]chr1:1]").isSymbolic());
+    }
+    
+    @Test
+    public void testBreakpointSymbolicBreakend() {
+        Assert.assertTrue(Allele.create("A[<contig>:1[").isSymbolic());
+        Assert.assertTrue(Allele.create("A]<contig>:1]").isSymbolic());
+        Assert.assertTrue(Allele.create("]<contig>:1]A").isSymbolic());
+        Assert.assertTrue(Allele.create("[<contig>:1[A").isSymbolic());        
+    }
+    
+    @Test
+    public void testInsSymbolicShorthand() {
+        Assert.assertTrue(Allele.create("A<ctg1>").isSymbolic());
+        Assert.assertTrue(Allele.create("<ctg1>A").isSymbolic());
+    }
+    
+    @Test
+    public void testTelomericBreakend() {
+        Assert.assertTrue(Allele.create(".[1:10]").isSymbolic());
+        Assert.assertTrue(Allele.create("[1:10].").isSymbolic());
+    }
+    
+    @Test
+    public void testSymbolic() {
+        Allele a = Allele.create("<SYMBOLIC>");
+
+        Assert.assertTrue(a.isSymbolic());
+        Assert.assertEquals("<SYMBOLIC>", a.getDisplayString());
+    }
 
     @Test
     public void testEquals() {
@@ -167,6 +225,11 @@ public class AlleleUnitTest extends VariantBaseTest {
     @Test (expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs5() {
         Allele.create("A A");
+    }
+    
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testBadConstructorArgs6() {
+        Allele.create("<symbolic>", true); // symbolic cannot be ref allele
     }
 
     @Test
