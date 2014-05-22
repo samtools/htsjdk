@@ -255,7 +255,7 @@ public class Allele implements Comparable<Allele> {
             return false;
         else {
             final String strBases = new String(bases);
-            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic
+            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic or large insertion
             		(bases[0] == '.' || bases[bases.length-1] == '.') || // single breakend
                     (strBases.contains("[") || strBases.contains("]")); // mated breakend
         }
