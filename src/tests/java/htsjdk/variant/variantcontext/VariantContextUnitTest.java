@@ -983,4 +983,10 @@ public class VariantContextUnitTest extends VariantBaseTest {
             Assert.assertEquals(vc.getMixedCount(), nMixed);
         }
     }
+    @Test
+    public void testSetAttribute() {
+    	VariantContextBuilder builder = new VariantContextBuilder();
+    	builder.attribute("Test", "value");
+    }
+
 }
