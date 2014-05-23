@@ -93,6 +93,7 @@ public class VariantContextTestProvider {
         if ( ENABLE_SYMBOLIC_ALLELE_TESTS ) {
             testSourceVCFs.add(new File(VariantBaseTest.variantTestDataRoot + "diagnosis_targets_testfile.vcf"));
             testSourceVCFs.add(new File(VariantBaseTest.variantTestDataRoot + "VQSR.mixedTest.recal"));
+            testSourceVCFs.add(new File(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"));
         }
     }
 
