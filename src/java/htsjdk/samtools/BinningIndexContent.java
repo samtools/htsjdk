@@ -122,27 +122,22 @@ public class BinningIndexContent {
         if (overlappingBins == null) return null;
 
         // System.out.println("# Sequence target TID: " + referenceIndex);
-        final List<Bin> bins = new ArrayList<Bin>();
-        for(final Bin bin: this.getBins()) {
-            if (overlappingBins.get(bin.getBinNumber()))
-                bins.add(bin);
-        }
-
-        if (bins.isEmpty()) {
-            return null;
-        }
-
         final List<Chunk> chunkList = new ArrayList<Chunk>();
-        for(final Bin bin: bins) {
-            for(final Chunk chunk: bin.getChunkList())
-                chunkList.add(chunk.clone());
+        
+        for (int index = overlappingBins.nextSetBit(0); index >= 0; index = overlappingBins.nextSetBit(index+1)) {
+        	final Bin bin = getBins().getBin(index);
+        	if(bin != null){
+        		for(final Chunk chunk: bin.getChunkList()){
+        			chunkList.add(chunk.clone());
+        		}
+        	}
         }
-
+        
         if (chunkList.isEmpty()) {
             return null;
         }
 
-        return Chunk.optimizeChunkList(chunkList,this.getLinearIndex().getMinimumOffset(startPos));
+        return Chunk.optimizeChunkList(chunkList, getLinearIndex().getMinimumOffset(startPos));
     }
     /**
      * This class is used to encapsulate the list of Bins store in the BAMIndexContent
