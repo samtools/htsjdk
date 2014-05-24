@@ -123,7 +123,7 @@ public class BinningIndexContent {
 
         // System.out.println("# Sequence target TID: " + referenceIndex);
         final List<Chunk> chunkList = new ArrayList<Chunk>();
-        
+
         for (int index = overlappingBins.nextSetBit(0); index >= 0; index = overlappingBins.nextSetBit(index+1)) {
         	final Bin bin = getBins().getBin(index);
         	if(bin != null){
@@ -132,7 +132,7 @@ public class BinningIndexContent {
         		}
         	}
         }
-        
+
         if (chunkList.isEmpty()) {
             return null;
         }
