@@ -26,7 +26,6 @@
 <project name="htsjdk" basedir="." default="all">
 
     <property name="src" value="src/java"/>
-    <property name="src.scripts" value="src/scripts"/>
     <property name="src.test" value="src/tests"/>
     <property name="src.test.java" value="${src.test}/java"/>
     <property name="lib" value="lib"/>
@@ -34,7 +33,6 @@
     <property name="classes" value="classes"/>
     <property name="classes.test" value="testclasses"/>
     <property name="scripts" value="src/scripts"/>
-    <property name="reports" value="dist/test"/>
     <property name="test.output" value="dist/test"/>
 
     <property name="javac.target" value="1.6"/>
@@ -47,18 +45,10 @@
         <arg value="--pretty=format:%H_%at"/>
     </exec>
     <property name="repository.revision" value=""/>
-    <property name="htsjdk-version" value="1.112"/>
-    <property name="sam-version" value="${htsjdk-version}"/>
-    <property name="tribble-version" value="${htsjdk-version}"/>
-    <property name="variant-version" value="${htsjdk-version}"/>
+    <property name="htsjdk-version" value="1.114"/>
     <property name="htsjdk-version-xml" value="htsjdk.version.property.xml"/>
-    <property name="command_tmp" value=".command_tmp"/>
-    <property name="command-line-html-dir" value="${dist}/html"/>
     <property name="testng.verbosity" value="2"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
-
-    <property environment="env"/>
-    <property name="java6.home" value="${env.JAVA6_HOME}"/>
 
     <condition  property="isUnix">
         <os family="unix"/>
@@ -87,14 +77,6 @@
                 <include name="**/*.jar"/>
             </fileset>
         </path>
-        <path  id="metrics.classpath">
-            <pathelement path="${classpath}"/>
-            <pathelement location="${classes}"/>
-        </path>
-
-        <path id="java6.lib.ref">
-            <fileset dir="${java6.home}/lib" includes="*.jar"/>
-        </path>
     </target>
 
     <!-- CLEAN -->
@@ -103,7 +85,6 @@
         <delete dir="${classes.test}"/>
         <delete dir="${test.output}"/>
         <delete dir="${dist}"/>
-        <delete dir="${command_tmp}"/>
         <delete dir="javadoc"/>
         <delete file="${htsjdk-version-xml}"/>
     </target>
@@ -193,9 +174,9 @@
     </target>
 
     <target name="htsjdk-jar" depends="compile-samtools, compile-tribble, compile-variant"
-            description="Builds htsjdk-${sam-version}.jar for inclusion in other projects">
+            description="Builds htsjdk-${htsjdk-version}.jar for inclusion in other projects">
         <mkdir dir="${dist}"/>
-        <jar destfile="${dist}/htsjdk-${sam-version}.jar" compress="no">
+        <jar destfile="${dist}/htsjdk-${htsjdk-version}.jar" compress="no">
             <fileset dir="${classes}" includes ="htsjdk/samtools/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/tribble/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/variant/**/*.*"/>
@@ -229,7 +210,6 @@
             </classpath>
             <link href="http://java.sun.com/j2se/1.5.0/docs/api/"/>
         </javadoc>
-        <mkdir dir="${command-line-html-dir}"/>
     </target>
 
     <!-- ALL -->
@@ -264,8 +244,6 @@
                    target="${javac.target}">
                 <classpath refid="@{compile.classpath}"/>
                 <compilerarg line="@{compiler.args}" />
-                <!-- ensure that Java 6 bootclasspath is used -->
-                <compilerarg value="-Xbootclasspath/p:${toString:java6.lib.ref}"/>
             </javac>
         </sequential>
     </macrodef>
@@ -290,8 +268,6 @@
                     <pathelement location="${classes}"/>
                 </classpath>
                 <compilerarg line="@{compiler.args}"/>
-                <!-- ensure that Java 6 bootclasspath is used -->
-                <compilerarg value="-Xbootclasspath/p:${toString:java6.lib.ref}"/>
             </javac>
         </sequential>
     </macrodef>

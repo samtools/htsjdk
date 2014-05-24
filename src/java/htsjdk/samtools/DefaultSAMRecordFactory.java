@@ -7,6 +7,12 @@ package htsjdk.samtools;
  */
 public class DefaultSAMRecordFactory implements SAMRecordFactory {
 
+    private static final DefaultSAMRecordFactory INSTANCE = new DefaultSAMRecordFactory();
+    
+    public static DefaultSAMRecordFactory getInstance() {
+        return INSTANCE;   
+    }
+
     /** Create a new SAMRecord to be filled in */
     public SAMRecord createSAMRecord(final SAMFileHeader header) {
         return new SAMRecord(header);

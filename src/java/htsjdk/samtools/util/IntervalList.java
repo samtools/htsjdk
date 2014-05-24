@@ -285,6 +285,17 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
+     * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
+     */
+    public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
+        final Collection<IntervalList> intervalLists = new ArrayList<IntervalList>();
+        for (final File file : intervalListFiles) {
+            intervalLists.add(IntervalList.fromFile(file));
+        }
+        return IntervalList.union(intervalLists);
+    }
+    
+    /**
      * Parses an interval list from a reader in a stream based fashion.
      * @param in a BufferedReader that can be read from
      * @return an IntervalList object that contains the headers and intervals from the file
@@ -579,7 +590,22 @@ public class IntervalList implements Iterable<Interval> {
     }
 
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        final IntervalList intervals1 = (IntervalList) o;
+
+        return header.equals(intervals1.header) && intervals.equals(intervals1.intervals);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = header.hashCode();
+        result = 31 * result + intervals.hashCode();
+        return result;
+    }
 }
 /**
  * Comparator that orders intervals based on their sequence index, by coordinate

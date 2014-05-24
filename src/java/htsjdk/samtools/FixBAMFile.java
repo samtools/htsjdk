@@ -22,7 +22,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMFileReader.ValidationStringency;
 
 import java.io.File;
 

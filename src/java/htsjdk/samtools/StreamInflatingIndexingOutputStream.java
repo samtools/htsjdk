@@ -67,7 +67,7 @@ class Indexer implements Runnable {
     public void run() {
         final SAMFileReader in = new SAMFileReader(this.stream);
         in.enableFileSource(true);
-        in.setValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+        in.setValidationStringency(ValidationStringency.SILENT);
         in.enableCrcChecking(false);
         final BAMIndexer indexer = new BAMIndexer(this.index, in.getFileHeader());
         for (final SAMRecord rec : in) {

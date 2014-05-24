@@ -64,9 +64,9 @@ public class SAMLineParser {
     /**
      * Add information about the origin (reader and position) to SAM records.
      */
-    private final SAMFileReader mParentReader;
+    private final SamReader mParentReader;
     private final SAMRecordFactory samRecordFactory;
-    private final SAMFileReader.ValidationStringency validationStringency;
+    private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
     private final File mFile;
 
@@ -86,7 +86,7 @@ public class SAMLineParser {
     public SAMLineParser(final SAMFileHeader samFileHeader) {
 
         this(new DefaultSAMRecordFactory(),
-                SAMFileReader.ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
+                ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
                 null, null);
     }
 
@@ -100,7 +100,7 @@ public class SAMLineParser {
                          final SAMFileReader samFileReader, final File samFile) {
 
         this(new DefaultSAMRecordFactory(),
-                SAMFileReader.ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
+                ValidationStringency.DEFAULT_STRINGENCY, samFileHeader,
                 samFileReader, samFile);
     }
 
@@ -113,8 +113,8 @@ public class SAMLineParser {
      * @param samFile SAM file being read (for error message only, may be null)
      */
     public SAMLineParser(final SAMRecordFactory samRecordFactory,
-                         final SAMFileReader.ValidationStringency validationStringency,
-                         final SAMFileHeader samFileHeader, final SAMFileReader samFileReader,
+                         final ValidationStringency validationStringency,
+                         final SAMFileHeader samFileHeader, final SamReader samFileReader,
                          final File samFile) {
 
         if (samRecordFactory == null)
@@ -150,7 +150,7 @@ public class SAMLineParser {
      * Get validation stringency.
      * @return validation stringency
      */
-    public SAMFileReader.ValidationStringency getValidationStringency() {
+    public ValidationStringency getValidationStringency() {
 
         return this.validationStringency;
     }
@@ -423,9 +423,9 @@ public class SAMLineParser {
     private void reportErrorParsingLine(final String reason) {
         final String errorMessage = makeErrorString(reason);
 
-        if (validationStringency == SAMFileReader.ValidationStringency.STRICT) {
+        if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException(errorMessage);
-        } else if (validationStringency == SAMFileReader.ValidationStringency.LENIENT) {
+        } else if (validationStringency == ValidationStringency.LENIENT) {
             System.err
                     .println("Ignoring SAM validation error due to lenient parsing:");
             System.err.println(errorMessage);
@@ -434,9 +434,9 @@ public class SAMLineParser {
 
     private void reportErrorParsingLine(final Exception e) {
         final String errorMessage = makeErrorString(e.getMessage());
-        if (validationStringency == SAMFileReader.ValidationStringency.STRICT) {
+        if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException(errorMessage);
-        } else if (validationStringency == SAMFileReader.ValidationStringency.LENIENT) {
+        } else if (validationStringency == ValidationStringency.LENIENT) {
             System.err
                     .println("Ignoring SAM validation error due to lenient parsing:");
             System.err.println(errorMessage);

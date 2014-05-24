@@ -33,7 +33,7 @@ public class SAMFileSource {
     /**
      * The reader originating this SAM record.
      */
-    private SAMFileReader mReader;
+    private SamReader mReader;
 
     /**
      * The point on disk from which a record originates.
@@ -45,7 +45,7 @@ public class SAMFileSource {
      * @param reader reader.
      * @param filePointer File pointer.
      */
-    public SAMFileSource(final SAMFileReader reader, final SAMFileSpan filePointer) {
+    public SAMFileSource(final SamReader reader, final SAMFileSpan filePointer) {
         this.mReader = reader;
         this.mFilePointer = filePointer;
     }
@@ -54,7 +54,7 @@ public class SAMFileSource {
      * Retrieves the reader from which this read was initially retrieved.
      * @return The reader.
      */
-    public SAMFileReader getReader() {
+    public SamReader getReader() {
         return mReader;
     }
 
