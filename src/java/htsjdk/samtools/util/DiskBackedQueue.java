@@ -21,14 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package htsjdk.samtools.util;
+package net.sf.samtools.util;
 
-import htsjdk.samtools.Defaults;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.SortingCollection;
+import net.sf.samtools.Defaults;
+import net.sf.samtools.SAMException;
 
 import java.io.File;
 import java.io.FileInputStream;
