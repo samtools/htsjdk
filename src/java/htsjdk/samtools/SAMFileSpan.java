@@ -284,9 +284,9 @@ class BAMFileSpan implements SAMFileSpan, Serializable {
     public static BAMFileSpan merge(final BAMFileSpan[] spans) {
         final ArrayList<Chunk> inputChunks = new ArrayList<Chunk>();
         for (final BAMFileSpan span : spans) {
-        	if(span != null){
-        		inputChunks.addAll(span.chunks);
-        	}
+            if (span != null) {
+                inputChunks.addAll(span.chunks);
+            }
         }
         return new BAMFileSpan(Chunk.optimizeChunkList(inputChunks, 0));
     }
