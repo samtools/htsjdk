@@ -1,0 +1,6 @@
+##fileformat=VCFv4.1
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##contig=<ID=chr12,length=133851895>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr12	203475	.	T	t[chr12:203540[	36	.	SVTYPE=BND
+chr12	203475	.	T	T[chr12:203540[	36	.	SVTYPE=BND

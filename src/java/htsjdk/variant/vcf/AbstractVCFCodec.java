@@ -319,7 +319,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             builder.id(parts[2]);
 
         final String ref = getCachedString(parts[3].toUpperCase());
-        final String alts = getCachedString(parts[4].toUpperCase());
+        final String alts = getCachedString(parts[4]);
         builder.log10PError(parseQual(parts[5]));
 
         final List<String> filters = parseFilters(getCachedString(parts[6]));
