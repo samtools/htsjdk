@@ -33,11 +33,20 @@ public class IntervalTreeMapTest {
     public void testBasic() {
         IntervalTreeMap<Interval> m=new IntervalTreeMap<Interval>();
 
-        Interval chr1Interval = new Interval("chr1", 1,100);
+        Interval chr1Interval = new Interval("chr1", 10,100);
         m.put(chr1Interval, chr1Interval);
         Interval chr2Interval = new Interval("chr2", 1,200);
         m.put(chr2Interval, chr2Interval);
-
+        
+        
+        Assert.assertTrue(m.containsContained(new Interval("chr1", 9,101)));
+        Assert.assertTrue(m.containsOverlapping(new Interval("chr1", 50,150)));
+        Assert.assertFalse(m.containsOverlapping(new Interval("chr3", 1,100)));
+        Assert.assertFalse(m.containsOverlapping(new Interval("chr1", 101,150)));
+        Assert.assertFalse(m.containsContained(new Interval("chr1", 11,101)));
+        Assert.assertFalse(m.isEmpty());
+        Assert.assertTrue(m.size()==2);
+        
         final Iterator<Interval> iterator = m.keySet().iterator();
         Assert.assertEquals(iterator.next(), chr1Interval);
         Assert.assertEquals(iterator.next(), chr2Interval);
