@@ -137,8 +137,7 @@ public class BinningIndexContent {
             return null;
         }
 
-        return Chunk.optimizeChunkList(chunkList, getLinearIndex()
-                .getMinimumOffset(startPos));
+        return Chunk.optimizeChunkList(chunkList, getLinearIndex().getMinimumOffset(startPos));
     }
     /**
      * This class is used to encapsulate the list of Bins store in the BAMIndexContent
