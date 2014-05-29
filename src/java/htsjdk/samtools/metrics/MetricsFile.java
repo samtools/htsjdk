@@ -288,6 +288,20 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
         }
     }
 
+    private boolean isOldStyleMetricFile(final BufferedReader in) {
+        try {
+            in.mark(2048);
+            final String line = in.readLine();
+            final boolean ret;
+            if (line == null) ret = false;
+            else ret = line.startsWith(METRIC_HEADER);
+            in.reset();
+            return ret;
+        } catch (IOException e) {
+            throw new SAMException("Problem rewinding BufferedReader", e);
+        }
+    }
+
     /** Reads the Metrics in from the given reader. */
     public void read(final Reader r) {
         final BufferedReader in = new BufferedReader(r);
@@ -295,47 +309,44 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
         String line = null;
 
         try {
-            // First read the headers
-            Header header = null;
-            boolean inHeader = true;
-            while ((line = in.readLine()) != null && inHeader) {
-                line = line.trim();
-                // A blank line signals the end of the headers, otherwise parse out
-                // the header types and values and build the headers.
-                if ("".equals(line)) {
-                    inHeader = false;
+            if (!isOldStyleMetricFile(in)) {
+                // First read the headers
+                Header header = null;
+                boolean inHeader = true;
+                while ((line = in.readLine()) != null && inHeader) {
+                    line = line.trim();
+                    // A blank line signals the end of the headers, otherwise parse out
+                    // the header types and values and build the headers.
+                    if ("".equals(line)) {
+                        inHeader = false;
+                    } else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
+                        if (header != null) {
+                            throw new IllegalStateException("Consecutive header class lines encountered.");
+                        }
+
+                        final String className = line.substring(MAJOR_HEADER_PREFIX.length()).trim();
+                        try {
+                            header = (Header) loadClass(className, true).newInstance();
+                        } catch (final Exception e) {
+                            throw new SAMException("Error load and/or instantiating an instance of " + className, e);
+                        }
+                    } else if (line.startsWith(MINOR_HEADER_PREFIX)) {
+                        if (header == null) {
+                            throw new IllegalStateException("Header class must precede header value:" + line);
+                        }
+                        header.parse(line.substring(MINOR_HEADER_PREFIX.length()));
+                        this.headers.add(header);
+                        header = null;
+                    } else {
+                        throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
+                    }
                 }
-                else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
-                    if (header != null) {
-                        throw new IllegalStateException("Consecutive header class lines encountered.");
-                    }
-                    
-                    final String className = line.substring(MAJOR_HEADER_PREFIX.length()).trim();
-                    try {
-                        header = (Header) loadClass(className, true).newInstance();
-                    }
-                    catch (final Exception e) {
-                        throw new SAMException("Error load and/or instantiating an instance of " + className, e);
-                    }
-                }
-                else if (line.startsWith(MINOR_HEADER_PREFIX)) {
-                    if (header == null) {
-                        throw new IllegalStateException("Header class must precede header value:" + line);
-                    }
-                    header.parse(line.substring(MINOR_HEADER_PREFIX.length()));
-                    this.headers.add(header);
-                    header = null;
-                }
-                else {
-                    throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
+
+                //read space between starting headers and metrics
+                while (line != null && !line.startsWith(MAJOR_HEADER_PREFIX)) {
+                    line = in.readLine();
                 }
             }
-
-            //read space between starting headers and metrics
-            while (line != null && !line.startsWith(MAJOR_HEADER_PREFIX)) {
-                line = in.readLine();
-            }
-
 
             if(line != null) {
                 line = line.trim();
