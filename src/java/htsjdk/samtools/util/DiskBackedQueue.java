@@ -23,12 +23,10 @@
  */
 package htsjdk.samtools.util;
 
-import com.sun.jndi.url.iiopname.iiopnameURLContextFactory;
-import net.sf.samtools.Defaults;
+import htsjdk.samtools.Defaults;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;

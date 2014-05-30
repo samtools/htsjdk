@@ -1,7 +1,5 @@
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.util.DiskBackedQueue;
-import htsjdk.samtools.util.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -28,9 +26,18 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
         }
 
         Assert.assertEquals(tmpDirIsEmpty(), numStringsToGenerate <= maxRecordsInRam);
-        assertIteratorEqualsList(strings, diskBackedQueue);
+        assertQueueEqualsList(strings, diskBackedQueue);
         Assert.assertEquals(diskBackedQueue.size(), 0);
 
+    }
+
+    private void assertQueueEqualsList(final String[] strings, final DiskBackedQueue<String> diskBackedQueue) {
+        int i = 0;
+        while (!diskBackedQueue.isEmpty()) {
+            final String s = diskBackedQueue.poll();
+            Assert.assertEquals(s, strings[i++]);
+        }
+        Assert.assertEquals(i, strings.length);
     }
 
     private DiskBackedQueue<String> makeDiskBackedQueue(final int maxRecordsInRam) {

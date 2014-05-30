@@ -104,7 +104,7 @@ public class SortingCollectionTest {
         Assert.assertEquals(tmpDir.list().length, 0);
     }
 
-    protected void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
+    private void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
         int i = 0;
         while (sortingCollection.hasNext()) {
             final String s = sortingCollection.next();
