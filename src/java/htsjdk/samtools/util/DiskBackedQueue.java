@@ -42,7 +42,7 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
- * A FIFO queue. Writes elements to temporary files when the queue gets too big.
+ * A single-ended FIFO queue. Writes elements to temporary files when the queue gets too big.
  * External references to elements in this queue are NOT guaranteed to be valid, due to the disk write/read
  * <p/>
  * NB: The queue becomes read-only after the first on-disk record is read. Max size is therefore non-deterministic.
@@ -52,12 +52,6 @@ import java.util.Queue;
  * Created by bradt on 4/28/14.
  */
 public class DiskBackedQueue<E> implements Queue<E> {
-
-    // TODO - this needs to be altered (and simplified significantly) to conform with the storage behavior we expect for MarkDuplicatesWithMateCigar BufferBlock
-
-    /** TODO - support peeking. Add a "nextRecord" member. Return this if we are peeking, and update it if polling or removing.
-     Move the record reading (current 'poll') to a private method  **/
-
     private final int maxRecordsInRam;
     private final Deque<E> ramRecords;
     private File diskRecords = null;
@@ -65,9 +59,10 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private OutputStream outputStream = null;
     private InputStream inputStream = null;
     private boolean canAdd = false;
+    private int numRecordsOnDisk = 0;
 
     /** Record representing the head of the queue; returned by peek, poll **/
-    private E headRecord;
+    private E headRecord = null;
 
     /** Directories where file of records go. **/
     private final List<File> tmpDirs;
@@ -95,7 +90,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         }
         this.tmpDirs = tmpDir;
         this.codec = codec;
-        this.maxRecordsInRam = maxRecordsInRam;
+        this.maxRecordsInRam = maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
         this.ramRecords = new ArrayDeque<E>();
     }
 
@@ -120,16 +115,25 @@ public class DiskBackedQueue<E> implements Queue<E> {
     /**
      * Add the record to the tail of the queue, spilling to disk if necessary
      * Must check that (canAdd() == true) before calling this method
+     *
+     * @param record The record to be added to the queue
+     * @return true (if add successful)
+     * @throws IllegalStateException if the queue cannot be added to
      */
     public boolean add(final E record) throws IllegalStateException {
         if (canAdd) {
-            if (diskRecords != null || ramRecords.size() == maxRecordsInRam)
+            // this is the first record in the queue
+            if (this.headRecord == null)
+                this.headRecord = record;
+            // the tail of the queue is on disk
+            else if (diskRecords != null || ramRecords.size() == maxRecordsInRam)
                 spillToDisk(record);
+            // the tail of the queue is in memory
             else
-                ramRecords.add(record);
+                ramRecords.addLast(record);
             return true;
         } else {
-            throw new IllegalStateException("cannot add to DiskBackedQueue whose canAdd() method returns false");
+            throw new IllegalStateException("Cannot add to DiskBackedQueue whose canAdd() method returns false");
         }
     }
 
@@ -149,78 +153,120 @@ public class DiskBackedQueue<E> implements Queue<E> {
 
     @Override
     public E poll() {
-        return (ramRecords.isEmpty()) ? ramRecords.peekFirst() : readFileRecord(this.diskRecords);
+        final E outRecord = this.headRecord;
+        if (outRecord != null)
+            updateQueueHead();
+        return outRecord;
     }
 
     @Override
     public E element() {
-        return null;
+        if (this.headRecord != null)
+            return this.headRecord;
+        else
+            throw new NoSuchElementException("Attempting to element() from empty DiskBackedQueue");
     }
 
     @Override
     public E peek() {
-        // TODO - fix
-        if (!ramRecords.isEmpty()) {
-            return ramRecords.peekFirst();
-        } else if (files.size() != 0) {
-            final File currentFile = files.remove(0);  // get the file nearest the head of the queue
-            CloserUtil.close(outputStreams.remove(0)); // close the file's associated output stream
-            readFileRecord(currentFile);
-            return ramRecords.peekFirst();
-        }
-        return null;
+        return this.headRecord;
     }
 
-    @Override
+    /**
+     * Not supported. It is not possible to check for the presence of a particular element,
+     * as some elements may have been written to disk
+     *
+     * @throws UnsupportedOperationException
+     */
     public boolean containsAll(final Collection<?> c) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
-    @Override
+    /**
+     * Add all elements from collection c to this DiskBackedQueue
+     * Must check that (canAdd() == true) before calling this method
+     *
+     * @param c the collection of elements to add
+     * @return true if this collection changed as a rsult of the call
+     * @throws IllegalStateException if the queue cannot be added to
+     */
     public boolean addAll(final Collection<? extends E> c) {
-        return false;
+        try {
+            for (final E element : c) {
+                this.add(element);
+            }
+            return true;
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Cannot add to DiskBackedQueue whose canAdd() method returns false", e);
+        }
     }
 
-    @Override
+    /**
+     * Not supported. Cannot access particular elements, as some elements may have been written to disk
+     *
+     * @throws UnsupportedOperationException
+     */
     public boolean remove(final Object o) {
         return false;
     }
 
-    @Override
+    /**
+     * Not supported. Cannot access particular elements, as some elements may have been written to disk
+     *
+     * @throws UnsupportedOperationException
+     */
     public boolean removeAll(final Collection<?> c) {
         return false;
     }
 
-    @Override
+    /**
+     * Not supported. Cannot access particular elements, as some elements may have been written to disk
+     *
+     * @throws UnsupportedOperationException
+     */
     public boolean retainAll(final Collection<?> c) {
         return false;
     }
 
     @Override
     public void clear() {
-
+        this.headRecord = null;
+        this.ramRecords.clear();
+        try {
+            this.outputStream.close();
+            this.inputStream.close();
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+        this.outputStream = null;
+        this.inputStream = null;
+        this.diskRecords = null;
     }
 
 
     /**
      * Write the present record to the end of a file representing the tail of the queue.
+     * @throws RuntimeIOException
      */
     private void spillToDisk(final E record) throws RuntimeIOException {
+        // NB: are these exceptions being handled correctly?
         try {
             if (this.diskRecords == null) {
                 this.diskRecords = newTempFile();
                 this.outputStream = tempStreamFactory.wrapTempOutputStream(new FileOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
+                this.codec.setOutputStream(this.outputStream);
             }
             try {
-                this.codec.setOutputStream(this.outputStream);
                 this.codec.encode(record);
                 this.outputStream.flush();
+                this.numRecordsOnDisk++;
             } catch (final RuntimeIOException ex) {
                 throw new RuntimeIOException("Problem writing temporary file. " +
                         "Try setting TMP_DIR to a file system with lots of space.", ex);
             }
         } catch (final IOException e) {
-            throw new RuntimeIOException(e);
+            throw new RuntimeIOException("Problem writing temporary file. " +
+                    "Try setting TMP_DIR to a file system with lots of space.", e);
         }
     }
 
@@ -232,17 +278,28 @@ public class DiskBackedQueue<E> implements Queue<E> {
         return IOUtil.newTempFile("diskbackedqueue.", ".tmp", this.tmpDirs.toArray(new File[tmpDirs.size()]), IOUtil.FIVE_GBS);
     }
 
+    /**
+     * Update the head of the queue with the next record in memory or on disk.
+     * Sets headRecord to null if the queue is now empty
+     */
+    private void updateQueueHead() {
+        this.headRecord = (ramRecords.isEmpty()) ? ramRecords.pollFirst() : readFileRecord(this.diskRecords);
+    }
 
     /**
-     * Read back a record that had been spilled to disk.
+     * Read back a record that had been spilled to disk. Return null if there are no disk records
      * Note- if we are reading disk records, we can no longer add additional elements to this DiskBackedQueue
      *
      * @param file the file to read from
      * @return The next element from the head of the file, or null if end-of-file is reached
+     * @throws RuntimeIOException
      */
     private E readFileRecord (final File file) {
         if (this.canAdd)
             this.canAdd = false; // NB: should this just be an assignment regardless?
+        // we never wrote a record to disk
+        if (file == null)
+            return null;
         try {
             if (this.inputStream == null) {
                 inputStream = new FileInputStream(file);
@@ -258,31 +315,45 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * Return the total number of elements in the queue, both in memory and on disk
      */
     public int size() {
-        return (files.size() * maxRecordsInRam) + ramRecords.size();
+        return (this.headRecord == null) ? 0 : (1 + this.ramRecords.size() + this.numRecordsOnDisk);
     }
 
     @Override
     public boolean isEmpty() {
-        return false;
+        return (this.headRecord == null);
     }
 
-    @Override
+    /**
+     * Not supported. It is not possible to check for the presence of a particular element,
+     * as some elements may have been written to disk
+     *
+     * @throws UnsupportedOperationException
+     */
     public boolean contains(final Object o) {
-        return false;
+        throw new UnsupportedOperationException("DiskBackedQueue does not support contains()");
     }
 
-    @Override
+    /**
+     * Not supported at this time
+     * @throws UnsupportedOperationException
+     */
     public Iterator<E> iterator() {
-        return null;
+        throw new UnsupportedOperationException("DiskBackedQueue does not support iterator()");
     }
 
-    @Override
+    /**
+     * Not supported at this time
+     * @throws UnsupportedOperationException
+     */
     public Object[] toArray() {
-        return new Object[0];
+        throw new UnsupportedOperationException("DiskBackedQueue does not support toArray()");
     }
 
-    @Override
+    /**
+     * Not supported at this time
+     * @throws UnsupportedOperationException
+     */
     public <T1> T1[] toArray(final T1[] a) {
-        return null;
+        throw new UnsupportedOperationException("DiskBackedQueue does not support toArray(T[] a)");
     }
 }
