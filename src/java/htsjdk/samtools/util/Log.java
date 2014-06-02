@@ -86,7 +86,7 @@ public final class Log {
      */
     private void emit(final LogLevel level, final Throwable throwable, final Object... parts) {
         if (isEnabled(level)) {
-            synchronized (this) {
+            synchronized (this.out) {
                 this.out.print(level.name());
                 this.out.print('\t');
                 this.out.print(getTimestamp());
