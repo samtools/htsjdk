@@ -24,18 +24,22 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
             diskBackedQueue.add(s);
             strings[numStringsGenerated++] = s;
         }
-
         Assert.assertEquals(tmpDirIsEmpty(), numStringsToGenerate <= maxRecordsInRam);
         assertQueueEqualsList(strings, diskBackedQueue);
+        Assert.assertEquals(diskBackedQueue.canAdd(), numStringsToGenerate <= maxRecordsInRam);
         Assert.assertEquals(diskBackedQueue.size(), 0);
-
+        Assert.assertTrue(diskBackedQueue.isEmpty());
+        Assert.assertEquals(diskBackedQueue.poll(), null);
+        diskBackedQueue.clear();
+        Assert.assertTrue(diskBackedQueue.canAdd());
     }
 
     private void assertQueueEqualsList(final String[] strings, final DiskBackedQueue<String> diskBackedQueue) {
         int i = 0;
         while (!diskBackedQueue.isEmpty()) {
             final String s = diskBackedQueue.poll();
-            Assert.assertEquals(s, strings[i++]);
+            Assert.assertEquals(s, strings[i]);
+            i++;
         }
         Assert.assertEquals(i, strings.length);
     }

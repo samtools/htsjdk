@@ -70,7 +70,10 @@ public class SortingCollectionTest {
     public Object[][] createTestData() {
         return new Object[][] {
                 {"empty", 0, 100},
+                {"singleton", 1, 100},
+                {"no ram records", 10, 0},
                 {"less than threshold", 100, 200},
+                {"threshold minus 1", 99, 100},
                 {"greater than threshold", 550, 100},
                 {"threshold multiple", 600, 100},
                 {"threshold multiple plus one", 101, 100},
