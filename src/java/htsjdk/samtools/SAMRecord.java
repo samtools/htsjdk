@@ -1923,12 +1923,9 @@ public class SAMRecord implements Cloneable
 	    	}
 
     	@Override
-    	public SAMRecord getSAMRecord()
-    		{
+    	public SAMRecord getSAMRecord() {
     		return SAMRecord.this;
     		}
-    	
     	}
-    
 }
 
