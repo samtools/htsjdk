@@ -68,7 +68,7 @@ public class ReservedTagConstants {
     public static final String OC = "OC";
     
     /**  FLAG for "Other canonical alignments"  used for {@link OtherCanonicalAlignment}*/
-    public static final String SA="SA";
+    public static final String SA = "SA";
 
 
 }
