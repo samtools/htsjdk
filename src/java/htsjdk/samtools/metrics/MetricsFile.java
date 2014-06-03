@@ -288,20 +288,6 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
         }
     }
 
-    private boolean isOldStyleMetricFile(final BufferedReader in) {
-        try {
-            in.mark(2048);
-            final String line = in.readLine();
-            final boolean ret;
-            if (line == null) ret = false;
-            else ret = line.startsWith(METRIC_HEADER);
-            in.reset();
-            return ret;
-        } catch (IOException e) {
-            throw new SAMException("Problem rewinding BufferedReader", e);
-        }
-    }
-
     /** Reads the Metrics in from the given reader. */
     public void read(final Reader r) {
         final BufferedReader in = new BufferedReader(r);
@@ -309,46 +295,52 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
         String line = null;
 
         try {
-            if (!isOldStyleMetricFile(in)) {
-                // First read the headers
-                Header header = null;
-                boolean inHeader = true;
-                while ((line = in.readLine()) != null && inHeader) {
-                    line = line.trim();
-                    // A blank line signals the end of the headers, otherwise parse out
-                    // the header types and values and build the headers.
-                    if ("".equals(line)) {
-                        inHeader = false;
-                    } else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
-                        if (header != null) {
-                            throw new IllegalStateException("Consecutive header class lines encountered.");
-                        }
-
-                        final String className = line.substring(MAJOR_HEADER_PREFIX.length()).trim();
-                        try {
-                            header = (Header) loadClass(className, true).newInstance();
-                        } catch (final Exception e) {
-                            throw new SAMException("Error load and/or instantiating an instance of " + className, e);
-                        }
-                    } else if (line.startsWith(MINOR_HEADER_PREFIX)) {
-                        if (header == null) {
-                            throw new IllegalStateException("Header class must precede header value:" + line);
-                        }
-                        header.parse(line.substring(MINOR_HEADER_PREFIX.length()));
-                        this.headers.add(header);
-                        header = null;
-                    } else {
-                        throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
+            // First read the headers
+            Header header = null;
+            while ((line = in.readLine()) != null) {
+                line = line.trim();
+                if ("".equals(line)) {
+                    // Do nothing! Nothing to be done!
+                }
+                else if (line.startsWith(METRIC_HEADER) || line.startsWith(HISTO_HEADER)) {
+                    // A line that starts with "## METRICS CLASS" heralds the start of the actual
+                    // data. Bounce our butts out of header parsing without reading the next line.
+                    // This isn't in the while loop's conditional because we want to trim() first.
+                    break;
+                }
+                else if (line.startsWith(MAJOR_HEADER_PREFIX)) {
+                    if (header != null) {
+                        throw new IllegalStateException("Consecutive header class lines encountered.");
+                    }
+                    
+                    final String className = line.substring(MAJOR_HEADER_PREFIX.length()).trim();
+                    try {
+                        header = (Header) loadClass(className, true).newInstance();
+                    }
+                    catch (final Exception e) {
+                        throw new SAMException("Error load and/or instantiating an instance of " + className, e);
                     }
                 }
-
-                //read space between starting headers and metrics
-                while (line != null && !line.startsWith(MAJOR_HEADER_PREFIX)) {
-                    line = in.readLine();
+                else if (line.startsWith(MINOR_HEADER_PREFIX)) {
+                    if (header == null) {
+                        throw new IllegalStateException("Header class must precede header value:" + line);
+                    }
+                    header.parse(line.substring(MINOR_HEADER_PREFIX.length()));
+                    this.headers.add(header);
+                    header = null;
+                }
+                else {
+                    throw new SAMException("Illegal state. Found following string in metrics file header: " + line);
                 }
             }
 
-            if(line != null) {
+            // Read space between headers and metrics, if any
+            while (line != null && ! line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
+                line = in.readLine();
+            }
+
+
+            if (line != null) {
                 line = line.trim();
             
                 // Then read the metrics if there are any
@@ -408,32 +400,38 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 }
             }
 
-            // Then read the histograms if any are present
-            while (line != null && !line.startsWith(MAJOR_HEADER_PREFIX)) {
+            // Read away any blank lines between metrics and histograms
+            while (line != null && ! line.trim().startsWith(MAJOR_HEADER_PREFIX)) {
                 line = in.readLine();
             }
-            if (line != null && line.startsWith(HISTO_HEADER)) {
-                // Get the key type of the histogram
-                final String keyClassName = line.split(SEPARATOR)[1].trim();
-                Class<?> keyClass = null;
 
-                try { keyClass = loadClass(keyClassName, true); }
-                catch (final ClassNotFoundException cnfe) { throw new SAMException("Could not load class with name " + keyClassName); }
+            // Then read the histograms if any are present
+            if (line != null) {
+                line = line.trim();
 
-                // Read the next line with the bin and value labels
-                final String[] labels = in.readLine().split(SEPARATOR);
-                for (int i=1; i<labels.length; ++i) {
-                    this.histograms.add(new Histogram<HKEY>(labels[0], labels[i]));
-                }
+                if (line.startsWith(HISTO_HEADER)) {
+                    // Get the key type of the histogram
+                    final String keyClassName = line.split(SEPARATOR)[1].trim();
+                    Class<?> keyClass = null;
 
-                // Read the entries in the histograms
-                while ((line = in.readLine()) != null && !"".equals(line)) {
-                    final String[] fields = line.trim().split(SEPARATOR);
-                    final HKEY key = (HKEY) formatter.parseObject(fields[0], keyClass);
+                    try { keyClass = loadClass(keyClassName, true); }
+                    catch (final ClassNotFoundException cnfe) { throw new SAMException("Could not load class with name " + keyClassName); }
 
-                    for (int i=1; i<fields.length; ++i) {
-                        final double value = formatter.parseDouble(fields[i]);
-                        this.histograms.get(i-1).increment(key, value);
+                    // Read the next line with the bin and value labels
+                    final String[] labels = in.readLine().split(SEPARATOR);
+                    for (int i=1; i<labels.length; ++i) {
+                        this.histograms.add(new Histogram<HKEY>(labels[0], labels[i]));
+                    }
+
+                    // Read the entries in the histograms
+                    while ((line = in.readLine()) != null && !"".equals(line)) {
+                        final String[] fields = line.trim().split(SEPARATOR);
+                        final HKEY key = (HKEY) formatter.parseObject(fields[0], keyClass);
+
+                        for (int i=1; i<fields.length; ++i) {
+                            final double value = formatter.parseDouble(fields[i]);
+                            this.histograms.get(i-1).increment(key, value);
+                        }
                     }
                 }
             }
