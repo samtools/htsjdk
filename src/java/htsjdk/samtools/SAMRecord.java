@@ -131,8 +131,8 @@ public class SAMRecord implements Cloneable
     /**
      * abs(insertSize) must be <= this
      */
-    public static final int MAX_INSERT_SIZE = 1<<29;
-    
+     public static final int MAX_INSERT_SIZE = 1<<29;
+
     /**
      * It is not necessary in general to use the flag constants, because there are getters
      * & setters that handles these symbolically.
