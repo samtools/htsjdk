@@ -26,7 +26,7 @@ package htsjdk.samtools;
 import java.util.List;
 
 /**
- * A canonical alignment in a SAMRecord, storeed in the 'SA' attribute of a {@link SAMRecord}
+ * A canonical alignment in a SAMRecord, stored in the 'SA' attribute of a {@link SAMRecord}
  *  <cite>Other canonical alignments in a chimeric alignment, in the format of:( rname,pos,strand,CIGAR,mapQ,NM;)+.</cite>
  * @author Pierre Lindenbaum   @yokofakun
  *
@@ -55,7 +55,7 @@ public interface OtherCanonicalAlignment
 	public int getUnclippedStart();
 	/**  @return the alignment end (1-based, inclusive) adjusted for clipped bases. */
 	public int getUnclippedEnd();
-    /** @return 1-based inclusive rightmost position of the clipped sequence, or 0 read if unmapped. */
+ 	/** @return 1-based inclusive rightmost position of the clipped sequence, or 0 read if unmapped. */
 	public int getAlignmentEnd();
 	/** shortcut to getCigar().getCigarElements(); */
 	public List<CigarElement> getCigarElements();
