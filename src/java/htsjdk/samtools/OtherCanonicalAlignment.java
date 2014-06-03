@@ -31,8 +31,7 @@ import java.util.List;
  * @author Pierre Lindenbaum   @yokofakun
  *
  */
-public interface OtherCanonicalAlignment
-	{
+public interface OtherCanonicalAlignment {
 	/** get the owner */
 	public SAMRecord getSAMRecord();
 	/** get the reference name */
