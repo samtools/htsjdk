@@ -1729,54 +1729,52 @@ public class SAMRecord implements Cloneable
         return SAMTextWriter.getSAMString(this);
     }
     
-    
     /**
      * get the other canonical alignments stored in the 'SA' attribute
      * @returns a list of other canonical alignments or an empty list if there is no 'SA' attribute.
      * 
      */
     public List<OtherCanonicalAlignment> getOtherCanonicalAlignments() {
-		String xp=this.getStringAttribute(ReservedTagConstants.SA);
-		if(xp==null) return Collections.emptyList();
+	String xp=this.getStringAttribute(ReservedTagConstants.SA);
+	if(xp==null) return Collections.emptyList();
+	
+	String ss[]=xp.split("[;]");
+	List<OtherCanonicalAlignment> L=new ArrayList<OtherCanonicalAlignment>(ss.length);
+	for(String s:ss)
+		{
+		if(s.isEmpty()) continue;
 		
-		String ss[]=xp.split("[;]");
-		List<OtherCanonicalAlignment> L=new ArrayList<OtherCanonicalAlignment>(ss.length);
-		for(String s:ss)
+		String tokens[]=s.split("[,]");
+		
+		if(tokens.length!=6)
 			{
-			if(s.isEmpty()) continue;
-			
-			String tokens[]=s.split("[,]");
-			
-			if(tokens.length!=6)
+			String msg="Cannot extract OtherCanonicalAlignment from "+s+" expected 6 tokens, got "+tokens.length;
+			switch(this.getValidationStringency())
 				{
-				String msg="Cannot extract OtherCanonicalAlignment from "+s+" expected 6 tokens, got "+tokens.length;
-				switch(this.getValidationStringency())
-					{
-					case STRICT:throw new SAMFormatException(msg);
-					case LENIENT:System.err.println(msg);break;
-					default:break;
-					}
-				continue;
+				case STRICT:throw new SAMFormatException(msg);
+				case LENIENT:System.err.println(msg);break;
+				default:break;
 				}
-			OtherCanonicalAlignmentImpl aln=new OtherCanonicalAlignmentImpl();
-			
-			aln.reference=tokens[0];
-			aln.pos=Integer.parseInt(tokens[1]);
-			aln.strand=tokens[2].charAt(0);
-			aln.cigarStr=tokens[3];
-			aln.mapq=Integer.parseInt(tokens[4]);	
-			aln.nm=Integer.parseInt(tokens[5]);
-			L.add(aln);
+			continue;
 			}
-		return L;
+		OtherCanonicalAlignmentImpl aln=new OtherCanonicalAlignmentImpl();
+		
+		aln.reference=tokens[0];
+		aln.pos=Integer.parseInt(tokens[1]);
+		aln.strand=tokens[2].charAt(0);
+		aln.cigarStr=tokens[3];
+		aln.mapq=Integer.parseInt(tokens[4]);	
+		aln.nm=Integer.parseInt(tokens[5]);
+		L.add(aln);
+		}
+	return L;
     	}
     
     /**
      * implementation of {@link OtherCanonicalAlignment} 
      * @author Pierre Lindenbaum
      * */
-    private class OtherCanonicalAlignmentImpl implements OtherCanonicalAlignment
-    	{
+    private class OtherCanonicalAlignmentImpl implements OtherCanonicalAlignment {
 		private String reference;
 		private int pos;
 		private char strand;
