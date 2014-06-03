@@ -1731,18 +1731,29 @@ public class SAMRecord implements Cloneable
     }
     
     /**
-     * get the other canonical alignments stored in the 'SA' attribute
-     * @returns a list of other canonical alignments or an empty list if there is no 'SA' attribute.
+     * get the other canonical alignments stored in the 'SA' attribute.
      * 
+     * read name, ,fileSource are copied from 'this'.
+     * BEWARE: do not try to use the DNA sequence/qual if the cigar string of 'this' contains HARD clips.
+     * 
+     * the number of edits is stored in the attribute 'NM'.
+     * read flag is 'SupplementaryAlignmentFlag'
+     * 
+     * TODO:  In the future replace the returned list of SAMRecord by a specialized
+     * implementation of a SamRecord interface/base-class that will keep a pointer to 'this'.
+     * 
+     * @returns a list of other canonical alignments or an empty list if there is no 'SA' attribute.
+     * @author Pierre Lindenbaum @yokofakun
      */
-    public List<OtherCanonicalAlignment> getOtherCanonicalAlignments() {
+    public List<SAMRecord> getOtherCanonicalAlignments() {
         final Pattern semiColonRegex = Pattern.compile("[;]");
         final Pattern commaRegex = Pattern.compile("[,]");
+        final DefaultSAMRecordFactory samRecordFactory=new DefaultSAMRecordFactory();
     	String saAttribute = this.getStringAttribute(ReservedTagConstants.SA);
     	if(saAttribute==null) return Collections.emptyList();
 
     	String otherAlignments[] = semiColonRegex.split(saAttribute);
-    	List<OtherCanonicalAlignment> returnedList = new ArrayList<OtherCanonicalAlignment>(otherAlignments.length);
+    	List<SAMRecord> returnedList = new ArrayList<SAMRecord>(otherAlignments.length);
     	for(String alignAsString : otherAlignments) {
     	    
     		if(alignAsString.isEmpty()) continue;
@@ -1750,7 +1761,8 @@ public class SAMRecord implements Cloneable
     		String tokens[]=commaRegex.split(alignAsString);
 
     		if(tokens.length!=6) {
-    			String msg="Cannot extract OtherCanonicalAlignment from "+alignAsString+" expected 6 tokens, got "+tokens.length;
+    			String msg="Cannot extract OtherCanonicalAlignment from "+alignAsString+
+    			        " expected 6 tokens, got "+tokens.length;
     			switch(this.getValidationStringency())
     			{
     			case STRICT:throw new SAMFormatException(msg);
@@ -1759,183 +1771,28 @@ public class SAMRecord implements Cloneable
     			}
     			continue;
     		}
+            /* 
+             * TODO fix this. In the future replace this SAMRecord by a specialized
+             * implementation of a SamRecord interface/base-class that will keep
+             * a pointer to 'this'.
+             */
+
+    		SAMRecord aln=samRecordFactory.createSAMRecord(this.getHeader());
+    		aln.setSupplementaryAlignmentFlag(true);
+            aln.setMappingQuality(Integer.parseInt(tokens[4]));
+            aln.setReadNegativeStrandFlag(tokens[2].equals("-"));
+    		aln.setReferenceName(tokens[0]);
+    		aln.setReadName(this.getReadName());
+    		aln.setAlignmentStart(Integer.parseInt(tokens[1]));
+    		aln.setAttribute("NM", Integer.parseInt(tokens[5]));
+    		aln.setCigarString(tokens[3]);
+    		aln.setReadBases(this.getReadBases());
+    		aln.setBaseQualities(this.getBaseQualities());
+    		aln.setFileSource(this.getFileSource());
     		
-    		OtherCanonicalAlignmentImpl aln=new OtherCanonicalAlignmentImpl();
-    		aln.xReferenceName = tokens[0];
-    		aln.xAlignmentStart = Integer.parseInt(tokens[1]);
-    		aln.xNegativeStrand = tokens[2].equals("-");
-    		aln.xCigarString = tokens[3];
-    		aln.xMappingQuality = Integer.parseInt(tokens[4]);	
-    		aln.xNumberOfEdits = Integer.parseInt(tokens[5]);
     		returnedList.add(aln);
     	}
     	return returnedList;
-    }
-
-    /**
-     * implementation of {@link OtherCanonicalAlignment} 
-     * @author Pierre Lindenbaum
-     * */
-    private class OtherCanonicalAlignmentImpl implements OtherCanonicalAlignment {
-        /** reference name */
-        private String xReferenceName;
-        /** alignmentStart */
-        private int xAlignmentStart;
-        /** strand */
-        private boolean xNegativeStrand;
-        /** cigar string */
-        private String xCigarString;
-        /** cigar . will be created, only if needed, from xCigarString */
-        private Cigar xCigar=null;
-        /** mapping quality */
-        private int xMappingQuality=0;
-        /** number of edits */
-        private int xNumberOfEdits=0;
-        /** alignment  end  will be created if needed by getAlignmentEnd  */
-        private int  xAlignmentEnd = SAMRecord.NO_ALIGNMENT_START;
-
-        @Override
-        public int getReferenceIndex() {
-            return getSAMRecord().getHeader().getSequenceDictionary().getSequenceIndex(this.xReferenceName);
-        }
-
-        @Override
-        public String getReferenceName() {
-            return this.xReferenceName;
-        }	
-
-        @Override
-        public int getAlignmentStart() {
-            return this.xAlignmentStart;
-        }
-
-        @Override
-        public boolean getReadNegativeStrandFlag() {
-            return this.xNegativeStrand;
-        }
-
-        @Override
-        public String getCigarString()
-        {
-            return this.xCigarString;
-        }
-        @Override
-        public Cigar getCigar() {
-            if(this.xCigar==null) this.xCigar=TextCigarCodec.getSingleton().decode(getCigarString());
-            return this.xCigar;
-        }
-        @Override
-        public List<CigarElement> getCigarElements()
-        {
-            return getCigar().getCigarElements();
-        }
-        @Override
-        public int getMappingQuality() {
-            return this.xMappingQuality;
-        }
-
-        @Override
-        public int getNM() {
-            return this.xNumberOfEdits;
-        }
-
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + this.xReferenceName.hashCode();
-            result = prime * result + this.xCigarString.hashCode();
-            result = prime * result + this.xAlignmentStart;
-            result = prime * result + (this.xNegativeStrand?0:1);
-            result = prime * result + this.xMappingQuality;
-            result = prime * result + this.xNumberOfEdits;
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            OtherCanonicalAlignmentImpl other = (OtherCanonicalAlignmentImpl) obj;
-            if(this.getSAMRecord()!=other.getSAMRecord()) {
-                return false;
-            }
-            if (this.xAlignmentStart != other.getAlignmentStart())
-                return false;
-            if(this.xMappingQuality!=other.getMappingQuality()) return false;
-            if(this.xNumberOfEdits!=other.getNM()) return false;
-
-            if (this.getReadNegativeStrandFlag() != other.getReadNegativeStrandFlag())
-                return false;
-            if (!this.xReferenceName.equals(other.getReferenceName()))
-                return false;
-            if (!xCigarString.equals(other.getCigar()))
-                return false;
-            return true;
-        }
-
-
-        @Override
-        public String toString() {
-            return this.getReferenceName()+","+
-                    (this.xNegativeStrand?'-':'+')+this.getAlignmentStart()+","+
-                    this.getCigarString()+","+this.getMappingQuality()+","+this.getNM() ;
-        }
-
-        @Override
-        public int getUnclippedStart() {
-            int upos = this.getAlignmentStart();
-
-            for (final CigarElement cig : this.getCigar().getCigarElements()) {
-                final CigarOperator op = cig.getOperator();
-                if (op == CigarOperator.SOFT_CLIP || op == CigarOperator.HARD_CLIP) {
-                    upos -= cig.getLength();
-                }
-                else {
-                    break;
-                }
-            }
-
-            return upos;
-        }
-
-        @Override
-        public int getUnclippedEnd() {
-            int upos = this.getAlignmentEnd();
-            final List<CigarElement> cigs = this.getCigar().getCigarElements();
-            for (int i=cigs.size() - 1; i>=0; --i) {
-                final CigarElement cig = cigs.get(i);
-                final CigarOperator op = cig.getOperator();
-
-                if (op == CigarOperator.SOFT_CLIP || op == CigarOperator.HARD_CLIP) {
-                    upos += cig.getLength();
-                }
-                else {
-                    break;
-                }
-            }
-
-            return upos;               
-        }
-
-
-        @Override
-        public int getAlignmentEnd() {
-            if(this.xAlignmentEnd == SAMRecord.NO_ALIGNMENT_START) {
-                this.xAlignmentEnd = this.getAlignmentStart() + this.getCigar().getReferenceLength() - 1;
-            }
-            return this.xAlignmentEnd;
-        }
-
-        @Override
-        public SAMRecord getSAMRecord() {
-            return SAMRecord.this;
-        }
     }
 }
 
