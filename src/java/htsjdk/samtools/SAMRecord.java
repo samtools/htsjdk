@@ -148,7 +148,7 @@ public class SAMRecord implements Cloneable
     private static final int READ_FAILS_VENDOR_QUALITY_CHECK_FLAG = 0x200;
     private static final int DUPLICATE_READ_FLAG = 0x400;
     private static final int SUPPLEMENTARY_ALIGNMENT_FLAG = 0x800;
-    private static final int TEMPORARY_DUPLICATE_MARKED_FLAG = 0x1600;
+    private static final int TEMPORARY_DUPLICATE_MARKED_FLAG = 0x1600; // NB: is this an appropriate value for a little-used flag?
 
 
     private String mReadName = null;

@@ -284,7 +284,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @throws RuntimeIOException
      */
     private E readFileRecord (final File file) {
-        if (this.canAdd)   // TODO - canAdd is getting set to false if we read to the end of the queue in memory
+        if (this.canAdd)
             this.canAdd = false; // NB: should this just be an assignment regardless?
         // we never wrote a record to disk
         if (file == null)
