@@ -41,9 +41,73 @@ public class FastqRecord {
         this.seqLine = seqLine ;
         this.qualLine = qualLine ;
     }
-
+    /** @return the read name */
     public String getReadHeader() { return seqHeaderPrefix; }
+    /** @return the read DNA sequence */
     public String getReadString() { return seqLine; }
+    /** @return the quality header */
     public String getBaseQualityHeader() { return qualHeaderPrefix; }
+    /** @return the quality string */
     public String getBaseQualityString() { return qualLine; }
+    /** shortcut to getReadString().length() */
+    public int length() { return this.seqLine.length();}
+    
+    
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime
+                * result
+                + ((qualHeaderPrefix == null) ? 0 : qualHeaderPrefix.hashCode());
+        result = prime * result
+                + ((qualLine == null) ? 0 : qualLine.hashCode());
+        result = prime * result
+                + ((seqHeaderPrefix == null) ? 0 : seqHeaderPrefix.hashCode());
+        result = prime * result + ((seqLine == null) ? 0 : seqLine.hashCode());
+        return result;
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        FastqRecord other = (FastqRecord) obj;
+        if (seqLine == null) {
+            if (other.seqLine != null)
+                return false;
+        } else if (!seqLine.equals(other.seqLine))
+            return false;
+        if (qualHeaderPrefix == null) {
+            if (other.qualHeaderPrefix != null)
+                return false;
+        } else if (!qualHeaderPrefix.equals(other.qualHeaderPrefix))
+            return false;
+        if (qualLine == null) {
+            if (other.qualLine != null)
+                return false;
+        } else if (!qualLine.equals(other.qualLine))
+            return false;
+        if (seqHeaderPrefix == null) {
+            if (other.seqHeaderPrefix != null)
+                return false;
+        } else if (!seqHeaderPrefix.equals(other.seqHeaderPrefix))
+            return false;
+        
+        return true;
+    }
+    
+    @Override
+    public String toString() {
+        return new StringBuilder().
+                append(FastqConstants.SEQUENCE_HEADER).append(this.seqHeaderPrefix==null?"":this.seqHeaderPrefix).append('\n').
+                append(this.seqLine==null?"":this.seqLine).append('\n').
+                append(FastqConstants.QUALITY_HEADER).append(this.qualHeaderPrefix==null?"":this.qualHeaderPrefix).append('\n').
+                append(this.qualLine==null?"":this.qualLine).
+                toString();
+        }
 }
