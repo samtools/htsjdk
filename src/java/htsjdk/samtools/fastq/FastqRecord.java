@@ -41,7 +41,7 @@ public class FastqRecord {
         this.seqLine = seqLine ;
         this.qualLine = qualLine ;
     }
-    
+
     /** @return the read name */
     public String getReadHeader() { return seqHeaderPrefix; }
     /** @return the read DNA sequence */
