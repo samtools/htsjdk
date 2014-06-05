@@ -22,7 +22,7 @@ public class RelativeIso8601Date extends Iso8601Date {
     public static final String LAZY_NOW_LABEL = "NOW";
     
     /** Flag that indicates this instance is lazy and has not yet been queried (and so its value should be updated at the next query). */
-    private boolean doSetTimeNextQuery;
+    private boolean doSetTimeNextQuery = false;
 
     /** Returns a "lazy now" instance. */
     public static RelativeIso8601Date generateLazyNowInstance() {
@@ -45,7 +45,7 @@ public class RelativeIso8601Date extends Iso8601Date {
 
     /** Updates the time stored by this instance if it's a "lazy now" instance and has never been stored. */
     private synchronized void conditionallyUpdateTime() {
-        if (!doSetTimeNextQuery) {
+        if (doSetTimeNextQuery) {
             super.setTime(System.currentTimeMillis());
             doSetTimeNextQuery = false;
         }
