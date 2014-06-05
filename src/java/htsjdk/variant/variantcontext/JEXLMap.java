@@ -94,9 +94,15 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
 
                 // add specific genotype if one is provided
                 infoMap.put(VCFConstants.GENOTYPE_KEY, g.getGenotypeString());
+                infoMap.put("isHom", g.isHom() ? "1" : "0");
                 infoMap.put("isHomRef", g.isHomRef() ? "1" : "0");
                 infoMap.put("isHet", g.isHet() ? "1" : "0");
                 infoMap.put("isHomVar", g.isHomVar() ? "1" : "0");
+                infoMap.put("isCalled", g.isCalled()? "1" : "0");
+                infoMap.put("isNoCall", g.isNoCall()? "1" : "0");
+                infoMap.put("isMixed", g.isMixed()? "1" : "0");
+                infoMap.put("isAvailable", g.isAvailable()? "1" : "0");
+
                 infoMap.put(VCFConstants.GENOTYPE_QUALITY_KEY, g.getGQ());
                 if ( g.hasDP() )
                     infoMap.put(VCFConstants.DEPTH_KEY, g.getDP());
