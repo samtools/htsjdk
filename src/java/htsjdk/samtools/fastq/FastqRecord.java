@@ -51,7 +51,7 @@ public class FastqRecord {
     /** @return the quality string */
     public String getBaseQualityString() { return qualLine; }
     /** shortcut to getReadString().length() */
-    public int length() { return this.seqLine.length();}
+    public int length() { return this.seqLine==null?0:this.seqLine.length();}
     
     
     @Override
