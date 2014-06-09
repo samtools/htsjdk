@@ -30,7 +30,9 @@ import htsjdk.samtools.util.StringUtil;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 
 /**
@@ -130,7 +132,7 @@ public class SAMRecord implements Cloneable
     /**
      * abs(insertSize) must be <= this
      */
-    public static final int MAX_INSERT_SIZE = 1<<29;
+     public static final int MAX_INSERT_SIZE = 1<<29;
 
     /**
      * It is not necessary in general to use the flag constants, because there are getters
@@ -1726,6 +1728,71 @@ public class SAMRecord implements Cloneable
      */
     public String getSAMString() {
         return SAMTextWriter.getSAMString(this);
+    }
+    
+    /**
+     * get the other canonical alignments stored in the 'SA' attribute.
+     * 
+     * read name, ,fileSource are copied from 'this'.
+     * BEWARE: do not try to use the DNA sequence/qual if the cigar string of 'this' contains HARD clips.
+     * 
+     * the number of edits is stored in the attribute 'NM'.
+     * read flag is 'SupplementaryAlignmentFlag'
+     * 
+     * TODO:  In the future replace the returned list of SAMRecord by a specialized
+     * implementation of a SamRecord interface/base-class that will keep a pointer to 'this'.
+     * 
+     * @returns a list of other canonical alignments or an empty list if there is no 'SA' attribute.
+     * @author Pierre Lindenbaum @yokofakun
+     */
+    public List<SAMRecord> getOtherCanonicalAlignments() {
+        final Pattern semiColonRegex = Pattern.compile("[;]");
+        final Pattern commaRegex = Pattern.compile("[,]");
+        final DefaultSAMRecordFactory samRecordFactory=new DefaultSAMRecordFactory();
+    	String saAttribute = this.getStringAttribute(ReservedTagConstants.SA);
+    	if(saAttribute==null) return Collections.emptyList();
+
+    	String otherAlignments[] = semiColonRegex.split(saAttribute);
+    	List<SAMRecord> returnedList = new ArrayList<SAMRecord>(otherAlignments.length);
+    	for(String alignAsString : otherAlignments) {
+    	    
+    		if(alignAsString.isEmpty()) continue;
+
+    		String tokens[]=commaRegex.split(alignAsString);
+
+    		if(tokens.length!=6) {
+    			String msg="Cannot extract OtherCanonicalAlignment from "+alignAsString+
+    			        " expected 6 tokens, got "+tokens.length;
+    			switch(this.getValidationStringency())
+    			{
+    			case STRICT:throw new SAMFormatException(msg);
+    			case LENIENT:System.err.println(msg);break;
+    			default:break;
+    			}
+    			continue;
+    		}
+            /* 
+             * TODO fix this. In the future replace this SAMRecord by a specialized
+             * implementation of a SamRecord interface/base-class that will keep
+             * a pointer to 'this'.
+             */
+
+    		SAMRecord aln=samRecordFactory.createSAMRecord(this.getHeader());
+    		aln.setSupplementaryAlignmentFlag(true);
+            aln.setMappingQuality(Integer.parseInt(tokens[4]));
+            aln.setReadNegativeStrandFlag(tokens[2].equals("-"));
+    		aln.setReferenceName(tokens[0]);
+    		aln.setReadName(this.getReadName());
+    		aln.setAlignmentStart(Integer.parseInt(tokens[1]));
+    		aln.setAttribute("NM", Integer.parseInt(tokens[5]));
+    		aln.setCigarString(tokens[3]);
+    		aln.setReadBases(this.getReadBases());
+    		aln.setBaseQualities(this.getBaseQualities());
+    		aln.setFileSource(this.getFileSource());
+    		
+    		returnedList.add(aln);
+    	}
+    	return returnedList;
     }
 }
 

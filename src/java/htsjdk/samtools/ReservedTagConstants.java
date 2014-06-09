@@ -66,5 +66,9 @@ public class ReservedTagConstants {
 
     /** The original cigar before indel cleaning, or 454 cafie and homopolymer correction */
     public static final String OC = "OC";
+    
+    /**  FLAG for "Other canonical alignments"  used for {@link OtherCanonicalAlignment}*/
+    public static final String SA = "SA";
+
 
 }
