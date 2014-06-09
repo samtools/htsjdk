@@ -6,6 +6,7 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -17,6 +18,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 public class BamFileIoUtils {
+    private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
+    
     public static final String BAM_FILE_EXTENSION = ".bam";
 
     public static boolean isBamFile(final File file) {
@@ -129,6 +132,7 @@ public class BamFileIoUtils {
             boolean isFirstFile = true;
 
             for (final File f : bams) {
+                LOG.info(String.format("Block copying %s ...", f.getAbsolutePath()));
                 blockCopyBamFile(f, out, !isFirstFile, true);
                 isFirstFile = false;
             }
