@@ -148,7 +148,6 @@ public class SAMRecord implements Cloneable
     private static final int READ_FAILS_VENDOR_QUALITY_CHECK_FLAG = 0x200;
     private static final int DUPLICATE_READ_FLAG = 0x400;
     private static final int SUPPLEMENTARY_ALIGNMENT_FLAG = 0x800;
-    private static final int TEMPORARY_DUPLICATE_MARKED_FLAG = 0x1600; // NB: is this an appropriate value for a little-used flag?
 
 
     private String mReadName = null;
@@ -759,14 +758,6 @@ public class SAMRecord implements Cloneable
     }
 
     /**
-     * The read either has or has not been through duplicate marking.
-     * Only used transiently during the operation of Picard's MarkDuplicatesWithMateCigar
-     */
-    public boolean getTemporaryDuplicateMarkedFlag() {
-        return (mFlags & TEMPORARY_DUPLICATE_MARKED_FLAG) != 0;
-    }
-
-    /**
      * the read is paired in sequencing, no matter whether it is mapped in a pair.
      */
     public void setReadPairedFlag(final boolean flag) {
@@ -859,14 +850,6 @@ public class SAMRecord implements Cloneable
      */
     public void setDuplicateReadFlag(final boolean flag) {
         setFlag(flag, DUPLICATE_READ_FLAG);
-    }
-
-    /**
-     * the read either has or has not been through duplicate marking.
-     * Only used transiently during the operation of Picard's MarkDuplicatesWithMateCigar
-     */
-    public void setTemporaryDuplicateMarkedFlag(final boolean flag) {
-        setFlag(flag, TEMPORARY_DUPLICATE_MARKED_FLAG);
     }
 
     /**
