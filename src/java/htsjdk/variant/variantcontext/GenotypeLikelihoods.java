@@ -39,7 +39,7 @@ public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
     private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
     // caching numAlleles up to 5 and ploidy up to 10
-    private final static int[][] numLikelihoodCache = new int[NUM_LIKELIHOODS_CACHE_N_ALLELES][NUM_LIKELIHOODS_CACHE_PLOIDY];
+    private final static int[][] numLikelihoodCache;
 
     public final static int MAX_PL = Integer.MAX_VALUE;
 
@@ -57,11 +57,13 @@ public class GenotypeLikelihoods {
      */
     static {
         // must be done before PLIndexToAlleleIndex
+        int[][] cache = new int[NUM_LIKELIHOODS_CACHE_N_ALLELES][NUM_LIKELIHOODS_CACHE_PLOIDY];
         for ( int numAlleles = 1; numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES; numAlleles++ ) {
             for ( int ploidy = 1; ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY; ploidy++ ) {
-                numLikelihoodCache[numAlleles][ploidy] = calcNumLikelihoods(numAlleles, ploidy);
+                cache[numAlleles][ploidy] = numLikelihoods(numAlleles, ploidy);
             }
         }
+        numLikelihoodCache = cache;
     }
 
     /**
@@ -111,7 +113,7 @@ public class GenotypeLikelihoods {
      */
     public double[] getAsVector() {
         // assumes one of the likelihoods vector or the string isn't null
-        if ( log10Likelihoods == null ) {
+        if (log10Likelihoods == null ) {
             // make sure we create the GL string if it doesn't already exist
             log10Likelihoods = parsePLsIntoLikelihoods(likelihoodsAsString_PLs);
         }
@@ -129,9 +131,9 @@ public class GenotypeLikelihoods {
     }
 
     public String getAsString() {
-        if ( likelihoodsAsString_PLs == null ) {
+        if (likelihoodsAsString_PLs == null ) {
             // todo -- should we accept null log10Likelihoods and set PLs as MISSING?
-            if ( log10Likelihoods == null )
+            if (log10Likelihoods == null )
                 throw new TribbleException("BUG: Attempted to get likelihoods as strings and neither the vector nor the string is set!");
             likelihoodsAsString_PLs = convertLikelihoodsToPLString(log10Likelihoods);
         }
@@ -141,9 +143,9 @@ public class GenotypeLikelihoods {
 
     @Override public boolean equals(Object aThat) {
         //check for self-comparison
-        if ( this == aThat ) return true;
+        if (this == aThat ) return true;
 
-        if ( !(aThat instanceof GenotypeLikelihoods) ) return false;
+        if (!(aThat instanceof GenotypeLikelihoods) ) return false;
         GenotypeLikelihoods that = (GenotypeLikelihoods)aThat;
 
         // now a proper field-by-field evaluation can be made.
@@ -225,7 +227,7 @@ public class GenotypeLikelihoods {
     }
 
     private final static double[] parsePLsIntoLikelihoods(String likelihoodsAsString_PLs) {
-        if ( !likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
+        if (!likelihoodsAsString_PLs.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = likelihoodsAsString_PLs.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             try {
@@ -246,7 +248,7 @@ public class GenotypeLikelihoods {
      * @return
      */
     private final static double[] parseDeprecatedGLString(String GLString) {
-        if ( !GLString.equals(VCFConstants.MISSING_VALUE_v4) ) {
+        if (!GLString.equals(VCFConstants.MISSING_VALUE_v4) ) {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             for ( int i = 0; i < strings.length; i++ ) {
@@ -259,13 +261,13 @@ public class GenotypeLikelihoods {
     }
 
     private final static String convertLikelihoodsToPLString(final double[] GLs) {
-        if ( GLs == null )
+        if (GLs == null )
             return VCFConstants.MISSING_VALUE_v4;
 
         final StringBuilder s = new StringBuilder();
         boolean first = true;
         for ( final int pl : GLsToPLs(GLs) ) {
-            if ( ! first )
+            if (! first )
                 s.append(",");
             else
                 first = false;
@@ -333,40 +335,14 @@ public class GenotypeLikelihoods {
 
         // a bit of sanity checking
         for ( int i = 0; i < cache.length; i++ ) {
-            if ( cache[i] == null )
+            if (cache[i] == null )
                 throw new IllegalStateException("BUG: cache entry " + i + " is unexpected null");
         }
 
         return cache;
     }
 
-    // -------------------------------------------------------------------------------------
-    //
-    // num likelihoods given number of alleles and ploidy
-    //
-    // -------------------------------------------------------------------------------------
-
-    /**
-     * Actually does the computation in @see #numLikelihoods
-     *
-     * @param numAlleles
-     * @param ploidy
-     * @return
-     */
-    private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
-        if (numAlleles == 1)
-            return 1;
-        else if (ploidy == 1)
-            return numAlleles;
-        else {
-            int acc =0;
-            for (int k=0; k <= ploidy; k++ )
-                acc += calcNumLikelihoods(numAlleles - 1, ploidy - k);
-            return acc;
-        }
-    }
-
-    /**
+     /**
      * Compute how many likelihood elements are associated with the given number of alleles
      * Equivalent to asking in how many ways N non-negative integers can add up to P is S(N,P)
      * where P = ploidy (number of chromosomes) and N = total # of alleles.
@@ -382,13 +358,8 @@ public class GenotypeLikelihoods {
      *
      * Note this method caches the value for most common num Allele / ploidy combinations for efficiency
      *
-     * Recursive implementation:
-     *   S(N,P) = sum_{k=0}^P S(N-1,P-k)
-     *  because if we have N integers, we can condition 1 integer to be = k, and then N-1 integers have to sum to P-K
-     * With initial conditions
-     *   S(N,1) = N  (only way to have N integers add up to 1 is all-zeros except one element with a one. There are N of these vectors)
-     *   S(1,P) = 1 (only way to have 1 integer add to P is with that integer P itself).
-     *
+     * Implementation using standard combinatorics.  For explanation see:
+     * http://math.stackexchange.com/questions/301259/how-many-ways-to-make-n-by-adding-k-non-negative-integers-proof
      *   @param  numAlleles      Number of alleles (including ref)
      *   @param  ploidy          Ploidy, or number of chromosomes in set
      *   @return    Number of likelihood elements we need to hold.
@@ -396,12 +367,51 @@ public class GenotypeLikelihoods {
     @Requires({"ploidy > 0", "numAlleles > 0"})
     @Ensures("result > 0")
     public static int numLikelihoods(final int numAlleles, final int ploidy) {
-        if ( numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES
+        // Check cache first
+        if (numLikelihoodCache != null
+                && numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES
                 && ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY )
             return numLikelihoodCache[numAlleles][ploidy];
         else {
-            // have to calculate on the fly
-            return calcNumLikelihoods(numAlleles, ploidy);
+            /*
+            * have to calculate on the fly.
+            * We need the binomial coefficient for
+            * (ploidy + numAlleles - 1 ) choose (numAlleles - 1)
+            */
+            if (numAlleles == 1)
+                return 1;
+            else if (ploidy == 1)
+                return numAlleles;
+            else {                
+                final int allelesMinusOne = numAlleles - 1;
+                final int n = ploidy + allelesMinusOne;
+                int maxDenom = (n - allelesMinusOne);
+                int minDenom = allelesMinusOne;
+                /** 
+                * When calculating the factorial, pick the largest of the two
+                * denominator terms to cancel out the numerator and
+                * help avoid overflow when calculating the factorials
+                */
+                if (maxDenom < minDenom){
+                    int tmp = maxDenom;
+                    maxDenom = minDenom;
+                    minDenom = tmp;
+                }
+                // calculate numerator
+                int numerator = n;
+                int toMultiply = (n - 1);
+                while (toMultiply > maxDenom) {
+                    numerator *= toMultiply;
+                    toMultiply--;
+                }
+                // calculate denominator
+                toMultiply = minDenom - 1;
+                while (toMultiply > 1) {
+                    minDenom *= toMultiply;
+                    toMultiply--;
+                }
+                return (numerator / minDenom);
+            }
         }
     }
 
@@ -420,7 +430,7 @@ public class GenotypeLikelihoods {
      */
     public static GenotypeLikelihoodsAllelePair getAllelePair(final int PLindex) {
         // make sure that we've cached enough data
-        if ( PLindex >= PLIndexToAlleleIndex.length )
+        if (PLindex >= PLIndexToAlleleIndex.length )
             throw new IllegalStateException("Internal limitation: cannot genotype more than " + MAX_ALT_ALLELES_THAT_CAN_BE_GENOTYPED + " alleles");
 
         return PLIndexToAlleleIndex[PLindex];
