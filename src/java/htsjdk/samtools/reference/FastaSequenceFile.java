@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.FastLineReader;
@@ -42,8 +43,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     private final boolean truncateNamesAtWhitespace;
     private FastLineReader in;
     private int sequenceIndex = -1;
-    private final static int BUFFER_SIZE = 5000 ;
-    private final byte[] basesBuffer = new byte[BUFFER_SIZE];
+    private final byte[] basesBuffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
 
 
     /** Constructs a FastaSequenceFile that reads from the specified file. */
