@@ -54,9 +54,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -101,6 +99,28 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
     private ReaderImplementation mReader = null;
 
     private File samFile = null;
+
+    private static class EmptySamIterator implements CloseableIterator<SAMRecord> {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public SAMRecord next() {
+            throw new NoSuchElementException("next called on empty iterator");
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Not supported: remove");
+        }
+
+        @Override
+        public void close() {
+            //no-op
+        }
+    }
 
     /**
      * Internal interface for SAM/BAM file reader implementations.
@@ -394,7 +414,15 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
      * @return Iterator over the SAMRecords matching the interval.
      */
     public SAMRecordIterator query(final String sequence, final int start, final int end, final boolean contained) {
-        return new AssertingIterator(mReader.query(new QueryInterval[]{new QueryInterval(getFileHeader().getSequenceIndex(sequence), start, end)}, contained));
+        final int referenceIndex = getFileHeader().getSequenceIndex(sequence);
+        final CloseableIterator<SAMRecord> currentIterator;
+        if (referenceIndex == -1) {
+            currentIterator = new EmptySamIterator();
+        } else {
+            final QueryInterval[] queryIntervals = {new QueryInterval(referenceIndex, start, end)};
+            currentIterator = mReader.query(queryIntervals, contained);
+        }
+        return new AssertingIterator(currentIterator);
     }
 
     /**
