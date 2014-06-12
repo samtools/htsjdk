@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -43,11 +44,6 @@ import java.util.Iterator;
  * the ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
  */
 public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implements Closeable {
-    /**
-     * Size of the read buffer.
-     */
-    private static final int BUFFER_SIZE = 128 * 1024;
-    
     /**
      * The interface facilitating direct access to the fasta.
      */
@@ -196,7 +192,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
 
         // Allocate a 128K buffer for reading in sequence data.
-        ByteBuffer channelBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+        ByteBuffer channelBuffer = ByteBuffer.allocate(Defaults.NON_ZERO_BUFFER_SIZE);
 
         while(targetBuffer.position() < length) {
             // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.
