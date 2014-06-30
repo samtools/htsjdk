@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/samtools/htsjdk.svg?branch=master)](https://travis-ci.org/samtools/htsjdk)
+
+
 A Java API for high-throughput sequencing data (HTS) formats.  
 
 HTSJDK is an implementation of a unified Java library for accessing
