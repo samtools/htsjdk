@@ -25,6 +25,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,13 +81,21 @@ public class ReferenceSequenceFileWalker {
             referenceSequence.getContigIndex());
         }
         referenceSequence = null;
-        for(referenceSequence = referenceSequenceFile.nextSequence();
-                referenceSequence != null && referenceSequence.getContigIndex() < sequenceIndex;
-                referenceSequence = referenceSequenceFile.nextSequence()) {
+
+        if(referenceSequenceFile.isIndexed()) {
+            final SAMSequenceRecord samSequenceRecord = referenceSequenceFile.getSequenceDictionary().getSequence(sequenceIndex);
+            if(samSequenceRecord != null) {
+                referenceSequence = referenceSequenceFile.getSequence(samSequenceRecord.getSequenceName()) ;
+            } // else referenceSequence will remain null
+        } else {
+            do {
+                referenceSequence = referenceSequenceFile.nextSequence();
+            }
+            while (referenceSequence != null && referenceSequence.getContigIndex() < sequenceIndex);
         }
         if (referenceSequence == null || referenceSequence.getContigIndex() != sequenceIndex) {
             throw new SAMException("Reference sequence (" + sequenceIndex +
-            ") not found in " + referenceSequenceFile.toString());
+                    ") not found in " + referenceSequenceFile.toString());
         }
         return referenceSequence;
     }
