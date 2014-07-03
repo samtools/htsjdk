@@ -16,7 +16,7 @@ public class ParsingUtilsTest {
     static final String AVAILABLE_FTP_URL = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
     static final String UNAVAILABLE_FTP_URL = "ftp://www.example.com/file.txt";
 
-    static final String AVAILABLE_HTTP_URL = "http://www.google.com";
+    static final String AVAILABLE_HTTP_URL = "https://www.google.com";
     static final String UNAVAILABLE_HTTP_URL = "http://www.unknownhostwhichshouldntexist.com";
 
     @Test
