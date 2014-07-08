@@ -117,6 +117,8 @@ public class TabixReader {
         mFp = new BlockCompressedInputStream(stream);
         if(idxFn == null){
             mIdxFn = ParsingUtils.appendToPath(fn, TabixUtils.STANDARD_INDEX_EXTENSION);
+        } else {
+            mIdxFn = idxFn;
         }
         readIndex();
     }
