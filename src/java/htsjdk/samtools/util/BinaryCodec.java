@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -45,7 +46,7 @@ import java.nio.ByteOrder;
  *
  * @author Dave Tefft
  */
-public class BinaryCodec {
+public class BinaryCodec implements Closeable {
 
     //Outstream to write to
     private OutputStream outputStream;

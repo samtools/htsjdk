@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import java.io.Closeable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Tim Fennell
  */
-public abstract class AbstractAsyncWriter<T> {
+public abstract class AbstractAsyncWriter<T> implements Closeable {
     private static volatile int threadsCreated = 0; // Just used for thread naming.
     public static final int DEFAULT_QUEUE_SIZE = 2000;
 
