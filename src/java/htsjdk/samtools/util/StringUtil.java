@@ -463,4 +463,86 @@ public class StringUtil {
     public static String asEmptyIfNull(final Object string) {
         return string == null ? EMPTY_STRING : string.toString();
     }
+
+    /*
+    * This is from GIT!
+    *  This function implements the Damerau-Levenshtein algorithm to
+    * calculate a distance between strings.
+    *
+    * Basically, it says how many letters need to be swapped, substituted,
+    * deleted from, or added to string1, at least, to get string2.
+    *
+    * The idea is to build a distance matrix for the substrings of both
+    * strings.  To avoid a large space complexity, only the last three rows
+    * are kept in memory (if swaps had the same or higher cost as one deletion
+    * plus one insertion, only two rows would be needed).
+    *
+    * At any stage, "i + 1" denotes the length of the current substring of
+    * string1 that the distance is calculated for.
+    *
+    * row2 holds the current row, row1 the previous row (i.e. for the substring
+    * of string1 of length "i"), and row0 the row before that.
+    *
+    * In other words, at the start of the big loop, row2[j + 1] contains the
+    * Damerau-Levenshtein distance between the substring of string1 of length
+    * "i" and the substring of string2 of length "j + 1".
+    *
+    * All the big loop does is determine the partial minimum-cost paths.
+    *
+    * It does so by calculating the costs of the path ending in characters
+    * i (in string1) and j (in string2), respectively, given that the last
+    * operation is a substitution, a swap, a deletion, or an insertion.
+    *
+    * This implementation allows the costs to be weighted:
+    *
+    * Note that this algorithm calculates a distance _iff_ d == a.
+    */
+    public static int levenshteinDistance(final String string1, final String string2, int swap, int substitution, int insertion, int deletion) {
+        int i, j;
+
+        int[] row0 = new int[(string2.length() + 1)];
+        int[] row1 = new int[(string2.length() + 1)];
+        int[] row2 = new int[(string2.length() + 1)];
+        int[] dummy;
+
+        final byte[] str1 = string1.getBytes();
+        final byte[] str2 = string2.getBytes();
+
+        for (j = 0; j < str2.length; j++) {
+            row1[j] = j * insertion;
+        }
+        for (i = 0; i < str1.length; i++) {
+            row2[0] = (i + 1) * deletion;
+            for (j = 0; j < str2.length; j++) {
+                /* substitution */
+                row2[j + 1] = row1[j];
+                if (str1[i] != str2[j]) {
+                    row2[j + 1] += substitution;
+                }
+                /* swap */
+                if (i > 0 && j > 0 && str1[i - 1] == str2[j] &&
+                        str1[i] == str2[j - 1] &&
+                        row2[j + 1] > row0[j - 1] + swap) {
+                    row2[j + 1] = row0[j - 1] + swap;
+                }
+                /* deletion */
+                if (row2[j + 1] > row1[j + 1] + deletion) {
+                    row2[j + 1] = row1[j + 1] + deletion;
+                }
+                /* insertion */
+                if (row2[j + 1] > row2[j] + insertion) {
+                    row2[j + 1] = row2[j] + insertion;
+                }
+            }
+
+            dummy = row0;
+            row0 = row1;
+            row1 = row2;
+            row2 = dummy;
+        }
+
+        i = row1[str2.length];
+
+        return i;
+    }
 }
