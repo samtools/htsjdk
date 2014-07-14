@@ -18,6 +18,7 @@
 
 package htsjdk.tribble;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
@@ -25,7 +26,7 @@ import java.util.List;
  * the basic interface that feature sources need to match
  * @param <T> a feature type
  */
-public interface FeatureReader<T extends Feature> {
+public interface FeatureReader<T extends Feature> extends Closeable {
     
     public CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException;
 

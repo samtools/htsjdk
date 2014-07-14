@@ -26,6 +26,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -34,7 +35,7 @@ import java.io.IOException;
  *
  * @author Tim Fennell
  */
-public interface ReferenceSequenceFile {
+public interface ReferenceSequenceFile extends Closeable {
 
     /**
      * Must return a sequence dictionary with at least the following fields completed

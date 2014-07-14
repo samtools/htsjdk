@@ -23,12 +23,13 @@
  */
 package htsjdk.tribble.readers;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * Interface for line-oriented readers.
  */
-public interface LineReader {
+public interface LineReader extends Closeable {
 
     /**
      * @return The next "line" from the source. Typically a line is a set of characters
