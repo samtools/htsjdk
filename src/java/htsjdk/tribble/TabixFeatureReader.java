@@ -55,7 +55,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public TabixFeatureReader(final String featureFile, final AsciiFeatureCodec codec) throws IOException {
         super(featureFile, codec);
         tabixReader = new TabixReader(featureFile);
-        sequenceNames = new ArrayList<String>(tabixReader.mChr2tid.keySet());
+        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
         readHeader();
     }
 
@@ -106,7 +106,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         if (!mp.contains(chr)) {
             return new EmptyIterator<T>();
         }
-        final TabixIteratorLineReader lineReader = new TabixIteratorLineReader(tabixReader.query(tabixReader.mChr2tid.get(chr), start - 1, end));
+        final TabixIteratorLineReader lineReader = new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid(chr), start - 1, end));
         return new FeatureIterator<T>(lineReader, start - 1, end);
     }
 
