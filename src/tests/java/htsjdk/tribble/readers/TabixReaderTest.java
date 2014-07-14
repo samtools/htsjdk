@@ -10,6 +10,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -30,18 +31,16 @@ public class TabixReaderTest {
     @BeforeClass
     public void setup() throws IOException {
         tabixReader = new TabixReader(tabixFile);
-        sequenceNames = new ArrayList<String>(tabixReader.mChr2tid.keySet());
+        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
     }
 
     @AfterClass
     public void teardown() throws Exception {
-        // close?  TabixReader doesn't have a close method!
+        tabixReader.close();
     }
 
     @Test
     public void testSequenceNames() {
-
-
         String[] expectedSeqNames = new String[24];
         for (int i = 1; i < 24; i++) {
             expectedSeqNames[i - 1] = String.valueOf(i);
@@ -56,7 +55,64 @@ public class TabixReaderTest {
 
 
     }
+    
+    @Test
+    public void testSequenceSet() {
+        Set<String> chroms= tabixReader.getChromosomes();
+        Assert.assertFalse(chroms.isEmpty());
+        Assert.assertTrue(chroms.contains("1"));
+        Assert.assertFalse(chroms.contains("MT"));
+        
+    }
 
+
+    @Test
+    public void testIterators() throws IOException {
+        TabixReader.Iterator iter=tabixReader.query("1", 1, 400);
+        Assert.assertNotNull(iter);
+        Assert.assertNotNull(iter.next());
+        Assert.assertNull(iter.next());
+        
+        iter=tabixReader.query("UN", 1, 100);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+        
+        iter=tabixReader.query("UN:1-100");
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+       
+        
+        iter=tabixReader.query("1:10-1");
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+ 
+        iter=tabixReader.query(999999,9,9);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+        
+        iter=tabixReader.query("1",Integer.MAX_VALUE-1,Integer.MAX_VALUE);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+        
+        final int pos_snp_in_vcf_chr1=327;
+        
+        iter=tabixReader.query("1",pos_snp_in_vcf_chr1,pos_snp_in_vcf_chr1);
+        Assert.assertNotNull(iter);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+
+        iter=tabixReader.query("1",pos_snp_in_vcf_chr1-1,pos_snp_in_vcf_chr1-1);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+
+        iter=tabixReader.query("1",pos_snp_in_vcf_chr1+1,pos_snp_in_vcf_chr1+1);
+        Assert.assertNotNull(iter);
+        Assert.assertNull(iter.next());
+
+    }
+    
+    
+    
     /**
      * Test reading a local tabix file
      *
@@ -66,7 +122,7 @@ public class TabixReaderTest {
     public void testLocalQuery() throws IOException {
 
          TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
-                tabixReader.query(tabixReader.mChr2tid.get("4"), 320, 330));
+                tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
 
         int nRecords = 0;
         String nextLine;
@@ -86,13 +142,12 @@ public class TabixReaderTest {
      */
     @Test
     public void testRemoteQuery() throws IOException {
-
         String tabixFile = "http://www.broadinstitute.org/igvdata/test/tabix/trioDup.vcf.gz";
 
         TabixReader tabixReader = new TabixReader(tabixFile);
 
         TabixIteratorLineReader lineReader = new TabixIteratorLineReader(
-                tabixReader.query(tabixReader.mChr2tid.get("4"), 320, 330));
+                tabixReader.query(tabixReader.chr2tid("4"), 320, 330));
 
         int nRecords = 0;
         String nextLine;
@@ -101,7 +156,6 @@ public class TabixReaderTest {
             nRecords++;
         }
         assertTrue(nRecords > 0);
-
 
     }
 }
