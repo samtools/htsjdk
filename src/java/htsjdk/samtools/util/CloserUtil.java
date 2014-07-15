@@ -53,8 +53,11 @@ public class CloserUtil {
      * Calls close() on all elements of <code>objs</code> that implement Closeable
      *
      * @param objs   A list of potentially closeable objects
+     *
+     * NOTE: This method must take a List<? extends Object>, not List<Object>, otherwise the overload above will be selected
+     * if the argument is not exactly List<Object>.
      */
-    public static void close(List<Object> objs) {
+    public static void close(List<? extends Object> objs) {
         for (Object o : objs) {
             if (o instanceof Closeable) {
                 try {
