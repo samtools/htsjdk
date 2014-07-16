@@ -15,8 +15,6 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
-import htsjdk.samtools.BAMFileReader.BAMIteratorFilter;
-import htsjdk.samtools.BAMFileReader.FilteringIteratorState;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SamReader.Type;
@@ -37,7 +35,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 
 public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private File file;
