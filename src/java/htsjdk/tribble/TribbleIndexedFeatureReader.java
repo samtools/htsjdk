@@ -92,6 +92,28 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     }
 
     /**
+     * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url
+     * @param indexFile    - path to the index file
+     * @param codec        - codec to decode the features
+     * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
+     * @throws IOException
+     */
+    public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
+        this(featureFile, codec, false); // required to read the header
+        if (indexFile != null && ParsingUtils.resourceExists(indexFile)) {
+            index = IndexFactory.loadIndex(indexFile);
+            this.needCheckForIndex = false;
+        } else {
+            if (requireIndex) {
+                this.loadIndex();
+                if(!this.hasIndex()){
+                    throw new TribbleException("An index is required, but none found.");
+                }
+            }
+        }
+    }
+
+    /**
      * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
      * @param codec       - codec to decode the features
      * @param index       - a tribble Index object
@@ -518,6 +540,5 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
         }
     }
-
 
 }
