@@ -69,8 +69,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		this.mIndexFile = indexFile;
 		this.referenceSource = referenceSource;
 		counter++;
-		if (counter % 1000 == 0)
-			System.err.println("open cram files: " + counter);
 
 		if (file == null)
 			getIterator();
