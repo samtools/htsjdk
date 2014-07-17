@@ -17,7 +17,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.cram.SAMIteratorForCRAM;
+import htsjdk.samtools.cram.CRAMIterator;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -141,11 +141,11 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (it != null && file == null)
 			return it;
 		try {
-			SAMIteratorForCRAM si = null;
+			CRAMIterator si = null;
 			if (file != null)
-				si = new SAMIteratorForCRAM(new FileInputStream(file), referenceSource);
+				si = new CRAMIterator(new FileInputStream(file), referenceSource);
 			else
-				si = new SAMIteratorForCRAM(is, referenceSource);
+				si = new CRAMIterator(is, referenceSource);
 
 			si.setValidationStringency(validationStringency);
 			header = si.getCramHeader();
@@ -224,10 +224,10 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} else if (is instanceof SeekableStream)
 			s = (SeekableStream) is;
 
-		SAMIteratorForCRAM si = null;
+		CRAMIterator si = null;
 		try {
 			s.seek(0);
-			si = new SAMIteratorForCRAM(s, referenceSource);
+			si = new CRAMIterator(s, referenceSource);
 			si.setValidationStringency(validationStringency);
 			it = si;
 		} catch (IOException e) {
@@ -275,10 +275,10 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} else if (is instanceof SeekableStream)
 			s = (SeekableStream) is;
 
-		SAMIteratorForCRAM si = null;
+		CRAMIterator si = null;
 		try {
 			s.seek(0);
-			si = new SAMIteratorForCRAM(s, referenceSource);
+			si = new CRAMIterator(s, referenceSource);
 			si.setValidationStringency(validationStringency);
 			s.seek(startOfLastLinearBin);
 			it = si;

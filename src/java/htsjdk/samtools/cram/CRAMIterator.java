@@ -16,7 +16,6 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -45,8 +44,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class SAMIteratorForCRAM implements SAMRecordIterator {
-	private static Log log = Log.getInstance(SAMIteratorForCRAM.class);
+public class CRAMIterator implements SAMRecordIterator {
+	private static Log log = Log.getInstance(CRAMIterator.class);
 	private InputStream is;
 	private CramHeader cramHeader;
 	private ArrayList<SAMRecord> records;
@@ -76,12 +75,12 @@ public class SAMIteratorForCRAM implements SAMRecordIterator {
 	private long samRecordIndex;
 	private ArrayList<CramRecord> cramRecords;
 
-	public SAMIteratorForCRAM(InputStream is, ReferenceSource referenceSource)
+	public CRAMIterator(InputStream is, ReferenceSource referenceSource)
 			throws IOException {
 		this.is = is;
 		this.referenceSource = referenceSource;
 		cramHeader = CramIO.readCramHeader(is);
-		records = new ArrayList<SAMRecord>(100000);
+		records = new ArrayList<SAMRecord>(10000);
 		normalizer = new CramNormalizer(cramHeader.samFileHeader,
 				referenceSource);
 		parser = new ContainerParser(cramHeader.samFileHeader);
@@ -224,7 +223,8 @@ public class SAMIteratorForCRAM implements SAMRecordIterator {
 			try {
 				FileInputStream fis = new FileInputStream(cramFile);
 				BufferedInputStream bis = new BufferedInputStream(fis);
-				SAMIteratorForCRAM iterator = new SAMIteratorForCRAM(bis, referenceSource);
+				CRAMIterator iterator = new CRAMIterator(bis,
+						referenceSource);
 				iterator.setValidationStringency(validationStringency);
 				return iterator;
 			} catch (IOException e) {
