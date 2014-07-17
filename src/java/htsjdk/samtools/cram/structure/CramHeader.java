@@ -22,22 +22,22 @@ import java.util.Arrays;
 public final class CramHeader {
 
 	public static final byte[] magick = "CRAM".getBytes();
-	public byte majorVersion;
-	public byte minorVersion;
+	private byte majorVersion;
+	private byte minorVersion;
 	public final byte[] id = new byte[20];
 	{
 		Arrays.fill(id, (byte) 0);
 	}
 
-	public SAMFileHeader samFileHeader;
+	private SAMFileHeader samFileHeader;
 
 	public CramHeader() {
 	}
 
 	public CramHeader(int majorVersion, int minorVersion, String id,
 			SAMFileHeader samFileHeader) {
-		this.majorVersion = (byte) majorVersion;
-		this.minorVersion = (byte) minorVersion;
+		this.majorVersion=(byte) majorVersion;
+		this.minorVersion=(byte) minorVersion;
 		System.arraycopy(id.getBytes(), 0, this.id, 0,
 				Math.min(id.length(), this.id.length));
 		this.samFileHeader = samFileHeader;
@@ -51,10 +51,10 @@ public final class CramHeader {
 	@Override
 	public CramHeader clone() {
 		CramHeader clone = new CramHeader();
-		clone.majorVersion = majorVersion;
-		clone.minorVersion = minorVersion;
+		clone.majorVersion= majorVersion;
+		clone.minorVersion=minorVersion;
 		System.arraycopy(id, 0, clone.id, 0, id.length);
-		clone.samFileHeader = samFileHeader.clone();
+		clone.samFileHeader = getSamFileHeader().clone();
 
 		return clone;
 	}
@@ -68,13 +68,40 @@ public final class CramHeader {
 
 		CramHeader h = (CramHeader) obj;
 
-		if (majorVersion != h.majorVersion)
+		if (getMajorVersion() != h.getMajorVersion())
 			return false;
-		if (minorVersion != h.minorVersion)
+		if (getMinorVersion() != h.getMinorVersion())
 			return false;
 		if (!Arrays.equals(id, h.id))
 			return false;
-		return samFileHeader.equals(h.samFileHeader);
+		return getSamFileHeader().equals(h.getSamFileHeader());
 	}
 
+	public byte getMajorVersion() {
+		return majorVersion;
+	}
+
+	public void setMajorVersion(byte majorVersion) {
+		this.majorVersion = majorVersion;
+	}
+
+	public byte getMinorVersion() {
+		return minorVersion;
+	}
+
+	public void setMinorVersion(byte minorVersion) {
+		this.minorVersion = minorVersion;
+	}
+
+	public SAMFileHeader getSamFileHeader() {
+		return samFileHeader;
+	}
+	
+	public void setSamFileHeader(SAMFileHeader samFileHeader) {
+		this.samFileHeader = samFileHeader;
+	}
+
+	public byte[] getId() {
+		return id;
+	}
 }

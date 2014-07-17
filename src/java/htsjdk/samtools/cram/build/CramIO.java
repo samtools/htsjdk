@@ -65,7 +65,6 @@ import java.util.List;
 
 public class CramIO {
 	public static int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
-	private static final byte[] CHECK = "".getBytes();
 	private static Log log = Log.getInstance(CramIO.class);
 	public static byte[] ZERO_B_EOF_MARKER = ByteBufferUtils
 			.bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 01 00 01 00");
@@ -184,7 +183,7 @@ public class CramIO {
 			CramHeader cramHeader = CramIO.readFormatDefinition(is, new CramHeader());
 			SeekableStream s = (SeekableStream) is;
 			if (!CramIO.hasZeroB_EOF_marker(s))
-				eofNotFound(cramHeader.majorVersion, cramHeader.minorVersion);
+				eofNotFound(cramHeader.getMajorVersion(), cramHeader.getMinorVersion());
 			s.seek(0);
 		} else
 			log.warn("CRAM file/stream completion cannot be verified.");
@@ -214,30 +213,13 @@ public class CramIO {
 		Container c = CramIO.readContainer(is);
 		if (c == null) {
 			// this will cause System.exit(1):
-			eofNotFound(cramHeader.majorVersion, cramHeader.minorVersion);
+			eofNotFound(cramHeader.getMajorVersion(), cramHeader.getMinorVersion());
 			return CramIO.readContainer(new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER));
 		}
 		if (c.isEOF())
 			log.info("EOF marker found, file/stream is complete.");
 
 		return c;
-	}
-
-	private static final boolean check(InputStream is) throws IOException {
-		DataInputStream dis = new DataInputStream(is);
-		byte[] bytes = new byte[CHECK.length];
-		dis.readFully(bytes);
-
-		boolean result = Arrays.equals(CHECK, bytes);
-
-		if (!result)
-			log.error("Expected %s but got %s.\n", new String(CHECK), new String(bytes));
-
-		return result;
-	}
-
-	private static final void check(OutputStream os) throws IOException {
-		os.write(CHECK);
 	}
 
 	public static long issueZeroB_EOF_marker(OutputStream os) throws IOException {
@@ -272,13 +254,13 @@ public class CramIO {
 
 	public static long writeCramHeader(CramHeader h, OutputStream os) throws IOException {
 		os.write("CRAM".getBytes("US-ASCII"));
-		os.write(h.majorVersion);
-		os.write(h.minorVersion);
+		os.write(h.getMajorVersion());
+		os.write(h.getMinorVersion());
 		os.write(h.id);
 		for (int i = h.id.length; i < 20; i++)
 			os.write(0);
 
-		long len = writeContainerForSamFileHeader(h.samFileHeader, os);
+		long len = writeContainerForSamFileHeader(h.getSamFileHeader(), os);
 
 		return DEFINITION_LENGTH + len;
 	}
@@ -289,8 +271,8 @@ public class CramIO {
 				throw new RuntimeException("Unknown file format.");
 		}
 
-		header.majorVersion = (byte) is.read();
-		header.minorVersion = (byte) is.read();
+		header.setMajorVersion((byte) is.read());
+		header.setMinorVersion((byte) is.read());
 
 		DataInputStream dis = new DataInputStream(is);
 		dis.readFully(header.id);
@@ -303,7 +285,7 @@ public class CramIO {
 
 		readFormatDefinition(is, header);
 
-		header.samFileHeader = readSAMFileHeader(new String(header.id), is);
+		header.setSamFileHeader(readSAMFileHeader(new String(header.id), is));
 		return header;
 	}
 
@@ -485,7 +467,7 @@ public class CramIO {
 	}
 
 	public static SAMFileHeader readSAMFileHeader(String id, InputStream is) throws IOException {
-		Container container = readContainerHeader(is);
+		readContainerHeader(is);
 		Block b = new Block(is, true, true);
 
 		is = new ByteArrayInputStream(b.getRawContent());
@@ -516,9 +498,9 @@ public class CramIO {
 		CramHeader header = new CramHeader();
 		readFormatDefinition(cis, header);
 
-		if (header.majorVersion != newHeader.majorVersion && header.minorVersion != newHeader.minorVersion) {
-			log.error(String.format("Cannot replace CRAM header because format versions differ: ", header.majorVersion,
-					header.minorVersion, newHeader.majorVersion, header.minorVersion, file.getAbsolutePath()));
+		if (header.getMajorVersion() != newHeader.getMajorVersion() && header.getMinorVersion() != newHeader.getMinorVersion()) {
+			log.error(String.format("Cannot replace CRAM header because format versions differ: ", header.getMajorVersion(),
+					header.getMinorVersion(), newHeader.getMajorVersion(), header.getMinorVersion(), file.getAbsolutePath()));
 			cis.close();
 			return false;
 		}
@@ -528,7 +510,7 @@ public class CramIO {
 		long dataStart = cis.getCount();
 		cis.close();
 
-		byte[] data = toByteArray(newHeader.samFileHeader);
+		byte[] data = toByteArray(newHeader.getSamFileHeader());
 
 		if (data.length > b.getRawContentSize()) {
 			log.error("Failed to replace CRAM header because the new header is bigger.");

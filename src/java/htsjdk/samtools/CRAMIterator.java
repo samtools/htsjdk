@@ -78,9 +78,9 @@ public class CRAMIterator implements SAMRecordIterator {
 		this.referenceSource = referenceSource;
 		cramHeader = CramIO.readCramHeader(this.is);
 		records = new ArrayList<SAMRecord>(10000);
-		normalizer = new CramNormalizer(cramHeader.samFileHeader,
+		normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
 				referenceSource);
-		parser = new ContainerParser(cramHeader.samFileHeader);
+		parser = new ContainerParser(cramHeader.getSamFileHeader());
 	}
 
 	public CramHeader getCramHeader() {
@@ -117,7 +117,7 @@ public class CRAMIterator implements SAMRecordIterator {
 			refs = null;
 			prevSeqId = -2;
 		} else if (prevSeqId < 0 || prevSeqId != container.sequenceId) {
-			SAMSequenceRecord sequence = cramHeader.samFileHeader
+			SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
 					.getSequence(container.sequenceId);
 			refs = referenceSource.getReferenceBases(sequence, true);
 			prevSeqId = container.sequenceId;
@@ -130,7 +130,7 @@ public class CRAMIterator implements SAMRecordIterator {
 		long time2 = System.nanoTime();
 
 		Cram2BamRecordFactory c2sFactory = new Cram2BamRecordFactory(
-				cramHeader.samFileHeader);
+				cramHeader.getSamFileHeader());
 
 		long c2sTime = 0;
 
@@ -139,7 +139,7 @@ public class CRAMIterator implements SAMRecordIterator {
 			SAMRecord s = c2sFactory.create(r);
 			c2sTime += System.nanoTime() - time;
 			if (!r.isSegmentUnmapped()) {
-				SAMSequenceRecord sequence = cramHeader.samFileHeader
+				SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
 						.getSequence(r.sequenceId);
 				refs = referenceSource.getReferenceBases(sequence, true);
 				Utils.calculateMdAndNmTags(s, refs, restoreMDTag, restoreNMTag);

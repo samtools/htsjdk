@@ -132,7 +132,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-		return header.samFileHeader;
+		return header.getSamFileHeader();
 	}
 
 	@Override
