@@ -27,7 +27,7 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import htsjdk.samtools.util.Log;
 
@@ -53,13 +53,13 @@ public class CramNormalizer {
 		this.referenceSource = referenceSource;
 	}
 
-	public void normalize(ArrayList<CramRecord> records, boolean resetPairing,
+	public void normalize(ArrayList<CramCompressionRecord> records, boolean resetPairing,
 			byte[] ref, int alignmentStart,
 			SubstitutionMatrix substitutionMatrix, boolean AP_delta) {
 
 		int startCounter = readCounter;
 
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			r.index = ++readCounter;
 
 			if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
@@ -72,7 +72,7 @@ public class CramNormalizer {
 		}
 
 		{// restore pairing first:
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				if (!r.isMultiFragment() || r.isDetached()) {
 					r.recordsToNextFragment = -1;
 
@@ -81,7 +81,7 @@ public class CramNormalizer {
 					continue;
 				}
 				if (r.isHasMateDownStream()) {
-					CramRecord downMate = records.get(r.index
+					CramCompressionRecord downMate = records.get(r.index
 							+ r.recordsToNextFragment - startCounter);
 					r.next = downMate;
 					downMate.previous = r;
@@ -106,7 +106,7 @@ public class CramNormalizer {
 		}
 
 		// assign some read names if needed:
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			if (r.readName == null) {
 				String name = readNamePrefix + r.index;
 				r.readName = name;
@@ -118,7 +118,7 @@ public class CramNormalizer {
 		}
 
 		// resolve bases:
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			if (r.isSegmentUnmapped())
 				continue;
 
@@ -136,13 +136,13 @@ public class CramNormalizer {
 	}
 
 	public static void restoreQualityScores(byte defaultQualityScore,
-			List<CramRecord> records) {
-		for (CramRecord record : records)
+			List<CramCompressionRecord> records) {
+		for (CramCompressionRecord record : records)
 			restoreQualityScores(defaultQualityScore, record);
 	}
 
 	public static byte[] restoreQualityScores(byte defaultQualityScore,
-			CramRecord record) {
+			CramCompressionRecord record) {
 		if (!record.isForcePreserveQualityScores()) {
 			byte[] scores = new byte[record.readLength];
 			Arrays.fill(scores, defaultQualityScore);
@@ -191,7 +191,7 @@ public class CramNormalizer {
 		return record.qualityScores;
 	}
 
-	private static final long calcRefLength(CramRecord record) {
+	private static final long calcRefLength(CramCompressionRecord record) {
 		if (record.readFeatures == null || record.readFeatures.isEmpty())
 			return record.readLength;
 		long len = record.readLength;
@@ -211,7 +211,7 @@ public class CramNormalizer {
 		return len;
 	}
 
-	private static final byte[] restoreReadBases(CramRecord record, byte[] ref,
+	private static final byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
 			SubstitutionMatrix substitutionMatrix) {
 		int readLength = record.readLength;
 		byte[] bases = new byte[readLength];

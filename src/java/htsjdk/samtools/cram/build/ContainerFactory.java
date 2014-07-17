@@ -26,7 +26,7 @@ import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 import htsjdk.samtools.cram.structure.BlockContentType;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
@@ -50,13 +50,13 @@ public class ContainerFactory {
 		this.preserveReadNames = preserveReadNames;
 	}
 
-	public Container buildContainer(List<CramRecord> records)
+	public Container buildContainer(List<CramCompressionRecord> records)
 			throws IllegalArgumentException, IllegalAccessException,
 			IOException {
 		return buildContainer(records, null);
 	}
 
-	public Container buildContainer(List<CramRecord> records,
+	public Container buildContainer(List<CramCompressionRecord> records,
 			SubstitutionMatrix substitutionMatrix)
 			throws IllegalArgumentException, IllegalAccessException,
 			IOException {
@@ -82,7 +82,7 @@ public class ContainerFactory {
 		long time3 = System.nanoTime();
 		long lastGlobalRecordCounter = c.globalRecordCounter;
 		for (int i = 0; i < records.size(); i += recordsPerSlice) {
-			List<CramRecord> sliceRecords = records.subList(i,
+			List<CramCompressionRecord> sliceRecords = records.subList(i,
 					Math.min(records.size(), i + recordsPerSlice));
 			Slice slice = buildSlice(sliceRecords, h, samFileHeader);
 			slice.globalRecordCounter = lastGlobalRecordCounter;
@@ -123,7 +123,7 @@ public class ContainerFactory {
 		}
 	}
 
-	private static Slice buildSlice(List<CramRecord> records,
+	private static Slice buildSlice(List<CramCompressionRecord> records,
 			CompressionHeader h, SAMFileHeader fileHeader)
 			throws IllegalArgumentException, IllegalAccessException,
 			IOException {
@@ -143,7 +143,7 @@ public class ContainerFactory {
 		int minAlStart = Integer.MAX_VALUE;
 		int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
 
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			slice.bases += r.readLength;
 
 			int alStart = r.alignmentStart;
@@ -183,7 +183,7 @@ public class ContainerFactory {
 		
 		Writer writer = f.buildWriter(bos, map, h, slice.sequenceId);
 		int prevAlStart = slice.alignmentStart;
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			r.alignmentDelta = r.alignmentStart - prevAlStart;
 			prevAlStart = r.alignmentStart;
 			writer.write(r);

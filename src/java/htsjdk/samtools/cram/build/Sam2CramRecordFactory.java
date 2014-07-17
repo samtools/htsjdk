@@ -33,7 +33,7 @@ import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.mask.RefMaskUtils;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
 
@@ -112,8 +112,8 @@ public class Sam2CramRecordFactory {
 		}
 	}
 
-	public CramRecord createCramRecord(SAMRecord record) {
-		CramRecord cramRecord = new CramRecord();
+	public CramCompressionRecord createCramRecord(SAMRecord record) {
+		CramCompressionRecord cramRecord = new CramCompressionRecord();
 		if (record.getReadPairedFlag()) {
 			cramRecord.mateAlignmentStart = record.getMateAlignmentStart();
 			cramRecord.setMateUmapped(record.getMateUnmappedFlag());
@@ -209,7 +209,7 @@ public class Sam2CramRecordFactory {
 	 * @param samRecord
 	 * @return
 	 */
-	private List<ReadFeature> checkedCreateVariations(CramRecord cramRecord,
+	private List<ReadFeature> checkedCreateVariations(CramCompressionRecord cramRecord,
 			SAMRecord samRecord) {
 		try {
 			return createVariations(cramRecord, samRecord);
@@ -221,7 +221,7 @@ public class Sam2CramRecordFactory {
 		}
 	}
 
-	private List<ReadFeature> createVariations(CramRecord cramRecord,
+	private List<ReadFeature> createVariations(CramCompressionRecord cramRecord,
 			SAMRecord samRecord) {
 		List<ReadFeature> features = new LinkedList<ReadFeature>();
 		int zeroBasedPositionInRead = 0;
@@ -338,7 +338,7 @@ public class Sam2CramRecordFactory {
 		}
 	}
 
-	private void addSubstitutionsAndMaskedBases(CramRecord cramRecord,
+	private void addSubstitutionsAndMaskedBases(CramCompressionRecord cramRecord,
 			List<ReadFeature> features, int fromPosInRead,
 			int alignmentStartOffset, int nofReadBases, byte[] bases,
 			byte[] qualityScore) {

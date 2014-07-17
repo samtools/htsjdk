@@ -26,7 +26,7 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
 import java.io.EOFException;
@@ -34,9 +34,9 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 public class CramRecordReader extends AbstractReader {
-	private CramRecord prevRecord;
+	private CramCompressionRecord prevRecord;
 
-	public void read(CramRecord r) throws IOException {
+	public void read(CramCompressionRecord r) throws IOException {
 		try {
 			// int mark = testC.readData();
 			// if (Writer.TEST_MARK != mark) {

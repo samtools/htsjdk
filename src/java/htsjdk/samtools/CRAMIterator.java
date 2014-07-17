@@ -17,7 +17,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.build.ContainerParser;
-import htsjdk.samtools.cram.build.Cram2BamRecordFactory;
+import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.common.Utils;
@@ -25,7 +25,7 @@ import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.Log.LogLevel;
@@ -71,7 +71,7 @@ public class CRAMIterator implements SAMRecordIterator {
 	}
 
 	private long samRecordIndex;
-	private ArrayList<CramRecord> cramRecords;
+	private ArrayList<CramCompressionRecord> cramRecords;
 
 	public CRAMIterator(InputStream is, ReferenceSource referenceSource)
 			throws IOException {
@@ -102,7 +102,7 @@ public class CRAMIterator implements SAMRecordIterator {
 		else
 			records.clear();
 		if (cramRecords == null)
-			cramRecords = new ArrayList<CramRecord>(container.nofRecords);
+			cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
 		else
 			cramRecords.clear();
 
@@ -130,12 +130,12 @@ public class CRAMIterator implements SAMRecordIterator {
 				container.h.substitutionMatrix, container.h.AP_seriesDelta);
 		long time2 = System.nanoTime();
 
-		Cram2BamRecordFactory c2sFactory = new Cram2BamRecordFactory(
+		Cram2SamRecordFactory c2sFactory = new Cram2SamRecordFactory(
 				cramHeader.getSamFileHeader());
 
 		long c2sTime = 0;
 
-		for (CramRecord r : cramRecords) {
+		for (CramCompressionRecord r : cramRecords) {
 			long time = System.nanoTime();
 			SAMRecord s = c2sFactory.create(r);
 			c2sTime += System.nanoTime() - time;

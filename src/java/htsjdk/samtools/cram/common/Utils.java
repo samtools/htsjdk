@@ -28,7 +28,7 @@ import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMTextWriter;
 import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -241,7 +241,7 @@ public class Utils {
 		record.setCigar(new Cigar(newCigarElements));
 	}
 
-	public static void reversePositionsInRead(CramRecord record) {
+	public static void reversePositionsInRead(CramCompressionRecord record) {
 		if (record.readFeatures == null || record.readFeatures.isEmpty())
 			return;
 		for (ReadFeature f : record.readFeatures)
@@ -374,12 +374,12 @@ public class Utils {
 
 	}
 
-	public static final void setInsertSize(CramRecord record) {
+	public static final void setInsertSize(CramCompressionRecord record) {
 
 	}
 
-	public static int computeInsertSize(CramRecord firstEnd,
-			CramRecord secondEnd) {
+	public static int computeInsertSize(CramCompressionRecord firstEnd,
+			CramCompressionRecord secondEnd) {
 		if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
 			return 0;
 		}

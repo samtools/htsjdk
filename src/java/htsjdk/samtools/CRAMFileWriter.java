@@ -20,7 +20,7 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,7 +29,7 @@ import java.util.List;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
 	private String fileName;
-	private List<CramRecord> records = new ArrayList<CramRecord>();
+	private List<CramCompressionRecord> records = new ArrayList<CramCompressionRecord>();
 	private ContainerFactory containerFactory;
 	private int recordsPerSlice = 10000;
 	private int containerSize = recordsPerSlice * 10;
@@ -61,7 +61,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 				throw new RuntimeException(e);
 			}
 
-		CramRecord cramRecord = sam2CramRecordFactory
+		CramCompressionRecord cramRecord = sam2CramRecordFactory
 				.createCramRecord(alignment);
 		records.add(cramRecord);
 	}

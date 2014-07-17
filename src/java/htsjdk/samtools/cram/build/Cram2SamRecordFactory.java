@@ -31,7 +31,7 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
 import java.util.ArrayList;
@@ -39,15 +39,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class Cram2BamRecordFactory {
+public class Cram2SamRecordFactory {
 
 	private SAMFileHeader header;
 
-	public Cram2BamRecordFactory(SAMFileHeader header) {
+	public Cram2SamRecordFactory(SAMFileHeader header) {
 		this.header = header;
 	}
 
-	public SAMRecord create(CramRecord cramRecord) {
+	public SAMRecord create(CramCompressionRecord cramRecord) {
 		SAMRecord samRecord = new SAMRecord(header);
 
 		samRecord.setReadName(cramRecord.readName);
@@ -98,7 +98,7 @@ public class Cram2BamRecordFactory {
 		return samRecord;
 	}
 
-	private static final void copyFlags(CramRecord cr, SAMRecord sr) {
+	private static final void copyFlags(CramCompressionRecord cr, SAMRecord sr) {
 		sr.setReadPairedFlag(cr.isMultiFragment());
 		sr.setProperPairFlag(cr.isProperPair());
 		sr.setReadUnmappedFlag(cr.isSegmentUnmapped());

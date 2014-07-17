@@ -24,7 +24,7 @@ import htsjdk.samtools.cram.encoding.reader.DataReaderFactory.DataReaderWithStat
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
@@ -49,12 +49,12 @@ public class ContainerParser {
 		this.samFileHeader = samFileHeader;
 	}
 
-	public List<CramRecord> getRecords(Container container,
-			ArrayList<CramRecord> records) throws IllegalArgumentException,
+	public List<CramCompressionRecord> getRecords(Container container,
+			ArrayList<CramCompressionRecord> records) throws IllegalArgumentException,
 			IllegalAccessException, IOException {
 		long time1 = System.nanoTime();
 		if (records == null)
-			records = new ArrayList<CramRecord>(container.nofRecords);
+			records = new ArrayList<CramCompressionRecord>(container.nofRecords);
 
 		for (Slice s : container.slices)
 			records.addAll(getRecords(s, container.h));
@@ -73,7 +73,7 @@ public class ContainerParser {
 		return records;
 	}
 
-	public List<CramRecord> getRecords(Slice s, CompressionHeader h)
+	public List<CramCompressionRecord> getRecords(Slice s, CompressionHeader h)
 			throws IllegalArgumentException, IllegalAccessException,
 			IOException {
 		String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
@@ -105,12 +105,12 @@ public class ContainerParser {
 				new ByteArrayInputStream(s.coreBlock.getRawContent())),
 				inputMap, h, s.sequenceId);
 
-		List<CramRecord> records = new ArrayList<CramRecord>();
+		List<CramCompressionRecord> records = new ArrayList<CramCompressionRecord>();
 
 		long readNanos = 0;
 		int prevStart = s.alignmentStart;
 		for (int i = 0; i < s.nofRecords; i++) {
-			CramRecord r = new CramRecord();
+			CramCompressionRecord r = new CramCompressionRecord();
 			r.sliceIndex = s.index ;
 			r.index = i;
 

@@ -16,7 +16,7 @@
 package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.cram.common.Utils;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
 import java.io.EOFException;
@@ -55,10 +55,10 @@ public abstract class AbstractFastqReader extends AbstractReader {
 	 *         paired, 1 for first in pair and 2 for second in pair
 	 */
 	protected int getSegmentIndexInTemplate(int flags) {
-		if ((flags & CramRecord.MULTIFRAGMENT_FLAG) == 0)
+		if ((flags & CramCompressionRecord.MULTIFRAGMENT_FLAG) == 0)
 			return 0;
 
-		if ((flags & CramRecord.FIRST_SEGMENT_FLAG) != 0)
+		if ((flags & CramCompressionRecord.FIRST_SEGMENT_FLAG) != 0)
 			return 1;
 		else
 			return 2;
@@ -89,7 +89,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 				readName = readNameC.readData();
 
 			// mate record:
-			if ((compressionFlags & CramRecord.DETACHED_FLAG) != 0) {
+			if ((compressionFlags & CramCompressionRecord.DETACHED_FLAG) != 0) {
 				mateFlags = mbfc.readData();
 				if (!captureReadNames)
 					readName = readNameC.readData();
@@ -98,7 +98,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 				malsc.skip();
 				tsc.skip();
 				detachedCount++;
-			} else if ((compressionFlags & CramRecord.HAS_MATE_DOWNSTREAM_FLAG) != 0) {
+			} else if ((compressionFlags & CramCompressionRecord.HAS_MATE_DOWNSTREAM_FLAG) != 0) {
 				int distance = distanceC.readData();
 				nameCache.put(recordCounter + distance + 1, recordCounter);
 			}
@@ -126,7 +126,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 				}
 			}
 
-			if ((flags & CramRecord.SEGMENT_UNMAPPED_FLAG) == 0) {
+			if ((flags & CramCompressionRecord.SEGMENT_UNMAPPED_FLAG) == 0) {
 				byte[] refBases = referenceSequence;
 				if (seqId != refId)
 					refBases = refSeqChanged(seqId);
@@ -140,10 +140,10 @@ public abstract class AbstractFastqReader extends AbstractReader {
 			}
 
 			Arrays.fill(scores, 0, readLength, (byte) (defaultQS - 33));
-			if ((compressionFlags & CramRecord.FORCE_PRESERVE_QS_FLAG) != 0) {
+			if ((compressionFlags & CramCompressionRecord.FORCE_PRESERVE_QS_FLAG) != 0) {
 				qcArray.readByteArrayInto(scores, 0, readLength);
 			} else {
-				if ((flags & CramRecord.SEGMENT_UNMAPPED_FLAG) == 0) {
+				if ((flags & CramCompressionRecord.SEGMENT_UNMAPPED_FLAG) == 0) {
 					rfBuf.restoreQualityScores(readLength, prevAlStart, scores);
 				}
 			}
@@ -153,7 +153,7 @@ public abstract class AbstractFastqReader extends AbstractReader {
 				else
 					scores[i] += 33;
 
-			if (reverseNegativeReads && (flags & CramRecord.NEGATIVE_STRAND_FLAG) != 0) {
+			if (reverseNegativeReads && (flags & CramCompressionRecord.NEGATIVE_STRAND_FLAG) != 0) {
 				Utils.reverseComplement(bases, 0, readLength);
 				Utils.reverse(scores, 0, readLength);
 			}

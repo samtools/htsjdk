@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-public class CramRecord {
+public class CramCompressionRecord {
 	public static final int MULTIFRAGMENT_FLAG = 0x1;
 	public static final int PROPER_PAIR_FLAG = 0x2;
 	public static final int SEGMENT_UNMAPPED_FLAG = 0x4;
@@ -68,7 +68,7 @@ public class CramRecord {
 	public int compressionFlags = 0;
 
 	// pointers to the previous and next segments in the template:
-	public CramRecord next, previous;
+	public CramCompressionRecord next, previous;
 
 	public int mateSequnceID = -1;
 	public int mateAlignmentStart = 0;
@@ -98,10 +98,10 @@ public class CramRecord {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof CramRecord))
+		if (!(obj instanceof CramCompressionRecord))
 			return false;
 
-		CramRecord r = (CramRecord) obj;
+		CramCompressionRecord r = (CramCompressionRecord) obj;
 
 		if (alignmentStart != r.alignmentStart)
 			return false;

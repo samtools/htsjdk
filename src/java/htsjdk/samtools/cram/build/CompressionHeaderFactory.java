@@ -39,7 +39,7 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
@@ -61,7 +61,7 @@ public class CompressionHeaderFactory {
 	private static final int oqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
 	private static final int bqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
 
-	public CompressionHeader build(List<CramRecord> records, SubstitutionMatrix substitutionMatrix) {
+	public CompressionHeader build(List<CramCompressionRecord> records, SubstitutionMatrix substitutionMatrix) {
 		CompressionHeader h = new CompressionHeader();
 		h.externalIds = new ArrayList<Integer>();
 		int exCounter = 0;
@@ -120,7 +120,7 @@ public class CompressionHeaderFactory {
 
 		{ // read name encoding:
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				calculator.add(r.readName.length());
 			calculator.calculate();
 
@@ -134,7 +134,7 @@ public class CompressionHeaderFactory {
 		{ // records to next fragment
 			IntegerEncodingCalculator calc = new IntegerEncodingCalculator(EncodingKey.NF_RecordsToNextFragment.name(),
 					0);
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				if (r.isHasMateDownStream())
 					calc.addValue(r.recordsToNextFragment);
 			}
@@ -146,7 +146,7 @@ public class CompressionHeaderFactory {
 
 		{ // tag count
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				calculator.add(r.tags == null ? 0 : r.tags.length);
 			calculator.calculate();
 
@@ -156,7 +156,7 @@ public class CompressionHeaderFactory {
 
 		{ // tag name and type
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				if (r.tags == null)
 					continue;
 				for (ReadTag tag : r.tags)
@@ -196,7 +196,7 @@ public class CompressionHeaderFactory {
 			Map<byte[], MutableInt> map = new TreeMap<byte[], MutableInt>(baComparator);
 			MutableInt noTagCounter = new MutableInt();
 			map.put(new byte[0], noTagCounter);
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				if (r.tags == null) {
 					noTagCounter.value++;
 					r.tagIdsIndex = noTagCounter;
@@ -249,7 +249,7 @@ public class CompressionHeaderFactory {
 		{ // tag values
 			Map<Integer, HuffmanParamsCalculator> cc = new TreeMap<Integer, HuffmanParamsCalculator>();
 
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				if (r.tags == null)
 					continue;
 
@@ -308,7 +308,7 @@ public class CompressionHeaderFactory {
 
 		{ // number of read features
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				calculator.add(r.readFeatures == null ? 0 : r.readFeatures.size());
 			calculator.calculate();
 
@@ -318,7 +318,7 @@ public class CompressionHeaderFactory {
 
 		{ // feature position
 			IntegerEncodingCalculator calc = new IntegerEncodingCalculator("read feature position", 0);
-			for (CramRecord r : records) {
+			for (CramCompressionRecord r : records) {
 				int prevPos = 0;
 				if (r.readFeatures == null)
 					continue;
@@ -335,7 +335,7 @@ public class CompressionHeaderFactory {
 
 		{ // feature code
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -383,7 +383,7 @@ public class CompressionHeaderFactory {
 		{ // base substitution code
 			if (substitutionMatrix == null) {
 				long[][] freqs = new long[200][200];
-				for (CramRecord r : records) {
+				for (CramCompressionRecord r : records) {
 					if (r.readFeatures == null)
 						continue;
 					else
@@ -401,7 +401,7 @@ public class CompressionHeaderFactory {
 				h.substitutionMatrix = substitutionMatrix;
 
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -432,7 +432,7 @@ public class CompressionHeaderFactory {
 
 		{ // deletion length
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -447,7 +447,7 @@ public class CompressionHeaderFactory {
 
 		{ // hard clip length
 			IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.HC_HardClip.name(), 1);
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -461,7 +461,7 @@ public class CompressionHeaderFactory {
 
 		{ // padding length
 			IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.PD_padding.name(), 1);
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -476,7 +476,7 @@ public class CompressionHeaderFactory {
 
 		{ // ref skip length
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.readFeatures == null)
 					continue;
 				else
@@ -490,7 +490,7 @@ public class CompressionHeaderFactory {
 
 		{ // mapping quality score
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (!r.isSegmentUnmapped())
 					calculator.add(r.mappingQuality);
 			calculator.calculate();
@@ -501,7 +501,7 @@ public class CompressionHeaderFactory {
 
 		{ // mate bit flags
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				calculator.add(r.getMateFlags());
 			calculator.calculate();
 
@@ -511,7 +511,7 @@ public class CompressionHeaderFactory {
 
 		{ // next fragment ref id:
 			HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-			for (CramRecord r : records)
+			for (CramCompressionRecord r : records)
 				if (r.isDetached())
 					calculator.add(r.mateSequnceID);
 			calculator.calculate();
@@ -551,7 +551,7 @@ public class CompressionHeaderFactory {
 	// }
 	// }
 
-	private static final int getValue(EncodingKey key, CramRecord r) {
+	private static final int getValue(EncodingKey key, CramCompressionRecord r) {
 		switch (key) {
 		case AP_AlignmentPositionOffset:
 			return r.alignmentDelta;
@@ -586,9 +586,9 @@ public class CompressionHeaderFactory {
 	}
 
 	private static final void getOptimalIntegerEncoding(CompressionHeader h, EncodingKey key, int minValue,
-			List<CramRecord> records) {
+			List<CramCompressionRecord> records) {
 		IntegerEncodingCalculator calc = new IntegerEncodingCalculator(key.name(), minValue);
-		for (CramRecord r : records) {
+		for (CramCompressionRecord r : records) {
 			int value = getValue(key, r);
 			calc.addValue(value);
 		}

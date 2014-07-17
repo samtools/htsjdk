@@ -29,7 +29,7 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
-import htsjdk.samtools.cram.structure.CramRecord;
+import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -143,7 +143,7 @@ public class Writer {
 
 	public static int detachedCount = 0;
 
-	public void write(CramRecord r) throws IOException {
+	public void write(CramCompressionRecord r) throws IOException {
 		// testC.writeData(TEST_MARK) ;
 
 		bitFlagsC.writeData(r.flags);
