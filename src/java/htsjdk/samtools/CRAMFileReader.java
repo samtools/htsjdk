@@ -16,9 +16,8 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.SAMIteratorForCRAM;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;

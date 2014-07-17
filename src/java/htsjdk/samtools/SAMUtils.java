@@ -441,7 +441,7 @@ public final class SAMUtils
      * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, print the validation
      * errors to stderr.  If SILENT, do nothing.
      */
-    static void processValidationErrors(final List<SAMValidationError> validationErrors,
+    public static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                         final long samRecordIndex,
                                         final ValidationStringency validationStringency) {
         if (validationErrors != null && validationErrors.size() > 0) {
