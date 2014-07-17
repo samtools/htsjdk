@@ -94,28 +94,28 @@ public class CompressionHeaderFactory {
 		h.tMap = new TreeMap<Integer, EncodingParams>();
 
 		{ // bit flags encoding:
-			getOptmialIntegerEncoding(h, EncodingKey.BF_BitFlags, 0, records);
+			getOptimalIntegerEncoding(h, EncodingKey.BF_BitFlags, 0, records);
 		}
 
 		{ // compression bit flags encoding:
-			getOptmialIntegerEncoding(h, EncodingKey.CF_CompressionBitFlags, 0, records);
+			getOptimalIntegerEncoding(h, EncodingKey.CF_CompressionBitFlags, 0, records);
 		}
 
 		{ // ref id:
 
-			getOptmialIntegerEncoding(h, EncodingKey.RI_RefId, -2, records);
+			getOptimalIntegerEncoding(h, EncodingKey.RI_RefId, -2, records);
 		}
 
 		{ // read length encoding:
-			getOptmialIntegerEncoding(h, EncodingKey.RL_ReadLength, 0, records);
+			getOptimalIntegerEncoding(h, EncodingKey.RL_ReadLength, 0, records);
 		}
 
 		{ // alignment offset:
-			getOptmialIntegerEncoding(h, EncodingKey.AP_AlignmentPositionOffset, 0, records);
+			getOptimalIntegerEncoding(h, EncodingKey.AP_AlignmentPositionOffset, 0, records);
 		}
 
 		{ // read group
-			getOptmialIntegerEncoding(h, EncodingKey.RG_ReadGroup, -1, records);
+			getOptimalIntegerEncoding(h, EncodingKey.RG_ReadGroup, -1, records);
 		}
 
 		{ // read name encoding:
@@ -585,7 +585,7 @@ public class CompressionHeaderFactory {
 		}
 	}
 
-	private static final void getOptmialIntegerEncoding(CompressionHeader h, EncodingKey key, int minValue,
+	private static final void getOptimalIntegerEncoding(CompressionHeader h, EncodingKey key, int minValue,
 			List<CramRecord> records) {
 		IntegerEncodingCalculator calc = new IntegerEncodingCalculator(key.name(), minValue);
 		for (CramRecord r : records) {
