@@ -145,7 +145,7 @@ public class ReferenceSource {
 				try {
 					sequence = rsFile.getSequence(variant);
 				} catch (SAMException e) {
-					log.info("Sequence not found: " + variant);
+					log.warn("Sequence not found: " + variant);
 				}
 				if (sequence != null)
 					return sequence.getBases();
@@ -163,9 +163,9 @@ public class ReferenceSource {
 			if (is == null)
 				return null;
 
-			log.info("Downloading reference sequence: " + url);
+			log.debug("Downloading reference sequence: " + url);
 			byte[] data = ByteBufferUtils.readFully(is);
-			log.info("Downloaded " + data.length + " bytes for md5 " + md5);
+			log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
 			is.close();
 
 			try {

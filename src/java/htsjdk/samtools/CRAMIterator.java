@@ -28,6 +28,7 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.CramRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.Log.LogLevel;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -164,10 +165,12 @@ public class CRAMIterator implements SAMRecordIterator {
 		}
 		cramRecords.clear();
 
-		log.info(String.format(
-				"CONTAINER READ: io %dms, parse %dms, norm %dms, convert %dms",
-				container.readTime / 1000000, container.parseTime / 1000000,
-				c2sTime / 1000000, (time2 - time1) / 1000000));
+		if (log.isEnabled(LogLevel.DEBUG))
+			log.debug(String
+					.format("CONTAINER READ: io %dms, parse %dms, norm %dms, convert %dms",
+							container.readTime / 1000000,
+							container.parseTime / 1000000, c2sTime / 1000000,
+							(time2 - time1) / 1000000));
 	}
 
 	@Override
@@ -250,9 +253,9 @@ public class CRAMIterator implements SAMRecordIterator {
 	public void setFileSource(SamReader mReader) {
 		this.mReader = mReader;
 	}
-	
+
 	public SAMFileHeader getSAMFileHeader() {
-		return cramHeader.getSamFileHeader() ;
+		return cramHeader.getSamFileHeader();
 	}
 
 }

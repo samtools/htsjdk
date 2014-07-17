@@ -217,7 +217,7 @@ public class CramIO {
 			return CramIO.readContainer(new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER));
 		}
 		if (c.isEOF())
-			log.info("EOF marker found, file/stream is complete.");
+			log.debug("EOF marker found, file/stream is complete.");
 
 		return c;
 	}

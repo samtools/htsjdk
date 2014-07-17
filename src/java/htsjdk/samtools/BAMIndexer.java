@@ -285,7 +285,7 @@ public class BAMIndexer {
         // create and write the content
         for (SAMRecord rec : reader) {
             if (++totalRecords % 1000000 == 0) {
-                if (null != log) log.info(totalRecords + " reads processed ...");
+                if (null != log) log.debug(totalRecords + " reads processed ...");
             }
             indexer.processAlignment(rec);
         }
