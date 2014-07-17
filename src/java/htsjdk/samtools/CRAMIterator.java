@@ -93,7 +93,6 @@ public class CRAMIterator implements SAMRecordIterator {
 			records.clear();
 		recordCounter = 0;
 
-		container = null;
 		containerOffset = is.getCount() ;
 		container = CramIO.readContainer(is);
 		if (container == null)
