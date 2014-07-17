@@ -250,5 +250,9 @@ public class CRAMIterator implements SAMRecordIterator {
 	public void setFileSource(SamReader mReader) {
 		this.mReader = mReader;
 	}
+	
+	public SAMFileHeader getSAMFileHeader() {
+		return cramHeader.getSamFileHeader() ;
+	}
 
 }

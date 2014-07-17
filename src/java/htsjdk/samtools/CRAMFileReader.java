@@ -37,7 +37,6 @@ import java.util.Arrays;
 public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private File file;
 	private ReferenceSource referenceSource;
-	private CramHeader header;
 	private InputStream is;
 	private CRAMIterator it;
 	private BAMIndex mIndex;
@@ -48,14 +47,11 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	private ValidationStringency validationStringency;
 
-	private static volatile long counter = 1L;
-
 	public CRAMFileReader(File file, InputStream is,
 			ReferenceSource referenceSource) {
 		this.file = file;
 		this.is = is;
 		this.referenceSource = referenceSource;
-		counter++;
 
 		if (file == null)
 			getIterator();
@@ -66,7 +62,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		this.file = bamFile;
 		this.mIndexFile = indexFile;
 		this.referenceSource = referenceSource;
-		counter++;
 
 		if (file == null)
 			getIterator();
@@ -74,10 +69,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	public SAMRecordIterator iterator() {
 		return getIterator();
-	}
-
-	private void readHeader() throws FileNotFoundException, IOException {
-		header = CramIO.readCramHeader(new FileInputStream(file));
 	}
 
 	@Override
@@ -109,30 +100,24 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (!hasIndex())
 			throw new SAMException("No index is available for this BAM file.");
 		if (mIndex == null) {
+			SAMSequenceDictionary dictionary = getFileHeader()
+					.getSequenceDictionary();
 			if (mIndexFile != null)
 				mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(
-						mIndexFile, getFileHeader().getSequenceDictionary(),
-						mEnableIndexMemoryMapping) : new DiskBasedBAMFileIndex(
-						mIndexFile, getFileHeader().getSequenceDictionary(),
-						mEnableIndexMemoryMapping);
+						mIndexFile, dictionary, mEnableIndexMemoryMapping)
+						: new DiskBasedBAMFileIndex(mIndexFile, dictionary,
+								mEnableIndexMemoryMapping);
 			else
 				mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(
-						mIndexStream, getFileHeader().getSequenceDictionary())
-						: new DiskBasedBAMFileIndex(mIndexStream,
-								getFileHeader().getSequenceDictionary());
+						mIndexStream, dictionary) : new DiskBasedBAMFileIndex(
+						mIndexStream, dictionary);
 		}
 		return mIndex;
 	}
 
 	@Override
 	public SAMFileHeader getFileHeader() {
-		try {
-			if (header == null)
-				readHeader();
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		return header.getSamFileHeader();
+		return it.getSAMFileHeader();
 	}
 
 	@Override
@@ -142,12 +127,12 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		try {
 			CRAMIterator si = null;
 			if (file != null)
-				si = new CRAMIterator(new FileInputStream(file), referenceSource);
+				si = new CRAMIterator(new FileInputStream(file),
+						referenceSource);
 			else
 				si = new CRAMIterator(is, referenceSource);
 
 			si.setValidationStringency(validationStringency);
-			header = si.getCramHeader();
 			it = si;
 			return it;
 		} catch (Exception e) {
