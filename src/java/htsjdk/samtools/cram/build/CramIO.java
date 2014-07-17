@@ -386,6 +386,7 @@ public class CramIO {
 		List<Slice> slices = new ArrayList<Slice>();
 		for (int s = fromSlice; s < howManySlices - fromSlice; s++) {
 			Slice slice = new Slice();
+			slice.index = s ;
 			sio.readSliceHeadBlock(slice, is);
 			sio.readSliceBlocks(slice, true, is);
 			slices.add(slice);

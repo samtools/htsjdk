@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram;
+package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SAMValidationError;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2BamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.common.Utils;
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -46,7 +41,7 @@ import java.util.List;
 
 public class CRAMIterator implements SAMRecordIterator {
 	private static Log log = Log.getInstance(CRAMIterator.class);
-	private InputStream is;
+	private CountingInputStream is;
 	private CramHeader cramHeader;
 	private ArrayList<SAMRecord> records;
 	private int recordCounter = 0;
@@ -57,6 +52,8 @@ public class CRAMIterator implements SAMRecordIterator {
 	private byte[] refs;
 	private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
 	private Container container;
+	private long containerOffset = 0 ;
+	private SamReader mReader ;
 
 	private ContainerParser parser;
 	private ReferenceSource referenceSource;
@@ -77,9 +74,9 @@ public class CRAMIterator implements SAMRecordIterator {
 
 	public CRAMIterator(InputStream is, ReferenceSource referenceSource)
 			throws IOException {
-		this.is = is;
+		this.is = new CountingInputStream(is);
 		this.referenceSource = referenceSource;
-		cramHeader = CramIO.readCramHeader(is);
+		cramHeader = CramIO.readCramHeader(this.is);
 		records = new ArrayList<SAMRecord>(10000);
 		normalizer = new CramNormalizer(cramHeader.samFileHeader,
 				referenceSource);
@@ -97,6 +94,7 @@ public class CRAMIterator implements SAMRecordIterator {
 		recordCounter = 0;
 
 		container = null;
+		containerOffset = is.getCount() ;
 		container = CramIO.readContainer(is);
 		if (container == null)
 			return;
@@ -155,6 +153,12 @@ public class CRAMIterator implements SAMRecordIterator {
 						samRecordIndex, validationStringency);
 			}
 
+			if (mReader != null) {
+				final long chunkStart = (containerOffset << 16) | r.sliceIndex;
+		        final long chunkEnd = ((containerOffset << 16) | r.sliceIndex) + 1;
+				nextRecord.setFileSource(new SAMFileSource(mReader,new BAMFileSpan(new Chunk(chunkStart,chunkEnd))));
+			}
+			
 			records.add(s);
 		}
 		cramRecords.clear();
@@ -237,6 +241,14 @@ public class CRAMIterator implements SAMRecordIterator {
 	@Override
 	public SAMRecordIterator assertSorted(SortOrder sortOrder) {
 		throw new RuntimeException("Not implemented.");
+	}
+
+	public SamReader getFileSource() {
+		return mReader;
+	}
+
+	public void setFileSource(SamReader mReader) {
+		this.mReader = mReader;
 	}
 
 }

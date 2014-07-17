@@ -17,7 +17,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.cram.CRAMIterator;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -40,7 +39,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private ReferenceSource referenceSource;
 	private CramHeader header;
 	private InputStream is;
-	private SAMRecordIterator it;
+	private CRAMIterator it;
 	private BAMIndex mIndex;
 	private File mIndexFile;
 	private boolean mEnableIndexCaching;
@@ -189,8 +188,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 		@Override
 		public SAMRecordIterator assertSorted(SortOrder sortOrder) {
-			// TODO Auto-generated method stub
-			return null;
+			return this;
 		}
 	};
 
@@ -257,7 +255,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			}
 		}
 
-		it = emptyIterator;
+		it = null;
 		return it;
 	}
 
@@ -347,7 +345,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	@Override
 	void enableFileSource(SamReader reader, boolean enabled) {
-		// TODO Auto-generated method stub
-		
+		if (it != null)
+			it.setFileSource(enabled ? reader : null);
 	}
 }
