@@ -52,8 +52,8 @@ public class CRAMIterator implements SAMRecordIterator {
 	private byte[] refs;
 	private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
 	private Container container;
-	private long containerOffset = 0 ;
-	private SamReader mReader ;
+	private long containerOffset = 0;
+	private SamReader mReader;
 
 	private ContainerParser parser;
 	private ReferenceSource referenceSource;
@@ -89,22 +89,23 @@ public class CRAMIterator implements SAMRecordIterator {
 
 	private void nextContainer() throws IOException, IllegalArgumentException,
 			IllegalAccessException {
-		if (records != null)
-			records.clear();
 		recordCounter = 0;
 
-		containerOffset = is.getCount() ;
+		containerOffset = is.getCount();
 		container = CramIO.readContainer(is);
-		if (container == null)
+		if (container == null || container.isEOF())
 			return;
 
 		if (records == null)
 			records = new ArrayList<SAMRecord>(container.nofRecords);
+		else
+			records.clear();
+		if (cramRecords == null)
+			cramRecords = new ArrayList<CramRecord>(container.nofRecords);
+		else
+			cramRecords.clear();
 
 		try {
-			if (cramRecords == null)
-				cramRecords = new ArrayList<CramRecord>(container.nofRecords);
-			cramRecords.clear();
 			parser.getRecords(container, cramRecords);
 		} catch (EOFException e) {
 			throw e;
@@ -154,10 +155,11 @@ public class CRAMIterator implements SAMRecordIterator {
 
 			if (mReader != null) {
 				final long chunkStart = (containerOffset << 16) | r.sliceIndex;
-		        final long chunkEnd = ((containerOffset << 16) | r.sliceIndex) + 1;
-				nextRecord.setFileSource(new SAMFileSource(mReader,new BAMFileSpan(new Chunk(chunkStart,chunkEnd))));
+				final long chunkEnd = ((containerOffset << 16) | r.sliceIndex) + 1;
+				nextRecord.setFileSource(new SAMFileSource(mReader,
+						new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
 			}
-			
+
 			records.add(s);
 		}
 		cramRecords.clear();
@@ -226,8 +228,7 @@ public class CRAMIterator implements SAMRecordIterator {
 			try {
 				FileInputStream fis = new FileInputStream(cramFile);
 				BufferedInputStream bis = new BufferedInputStream(fis);
-				CRAMIterator iterator = new CRAMIterator(bis,
-						referenceSource);
+				CRAMIterator iterator = new CRAMIterator(bis, referenceSource);
 				iterator.setValidationStringency(validationStringency);
 				return iterator;
 			} catch (IOException e) {
