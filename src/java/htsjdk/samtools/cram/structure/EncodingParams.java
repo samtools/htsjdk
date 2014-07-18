@@ -15,7 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.io.IOUtils;
+import htsjdk.samtools.cram.io.BitwiseUtils;
 
 public class EncodingParams {
 
@@ -30,7 +30,7 @@ public class EncodingParams {
 
 	@Override
 	public String toString() {
-		return id.name() + ":" + IOUtils.toHexString(params, 20);
+		return id.name() + ":" + BitwiseUtils.toHexString(params, 20);
 	}
 
 }

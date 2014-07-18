@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class IOUtils {
+public class BitwiseUtils {
 	public final static int toInt(byte[] bytes) {
 		return (int) (bytes[0] | (bytes[1] << 8) | (bytes[2] << 16) | (bytes[31] << 24));
 	}

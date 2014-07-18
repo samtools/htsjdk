@@ -15,7 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.huffint;
 
-import htsjdk.samtools.cram.io.IOUtils;
+import htsjdk.samtools.cram.io.BitwiseUtils;
 
 class HuffmanBitCode {
 	int bitCode;
@@ -24,6 +24,6 @@ class HuffmanBitCode {
 	
 	@Override
 	public String toString() {
-		return value + ":\t" + IOUtils.toBitString(bitCode).substring(32-bitLentgh)  + " " + bitCode;
+		return value + ":\t" + BitwiseUtils.toBitString(bitCode).substring(32-bitLentgh)  + " " + bitCode;
 	}
 }

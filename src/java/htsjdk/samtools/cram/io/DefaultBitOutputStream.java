@@ -57,7 +57,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 	@Override
 	public String toString() {
 		return "DefaultBitOutputStream: "
-				+ IOUtils.toBitString(new byte[] { (byte) bufferByte }).substring(0, bufferedNumberOfBits);
+				+ BitwiseUtils.toBitString(new byte[] { (byte) bufferByte }).substring(0, bufferedNumberOfBits);
 	}
 
 	public void write(long value, int nofBitsToWrite) throws IOException {

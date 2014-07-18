@@ -15,7 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.io.IOUtils;
+import htsjdk.samtools.cram.io.BitwiseUtils;
 import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class SubstitutionMatrix {
 	}
 	
 	public void dump () {
-		log.debug ("Subs matrix: " + Arrays.toString(bytes) + ": " + IOUtils.toBitString(bytes));
+		log.debug ("Subs matrix: " + Arrays.toString(bytes) + ": " + BitwiseUtils.toBitString(bytes));
 		
 		StringBuffer sb = new StringBuffer("Subs matrix decoded: ") ;
 		for (byte r:"ACGTN".getBytes()) {

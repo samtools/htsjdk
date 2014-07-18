@@ -17,7 +17,7 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.IOUtils;
+import htsjdk.samtools.cram.io.BitwiseUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -57,6 +57,6 @@ public class ExternalByteCodec extends AbstractBitCodec<Byte> {
 	@Override
 	public void readInto(BitInputStream bis, byte[] array, int offset,
 			int valueLen) throws IOException {
-		IOUtils.readFully(is, array, offset, valueLen);
+		BitwiseUtils.readFully(is, array, offset, valueLen);
 	}
 }
