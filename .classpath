@@ -7,6 +7,5 @@
 	<classpathentry kind="lib" path="lib/apache-ant-1.8.2-bzip2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-jexl-2.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/snappy-java-1.0.3-rc3.jar"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

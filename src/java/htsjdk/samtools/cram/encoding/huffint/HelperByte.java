@@ -15,16 +15,9 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.huffint;
 
-import static org.junit.Assert.fail;
-import htsjdk.samtools.cram.build.CompressionHeaderFactory;
-import htsjdk.samtools.cram.build.CompressionHeaderFactory.HuffmanParamsCalculator;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -196,57 +189,6 @@ class HelperByte {
 		i = i - ((i >> 1) & 0x55555555);
 		i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
 		return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-	}
-
-	public static void main(String[] args) throws IOException {
-		int size = 1000000;
-
-		long time5 = System.nanoTime();
-		CompressionHeaderFactory.HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
-		for (byte i = 33; i < 33 + 15; i++)
-			cal.add(i);
-		cal.calculate();
-
-		// CanonicalHuffmanByteCodec helper = new CanonicalHuffmanByteCodec(
-		// cal.valuesAsBytes(), cal.bitLens());
-		HelperByte helper = new HelperByte(cal.valuesAsBytes(), cal.bitLens());
-		long time6 = System.nanoTime();
-
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
-
-		long time1 = System.nanoTime();
-		for (int i = 0; i < size; i++) {
-			for (byte b : cal.valuesAsBytes()) {
-				helper.write(bos, b);
-			}
-		}
-
-		bos.close();
-		long time2 = System.nanoTime();
-
-		ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-		DefaultBitInputStream bis = new DefaultBitInputStream(bais);
-
-		long time3 = System.nanoTime();
-		int counter = 0;
-		for (int i = 0; i < size; i++) {
-			for (int b : cal.values()) {
-				int v = helper.read(bis);
-				if (v != b)
-					fail("Mismatch: " + v + " vs " + b + " at " + counter);
-
-				counter++;
-			}
-		}
-		long time4 = System.nanoTime();
-
-		System.out
-				.printf("Size: %d bytes, bits per value: %.2f, create time %dms, write time %d ms, read time %d ms.",
-						baos.size(), 8f * baos.size() / size
-								/ cal.values().length,
-						(time6 - time5) / 1000000, (time2 - time1) / 1000000,
-						(time4 - time3) / 1000000);
 	}
 
 }
