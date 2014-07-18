@@ -59,6 +59,20 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         readHeader();
     }
 
+    /**
+     *
+     * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
+     * @param indexFile - path to the index file.
+     * @param codec
+     * @throws IOException
+     */
+    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec) throws IOException {
+        super(featureFile, codec);
+        tabixReader = new TabixReader(featureFile, indexFile);
+        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
+        readHeader();
+    }
+
 
     /**
      * read the header
