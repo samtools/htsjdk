@@ -132,7 +132,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     public void close() throws IOException {
-
+        tabixReader.close();
     }
 
 
