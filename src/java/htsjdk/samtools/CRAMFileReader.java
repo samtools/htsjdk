@@ -197,16 +197,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (filePointers == null || filePointers.length == 0)
 			return emptyIterator;
 
-		SeekableStream s = null;
-		if (file != null) {
-			try {
-				s = new SeekableFileStream(file);
-			} catch (FileNotFoundException e) {
-				throw new RuntimeException(e);
-			}
-		} else if (is instanceof SeekableStream)
-			s = (SeekableStream) is;
-
+		SeekableStream s = getSeekableStreamOrFailWithRTE() ;
 		CRAMIterator si = null;
 		try {
 			s.seek(0);
@@ -248,16 +239,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	public CloseableIterator<SAMRecord> queryUnmapped() {
 		final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
 
-		SeekableStream s = null;
-		if (file != null) {
-			try {
-				s = new SeekableFileStream(file);
-			} catch (FileNotFoundException e) {
-				throw new RuntimeException(e);
-			}
-		} else if (is instanceof SeekableStream)
-			s = (SeekableStream) is;
-
+		SeekableStream s = getSeekableStreamOrFailWithRTE() ;
 		CRAMIterator si = null;
 		try {
 			s.seek(0);
@@ -270,6 +252,19 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		}
 
 		return it;
+	}
+	
+	private SeekableStream getSeekableStreamOrFailWithRTE () {
+		SeekableStream s = null;
+		if (file != null) {
+			try {
+				s = new SeekableFileStream(file);
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		} else if (is instanceof SeekableStream)
+			s = (SeekableStream) is;
+		return s ;
 	}
 
 	@Override
