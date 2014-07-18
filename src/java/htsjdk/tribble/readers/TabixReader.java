@@ -99,20 +99,12 @@ public class TabixReader {
      * @param fn File name of the data file
      */
     public TabixReader(final String fn) throws IOException {
-        this(fn, null, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
-    }
-
-    /**
-     * @param fn File name of the data file
-     * @param idxFn Full path to the index file. Auto-generated if null
-     */
-    public TabixReader(final String fn, final String idxFn) throws IOException {
-        this(fn, idxFn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
+        this(fn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
     }
 
     /**
      * @param fn File name of the data file  (used for error messages only)
-     * @param stream Seekable stream from which the data is read
+     * @param stream Seekable stream from which the data is read 
      */
     public TabixReader(final String fn, SeekableStream stream) throws IOException {
         this(fn, null, stream);
@@ -139,7 +131,7 @@ public class TabixReader {
         {
         return this.mFn;
         }
-
+    
     private static int reg2bins(final int beg, final int _end, final int[] list) {
         int i = 0, k, end = _end;
         if (beg >= end) return 0;
@@ -254,7 +246,7 @@ public class TabixReader {
         Integer tid=this.mChr2tid.get(chr);
        return tid==null?-1:tid;
     }
-
+    
     /** return the chromosomes in that tabix file */
     public Set<String> getChromosomes()
         {
@@ -341,8 +333,8 @@ public class TabixReader {
         {
         /** return null when there is no more data to read */
         public String next() throws IOException;
-        }
-
+        }   
+    
     /** iterator returned instead of null when there is no more data */
     private static final Iterator EOF_ITERATOR=new Iterator()  {
         @Override
@@ -350,7 +342,7 @@ public class TabixReader {
             return null;
             }
         };
-
+       
     /** default implementation of Iterator */
     private class IteratorImpl implements Iterator {
         private int i;
@@ -370,7 +362,7 @@ public class TabixReader {
             beg = _beg;
             end = _end;
         }
-
+        
         @Override
         public String next() throws IOException {
             if (iseof) return null;
@@ -473,7 +465,7 @@ public class TabixReader {
         if(x[0]<0) return EOF_ITERATOR;
         return query(x[0], x[1], x[2]);
     }
-
+    
     /**
     *
     * @see #parseReg(String)
@@ -518,7 +510,7 @@ public class TabixReader {
             }
         }
     }
-
+    
     @Override
     public String toString() {
         return "TabixReader: filename:"+getSource();
