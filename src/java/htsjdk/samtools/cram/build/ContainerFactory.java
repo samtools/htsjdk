@@ -37,11 +37,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ContainerFactory {
-	public SAMFileHeader samFileHeader;
-	public int recordsPerSlice = 10000;
-	public boolean preserveReadNames = false;
-	public long globalRecordCounter = 0;
-	public boolean AP_delta = true;
+	SAMFileHeader samFileHeader;
+	int recordsPerSlice = 10000;
+	boolean preserveReadNames = false;
+	long globalRecordCounter = 0;
+	boolean AP_delta = true;
 
 	public ContainerFactory(SAMFileHeader samFileHeader, int recordsPerSlice,
 			boolean preserveReadNames) {
