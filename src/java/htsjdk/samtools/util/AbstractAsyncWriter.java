@@ -62,12 +62,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     public void close() {
         checkAndRethrow();
 
-        if (this.isClosed.get()) {
-            throw new RuntimeException("AbstractAsyncWriter already closed.");
-        }
-        else {
-            this.isClosed.set(true);
-
+        if (!this.isClosed.getAndSet(true)) {
             try { this.writer.join(); }
             catch (InterruptedException ie) { throw new RuntimeException("Interrupted waiting on writer thread.", ie); }
 
