@@ -15,6 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.ref;
 
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
@@ -156,7 +157,7 @@ public class ReferenceSource {
 
 	protected byte[] findBasesByMD5(String md5) throws MalformedURLException,
 			IOException {
-		String url = String.format("http://www.ebi.ac.uk/ena/cram/md5/%s", md5);
+		String url = String.format(Defaults.EBI_REFERENCE_SEVICE_URL_MASK, md5);
 
 		for (int i = 0; i < downloadTriesBeforeFailing; i++) {
 			InputStream is = new URL(url).openStream();
