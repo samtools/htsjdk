@@ -265,6 +265,11 @@ public abstract class Genotype implements Comparable<Genotype> {
     public boolean isHet() { return getType() == GenotypeType.HET; }
 
     /**
+     * @return true if we're het (observed alleles differ) and neither allele is reference; if the ploidy is less than 2 or if any alleles are no-calls, this method will return false.
+     */
+    public boolean isHetNonRef() { return (getType() == GenotypeType.HET && getAllele(0).isNonReference() && getAllele(1).isNonReference()); }
+
+    /**
      * @return true if this genotype is not actually a genotype but a "no call" (e.g. './.' in VCF); if any alleles are not no-calls (even if some are), this method will return false.
      */
     public boolean isNoCall() { return getType() == GenotypeType.NO_CALL; }
