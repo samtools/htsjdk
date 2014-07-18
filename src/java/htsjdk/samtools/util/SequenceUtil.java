@@ -34,6 +34,9 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 
 import java.io.File;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -772,4 +775,149 @@ public class SequenceUtil {
         }
         return ret;
     }
+
+	public static void reverse(final byte[] array, int offset, int len) {
+		final int lastIndex = len - 1;
+	
+		int i, j;
+		for (i = offset, j = offset + lastIndex; i < j; ++i, --j) {
+			final byte tmp = array[i];
+			array[i] = array[j];
+			array[j] = tmp;
+		}
+		if (len % 2 == 1) {
+			array[i] = array[i];
+		}
+	}
+
+	public static void reverseComplement(final byte[] bases, int offset, int len) {
+		final int lastIndex = len - 1;
+	
+		int i, j;
+		for (i = offset, j = offset + lastIndex; i < j; ++i, --j) {
+			final byte tmp = complement(bases[i]);
+			bases[i] = complement(bases[j]);
+			bases[j] = tmp;
+		}
+		if (len % 2 == 1) {
+			bases[i] = complement(bases[i]);
+		}
+	}
+
+	public static String calculateMD5String(byte[] data)
+			throws NoSuchAlgorithmException {
+		return SequenceUtil.calculateMD5String(data, 0, data.length);
+	}
+
+	public static String calculateMD5String(byte[] data, int offset, int len) {
+		byte[] digest = calculateMD5(data, offset, len);
+		return String.format("%032x", new BigInteger(1, digest));
+	}
+
+	public static byte[] calculateMD5(byte[] data, int offset, int len) {
+		MessageDigest md5_MessageDigest;
+		try {
+			md5_MessageDigest = MessageDigest.getInstance("MD5");
+			md5_MessageDigest.reset();
+	
+			md5_MessageDigest.update(data, offset, len);
+			return md5_MessageDigest.digest();
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * A rip off samtools bam_md.c
+	 * 
+	 * @param record
+	 * @param ref
+	 * @param flag
+	 * @return
+	 */
+	public static void calculateMdAndNmTags(SAMRecord record, byte[] ref,
+			boolean calcMD, boolean calcNM) {
+		if (!calcMD && !calcNM)
+			return;
+	
+		Cigar cigar = record.getCigar();
+		List<CigarElement> cigarElements = cigar.getCigarElements();
+		byte[] seq = record.getReadBases();
+		int start = record.getAlignmentStart() - 1;
+		int i, x, y, u = 0;
+		int nm = 0;
+		StringBuffer str = new StringBuffer();
+	
+		int size = cigarElements.size();
+		for (i = y = 0, x = start; i < size; ++i) {
+			CigarElement ce = cigarElements.get(i);
+			int j, l = ce.getLength();
+			CigarOperator op = ce.getOperator();
+			if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ
+					|| op == CigarOperator.X) {
+				for (j = 0; j < l; ++j) {
+					int z = y + j;
+	
+					if (ref.length <= x + j)
+						break; // out of boundary
+	
+					int c1 = 0;
+					int c2 = 0;
+					// try {
+					c1 = seq[z];
+					c2 = ref[x + j];
+	
+					if ((c1 == c2 && c1 != 15 && c2 != 15) || c1 == 0) {
+						// a match
+						++u;
+					} else {
+						str.append(u);
+						str.appendCodePoint(ref[x + j]);
+						u = 0;
+						++nm;
+					}
+				}
+				if (j < l)
+					break;
+				x += l;
+				y += l;
+			} else if (op == CigarOperator.DELETION) {
+				str.append(u);
+				str.append('^');
+				for (j = 0; j < l; ++j) {
+					if (ref[x + j] == 0)
+						break;
+					str.appendCodePoint(ref[x + j]);
+				}
+				u = 0;
+				if (j < l)
+					break;
+				x += l;
+				nm += l;
+			} else if (op == CigarOperator.INSERTION
+					|| op == CigarOperator.SOFT_CLIP) {
+				y += l;
+				if (op == CigarOperator.INSERTION)
+					nm += l;
+			} else if (op == CigarOperator.SKIPPED_REGION) {
+				x += l;
+			}
+		}
+		str.append(u);
+	
+		if (calcMD)
+			record.setAttribute(SAMTag.MD.name(), str.toString());
+		if (calcNM)
+			record.setAttribute(SAMTag.NM.name(), nm);
+	}
+
+	public static final byte upperCase(byte base) {
+		return base >= a ? (byte) (base - (a - A)) : base;
+	}
+
+	public static final byte[] upperCase(byte[] bases) {
+		for (int i = 0; i < bases.length; i++)
+			bases[i] = upperCase(bases[i]);
+		return bases;
+	}
 }

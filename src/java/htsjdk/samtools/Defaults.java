@@ -41,6 +41,12 @@ public class Defaults {
      * writing SAM files (ex. CRAM).
      */
     public static final File REFERENCE_FASTA;
+    
+	/**
+	 * A mask (pattern) to use when building EBI reference service URL for a
+	 * given MD5 checksum. Must contain one and only one string placeholder.
+	 */
+	public static final String EBI_REFERENCE_SEVICE_URL_MASK;
 
     static {
         CREATE_INDEX      = getBooleanProperty("create_index", false);
@@ -56,6 +62,7 @@ public class Defaults {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
         REFERENCE_FASTA   = getFileProperty("reference_fasta", null);
+        EBI_REFERENCE_SEVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s" ;
     }
 
     /** Gets a string system property, prefixed with "samjdk." using the default if the property does not exist.*/

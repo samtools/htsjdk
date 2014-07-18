@@ -121,6 +121,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
+    public int size() {
+        return this.records.size();
+    }
     /**
      * Set the seed of the random number generator for cases in which repeatable result is desired.
      * @param seed
@@ -221,9 +224,20 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * cigar string, quality string or default quality score.
      */
     public SAMRecord addFrag(final String name, final int contig, final int start, final boolean negativeStrand,
-                             final boolean recordUnmapped, final String cigar, final String qualityString,
-                             final int defaultQuality) throws SAMException {
-        final SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
+                                             final boolean recordUnmapped, final String cigar, final String qualityString,
+                                             final int defaultQuality) throws SAMException {
+        return addFrag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality, false);
+    }
+
+    /**
+     * Adds a fragment record (mapped or unmapped) to the set using the provided contig start and optionally the strand,
+     * cigar string, quality string or default quality score.
+     */
+    public SAMRecord addFrag(final String name, final int contig, final int start, final boolean negativeStrand,
+                                             final boolean recordUnmapped, final String cigar, final String qualityString,
+                                             final int defaultQuality, final boolean isSecondary) throws SAMException {
+        final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
+        if (isSecondary) rec.setNotPrimaryAlignmentFlag(true);
         this.records.add(rec);
         return rec;
     }
@@ -261,7 +275,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Adds an unmapped fragment read to the builder.
      */
     public void addUnmappedFragment(final String name) {
-        addFrag(name, -1, -1, false, true, null, null, -1);
+        addFrag(name, -1, -1, false, true, null, null, -1, false);
     }
 
 
@@ -333,7 +347,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      */
     public List<SAMRecord> addPair(final String name, final int contig, final int start1, final int start2,
                                    final boolean record1Unmapped, final boolean record2Unmapped, final String cigar1,
-                                   final String cigar2, final boolean strand1, final boolean strand2, final int defaultQuality) {
+                                   final String cigar2, final boolean strand1, final boolean strand2, final boolean record1NonPrimary,
+                                   final boolean record2NonPrimary, final int defaultQuality) {
         final List<SAMRecord> recordsList = new LinkedList<SAMRecord>();
 
         final SAMRecord end1 = createReadNoFlag(name, contig, start1, strand1, record1Unmapped, cigar1, null, defaultQuality);
@@ -348,6 +363,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
         end2.setReadPairedFlag(true);
         end2.setSecondOfPairFlag(true);
+
+        if (record1NonPrimary) end1.setNotPrimaryAlignmentFlag(true);
+        if (record2NonPrimary) end2.setNotPrimaryAlignmentFlag(true);
 
         // set mate info
         SamPairUtil.setMateInfo(end1, end2, header, true);
