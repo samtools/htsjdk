@@ -51,7 +51,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
 
         checkAndRethrow();
         try { this.queue.put(item); }
-        catch (InterruptedException ie) { throw new RuntimeException("Interrupted queueing item for writing.", ie); }
+        catch (final InterruptedException ie) { throw new RuntimeException("Interrupted queueing item for writing.", ie); }
         checkAndRethrow();
     }
 
@@ -62,14 +62,9 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     public void close() {
         checkAndRethrow();
 
-        if (this.isClosed.get()) {
-            throw new RuntimeException("AbstractAsyncWriter already closed.");
-        }
-        else {
-            this.isClosed.set(true);
-
+        if (!this.isClosed.getAndSet(true)) {
             try { this.writer.join(); }
-            catch (InterruptedException ie) { throw new RuntimeException("Interrupted waiting on writer thread.", ie); }
+            catch (final InterruptedException ie) { throw new RuntimeException("Interrupted waiting on writer thread.", ie); }
 
             // Assert that the queue is empty
             if (!this.queue.isEmpty()) {
@@ -106,12 +101,12 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
                         final T item = queue.poll(2, TimeUnit.SECONDS);
                         if (item != null) synchronouslyWrite(item);
                     }
-                    catch (InterruptedException ie) {
+                    catch (final InterruptedException ie) {
                         /* Do Nothing */
                     }
                 }
             }
-            catch (Throwable t) {
+            catch (final Throwable t) {
                 ex.compareAndSet(null, t);
                 // In case a writer was blocking on a full queue before ex has been set, clear the queue
                 // so that the writer will no longer be blocked so that it can see the exception.
