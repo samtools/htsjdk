@@ -35,7 +35,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Reads a fastq file.
+ * Reads a FASTQ file with four lines per record.
  * WARNING: Despite the fact that this class implements Iterable, calling iterator() method does not
  * start iteration from the beginning of the file.  Developers should probably not call iterator()
  * directly.  It is provided so that this class can be used in Java for-each loop.
@@ -51,6 +51,12 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     public FastqReader(final File file) {
         this(file,false);
     }
+    
+    /**
+     * Constructor
+     * @param file of FASTQ to read read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
+     * @param skipBlankLines should we skip blank lines ?
+     */
 
     public FastqReader(final File file, final boolean skipBlankLines) {
         this.skipBlankLines=skipBlankLines;
@@ -63,11 +69,21 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         this(null, reader);
     }
 
-    public FastqReader(final File file, final BufferedReader reader) {
-        fastqFile = file;
+    /**
+     * Constructor
+     * @param file Name of FASTQ being read, or null if not known.
+     * @param reader input reader . Will be closed by the close method
+     * @param skipBlankLines should we skip blank lines ?
+     */
+    public FastqReader(final File file, final BufferedReader reader,boolean skipBlankLines) {
+        this.fastqFile = file;
         this.reader = reader;
-        nextRecord = readNextRecord();
-        skipBlankLines = false;
+        this.nextRecord = readNextRecord();
+        this.skipBlankLines = skipBlankLines;
+    }
+
+    public FastqReader(final File file, final BufferedReader reader) {
+        this(file,reader,false);
     }
 
     private FastqRecord readNextRecord() {
@@ -176,5 +192,8 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         return line;
     }
 
-
+    @Override
+    public String toString() {
+        return "FastqReader["+(this.fastqFile == null?"":this.fastqFile)+ " Line:"+getLineNumber()+"]";
+    }
 }
