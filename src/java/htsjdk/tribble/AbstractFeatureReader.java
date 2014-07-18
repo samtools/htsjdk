@@ -82,11 +82,11 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
             if (methods.isTabix(featureResource, indexResource)) {
                 if ( ! (codec instanceof AsciiFeatureCodec) )
                     throw new TribbleException("Tabix indexed files only work with ASCII codecs, but received non-Ascii codec " + codec.getClass().getSimpleName());
-                return new TabixFeatureReader<FEATURE, SOURCE>(featureResource, indexResource, (AsciiFeatureCodec) codec);
+                return new TabixFeatureReader<FEATURE, SOURCE>(featureResource, (AsciiFeatureCodec) codec);
             }
             // Not tabix => tribble index file (might be gzipped, but not block gzipped)
             else {
-                return new TribbleIndexedFeatureReader<FEATURE, SOURCE>(featureResource, indexResource, codec, requireIndex);
+                return new TribbleIndexedFeatureReader<FEATURE, SOURCE>(featureResource, codec, requireIndex);
             }
         } catch (IOException e) {
             throw new TribbleException.MalformedFeatureFile("Unable to create BasicFeatureReader using feature file ", featureResource, e);
