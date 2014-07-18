@@ -15,9 +15,9 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.reader;
 
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -154,8 +154,8 @@ public abstract class AbstractFastqReader extends AbstractReader {
 					scores[i] += 33;
 
 			if (reverseNegativeReads && (flags & CramCompressionRecord.NEGATIVE_STRAND_FLAG) != 0) {
-				Utils.reverseComplement(bases, 0, readLength);
-				Utils.reverse(scores, 0, readLength);
+				SequenceUtil.reverseComplement(bases, 0, readLength);
+				SequenceUtil.reverse(scores, 0, readLength);
 			}
 
 			writeRead(readName, flags, bases, scores);

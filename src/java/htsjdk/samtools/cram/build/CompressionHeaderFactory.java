@@ -16,7 +16,6 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.encoding.BetaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
@@ -683,7 +682,7 @@ public class CompressionHeaderFactory {
 					freqs[i] = countMap.get(v).value;
 					i++;
 				}
-				tree = HuffmanCode.buildTree(freqs, Utils.autobox(values));
+				tree = HuffmanCode.buildTree(freqs, autobox(values));
 			}
 
 			List<Integer> valueList = new ArrayList<Integer>();
@@ -706,6 +705,13 @@ public class CompressionHeaderFactory {
 				values[i] = code.value;
 			}
 		}
+	}
+	
+	private static Integer[] autobox(int[] array) {
+		Integer[] newArray = new Integer[array.length];
+		for (int i = 0; i < array.length; i++)
+			newArray[i] = array[i];
+		return newArray;
 	}
 
 	public static class EncodingLengthCalculator {

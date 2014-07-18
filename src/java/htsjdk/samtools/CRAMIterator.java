@@ -20,7 +20,6 @@ import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -29,6 +28,7 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.Log.LogLevel;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
@@ -143,7 +143,7 @@ public class CRAMIterator implements SAMRecordIterator {
 				SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
 						.getSequence(r.sequenceId);
 				refs = referenceSource.getReferenceBases(sequence, true);
-				Utils.calculateMdAndNmTags(s, refs, restoreMDTag, restoreNMTag);
+				SequenceUtil.calculateMdAndNmTags(s, refs, restoreMDTag, restoreNMTag);
 			}
 
 			s.setValidationStringency(validationStringency);

@@ -22,7 +22,6 @@ import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.HardClip;

@@ -15,8 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
@@ -102,7 +102,7 @@ public class Slice {
 
 	private static boolean validateRefMD5(byte[] ref, int alignmentStart, int alignmentSpan, byte[] expectedMD5) {
 		int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
-		String md5 = Utils.calculateMD5String(ref, alignmentStart - 1, span);
+		String md5 = SequenceUtil.calculateMD5String(ref, alignmentStart - 1, span);
 		return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
 	}
 
@@ -232,7 +232,7 @@ public class Slice {
 			if (alignmentStart + span > ref.length + 1)
 				throw new RuntimeException("Invalid alignment boundaries.");
 
-			refMD5 = Utils.calculateMD5(ref, alignmentStart - 1, span);
+			refMD5 = SequenceUtil.calculateMD5(ref, alignmentStart - 1, span);
 
 			StringBuffer sb = new StringBuffer();
 			int shoulder = 10;

@@ -17,7 +17,6 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.InsertBase;
@@ -100,7 +99,7 @@ public class CramNormalizer {
 					if (downMate.mateSequnceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
 						downMate.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
 
-					Utils.computeInsertSize(r, downMate);
+					computeInsertSize(r, downMate);
 				}
 			}
 		}
@@ -285,5 +284,60 @@ public class CramNormalizer {
 		}
 
 		return bases;
+	}
+	
+	/**
+	 * The method is similar in semantics to
+	 * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
+	 * computeInsertSize} but operates on CRAM native records instead of
+	 * SAMRecord objects.
+	 * 
+	 * @param firstEnd
+	 * @param secondEnd
+	 * @return template length
+	 */
+	private static int computeInsertSize(CramCompressionRecord firstEnd,
+			CramCompressionRecord secondEnd) {
+		if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
+			return 0;
+		}
+		if (firstEnd.sequenceId != secondEnd.sequenceId) {
+			return 0;
+		}
+
+		final int right = Math
+				.max(Math.max(firstEnd.alignmentStart,
+						firstEnd.getAlignmentEnd()),
+						Math.max(secondEnd.alignmentStart,
+								secondEnd.getAlignmentEnd()));
+		final int left = Math
+				.min(Math.min(firstEnd.alignmentStart,
+						firstEnd.getAlignmentEnd()),
+						Math.min(secondEnd.alignmentStart,
+								secondEnd.getAlignmentEnd()));
+		final int tlen = right - left + 1;
+
+		if (firstEnd.alignmentStart == left) {
+			if (firstEnd.getAlignmentEnd() != right)
+				firstEnd.templateSize = tlen;
+			else if (firstEnd.isFirstSegment())
+				firstEnd.templateSize = tlen;
+			else
+				firstEnd.templateSize = -tlen;
+		} else {
+			firstEnd.templateSize = -tlen;
+		}
+		if (secondEnd.alignmentStart == left) {
+			if (secondEnd.getAlignmentEnd() != right)
+				secondEnd.templateSize = tlen;
+			else if (secondEnd.isFirstSegment())
+				secondEnd.templateSize = tlen;
+			else
+				secondEnd.templateSize = -tlen;
+		} else {
+			secondEnd.templateSize = -tlen;
+		}
+
+		return tlen;
 	}
 }

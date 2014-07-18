@@ -17,13 +17,13 @@ package htsjdk.samtools.cram.ref;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.common.Utils;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +101,7 @@ public class ReferenceSource {
 		{ // try to fetch sequence by name:
 			bases = findBasesByName(record.getSequenceName(), tryNameVariants);
 			if (bases != null) {
-				Utils.upperCase(bases);
+				SequenceUtil.upperCase(bases);
 				cacheW.put(record.getSequenceName(), new WeakReference<byte[]>(
 						bases));
 				return bases;
@@ -116,7 +116,7 @@ public class ReferenceSource {
 					throw new RuntimeException(e);
 				}
 			if (bases != null) {
-				Utils.upperCase(bases);
+				SequenceUtil.upperCase(bases);
 				cacheW.put(md5, new WeakReference<byte[]>(bases));
 				return bases;
 			}
@@ -169,7 +169,7 @@ public class ReferenceSource {
 			is.close();
 
 			try {
-				String downloadedMD5 = Utils.calculateMD5String(data);
+				String downloadedMD5 = SequenceUtil.calculateMD5String(data);
 				if (md5.equals(downloadedMD5)) {
 					return data;
 				} else {
