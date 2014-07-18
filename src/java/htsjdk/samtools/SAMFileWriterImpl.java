@@ -43,7 +43,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     private SAMFileHeader header;
     private SortingCollection<SAMRecord> alignmentSorter;
     private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-	private ProgressLoggerInterface progressLogger = null;
+    private ProgressLoggerInterface progressLogger = null;
+    private boolean isClosed = false;
 
     // If true, records passed to addAlignment are already in the order specified by sortOrder
     private boolean presorted;
@@ -58,7 +59,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @param maxRecordsInRam
      */
     public static void setDefaultMaxRecordsInRam(final int maxRecordsInRam) {
-    	DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;	
+        DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;    
     }
     
     /**
@@ -67,15 +68,15 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @return DEAFULT_MAX_RECORDS_IN_RAM 
      */
     public static int getDefaultMaxRecordsInRam() {
-    	return DEAFULT_MAX_RECORDS_IN_RAM;	
+        return DEAFULT_MAX_RECORDS_IN_RAM;    
     }
 
-	/**
-	 * Sets the progress logger used by this implementation. Setting this lets this writer emit log
-	 * messages as SAM records in a SortingCollection are being written to disk.
-	 */
+    /**
+     * Sets the progress logger used by this implementation. Setting this lets this writer emit log
+     * messages as SAM records in a SortingCollection are being written to disk.
+     */
     public void setProgressLogger(final ProgressLoggerInterface progress) {
-	    this.progressLogger = progress;
+        this.progressLogger = progress;
     }
 
     /**
@@ -195,14 +196,17 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      */
     public final void close()
     {
-        if (alignmentSorter != null) {
-            for (final SAMRecord alignment : alignmentSorter) {
-                writeAlignment(alignment);
-	            if (progressLogger != null) progressLogger.record(alignment);
+        if (!isClosed) {
+            if (alignmentSorter != null) {
+                for (final SAMRecord alignment : alignmentSorter) {
+                    writeAlignment(alignment);
+                    if (progressLogger != null) progressLogger.record(alignment);
+                }
+                alignmentSorter.cleanup();
             }
-            alignmentSorter.cleanup();
+            finish();
         }
-        finish();
+        isClosed = true;
     }
 
     /**
