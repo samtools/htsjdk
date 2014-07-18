@@ -57,7 +57,6 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * @param file of FASTQ to read read. Will be opened with htsjdk.samtools.util.IOUtil.openFileForBufferedReading
      * @param skipBlankLines should we skip blank lines ?
      */
-
     public FastqReader(final File file, final boolean skipBlankLines) {
         this.skipBlankLines=skipBlankLines;
         fastqFile = file;
