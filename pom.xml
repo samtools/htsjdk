@@ -16,6 +16,26 @@
 
     <name>HTS JDK</name>
 
+    <profiles>
+        <profile>
+            <id>DEV</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <keystore.location>examplestore</keystore.location>
+                <keystore.alias>test</keystore.alias>
+                <keystore.storepass>123456</keystore.storepass>
+                <keystore.keypass>123456</keystore.keypass>
+            </properties>
+        </profile>
+        <profile>
+            <id>RELEASE</id>
+            <!-- use "-D" params to specify keystore info on the command line
+                 for the actual release -->
+        </profile>
+    </profiles>
+
     <repositories>
         <repository>
             <id>central</id>
@@ -126,11 +146,11 @@
                 </executions>
                 <configuration>
                     <!--generated via: keytool -genkey -alias test -keystore examplestore -->
-                    <keystore>examplestore</keystore>
-                    <alias>test</alias>
+                    <keystore>${keystore.location}</keystore>
+                    <alias>${keystore.alias}</alias>
                     <!-- should probably encrypt the passwords in the real production version -->
-                    <storepass>123456</storepass>
-                    <keypass>123456</keypass>
+                    <storepass>${keystore.storepass}</storepass>
+                    <keypass>${keystore.keypass}</keypass>
                 </configuration>
             </plugin>
 
