@@ -30,6 +30,7 @@
 # Assumes OpenJDK exists at $OPENJDK.  I used openjdk-7-fcs-src-b147-27_jun_2011.zip
 # Assumes that Picard-public java sources have been compiled
 # Assumes IPP8_CODE_SAMPLES_DIR points to Intel IPP sample code built with -fPIC
+# Assumes IPP8_COMPOSER_XE_DIR points to Intel composer xe directory 
 set -e
 
 if [ "$OPENJDK" = "" ]
@@ -39,6 +40,11 @@ fi
 
 if [ "$IPP8_CODE_SAMPLES_DIR" = "" ]
 then echo "ERROR: IPP8_CODE_SAMPLES_DIR environment variable not defined." >&2
+     exit 1
+fi
+
+if [ "$IPP8_COMPOSER_XE_DIR" = "" ]
+then echo "ERROR: IPP8_COMPOSER_XE_DIR environment variable not defined." >&2
      exit 1
 fi
 
@@ -53,9 +59,12 @@ mkdir -p $builddir
 javah -jni -classpath $rootdir/classes -d $builddir htsjdk.samtools.util.zip.IntelDeflater
 
 # Compile source and create library.
-gcc -I$builddir -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \
--I$OPENJDK/jdk/src/solaris/native/common/ -c -O3 -fPIC IntelDeflater.c
-gcc  -shared -o $builddir/libIntelDeflater.so IntelDeflater.o  -L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
+gcc -o src/c/inteldeflater/IntelDeflater.o -I$builddir -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \
+-I$OPENJDK/jdk/src/solaris/native/common/ -c -O3 -fPIC src/c/inteldeflater/IntelDeflater.c
+gcc  -shared -o $builddir/libIntelDeflater.so src/c/inteldeflater/IntelDeflater.o  \
+-L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
+-L${IPP8_COMPOSER_XE_DIR}/lib/intel64 \
+-L${IPP8_COMPOSER_XE_DIR}/ipp/lib/intel64 \
 -lzlib  -lstdc++ -Wl,-Bstatic  -lbfp754  -ldecimal  -liomp5  -liompstubs5  -lipgo  -lippac  -lippcc  -lippch  -lippcv  \
 -lippdc  -lippdi  -lippgen  -lippi  -lippj  -lippm  -lippr  -lippsc  -lippvc  -lippvm  -lirng  -lmatmul  -lpdbx  \
 -lpdbxinst  -lsvml  -lipps  -limf  -lirc  -lirc_s  -lippcore -Wl,-Bdynamic
