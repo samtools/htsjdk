@@ -101,6 +101,16 @@
         <sourceDirectory>src/java</sourceDirectory>
         <testSourceDirectory>src/tests/java</testSourceDirectory>
 
+        <resources>
+            <resource>
+                <directory>lib/jni</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/libIntelDeflater.so</include>
+                </includes>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
