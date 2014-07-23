@@ -34,6 +34,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
+/**
+ * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
+ * Supports random access using BAI or CRAI index file formats.
+ * 
+ * @author vadim
+ *
+ */
 public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private File file;
 	private ReferenceSource referenceSource;
@@ -47,8 +54,39 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	private ValidationStringency validationStringency;
 
+	/**
+	 * Open CRAM data for reading using either the file or the input stream
+	 * supplied in the arguments. The
+	 * {@link htsjdk.samtools.Defaults#REFERENCE_FASTA default} reference fasta
+	 * file will be used.
+	 * 
+	 * @param file
+	 *            CRAM file to open
+	 * @param is
+	 *            CRAM stream to read
+	 */
+	public CRAMFileReader(File file, InputStream is) {
+		this(file, is, new ReferenceSource(Defaults.REFERENCE_FASTA));
+	}
+
+	/**
+	 * Open CRAM data for reading using either the file or the input stream
+	 * supplied in the arguments.
+	 * 
+	 * @param cramFile
+	 *            CRAM file to read
+	 * @param indexFile
+	 *            index file to be used for random access
+	 * @param referenceSource
+	 *            a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+	 *            reference sequences
+	 */
 	public CRAMFileReader(File file, InputStream is,
 			ReferenceSource referenceSource) {
+		if (file == null && is == null)
+			throw new NullPointerException(
+					"Either file or input stream is required.");
+
 		this.file = file;
 		this.is = is;
 		this.referenceSource = referenceSource;
@@ -57,9 +95,24 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			getIterator();
 	}
 
-	public CRAMFileReader(File bamFile, File indexFile,
+	/**
+	 * Open CRAM file for reading. If index file is supplied than random access
+	 * will be available.
+	 * 
+	 * @param cramFile
+	 *            CRAM file to read
+	 * @param indexFile
+	 *            index file to be used for random access
+	 * @param referenceSource
+	 *            a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+	 *            reference sequences
+	 */
+	public CRAMFileReader(File cramFile, File indexFile,
 			ReferenceSource referenceSource) {
-		this.file = bamFile;
+		if (file == null)
+			throw new NullPointerException("File is required.");
+
+		this.file = cramFile;
 		this.mIndexFile = indexFile;
 		this.referenceSource = referenceSource;
 
@@ -197,7 +250,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (filePointers == null || filePointers.length == 0)
 			return emptyIterator;
 
-		SeekableStream s = getSeekableStreamOrFailWithRTE() ;
+		SeekableStream s = getSeekableStreamOrFailWithRTE();
 		CRAMIterator si = null;
 		try {
 			s.seek(0);
@@ -239,7 +292,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	public CloseableIterator<SAMRecord> queryUnmapped() {
 		final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
 
-		SeekableStream s = getSeekableStreamOrFailWithRTE() ;
+		SeekableStream s = getSeekableStreamOrFailWithRTE();
 		CRAMIterator si = null;
 		try {
 			s.seek(0);
@@ -253,8 +306,8 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 		return it;
 	}
-	
-	private SeekableStream getSeekableStreamOrFailWithRTE () {
+
+	private SeekableStream getSeekableStreamOrFailWithRTE() {
 		SeekableStream s = null;
 		if (file != null) {
 			try {
@@ -264,7 +317,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			}
 		} else if (is instanceof SeekableStream)
 			s = (SeekableStream) is;
-		return s ;
+		return s;
 	}
 
 	@Override
