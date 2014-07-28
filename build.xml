@@ -45,7 +45,7 @@
         <arg value="--pretty=format:%H_%at"/>
     </exec>
     <property name="repository.revision" value=""/>
-    <property name="htsjdk-version" value="1.117"/>
+    <property name="htsjdk-version" value="1.118"/>
     <property name="htsjdk-version-xml" value="htsjdk.version.property.xml"/>
     <property name="testng.verbosity" value="2"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
