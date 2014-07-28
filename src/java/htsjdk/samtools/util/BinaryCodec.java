@@ -330,7 +330,7 @@ public class BinaryCodec implements Closeable {
             throw new IllegalArgumentException("Negative value (" + val + ") passed to unsigned writing method.");
         }
         if (val > MAX_USHORT) {
-            throw new IllegalArgumentException("Value (" + val + ") to large to be written as ushort.");
+            throw new IllegalArgumentException("Value (" + val + ") too large to be written as ushort.");
         }
         byteBuffer.clear();
         byteBuffer.putInt(val);
