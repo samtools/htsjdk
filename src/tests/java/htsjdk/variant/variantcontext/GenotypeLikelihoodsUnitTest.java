@@ -108,6 +108,11 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
 
         // some special cases: ploidy = 20, #alleles = 4
         Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(4, 20), 1771);
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(100, 4), 4421275);
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(4, 100), 176851);
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(20, 3), 1540);
+        Assert.assertEquals(GenotypeLikelihoods.numLikelihoods(3, 20), 231);
+        
     }
     
     @Test
