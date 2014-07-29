@@ -63,7 +63,7 @@ public class SliceIO {
 			s.contentIDs[i++] = id;
 		ByteBufferUtils.write(s.contentIDs, baos);
 		ByteBufferUtils.writeUnsignedITF8(s.embeddedRefBlockContentID, baos);
-		baos.write(s.refMD5);
+		baos.write(s.refMD5 == null ? new byte[16]: s.refMD5);
 		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
 		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
 		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);

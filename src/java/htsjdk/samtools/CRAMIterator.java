@@ -175,6 +175,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
 	@Override
 	public boolean hasNext() {
+		if (container == null || container.isEOF()) return false ;
 		if (recordCounter >= records.size()) {
 			try {
 				nextContainer();
