@@ -26,6 +26,7 @@ package htsjdk.samtools.metrics;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
+import htsjdk.samtools.util.Objects;
 
 import java.lang.reflect.Field;
 
@@ -114,7 +115,7 @@ public class MetricBase {
     public boolean equals(MetricBase that) {
         for (Field field : this.getClass().getFields()) {
             try {
-                if (!field.get(this).equals(field.get(that))) {
+                if (!Objects.equals(field.get(this), field.get(that))) {
                     return false;
                 }
             }
