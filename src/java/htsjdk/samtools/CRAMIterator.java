@@ -94,8 +94,12 @@ public class CRAMIterator implements SAMRecordIterator {
 
 		containerOffset = is.getCount();
 		container = CramIO.readContainer(is);
-		if (container == null || container.isEOF())
+		if (container == null || container.isEOF()) {
+			records.clear();
+			nextRecord = null ;
+			recordCounter = -1 ;
 			return;
+		}
 
 		if (records == null)
 			records = new ArrayList<SAMRecord>(container.nofRecords);
@@ -175,8 +179,8 @@ public class CRAMIterator implements SAMRecordIterator {
 
 	@Override
 	public boolean hasNext() {
-		if (container == null || container.isEOF()) return false ;
-		if (recordCounter >= records.size()) {
+		if (container != null && container.isEOF()) return false ;
+		if (container == null || recordCounter >= records.size()) {
 			try {
 				nextContainer();
 				if (records.isEmpty())

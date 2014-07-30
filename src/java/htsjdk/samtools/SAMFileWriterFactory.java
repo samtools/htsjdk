@@ -23,12 +23,14 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -283,5 +285,19 @@ public class SAMFileWriterFactory {
             return makeSAMWriter(header, presorted, outputFile);
         }
         return makeBAMWriter(header, presorted, outputFile);
+    }
+    
+    public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
+    	if (outputFile.getName().endsWith(".cram"))
+			try {
+				return makeCRAMWriter(header, presorted, new FileOutputStream(outputFile)) ;
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e) ;
+			}
+    	return makeSAMOrBAMWriter(header, presorted, outputFile) ;
+    }
+    
+    public SAMFileWriter makeCRAMWriter (final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
+    	return new CRAMFileWriter(stream, null, header, null) ;
     }
 }

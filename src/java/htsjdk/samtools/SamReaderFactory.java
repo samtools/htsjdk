@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
@@ -182,7 +183,16 @@ public abstract class SamReaderFactory {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-                    } else {
+                    } else if (CramIO.isCRAM(bufferedStream)) {
+                    	 if (sourceFile == null || !sourceFile.isFile()) {
+                             // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
+                             primitiveSamReader = new CRAMFileReader(null, bufferedStream);
+                         } else {
+                             bufferedStream.close();
+                             primitiveSamReader = new CRAMFileReader(sourceFile, null);
+                         }
+                    }
+                    else {
                         if (indexDefined) {
                             bufferedStream.close();
                             throw new RuntimeException("Cannot use index file with textual SAM file");

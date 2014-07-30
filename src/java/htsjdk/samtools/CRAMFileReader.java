@@ -39,7 +39,7 @@ import java.util.Arrays;
  * Supports random access using BAI or CRAI index file formats.
  * 
  * @author vadim
- *
+ * 
  */
 public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private File file;
@@ -91,8 +91,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		this.is = is;
 		this.referenceSource = referenceSource;
 
-		if (file == null)
-			getIterator();
+		getIterator();
 	}
 
 	/**
@@ -116,8 +115,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		this.mIndexFile = indexFile;
 		this.referenceSource = referenceSource;
 
-		if (file == null)
-			getIterator();
+		getIterator();
 	}
 
 	public SAMRecordIterator iterator() {
