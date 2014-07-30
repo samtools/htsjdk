@@ -128,21 +128,14 @@ public class CRAMIterator implements SAMRecordIterator {
 			prevSeqId = container.sequenceId;
 		}
 
-		long time1 = System.nanoTime();
-
 		normalizer.normalize(cramRecords, true, refs, container.alignmentStart,
 				container.h.substitutionMatrix, container.h.AP_seriesDelta);
-		long time2 = System.nanoTime();
 
 		Cram2SamRecordFactory c2sFactory = new Cram2SamRecordFactory(
 				cramHeader.getSamFileHeader());
 
-		long c2sTime = 0;
-
 		for (CramCompressionRecord r : cramRecords) {
-			long time = System.nanoTime();
 			SAMRecord s = c2sFactory.create(r);
-			c2sTime += System.nanoTime() - time;
 			if (!r.isSegmentUnmapped()) {
 				SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
 						.getSequence(r.sequenceId);
@@ -168,13 +161,6 @@ public class CRAMIterator implements SAMRecordIterator {
 			records.add(s);
 		}
 		cramRecords.clear();
-
-		if (log.isEnabled(LogLevel.DEBUG))
-			log.debug(String
-					.format("CONTAINER READ: io %dms, parse %dms, norm %dms, convert %dms",
-							container.readTime / 1000000,
-							container.parseTime / 1000000, c2sTime / 1000000,
-							(time2 - time1) / 1000000));
 	}
 
 	@Override

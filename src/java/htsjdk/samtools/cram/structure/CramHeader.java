@@ -36,10 +36,11 @@ public final class CramHeader {
 
 	public CramHeader(int majorVersion, int minorVersion, String id,
 			SAMFileHeader samFileHeader) {
-		this.majorVersion=(byte) majorVersion;
-		this.minorVersion=(byte) minorVersion;
-		System.arraycopy(id.getBytes(), 0, this.id, 0,
-				Math.min(id.length(), this.id.length));
+		this.majorVersion = (byte) majorVersion;
+		this.minorVersion = (byte) minorVersion;
+		if (id != null)
+			System.arraycopy(id.getBytes(), 0, this.id, 0,
+					Math.min(id.length(), this.id.length));
 		this.samFileHeader = samFileHeader;
 	}
 
@@ -51,8 +52,8 @@ public final class CramHeader {
 	@Override
 	public CramHeader clone() {
 		CramHeader clone = new CramHeader();
-		clone.majorVersion= majorVersion;
-		clone.minorVersion=minorVersion;
+		clone.majorVersion = majorVersion;
+		clone.minorVersion = minorVersion;
 		System.arraycopy(id, 0, clone.id, 0, id.length);
 		clone.samFileHeader = getSamFileHeader().clone();
 
@@ -96,7 +97,7 @@ public final class CramHeader {
 	public SAMFileHeader getSamFileHeader() {
 		return samFileHeader;
 	}
-	
+
 	public void setSamFileHeader(SAMFileHeader samFileHeader) {
 		this.samFileHeader = samFileHeader;
 	}

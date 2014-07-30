@@ -15,7 +15,6 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
-import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
@@ -25,11 +24,15 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.StringLineReader;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
 	private static final int REF_SEQ_INDEX_NOT_INITED = -2;
@@ -49,34 +52,25 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	private ReferenceSource source;
 	private int refSeqIndex = REF_SEQ_INDEX_NOT_INITED;
 
+	private static Log log = Log.getInstance(CRAMFileWriter.class);
+
 	private boolean preserveReadNames = true;
 	private SAMFileHeader samFileHeader;
 
 	public CRAMFileWriter(OutputStream os, ReferenceSource source,
 			SAMFileHeader samFileHeader, String fileName) {
-		if (samFileHeader.getSortOrder() != SortOrder.coordinate)
-			throw new RuntimeException(
-					"Only coordinate sort order is supported in this version.");
-
 		this.os = os;
 		this.source = source;
 		this.samFileHeader = samFileHeader;
 		this.fileName = fileName;
+		setSortOrder(samFileHeader.getSortOrder(), true);
+		setHeader(samFileHeader);
 
 		if (this.source == null)
 			this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
 
 		containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice,
 				preserveReadNames);
-
-		CramHeader cramHeader = new CramHeader(cramVersion.major,
-				cramVersion.minor, fileName == null ? "" : fileName,
-				samFileHeader);
-		try {
-			CramIO.writeCramHeader(cramHeader, os);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	/**
@@ -93,7 +87,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 		if (records.size() >= containerSize)
 			return true;
 
-		if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED && refSeqIndex != nextRecord.getReferenceIndex())
+		if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED
+				&& refSeqIndex != nextRecord.getReferenceIndex())
 			return true;
 
 		return false;
@@ -108,6 +103,56 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	 */
 	protected void flushContainer() throws IllegalArgumentException,
 			IllegalAccessException, IOException {
+		int index = 0;
+		int prevAlStart = records.get(0).alignmentStart;
+		for (CramCompressionRecord cramRecord : records) {
+			cramRecord.index = ++index;
+			cramRecord.alignmentDelta = cramRecord.alignmentStart - prevAlStart;
+			prevAlStart = cramRecord.alignmentStart;
+		}
+
+		if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory
+				.getFeatureCount())
+			log.warn("Abnormally high number of mismatches, possibly wrong reference.");
+
+		// mating:
+		Map<String, CramCompressionRecord> mateMap = new TreeMap<String, CramCompressionRecord>();
+		for (CramCompressionRecord r : records) {
+			if (!r.isMultiFragment()) {
+				r.setDetached(true);
+
+				r.setHasMateDownStream(false);
+				r.recordsToNextFragment = -1;
+				r.next = null;
+				r.previous = null;
+			} else {
+				String name = r.readName;
+				CramCompressionRecord mate = mateMap.get(name);
+				if (mate == null) {
+					mateMap.put(name, r);
+				} else {
+					mate.recordsToNextFragment = r.index - mate.index - 1;
+					mate.next = r;
+					r.previous = mate;
+					r.previous.setHasMateDownStream(true);
+					r.setHasMateDownStream(false);
+					r.setDetached(false);
+					r.previous.setDetached(false);
+
+					mateMap.remove(name);
+				}
+			}
+		}
+
+		for (CramCompressionRecord r : mateMap.values()) {
+			r.setDetached(true);
+
+			r.setHasMateDownStream(false);
+			r.recordsToNextFragment = -1;
+			r.next = null;
+			r.previous = null;
+		}
+
 		Container container = containerFactory.buildContainer(records);
 		CramIO.writeContainer(container, os);
 		records.clear();
@@ -165,11 +210,14 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 	@Override
 	protected void writeHeader(String textHeader) {
-		SAMFileHeader header = new SAMFileHeader();
+    	// TODO: header must be written exactly once per writer life cycle.
+		SAMFileHeader header = new SAMTextHeaderCodec().decode(
+				new StringLineReader(textHeader), (fileName != null ? fileName
+						: null));
+
 		containerFactory = new ContainerFactory(header, recordsPerSlice,
 				preserveReadNames);
 
-		header.setTextHeader(textHeader);
 		CramHeader cramHeader = new CramHeader(cramVersion.major,
 				cramVersion.minor, fileName, header);
 		try {
@@ -181,8 +229,6 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 	@Override
 	protected void finish() {
-		if (sam2CramRecordFactory != null)
-			sam2CramRecordFactory = null;
 		try {
 			if (!records.isEmpty())
 				flushContainer();

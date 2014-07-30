@@ -177,10 +177,11 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			return it;
 		try {
 			CRAMIterator si = null;
-			if (file != null)
+			if (file != null) {
 				si = new CRAMIterator(new FileInputStream(file),
 						referenceSource);
-			else
+//				si.getCramHeader().getSamFileHeader().setSortOrder(SortOrder.unsorted);
+			} else
 				si = new CRAMIterator(is, referenceSource);
 
 			si.setValidationStringency(validationStringency);
