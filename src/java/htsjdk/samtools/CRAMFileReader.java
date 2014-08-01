@@ -20,23 +20,20 @@ import htsjdk.samtools.SamReader.Type;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeEOFException;
 
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 /**
  * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
- * Supports random access using BAI or CRAI index file formats.
+ * Supports random access using BAI index file formats.
  * 
  * @author vadim
  * 
@@ -49,7 +46,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	private BAMIndex mIndex;
 	private File mIndexFile;
 	private boolean mEnableIndexCaching;
-	private File mIndexStream;
 	private boolean mEnableIndexMemoryMapping;
 
 	private ValidationStringency validationStringency;
@@ -124,12 +120,14 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	@Override
 	void enableIndexCaching(boolean enabled) {
-		// inapplicable to CRAM: do nothing
+		// relevant to BAI only
+		mEnableIndexCaching = enabled;
 	}
 
 	@Override
 	void enableIndexMemoryMapping(boolean enabled) {
-		// inapplicable to CRAM: do nothing
+		// relevant to BAI only
+		mEnableIndexMemoryMapping = enabled;
 	}
 
 	@Override
@@ -143,7 +141,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 
 	@Override
 	public boolean hasIndex() {
-		return mIndex != null || mIndexFile != null || mIndexStream != null;
+		return mIndex != null || mIndexFile != null;
 	}
 
 	@Override
@@ -153,15 +151,10 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 		if (mIndex == null) {
 			SAMSequenceDictionary dictionary = getFileHeader()
 					.getSequenceDictionary();
-			if (mIndexFile != null)
-				mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(
-						mIndexFile, dictionary, mEnableIndexMemoryMapping)
-						: new DiskBasedBAMFileIndex(mIndexFile, dictionary,
-								mEnableIndexMemoryMapping);
-			else
-				mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(
-						mIndexStream, dictionary) : new DiskBasedBAMFileIndex(
-						mIndexStream, dictionary);
+			mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile,
+					dictionary, mEnableIndexMemoryMapping)
+					: new DiskBasedBAMFileIndex(mIndexFile, dictionary,
+							mEnableIndexMemoryMapping);
 		}
 		return mIndex;
 	}
@@ -180,7 +173,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 			if (file != null) {
 				si = new CRAMIterator(new FileInputStream(file),
 						referenceSource);
-//				si.getCramHeader().getSamFileHeader().setSortOrder(SortOrder.unsorted);
 			} else
 				si = new CRAMIterator(is, referenceSource);
 
@@ -341,17 +333,6 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
 	@Override
 	public ValidationStringency getValidationStringency() {
 		return validationStringency;
-	}
-
-	public static boolean isCRAMFile(File file) throws IOException {
-		final int buffSize = CramHeader.magick.length;
-		FileInputStream fis = new FileInputStream(file);
-		DataInputStream dis = new DataInputStream(fis);
-		final byte[] buffer = new byte[buffSize];
-		dis.readFully(buffer);
-		dis.close();
-
-		return Arrays.equals(buffer, CramHeader.magick);
 	}
 
 	@Override
