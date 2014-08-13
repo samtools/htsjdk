@@ -215,10 +215,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
     public void close() {
         try {
             outputStream.flush();
-            outputStream.close();
         }
         catch ( IOException e ) {
-            throw new RuntimeException("Failed to close BCF2 file");
+            throw new RuntimeException("Failed to flush BCF2 file");
         }
         super.close();
     }
