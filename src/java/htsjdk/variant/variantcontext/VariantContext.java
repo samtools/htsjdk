@@ -1162,12 +1162,24 @@ public class VariantContext implements Feature { // to enable tribble integratio
         if ( !hasGenotypes() )
             return;
 
-        List<Allele> reportedAlleles = getAlleles();
-        Set<Allele> observedAlleles = new HashSet<Allele>();
+        // maintain a list of non-symbolic alleles reported in the REF and ALT fields of the record
+        // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
+        final List<Allele> reportedAlleles = new ArrayList<Allele>();
+        for ( final Allele allele : getAlleles() ) {
+            if ( !allele.isSymbolic() )
+                reportedAlleles.add(allele);
+        }
+
+        // maintain a list of non-symbolic alleles observed in the genotypes
+        final Set<Allele> observedAlleles = new HashSet<Allele>();
         observedAlleles.add(getReference());
         for ( final Genotype g : getGenotypes() ) {
-            if ( g.isCalled() )
-                observedAlleles.addAll(g.getAlleles());
+            if ( g.isCalled() ) {
+                for ( final Allele allele : g.getAlleles() ) {
+                    if ( !allele.isSymbolic() )
+                        observedAlleles.add(allele);
+                }
+            }
         }
         if ( observedAlleles.contains(Allele.NO_CALL) )
             observedAlleles.remove(Allele.NO_CALL);
