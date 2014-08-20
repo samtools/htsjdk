@@ -84,6 +84,10 @@ public class ReferenceSequenceFileWalker implements Closeable {
         referenceSequence = null;
 
         if(referenceSequenceFile.isIndexed()) {
+            if(referenceSequenceFile.getSequenceDictionary() == null) {
+                throw new SAMException("Since it has a .faidx index, the reference sequence must also have a .dict sequence dictionary " +
+                        "file");
+            }
             final SAMSequenceRecord samSequenceRecord = referenceSequenceFile.getSequenceDictionary().getSequence(sequenceIndex);
             if(samSequenceRecord != null) {
                 referenceSequence = referenceSequenceFile.getSequence(samSequenceRecord.getSequenceName()) ;
