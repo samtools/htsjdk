@@ -150,6 +150,7 @@ public class QualityEncodingDetector {
      * Adds the provided reader's records to the detector.
      * @return The number of records read
      */
+<<<<<<< HEAD
     public long add(final long maxRecords, final SAMFileReader reader) {
         return add(maxRecords, reader.iterator());
     }
@@ -158,6 +159,8 @@ public class QualityEncodingDetector {
      * Adds the provided iterator's records to the detector.
      * @return The number of records read
      */
+=======
+>>>>>>> 1ab65f0f57cb289f876d452fca84e5f14b3ea665
     public long add(final long maxRecords, final CloseableIterator<SAMRecord> iterator) {
         long recordCount = 0;
         try {
