@@ -275,14 +275,33 @@ public class SamPairUtil {
      * using the primary alignment of the read's mate.
      * @param supplemental a supplemental alignment for the mate pair of the primary supplied
      * @param matePrimary the primary alignment of the the mate pair of the supplemental
+     * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
      */
     public static void setMateInformationOnSupplementalAlignment( final SAMRecord supplemental,
-                                                                  final SAMRecord matePrimary) {
+                                                                  final SAMRecord matePrimary,
+                                                                  final boolean setMateCigar) {
         supplemental.setMateReferenceIndex(matePrimary.getReferenceIndex());
         supplemental.setMateAlignmentStart(matePrimary.getAlignmentStart());
         supplemental.setMateNegativeStrandFlag(matePrimary.getReadNegativeStrandFlag());
         supplemental.setMateUnmappedFlag(matePrimary.getReadUnmappedFlag());
         supplemental.setInferredInsertSize(-matePrimary.getInferredInsertSize());
+        if (setMateCigar && !matePrimary.getReadUnmappedFlag()) {
+            supplemental.setAttribute(SAMTag.MC.name(), matePrimary.getCigarString());
+        }
+        else {
+            supplemental.setAttribute(SAMTag.MC.name(), null);
+        }
+    }
+
+    /**
+     * Sets mate pair information appropriately on a supplemental SAMRecord (e.g. from a split alignment)
+     * using the primary alignment of the read's mate.
+     * @param supplemental a supplemental alignment for the mate pair of the primary supplied
+     * @param matePrimary the primary alignment of the the mate pair of the supplemental
+     */
+    public static void setMateInformationOnSupplementalAlignment( final SAMRecord supplemental,
+                                                                  final SAMRecord matePrimary) {
+        setMateInformationOnSupplementalAlignment(supplemental, matePrimary, false);
     }
 
     /**
