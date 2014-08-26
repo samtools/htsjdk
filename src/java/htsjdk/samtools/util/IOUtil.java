@@ -30,8 +30,6 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import org.apache.tools.bzip2.CBZip2InputStream;
-import org.apache.tools.bzip2.CBZip2OutputStream;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -411,14 +409,10 @@ public class IOUtil {
     public static InputStream openFileForReading(final File file) {
 
         try {
-            if(file.getName().endsWith(".bz2")) {
-                return openBzipFileForReading(file);
-            }
             if (file.getName().endsWith(".gz") ||
                 file.getName().endsWith(".bfq"))  {
                 return openGzipFileForReading(file);
             }
-            //TODO: Other compression formats
             else {
                 return new FileInputStream(file);
             }
@@ -446,28 +440,6 @@ public class IOUtil {
     }
 
     /**
-     * Opens a GZIP-encoded file for reading, decompressing it if necessary
-     *
-     * @param file  The file to open
-     * @return the input stream to read from
-     */
-    public static InputStream openBzipFileForReading(final File file) {
-
-        try {
-            final FileInputStream fis = new FileInputStream(file);
-            if(fis.read() != 66 || fis.read() != 90) { //Read magic number 'BZ' or else CBZip2InputStream will complain about it
-                fis.close();
-                throw new SAMException(file.getAbsolutePath() + " is not a BZIP file.");
-            }
-
-            return new CBZip2InputStream(fis);
-        }
-        catch (IOException ioe) {
-            throw new SAMException("Error opening file: " + file.getName(), ioe);
-        }
-    }
-
-    /**
      * Opens a file for writing, overwriting the file if it already exists
      *
      * @param file  the file to write to
@@ -487,14 +459,10 @@ public class IOUtil {
     public static OutputStream openFileForWriting(final File file, final boolean append) {
 
         try {
-            if (file.getName().endsWith(".bz2")) {
-                return openBzipFileForWriting(file, append);
-            }
             if (file.getName().endsWith(".gz") ||
                 file.getName().endsWith(".bfq")) {
                 return openGzipFileForWriting(file, append);
             }
-            //TODO: Other compression formats
             else {
                 return new FileOutputStream(file, append);
             }
@@ -553,27 +521,6 @@ public class IOUtil {
             } else {
                 return new CustomGzipOutputStream(new FileOutputStream(file, append), Defaults.COMPRESSION_LEVEL);
             }
-        }
-        catch (IOException ioe) {
-            throw new SAMException("Error opening file for writing: " + file.getName(), ioe);
-        }
-    }
-
-    /**
-     * Opens a BZIP encoded file for writing
-     *
-     * @param file  the file to write to
-     * @param append    whether to append to the file if it already exists (we overwrite it if false)
-     * @return the output stream to write to
-     */
-    public static OutputStream openBzipFileForWriting(final File file, final boolean append) {
-
-        try {
-
-            final FileOutputStream fos = new FileOutputStream(file, append);
-            fos.write(66); //write magic number 'BZ' because CBZip2OutputStream does not do it for you
-            fos.write(90);
-            return IOUtil.maybeBufferOutputStream(new CBZip2OutputStream(fos));
         }
         catch (IOException ioe) {
             throw new SAMException("Error opening file for writing: " + file.getName(), ioe);
