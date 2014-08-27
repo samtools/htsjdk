@@ -49,8 +49,8 @@ public class IoUtilTest {
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ","for breakfast  ","wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "foo";
-    private static final String TEST_FILE_EXTENSIONS[] = { ".txt", ".txt.gz", ".txt.bz2" };
-    private static final String TEST_STRING = "bar!";
+    private static final String TEST_FILE_EXTENSIONS[] = { ".txt", ".txt.gz" };
+   	private static final String TEST_STRING = "bar!";
     private File existingTempFile;
     private String systemTempDir;
 
