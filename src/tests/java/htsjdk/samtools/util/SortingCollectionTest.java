@@ -55,10 +55,12 @@ public class SortingCollectionTest {
 
     @AfterTest void tearDown() {
         System.err.println("In SortingCollectionTest.tearDown.  tmpDir: " + tmpDir);
-        for (final File f : tmpDir.listFiles()) {
-            f.delete();
+        if (tmpDir.exists()) {
+            for (final File f : tmpDir.listFiles()) {
+                f.delete();
+            }
+            tmpDir.delete();
         }
-        tmpDir.delete();
     }
 
     protected boolean tmpDirIsEmpty() {
