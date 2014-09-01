@@ -302,7 +302,7 @@ public class SAMFileWriterFactory {
     	CRAMFileWriter writer = new CRAMFileWriter(stream, null, header, null) ;
     	writer.setPreserveReadNames(true);
     	writer.setCaptureAllTags(false);
-    	writer.setPreservation(new QualityScorePreservation("*8"));
+//    	writer.setPreservation(new QualityScorePreservation("*8"));
     	return writer ;
     }
 }

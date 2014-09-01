@@ -21,6 +21,7 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
@@ -203,9 +204,11 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 			if (preservation != null)
 				preservation.addQualityScores(samRecord, cramRecord, tracks);
+			else
+				cramRecord.setForcePreserveQualityScores(true);
 		}
 
-//		samRecords.clear();
+		// samRecords.clear();
 
 		if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory
 				.getFeatureCount())
@@ -249,12 +252,12 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 			r.previous = null;
 		}
 
-		Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader) ;
-		for (int i=0; i<samRecords.size(); i++) {
-			String s1 = samRecords.get(i).getSAMString() ;
-			SAMRecord r = f.create(cramRecords.get(i)) ;
-			String s2 = r.getSAMString() ;
-			assert(s1.equals(s2)) ;
+		Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
+		for (int i = 0; i < samRecords.size(); i++) {
+			String s1 = samRecords.get(i).getSAMString();
+			SAMRecord r = f.create(cramRecords.get(i));
+			String s2 = r.getSAMString();
+			assert (s1.equals(s2));
 		}
 
 		Container container = containerFactory.buildContainer(cramRecords);
@@ -337,12 +340,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 		this.preserveReadNames = preserveReadNames;
 	}
 
-	public QualityScorePreservation getPreservation() {
-		return preservation;
-	}
-
-	public void setPreservation(QualityScorePreservation preservation) {
-		this.preservation = preservation;
+	public List<PreservationPolicy> getPreservationPolicies() {
+		return preservation.getPreservationPolicies();
 	}
 
 	public boolean isCaptureAllTags() {

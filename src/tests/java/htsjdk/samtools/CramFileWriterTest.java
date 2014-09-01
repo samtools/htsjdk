@@ -89,6 +89,7 @@ public class CramFileWriterTest {
 			Assert.assertEquals(r1.getMateReferenceName(),
 					r2.getMateReferenceName());
 			Assert.assertEquals(r1.getReadBases(), r2.getReadBases());
+			Assert.assertEquals(r1.getBaseQualities(), r2.getBaseQualities());
 		}
 		cReader.close();
 	}
