@@ -21,6 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
@@ -32,13 +33,14 @@ import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.mask.RefMaskUtils;
+import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,15 +53,6 @@ public class Sam2CramRecordFactory {
 	public static final String UNKNOWN_READ_GROUP_ID = "UNKNOWN";
 	public static final String UNKNOWN_READ_GROUP_SAMPLE = "UNKNOWN";
 
-	private enum TREAT_TYPE {
-		IGNORE, ALIGNMENT, INSERTION, SOFT_CLIP
-	};
-
-	/**
-	 * Reserved for later use.
-	 */
-	private TREAT_TYPE treatSoftClipsAs = TREAT_TYPE.SOFT_CLIP;
-
 	public final static byte QS_asciiOffset = 33;
 	public final static byte unsetQualityScore = 32;
 	public final static byte ignorePositionsWithQualityScore = -1;
@@ -67,11 +60,6 @@ public class Sam2CramRecordFactory {
 	private byte[] refBases;
 	private byte[] refSNPs;
 	private RefMaskUtils.RefMask refPile;
-
-	public boolean captureUnmappedBases = true;
-	public boolean captureUnmappedScores = false;
-
-	private ByteBuffer insertionBuf = ByteBuffer.allocate(1024);
 
 	private static Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
@@ -81,9 +69,6 @@ public class Sam2CramRecordFactory {
 	private long landedPiledScores = 0;
 	private long landedTotalScores = 0;
 
-	private boolean captureInsertScores = false;
-	private boolean captureSubtitutionScores = false;
-	private int uncategorisedQualityScoreCutoff = 0;
 	public boolean captureAllTags = false;
 	public boolean preserveReadNames = false;
 	public Set<String> captureTags = new TreeSet<String>();
@@ -97,11 +82,12 @@ public class Sam2CramRecordFactory {
 	public boolean losslessQS = false;
 
 	private List<ReadTag> readTagList = new ArrayList<ReadTag>();
-	
-	private long baseCount = 0 ;
-	private long featureCount = 0 ;
 
-	public Sam2CramRecordFactory(byte[] refBases, SAMFileHeader samFileHeader) {
+	private long baseCount = 0;
+	private long featureCount = 0;
+
+	public Sam2CramRecordFactory(int samSequenceIndex, byte[] refBases,
+			SAMFileHeader samFileHeader) {
 		this.refBases = refBases;
 
 		List<SAMReadGroupRecord> readGroups = samFileHeader.getReadGroups();
@@ -109,6 +95,7 @@ public class Sam2CramRecordFactory {
 			SAMReadGroupRecord readGroupRecord = readGroups.get(i);
 			readGroupMap.put(readGroupRecord.getId(), i);
 		}
+
 	}
 
 	public CramCompressionRecord createCramRecord(SAMRecord record) {
@@ -116,9 +103,11 @@ public class Sam2CramRecordFactory {
 		if (record.getReadPairedFlag()) {
 			cramRecord.mateAlignmentStart = record.getMateAlignmentStart();
 			cramRecord.setMateUmapped(record.getMateUnmappedFlag());
-			cramRecord.setMateNegativeStrand(record.getMateNegativeStrandFlag());
+			cramRecord
+					.setMateNegativeStrand(record.getMateNegativeStrandFlag());
 			cramRecord.mateSequnceID = record.getMateReferenceIndex();
-		} else cramRecord.mateSequnceID = -1;
+		} else
+			cramRecord.mateSequnceID = -1;
 		cramRecord.sequenceId = record.getReferenceIndex();
 		cramRecord.readName = record.getReadName();
 		cramRecord.alignmentStart = record.getAlignmentStart();
@@ -133,7 +122,8 @@ public class Sam2CramRecordFactory {
 		cramRecord.setLastSegment(record.getReadPairedFlag()
 				&& record.getSecondOfPairFlag());
 		cramRecord.setSecondaryAlignment(record.getNotPrimaryAlignmentFlag());
-		cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
+		cramRecord.setVendorFiltered(record
+				.getReadFailsVendorQualityCheckFlag());
 		cramRecord.setDuplicate(record.getDuplicateReadFlag());
 
 		cramRecord.readLength = record.getReadLength();
@@ -159,11 +149,13 @@ public class Sam2CramRecordFactory {
 				cramRecord.setLastSegment(true);
 		}
 
-		if (!cramRecord.isSegmentUnmapped()) {
+		if (!record.getReadUnmappedFlag()
+				&& record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
 			List<ReadFeature> features = checkedCreateVariations(cramRecord,
 					record);
 			cramRecord.readFeatures = features;
-		}
+		} else
+			cramRecord.readFeatures = Collections.emptyList();
 
 		cramRecord.readBases = record.getReadBases();
 		cramRecord.qualityScores = record.getBaseQualities();
@@ -181,10 +173,10 @@ public class Sam2CramRecordFactory {
 			if (!captureTags.isEmpty()) {
 				List<SAMTagAndValue> attributes = record.getAttributes();
 				cramRecord.tags = new ReadTag[attributes.size()];
-				int i = 0;
 				for (SAMTagAndValue tv : attributes) {
 					if (captureTags.contains(tv.tag)) {
-						readTagList.add(ReadTag.deriveTypeFromValue(tv.tag, tv.value));
+						readTagList.add(ReadTag.deriveTypeFromValue(tv.tag,
+								tv.value));
 					}
 				}
 			}
@@ -192,7 +184,8 @@ public class Sam2CramRecordFactory {
 		cramRecord.tags = (ReadTag[]) readTagList
 				.toArray(new ReadTag[readTagList.size()]);
 
-		cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
+		cramRecord.setVendorFiltered(record
+				.getReadFailsVendorQualityCheckFlag());
 
 		if (preserveReadNames)
 			cramRecord.readName = record.getReadName();
@@ -208,8 +201,8 @@ public class Sam2CramRecordFactory {
 	 * @param samRecord
 	 * @return
 	 */
-	private List<ReadFeature> checkedCreateVariations(CramCompressionRecord cramRecord,
-			SAMRecord samRecord) {
+	private List<ReadFeature> checkedCreateVariations(
+			CramCompressionRecord cramRecord, SAMRecord samRecord) {
 		try {
 			return createVariations(cramRecord, samRecord);
 		} catch (ArrayIndexOutOfBoundsException e) {
@@ -220,8 +213,8 @@ public class Sam2CramRecordFactory {
 		}
 	}
 
-	private List<ReadFeature> createVariations(CramCompressionRecord cramRecord,
-			SAMRecord samRecord) {
+	private List<ReadFeature> createVariations(
+			CramCompressionRecord cramRecord, SAMRecord samRecord) {
 		List<ReadFeature> features = new LinkedList<ReadFeature>();
 		int zeroBasedPositionInRead = 0;
 		int alignmentStartOffset = 0;
@@ -281,9 +274,9 @@ public class Sam2CramRecordFactory {
 				alignmentStartOffset += cigarElementLength;
 		}
 
-		this.baseCount += bases.length ;
-		this.featureCount += features.size() ;
-		
+		this.baseCount += bases.length;
+		this.featureCount += features.size();
+
 		return features;
 	}
 
@@ -295,17 +288,6 @@ public class Sam2CramRecordFactory {
 						+ cigarElementLength);
 
 		SoftClip v = new SoftClip(zeroBasedPositionInRead + 1, insertedBases);
-		features.add(v);
-	}
-
-	private void addHardClip(List<ReadFeature> features,
-			int zeroBasedPositionInRead, int cigarElementLength, byte[] bases,
-			byte[] scores) {
-		byte[] insertedBases = Arrays.copyOfRange(bases,
-				zeroBasedPositionInRead, zeroBasedPositionInRead
-						+ cigarElementLength);
-
-		HardClip v = new HardClip(zeroBasedPositionInRead + 1, insertedBases.length);
 		features.add(v);
 	}
 
@@ -322,31 +304,18 @@ public class Sam2CramRecordFactory {
 			ib.setPosition(zeroBasedPositionInRead + 1 + i);
 			ib.setBase(insertedBases[i]);
 			features.add(ib);
-			if (losslessQS || scores == null || scores.length < bases.length)
-				continue;
-			boolean qualityMasked = (scores[i] < uncategorisedQualityScoreCutoff);
-			if (captureInsertScores || qualityMasked) {
-				byte score = (byte) (QS_asciiOffset + scores[zeroBasedPositionInRead
-						+ i]);
-				// if (score >= QS_asciiOffset) {
-				features.add(new BaseQualityScore(zeroBasedPositionInRead + 1
-						+ i, score));
-				landedTotalScores++;
-				// }
-			}
 		}
 	}
 
-	private void addSubstitutionsAndMaskedBases(CramCompressionRecord cramRecord,
-			List<ReadFeature> features, int fromPosInRead,
-			int alignmentStartOffset, int nofReadBases, byte[] bases,
-			byte[] qualityScore) {
+	private void addSubstitutionsAndMaskedBases(
+			CramCompressionRecord cramRecord, List<ReadFeature> features,
+			int fromPosInRead, int alignmentStartOffset, int nofReadBases,
+			byte[] bases, byte[] qualityScore) {
 		int oneBasedPositionInRead;
 		boolean noQS = (qualityScore.length == 0);
 
 		int i = 0;
 		boolean qualityAdded = false;
-		boolean qualityMasked = false;
 		byte refBase;
 		for (i = 0; i < nofReadBases; i++) {
 			oneBasedPositionInRead = i + fromPosInRead + 1;
@@ -356,7 +325,7 @@ public class Sam2CramRecordFactory {
 				refBase = 'N';
 			else
 				refBase = refBases[refCoord];
-			refBase = Utils.normalizeBase(refBase) ;
+			refBase = Utils.normalizeBase(refBase);
 
 			if (bases[i + fromPosInRead] != refBase) {
 				Substitution sv = new Substitution();
@@ -369,14 +338,6 @@ public class Sam2CramRecordFactory {
 
 				if (losslessQS || noQS)
 					continue;
-
-				if (captureSubtitutionScores) {
-					byte score = (byte) (QS_asciiOffset + qualityScore[i
-							+ fromPosInRead]);
-					features.add(new BaseQualityScore(oneBasedPositionInRead,
-							score));
-					qualityAdded = true;
-				}
 			}
 
 			if (noQS)
@@ -405,42 +366,9 @@ public class Sam2CramRecordFactory {
 				}
 			}
 
-			qualityMasked = (qualityScore[i + fromPosInRead] < uncategorisedQualityScoreCutoff);
-			if (!qualityAdded && qualityMasked) {
-				byte score = (byte) (QS_asciiOffset + qualityScore[i
-						+ fromPosInRead]);
-				features.add(new BaseQualityScore(oneBasedPositionInRead, score));
-				qualityAdded = true;
-			}
-
 			if (qualityAdded)
 				landedTotalScores++;
 		}
-	}
-
-	public boolean isCaptureInsertScores() {
-		return captureInsertScores;
-	}
-
-	public void setCaptureInsertScores(boolean captureInsertScores) {
-		this.captureInsertScores = captureInsertScores;
-	}
-
-	public boolean isCaptureSubtitutionScores() {
-		return captureSubtitutionScores;
-	}
-
-	public void setCaptureSubtitutionScores(boolean captureSubtitutionScores) {
-		this.captureSubtitutionScores = captureSubtitutionScores;
-	}
-
-	public int getUncategorisedQualityScoreCutoff() {
-		return uncategorisedQualityScoreCutoff;
-	}
-
-	public void setUncategorisedQualityScoreCutoff(
-			int uncategorisedQualityScoreCutoff) {
-		this.uncategorisedQualityScoreCutoff = uncategorisedQualityScoreCutoff;
 	}
 
 	public long getLandedRefMaskScores() {
@@ -453,22 +381,6 @@ public class Sam2CramRecordFactory {
 
 	public long getLandedTotalScores() {
 		return landedTotalScores;
-	}
-
-	public boolean isCaptureUnmappedBases() {
-		return captureUnmappedBases;
-	}
-
-	public void setCaptureUnmappedBases(boolean captureUnmappedBases) {
-		this.captureUnmappedBases = captureUnmappedBases;
-	}
-
-	public boolean isCaptureUnmappedScores() {
-		return captureUnmappedScores;
-	}
-
-	public void setCaptureUnmappedScores(boolean captureUnmappedScores) {
-		this.captureUnmappedScores = captureUnmappedScores;
 	}
 
 	public byte[] getRefBases() {
@@ -499,7 +411,6 @@ public class Sam2CramRecordFactory {
 		this.refPile = refPile;
 	}
 
-
 	public long getBaseCount() {
 		return baseCount;
 	}
@@ -508,5 +419,4 @@ public class Sam2CramRecordFactory {
 		return featureCount;
 	}
 
-	
 }

@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
@@ -297,7 +298,11 @@ public class SAMFileWriterFactory {
     	return makeSAMOrBAMWriter(header, presorted, outputFile) ;
     }
     
-    public SAMFileWriter makeCRAMWriter (final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-    	return new CRAMFileWriter(stream, null, header, null) ;
+    public CRAMFileWriter makeCRAMWriter (final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
+    	CRAMFileWriter writer = new CRAMFileWriter(stream, null, header, null) ;
+    	writer.setPreserveReadNames(true);
+    	writer.setCaptureAllTags(false);
+    	writer.setPreservation(new QualityScorePreservation("*8"));
+    	return writer ;
     }
 }

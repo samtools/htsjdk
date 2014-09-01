@@ -123,10 +123,9 @@ public class ContainerParser {
 				throw e;
 			}
 
-			if (r.sequenceId == s.sequenceId) {
+			if (r.sequenceId == s.sequenceId) 
 				r.sequenceName = seqName;
-				r.sequenceId = s.sequenceId;
-			} else {
+			else {
 				if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
 					r.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
 				else {

@@ -39,15 +39,13 @@ import java.util.Map;
 public class ContainerFactory {
 	SAMFileHeader samFileHeader;
 	int recordsPerSlice = 10000;
-	boolean preserveReadNames = false;
+	boolean preserveReadNames = true;
 	long globalRecordCounter = 0;
 	boolean AP_delta = true;
 
-	public ContainerFactory(SAMFileHeader samFileHeader, int recordsPerSlice,
-			boolean preserveReadNames) {
+	public ContainerFactory(SAMFileHeader samFileHeader, int recordsPerSlice) {
 		this.samFileHeader = samFileHeader;
 		this.recordsPerSlice = recordsPerSlice;
-		this.preserveReadNames = preserveReadNames;
 	}
 
 	public Container buildContainer(List<CramCompressionRecord> records)
@@ -160,7 +158,7 @@ public class ContainerFactory {
 		int seqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
 		boolean singleSeqId = true;
 		for (int i = 0; i < seqIds.length && singleSeqId; i++) {
-			if (seqIds[i] > 0) {
+			if (seqIds[i] >= 0) {
 				seqId = i++;
 				for (; i < seqIds.length && singleSeqId; i++) {
 					if (seqIds[i] > 0)
@@ -212,5 +210,13 @@ public class ContainerFactory {
 		}
 
 		return slice;
+	}
+
+	public boolean isPreserveReadNames() {
+		return preserveReadNames;
+	}
+
+	public void setPreserveReadNames(boolean preserveReadNames) {
+		this.preserveReadNames = preserveReadNames;
 	}
 }

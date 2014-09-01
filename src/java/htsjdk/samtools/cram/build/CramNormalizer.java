@@ -122,9 +122,8 @@ public class CramNormalizer {
 				continue;
 
 			byte[] refBases = ref;
-			if (referenceSource != null)
-				refBases = referenceSource.getReferenceBases(
-						header.getSequence(r.sequenceId), true);
+				if (referenceSource != null)
+					refBases = referenceSource.getReferenceBases(header.getSequence(r.sequenceId), true);
 
 			byte[] bases = restoreReadBases(r, refBases, substitutionMatrix);
 			r.readBases = bases;

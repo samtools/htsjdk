@@ -16,11 +16,14 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.ContainerFactory;
+import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -32,7 +35,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
 	private static final int REF_SEQ_INDEX_NOT_INITED = -2;
@@ -41,7 +46,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	private static final Version cramVersion = CramVersions.CRAM_v2_1;
 
 	private String fileName;
-	private List<CramCompressionRecord> records = new ArrayList<CramCompressionRecord>();
+	private List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
 	private ContainerFactory containerFactory;
 	protected int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
 	protected int containerSize = recordsPerSlice
@@ -54,8 +59,12 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 	private static Log log = Log.getInstance(CRAMFileWriter.class);
 
-	private boolean preserveReadNames = true;
 	private SAMFileHeader samFileHeader;
+	private boolean preserveReadNames = true;
+	private QualityScorePreservation preservation = null;
+	private boolean captureAllTags = true;
+	private Set<String> captureTags = new TreeSet<String>();
+	private Set<String> ignoreTags = new TreeSet<String>();
 
 	public CRAMFileWriter(OutputStream os, ReferenceSource source,
 			SAMFileHeader samFileHeader, String fileName) {
@@ -69,8 +78,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 		if (this.source == null)
 			this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
 
-		containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice,
-				preserveReadNames);
+		containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
 	}
 
 	/**
@@ -80,11 +88,11 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	 * 
 	 * @param nextRecord
 	 *            the record to be added into the current or next container
-	 * @return true if the current container should be flished and the following
+	 * @return true if the current container should be flushed and the following
 	 *         records should go into a new container; false otherwise.
 	 */
 	protected boolean shouldFlushContainer(SAMRecord nextRecord) {
-		if (records.size() >= containerSize)
+		if (samRecords.size() >= containerSize)
 			return true;
 
 		if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED
@@ -92,6 +100,43 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 			return true;
 
 		return false;
+	}
+
+	private static void updateTracks(List<SAMRecord> samRecords,
+			ReferenceTracks tracks) {
+		for (SAMRecord samRecord : samRecords) {
+			if (samRecord.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
+				int refPos = samRecord.getAlignmentStart();
+				int readPos = 0;
+				for (CigarElement ce : samRecord.getCigar().getCigarElements()) {
+					if (ce.getOperator().consumesReferenceBases()) {
+						for (int i = 0; i < ce.getLength(); i++)
+							tracks.addCoverage(refPos + i, 1);
+					}
+					switch (ce.getOperator()) {
+					case M:
+					case X:
+					case EQ:
+						for (int i = readPos; i < ce.getLength(); i++) {
+							byte readBase = samRecord.getReadBases()[readPos
+									+ i];
+							byte refBase = tracks.baseAt(refPos + i);
+							if (readBase != refBase)
+								tracks.addMismatches(refPos + i, 1);
+						}
+						break;
+
+					default:
+						break;
+					}
+
+					readPos += ce.getOperator().consumesReadBases() ? ce
+							.getLength() : 0;
+					refPos += ce.getOperator().consumesReferenceBases() ? ce
+							.getLength() : 0;
+				}
+			}
+		}
 	}
 
 	/**
@@ -103,13 +148,64 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	 */
 	protected void flushContainer() throws IllegalArgumentException,
 			IllegalAccessException, IOException {
-		int index = 0;
-		int prevAlStart = records.get(0).alignmentStart;
-		for (CramCompressionRecord cramRecord : records) {
-			cramRecord.index = ++index;
-			cramRecord.alignmentDelta = cramRecord.alignmentStart - prevAlStart;
-			prevAlStart = cramRecord.alignmentStart;
+
+		byte[] refs;
+		if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+			refs = new byte[0];
+		else
+			refs = source.getReferenceBases(
+					samFileHeader.getSequence(refSeqIndex), true);
+
+		int start = SAMRecord.NO_ALIGNMENT_START;
+		int stop = SAMRecord.NO_ALIGNMENT_START;
+		for (SAMRecord r : samRecords) {
+			if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)
+				continue;
+
+			if (start == SAMRecord.NO_ALIGNMENT_START)
+				start = r.getAlignmentStart();
+
+			start = Math.min(r.getAlignmentStart(), start);
+			stop = Math.max(r.getAlignmentEnd(), stop);
 		}
+
+		ReferenceTracks tracks = null;
+		if (preservation != null && preservation.areReferenceTracksRequired()) {
+			if (tracks == null || tracks.getSequenceId() != refSeqIndex)
+				tracks = new ReferenceTracks(refSeqIndex, refs);
+			tracks.ensureRange(start, stop - start + 1);
+			updateTracks(samRecords, tracks);
+		}
+
+		List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(
+				samRecords.size());
+
+		sam2CramRecordFactory = new Sam2CramRecordFactory(refSeqIndex, refs,
+				samFileHeader);
+		sam2CramRecordFactory.preserveReadNames = preserveReadNames;
+		sam2CramRecordFactory.captureAllTags = captureAllTags;
+		sam2CramRecordFactory.captureTags.addAll(captureTags);
+		sam2CramRecordFactory.ignoreTags.addAll(ignoreTags);
+		containerFactory.setPreserveReadNames(preserveReadNames);
+
+		int index = 0;
+		int prevAlStart = start;
+		for (SAMRecord samRecord : samRecords) {
+			CramCompressionRecord cramRecord = sam2CramRecordFactory
+					.createCramRecord(samRecord);
+			cramRecord.index = ++index;
+			cramRecord.alignmentDelta = samRecord.getAlignmentStart()
+					- prevAlStart;
+			cramRecord.alignmentStart = samRecord.getAlignmentStart();
+			prevAlStart = samRecord.getAlignmentStart();
+
+			cramRecords.add(cramRecord);
+
+			if (preservation != null)
+				preservation.addQualityScores(samRecord, cramRecord, tracks);
+		}
+
+//		samRecords.clear();
 
 		if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory
 				.getFeatureCount())
@@ -117,7 +213,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 		// mating:
 		Map<String, CramCompressionRecord> mateMap = new TreeMap<String, CramCompressionRecord>();
-		for (CramCompressionRecord r : records) {
+		for (CramCompressionRecord r : cramRecords) {
 			if (!r.isMultiFragment()) {
 				r.setDetached(true);
 
@@ -153,9 +249,17 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 			r.previous = null;
 		}
 
-		Container container = containerFactory.buildContainer(records);
+		Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader) ;
+		for (int i=0; i<samRecords.size(); i++) {
+			String s1 = samRecords.get(i).getSAMString() ;
+			SAMRecord r = f.create(cramRecords.get(i)) ;
+			String s2 = r.getSAMString() ;
+			assert(s1.equals(s2)) ;
+		}
+
+		Container container = containerFactory.buildContainer(cramRecords);
 		CramIO.writeContainer(container, os);
-		records.clear();
+		samRecords.clear();
 	}
 
 	@Override
@@ -169,7 +273,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
 		updateReferenceContext(alignment.getReferenceIndex());
 
-		records.add(sam2CramRecordFactory.createCramRecord(alignment));
+		samRecords.add(alignment);
 	}
 
 	/**
@@ -182,41 +286,22 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	private void updateReferenceContext(int samRecordReferenceIndex) {
 		if (refSeqIndex == REF_SEQ_INDEX_NOT_INITED) {
 			refSeqIndex = samRecordReferenceIndex;
-			createSam2CramRecordFactory();
 		} else {
 			int newRefSeqIndex = samRecordReferenceIndex;
 			if (refSeqIndex != newRefSeqIndex) {
 				refSeqIndex = newRefSeqIndex;
-				createSam2CramRecordFactory();
 			}
 		}
 	}
 
-	/**
-	 * Create a new factory for the current reference sequence
-	 * {@link #refSeqIndex index}. For unmapped reads the factory will be
-	 * initialized with an empty reference.
-	 * 
-	 */
-	private void createSam2CramRecordFactory() {
-		byte[] refs;
-		if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-			refs = new byte[0];
-		else
-			refs = source.getReferenceBases(
-					samFileHeader.getSequence(refSeqIndex), true);
-		sam2CramRecordFactory = new Sam2CramRecordFactory(refs, samFileHeader);
-	}
-
 	@Override
 	protected void writeHeader(String textHeader) {
-    	// TODO: header must be written exactly once per writer life cycle.
+		// TODO: header must be written exactly once per writer life cycle.
 		SAMFileHeader header = new SAMTextHeaderCodec().decode(
 				new StringLineReader(textHeader), (fileName != null ? fileName
 						: null));
 
-		containerFactory = new ContainerFactory(header, recordsPerSlice,
-				preserveReadNames);
+		containerFactory = new ContainerFactory(header, recordsPerSlice);
 
 		CramHeader cramHeader = new CramHeader(cramVersion.major,
 				cramVersion.minor, fileName, header);
@@ -230,7 +315,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	@Override
 	protected void finish() {
 		try {
-			if (!records.isEmpty())
+			if (!samRecords.isEmpty())
 				flushContainer();
 			CramIO.issueZeroB_EOF_marker(os);
 			os.flush();
@@ -242,5 +327,45 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	@Override
 	protected String getFilename() {
 		return fileName;
+	}
+
+	public boolean isPreserveReadNames() {
+		return preserveReadNames;
+	}
+
+	public void setPreserveReadNames(boolean preserveReadNames) {
+		this.preserveReadNames = preserveReadNames;
+	}
+
+	public QualityScorePreservation getPreservation() {
+		return preservation;
+	}
+
+	public void setPreservation(QualityScorePreservation preservation) {
+		this.preservation = preservation;
+	}
+
+	public boolean isCaptureAllTags() {
+		return captureAllTags;
+	}
+
+	public void setCaptureAllTags(boolean captureAllTags) {
+		this.captureAllTags = captureAllTags;
+	}
+
+	public Set<String> getCaptureTags() {
+		return captureTags;
+	}
+
+	public void setCaptureTags(Set<String> captureTags) {
+		this.captureTags = captureTags;
+	}
+
+	public Set<String> getIgnoreTags() {
+		return ignoreTags;
+	}
+
+	public void setIgnoreTags(Set<String> ignoreTags) {
+		this.ignoreTags = ignoreTags;
 	}
 }

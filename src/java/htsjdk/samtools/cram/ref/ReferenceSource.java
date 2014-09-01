@@ -140,6 +140,10 @@ public class ReferenceSource {
 
 		if (sequence != null)
 			return sequence.getBases();
+		
+		sequence = rsFile.getSequence(name);
+		if (sequence != null)
+			return sequence.getBases();
 
 		if (tryVariants) {
 			for (String variant : getVariants(name)) {
