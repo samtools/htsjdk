@@ -23,6 +23,8 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.lossy.QualityScorePreservation;
+import htsjdk.samtools.cram.lossy.QualityScoreTreatment;
+import htsjdk.samtools.cram.lossy.ReadCategory;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.Container;
@@ -341,6 +343,10 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 	}
 
 	public List<PreservationPolicy> getPreservationPolicies() {
+		if (preservation == null) {
+			// set up greedy policy by default:
+			preservation = new QualityScorePreservation("*8");
+		}
 		return preservation.getPreservationPolicies();
 	}
 
