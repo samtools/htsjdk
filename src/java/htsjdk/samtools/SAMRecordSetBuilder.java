@@ -366,6 +366,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Adds a pair of records (mapped or unmmapped) to the set using the provided contig starts.
      * The pair is assumed to be a well formed pair sitting on a single contig.
      */
+    public List<SAMRecord> addPair(final String name, final int contig, final int start1, final int start2,
+                                   final boolean record1Unmapped, final boolean record2Unmapped, final String cigar1,
+                                   final String cigar2, final boolean strand1, final boolean strand2, final int defaultQuality) {
+        return this.addPair(name, contig, contig, start1, start2, record1Unmapped, record2Unmapped, cigar1, cigar2, strand1, strand2, false, false, defaultQuality);
+    }
+
+    /**
+     * Adds a pair of records (mapped or unmmapped) to the set using the provided contig starts.
+     * The pair is assumed to be a well formed pair sitting on a single contig.
+     */
     public List<SAMRecord> addPair(final String name, final int contig1, final int contig2, final int start1, final int start2,
                                    final boolean record1Unmapped, final boolean record2Unmapped, final String cigar1,
                                    final String cigar2, final boolean strand1, final boolean strand2, final boolean record1NonPrimary,
