@@ -7,6 +7,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -53,7 +54,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 	public VCFFileReader(final File file, final boolean requireIndex) {
 		this.reader = AbstractFeatureReader.getFeatureReader(
 						file.getAbsolutePath(),
-						isBCF(file) ? new BCF2Codec() : new VCFCodec(),
+						isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
 						requireIndex);
 	}
 
@@ -62,7 +63,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         this.reader = AbstractFeatureReader.getFeatureReader(
                 file.getAbsolutePath(),
                 indexFile.getAbsolutePath(),
-                isBCF(file) ? new BCF2Codec() : new VCFCodec(),
+                isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
                 requireIndex);
     }
 
