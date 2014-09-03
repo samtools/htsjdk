@@ -181,7 +181,7 @@ public class Interval implements Comparable<Interval>, Cloneable {
     }
 
     public String toString() {
-        return getSequence() + ":" + start + "-" + end;
+        return getSequence() + ":" + start + "-" + end + "\t" + (negativeStrand ? '-' : '+') + "\t" + ((null == name) ? '.' : name);
     }
 
     @Override

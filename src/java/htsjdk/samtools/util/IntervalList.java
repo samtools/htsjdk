@@ -185,8 +185,9 @@ public class IntervalList implements Iterable<Interval> {
                 current = next;
             }
             else if (current.intersects(next) || current.abuts(next)) {
+                if (current.isNegativeStrand() != next.isNegativeStrand()) throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                 toBeMerged.add(next);
-                current = new Interval(current.getSequence(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), false , "");
+                current = new Interval(current.getSequence(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
             }
             else {
                 // Emit merged/unique interval
@@ -235,7 +236,10 @@ public class IntervalList implements Iterable<Interval> {
             end   = Math.max(end, i.getEnd());
         }
 
-        if (concatenateNames) { name = StringUtil.join("|", names); }
+        if (concatenateNames) {
+            if (names.isEmpty()) name = null;
+            else name = StringUtil.join("|", names);
+        }
         else { name = names.iterator().next(); }
 
         return new Interval(chrom, start, end, neg, name);
