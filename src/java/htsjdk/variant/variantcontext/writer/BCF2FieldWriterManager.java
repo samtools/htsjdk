@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFCompoundHeaderLine;
 import htsjdk.variant.vcf.VCFConstants;
@@ -74,8 +72,6 @@ public class BCF2FieldWriterManager {
         }
     }
 
-    @Requires({"field != null", "writer != null"})
-    @Ensures("map.containsKey(field)")
     private final <T> void add(final Map<String, T> map, final String field, final T writer) {
         if ( map.containsKey(field) )
             throw new IllegalStateException("BUG: field " + field + " already seen in VCFHeader while building BCF2 field encoders");
@@ -178,7 +174,6 @@ public class BCF2FieldWriterManager {
         return getWriter(field, genotypesWriters);
     }
 
-    @Requires({"map != null", "key != null"})
     public <T> T getWriter(final String key, final Map<String, T> map) {
         return map.get(key);
     }

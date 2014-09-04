@@ -25,9 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-
-import com.google.java.contract.Requires;
-
 import java.util.List;
 import java.util.Map;
 
@@ -96,15 +93,6 @@ public final class FastGenotype extends Genotype {
      * @param PL
      * @param extendedAttributes
      */
-    @Requires({
-            "sampleName != null",
-            "alleles != null",
-            "GQ >= -1",
-            "DP >= -1",
-            "validADorPLField(AD)",
-            "validADorPLField(PL)",
-            "extendedAttributes != null",
-            "! hasForbiddenKey(extendedAttributes)"})
     protected FastGenotype(final String sampleName,
                            final List<Allele> alleles,
                            final boolean isPhased,

@@ -25,7 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Requires;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -52,7 +51,6 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
     private final int nFields;
     private final GenotypeBuilder[] builders;
 
-    @Requires("codec.getHeader().getNGenotypeSamples() == builders.length")
     BCF2LazyGenotypesDecoder(final BCF2Codec codec, final List<Allele> alleles, final int nSamples,
                              final int nFields, final GenotypeBuilder[] builders) {
         this.codec = codec;

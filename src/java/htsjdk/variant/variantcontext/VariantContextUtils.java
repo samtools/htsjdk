@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
@@ -334,8 +332,6 @@ public class VariantContextUtils {
      * @param vc  variant context
      * @return  new VC without genotypes
      */
-    @Requires("vc != null")
-    @Ensures("result != null")
     public static VariantContext sitesOnlyVariantContext(VariantContext vc) {
         return new VariantContextBuilder(vc).noGenotypes().make();
     }
@@ -345,8 +341,6 @@ public class VariantContextUtils {
      * @param vcs  collection of VCs
      * @return new VCs without genotypes
      */
-    @Requires("vcs != null")
-    @Ensures("result != null")
     public static Collection<VariantContext> sitesOnlyVariantContexts(Collection<VariantContext> vcs) {
         List<VariantContext> r = new ArrayList<VariantContext>();
         for ( VariantContext vc : vcs )
@@ -378,7 +372,6 @@ public class VariantContextUtils {
      *                              if no is expected but will throw an error if one is found
      * @return this builder
      */
-    @Requires({"! alleles.isEmpty()", "start > 0", "endForSymbolicAlleles == -1 || endForSymbolicAlleles > 0" })
     public static int computeEndFromAlleles(final List<Allele> alleles, final int start, final int endForSymbolicAlleles) {
         final Allele ref = alleles.get(0);
 

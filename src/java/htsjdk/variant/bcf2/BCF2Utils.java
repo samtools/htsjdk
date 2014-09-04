@@ -25,8 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
@@ -85,8 +83,6 @@ public final class BCF2Utils {
      * @param header the VCFHeader from which to build the dictionary
      * @return a non-null dictionary of elements, may be empty
      */
-    @Requires("header != null")
-    @Ensures({"result != null", "new HashSet(result).size() == result.size()"})
     public static ArrayList<String> makeDictionary(final VCFHeader header) {
         final Set<String> seen = new HashSet<String>();
         final ArrayList<String> dict = new ArrayList<String>();
@@ -109,22 +105,18 @@ public final class BCF2Utils {
         return dict;
     }
 
-    @Requires({"nElements >= 0", "nElements <= OVERFLOW_ELEMENT_MARKER", "type != null"})
     public static byte encodeTypeDescriptor(final int nElements, final BCF2Type type ) {
         return (byte)((0x0F & nElements) << 4 | (type.getID() & 0x0F));
     }
 
-    @Ensures("result >= 0")
     public static int decodeSize(final byte typeDescriptor) {
         return (0xF0 & typeDescriptor) >> 4;
     }
 
-    @Ensures("result >= 0")
     public static int decodeTypeID(final byte typeDescriptor) {
         return typeDescriptor & 0x0F;
     }
 
-    @Ensures("result != null")
     public static BCF2Type decodeType(final byte typeDescriptor) {
         return ID_TO_ENUM[decodeTypeID(typeDescriptor)];
     }
@@ -145,8 +137,6 @@ public final class BCF2Utils {
      * @param strings size > 1 list of strings
      * @return
      */
-    @Requires({"strings != null"})
-    @Ensures("result != null")
     public static String collapseStringList(final List<String> strings) {
         if ( strings.isEmpty() ) return "";
         else if ( strings.size() == 1 ) return strings.get(0);
@@ -171,15 +161,12 @@ public final class BCF2Utils {
      * @param collapsed
      * @return
      */
-    @Requires({"collapsed != null", "isCollapsedString(collapsed)"})
-    @Ensures("result != null")
     public static List<String> explodeStringList(final String collapsed) {
         assert isCollapsedString(collapsed);
         final String[] exploded = collapsed.substring(1).split(",");
         return Arrays.asList(exploded);
     }
 
-    @Requires("s != null")
     public static boolean isCollapsedString(final String s) {
         return s.length() > 0 && s.charAt(0) == ',';
     }
@@ -196,7 +183,6 @@ public final class BCF2Utils {
      * @param vcfFile
      * @return the BCF
      */
-    @Requires("vcfFile != null")
     public static final File shadowBCF(final File vcfFile) {
         final String path = vcfFile.getAbsolutePath();
         if ( path.contains(".vcf") )
@@ -221,7 +207,6 @@ public final class BCF2Utils {
         }
     }
 
-    @Ensures("result.isIntegerType()")
     public static BCF2Type determineIntegerType(final int value) {
         for ( final BCF2Type potentialType : INTEGER_TYPES_BY_SIZE) {
             if ( potentialType.withinRange(value) )
@@ -231,7 +216,6 @@ public final class BCF2Utils {
         throw new TribbleException("Integer cannot be encoded in allowable range of even INT32: " + value);
     }
 
-    @Ensures("result.isIntegerType()")
     public static BCF2Type determineIntegerType(final int[] values) {
         // find the min and max values in the array
         int max = 0, min = 0;
@@ -256,8 +240,6 @@ public final class BCF2Utils {
      * @param t2
      * @return
      */
-    @Requires({"t1.isIntegerType()","t2.isIntegerType()"})
-    @Ensures("result.isIntegerType()")
     public static BCF2Type maxIntegerType(final BCF2Type t1, final BCF2Type t2) {
         switch ( t1 ) {
             case INT8: return t2;
@@ -267,7 +249,6 @@ public final class BCF2Utils {
         }
     }
 
-    @Ensures("result.isIntegerType()")
     public static BCF2Type determineIntegerType(final List<Integer> values) {
         BCF2Type maxType = BCF2Type.INT8;
         for ( final int value : values ) {

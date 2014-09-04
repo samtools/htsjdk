@@ -25,8 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 
@@ -113,8 +111,6 @@ public final class BCF2Decoder {
      *
      * @param recordBytes
      */
-    @Requires("recordBytes != null")
-    @Ensures({"this.recordBytes == recordBytes", "recordStream != null"})
     public void setRecordBytes(final byte[] recordBytes) {
         this.recordBytes = recordBytes;
         this.recordStream = new ByteArrayInputStream(recordBytes);
@@ -136,7 +132,6 @@ public final class BCF2Decoder {
         return decodeTypedValue(typeDescriptor, size);
     }
 
-    @Requires("size >= 0")
     public final Object decodeTypedValue(final byte typeDescriptor, final int size) throws IOException {
         if ( size == 0 ) {
             // missing value => null in java
@@ -206,7 +201,6 @@ public final class BCF2Decoder {
         }
     }
 
-    @Ensures("result >= 0")
     public final int decodeNumberOfElements(final byte typeDescriptor) throws IOException {
         if ( BCF2Utils.sizeIsOverflow(typeDescriptor) )
             // -1 ensures we explode immediately with a bad size if the result is missing
@@ -224,14 +218,12 @@ public final class BCF2Decoder {
      * @param typeDescriptor
      * @return
      */
-    @Requires("BCF2Utils.decodeSize(typeDescriptor) == 1")
     public final int decodeInt(final byte typeDescriptor, final int missingValue) throws IOException {
         final BCF2Type type = BCF2Utils.decodeType(typeDescriptor);
         final int i = decodeInt(type);
         return i == type.getMissingBytes() ? missingValue : i;
     }
 
-    @Requires("type != null")
     public final int decodeInt(final BCF2Type type) throws IOException {
         return type.read(recordStream);
     }
@@ -254,7 +246,6 @@ public final class BCF2Decoder {
      *                  int elements are still forced to do a fresh allocation as well.
      * @return see description
      */
-    @Requires({"type != null", "type.isIntegerType()", "size >= 0"})
     public final int[] decodeIntArray(final int size, final BCF2Type type, int[] maybeDest) throws IOException {
         if ( size == 0 ) {
             return null;
@@ -321,8 +312,6 @@ public final class BCF2Decoder {
      * @param inputStream the stream to read from
      * @return a non-null byte[] containing exactly blockSizeInBytes bytes from the inputStream
      */
-    @Requires({"blockSizeInBytes >= 0", "inputStream != null"})
-    @Ensures("result != null")
     private static byte[] readRecordBytes(final int blockSizeInBytes, final InputStream inputStream) {
         assert blockSizeInBytes >= 0;
 

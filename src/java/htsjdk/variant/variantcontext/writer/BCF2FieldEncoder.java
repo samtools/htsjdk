@@ -25,9 +25,6 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Invariant;
-import com.google.java.contract.Requires;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -46,11 +43,6 @@ import java.util.Map;
  * @author Mark DePristo
  * @since 06/12
  */
-@Invariant({
-        "headerLine != null",
-        "dictionaryOffsetType.isIntegerType()",
-        "dictionaryOffset >= 0"
-})
 public abstract class BCF2FieldEncoder {
     /**
      * The header line describing the field we will encode values of
@@ -80,7 +72,6 @@ public abstract class BCF2FieldEncoder {
     //
     // ----------------------------------------------------------------------
 
-    @Requires({"headerLine != null", "dict != null"})
     private BCF2FieldEncoder(final VCFCompoundHeaderLine headerLine, final Map<String, Integer> dict, final BCF2Type staticType) {
         this.headerLine = headerLine;
         this.staticType = staticType;
@@ -97,7 +88,6 @@ public abstract class BCF2FieldEncoder {
     //
     // ----------------------------------------------------------------------
 
-    @Ensures("result != null")
     public final String getField() { return headerLine.getID(); }
 
     /**
@@ -106,7 +96,6 @@ public abstract class BCF2FieldEncoder {
      * @param encoder where we write our dictionary offset
      * @throws IOException
      */
-    @Requires("encoder != null")
     public final void writeFieldKey(final BCF2Encoder encoder) throws IOException {
         encoder.encodeTypedInt(dictionaryOffset, dictionaryOffsetType);
     }
@@ -122,7 +111,6 @@ public abstract class BCF2FieldEncoder {
     //
     // ----------------------------------------------------------------------
 
-    @Ensures("result != null")
     protected final VCFHeaderLineCount getCountType() {
         return headerLine.getCountType();
     }
@@ -132,7 +120,6 @@ public abstract class BCF2FieldEncoder {
      *
      * @return
      */
-    @Ensures("result != (hasValueDeterminedNumElements() || hasContextDeterminedNumElements())")
     public boolean hasConstantNumElements() {
         return getCountType() == VCFHeaderLineCount.INTEGER;
     }
@@ -143,7 +130,6 @@ public abstract class BCF2FieldEncoder {
      * is a variable length list per site or per genotype.
      * @return
      */
-    @Ensures("result != (hasConstantNumElements() || hasContextDeterminedNumElements())")
     public boolean hasValueDeterminedNumElements() {
         return getCountType() == VCFHeaderLineCount.UNBOUNDED;
     }
@@ -154,7 +140,6 @@ public abstract class BCF2FieldEncoder {
      *
      * @return
      */
-    @Ensures("result != (hasValueDeterminedNumElements() || hasConstantNumElements())")
     public boolean hasContextDeterminedNumElements() {
         return ! hasConstantNumElements() && ! hasValueDeterminedNumElements();
     }
@@ -163,8 +148,6 @@ public abstract class BCF2FieldEncoder {
      * Get the number of elements, assuming this field has a constant number of elements.
      * @return
      */
-    @Requires("hasConstantNumElements()")
-    @Ensures("result >= 0")
     public int numElements() {
         return headerLine.getCount();
     }
@@ -173,8 +156,6 @@ public abstract class BCF2FieldEncoder {
      * Get the number of elements by looking at the actual value provided
      * @return
      */
-    @Requires("hasValueDeterminedNumElements()")
-    @Ensures("result >= 0")
     public int numElements(final Object value) {
         return numElementsFromValue(value);
     }
@@ -183,8 +164,6 @@ public abstract class BCF2FieldEncoder {
      * Get the number of elements, assuming this field has context-determined number of elements.
      * @return
      */
-    @Requires("hasContextDeterminedNumElements()")
-    @Ensures("result >= 0")
     public int numElements(final VariantContext vc) {
         return headerLine.getCount(vc);
     }
@@ -197,7 +176,6 @@ public abstract class BCF2FieldEncoder {
      * @param value
      * @return
      */
-    @Ensures("result >= 0")
     public final int numElements(final VariantContext vc, final Object value) {
         if ( hasConstantNumElements() ) return numElements();
         else if ( hasContextDeterminedNumElements() ) return numElements(vc);
@@ -212,8 +190,6 @@ public abstract class BCF2FieldEncoder {
      * @param value
      * @return
      */
-    @Requires("hasValueDeterminedNumElements()")
-    @Ensures("result >= 0")
     protected int numElementsFromValue(final Object value) {
         if ( value == null ) return 0;
         else if ( value instanceof List ) return ((List) value).size();
@@ -231,7 +207,6 @@ public abstract class BCF2FieldEncoder {
      * the actual field value itself?
      * @return
      */
-    @Ensures("result || isDynamicallyTyped()")
     public final boolean isStaticallyTyped() { return ! isDynamicallyTyped(); }
 
     /**
@@ -239,7 +214,6 @@ public abstract class BCF2FieldEncoder {
      * the actual field value itself?
      * @return
      */
-    @Ensures("result || isStaticallyTyped()")
     public final boolean isDynamicallyTyped() { return staticType == null; }
 
     /**
@@ -252,14 +226,10 @@ public abstract class BCF2FieldEncoder {
         return isDynamicallyTyped() ? getDynamicType(value) : getStaticType();
     }
 
-    @Requires("isStaticallyTyped()")
-    @Ensures("result != null")
     public final BCF2Type getStaticType() {
         return staticType;
     }
 
-    @Requires("isDynamicallyTyped()")
-    @Ensures("result != null")
     public BCF2Type getDynamicType(final Object value) {
         throw new IllegalStateException("BUG: cannot get dynamic type for statically typed BCF2 field " + getField());
     }
@@ -290,7 +260,6 @@ public abstract class BCF2FieldEncoder {
      * @param minValues
      * @throws IOException
      */
-    @Requires({"encoder != null", "isDynamicallyTyped() || type == getStaticType()", "minValues >= 0"})
     public abstract void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException;
 
     // ----------------------------------------------------------------------
@@ -329,7 +298,6 @@ public abstract class BCF2FieldEncoder {
          * @param value a String or List<String> to encode, or null
          * @return a non-null string to encode
          */
-        @Ensures("result != null")
         private String javaStringToBCF2String(final Object value) {
             if ( value == null )
                 return "";
@@ -364,7 +332,6 @@ public abstract class BCF2FieldEncoder {
         }
 
         @Override
-        @Requires({"minValues <= 1", "value != null", "value instanceof Boolean", "((Boolean)value) == true"})
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException {
             encoder.encodeRawBytes(1, getStaticType());
         }
@@ -429,7 +396,6 @@ public abstract class BCF2FieldEncoder {
             return value == null ? BCF2Type.INT8 : BCF2Utils.determineIntegerType((int[])value);
         }
 
-        @Requires("value == null || ((int[])value).length <= minValues")
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException {
             int count = 0;

@@ -26,9 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Invariant;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
@@ -45,11 +42,6 @@ import java.util.TreeSet;
  *
  * @author Mark DePristo
  */
-@Invariant({
-        "getAlleles() != null",
-        "getSampleName() != null",
-        "getPloidy() >= 0",
-        "! hasForbiddenKey(getExtendedAttributes())"})
 public abstract class Genotype implements Comparable<Genotype> {
     /**
      * A list of genotype field keys corresponding to values we
@@ -79,7 +71,6 @@ public abstract class Genotype implements Comparable<Genotype> {
     /**
      * @return the alleles for this genotype.  Cannot be null.  May be empty
      */
-    @Ensures("result != null")
     public abstract List<Allele> getAlleles();
 
     /**
@@ -88,8 +79,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param allele
      * @return a value >= 0 indicating how many times the allele occurred in this sample's genotype
      */
-    @Requires("allele != null")
-    @Ensures("result >= 0")
     public int countAllele(final Allele allele) {
         int c = 0;
         for ( final Allele a : getAlleles() )
@@ -105,8 +94,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param i the ith allele, must be < the ploidy, starting with 0
      * @return the allele at position i, which cannot be null
      */
-    @Requires({"i >=0 && i < getPloidy()", "getType() != GenotypeType.UNAVAILABLE"})
-    @Ensures("result != null")
     public abstract Allele getAllele(int i);
 
     /**
@@ -121,7 +108,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return the ploidy of this genotype.  0 if the site is no-called.
      */
-    @Ensures("result >= 0")
     public int getPloidy() {
         return getAlleles().size();
     }
@@ -129,7 +115,6 @@ public abstract class Genotype implements Comparable<Genotype> {
     /**
      * @return the sequencing depth of this sample, or -1 if this value is missing
      */
-    @Ensures("result >= -1")
     public abstract int getDP();
 
     /**
@@ -144,7 +129,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return a non-null String
      */
-    @Ensures("result != null")
     public String getSampleName() {
         return sampleName;
     }
@@ -153,14 +137,12 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Returns a phred-scaled quality score, or -1 if none is available
      * @return
      */
-    @Ensures("result >= -1")
     public abstract int getGQ();
 
     /**
      * Does the PL field have a value?
      * @return true if there's a PL field value
      */
-    @Ensures("(result == false && getPL() == null) || (result == true && getPL() != null)")
     public boolean hasPL() {
         return getPL() != null;
     }
@@ -169,7 +151,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Does the AD field have a value?
      * @return true if there's a AD field value
      */
-    @Ensures("(result == false && getAD() == null) || (result == true && getAD() != null)")
     public boolean hasAD() {
         return getAD() != null;
     }
@@ -178,7 +159,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Does the GQ field have a value?
      * @return true if there's a GQ field value
      */
-    @Ensures("(result == false && getGQ() == -1) || (result == true && getGQ() >= 0)")
     public boolean hasGQ() {
         return getGQ() != -1;
     }
@@ -187,7 +167,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Does the DP field have a value?
      * @return true if there's a DP field value
      */
-    @Ensures("(result == false && getDP() == -1) || (result == true && getDP() >= 0)")
     public boolean hasDP() {
         return getDP() != -1;
     }
@@ -201,7 +180,6 @@ public abstract class Genotype implements Comparable<Genotype> {
     /**
      * @return the high-level type of this sample's genotype
      */
-    @Ensures({"type != null", "result != null"})
     public GenotypeType getType() {
         if ( type == null ) {
             type = determineType();
@@ -213,7 +191,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Internal code to determine the type of the genotype from the alleles vector
      * @return the type
      */
-    @Requires("type == null") // we should never call if already calculated
     protected GenotypeType determineType() {
         // TODO -- this code is slow and could be optimized for the diploid case
         final List<Allele> alleles = getAlleles();
@@ -298,7 +275,6 @@ public abstract class Genotype implements Comparable<Genotype> {
     /**
      * @return Returns true if this Genotype has PL field values
      */
-    @Ensures("(result && getLikelihoods() != null) || (! result && getLikelihoods() == null)")
     public boolean hasLikelihoods() {
         return getPL() != null;
     }
@@ -309,7 +285,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return a non-null String representation for the PL of this sample
      */
-    @Ensures("result != null")
     public String getLikelihoodsString() {
         return hasLikelihoods() ? getLikelihoods().toString() : VCFConstants.MISSING_VALUE_v4;
     }
@@ -318,7 +293,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Returns the GenotypesLikelihoods data associated with this Genotype, or null if missing
      * @return null or a GenotypesLikelihood object for this sample's PL field
      */
-    @Ensures("(hasLikelihoods() && result != null) || (! hasLikelihoods() && result == null)")
     public GenotypeLikelihoods getLikelihoods() {
         return hasLikelihoods() ? GenotypeLikelihoods.fromPLs(getPL()) : null;
     }
@@ -365,7 +339,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return a string representing the genotypes, or null if the type is unavailable.
      */
-    @Ensures("result != null || ! isAvailable()")
     public String getGenotypeString() {
         return getGenotypeString(true);
     }
@@ -377,7 +350,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return a string representing the genotypes, or null if the type is unavailable.
      */
-    @Ensures("result != null || ! isAvailable()")
     public String getGenotypeString(boolean ignoreRefState) {
         if ( getPloidy() == 0 )
             return "NA";
@@ -464,7 +436,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * Returns the extended attributes for this object
      * @return is never null, but is often isEmpty()
      */
-    @Ensures({"result != null", "! hasForbiddenKey(result)"})
     public abstract Map<String, Object> getExtendedAttributes();
 
     /**
@@ -475,7 +446,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param key a non-null string key to check for an association
      * @return true if key has a value in the extendedAttributes
      */
-    @Requires({"key != null", "! isForbiddenKey(key)"})
     public boolean hasExtendedAttribute(final String key) {
         return getExtendedAttributes().containsKey(key);
     }
@@ -487,8 +457,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param defaultValue the value to return if key isn't in the extended attributes
      * @return a value (potentially) null associated with key, or defaultValue if no association exists
      */
-    @Requires({"key != null", "! isForbiddenKey(key)"})
-    @Ensures("hasExtendedAttribute(key) || result == defaultValue")
     public Object getExtendedAttribute(final String key, final Object defaultValue) {
         return hasExtendedAttribute(key) ? getExtendedAttributes().get(key) : defaultValue;
     }
@@ -520,7 +488,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      *
      * @return returns false if getFilters() == null
      */
-    @Ensures({"result != (getFilters() == null)"})
     public final boolean isFiltered() {
         return getFilters() != null;
     }
@@ -608,7 +575,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param <V> the value type
      * @return a sting, enclosed in {}, with comma seperated key value pairs in order of the keys
      */
-    @Requires("c != null")
     protected static <T extends Comparable<T>, V> String sortedString(Map<T, V> c) {
 
         // NOTE -- THIS IS COPIED FROM GATK UTILS TO ALLOW US TO KEEP A SEPARATION BETWEEN THE GATK AND VCF CODECS
@@ -629,8 +595,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param v the value of the field, or -1 if missing
      * @return a non-null string for display if the field is not missing
      */
-    @Requires("name != null")
-    @Ensures("result != null")
     protected final static String toStringIfExists(final String name, final int v) {
         return v == -1 ? "" : " " + name + " " + v;
     }
@@ -651,8 +615,6 @@ public abstract class Genotype implements Comparable<Genotype> {
      * @param vs the value of the field, or null if missing
      * @return a non-null string for display if the field is not missing
      */
-    @Requires("name != null")
-    @Ensures("result != null")
     protected final static String toStringIfExists(final String name, final int[] vs) {
         if ( vs == null )
             return "";

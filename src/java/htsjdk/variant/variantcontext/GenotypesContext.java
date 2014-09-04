@@ -25,9 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -94,7 +91,6 @@ public class GenotypesContext implements List<Genotype> {
     /**
      * Create an empty GenotypeContext, with initial capacity for n elements
      */
-    @Requires("n >= 0")
     protected GenotypesContext(final int n) {
         this(new ArrayList<Genotype>(n));
     }
@@ -102,7 +98,6 @@ public class GenotypesContext implements List<Genotype> {
     /**
      * Create an GenotypeContext containing genotypes
      */
-    @Requires("genotypes != null")
     protected GenotypesContext(final ArrayList<Genotype> genotypes) {
         this.notToBeDirectlyAccessedGenotypes = genotypes;
         this.sampleNameToOffset = null;
@@ -119,11 +114,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param sampleNamesInOrder a list of sample names, one for each genotype in genotypes, sorted in alphabetical
      * order.
      */
-    @Requires({"genotypes != null",
-            "sampleNameToOffset != null",
-            "sampleNamesInOrder != null",
-            "genotypes.size() == sampleNameToOffset.size()",
-            "genotypes.size() == sampleNamesInOrder.size()"})
     protected GenotypesContext(final ArrayList<Genotype> genotypes,
                              final Map<String, Integer> sampleNameToOffset,
                              final List<String> sampleNamesInOrder) {
@@ -142,7 +132,6 @@ public class GenotypesContext implements List<Genotype> {
      * Basic creation routine
      * @return an empty, mutable GenotypeContext
      */
-    @Ensures({"result != null"})
     public static final GenotypesContext create() {
         return new GenotypesContext();
     }
@@ -151,8 +140,6 @@ public class GenotypesContext implements List<Genotype> {
      * Basic creation routine
      * @return an empty, mutable GenotypeContext with initial capacity for nGenotypes
      */
-    @Requires("nGenotypes >= 0")
-    @Ensures({"result != null"})
     public static final GenotypesContext create(final int nGenotypes) {
         return new GenotypesContext(nGenotypes);
     }
@@ -169,10 +156,6 @@ public class GenotypesContext implements List<Genotype> {
      * order.
      * @return an mutable GenotypeContext containing genotypes with already present lookup data
      */
-    @Requires({"genotypes != null",
-            "sampleNameToOffset != null",
-            "sampleNamesInOrder != null"})
-    @Ensures({"result != null"})
     public static final GenotypesContext create(final ArrayList<Genotype> genotypes,
                                                 final Map<String, Integer> sampleNameToOffset,
                                                 final List<String> sampleNamesInOrder) {
@@ -185,8 +168,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param genotypes our genotypes in arbitrary
      * @return an mutable GenotypeContext containing genotypes
      */
-    @Requires({"genotypes != null"})
-    @Ensures({"result != null"})
     public static final GenotypesContext create(final ArrayList<Genotype> genotypes) {
         return genotypes == null ? NO_GENOTYPES : new GenotypesContext(genotypes);
     }
@@ -197,8 +178,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param genotypes our genotypes in arbitrary
      * @return an mutable GenotypeContext containing genotypes
      */
-    @Requires({"genotypes != null"})
-    @Ensures({"result != null"})
     public static final GenotypesContext create(final Genotype... genotypes) {
         return create(new ArrayList<Genotype>(Arrays.asList(genotypes)));
     }
@@ -209,8 +188,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param toCopy the GenotypesContext to copy
      * @return an mutable GenotypeContext containing genotypes
      */
-    @Requires({"toCopy != null"})
-    @Ensures({"result != null"})
     public static final GenotypesContext copy(final GenotypesContext toCopy) {
         return create(new ArrayList<Genotype>(toCopy.getGenotypes()));
     }
@@ -222,7 +199,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param toCopy the collection of genotypes
      * @return an mutable GenotypeContext containing genotypes
      */
-    @Ensures({"result != null"})
     public static final GenotypesContext copy(final Collection<Genotype> toCopy) {
         return toCopy == null ? NO_GENOTYPES : create(new ArrayList<Genotype>(toCopy));
     }
@@ -253,17 +229,14 @@ public class GenotypesContext implements List<Genotype> {
     //
     // ---------------------------------------------------------------------------
 
-    @Ensures({"sampleNameToOffset == null"})
     protected void invalidateSampleNameMap() {
         sampleNameToOffset = null;
     }
 
-    @Ensures({"sampleNamesInOrder == null"})
     protected void invalidateSampleOrdering() {
         sampleNamesInOrder = null;
     }
 
-    @Ensures({"sampleNamesInOrder != null"})
     protected void ensureSampleOrdering() {
         if ( sampleNamesInOrder == null ) {
             sampleNamesInOrder = new ArrayList<String>(size());
@@ -275,7 +248,6 @@ public class GenotypesContext implements List<Genotype> {
         }
     }
 
-    @Ensures({"sampleNameToOffset != null"})
     protected void ensureSampleNameMap() {
         if ( sampleNameToOffset == null ) {
             sampleNameToOffset = new HashMap<String, Integer>(size());
@@ -350,7 +322,6 @@ public class GenotypesContext implements List<Genotype> {
      * @return
      */
     @Override
-    @Requires({"genotype != null", "get(genotype.getSampleName()) == null"})
     public boolean add(final Genotype genotype) {
         checkImmutability();
         invalidateSampleOrdering();
@@ -364,7 +335,6 @@ public class GenotypesContext implements List<Genotype> {
     }
 
     @Override
-    @Requires("! contains(genotype)")
     public void add(final int i, final Genotype genotype) {
         throw new UnsupportedOperationException();
     }
@@ -379,7 +349,6 @@ public class GenotypesContext implements List<Genotype> {
      * @return
      */
     @Override
-    @Requires("! containsAny(genotypes)")
     public boolean addAll(final Collection<? extends Genotype> genotypes) {
         checkImmutability();
         invalidateSampleOrdering();
@@ -428,7 +397,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param defaultPloidy the default ploidy, if all samples are no-called
      * @return
      */
-    @Ensures("result >= 0")
     public int getMaxPloidy(final int defaultPloidy) {
         if ( defaultPloidy < 0 ) throw new IllegalArgumentException("defaultPloidy must be greater than or equal to 0");
 
@@ -573,7 +541,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param genotype a non null genotype to bind in this context
      * @return null if genotype was not added, otherwise returns the previous genotype
      */
-    @Requires("genotype != null")
     public Genotype replace(final Genotype genotype) {
         checkImmutability();
         Integer offset = getSampleI(genotype.getSampleName());
@@ -605,7 +572,6 @@ public class GenotypesContext implements List<Genotype> {
      * this context
      * @return a Iterable over the genotypes in this context.
      */
-    @Requires("sampleNamesInOrder != null")
     public Iterable<Genotype> iterateInSampleNameOrder(final Iterable<String> sampleNamesInOrder) {
         return new Iterable<Genotype>() {
             @Override
@@ -650,7 +616,6 @@ public class GenotypesContext implements List<Genotype> {
     /**
      * @return The set of sample names for all genotypes in this context, in arbitrary order
      */
-    @Ensures("result != null")
     public Set<String> getSampleNames() {
         ensureSampleNameMap();
         return sampleNameToOffset.keySet();
@@ -659,19 +624,16 @@ public class GenotypesContext implements List<Genotype> {
     /**
      * @return The set of sample names for all genotypes in this context, in their natural ordering (A, B, C)
      */
-    @Ensures("result != null")
     public List<String> getSampleNamesOrderedByName() {
         ensureSampleOrdering();
         return sampleNamesInOrder;
     }
 
-    @Requires("sample != null")
     public boolean containsSample(final String sample) {
         ensureSampleNameMap();
         return sampleNameToOffset.containsKey(sample);
     }
 
-    @Requires("samples != null")
     public boolean containsSamples(final Collection<String> samples) {
         return getSampleNames().containsAll(samples);
     }
@@ -684,8 +646,6 @@ public class GenotypesContext implements List<Genotype> {
      * @param samples
      * @return
      */
-    @Requires("samples != null")
-    @Ensures("result != null")
     public GenotypesContext subsetToSamples( final Set<String> samples ) {
         final int nSamples = samples.size();
 

@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.LocationAware;
@@ -70,9 +68,6 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param refDict   the reference dictionary
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      */
-    @Requires({"name != null",
-            "! ( location == null && output == null )",
-            "! ( enableOnTheFlyIndexing && location == null )"})
     protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                                            final boolean enableOnTheFlyIndexing) {
         this(name, location, output, refDict);
@@ -92,10 +87,6 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @param enableOnTheFlyIndexing    is OTF indexing enabled?
      * @param idxCreator    the custom index creator.  NOTE: must be initialized
      */
-    @Requires({"name != null",
-            "! ( location == null && output == null )",
-            "! ( enableOnTheFlyIndexing && location == null )",
-            "idxCreator != null"})
     protected IndexingVariantContextWriter(final String name, final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                                            final boolean enableOnTheFlyIndexing, final IndexCreator idxCreator) {
         this(name, location, output, refDict);
@@ -106,7 +97,6 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
         }
     }
 
-    @Requires({"idxCreator != null"})
     private void initIndexingWriter(final IndexCreator idxCreator) {
         indexer = idxCreator;
         if (outputStream instanceof LocationAware) {
@@ -118,12 +108,10 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
         }
     }
 
-    @Ensures("result != null")
     public OutputStream getOutputStream() {
         return outputStream;
     }
 
-    @Ensures("result != null")
     public String getStreamName() {
         return name;
     }

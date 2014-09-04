@@ -25,8 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Requires;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -161,7 +159,6 @@ public enum BCF2Type {
      * @param v
      * @return
      */
-    @Requires("this.isIntegerType()")
     public final boolean withinRange(final long v) { return v >= minValue && v <= maxValue; }
 
     /**
@@ -207,12 +204,10 @@ public enum BCF2Type {
      * @return
      * @throws IOException
      */
-    @Requires("in != null")
     public int read(final InputStream in) throws IOException {
         throw new IllegalArgumentException("Not implemented");
     }
 
-    @Requires("out != null")
     public void write(final int value, final OutputStream out) throws IOException {
         throw new IllegalArgumentException("Not implemented");
     }
