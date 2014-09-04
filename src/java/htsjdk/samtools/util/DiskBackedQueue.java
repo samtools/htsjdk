@@ -42,7 +42,8 @@ import java.util.Queue;
  * A single-ended FIFO queue. Writes elements to temporary files when the queue gets too big.
  * External references to elements in this queue are NOT guaranteed to be valid, due to the disk write/read
  * <p/>
- * NB: The queue becomes read-only after the first on-disk record is read. Max size is therefore non-deterministic.
+ * NB: The queue becomes read-only after the first time that an on-disk record is "next up" to be read (i.e. has been
+ * loaded into headRecord). Max size is therefore non-deterministic.
  * This avoids issues arising from conflicts between the input and output streams.
  * This could perhaps be avoided by creating a version of BAMRecordCodec that operates on RandomAccessFiles or channels.
  * <p/>
