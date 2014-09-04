@@ -441,13 +441,15 @@ public class VariantContextWriterBuilder {
             return new VCFWriter(writerFile, writerStream, refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER));
+                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
         }
         else {
             return new VCFWriter(writerFile, writerStream, refDict, idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
-                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER));
+                    options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
+                    options.contains(Options.WRITE_FULL_FORMAT_FIELD));
         }
     }
 

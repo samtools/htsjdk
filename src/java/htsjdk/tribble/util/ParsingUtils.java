@@ -210,7 +210,7 @@ public class ParsingUtils {
         }
 
         if (end < 0) {
-            tokens[nTokens++] = aString;
+            tokens[nTokens++] = aString.substring(start);
             return nTokens;
         }
 
