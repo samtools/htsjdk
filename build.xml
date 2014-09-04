@@ -229,7 +229,7 @@
         <attribute name="excludes" default=""/>
         <attribute name="destdir" default="${classes}"/>
         <attribute name="compile.classpath" default="classpath"/>
-        <attribute name="compiler.args" default="-proc:none"/>
+        <attribute name="compiler.args" default=""/>
         <sequential>
         <mkdir dir="${classes}"/>
             <!-- unset the sourcepath attribute in order to compile only files explicitly specified and disable javac's default searching mechanism -->
@@ -251,7 +251,7 @@
     <macrodef name="compile-tests">
         <attribute name="includes" default=""/>
         <attribute name="excludes" default=""/>
-        <attribute name="compiler.args" default="-proc:none"/>
+        <attribute name="compiler.args" default=""/>
 
         <sequential>
             <mkdir dir="${classes.test}"/>
