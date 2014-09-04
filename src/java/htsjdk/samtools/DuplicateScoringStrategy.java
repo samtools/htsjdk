@@ -32,7 +32,7 @@ public class DuplicateScoringStrategy {
     /**
      * Returns the duplicate score computed from the given fragment.
      *
-     * If true is given to assumeMateCigar, then any score that can use the mate cigar to to compute the mate's score will return the score
+     * If true is given to assumeMateCigar, then any score that can use the mate cigar to compute the mate's score will return the score
      * computed on both ends.
      */
     public static short computeDuplicateScore(final SAMRecord record, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
