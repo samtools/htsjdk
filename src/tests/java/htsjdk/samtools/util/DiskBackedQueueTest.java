@@ -64,4 +64,25 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
         return DiskBackedQueue.newInstance(new StringCodec(), maxRecordsInRam, Collections.singletonList(tmpDir));
     }
 
+    @Test
+    public void testReadOnlyQueueJustBeforeReadingFromDisk() {
+        DiskBackedQueue<String> queue = makeDiskBackedQueue(2);
+        queue.add("foo");
+        queue.add("bar");
+        queue.add("baz");
+        Assert.assertEquals("foo", queue.poll());
+        Assert.assertEquals("bar", queue.poll());
+
+        // Spilled-to-disk records have not been read yet, but one has been loaded into headRecord, so the queue is
+        // closed for enqueue-ing.
+        Assert.assertFalse(queue.canAdd());
+        Assert.assertEquals("baz", queue.poll());
+
+        Assert.assertEquals(queue.size(), 0);
+        Assert.assertTrue(queue.isEmpty());
+        Assert.assertEquals(queue.poll(), null);
+        queue.clear();
+        Assert.assertTrue(queue.canAdd());
+    }
+
 }
