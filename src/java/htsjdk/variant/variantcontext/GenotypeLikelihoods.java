@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
@@ -181,7 +179,6 @@ public class GenotypeLikelihoods {
         return getGQLog10FromLikelihoods(genotype.ordinal() - 1 /* NO_CALL IS FIRST */, getAsVector());
     }
 
-    @Requires({"genotypeAlleles != null","genotypeAlleles.size()==2","contextAlleles != null","contextAlleles.size() >= 1"})
     private double getLog10GQ(List<Allele> genotypeAlleles,List<Allele> contextAlleles) {
         int allele1Index = contextAlleles.indexOf(genotypeAlleles.get(0));
         int allele2Index = contextAlleles.indexOf(genotypeAlleles.get(1));
@@ -393,8 +390,6 @@ public class GenotypeLikelihoods {
      *   @param  ploidy          Ploidy, or number of chromosomes in set
      *   @return    Number of likelihood elements we need to hold.
      */
-    @Requires({"ploidy > 0", "numAlleles > 0"})
-    @Ensures("result > 0")
     public static int numLikelihoods(final int numAlleles, final int ploidy) {
         if ( numAlleles < NUM_LIKELIHOODS_CACHE_N_ALLELES
                 && ploidy < NUM_LIKELIHOODS_CACHE_PLOIDY )

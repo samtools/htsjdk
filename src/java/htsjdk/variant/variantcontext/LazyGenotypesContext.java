@@ -25,9 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -66,8 +63,6 @@ public class LazyGenotypesContext extends GenotypesContext {
      * to the LazyGenotypesContext holding encoded genotypes data
      */
     public interface LazyParser {
-        @Requires("data != null")
-        @Ensures("result != null")
         public LazyData parse(Object data);
     }
 
@@ -81,7 +76,6 @@ public class LazyGenotypesContext extends GenotypesContext {
         final Map<String, Integer> sampleNameToOffset;
         final List<String> sampleNamesInOrder;
 
-        @Requires({"genotypes != null", "sampleNamesInOrder != null", "sampleNameToOffset != null"})
         public LazyData(final ArrayList<Genotype> genotypes,
                         final List<String> sampleNamesInOrder,
                         final Map<String, Integer> sampleNameToOffset) {
@@ -99,7 +93,6 @@ public class LazyGenotypesContext extends GenotypesContext {
      * @param unparsedGenotypeData the encoded genotypes data that we will decode if necessary
      * @param nUnparsedGenotypes the number of genotypes that will be produced if / when we actually decode the genotypes data
      */
-    @Requires({"parser != null", "unparsedGenotypeData != null", "nUnparsedGenotypes >= 0"})
     public LazyGenotypesContext(final LazyParser parser, final Object unparsedGenotypeData, final int nUnparsedGenotypes) {
         super(EMPTY);
         this.parser = parser;
@@ -116,7 +109,6 @@ public class LazyGenotypesContext extends GenotypesContext {
      * @return
      */
     @Override
-    @Ensures("result != null")
     protected ArrayList<Genotype> getGenotypes() {
         decode();
         return notToBeDirectlyAccessedGenotypes;

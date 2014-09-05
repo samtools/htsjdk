@@ -25,8 +25,6 @@
 
 package htsjdk.variant.vcf;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 
@@ -62,8 +60,6 @@ public class VCFStandardHeaderLines {
      * @param header
      * @return
      */
-    @Requires("header != null")
-    @Ensures("result != null")
     public static VCFHeader repairStandardHeaderLines(final VCFHeader header) {
         final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(header.getMetaDataInInputOrder().size());
         for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
@@ -209,8 +205,6 @@ public class VCFStandardHeaderLines {
     private static class Standards<T extends VCFCompoundHeaderLine> {
         private final Map<String, T> standards = new HashMap<String, T>();
 
-        @Requires("line != null")
-        @Ensures({"result != null", "result.getID().equals(line.getID())"})
         public T repair(final T line) {
             final T standard = get(line.getID(), false);
             if ( standard != null ) {
@@ -235,8 +229,6 @@ public class VCFStandardHeaderLines {
                 return line;
         }
 
-        @Requires("headerLines != null")
-        @Ensures({"result != null", "result.isEmpty() || ! throwErrorForMissing", "IDs.containsAll(result)"})
         public Set<String> addToHeader(final Set<VCFHeaderLine> headerLines, final Collection<String> IDs, final boolean throwErrorForMissing) {
             final Set<String> missing = new HashSet<String>();
             for ( final String ID : IDs ) {
@@ -250,16 +242,12 @@ public class VCFStandardHeaderLines {
             return missing;
         }
 
-        @Requires("line != null")
-        @Ensures({"standards.containsKey(line.getID())"})
         public void add(final T line) {
             if ( standards.containsKey(line.getID()) )
                 throw new TribbleException("Attempting to add multiple standard header lines for ID " + line.getID());
             standards.put(line.getID(), line);
         }
 
-        @Requires("ID != null")
-        @Ensures({"result != null || ! throwErrorForMissing"})
         public T get(final String ID, final boolean throwErrorForMissing) {
             final T x = standards.get(ID);
             if ( throwErrorForMissing && x == null )

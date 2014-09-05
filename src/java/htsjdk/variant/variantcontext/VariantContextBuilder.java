@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
@@ -95,8 +93,6 @@ public class VariantContextBuilder {
      * Create an empty VariantContextBuilder where all values adopt their default values, but the bare min.
      * of info (source, chr, start, stop, and alleles) have been provided to start.
      */
-    @Requires({"source != null", "contig != null", "start >= 0", "stop >= 0",
-            "alleles != null && !alleles.isEmpty()"})
     public VariantContextBuilder(String source, String contig, long start, long stop, Collection<Allele> alleles) {
         this.source = source;
         this.contig = contig;
@@ -156,7 +152,6 @@ public class VariantContextBuilder {
      * @param alleles
      * @return this builder
      */
-    @Requires({"alleles != null", "!alleles.isEmpty()"})
     public VariantContextBuilder alleles(final Collection<Allele> alleles) {
         this.alleles = alleles;
         toValidate.add(VariantContext.Validation.ALLELES);
@@ -208,8 +203,6 @@ public class VariantContextBuilder {
      * @param value
      * @return
      */
-    @Requires({"key != null"})
-    @Ensures({"this.attributes.size() == old(this.attributes.size()) || this.attributes.size() == old(this.attributes.size()+1)"})
     public VariantContextBuilder attribute(final String key, final Object value) {
         makeAttributesModifiable();
         attributes.put(key, value);
@@ -222,8 +215,6 @@ public class VariantContextBuilder {
      * @param key  key to remove
      * @return
      */
-    @Requires({"key != null"})
-    @Ensures({"this.attributes.size() == old(this.attributes.size()) || this.attributes.size() == old(this.attributes.size()-1)"})
     public VariantContextBuilder rmAttribute(final String key) {
         makeAttributesModifiable();
         attributes.remove(key);
@@ -236,8 +227,6 @@ public class VariantContextBuilder {
      * @param keys  list of keys to remove
      * @return
      */
-    @Requires({"keys != null"})
-    @Ensures({"this.attributes.size() <= old(this.attributes.size())"})
     public VariantContextBuilder rmAttributes(final List<String> keys) {
         makeAttributesModifiable();
         for ( final String key : keys )
@@ -249,7 +238,6 @@ public class VariantContextBuilder {
      * Makes the attributes field modifiable.  In many cases attributes is just a pointer to an immutable
      * collection, so methods that want to add / remove records require the attributes to be copied to a
      */
-    @Ensures({"this.attributesCanBeModified"})
     private void makeAttributesModifiable() {
         if ( ! attributesCanBeModified ) {
             this.attributesCanBeModified = true;
@@ -283,7 +271,6 @@ public class VariantContextBuilder {
         return this;
     }
 
-    @Requires({"filter != null", "!filter.equals(\"PASS\")"})
     public VariantContextBuilder filter(final String filter) {
         if ( this.filters == null ) this.filters = new LinkedHashSet<String>(1);
         this.filters.add(filter);
@@ -360,7 +347,6 @@ public class VariantContextBuilder {
      * @param ID
      * @return
      */
-    @Requires("ID != null")
     public VariantContextBuilder id(final String ID) {
         this.ID = ID;
         return this;
@@ -379,7 +365,6 @@ public class VariantContextBuilder {
      * @param log10PError
      * @return
      */
-    @Requires("log10PError <= 0 || log10PError == VariantContext.NO_LOG10_PERROR")
     public VariantContextBuilder log10PError(final double log10PError) {
         this.log10PError = log10PError;
         return this;
@@ -390,7 +375,6 @@ public class VariantContextBuilder {
      * @param source
      * @return
      */
-    @Requires("source != null")
     public VariantContextBuilder source(final String source) {
         this.source = source;
         return this;
@@ -403,7 +387,6 @@ public class VariantContextBuilder {
      * @param stop
      * @return
      */
-    @Requires({"contig != null", "start >= 0", "stop >= 0"})
     public VariantContextBuilder loc(final String contig, final long start, final long stop) {
         this.contig = contig;
         this.start = start;
@@ -417,7 +400,6 @@ public class VariantContextBuilder {
      * @param contig
      * @return
      */
-    @Requires({"contig != null"})
     public VariantContextBuilder chr(final String contig) {
         this.contig = contig;
         return this;
@@ -428,7 +410,6 @@ public class VariantContextBuilder {
      * @param start
      * @return
      */
-    @Requires({"start >= 0"})
     public VariantContextBuilder start(final long start) {
         this.start = start;
         toValidate.add(VariantContext.Validation.ALLELES);
@@ -440,7 +421,6 @@ public class VariantContextBuilder {
      * @param stop
      * @return
      */
-    @Requires({"stop >= 0"})
     public VariantContextBuilder stop(final long stop) {
         this.stop = stop;
         return this;
@@ -464,7 +444,6 @@ public class VariantContextBuilder {
      *                              if no is expected but will throw an error if one is found
      * @return this builder
      */
-    @Requires({"! alleles.isEmpty()", "start > 0", "endForSymbolicAlleles == -1 || endForSymbolicAlleles > 0" })
     public VariantContextBuilder computeEndFromAlleles(final List<Allele> alleles, final int start, final int endForSymbolicAlleles) {
         stop(VariantContextUtils.computeEndFromAlleles(alleles, start, endForSymbolicAlleles));
         return this;
