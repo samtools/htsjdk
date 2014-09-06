@@ -1,6 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+    <relativePath />
+  </parent>
   
   <!-- add this to your shell:
        export MAVEN_OPTS="-Xms256m -Xmx1g -XX:MaxPermSize=256m" -->
@@ -25,12 +32,12 @@
     </license>
   </licenses>
   <developers>
-    <!--<developer>
-        <name>Firstname Lastname</name>
-        <email>name@broadinstitute.org</email>
-        <organization>The Broad Institute</organization>
-        <organizationUrl>http://www.broadinstitute.org</organizationUrl>
-      </developer>-->
+    <developer>
+      <name>Nils Homer</name>
+      <email>nhomer@broadinstitute.org</email>
+      <organization>The Broad Institute</organization>
+      <organizationUrl>http://www.broadinstitute.org</organizationUrl>
+    </developer>
   </developers>
   <scm>
     <connection>scm:git:git@github.com:samtools/htsjdk.git</connection>
