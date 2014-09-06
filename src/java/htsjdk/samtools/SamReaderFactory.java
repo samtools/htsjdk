@@ -95,11 +95,13 @@ public abstract class SamReaderFactory {
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
         private SAMRecordFactory samRecordFactory;
+        private CustomReaderFactory customReaderFactory;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
             this.samRecordFactory = samRecordFactory;
             this.validationStringency = validationStringency;
+            this.customReaderFactory = CustomReaderFactory.getInstance();
         }
 
         @Override
@@ -151,6 +153,13 @@ public abstract class SamReaderFactory {
                 final boolean indexDefined = indexMaybe != null;
 
                 final InputResource.Type type = data.type();
+                if (type == InputResource.Type.URL) {
+                  SamReader reader = customReaderFactory.maybeOpen(
+                      data.asUrl());
+                  if (reader != null) {
+                    return reader;
+                  }
+                }
                 if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
                         final SeekableStream bufferedIndexStream;
