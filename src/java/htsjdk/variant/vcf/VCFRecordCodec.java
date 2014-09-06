@@ -25,7 +25,7 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
 	private BufferedReader inputReader = null;
 
 	public VCFRecordCodec(final VCFHeader header) {
-		this.vcfEncoder = new VCFEncoder(header, false);
+		this.vcfEncoder = new VCFEncoder(header, false, false);
 		// Explicitly set the version because it's not available in the header itself.
 		this.vcfDecoder.setVCFHeader(header, VCFHeaderVersion.VCF4_1);
 	}

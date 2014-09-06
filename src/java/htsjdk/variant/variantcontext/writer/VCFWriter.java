@@ -54,13 +54,16 @@ class VCFWriter extends IndexingVariantContextWriter {
 	// Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
 
-    // the VCF header we're storing
-    protected VCFHeader mHeader = null;
+	// the VCF header we're storing
+	protected VCFHeader mHeader = null;
 
 	private final boolean allowMissingFieldsInHeader;
 
 	// should we write genotypes or just sites?
 	private final boolean doNotWriteGenotypes;
+
+    // should we always output a complete format record, even if we could drop trailing fields?
+    private final boolean writeFullFormatField;
 
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
@@ -77,18 +80,22 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     public VCFWriter(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                      final boolean enableOnTheFlyIndexing,
-                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader ) {
+                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+                     final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
-	    this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
+        this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
+        this.writeFullFormatField = writeFullFormatField;
     }
 
     public VCFWriter(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                      final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
-                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader ) {
+                     final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+                     final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
+        this.writeFullFormatField = writeFullFormatField;
     }
     // --------------------------------------------------------------------------------
     //
@@ -124,7 +131,7 @@ class VCFWriter extends IndexingVariantContextWriter {
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         try {
             this.mHeader = writeHeader(header, writer, doNotWriteGenotypes, getVersionLine(), getStreamName());
-	        this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader);
+            this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
             writeAndResetBuffer();
 
         } catch ( IOException e ) {
@@ -210,9 +217,9 @@ class VCFWriter extends IndexingVariantContextWriter {
         try {
             super.add(context);
 
-	        if (this.doNotWriteGenotypes) write(this.vcfEncoder.encode(new VariantContextBuilder(context).noGenotypes().make()));
-	        else write(this.vcfEncoder.encode(context));
-	        write("\n");
+            if (this.doNotWriteGenotypes) write(this.vcfEncoder.encode(new VariantContextBuilder(context).noGenotypes().make()));
+            else write(this.vcfEncoder.encode(context));
+            write("\n");
 
             writeAndResetBuffer();
 
