@@ -8,5 +8,7 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also an number of useful utilities for 
 manipulating HTS data.
 
+Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
+
 [1]: http://samtools.sourceforge.net
 [2]: http://vcftools.sourceforge.net/specs.html
