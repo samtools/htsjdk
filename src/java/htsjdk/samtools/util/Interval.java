@@ -49,7 +49,6 @@ public class Interval implements Comparable<Interval>, Cloneable {
      */
     public Interval(final String sequence, final int start, final int end) {
         this(sequence, start, end, false, null);
-
     }
 
     /**

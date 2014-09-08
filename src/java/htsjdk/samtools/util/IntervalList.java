@@ -166,6 +166,16 @@ public class IntervalList implements Iterable<Interval> {
      * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
      */
     public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames) {
+        return getUniqueIntervals(list, concatenateNames, false);
+    }
+
+    //NO SIDE EFFECTS HERE!
+    /**
+     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
+     * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
+     * @param enforceSameStrands enforce that merged intervals have the same strand, otherwise ignore.
+     */
+    public static List<Interval> getUniqueIntervals(final IntervalList list, final boolean concatenateNames, final boolean enforceSameStrands) {
 
         final List<Interval> intervals;
         if (list.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
@@ -185,7 +195,7 @@ public class IntervalList implements Iterable<Interval> {
                 current = next;
             }
             else if (current.intersects(next) || current.abuts(next)) {
-                if (current.isNegativeStrand() != next.isNegativeStrand()) throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
+                if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                 toBeMerged.add(next);
                 current = new Interval(current.getSequence(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
             }
