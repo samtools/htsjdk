@@ -25,6 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,7 +37,7 @@ import java.io.InputStream;
  *
  * @author alecw@broadinstitute.org
  */
-public class FastLineReader {
+public class FastLineReader implements Closeable {
     private InputStream in;
     private byte[] fileBuffer = new byte[512000];
     // Next byte to read in fileBuffer

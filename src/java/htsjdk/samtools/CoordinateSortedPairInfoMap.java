@@ -69,7 +69,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     // internal state.
     private boolean iterationInProgress = false;
 
-    public CoordinateSortedPairInfoMap(int maxOpenFiles, Codec<KEY, REC> elementCodec) {
+    public CoordinateSortedPairInfoMap(final int maxOpenFiles, final Codec<KEY, REC> elementCodec) {
         this.elementCodec = elementCodec;
         workDir.deleteOnExit();
         outputStreams = new FileAppendStreamLRUCache(maxOpenFiles);
@@ -95,7 +95,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
 
             // Spill map in RAM to disk
             if (mapInRam != null) {
-                File spillFile = makeFileForSequence(sequenceIndexOfMapInRam);
+                final File spillFile = makeFileForSequence(sequenceIndexOfMapInRam);
                 if (spillFile.exists()) throw new IllegalStateException(spillFile + " should not exist.");
                 if (!mapInRam.isEmpty()) {
                     // Do not create file or entry in sizeOfMapOnDisk if there is nothing to write.

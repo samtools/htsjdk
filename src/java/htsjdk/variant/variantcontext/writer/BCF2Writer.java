@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -215,10 +213,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
     public void close() {
         try {
             outputStream.flush();
-            outputStream.close();
         }
         catch ( IOException e ) {
-            throw new RuntimeException("Failed to close BCF2 file");
+            throw new RuntimeException("Failed to flush BCF2 file");
         }
         super.close();
     }
@@ -409,7 +406,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
      *
      * @throws IOException
      */
-    @Requires({"infoBlock.length > 0", "genotypesBlock.length >= 0"})
     private void writeBlock(final byte[] infoBlock, final byte[] genotypesBlock) throws IOException {
         BCF2Type.INT32.write(infoBlock.length, outputStream);
         BCF2Type.INT32.write(genotypesBlock.length, outputStream);
@@ -417,8 +413,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
         outputStream.write(genotypesBlock);
     }
 
-    @Requires("! strings.isEmpty()")
-    @Ensures("result.isIntegerType()")
     private BCF2Type encodeStringsByRef(final Collection<String> strings) throws IOException {
         final List<Integer> offsets = new ArrayList<Integer>(strings.size());
 
@@ -440,7 +434,6 @@ class BCF2Writer extends IndexingVariantContextWriter {
      *
      * @param contigLines
      */
-    @Requires("contigDictionary.isEmpty()")
     private void createContigDictionary(final Collection<VCFContigHeaderLine> contigLines) {
         int offset = 0;
         for ( VCFContigHeaderLine contig : contigLines )

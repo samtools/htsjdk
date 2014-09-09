@@ -25,8 +25,6 @@
 
 package htsjdk.variant.variantcontext.writer;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.variant.bcf2.BCF2Type;
 import htsjdk.variant.bcf2.BCF2Utils;
 import htsjdk.variant.variantcontext.Allele;
@@ -50,22 +48,17 @@ public abstract class BCF2FieldWriter {
     private final VCFHeader header;
     private final BCF2FieldEncoder fieldEncoder;
 
-    @Requires({"header != null", "fieldEncoder != null"})
     protected BCF2FieldWriter(final VCFHeader header, final BCF2FieldEncoder fieldEncoder) {
         this.header = header;
         this.fieldEncoder = fieldEncoder;
     }
 
-    @Ensures("result != null")
     protected VCFHeader getHeader() { return header; }
-    @Ensures("result != null")
     protected BCF2FieldEncoder getFieldEncoder() {
         return fieldEncoder;
     }
-    @Ensures("result != null")
     protected String getField() { return getFieldEncoder().getField(); }
 
-    @Requires("vc != null")
     public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
         fieldEncoder.writeFieldKey(encoder);
     }
@@ -130,9 +123,6 @@ public abstract class BCF2FieldWriter {
         }
 
         @Override
-        @Requires({"encodingType != null",
-                "nValuesPerGenotype >= 0 || ! getFieldEncoder().hasConstantNumElements()"})
-        @Ensures("nValuesPerGenotype >= 0")
         public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
             // writes the key information
             super.start(encoder, vc);
@@ -150,18 +140,15 @@ public abstract class BCF2FieldWriter {
             encoder.encodeType(nValuesPerGenotype, encodingType);
         }
 
-        @Requires({"encodingType != null", "nValuesPerGenotype >= 0"})
         public void addGenotype(final BCF2Encoder encoder, final VariantContext vc, final Genotype g) throws IOException {
             final Object fieldValue = g.getExtendedAttribute(getField(), null);
             getFieldEncoder().encodeValue(encoder, fieldValue, encodingType, nValuesPerGenotype);
         }
 
-        @Ensures({"result >= 0"})
         protected int numElements(final VariantContext vc, final Genotype g) {
             return getFieldEncoder().numElements(vc, g.getExtendedAttribute(getField()));
         }
 
-        @Ensures({"result >= 0"})
         private final int computeMaxSizeOfGenotypeFieldFromValues(final VariantContext vc) {
             int size = -1;
 
@@ -305,7 +292,6 @@ public abstract class BCF2FieldWriter {
          * @param a the allele whose offset we wish to determine
          * @return the offset (from 0) of the allele in the list of variant context alleles (-1 means NO_CALL)
          */
-        @Requires("a != null")
         private final int getAlleleOffset(final Allele a) {
             if ( a == ref ) return 0;
             else if ( a == alt1 ) return 1;

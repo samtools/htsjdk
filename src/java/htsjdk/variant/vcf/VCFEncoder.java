@@ -22,11 +22,11 @@ import java.util.TreeMap;
  */
 public class VCFEncoder {
 
-    /**
-     * The encoding used for VCF files: ISO-8859-1
-     */
-    public static final Charset VCF_CHARSET = Charset.forName("ISO-8859-1");
-    private static final String QUAL_FORMAT_STRING = "%.2f";
+	/**
+	 * The encoding used for VCF files: ISO-8859-1
+	 */
+	public static final Charset VCF_CHARSET = Charset.forName("ISO-8859-1");
+	private static final String QUAL_FORMAT_STRING = "%.2f";
 	private static final String QUAL_FORMAT_EXTENSION_TO_TRIM = ".00";
 
 	private final IntGenotypeFieldAccessors GENOTYPE_FIELD_ACCESSORS = new IntGenotypeFieldAccessors();
@@ -35,14 +35,17 @@ public class VCFEncoder {
 
 	private boolean allowMissingFieldsInHeader = false;
 
+	private boolean outputTrailingFormatFields = false;
+
 	/**
 	 * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
 	 * allowing missing fields in the header.
 	 */
-	public VCFEncoder(final VCFHeader header, final boolean allowMissingFieldsInHeader) {
+	public VCFEncoder(final VCFHeader header, final boolean allowMissingFieldsInHeader, final boolean outputTrailingFormatFields) {
 		if (header == null) throw new NullPointerException("The VCF header must not be null.");
 		this.header = header;
 		this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
+		this.outputTrailingFormatFields = outputTrailingFormatFields;
 	}
 
 	/**
@@ -320,9 +323,11 @@ public class VCFEncoder {
 			}
 
 			// strip off trailing missing values
-			for (int i = attrs.size()-1; i >= 0; i--) {
-				if ( isMissingValue(attrs.get(i))) attrs.remove(i);
-				else break;
+			if (!outputTrailingFormatFields) {
+				for (int i = attrs.size() - 1; i >= 0; i--) {
+					if (isMissingValue(attrs.get(i))) attrs.remove(i);
+					else break;
+				}
 			}
 
 			for (int i = 0; i < attrs.size(); i++) {

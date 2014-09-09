@@ -637,9 +637,26 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         }
     }
 
-    private static class IndexStreamBuffer extends IndexFileBuffer {
+    static class IndexStreamBuffer extends IndexFileBuffer {
         private final SeekableStream in;
         private final ByteBuffer tmpBuf;
+
+        /** Continually reads from the provided {@link SeekableStream} into the buffer until the specified number of bytes are read, or
+         * until the stream is exhausted, throwing a {@link RuntimeIOException}. */
+        private static void readFully(final SeekableStream in, final byte[] buffer, final int offset, final int length) {
+            int read = 0;
+            while (read < length) {
+                final int readThisLoop;
+                try {
+                    readThisLoop = in.read(buffer, read, length - read);
+                } catch (final IOException e) {
+                    throw new RuntimeIOException(e);
+                }
+                if (readThisLoop == -1) break;
+                read += readThisLoop;
+            }
+            if (read != length) throw new RuntimeIOException("Expected to read " + length + " bytes, but expired stream after " + read + ".");
+        }
 
         public IndexStreamBuffer(final SeekableStream s) {
             in = s;
@@ -655,8 +672,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         
         @Override
         public void readBytes(final byte[] bytes) {
-            try { in.read(bytes); }
-            catch (final IOException e) { throw new RuntimeIOException(e); }
+            readFully(in, bytes, 0, bytes.length);
         }
         
         @Override
@@ -667,21 +683,13 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
 
         @Override
         public int readInteger() {
-           try {
-               final int r = in.read(tmpBuf.array(), 0, 4);
-               if (r != 4)
-                   throw new RuntimeIOException("Expected 4 bytes, got " + r);
-           } catch (final IOException e) { throw new RuntimeIOException(e); }
-           return tmpBuf.getInt(0);
+            readFully(in, tmpBuf.array(), 0, 4);
+            return tmpBuf.getInt(0);
         }
         
         @Override
         public long readLong() {
-            try {
-                final int r = in.read(tmpBuf.array(), 0, 8);
-                if (r != 8)
-                    throw new RuntimeIOException("Expected 8 bytes, got " + r);
-            } catch (final IOException e) { throw new RuntimeIOException(e); }
+            readFully(in, tmpBuf.array(), 0, 8);
             return tmpBuf.getLong(0);
         }
         

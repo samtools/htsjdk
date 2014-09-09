@@ -25,8 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.vcf.VCFConstants;
@@ -79,8 +77,6 @@ public class BCF2GenotypeFieldDecoders {
      * @param field the GT field to decode
      * @return a non-null decoder
      */
-    @Requires("field != null")
-    @Ensures("result != null")
     public Decoder getDecoder(final String field) {
         final Decoder d = genotypeFieldDecoder.get(field);
         return d == null ? defaultDecoder : d;
@@ -101,8 +97,6 @@ public class BCF2GenotypeFieldDecoders {
      * the PL field into a int[] rather than the generic List of Integer
      */
     public interface Decoder {
-        @Requires({"siteAlleles != null", "! siteAlleles.isEmpty()",
-                "field != null", "decoder != null", "gbs != null", "gbs.length != 0"})
         public void decode(final List<Allele> siteAlleles,
                            final String field,
                            final BCF2Decoder decoder,
@@ -133,7 +127,6 @@ public class BCF2GenotypeFieldDecoders {
          * Some notes.  If there are nAlleles at the site, there are implicitly actually
          * n + 1 options including
          */
-        @Requires("siteAlleles.size() == 2")
         @SuppressWarnings({"unchecked"})
         private final void fastBiallelicDiploidDecode(final List<Allele> siteAlleles,
                                                       final BCF2Decoder decoder,
@@ -209,8 +202,6 @@ public class BCF2GenotypeFieldDecoders {
             }
         }
 
-        @Requires({"siteAlleles != null && ! siteAlleles.isEmpty()", "encode >= 0"})
-        @Ensures("result != null")
         private final Allele getAlleleFromEncoded(final List<Allele> siteAlleles, final int encode) {
             final int offset = encode >> 1;
             return offset == 0 ? Allele.NO_CALL : siteAlleles.get(offset - 1);

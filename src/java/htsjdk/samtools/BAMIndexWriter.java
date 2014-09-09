@@ -23,12 +23,14 @@
  */
 package htsjdk.samtools;
 
+import java.io.Closeable;
+
 /**
  * A basic interface for writing BAM index files
  *
  * @author mborkan
  */
-interface BAMIndexWriter {  // note - only package visibility
+interface BAMIndexWriter extends Closeable {  // note - only package visibility
 
     /**
      * Write the data for one alignments to one reference sequence

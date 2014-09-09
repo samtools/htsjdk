@@ -78,7 +78,8 @@ public final class HardyWeinbergCalculation {
        }
 
        //start at midpoint
-       int mid = (rare * ((2 * diplotypes) - rare)) / (2 * diplotypes);
+       //cast to long and back to int to avoid overflow at large numbers
+       int mid = (int) (((long) rare * ((2 * diplotypes) - rare)) / (2 * diplotypes));
 
        //check to ensure that midpoint and rare alleles have same parity
        if (((rare & 1) ^ (mid & 1)) != 0) {

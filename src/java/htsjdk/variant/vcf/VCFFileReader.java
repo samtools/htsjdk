@@ -7,6 +7,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -44,13 +45,27 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 		this(file, true);
 	}
 
+    /** Constructs a VCFFileReader with a specified index. */
+    public VCFFileReader(final File file, final File indexFile) {
+        this(file, indexFile, true);
+    }
+
     /** Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired. */
 	public VCFFileReader(final File file, final boolean requireIndex) {
 		this.reader = AbstractFeatureReader.getFeatureReader(
 						file.getAbsolutePath(),
-						isBCF(file) ? new BCF2Codec() : new VCFCodec(),
+						isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
 						requireIndex);
 	}
+
+    /** Allows construction of a VCFFileReader with a specified index file. */
+    public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
+        this.reader = AbstractFeatureReader.getFeatureReader(
+                file.getAbsolutePath(),
+                indexFile.getAbsolutePath(),
+                isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
+                requireIndex);
+    }
 
     /**
      * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,

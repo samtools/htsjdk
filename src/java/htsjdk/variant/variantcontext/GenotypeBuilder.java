@@ -25,10 +25,6 @@
 
 package htsjdk.variant.variantcontext;
 
-
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Invariant;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
@@ -56,7 +52,6 @@ import java.util.Map;
  * @author Mark DePristo
  * @since 06/12
  */
-@Invariant({"alleles != null"})
 public final class GenotypeBuilder {
     private static final List<Allele> HAPLOID_NO_CALL = Arrays.asList(Allele.NO_CALL);
     private static final List<Allele> DIPLOID_NO_CALL = Arrays.asList(Allele.NO_CALL, Allele.NO_CALL);
@@ -192,7 +187,6 @@ public final class GenotypeBuilder {
      *
      * @return a newly minted Genotype object with values provided from this builder
      */
-    @Ensures({"result != null"})
     public Genotype make() {
         final Map<String, Object> ea = extendedAttributes == null ? NO_ATTRIBUTES : extendedAttributes;
         return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
@@ -203,8 +197,6 @@ public final class GenotypeBuilder {
      * @param sampleName
      * @return
      */
-    @Requires({"sampleName != null"})
-    @Ensures({"this.sampleName != null"})
     public GenotypeBuilder name(final String sampleName) {
         this.sampleName = sampleName;
         return this;
@@ -215,7 +207,6 @@ public final class GenotypeBuilder {
      * @param alleles
      * @return
      */
-    @Ensures({"this.alleles != null"})
     public GenotypeBuilder alleles(final List<Allele> alleles) {
         if ( alleles == null )
             this.alleles = Collections.emptyList();
@@ -234,8 +225,6 @@ public final class GenotypeBuilder {
         return this;
     }
 
-    @Requires({"GQ >= -1"})
-    @Ensures({"this.GQ == GQ", "this.GQ >= -1"})
     public GenotypeBuilder GQ(final int GQ) {
         this.GQ = GQ;
         return this;
@@ -285,8 +274,6 @@ public final class GenotypeBuilder {
      * This genotype has this DP value
      * @return
      */
-    @Requires({"DP >= -1"})
-    @Ensures({"this.DP == DP"})
     public GenotypeBuilder DP(final int DP) {
         this.DP = DP;
         return this;
@@ -296,8 +283,6 @@ public final class GenotypeBuilder {
      * This genotype has this AD value
      * @return
      */
-    @Requires({"AD == null || AD.length > 0"})
-    @Ensures({"this.AD == AD"})
     public GenotypeBuilder AD(final int[] AD) {
         this.AD = AD;
         return this;
@@ -307,8 +292,6 @@ public final class GenotypeBuilder {
      * This genotype has this PL value, as int[].  FAST
      * @return
      */
-    @Requires("PL == null || PL.length > 0")
-    @Ensures({"this.PL == PL"})
     public GenotypeBuilder PL(final int[] PL) {
         this.PL = PL;
         return this;
@@ -318,8 +301,6 @@ public final class GenotypeBuilder {
      * This genotype has this PL value, converted from double[]. SLOW
      * @return
      */
-    @Requires("PL == null || PL.length > 0")
-    @Ensures({"this.PL == PL"})
     public GenotypeBuilder PL(final double[] GLs) {
         this.PL = GenotypeLikelihoods.fromLog10Likelihoods(GLs).getAsPLs();
         return this;
@@ -331,8 +312,6 @@ public final class GenotypeBuilder {
      * Cannot contain inline attributes (DP, AD, GQ, PL)
      * @return
      */
-    @Requires("attributes != null")
-    @Ensures("attributes.isEmpty() || extendedAttributes != null")
     public GenotypeBuilder attributes(final Map<String, Object> attributes) {
         for ( Map.Entry<String, Object> pair : attributes.entrySet() )
             attribute(pair.getKey(), pair.getValue());
@@ -355,8 +334,6 @@ public final class GenotypeBuilder {
      * Cannot contain inline attributes (DP, AD, GQ, PL)
      * @return
      */
-    @Requires({"key != null"})
-    @Ensures({"extendedAttributes != null", "extendedAttributes.containsKey(key)"})
     public GenotypeBuilder attribute(final String key, final Object value) {
         if ( extendedAttributes == null )
             extendedAttributes = new HashMap<String, Object>(initialAttributeMapSize);
@@ -372,7 +349,6 @@ public final class GenotypeBuilder {
      * @param filters non-null list of filters.  empty list => PASS
      * @return this builder
      */
-    @Requires("filters != null")
     public GenotypeBuilder filters(final List<String> filters) {
         if ( filters.isEmpty() )
             return filter(null);
@@ -387,7 +363,6 @@ public final class GenotypeBuilder {
      * @param filters
      * @return
      */
-    @Requires("filters != null")
     public GenotypeBuilder filters(final String ... filters) {
         return filters(Arrays.asList(filters));
     }

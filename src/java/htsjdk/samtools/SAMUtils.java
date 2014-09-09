@@ -922,4 +922,17 @@ public final class SAMUtils
         // NB: use getMateCigarString rather than getMateCigar to avoid validation.
         return (rec.getReadPairedFlag() && !rec.getMateUnmappedFlag() && null != SAMUtils.getMateCigarString(rec));
     }
+
+    /**
+     * Returns a string that is the the read group ID and read name separated by a colon.  This is meant to cannonically
+     * identify a given record within a set of records.
+     * @param record
+     * @return
+     */
+    public static String getCanonicalRecordName(final SAMRecord record) {
+        String name = record.getStringAttribute(ReservedTagConstants.READ_GROUP_ID);
+        if (null == name) name = record.getReadName();
+        else name = name + ":" + record.getReadName();
+        return name;
+    }
 }

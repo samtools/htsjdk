@@ -45,7 +45,7 @@
         <arg value="--pretty=format:%H_%at"/>
     </exec>
     <property name="repository.revision" value=""/>
-    <property name="htsjdk-version" value="1.115"/>
+    <property name="htsjdk-version" value="1.120"/>
     <property name="htsjdk-version-xml" value="htsjdk.version.property.xml"/>
     <property name="testng.verbosity" value="2"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
@@ -105,7 +105,7 @@
     </target>
 
     <target name="compile-variant" depends="init, compile-tribble" description="Compile variant files without cleaning">
-        <compile-src includes="htsjdk/variant/**/*.*" compiler.args="-proc:none"/>
+		<compile-src includes="htsjdk/variant/**/*.*"/>
     </target>
 
     <target name="compile-tests" depends="compile-samtools-tests, compile-tribble-tests, compile-variant-tests" description="Compile test files without cleaning"/>
@@ -119,7 +119,7 @@
     </target>
 
     <target name="compile-variant-tests" depends="init" description="Compile variant test files without cleaning">
-        <compile-tests includes="htsjdk/variant/**/*.*" compiler.args="-proc:none"/>
+        <compile-tests includes="htsjdk/variant/**/*.*"/>
     </target>
 
     <!-- TEST -->

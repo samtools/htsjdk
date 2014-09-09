@@ -23,13 +23,15 @@
  */
 package htsjdk.samtools;
 
+import java.io.Closeable;
+
 /**
  * A basic interface for querying BAM indices.
  *
  * @author mhanna
  * @version 0.1
  */
-public interface BAMIndex {
+public interface BAMIndex extends Closeable {
 
     public static final String BAMIndexSuffix = ".bai";
 

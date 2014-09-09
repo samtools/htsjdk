@@ -23,13 +23,15 @@
  */
 package htsjdk.samtools;
 
+import java.io.Closeable;
+
 import htsjdk.samtools.util.ProgressLoggerInterface;
 
 /**
  * Interface for SAMText and BAM file writers.  Clients need not care which they write to,
  * once the object is constructed.
  */
-public interface SAMFileWriter {
+public interface SAMFileWriter extends Closeable {
 
 	void addAlignment(SAMRecord alignment);
 

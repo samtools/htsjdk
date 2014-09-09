@@ -25,13 +25,15 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import java.io.Closeable;
+
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 
 /**
  * this class writes VCF files
  */
-public interface VariantContextWriter {
+public interface VariantContextWriter extends Closeable {
 
     public void writeHeader(VCFHeader header);
 

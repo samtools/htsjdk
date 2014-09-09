@@ -39,6 +39,11 @@ public class SolexaQualityConverter {
      */
     public static final int PHRED_ADDEND = 33;
 
+    /**
+     * This value is removed from an Illumina 1.8 quality score to make it a Phred score
+     */
+    public final static int ILLUMINA_TO_PHRED_SUBTRAHEND = SOLEXA_ADDEND - PHRED_ADDEND;
+
     private static SolexaQualityConverter singleton = null;
 
     public static synchronized SolexaQualityConverter getSingleton()  {

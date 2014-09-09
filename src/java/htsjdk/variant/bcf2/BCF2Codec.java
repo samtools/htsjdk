@@ -25,8 +25,6 @@
 
 package htsjdk.variant.bcf2;
 
-import com.google.java.contract.Ensures;
-import com.google.java.contract.Requires;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
@@ -249,7 +247,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param builder
      * @return
      */
-    @Requires({"builder != null"})
     private final void decodeSiteLoc(final VariantContextBuilder builder) throws IOException {
         final int contigOffset = decoder.decodeInt(BCF2Type.INT32);
         final String contig = lookupContigName(contigOffset);
@@ -267,8 +264,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param builder
      * @return
      */
-    @Requires({"builder != null", "decoder != null"})
-    @Ensures({"result != null", "result.isValid()"})
     private final SitesInfoForDecoding decodeSitesExtendedInfo(final VariantContextBuilder builder) throws IOException {
         final Object qual = decoder.decodeSingleValue(BCF2Type.FLOAT);
         if ( qual != null ) {
@@ -341,7 +336,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param nAlleles
      * @return the alleles
      */
-    @Requires("nAlleles > 0")
     private List<Allele> decodeAlleles( final VariantContextBuilder builder, final int pos, final int nAlleles ) throws IOException {
         // TODO -- probably need inline decoder for efficiency here (no sense in going bytes -> string -> vector -> bytes
         List<Allele> alleles = new ArrayList<Allele>(nAlleles);
@@ -395,7 +389,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param builder
      * @param numInfoFields
      */
-    @Requires("numInfoFields >= 0")
     private void decodeInfo( final VariantContextBuilder builder, final int numInfoFields ) throws IOException {
         if ( numInfoFields == 0 )
             // fast path, don't bother doing any work if there are no fields
@@ -448,7 +441,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         final public int nGenotypeFields;
         final public byte[] bytes;
 
-        @Requires({"nGenotypeFields > 0", "bytes != null"})
         public LazyData(final VCFHeader header, final int nGenotypeFields, final byte[] bytes) {
             this.header = header;
             this.nGenotypeFields = nGenotypeFields;
@@ -456,13 +448,10 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         }
     }
 
-    @Ensures("result != null")
     private final String getDictionaryString() throws IOException {
         return getDictionaryString((Integer) decoder.decodeTypedValue());
     }
 
-    @Requires("offset < dictionary.size()")
-    @Ensures("result != null")
     protected final String getDictionaryString(final int offset) {
         return dictionary.get(offset);
     }
@@ -474,14 +463,10 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      * @param contigOffset
      * @return
      */
-    @Requires({"contigOffset >= 0", "contigOffset < contigNames.size()"})
-    @Ensures("result != null")
     private final String lookupContigName( final int contigOffset ) {
         return contigNames.get(contigOffset);
     }
 
-    @Requires("header != null")
-    @Ensures({"result != null", "! result.isEmpty()"})
     private final ArrayList<String> parseDictionary(final VCFHeader header) {
         final ArrayList<String> dict = BCF2Utils.makeDictionary(header);
 
@@ -499,8 +484,6 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
         return header;
     }
 
-    @Requires("field != null")
-    @Ensures("result != null")
     protected BCF2GenotypeFieldDecoders.Decoder getGenotypeFieldDecoder(final String field) {
         return gtFieldDecoders.getDecoder(field);
     }

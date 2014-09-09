@@ -49,6 +49,8 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class SamReaderFactory {
 
+    private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
+
     abstract public SamReader open(final File file);
 
     abstract public SamReader open(final SamInputResource resource);
@@ -67,8 +69,14 @@ public abstract class SamReaderFactory {
     /** Set this factory's {@link ValidationStringency} to the provided one, then returns itself. */
     abstract public SamReaderFactory validationStringency(final ValidationStringency validationStringency);
 
-    private static final SamReaderFactoryImpl DEFAULT =
-            new SamReaderFactoryImpl(Option.DEFAULTS, ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
+    private static SamReaderFactoryImpl DEFAULT =
+            new SamReaderFactoryImpl(Option.DEFAULTS, defaultValidationStringency, DefaultSAMRecordFactory.getInstance());
+
+    public static void setDefaultValidationStringency(final ValidationStringency defaultValidationStringency) {
+        SamReaderFactory.defaultValidationStringency = defaultValidationStringency;
+        // The default may have changed, so reset the default SamReader
+        DEFAULT = new SamReaderFactoryImpl(Option.DEFAULTS, defaultValidationStringency, DefaultSAMRecordFactory.getInstance());
+    }
 
     /** Creates a copy of the default {@link SamReaderFactory}. */
     public static SamReaderFactory makeDefault() {

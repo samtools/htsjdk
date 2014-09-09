@@ -19,7 +19,7 @@ public class ReferenceSequenceFileWalkerTest {
         return new Object[][]{
                 new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 0, 1},
                 new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 1, 1},
-                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 0, 0}
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 0, 0},
         };
     }
 
@@ -41,9 +41,15 @@ public class ReferenceSequenceFileWalkerTest {
     @DataProvider(name = "TestFailReference")
     public Object[][] TestFailReference() {
         return new Object[][]{
-                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 2,3},
-                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 1,0},
-                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", -1,0}
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta", 1,3},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta", 2,3},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta", 1,0},  //fail because not allowed to look back
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta", -1,0},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", -1, 0},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 1, -1},    //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 2,3},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 1,3},  //fail because out of bounds
+                new Object[]{"testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta", 1, 0} // fasta is indexed, but not allowed to look back
         };
     }
 

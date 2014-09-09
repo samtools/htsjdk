@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -45,7 +46,7 @@ import java.nio.ByteOrder;
  *
  * @author Dave Tefft
  */
-public class BinaryCodec {
+public class BinaryCodec implements Closeable {
 
     //Outstream to write to
     private OutputStream outputStream;
@@ -329,7 +330,7 @@ public class BinaryCodec {
             throw new IllegalArgumentException("Negative value (" + val + ") passed to unsigned writing method.");
         }
         if (val > MAX_USHORT) {
-            throw new IllegalArgumentException("Value (" + val + ") to large to be written as ushort.");
+            throw new IllegalArgumentException("Value (" + val + ") too large to be written as ushort.");
         }
         byteBuffer.clear();
         byteBuffer.putInt(val);

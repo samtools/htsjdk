@@ -35,7 +35,7 @@
 #include "jni_util.h"
 #include "zlib.h"
 
-#include "net_sf_samtools_util_zip_IntelDeflater.h"
+#include "htsjdk_samtools_util_zip_IntelDeflater.h"
 
 #define DEF_MEM_LEVEL 8
 
@@ -47,7 +47,7 @@ static jfieldID finishedID;
 static jfieldID bufID, offID, lenID;
 
 JNIEXPORT void JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_initIDs(JNIEnv *env, jclass cls)
+Java_htsjdk_samtools_util_zip_IntelDeflater_initIDs(JNIEnv *env, jclass cls)
 {
     levelID = (*env)->GetFieldID(env, cls, "level", "I");
     strategyID = (*env)->GetFieldID(env, cls, "strategy", "I");
@@ -60,7 +60,7 @@ Java_net_sf_samtools_util_zip_IntelDeflater_initIDs(JNIEnv *env, jclass cls)
 }
 
 JNIEXPORT jlong JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_init(JNIEnv *env, jclass cls, jint level,
+Java_htsjdk_samtools_util_zip_IntelDeflater_init(JNIEnv *env, jclass cls, jint level,
                                  jint strategy, jboolean nowrap)
 {
     z_stream *strm = calloc(1, sizeof(z_stream));
@@ -93,7 +93,7 @@ Java_net_sf_samtools_util_zip_IntelDeflater_init(JNIEnv *env, jclass cls, jint l
 }
 
 JNIEXPORT void JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_setDictionary(JNIEnv *env, jclass cls, jlong addr,
+Java_htsjdk_samtools_util_zip_IntelDeflater_setDictionary(JNIEnv *env, jclass cls, jlong addr,
                                           jarray b, jint off, jint len)
 {
     Bytef *buf = (*env)->GetPrimitiveArrayCritical(env, b, 0);
@@ -116,7 +116,7 @@ Java_net_sf_samtools_util_zip_IntelDeflater_setDictionary(JNIEnv *env, jclass cl
 }
 
 JNIEXPORT jint JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject this, jlong addr,
+Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject this, jlong addr,
                                          jarray b, jint off, jint len, jint flush)
 {
     z_stream *strm = jlong_to_ptr(addr);
@@ -211,25 +211,25 @@ Java_net_sf_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 }
 
 JNIEXPORT jint JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_getAdler(JNIEnv *env, jclass cls, jlong addr)
+Java_htsjdk_samtools_util_zip_IntelDeflater_getAdler(JNIEnv *env, jclass cls, jlong addr)
 {
     return ((z_stream *)jlong_to_ptr(addr))->adler;
 }
 
 JNIEXPORT jlong JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_getBytesRead(JNIEnv *env, jclass cls, jlong addr)
+Java_htsjdk_samtools_util_zip_IntelDeflater_getBytesRead(JNIEnv *env, jclass cls, jlong addr)
 {
     return ((z_stream *)jlong_to_ptr(addr))->total_in;
 }
 
 JNIEXPORT jlong JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_getBytesWritten(JNIEnv *env, jclass cls, jlong addr)
+Java_htsjdk_samtools_util_zip_IntelDeflater_getBytesWritten(JNIEnv *env, jclass cls, jlong addr)
 {
     return ((z_stream *)jlong_to_ptr(addr))->total_out;
 }
 
 JNIEXPORT void JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_reset(JNIEnv *env, jclass cls, jlong addr)
+Java_htsjdk_samtools_util_zip_IntelDeflater_reset(JNIEnv *env, jclass cls, jlong addr)
 {
     if (deflateReset((z_stream *)jlong_to_ptr(addr)) != Z_OK) {
         JNU_ThrowInternalError(env, 0);
@@ -237,7 +237,7 @@ Java_net_sf_samtools_util_zip_IntelDeflater_reset(JNIEnv *env, jclass cls, jlong
 }
 
 JNIEXPORT void JNICALL
-Java_net_sf_samtools_util_zip_IntelDeflater_end(JNIEnv *env, jclass cls, jlong addr)
+Java_htsjdk_samtools_util_zip_IntelDeflater_end(JNIEnv *env, jclass cls, jlong addr)
 {
     if (deflateEnd((z_stream *)jlong_to_ptr(addr)) == Z_STREAM_ERROR) {
         JNU_ThrowInternalError(env, 0);
