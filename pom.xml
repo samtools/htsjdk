@@ -126,6 +126,7 @@
       <dependency>
         <groupId>org.xerial.snappy</groupId>
         <artifactId>snappy-java</artifactId>
+        <!-- even 1.0.3 (not rc3) fails-->
         <version>1.0.3-rc3</version>
         <optional>true</optional>
       </dependency>
