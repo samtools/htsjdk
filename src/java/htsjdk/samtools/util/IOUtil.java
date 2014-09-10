@@ -286,6 +286,16 @@ public class IOUtil {
     }
 
     /**
+     * Checks that each file is non-null, exists, is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for readability
+     */
+    public static void assertFilesAreReadable(final List<File> files) {
+        for (final File file : files) assertFileIsReadable(file);
+    }
+
+    /**
      * Checks that a file is non-null, and is either extent and writable, or non-existent but
      * that the parent directory exists and is writable. If any
      * condition is false then a runtime exception is thrown.
@@ -317,6 +327,17 @@ public class IOUtil {
         else if (!file.canWrite()) {
             throw new SAMException("File exists but is not writable: " + file.getAbsolutePath());
         }
+    }
+
+    /**
+     * Checks that each file is non-null, and is either extent and writable, or non-existent but
+     * that the parent directory exists and is writable. If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for writability
+     */
+    public static void assertFilesAreWritable(final List<File> files) {
+        for (final File file : files) assertFileIsWritable(file);
     }
 
     /**
