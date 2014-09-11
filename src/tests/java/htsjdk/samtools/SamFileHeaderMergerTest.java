@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -184,7 +185,7 @@ public class SamFileHeaderMergerTest {
         List<String> expected = Arrays.asList(expected_output.split("\\n"));
         for (int i = 0; i < expected.size(); i++) {
             if (expected.get(i).startsWith("@")) {
-                Assert.assertEquals(actual.get(i), expected.get(i));
+                Assert.assertTrue(headersEquivalent(actual.get(i), expected.get(i)));
             }
             else
             {
@@ -198,6 +199,15 @@ public class SamFileHeaderMergerTest {
                 }
             }
         }
+    }
+
+    private static final boolean headersEquivalent(String a, String b) {
+        if (a.length() != b.length()) return false;
+        List<String> remaining = new LinkedList<String>(Arrays.asList(a.split("\\t")));
+        for (final String item : b.split("\\t")) {
+            if (!remaining.remove(item)) return false;
+        }
+        return remaining.isEmpty(); 
     }
 
     @DataProvider(name="data")
