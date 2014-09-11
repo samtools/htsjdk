@@ -57,6 +57,7 @@ import java.util.Map;
 public class TabixIndex implements Index {
     private static final byte[] MAGIC = {'T', 'B', 'I', 1};
     public static final int MAGIC_NUMBER;
+
     static {
         final ByteBuffer bb = ByteBuffer.allocate(MAGIC.length);
         bb.put(MAGIC);
@@ -69,10 +70,10 @@ public class TabixIndex implements Index {
     private final BinningIndexContent[] indices;
 
     /**
-     * @param formatSpec Information about how to interpret the file being indexed.  Unused by this class other than
-     *                   written to an output file.
+     * @param formatSpec    Information about how to interpret the file being indexed.  Unused by this class other than
+     *                      written to an output file.
      * @param sequenceNames Sequences in the file being indexed, in the order they appear in the file.
-     * @param indices One for each element of sequenceNames
+     * @param indices       One for each element of sequenceNames
      */
     public TabixIndex(final TabixFormat formatSpec, final List<String> sequenceNames, final BinningIndexContent[] indices) {
         if (sequenceNames.size() != indices.length) {
@@ -110,7 +111,7 @@ public class TabixIndex implements Index {
         formatSpec.sequenceColumn = dis.readInt();
         formatSpec.startPositionColumn = dis.readInt();
         formatSpec.endPositionColumn = dis.readInt();
-        formatSpec.metaCharacter = (char)dis.readInt();
+        formatSpec.metaCharacter = (char) dis.readInt();
         formatSpec.numHeaderLinesToSkip = dis.readInt();
         final int nameBlockSize = dis.readInt();
         final byte[] nameBlock = new byte[nameBlockSize];
@@ -134,19 +135,18 @@ public class TabixIndex implements Index {
     }
 
     /**
-     *
-     * @param chr the chromosome
+     * @param chr   the chromosome
      * @param start the start position, one-based, inclusive.
-     * @param end the end position, one-based, inclusive.
+     * @param end   the end position, one-based, inclusive.
      * @return List of regions of file that are candidates for the given query.
-     *
+     * <p/>
      * TODO: This method has not yet been tested, since the primary task is index writing.
      */
     @Override
     public List<Block> getBlocks(final String chr, final int start, final int end) {
         final int sequenceIndex = sequenceNames.indexOf(chr);
         if (sequenceIndex == -1 || indices[sequenceIndex] == null) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
         final List<Chunk> chunks = indices[sequenceIndex].getChunksOverlapping(start, end);
         final List<Block> ret = new ArrayList<Block>(chunks.size());
@@ -172,7 +172,6 @@ public class TabixIndex implements Index {
     }
 
     /**
-     *
      * No arbitrary properties in Tabix
      */
     @Override
@@ -199,6 +198,7 @@ public class TabixIndex implements Index {
 
     /**
      * Writes the index with BGZF.
+     *
      * @param tabixFile Where to write the index.
      */
     public void write(final File tabixFile) {
@@ -213,6 +213,7 @@ public class TabixIndex implements Index {
 
     /**
      * Writes to a file with appropriate name and directory based on feature file.
+     *
      * @param featureFile File being indexed.
      */
     @Override
@@ -222,7 +223,6 @@ public class TabixIndex implements Index {
     }
 
     /**
-     *
      * @param los It is assumes that caller has done appropriate buffering and BlockCompressedOutputStream wrapping.
      *            Caller should close output stream after invoking this method.
      * @throws IOException
@@ -276,7 +276,7 @@ public class TabixIndex implements Index {
         los.writeInt(bin.getBinNumber());
         final List<Chunk> chunkList = bin.getChunkList();
         los.writeInt(chunkList.size());
-        for (final Chunk chunk: chunkList) {
+        for (final Chunk chunk : chunkList) {
             los.writeLong(chunk.getChunkStart());
             los.writeLong(chunk.getChunkEnd());
         }
@@ -285,8 +285,9 @@ public class TabixIndex implements Index {
     /**
      * Although this is probably identical to BAM index reading code, code does not exist there to load directly
      * into a BinningIndexContent object, so that is implemented here.
+     *
      * @param referenceSequenceIndex Merely for setting in the returned object, not for seeking into the file.
-     * @param dis This method assumes that the current position is at the start of the reference.
+     * @param dis                    This method assumes that the current position is at the start of the reference.
      */
     private BinningIndexContent loadSequence(final int referenceSequenceIndex, final LittleEndianInputStream dis) throws IOException {
         final int numBins = dis.readInt();
@@ -303,7 +304,7 @@ public class TabixIndex implements Index {
                     if (bins.get(bin.getBinNumber()) != null) {
                         throw new TribbleException("Bin " + bin.getBinNumber() + " appears more than once in file");
                     }
-                    bins.set(bin.getBinNumber(),bin);
+                    bins.set(bin.getBinNumber(), bin);
                 } else {
                     // Grow bins array as needed.
                     bins.ensureCapacity(bin.getBinNumber() + 1);

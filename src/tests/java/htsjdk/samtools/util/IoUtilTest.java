@@ -46,11 +46,11 @@ public class IoUtilTest {
     private static final File SLURP_TEST_FILE = new File("testdata/htsjdk/samtools/io/slurptest.txt");
     private static final File EMPTY_FILE = new File("testdata/htsjdk/samtools/io/empty.txt");
     private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("testdata/htsjdk/samtools/io/5newline5.txt");
-    private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ","for breakfast  ","wont you join me");
+    private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
-    private static final String TEST_FILE_EXTENSIONS[] = { ".txt", ".txt.gz" };
-   	private static final String TEST_STRING = "bar!";
+    private static final String TEST_FILE_EXTENSIONS[] = {".txt", ".txt.gz"};
+    private static final String TEST_STRING = "bar!";
     private File existingTempFile;
     private String systemTempDir;
 
@@ -66,11 +66,9 @@ public class IoUtilTest {
     }
 
     @Test
-    public void testFileReadingAndWriting() throws IOException
-    {
+    public void testFileReadingAndWriting() throws IOException {
         String randomizedTestString = TEST_STRING + System.currentTimeMillis();
-        for (String ext : TEST_FILE_EXTENSIONS)
-        {
+        for (String ext : TEST_FILE_EXTENSIONS) {
             File f = File.createTempFile(TEST_FILE_PREFIX, ext);
             f.deleteOnExit();
 
@@ -86,16 +84,17 @@ public class IoUtilTest {
         }
     }
 
-    @Test(groups={"unix"})
+    @Test(groups = {"unix"})
     public void testGetCanonicalPath() throws IOException {
         String tmpPath = System.getProperty("java.io.tmpdir");
         String userName = System.getProperty("user.name");
 
-        if(tmpPath.endsWith(userName)) {
+        if (tmpPath.endsWith(userName)) {
             tmpPath = tmpPath.substring(0, tmpPath.length() - userName.length());
         }
 
         File tmpDir = new File(tmpPath, userName);
+        tmpDir.mkdir();
         File actual = new File(tmpDir, "actual.txt");
         ProcessExecutor.execute(new String[]{"touch", actual.getAbsolutePath()});
         File symlink = new File(tmpDir, "symlink.txt");
@@ -106,7 +105,7 @@ public class IoUtilTest {
         File lnToSymlink = new File(lnDir, "symlink.txt");
 
 
-        File files [] = { actual, symlink, lnToActual, lnToSymlink };
+        File files[] = {actual, symlink, lnToActual, lnToSymlink};
         for (File f : files) {
             Assert.assertEquals(IOUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
         }
@@ -116,11 +115,12 @@ public class IoUtilTest {
         lnToActual.delete();
         lnToSymlink.delete();
         lnDir.delete();
+        tmpDir.delete();
     }
 
     @Test
     public void testUtfWriting() throws IOException {
-        final String utf8 = new StringWriter().append((char)168).append((char)197).toString();
+        final String utf8 = new StringWriter().append((char) 168).append((char) 197).toString();
         for (String ext : TEST_FILE_EXTENSIONS) {
             final File f = File.createTempFile(TEST_FILE_PREFIX, ext);
             f.deleteOnExit();
@@ -147,12 +147,12 @@ public class IoUtilTest {
     public void slurpWhitespaceOnlyFileTest() throws FileNotFoundException {
         Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
     }
-    
+
     @Test
     public void slurpEmptyFileTest() throws FileNotFoundException {
         Assert.assertEquals(IOUtil.slurp(EMPTY_FILE), "");
     }
-    
+
     @Test
     public void slurpTest() throws FileNotFoundException {
         Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
@@ -164,7 +164,7 @@ public class IoUtilTest {
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
     }
 
-    @Test(dataProvider = "unixFileTypeTestCases", groups={"unix"})
+    @Test(dataProvider = "unixFileTypeTestCases", groups = {"unix"})
     public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
@@ -172,7 +172,7 @@ public class IoUtilTest {
 
     @DataProvider(name = "fileTypeTestCases")
     private Object[][] fileTypeTestCases() {
-        return new Object[][] {
+        return new Object[][]{
                 {existingTempFile.getAbsolutePath(), Boolean.TRUE},
                 {systemTempDir, Boolean.FALSE}
 
@@ -181,8 +181,8 @@ public class IoUtilTest {
 
     @DataProvider(name = "unixFileTypeTestCases")
     private Object[][] unixFileTypeTestCases() {
-        return new Object[][] {
-                {"/dev/null",   Boolean.FALSE},
+        return new Object[][]{
+                {"/dev/null", Boolean.FALSE},
                 {"/dev/stdout", Boolean.FALSE},
                 {"/non/existent/file", Boolean.TRUE},
         };

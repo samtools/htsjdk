@@ -148,7 +148,7 @@ public abstract class AbstractIndex implements MutableIndex {
     public AbstractIndex() {
         this.version = VERSION; // <= is overriden when file is read
         this.properties = new LinkedHashMap<String, String>();
-        chrIndices = new LinkedHashMap();
+        chrIndices = new LinkedHashMap<String, ChrIndex>();
     }
 
     /**

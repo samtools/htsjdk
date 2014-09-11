@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CloserUtil;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -133,7 +134,7 @@ public class BAMRemoteFileTest {
     private List<String> getReferenceNames(final URL bamFile) throws IOException {
 
 
-        final SAMFileReader reader = new SAMFileReader(bamFile.openStream());
+        final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamFile.openStream()));
 
         final List<String> result = new ArrayList<String>();
         final List<SAMSequenceRecord> seqRecords = reader.getFileHeader().getSequenceDictionary().getSequences();
@@ -148,8 +149,12 @@ public class BAMRemoteFileTest {
 
     private void runLocalRemoteTest(final URL bamURL, final File bamFile, final String sequence, final int startPos, final int endPos, final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
-        final SAMFileReader reader1 = new SAMFileReader(bamFile, BAM_INDEX_FILE, false);
-        final SAMFileReader reader2 = new SAMFileReader(bamURL, BAM_INDEX_FILE, false);
+        final SamReader reader1 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(SamInputResource.of(bamFile).index(BAM_INDEX_FILE));
+        final SamReader reader2 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(SamInputResource.of(bamURL).index(BAM_INDEX_FILE));
         final Iterator<SAMRecord> iter1 = reader1.query(sequence, startPos, endPos, contained);
         final Iterator<SAMRecord> iter2 = reader2.query(sequence, startPos, endPos, contained);
 
@@ -167,7 +172,7 @@ public class BAMRemoteFileTest {
         assertEquals(records1.size(), records2.size());
         for (int i = 0; i < records1.size(); i++) {
             //System.out.println(records1.get(i).format());
-            assertEquals(records1.get(i).format(), records2.get(i).format());
+            assertEquals(records1.get(i).getSAMString(), records2.get(i).getSAMString());
         }
 
 
@@ -175,8 +180,12 @@ public class BAMRemoteFileTest {
 
     private int runQueryTest(final URL bamURL, final String sequence, final int startPos, final int endPos, final boolean contained) {
         verbose("Testing query " + sequence + ":" + startPos + "-" + endPos + " ...");
-        final SAMFileReader reader1 = new SAMFileReader(bamURL, BAM_INDEX_FILE, false);
-        final SAMFileReader reader2 = new SAMFileReader(bamURL, BAM_INDEX_FILE, false);
+        final SamReader reader1 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(SamInputResource.of(bamURL).index(BAM_INDEX_FILE));
+        final SamReader reader2 = SamReaderFactory.makeDefault()
+                .disable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(SamInputResource.of(bamURL).index(BAM_INDEX_FILE));
         final Iterator<SAMRecord> iter1 = reader1.query(sequence, startPos, endPos, contained);
         final Iterator<SAMRecord> iter2 = reader2.iterator();
         // Compare ordered iterators.
@@ -224,8 +233,8 @@ public class BAMRemoteFileTest {
             record1 = null;
             record2 = null;
         }
-        reader1.close();
-        reader2.close();
+        CloserUtil.close(reader1);
+        CloserUtil.close(reader2);
         verbose("Checked " + count1 + " records against " + count2 + " records.");
         verbose("Found " + (count2 - beforeCount - afterCount) + " records matching.");
         verbose("Found " + beforeCount + " records before.");
@@ -239,7 +248,7 @@ public class BAMRemoteFileTest {
             System.out.println("Error: Record erroneously " +
                     (passes ? "passed" : "failed") +
                     " filter.");
-            System.out.println(" Record: " + record.format());
+            System.out.println(" Record: " + record.getSAMString());
             System.out.println(" Filter: " + sequence + ":" +
                     startPos + "-" + endPos +
                     " (" + (contained ? "contained" : "overlapping") + ")");

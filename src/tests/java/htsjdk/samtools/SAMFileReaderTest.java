@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -35,18 +36,19 @@ public class SAMFileReaderTest {
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void variousFormatReaderTest(final String inputFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        final SAMFileReader reader = new SAMFileReader(input);
-        for (final SAMRecord rec: reader) {}
-        reader.close();
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        for (final SAMRecord rec : reader) {
+        }
+        CloserUtil.close(reader);
     }
 
     @DataProvider(name = "variousFormatReaderTestCases")
     public Object[][] variousFormatReaderTestCases() {
-        final Object[][] scenarios = new Object[][] {
-                { "block_compressed.sam.gz"},
-                { "uncompressed.sam"},
-                { "compressed.sam.gz"},
-                { "compressed.bam"},
+        final Object[][] scenarios = new Object[][]{
+                {"block_compressed.sam.gz"},
+                {"uncompressed.sam"},
+                {"compressed.sam.gz"},
+                {"compressed.bam"},
         };
         return scenarios;
     }
@@ -70,15 +72,14 @@ public class SAMFileReaderTest {
     @Test(dataProvider = "variousFormatReaderTestCases")
     public void samRecordFactoryTest(final String inputFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        final SAMFileReader reader = new SAMFileReader(input);
         final SAMRecordFactoryTester factory = new SAMRecordFactoryTester();
-        reader.setSAMRecordFactory(factory);
+        final SamReader reader = SamReaderFactory.makeDefault().samRecordFactory(factory).open(input);
 
-        int i=0;
-        for (final SAMRecord rec: reader) {
+        int i = 0;
+        for (final SAMRecord rec : reader) {
             ++i;
         }
-        reader.close();
+        CloserUtil.close(reader);
 
         Assert.assertTrue(i > 0);
         if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz")) Assert.assertEquals(factory.samRecordsCreated, i);

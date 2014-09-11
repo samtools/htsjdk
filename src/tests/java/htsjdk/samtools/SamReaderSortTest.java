@@ -23,6 +23,7 @@ package htsjdk.samtools;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -42,63 +43,60 @@ public class SamReaderSortTest {
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testSortsDisagree() throws Exception {
-        SAMRecordIterator it = new SAMFileReader(new File(COORDINATE_SORTED_FILE)).iterator();
+        SAMRecordIterator it = SamReaderFactory.makeDefault().open(new File(COORDINATE_SORTED_FILE)).iterator();
         try {
             it.assertSorted(SAMFileHeader.SortOrder.queryname);
-            while(it.hasNext()) {
+            while (it.hasNext()) {
                 it.next();
             }
             Assert.fail("Queryname assertion should have failed on coordinate sorted file but didn't");
-        }
-        finally {
+        } finally {
             it.close();
         }
     }
 
-    @Test(dataProvider="validSorts")
+    @Test(dataProvider = "validSorts")
     public void testSortAssertionValid(String file, SAMFileHeader.SortOrder order) {
-        SAMRecordIterator it = new SAMFileReader(new File(file)).iterator();
+        SAMRecordIterator it = SamReaderFactory.makeDefault().open(new File(file)).iterator();
         try {
             it.assertSorted(order);
             while (it.hasNext()) {
                 it.next();
             }
-        }
-        finally {
+        } finally {
             it.close();
         }
     }
 
-    @DataProvider(name="validSorts")
+    @DataProvider(name = "validSorts")
     public Object[][] getValidSorts() {
-        return new Object[][] {
-            {COORDINATE_SORTED_FILE, SAMFileHeader.SortOrder.coordinate},
-            {QUERYNAME_SORTED_FILE, SAMFileHeader.SortOrder.queryname},
-            {QUERYNAME_SORTED_NO_HEADER_SORT, SAMFileHeader.SortOrder.queryname},
-            {COORDINATE_SORTED_FILE, SAMFileHeader.SortOrder.unsorted}
+        return new Object[][]{
+                {COORDINATE_SORTED_FILE, SAMFileHeader.SortOrder.coordinate},
+                {QUERYNAME_SORTED_FILE, SAMFileHeader.SortOrder.queryname},
+                {QUERYNAME_SORTED_NO_HEADER_SORT, SAMFileHeader.SortOrder.queryname},
+                {COORDINATE_SORTED_FILE, SAMFileHeader.SortOrder.unsorted}
         };
     }
 
 
-    @Test(dataProvider="invalidSorts", expectedExceptions = IllegalStateException.class)
+    @Test(dataProvider = "invalidSorts", expectedExceptions = IllegalStateException.class)
     public void testSortAssertionFails(String file, SAMFileHeader.SortOrder order) throws Exception {
-        SAMRecordIterator it = new SAMFileReader(new File(file)).iterator();
+        SAMRecordIterator it = SamReaderFactory.makeDefault().open(new File(file)).iterator();
         try {
             it.assertSorted(order);
             while (it.hasNext()) {
                 it.next();
             }
             Assert.fail("Iterated successfully over " + file + " with invalid sort assertion: " + order.name());
-        }
-        finally {
+        } finally {
             it.close();
         }
     }
 
-    @DataProvider(name="invalidSorts")
+    @DataProvider(name = "invalidSorts")
     public Object[][] getInvalidSorts() {
-        return new Object[][] {
-            {QUERYNAME_SORTED_NO_HEADER_SORT, SAMFileHeader.SortOrder.coordinate}
+        return new Object[][]{
+                {QUERYNAME_SORTED_NO_HEADER_SORT, SAMFileHeader.SortOrder.coordinate}
         };
     }
 }

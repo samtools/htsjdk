@@ -42,9 +42,9 @@ public class SAMCloneTest {
     @Test
     public void testBasic() throws Exception {
         final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
-        SAMFileReader inputSAM = recordSetBuilder.getSamReader();
+        SamReader inputSAM = recordSetBuilder.getSamReader();
         for (final SAMRecord samRecord : inputSAM) {
-            SAMRecord newRecord = (SAMRecord)samRecord.clone();
+            SAMRecord newRecord = (SAMRecord) samRecord.clone();
             Assert.assertEquals(newRecord, samRecord);
         }
         inputSAM.close();

@@ -63,7 +63,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     public VCFHeaderLineCount getCountType() { return countType; }
     public boolean isFixedCount() { return countType == VCFHeaderLineCount.INTEGER; }
     public int getCount() {
-        if ( ! isFixedCount() )
+        if (!isFixedCount())
             throw new TribbleException("Asking for header line count when type is not an integer");
         return count;
     }
@@ -83,11 +83,15 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @return
      */
     public int getCount(final VariantContext vc) {
-        switch ( countType ) {
-            case INTEGER:       return count;
-            case UNBOUNDED:     return -1;
-            case A:             return vc.getNAlleles() - 1;
-            case R:             return vc.getNAlleles();
+        switch (countType) {
+            case INTEGER:
+                return count;
+            case UNBOUNDED:
+                return -1;
+            case A:
+                return vc.getNAlleles() - 1;
+            case R:
+                return vc.getNAlleles();
             case G:
                 final int ploidy = vc.getMaxPloidy(2);
                 return GenotypeLikelihoods.numLikelihoods(vc.getNAlleles(), ploidy);
@@ -154,21 +158,21 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     protected VCFCompoundHeaderLine(String line, VCFHeaderVersion version, SupportedHeaderLineType lineType) {
         super(lineType.toString(), "");
 
-        final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID","Number","Type","Description"));
-        if ( version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2) )
+        final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
+        if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2))
             expectedTags.add("Version");
-        final Map<String,String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags);
+        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags);
         name = mapping.get("ID");
         count = -1;
         final String numberStr = mapping.get("Number");
-        if ( numberStr.equals(VCFConstants.PER_ALTERNATE_COUNT) ) {
+        if (numberStr.equals(VCFConstants.PER_ALTERNATE_COUNT)) {
             countType = VCFHeaderLineCount.A;
-        } else if ( numberStr.equals(VCFConstants.PER_ALLELE_COUNT) ) {
+        } else if (numberStr.equals(VCFConstants.PER_ALLELE_COUNT)) {
             countType = VCFHeaderLineCount.R;
-        } else if ( numberStr.equals(VCFConstants.PER_GENOTYPE_COUNT) ) {
+        } else if (numberStr.equals(VCFConstants.PER_GENOTYPE_COUNT)) {
             countType = VCFHeaderLineCount.G;
-        } else if ( (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4)) ||
-                    (! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3)) ) {
+        } else if ((version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4)) ||
+                (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3))) {
             countType = VCFHeaderLineCount.UNBOUNDED;
         } else {
             countType = VCFHeaderLineCount.INTEGER;
@@ -176,7 +180,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
 
         }
 
-        if ( count < 0 && countType == VCFHeaderLineCount.INTEGER )
+        if (count < 0 && countType == VCFHeaderLineCount.INTEGER)
             throw new TribbleException.InvalidHeader("Count < 0 for fixed size VCF header field " + name);
 
         try {
@@ -188,26 +192,26 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             throw new IllegalArgumentException("Flag is an unsupported type for this kind of field");
 
         description = mapping.get("Description");
-        if ( description == null && ALLOW_UNBOUND_DESCRIPTIONS ) // handle the case where there's no description provided
+        if (description == null && ALLOW_UNBOUND_DESCRIPTIONS) // handle the case where there's no description provided
             description = UNBOUND_DESCRIPTION;
-        
+
         this.lineType = lineType;
 
         validate();
     }
 
     private void validate() {
-        if ( name == null || type == null || description == null || lineType == null )
-            throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s", 
-                    super.getKey(), name, type, description, lineType ));
-        if ( name.contains("<") || name.contains(">") )
+        if (name == null || type == null || description == null || lineType == null)
+            throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
+                    super.getKey(), name, type, description, lineType));
+        if (name.contains("<") || name.contains(">"))
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
-        if ( name.contains("=") )
+        if (name.contains("="))
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain an equals sign");
 
-        if ( type == VCFHeaderLineType.Flag && count != 0 ) {
+        if (type == VCFHeaderLineType.Flag && count != 0) {
             count = 0;
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+            if (GeneralUtils.DEBUG_MODE_ENABLED) {
                 System.err.println("FLAG fields must have a count value of 0, but saw " + count + " for header line " + getID() + ". Changing it to 0 inside the code");
             }
         }
@@ -218,16 +222,25 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @return a string representation
      */
     protected String toStringEncoding() {
-        Map<String,Object> map = new LinkedHashMap<String,Object>();
+        Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("ID", name);
         Object number;
-        switch ( countType ) {
-            case A: number = VCFConstants.PER_ALTERNATE_COUNT; break;
-            case R: number = VCFConstants.PER_ALLELE_COUNT; break;
-            case G: number = VCFConstants.PER_GENOTYPE_COUNT; break;
-            case UNBOUNDED: number = VCFConstants.UNBOUNDED_ENCODING_v4; break;
+        switch (countType) {
+            case A:
+                number = VCFConstants.PER_ALTERNATE_COUNT;
+                break;
+            case R:
+                number = VCFConstants.PER_ALLELE_COUNT;
+                break;
+            case G:
+                number = VCFConstants.PER_GENOTYPE_COUNT;
+                break;
+            case UNBOUNDED:
+                number = VCFConstants.UNBOUNDED_ENCODING_v4;
+                break;
             case INTEGER:
-            default: number = count;
+            default:
+                number = count;
         }
         map.put("Number", number);
         map.put("Type", type);
@@ -241,9 +254,9 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @return true if equal
      */
     public boolean equals(Object o) {
-        if ( !(o instanceof VCFCompoundHeaderLine) )
+        if (!(o instanceof VCFCompoundHeaderLine))
             return false;
-        VCFCompoundHeaderLine other = (VCFCompoundHeaderLine)o;
+        VCFCompoundHeaderLine other = (VCFCompoundHeaderLine) o;
         return equalsExcludingDescription(other) &&
                 description.equals(other.description);
     }
@@ -257,7 +270,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     }
 
     public boolean sameLineTypeAndName(VCFCompoundHeaderLine other) {
-        return  lineType == other.lineType &&
+        return lineType == other.lineType &&
                 name.equals(other.name);
     }
 

@@ -16,13 +16,13 @@ public class RemoteURLHelper implements URLHelper {
 
     private URLHelper wrappedHelper;
 
-    public RemoteURLHelper(URL url){
+    public RemoteURLHelper(URL url) {
         String protocol = url.getProtocol().toLowerCase();
-        if(protocol.startsWith("http")){
+        if (protocol.startsWith("http")) {
             this.wrappedHelper = new HTTPHelper(url);
-        }else if(protocol.startsWith("ftp")){
+        } else if (protocol.startsWith("ftp")) {
             this.wrappedHelper = new FTPHelper(url);
-        }else{
+        } else {
             throw new IllegalArgumentException("Unable to create helper for url with protocol " + protocol);
         }
     }
@@ -43,6 +43,7 @@ public class RemoteURLHelper implements URLHelper {
     }
 
     @Override
+    @Deprecated
     public InputStream openInputStreamForRange(long start, long end) throws IOException {
         return this.wrappedHelper.openInputStreamForRange(start, end);
     }

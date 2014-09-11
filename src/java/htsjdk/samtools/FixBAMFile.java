@@ -23,15 +23,15 @@
 package htsjdk.samtools;
 
 
+import htsjdk.samtools.util.CloserUtil;
+
 import java.io.File;
 
-public class FixBAMFile
-{
+public class FixBAMFile {
     public static void main(String[] args) {
         File inputFile = new File(args[0]);
         File outputFile = new File(args[1]);
-        SAMFileReader reader = new SAMFileReader(inputFile);
-        reader.setValidationStringency(ValidationStringency.SILENT);
+        SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(inputFile);
         SAMFileHeader header = reader.getFileHeader();
         SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile);
         for (SAMRecord record : reader) {
@@ -41,5 +41,6 @@ public class FixBAMFile
             writer.addAlignment(record);
         }
         writer.close();
+        CloserUtil.close(reader);
     }
 }

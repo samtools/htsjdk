@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -31,13 +32,6 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -48,13 +42,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -669,12 +658,13 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         return source.endsWith(".bam") || source.contains(".bam?") || source.contains(".bam&") || source.contains(".bam%26");
     }
 
-    private void init(final InputStream stream, final File file, final File indexFile, final boolean eagerDecode, final ValidationStringency validationStringency) {
+    private void init(final InputStream stream, File file, final File indexFile, final boolean eagerDecode,
+                      final ValidationStringency validationStringency) {
         if (stream != null && file != null) throw new IllegalArgumentException("stream and file are mutually exclusive");
         this.samFile = file;
 
         try {
-            final BufferedInputStream bufferedStream;
+            BufferedInputStream bufferedStream;
             // Buffering is required because mark() and reset() are called on the input stream.
             final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
             if (file != null) bufferedStream = new BufferedInputStream(new FileInputStream(file), bufferSize);
@@ -694,6 +684,14 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             } else if (isGzippedSAMFile(bufferedStream)) {
                 mIsBinary = false;
                 mReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+            } else if (CramIO.isCRAM(bufferedStream)) {
+                if (file == null || !file.isFile()) {
+                    file = null;
+                } else {
+                    bufferedStream.close();
+                    bufferedStream = null;
+                }
+                mReader = new CRAMFileReader(file, bufferedStream);
             } else if (isSAMFile(bufferedStream)) {
                 if (indexFile != null) {
                     bufferedStream.close();

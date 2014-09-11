@@ -45,7 +45,7 @@ public class SAMTextWriterTest {
     @Test
     public void testBasic() throws Exception {
         final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
-        SAMFileReader inputSAM = recordSetBuilder.getSamReader();
+        SamReader inputSAM = recordSetBuilder.getSamReader();
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
         final Map<String, Object> tagMap = new HashMap<String, Object>();
@@ -69,7 +69,7 @@ public class SAMTextWriterTest {
             inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
         }
 
-        final SAMFileReader newSAM = new SAMFileReader(samFile);
+        final SamReader newSAM = SamReaderFactory.makeDefault().open(samFile);
         Assert.assertEquals(newSAM.getFileHeader(), inputSAM.getFileHeader());
         final Iterator<SAMRecord> inputIt = inputSAM.iterator();
         final Iterator<SAMRecord> newSAMIt = newSAM.iterator();
@@ -90,6 +90,6 @@ public class SAMTextWriterTest {
             Assert.assertEquals(newSAMRecord, inputSAMRecord);
         }
         Assert.assertFalse(newSAMIt.hasNext());
+        inputSAM.close();
     }
-
 }

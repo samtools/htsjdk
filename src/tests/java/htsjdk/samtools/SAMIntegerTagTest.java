@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -49,22 +50,22 @@ public class SAMIntegerTagTest {
     public void testBAM() throws Exception {
         final SAMRecord rec = writeAndReadSamRecord("bam");
         Assert.assertTrue(rec.getAttribute(BYTE_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(BYTE_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(BYTE_TAG)).intValue(), 1);
         Assert.assertTrue(rec.getAttribute(SHORT_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(SHORT_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(SHORT_TAG)).intValue(), 1);
         Assert.assertTrue(rec.getAttribute(INTEGER_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(INTEGER_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(INTEGER_TAG)).intValue(), 1);
     }
 
     @Test
     public void testSAM() throws Exception {
         final SAMRecord rec = writeAndReadSamRecord("sam");
         Assert.assertTrue(rec.getAttribute(BYTE_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(BYTE_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(BYTE_TAG)).intValue(), 1);
         Assert.assertTrue(rec.getAttribute(SHORT_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(SHORT_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(SHORT_TAG)).intValue(), 1);
         Assert.assertTrue(rec.getAttribute(INTEGER_TAG) instanceof Integer);
-        Assert.assertEquals(((Number)rec.getAttribute(INTEGER_TAG)).intValue(), 1);
+        Assert.assertEquals(((Number) rec.getAttribute(INTEGER_TAG)).intValue(), 1);
     }
 
     @Test(expectedExceptions = SAMException.class)
@@ -135,13 +136,14 @@ public class SAMIntegerTagTest {
 
     /**
      * Create a SAMRecord with integer tags of various sizes, write to a file, and read it back.
+     *
      * @param format "sam" or "bam".
      * @return The record after having being read from file.
      */
     private SAMRecord writeAndReadSamRecord(final String format) throws IOException {
         SAMRecord rec = createSamRecord();
-        rec.setAttribute(BYTE_TAG, (byte)1);
-        rec.setAttribute(SHORT_TAG, (short)1);
+        rec.setAttribute(BYTE_TAG, (byte) 1);
+        rec.setAttribute(SHORT_TAG, (short) 1);
         rec.setAttribute(INTEGER_TAG, 1);
         rec = writeAndReadSamRecord(format, rec);
         return rec;
@@ -149,8 +151,9 @@ public class SAMIntegerTagTest {
 
     /**
      * Write a SAMRecord to a SAM file in the given format, and read it back.
+     *
      * @param format "sam" or "bam".
-     * @param rec The record to write.
+     * @param rec    The record to write.
      * @return The same record, after having being written and read back.
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
@@ -158,7 +161,7 @@ public class SAMIntegerTagTest {
         final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(rec.getHeader(), false, bamFile);
         bamWriter.addAlignment(rec);
         bamWriter.close();
-        final SAMFileReader reader = new SAMFileReader(bamFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         rec = reader.iterator().next();
         reader.close();
         bamFile.delete();
@@ -173,14 +176,16 @@ public class SAMIntegerTagTest {
 
     @Test(expectedExceptions = {SAMFormatException.class})
     public void testBadSamStrict() {
-        final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, "variousAttributes.sam"));
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "variousAttributes.sam"));
         reader.iterator().next();
         Assert.fail("Should not reach.");
     }
 
     @Test(expectedExceptions = {RuntimeException.class})
     public void testBadBamStrict() {
-        final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, "variousAttributes.bam"), true);
+        final SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .open(new File(TEST_DATA_DIR, "variousAttributes.bam"));
         reader.iterator().next();
         Assert.fail("Should not reach.");
 
@@ -188,8 +193,11 @@ public class SAMIntegerTagTest {
 
     @Test
     public void testBadBamLenient() {
-        final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, "variousAttributes.bam"), true);
-        reader.setValidationStringency(ValidationStringency.LENIENT);
+        final SamReader reader = SamReaderFactory.makeDefault()
+                .enable(SamReaderFactory.Option.EAGERLY_DECODE)
+                .validationStringency(ValidationStringency.LENIENT)
+                .open(new File(TEST_DATA_DIR, "variousAttributes.bam"));
+
         final SAMRecord rec = reader.iterator().next();
         final Map<String, Number> expectedTags = new HashMap<String, Number>();
         expectedTags.put("SB", -128);
@@ -203,6 +211,6 @@ public class SAMIntegerTagTest {
             final Object value = rec.getAttribute(entry.getKey());
             Assert.assertEquals(value, entry.getValue());
         }
-        reader.close();
+        CloserUtil.close(reader);
     }
 }

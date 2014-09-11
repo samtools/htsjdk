@@ -1771,5 +1771,18 @@ public class SAMRecord implements Cloneable
     public String getSAMString() {
         return SAMTextWriter.getSAMString(this);
     }
+
+    public String getPairedReadName() {
+        final StringBuilder builder = new StringBuilder(64);
+        builder.append(getReadName());
+        if (getReadPairedFlag()) {
+            if (getFirstOfPairFlag()) {
+                builder.append(" 1/2");
+            } else {
+                builder.append(" 2/2");
+            }
+        }
+        return builder.toString();
+    }
 }
 

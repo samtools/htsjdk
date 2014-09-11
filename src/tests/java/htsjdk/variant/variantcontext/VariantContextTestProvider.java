@@ -881,7 +881,7 @@ public class VariantContextTestProvider {
         Assert.assertEquals(actual.getLikelihoods(), expected.getLikelihoods(), "Genotype getLikelihoods");
         Assert.assertTrue(Arrays.equals(actual.getPL(), expected.getPL()));
 
-        Assert.assertEquals(actual.getPhredScaledQual(), expected.getPhredScaledQual(), "Genotype phredScaledQual");
+        Assert.assertEquals(actual.getGQ(), expected.getGQ(), "Genotype phredScaledQual");
         assertAttributesEquals(actual.getExtendedAttributes(), expected.getExtendedAttributes());
         Assert.assertEquals(actual.isPhased(), expected.isPhased(), "Genotype isPhased");
         Assert.assertEquals(actual.getPloidy(), expected.getPloidy(), "Genotype getPloidy");
