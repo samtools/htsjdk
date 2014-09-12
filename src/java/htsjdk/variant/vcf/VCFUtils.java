@@ -39,36 +39,39 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class VCFUtils {
 
-    public static Set<VCFHeaderLine> smartMergeHeaders(Collection<VCFHeader> headers, boolean emitWarnings) throws IllegalStateException {
-        HashMap<String, VCFHeaderLine> map = new HashMap<String, VCFHeaderLine>(); // from KEY.NAME -> line
-        HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
+    public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
+        // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
+        // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
+        final TreeMap<String, VCFHeaderLine> map = new TreeMap<String, VCFHeaderLine>(); // from KEY.NAME -> line
+        final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
 
         // todo -- needs to remove all version headers from sources and add its own VCF version line
-        for ( VCFHeader source : headers ) {
+        for ( final VCFHeader source : headers ) {
             //System.out.printf("Merging in header %s%n", source);
-            for ( VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
+            for ( final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
 
                 String key = line.getKey();
                 if ( line instanceof VCFIDHeaderLine )
                     key = key + "-" + ((VCFIDHeaderLine)line).getID();
 
                 if ( map.containsKey(key) ) {
-                    VCFHeaderLine other = map.get(key);
+                    final VCFHeaderLine other = map.get(key);
                     if ( line.equals(other) ) {
                         // continue;
                     } else if ( ! line.getClass().equals(other.getClass()) ) {
                         throw new IllegalStateException("Incompatible header types: " + line + " " + other );
                     } else if ( line instanceof VCFFilterHeaderLine ) {
-                        String lineName = ((VCFFilterHeaderLine) line).getID();
-                        String otherName = ((VCFFilterHeaderLine) other).getID();
+                        final String lineName = ((VCFFilterHeaderLine) line).getID();
+                        final String otherName = ((VCFFilterHeaderLine) other).getID();
                         if ( ! lineName.equals(otherName) )
                             throw new IllegalStateException("Incompatible header types: " + line + " " + other );
                     } else if ( line instanceof VCFCompoundHeaderLine ) {
-                        VCFCompoundHeaderLine compLine = (VCFCompoundHeaderLine)line;
-                        VCFCompoundHeaderLine compOther = (VCFCompoundHeaderLine)other;
+                        final VCFCompoundHeaderLine compLine = (VCFCompoundHeaderLine)line;
+                        final VCFCompoundHeaderLine compOther = (VCFCompoundHeaderLine)other;
 
                         // if the names are the same, but the values are different, we need to quit
                         if (! (compLine).equalsExcludingDescription(compOther) ) {
@@ -103,8 +106,8 @@ public class VCFUtils {
                 }
             }
         }
-
-        return new HashSet<VCFHeaderLine>(map.values());
+        // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
+        return new LinkedHashSet<VCFHeaderLine>(map.values());
     }
 
     /**
@@ -122,7 +125,7 @@ public class VCFUtils {
         return withUpdatedContigsAsLines(oldLines, referenceFile, refDict, false);
     }
 
-    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, boolean referenceNameOnly) {
+    public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, final boolean referenceNameOnly) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>(oldLines.size());
 
         for ( final VCFHeaderLine line : oldLines ) {
@@ -136,10 +139,10 @@ public class VCFUtils {
         for ( final VCFHeaderLine contigLine : makeContigHeaderLines(refDict, referenceFile) )
             lines.add(contigLine);
 
-        String referenceValue;
+        final String referenceValue;
         if (referenceFile != null) {
             if (referenceNameOnly) {
-                int extensionStart = referenceFile.getName().lastIndexOf(".");
+                final int extensionStart = referenceFile.getName().lastIndexOf(".");
                 referenceValue = extensionStart == -1 ? referenceFile.getName() : referenceFile.getName().substring(0, extensionStart);
             }
             else {
@@ -160,7 +163,7 @@ public class VCFUtils {
                                                                   final File referenceFile) {
         final List<VCFContigHeaderLine> lines = new ArrayList<VCFContigHeaderLine>();
         final String assembly = referenceFile != null ? getReferenceAssembly(referenceFile.getName()) : null;
-        for ( SAMSequenceRecord contig : refDict.getSequences() )
+        for ( final SAMSequenceRecord contig : refDict.getSequences() )
             lines.add(makeContigHeaderLine(contig, assembly));
         return lines;
     }

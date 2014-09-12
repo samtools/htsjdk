@@ -46,6 +46,9 @@ import java.io.StringBufferInputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by IntelliJ IDEA.
@@ -93,6 +96,23 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             Assert.assertEquals(vcfRecord.getSampleNames().size(), 1, "Wrong number of samples in vcf record after remapping");
             Assert.assertEquals(vcfRecord.getSampleNames().iterator().next(), "FOOSAMPLE", "Wrong sample in vcf record after remapping");
         }
+    }
+
+    @Test
+    public void testVCFHeaderDictionaryMerging() {
+        VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false).getFileHeader();
+        VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
+        final List<String> sampleList = new ArrayList<String>();
+        sampleList.addAll(headerOne.getSampleNamesInOrder());
+
+        // Check that the two dictionaries start out the same
+        headerOne.getSequenceDictionary().assertSameDictionary(headerTwo.getSequenceDictionary());
+
+        // Run the merge command
+        final VCFHeader mergedHeader = new VCFHeader(VCFUtils.smartMergeHeaders(Arrays.asList(headerOne, headerTwo), false), sampleList);
+
+        // Check that the mergedHeader's sequence dictionary matches the first two
+        mergedHeader.getSequenceDictionary().assertSameDictionary(headerOne.getSequenceDictionary());
     }
 
     @Test(expectedExceptions = TribbleException.class)
