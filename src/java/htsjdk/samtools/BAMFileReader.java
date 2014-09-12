@@ -639,7 +639,7 @@ class BAMFileReader extends SAMFileReader.ReaderImplementation {
                     mNextRecord.setValidationStringency(mValidationStringency);
 
                     if (mValidationStringency != ValidationStringency.SILENT) {
-                        final List<SAMValidationError> validationErrors = mNextRecord.isValid();
+                        final List<SAMValidationError> validationErrors = mNextRecord.isValid(mValidationStringency == ValidationStringency.STRICT);
                         SAMUtils.processValidationErrors(validationErrors,
                                 this.samRecordIndex, BAMFileReader.this.getValidationStringency());
                     }
