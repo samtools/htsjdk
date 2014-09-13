@@ -88,7 +88,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     /**
      * The unit of iteration.  Holds the locus, plus a ReadAndOffset for each read that overlaps the locus
      */
-    public static class LocusInfo implements Locus {
+    public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
         private final int position;
         private final List<RecordAndOffset> recordAndOffsets = new ArrayList<RecordAndOffset>(100);
@@ -357,32 +357,34 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      */
     private void accumulateSamRecord(final SAMRecord rec) {
         final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
-        final int alignmentStart = rec.getAlignmentStart();
-        final int alignmentEnd   = rec.getAlignmentEnd();
-        final int length = alignmentEnd - alignmentStart;
+        final int alignmentStart  = rec.getAlignmentStart();
+        final int alignmentEnd    = rec.getAlignmentEnd();
+        final int alignmentLength = alignmentEnd - alignmentStart;
 
         // Ensure there are LocusInfos up to and including this position
-        for (int i=accumulator.size(); i<=length; ++i) {
+        for (int i=accumulator.size(); i<=alignmentLength; ++i) {
             accumulator.add(new LocusInfo(ref, alignmentStart + i));
         }
 
+        final int minQuality = getQualityScoreCutoff();
+        final boolean dontCheckQualities = minQuality == 0;
+        final byte[] baseQualities = dontCheckQualities ? null : rec.getBaseQualities();
+
         // interpret the CIGAR string and add the base info
         for(final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
-            final int readStart = alignmentBlock.getReadStart();
-            final int refStart = alignmentBlock.getReferenceStart();
+            final int readStart   = alignmentBlock.getReadStart();
+            final int refStart    = alignmentBlock.getReferenceStart();
+            final int blockLength = alignmentBlock.getLength();
 
-            for (int i = 0; i < alignmentBlock.getLength(); ++i) {
+            for (int i=0; i<blockLength; ++i) {
                 // 0-based offset into the read of the current base
                 final int readOffset = readStart + i - 1;
-                // 1-based reference position that the current base aligns to
-                final int refPos = refStart + i;
 
-                // 0-based offset from the aligned position of the first base in the read to the aligned position
-                // of the current base.
-                final int refOffset =  refPos - alignmentStart;
+                // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
+                final int refOffset =  refStart + i - alignmentStart;
 
                 // if the quality score cutoff is met, accumulate the base info
-                if (rec.getBaseQualities()[readOffset] >= getQualityScoreCutoff()) {
+                if (dontCheckQualities || baseQualities[readOffset] >= minQuality) {
                     accumulator.get(refOffset).add(rec, readOffset);
                 }
             }
