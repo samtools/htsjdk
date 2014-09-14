@@ -54,7 +54,8 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     private static final Log LOG = Log.getInstance(SamLocusIterator.class);
 
     /**
-     * A SAMRecord plus the zero-based offset in the read corresponding to the position in LocusInfo
+     * Holds a SAMRecord plus the zero-based offset into that SAMRecord's bases and quality scores that corresponds
+     * to the base and quality at the genomic position described the containing LocusInfo.
      */
     public static class RecordAndOffset {
         private final SAMRecord record;
@@ -65,28 +66,16 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             this.record = record;
         }
 
-        /**
-         * Zero-based offset into the read corresonding to the current position in LocusInfo
-         */
-        public int getOffset() {
-            return offset;
-        }
-
-        public SAMRecord getRecord() {
-            return record;
-        }
-
-        public byte getReadBase() {
-            return record.getReadBases()[offset];
-        }
-
-        public byte getBaseQuality() {
-            return record.getBaseQualities()[offset];
-        }
+        /** Zero-based offset into the read corresponding to the current position in LocusInfo */
+        public int getOffset() { return offset; }
+        public SAMRecord getRecord() { return record; }
+        public byte getReadBase() { return record.getReadBases()[offset]; }
+        public byte getBaseQuality() { return record.getBaseQualities()[offset]; }
     }
 
     /**
-     * The unit of iteration.  Holds the locus, plus a ReadAndOffset for each read that overlaps the locus
+     * The unit of iteration.  Holds information about the locus (the SAMSequenceRecord and 1-based position
+     * on the reference), plus List of ReadAndOffset objects, one for each read that overlaps the locus
      */
     public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
@@ -98,31 +87,18 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             this.position = position;
         }
 
-        /**
-         * Accumulate info for one read at the locus.
-         */
+        /** Accumulate info for one read at the locus. */
         public void add(final SAMRecord read, final int position) {
             recordAndOffsets.add(new RecordAndOffset(read, position));
         }
 
         public int getSequenceIndex() { return referenceSequence.getSequenceIndex(); }
 
-        /**
-         * @return 1-based reference position
-         */
+        /** @return 1-based reference position */
         public int getPosition() { return position; }
-
-        public List<RecordAndOffset> getRecordAndPositions() {
-            return Collections.unmodifiableList(recordAndOffsets);
-        }
-
+        public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
         public String getSequenceName() { return referenceSequence.getSequenceName(); }
-
-        @Override
-        public String toString() {
-            return referenceSequence.getSequenceName() + ":" + position;
-        }
-
+        @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
         public int getSequenceLength(){return referenceSequence.getSequenceLength();}
     }
 
@@ -136,11 +112,24 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     private final List<Interval> intervals;
     private final boolean useIndex;
 
-    // LocusInfos on this list are ready to be returned by iterator.  All reads that overlap
-    // the locus have been accumulated before the LocusInfo is moved into this list.
+    /**
+     * LocusInfos on this list are ready to be returned by iterator.  All reads that overlap
+     * the locus have been accumulated before the LocusInfo is moved into this list.
+     */
     private final ArrayList<LocusInfo> complete = new ArrayList<LocusInfo>(100);
 
-    // LocusInfos for which accumulation is in progress
+    /**
+     * LocusInfos for which accumulation is in progress.  When {@link #accumulateSamRecord(SAMRecord)} is called
+     * the state of this list is guaranteed to be either:
+     *   a) Empty, or
+     *   b) That the element at index 0 corresponds to the same genomic locus as the first aligned base
+     *      in the read being accumulated
+     *
+     * Before each new read is accumulated the accumulator is examined and:
+     *   i) any LocusInfos at positions earlier than the read start are moved to {@link #complete}
+     *   ii) any uncovered positions between the last LocusInfo and the first aligned base of the new read
+     *       have LocusInfos created and added to {@link #complete} if we are emitting uncovered loci
+     */
     private final ArrayList<LocusInfo> accumulator = new ArrayList<LocusInfo>(100);
 
     private int qualityScoreCutoff = Integer.MIN_VALUE;
@@ -238,8 +227,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     }
 
     /**
-     * @return true if there are more aligned reads in the SAM file, LocusInfos in some stage of accumulation,
-     * or loci in the target mask that have yet to be covered.
+     * Returns true if there are more LocusInfo objects that can be returned, due to any of the following reasons:
+     *   1) there are more aligned reads in the SAM file
+     *   2) there are LocusInfos in some stage of accumulation
+     *   3) there are loci in the target mask that have yet to be accumulated (even if there are no reads covering them)
      */
     public boolean hasNext() {
         if (this.samIterator == null) {
@@ -256,7 +247,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     }
 
     /**
-     * @return true if there are loci in the target mask that have yet to be covered by LocusInfos
+     * Returns true if there are more bases at which the locus iterator must emit LocusInfos because
+     * there are loci beyond the last emitted loci which are in the set of loci to be emitted and
+     * the iterator is setup to emit uncovered loci - so we can guarantee we'll emit those loci.
      */
     private boolean hasRemainingMaskBases() {
         // if there are more sequences in the mask, by definition some of them must have
@@ -405,8 +398,6 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 return null;
             }
 
-
-
             final int nextbit = referenceSequenceMask.nextPosition(lastReferenceSequence, lastPosition);
 
             // try the next reference sequence
@@ -418,14 +409,14 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 }
                 lastReferenceSequence++;
                 lastPosition = 0;
-            } else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex() ||
-                    nextbit < stopBeforeLocus.getPosition()) {
+            }
+            else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex() || nextbit < stopBeforeLocus.getPosition()) {
                 lastPosition = nextbit;
                 return new LocusInfo(getReferenceSequence(lastReferenceSequence), lastPosition);
-            } else if (nextbit >= stopBeforeLocus.getPosition()) {
+            }
+            else if (nextbit >= stopBeforeLocus.getPosition()) {
                 return null;
             }
-
         }
 
         return null;
