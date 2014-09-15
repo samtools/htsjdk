@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Map;
 
 public class Slice {
+	public static final int UNMAPPED_OR_NOREF = -1 ;
+	public static final int MUTLIREF = -2 ;
 	private static final Log log = Log.getInstance(Slice.class);
 
 	// as defined in the specs:

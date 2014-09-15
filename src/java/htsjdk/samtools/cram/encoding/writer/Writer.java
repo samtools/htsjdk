@@ -31,7 +31,6 @@ import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingKey;
-import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
 import java.io.IOException;

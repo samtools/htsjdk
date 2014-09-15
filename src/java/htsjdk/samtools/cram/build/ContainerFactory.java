@@ -137,48 +137,56 @@ public class ContainerFactory {
 		Slice slice = new Slice();
 		slice.nofRecords = records.size();
 
-		int[] seqIds = new int[fileHeader.getSequenceDictionary().size()];
-		int minAlStart = Integer.MAX_VALUE;
-		int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
+		{
 
-		for (CramCompressionRecord r : records) {
-			slice.bases += r.readLength;
+			// @formatter:off
+			/*
+			 * 1) Count slice bases. 
+			 * 2) Decide if the slice is single ref, unmapped or multiref. 
+			 * 3) Detect alignment boundaries for the slice if not multiref.
+			 */
+			// @formatter:on
+			slice.sequenceId = Slice.UNMAPPED_OR_NOREF;
+			int minAlStart = Integer.MAX_VALUE;
+			int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
+			for (CramCompressionRecord r : records) {
+				slice.bases += r.readLength;
 
-			int alStart = r.alignmentStart;
-			if (alStart != SAMRecord.NO_ALIGNMENT_START && r.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-				seqIds[r.sequenceId]++;
+				if (slice.sequenceId != Slice.MUTLIREF
+						&& r.alignmentStart != SAMRecord.NO_ALIGNMENT_START
+						&& r.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+					switch (slice.sequenceId) {
+					case Slice.UNMAPPED_OR_NOREF:
+						slice.sequenceId = r.sequenceId;
+						break;
+					case Slice.MUTLIREF:
+						break;
 
-//				if (alStart != SAMRecord.NO_ALIGNMENT_START) {
-					minAlStart = Math.min(alStart, minAlStart);
+					default:
+						if (slice.sequenceId != r.sequenceId)
+							slice.sequenceId = Slice.UNMAPPED_OR_NOREF;
+						break;
+					}
+
+					minAlStart = Math.min(r.alignmentStart, minAlStart);
 					maxAlEnd = Math.max(r.getAlignmentEnd(), maxAlEnd);
-//				}
-			}
-		}
-
-		int seqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-		boolean singleSeqId = true;
-		for (int i = 0; i < seqIds.length && singleSeqId; i++) {
-			if (seqIds[i] >= 0) {
-				seqId = i++;
-				for (; i < seqIds.length && singleSeqId; i++) {
-					if (seqIds[i] > 0)
-						singleSeqId = false;
 				}
 			}
+
+			/*
+			 * Set the slice boundaries if the slice have records mapped to a
+			 * single ref.
+			 */
+			if (slice.sequenceId == Slice.MUTLIREF
+					|| minAlStart == Integer.MAX_VALUE) {
+				slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+				slice.alignmentSpan = 0;
+			} else {
+				slice.alignmentStart = minAlStart;
+				slice.alignmentSpan = maxAlEnd - minAlStart + 1;
+			}
 		}
 
-		if (!singleSeqId)
-			throw new RuntimeException("Multiref slices are not supported.");
-
-		slice.sequenceId = seqId;
-		if (minAlStart == Integer.MAX_VALUE) {
-			slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-			slice.alignmentSpan = 0;
-		} else {
-			slice.alignmentStart = minAlStart;
-			slice.alignmentSpan = maxAlEnd - minAlStart+1;
-		}
-		
 		Writer writer = f.buildWriter(bos, map, h, slice.sequenceId);
 		int prevAlStart = slice.alignmentStart;
 		for (CramCompressionRecord r : records) {
