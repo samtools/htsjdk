@@ -46,7 +46,7 @@
     </exec>
     <property name="repository.revision" value=""/>
     <property name="htsjdk-version" value="1.120"/>
-    <property name="htsjdk-version-xml" value="htsjdk.version.property.xml"/>
+    <property name="htsjdk-version-xml" value="htsjdk.version.properties"/>
     <property name="testng.verbosity" value="2"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
 
