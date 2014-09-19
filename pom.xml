@@ -23,7 +23,7 @@
   
   <name>HTS JDK</name>
   <description>A Java API for high-throughput sequencing data (HTS) formats.</description>
-  <url>http://picard.sourceforge.net/index.shtml</url>
+  <url>samtools.github.io/htsjdk</url>
   <inceptionYear>2009</inceptionYear>
   <licenses>
     <license>
