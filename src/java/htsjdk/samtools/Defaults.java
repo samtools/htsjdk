@@ -41,6 +41,13 @@ public class Defaults {
      * writing SAM files (ex. CRAM).
      */
     public static final File REFERENCE_FASTA;
+    
+    /** Custom reader factory able to handle URL based resources like ga4gh.
+     *  Expected format: <url prefix>,<fully qualified factory class name>[,<jar file name>]
+     *  E.g. https://www.googleapis.com/genomics/v1beta/reads/,com.google.genomics.ReaderFactory
+     *  OR https://www.googleapis.com/genomics/v1beta/reads/,com.google.genomics.ReaderFactory,/tmp/genomics.jar
+     */
+    public static final String CUSTOM_READER_FACTORY;
 
     static {
         CREATE_INDEX      = getBooleanProperty("create_index", false);
@@ -56,6 +63,7 @@ public class Defaults {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
         REFERENCE_FASTA   = getFileProperty("reference_fasta", null);
+        CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
     }
 
     /** Gets a string system property, prefixed with "samjdk." using the default if the property does not exist.*/
