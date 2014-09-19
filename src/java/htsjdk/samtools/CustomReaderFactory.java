@@ -23,8 +23,6 @@
  */
 package htsjdk.samtools;
 
-import sun.reflect.Reflection;
-
 import htsjdk.samtools.util.Log;
 
 import java.net.URL;
