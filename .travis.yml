@@ -4,3 +4,11 @@ jdk:
   - oraclejdk8
   - openjdk7
   - openjdk6
+env:
+  global:
+    - SONATYPE_USERNAME=nhomer
+    - secure: "aLYLEqAIFdJqhZzEqxr0uMhRVqb1p/eQtoK3pDfBu5M9deCgsuANMHedbkwpPPVhTT1Pey87IjSb8n6MoirxszZ7UjobOmAjfOgwPUv1eFu23DgTlNXVnroypR72ZkWQ3FnVQZtRqIJR9w6JvYREFTlQLu8BvjBR5B0hM9OhYZU="
+
+after_success:
+  - python addServer.py
+  - "[[ $TRAVIS_BRANCH == \"nh_sonatype_testing\" ]] && { python src/scripts/addServer.py; mvn clean deploy --settings ~/.m2/mySettings.xml; };"
