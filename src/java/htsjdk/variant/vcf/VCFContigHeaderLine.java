@@ -28,7 +28,7 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TribbleException;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -59,7 +59,8 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
     }
 
 	VCFContigHeaderLine(final SAMSequenceRecord sequenceRecord, final String assembly) {
-		super(VCFHeader.CONTIG_KEY, new HashMap<String, String>() {{
+        // Using LinkedHashMap to preserve order of keys in contig line (ID, length, assembly)
+        super(VCFHeader.CONTIG_KEY, new LinkedHashMap<String, String>() {{
 			// Now inside an init block in an anon HashMap subclass
 			this.put("ID", sequenceRecord.getSequenceName());
 			this.put("length", Integer.toString(sequenceRecord.getSequenceLength()));
@@ -76,6 +77,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
 		final String lengthString = this.getGenericFieldValue("length");
 		if (lengthString == null) throw new TribbleException("Contig " + this.getID() + " does not have a length field.");
 		final SAMSequenceRecord record = new SAMSequenceRecord(this.getID(), Integer.valueOf(lengthString));
+        record.setAssembly(this.getGenericFieldValue("assembly"));
 		record.setSequenceIndex(this.contigIndex);
 		return record;
 	}
