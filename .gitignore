@@ -10,4 +10,4 @@ intellij.testclasses
 intellij.classes
 
 /bin
-/htsjdk.version.property.xml
+/htsjdk.version.properties
