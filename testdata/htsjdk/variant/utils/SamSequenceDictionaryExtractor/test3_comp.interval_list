@@ -1,0 +1,24 @@
+@HD	VN:1.0	SO:queryname
+@SQ	SN:Pf3D7_01	LN:643292	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:6a7e6510bdae0ad38e8bc3aa1adf537f	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_02	LN:947102	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:d34154a67b6b8e10d2d7aea3c83e09e7	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_03	LN:1060087	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:468c14169020248f4e41799de3a4bef5	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_04	LN:1204112	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:9b74fcd8d379f3763a31050acf098f3a	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_05	LN:1343552	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:3d84171954a6768f2a9d93796fe58d9a	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_06	LN:1418244	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:d2f87cf0c3570ae0da5dfd71bd4c506a	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_07	LN:1501717	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:493245de8db9737efb5ce128e6b65661	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_08	LN:1419563	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:1878bd1367b051daff937555e44f41b7	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_09	LN:1541723	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:87f4b581b5db461261b36b5344fe9df4	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_10	LN:1687655	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:a13945591ca5a84710655be93c75d623	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_11	LN:2038337	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:909466c6a0faec815f63b21047beea15	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_12	LN:2271478	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:c4427f71425a56c2e6325089b6bc2b7d	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_13	LN:2895605	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:5c761a4674f0363bb789b5a982952bfc	SP:Plasmodium falciparum
+@SQ	SN:Pf3D7_14	LN:3291871	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:03d21468ae712ffe4f1c62d54e4c2e2a	SP:Plasmodium falciparum
+@SQ	SN:M76611	LN:5967	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:ae96d861208f8c5912393e1441319d64	SP:Plasmodium falciparum
+@SQ	SN:PFC10_API_IRAB	LN:34242	UR:/seq/references/Plasmodium_falciparum_3D7/v3/Plasmodium_falciparum_3D7.fasta	AS:n/a	M5:ea11bbb35c7871b0b47bde08f4e62f59	SP:Plasmodium falciparum
+@RG	ID:61PA6.3	PL:illumina	PU:61PA6AAXX100630.3	LB:Solexa-32208	DT:2010-06-30T00:00:00-0400	SM:Pla HS 07560	CN:BI
+@PG	ID:bwa	PN:bwa	VN:0.5.9-tpx	CL:bwa aln Plasmodium_falciparum_3D7.fasta -q 5 -l 32 -k 2 -t $NSLOTS -o 1 -f illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.Plasmodium_falciparum_3D7.2.sai illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.2.fastq.gz; bwa aln Plasmodium_falciparum_3D7.fasta -q 5 -l 32 -k 2 -t $NSLOTS -o 1 -f illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.Plasmodium_falciparum_3D7.1.sai illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.1.fastq.gz; bwa sampe -t $NSLOTS -T -P -a 487 -f illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.Plasmodium_falciparum_3D7.aligned_bwa.sam Plasmodium_falciparum_3D7.fasta illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.Plasmodium_falciparum_3D7.1.sai illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.Plasmodium_falciparum_3D7.2.sai illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.1.fastq.gz illuminaReadGroupBamScreening.C342.61PA6AAXX100630.3.tagged_908.BI4502710.positive.2.fastq.gz
+Pf3D7_05	1	1	+	interval-1
+Pf3D7_05	1	2	+	interval-2
+Pf3D7_05	3	300	+	interval-3
+Pf3D7_09	25	64	+	interval-4
+Pf3D7_09	1000	1001	+	interval-5

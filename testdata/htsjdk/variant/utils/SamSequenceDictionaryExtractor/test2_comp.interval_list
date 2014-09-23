@@ -1,0 +1,7 @@
+@SQ	SN:chrM	LN:16571	UR:file:/Users/mhanna/src/Sting/Homo_sapiens_assembly18.trimmed.fasta	M5:d2ed829b8a1628d16cbeee88e88e39eb
+@SQ	SN:chr20	LN:1000000	UR:file:/Users/mhanna/src/Sting/Homo_sapiens_assembly18.trimmed.fasta	M5:b4eac854d70893986ac578c53c2324f1
+chr20	1	1	+	interval-1
+chr20	1	2	+	interval-2
+chr20	3	300	+	interval-3
+chrM	25	64	+	interval-4
+chrM	1000	1001	+	interval-5
