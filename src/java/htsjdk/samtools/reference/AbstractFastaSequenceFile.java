@@ -77,9 +77,9 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         for (final String extension : ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
             if (dictionaryName.endsWith(extension)) {
                   dictionaryNameExt = new String(dictionaryName);
-                  dictionaryNameExt += ".dict";
+                  dictionaryNameExt += IOUtil.DICT_FILE_EXTENSION;
                   dictionaryName = dictionaryName.substring(0, dictionaryName.lastIndexOf(extension));
-                  dictionaryName += ".dict";
+                  dictionaryName += IOUtil.DICT_FILE_EXTENSION;
                   fileTypeSupported = true;
                   break;
             }
