@@ -1,3 +1,27 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2014 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -10,6 +34,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
@@ -19,7 +44,6 @@ import java.util.TreeSet;
  * Tests the IntervalList class
  */
 public class IntervalListTest {
-
 
     final SAMFileHeader fileHeader;
 
@@ -294,18 +318,14 @@ public class IntervalListTest {
     }
 
 
-    @DataProvider(name = "subtractData")
-    public Object[][] subtractData() {
-        final IntervalList subtract12_from_3 = new IntervalList(fileHeader);
+    @DataProvider(name = "subtractSingletonData")
+    public Object[][] subtractSingletonData() {
         final IntervalList subtract1_from_2 = new IntervalList(fileHeader);
         final IntervalList subtract2_from_3 = new IntervalList(fileHeader);
         final IntervalList subtract1_from_3 = new IntervalList(fileHeader);
         final IntervalList subtract3_from_1 = new IntervalList(fileHeader);
 
 
-        subtract12_from_3.add(new Interval("1", 201, 201));
-        subtract12_from_3.add(new Interval("2", 401, 600));
-        subtract12_from_3.add(new Interval("3", 50, 470));
 
         subtract1_from_2.add(new Interval("1", 301, 500));
         subtract1_from_2.add(new Interval("2", 1, 99));
@@ -329,10 +349,23 @@ public class IntervalListTest {
 
 
         return new Object[][]{
+                new Object[]{list2, list1, subtract1_from_2},
+                new Object[]{list3, list2, subtract2_from_3},
+                new Object[]{list3, list1, subtract1_from_3},
+        };
+    }
+
+    @DataProvider(name = "subtractData")
+    public Object[][] subtractData() {
+        final IntervalList subtract12_from_3 = new IntervalList(fileHeader);
+
+        subtract12_from_3.add(new Interval("1", 201, 201));
+        subtract12_from_3.add(new Interval("2", 401, 600));
+        subtract12_from_3.add(new Interval("3", 50, 470));
+
+
+        return new Object[][]{
                 new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list1, list2), subtract12_from_3},
-                new Object[]{CollectionUtil.makeList(list2), CollectionUtil.makeList(list1), subtract1_from_2},
-                new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list2), subtract2_from_3},
-                new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list1), subtract1_from_3},
         };
     }
 
@@ -344,6 +377,21 @@ public class IntervalListTest {
                 CollectionUtil.makeCollection(list.iterator()));
     }
 
+    @Test(dataProvider = "subtractSingletonData")
+    public void testSubtractSingletonIntervalLists(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.subtract(fromLists, whatLists).iterator()),
+                CollectionUtil.makeCollection(list.iterator()));
+    }
+
+
+
+    @Test(dataProvider = "subtractSingletonData")
+    public void testSubtractSingletonasListIntervalList(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.subtract(Collections.singletonList(fromLists), Collections.singletonList(whatLists)).iterator()),
+                CollectionUtil.makeCollection(list.iterator()));
+    }
 
     @DataProvider(name = "VCFCompData")
     public Object[][] VCFCompData() {
@@ -385,6 +433,23 @@ public class IntervalListTest {
         //assert that the names match
         Assert.assertEquals(intervalNames, compIntervalNames);
 
+    }
+
+    @DataProvider
+    public Object[][] testFromSequenceData() {
+        return new Object[][]{
+                new Object[]{"testdata/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "1", 249250621},
+                new Object[]{"testdata/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "2", 243199373},
+                new Object[]{"testdata/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list", "3", 198022430},
+        };
+    }
+
+    @Test(dataProvider = "testFromSequenceData")
+    public void testFromSequenceName(final String intervalList, final String referenceName, final Integer length) {
+
+        final IntervalList intervals = IntervalList.fromFile(new File(intervalList));
+        final IntervalList test = IntervalList.fromName(intervals.getHeader(), referenceName);
+        Assert.assertEquals(test.getIntervals(), CollectionUtil.makeList(new Interval(referenceName, 1, length)));
     }
 
     @Test
