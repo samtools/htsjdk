@@ -37,7 +37,7 @@ public class SeekableBufferedStreamTest {
 
 //    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final String BAM_URL_STRING = "http://picard.sourceforge.net/testdata/index_test.bam";
+    private final String BAM_URL_STRING = "http://broadinstitute.github.io/picard/testdata/index_test.bam";
     private static File TestFile = new File("testdata/htsjdk/samtools/seekablestream/megabyteZeros.dat");
 
     /**
