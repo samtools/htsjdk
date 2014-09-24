@@ -244,6 +244,8 @@ public class CramIO {
 		s.seek(s.length() - ZERO_B_EOF_MARKER.length);
 		ByteBufferUtils.readFully(tail, s);
 
+		// relaxing the ITF8 hanging bits:
+		tail[8] |= 0xf0;
 		return Arrays.equals(tail, ZERO_B_EOF_MARKER);
 	}
 
@@ -260,6 +262,8 @@ public class CramIO {
 			raf.close();
 		}
 
+		// relaxing the ITF8 hanging bits:
+		tail[8] |= 0xf0;
 		return Arrays.equals(tail, ZERO_B_EOF_MARKER);
 	}
 
