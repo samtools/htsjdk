@@ -9,6 +9,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -65,6 +66,17 @@ public class SamInputResource {
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final SeekableStream seekableStream) { return new SamInputResource(new SeekableStreamInputResource(seekableStream)); }
 
+    /** Creates a {@link SamInputResource} from a string specifying *either* a url or a file path */
+    public static SamInputResource of(final String string) { 
+      try {
+        URL url = new URL(string);    // this will throw if its not a url
+        return of(url); 
+      } catch (MalformedURLException e) {
+       // ignore
+      }
+      return of(new File(string));
+    }
+    
     /** Updates the index to point at the provided resource, then returns itself. */
     public SamInputResource index(final File file) {
         this.index = new FileInputResource(file);

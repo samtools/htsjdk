@@ -231,8 +231,8 @@ public class SamReaderFactoryTest {
               "https://www.googleapis.com/genomics/v1beta/reads/," +
               "htsjdk.samtools.SamReaderFactoryTest$TestReaderFactory"));
           final SamReader reader = SamReaderFactory.makeDefault().open(
-              SamInputResource.of(new URL(
-                  "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam")));
+              SamInputResource.of(
+              "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam"));
           int i = 0;
           for (@SuppressWarnings("unused") final SAMRecord ignored : reader) {
               ++i;
@@ -252,5 +252,17 @@ public class SamReaderFactoryTest {
         LOG.info("Opening customr reader for " + file.toString());
         return SamReaderFactory.makeDefault().open(file);
       }
+    }
+    
+    @Test
+    public void inputResourceFromStringTest() throws IOException {
+      Assert.assertEquals(SamInputResource.of("http://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("https://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("ftp://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("/a/b/c").data().type(),
+          InputResource.Type.FILE);
     }
 }
