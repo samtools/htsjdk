@@ -73,6 +73,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      *
      * If the count is a fixed count, return that.  For example, a field with size of 1 in the header returns 1
      * If the count is of type A, return vc.getNAlleles - 1
+     * If the count is of type R, return vc.getNAlleles
      * If the count is of type G, return the expected number of genotypes given the number of alleles in VC and the
      *   max ploidy among all samples.  Note that if the max ploidy of the VC is 0 (there's no GT information
      *   at all, then implicitly assume diploid samples when computing G values.
@@ -86,6 +87,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
             case INTEGER:       return count;
             case UNBOUNDED:     return -1;
             case A:             return vc.getNAlleles() - 1;
+            case R:             return vc.getNAlleles();
             case G:
                 final int ploidy = vc.getMaxPloidy(2);
                 return GenotypeLikelihoods.numLikelihoods(vc.getNAlleles(), ploidy);
@@ -159,8 +161,10 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         name = mapping.get("ID");
         count = -1;
         final String numberStr = mapping.get("Number");
-        if ( numberStr.equals(VCFConstants.PER_ALLELE_COUNT) ) {
+        if ( numberStr.equals(VCFConstants.PER_ALTERNATE_COUNT) ) {
             countType = VCFHeaderLineCount.A;
+        } else if ( numberStr.equals(VCFConstants.PER_ALLELE_COUNT) ) {
+            countType = VCFHeaderLineCount.R;
         } else if ( numberStr.equals(VCFConstants.PER_GENOTYPE_COUNT) ) {
             countType = VCFHeaderLineCount.G;
         } else if ( (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4)) ||
@@ -218,7 +222,8 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         map.put("ID", name);
         Object number;
         switch ( countType ) {
-            case A: number = VCFConstants.PER_ALLELE_COUNT; break;
+            case A: number = VCFConstants.PER_ALTERNATE_COUNT; break;
+            case R: number = VCFConstants.PER_ALLELE_COUNT; break;
             case G: number = VCFConstants.PER_GENOTYPE_COUNT; break;
             case UNBOUNDED: number = VCFConstants.UNBOUNDED_ENCODING_v4; break;
             case INTEGER:
