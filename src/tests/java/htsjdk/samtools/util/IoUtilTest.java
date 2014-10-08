@@ -44,11 +44,11 @@ import java.util.List;
 public class IoUtilTest {
 
     private static final File SLURP_TEST_FILE = new File("testdata/htsjdk/samtools/io/slurptest.txt");
-    private static final File EMPTY_FILE = new File("testdata/htsjdk/samtools/io/empty.txt");;
+    private static final File EMPTY_FILE = new File("testdata/htsjdk/samtools/io/empty.txt");
     private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("testdata/htsjdk/samtools/io/5newline5.txt");
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ","for breakfast  ","wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
-    private static final String TEST_FILE_PREFIX = "foo";
+    private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
     private static final String TEST_FILE_EXTENSIONS[] = { ".txt", ".txt.gz" };
    	private static final String TEST_STRING = "bar!";
     private File existingTempFile;
@@ -72,6 +72,7 @@ public class IoUtilTest {
         for (String ext : TEST_FILE_EXTENSIONS)
         {
             File f = File.createTempFile(TEST_FILE_PREFIX, ext);
+            f.deleteOnExit();
 
             OutputStream os = IOUtil.openFileForWriting(f);
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
