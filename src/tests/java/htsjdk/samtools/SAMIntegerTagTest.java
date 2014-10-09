@@ -154,14 +154,14 @@ public class SAMIntegerTagTest {
      * @return The same record, after having being written and read back.
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
-        final File bamFile = File.createTempFile("test.", "." + format);
-        bamFile.deleteOnExit();
+        final File bamFile = File.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
         final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(rec.getHeader(), false, bamFile);
         bamWriter.addAlignment(rec);
         bamWriter.close();
         final SAMFileReader reader = new SAMFileReader(bamFile);
         rec = reader.iterator().next();
         reader.close();
+        bamFile.delete();
         return rec;
     }
 

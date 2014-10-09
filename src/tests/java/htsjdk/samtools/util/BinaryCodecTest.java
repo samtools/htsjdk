@@ -45,6 +45,7 @@ import java.io.IOException;
   */
 
 public class BinaryCodecTest {
+	public final static String TEST_BASENAME = "htsjdk-BinaryCodecTest";
 
     @Test
     public void testReadAndWrite() throws IOException {
@@ -52,7 +53,8 @@ public class BinaryCodecTest {
         value[0] = 1;
         value[1] = 2;
         //Writing to file
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeBytes(value);
@@ -69,6 +71,7 @@ public class BinaryCodecTest {
         readCodec.readBytes(bytesFromBinaryFile);
         Assert.assertEquals(valuesTwo, bytesFromBinaryFile);
         readCodec.close();
+        outputFile.delete();
     }
 
     @Test
@@ -76,7 +79,8 @@ public class BinaryCodecTest {
         final String value = "Test String to Write";
 
         //Writing to file
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeString(value, true, false);
@@ -97,7 +101,8 @@ public class BinaryCodecTest {
         final int value = 42;
 
         //Writing to file
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeInt(value);
@@ -114,7 +119,8 @@ public class BinaryCodecTest {
     public void testReadAndWriteDouble() throws IOException {
         final double value = 54.4;
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeDouble(value);
@@ -131,7 +137,8 @@ public class BinaryCodecTest {
     public void testReadAndWriteLong() throws IOException {
         final long value = 42;
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeLong(value);
@@ -149,7 +156,8 @@ public class BinaryCodecTest {
     public void testReadAndWriteFloat()  throws IOException{
         final float value = 42.5F;
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeFloat(value);
@@ -168,7 +176,8 @@ public class BinaryCodecTest {
         boolean values[] = {true, false};
 
         for (boolean value : values) {
-            final File outputFile = File.createTempFile("temp", ".bin");
+            final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+            outputFile.deleteOnExit();
             final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
             final BinaryCodec codec = new BinaryCodec(stream);
             codec.writeBoolean(value);
@@ -187,7 +196,8 @@ public class BinaryCodecTest {
         final float fValue = 42.5F;
         final String sValue = "TestString";
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         codec.writeFloat(fValue);
@@ -208,7 +218,8 @@ public class BinaryCodecTest {
         final long startTime = System.currentTimeMillis();
         int i = 0;
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         while (i<100){
@@ -242,7 +253,8 @@ public class BinaryCodecTest {
         final long startTime = System.currentTimeMillis();
         int i = 0;
 
-        final File outputFile = File.createTempFile("temp", ".bin");
+        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+        outputFile.deleteOnExit();
         final DataOutputStream stream = new DataOutputStream(new FileOutputStream(outputFile));
         final BinaryCodec codec = new BinaryCodec(stream);
         while (i<100){

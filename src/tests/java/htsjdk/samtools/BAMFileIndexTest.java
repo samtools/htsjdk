@@ -294,6 +294,7 @@ public class BAMFileIndexTest
         }
         writer.close();
         final SAMFileReader bamReader = new SAMFileReader(bamFile);
+        SamFiles.findIndex(bamFile).deleteOnExit();
         Assert.assertEquals(countElements(bamReader.queryContained("chr7", 100, 100)), 1);
         Assert.assertEquals(countElements(bamReader.queryOverlapping("chr7", 100, 100)), 2);
     }

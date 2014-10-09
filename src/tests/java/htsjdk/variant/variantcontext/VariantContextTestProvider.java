@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
@@ -46,6 +47,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
+
 import org.testng.Assert;
 
 import java.io.BufferedInputStream;
@@ -645,6 +647,7 @@ public class VariantContextTestProvider {
 
             final File tmpFile = File.createTempFile("testReaderWriter", tester.getExtension());
             tmpFile.deleteOnExit();
+            Tribble.indexFile(tmpFile).deleteOnExit();
 
             // write expected to disk
             final EnumSet<Options> options = EnumSet.of(Options.INDEX_ON_THE_FLY);
@@ -691,6 +694,7 @@ public class VariantContextTestProvider {
                                         final boolean recurse) throws IOException {
         final File tmpFile = File.createTempFile("testReaderWriter", tester.getExtension());
         tmpFile.deleteOnExit();
+        Tribble.indexFile(tmpFile).deleteOnExit();
 
         // write expected to disk
         final EnumSet<Options> options = EnumSet.of(Options.INDEX_ON_THE_FLY);

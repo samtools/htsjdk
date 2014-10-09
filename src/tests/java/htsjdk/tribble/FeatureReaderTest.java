@@ -24,13 +24,14 @@ import java.util.List;
 
 public class FeatureReaderTest {
     private final static File asciiBedFile = new File(TestUtils.DATA_DIR + "test.bed");
-    private final static File binaryBedFile = new File(TestUtils.OUTPUT_DIR + "test.binary.bed");
+    private File binaryBedFile;
     private final static File tabixBedFile = new File(TestUtils.DATA_DIR + "test.tabix.bed.gz");
 
     @BeforeClass
     public void setup() throws IOException {
-        ExampleBinaryCodec.convertToBinaryTest(asciiBedFile, binaryBedFile, new BEDCodec());
+        binaryBedFile = File.createTempFile("htsjdk-test.featurereader", ".bed");
         binaryBedFile.deleteOnExit();
+        ExampleBinaryCodec.convertToBinaryTest(asciiBedFile, binaryBedFile, new BEDCodec());
     }
 
     @AfterClass

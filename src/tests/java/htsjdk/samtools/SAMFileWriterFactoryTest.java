@@ -43,13 +43,11 @@ public class SAMFileWriterFactoryTest {
         final File outputFile = File.createTempFile("tmp.", BamFileIoUtils.BAM_FILE_EXTENSION);
         outputFile.delete();
         outputFile.deleteOnExit();
-        String basename = outputFile.getName();
-        basename = basename.substring(0, basename.lastIndexOf("."));
-        final File indexFile = new File(outputFile.getParent(), basename + BAMIndex.BAMIndexSuffix);
+        createSmallBam(outputFile);
+        final File indexFile = SamFiles.findIndex(outputFile);
         indexFile.deleteOnExit();
         final File md5File = new File(outputFile.getParent(), outputFile.getName() + ".md5");
         md5File.deleteOnExit();
-        createSmallBam(outputFile);
         Assert.assertTrue(outputFile.length() > 0);
         Assert.assertTrue(indexFile.length() > 0);
         Assert.assertTrue(md5File.length() > 0);
