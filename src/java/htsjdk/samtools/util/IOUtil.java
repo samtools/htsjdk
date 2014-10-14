@@ -47,6 +47,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -266,6 +267,35 @@ public class IOUtil {
     }
 
     /**
+     * Checks that an input is  is non-null, a URL or a file, exists, 
+     * and if its a file then it is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param input the input to check for validity
+     */
+    public static void asserInputIsValid(final String input) {
+      if (input == null) {
+        throw new IllegalArgumentException("Cannot check validity of null input.");
+      }
+      if (!isUrl(input)) {
+        assertFileIsReadable(new File(input));
+      }
+    }
+    
+    /** 
+     * Returns true iff the string is a url. 
+     * Helps distinguish url inputs form file path inputs.
+     */
+    public static boolean isUrl(final String input) {
+      try {
+        new URL(input);
+        return true;
+      } catch (MalformedURLException e) {
+        return false;
+      }
+    }
+    
+    /**
      * Checks that a file is non-null, exists, is not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
@@ -293,6 +323,17 @@ public class IOUtil {
      */
     public static void assertFilesAreReadable(final List<File> files) {
         for (final File file : files) assertFileIsReadable(file);
+    }
+    
+    /**
+     * Checks that each string is non-null, exists or is a URL, 
+     * and if it is a file then not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for readability
+     */
+    public static void assertInputsAreValid(final List<String> inputs) {
+        for (final String input : inputs) asserInputIsValid(input);
     }
 
     /**

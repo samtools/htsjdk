@@ -67,7 +67,7 @@ public class SamFileHeaderMerger {
 
     //Super Header to construct
     private final SAMFileHeader mergedHeader;
-    private Collection<SAMFileReader> readers;
+    private Collection<SamReader> readers;
     private final Collection<SAMFileHeader> headers;
     private int recordCounter;
 
@@ -123,7 +123,7 @@ public class SamFileHeaderMerger {
      * @param sortOrder sort order new header should have
      * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
      */
-    public SamFileHeaderMerger(final Collection<SAMFileReader> readers, final SAMFileHeader.SortOrder sortOrder) {
+    public SamFileHeaderMerger(final Collection<SamReader> readers, final SAMFileHeader.SortOrder sortOrder) {
         this(readers, sortOrder, false);
     }
 
@@ -136,7 +136,7 @@ public class SamFileHeaderMerger {
      * all input sequence dictionaries be identical.
      * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
      */
-    public SamFileHeaderMerger(final Collection<SAMFileReader> readers, final SAMFileHeader.SortOrder sortOrder, final boolean mergeDictionaries) {
+    public SamFileHeaderMerger(final Collection<SamReader> readers, final SAMFileHeader.SortOrder sortOrder, final boolean mergeDictionaries) {
         this(sortOrder, getHeadersFromReaders(readers), mergeDictionaries);
         this.readers = readers;
     }
@@ -190,9 +190,9 @@ public class SamFileHeaderMerger {
     }
 
     // Utilility method to make use with old constructor
-    private static List<SAMFileHeader> getHeadersFromReaders(final Collection<SAMFileReader> readers) {
+    private static List<SAMFileHeader> getHeadersFromReaders(final Collection<SamReader> readers) {
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>(readers.size());
-        for (final SAMFileReader reader : readers) {
+        for (final SamReader reader : readers) {
             headers.add(reader.getFileHeader());
         }
         return headers;
@@ -648,7 +648,7 @@ public class SamFileHeaderMerger {
      *
      * @deprecated replaced by getReadGroupId(SAMFileHeader, String)
      * */
-    public String getReadGroupId(final SAMFileReader reader, final String originalReadGroupId) {
+    public String getReadGroupId(final SamReader reader, final String originalReadGroupId) {
         return getReadGroupId(reader.getFileHeader(), originalReadGroupId);
     }
 
@@ -663,7 +663,7 @@ public class SamFileHeaderMerger {
      * @return new ID from the merged list of program groups in the output file
      * @deprecated replaced by getProgramGroupId(SAMFileHeader, String)
      */
-    public String getProgramGroupId(final SAMFileReader reader, final String originalProgramGroupId) {
+    public String getProgramGroupId(final SamReader reader, final String originalProgramGroupId) {
         return getProgramGroupId(reader.getFileHeader(), originalProgramGroupId);
     }
 
@@ -699,7 +699,7 @@ public class SamFileHeaderMerger {
     /** Returns the collection of readers that this header merger is working with. May return null.
      * @deprecated replaced by getHeaders()
      */
-    public Collection<SAMFileReader> getReaders() {
+    public Collection<SamReader> getReaders() {
         return this.readers;
     }
 
@@ -716,7 +716,7 @@ public class SamFileHeaderMerger {
      * @return the new index value
      * @deprecated replaced by getMergedSequenceIndex(SAMFileHeader, Integer)
      */
-    public Integer getMergedSequenceIndex(final SAMFileReader reader, final Integer oldReferenceSequenceIndex) {
+    public Integer getMergedSequenceIndex(final SamReader reader, final Integer oldReferenceSequenceIndex) {
         return this.getMergedSequenceIndex(reader.getFileHeader(), oldReferenceSequenceIndex);
     }
 

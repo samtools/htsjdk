@@ -26,6 +26,8 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.CloseableIterator;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
@@ -37,7 +39,7 @@ import java.util.PriorityQueue;
 public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     private final PriorityQueue<ComparableSamRecordIterator> pq;
     private final SamFileHeaderMerger samHeaderMerger;
-    private final Collection<SAMFileReader> readers;
+    private final Collection<SamReader> readers;
     private final SAMFileHeader.SortOrder sortOrder;
     private final SAMRecordComparator comparator;
 
@@ -59,8 +61,18 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
      * provided by the header merger parameter.
      * @param headerMerger The merged header and contents of readers.
      * @param assumeSorted false ensures that the iterator checks the headers of the readers for appropriate sort order.
+     * @deprecated please use the SamReader variant
      */
-    public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, Collection<SAMFileReader> readers, final boolean assumeSorted) {
+    public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, List<SAMFileReader> readers, final boolean assumeSorted) {
+      this(headerMerger, Collections.<SamReader>unmodifiableCollection(readers), assumeSorted);
+    }
+    /**
+     * Constructs a new merging iterator with the same set of readers and sort order as
+     * provided by the header merger parameter.
+     * @param headerMerger The merged header and contents of readers.
+     * @param assumeSorted false ensures that the iterator checks the headers of the readers for appropriate sort order.
+     */
+    public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, Collection<SamReader> readers, final boolean assumeSorted) {
         this.samHeaderMerger = headerMerger;
         this.sortOrder = headerMerger.getMergedHeader().getSortOrder();
         this.comparator = getComparator();
@@ -68,7 +80,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
 
         this.pq = new PriorityQueue<ComparableSamRecordIterator>(readers.size());
 
-        for (final SAMFileReader reader : readers) {
+        for (final SamReader reader : readers) {
             if(!samHeaderMerger.getHeaders().contains(reader.getFileHeader()))
                 throw new SAMException("All iterators to be merged must be accounted for in the SAM header merger");
             if (!assumeSorted && this.sortOrder != SAMFileHeader.SortOrder.unsorted &&
@@ -84,9 +96,9 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
      * @param headerMerger The merged header and contents of readers.
      * @param iterators Iterator traversing over reader contents.
      */
-    public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, final Map<SAMFileReader,CloseableIterator<SAMRecord>> iterators, final boolean assumeSorted) {
+    public MergingSamRecordIterator(final SamFileHeaderMerger headerMerger, final Map<SamReader,CloseableIterator<SAMRecord>> iterators, final boolean assumeSorted) {
         this(headerMerger,iterators.keySet(),assumeSorted);
-        for (final Map.Entry<SAMFileReader,CloseableIterator<SAMRecord>> mapping : iterators.entrySet())
+        for (final Map.Entry<SamReader,CloseableIterator<SAMRecord>> mapping : iterators.entrySet())
             addIfNotEmpty(new ComparableSamRecordIterator(mapping.getKey(),mapping.getValue(),comparator));
         initialized = true;
     }
@@ -94,7 +106,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     private void startIterationIfRequired() {
         if(initialized)
             return;
-        for(final SAMFileReader reader: readers)
+        for(final SamReader reader: readers)
             addIfNotEmpty(new ComparableSamRecordIterator(reader,reader.iterator(),comparator));
         initialized = true;
     }
