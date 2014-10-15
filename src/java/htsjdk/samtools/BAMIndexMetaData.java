@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.File;
@@ -136,6 +137,30 @@ public class BAMIndexMetaData {
             unAlignedRecords++;
         } else {
             alignedRecords++;
+        }
+        if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
+            this.firstOffset = start;
+        }
+        if (BlockCompressedFilePointerUtil.compare(lastOffset, end) < 1) {
+            this.lastOffset = end;
+        }
+    }
+    
+    void recordMetaData(Slice slice) {
+
+        final int alignmentStart = slice.alignmentStart ;
+        if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+            incrementNoCoordinateRecordCount();
+            return;
+        }
+
+        final long start = slice.offset ;
+        final long end = slice.offset + 0 ;
+
+        if (slice.alignmentSpan < 1) {
+            unAlignedRecords+=slice.nofRecords;
+        } else {
+            alignedRecords+=slice.nofRecords;
         }
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;
