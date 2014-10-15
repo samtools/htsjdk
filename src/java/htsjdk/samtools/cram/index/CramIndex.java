@@ -132,10 +132,8 @@ public class CramIndex {
 		}
 	}
 	
-	public static List<Entry> buildIndexForCramFile(File cramFile) throws IOException {
-		FileInputStream fis = new FileInputStream(cramFile) ;
-		BufferedInputStream bis = new BufferedInputStream(fis) ;
-		CountingInputStream cis = new CountingInputStream(bis) ;
+	public static List<Entry> buildIndexForCramFile(InputStream is) throws IOException {
+		CountingInputStream cis = new CountingInputStream(is) ;
 		List<Entry> index = new ArrayList<CramIndex.Entry>() ;
 		while (true) {
 			long offset = cis.getCount();
@@ -146,6 +144,11 @@ public class CramIndex {
 			addContainer(c, index);
 		}
 		return index ;
+	}
+	public static List<Entry> buildIndexForCramFile(File cramFile) throws IOException {
+		FileInputStream fis = new FileInputStream(cramFile) ;
+		BufferedInputStream bis = new BufferedInputStream(fis) ;
+		return buildIndexForCramFile(bis) ;
 	}
 
 	public static List<Entry> readIndexFromCraiFile(File file)
