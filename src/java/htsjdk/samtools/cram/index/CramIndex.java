@@ -15,9 +15,12 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.index;
 
+import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -56,6 +59,23 @@ public class CramIndex {
 			os.write('\n');
 		}
 	}
+	
+	private static void addContainer(Container c, List<Entry> index) throws IOException {
+		for (int i = 0; i < c.slices.length; i++) {
+			Slice s = c.slices[i];
+			Entry e = new Entry();
+			e.sequenceId = c.sequenceId;
+			e.alignmentStart = s.alignmentStart;
+			e.alignmentSpan = s.alignmentSpan;
+			e.containerStartOffset = c.offset;
+			e.sliceOffset = c.landmarks[i];
+			e.sliceSize = s.size;
+
+			e.sliceIndex = i;
+
+			index.add(e) ;
+		}
+	}
 
 	public static class Entry implements Comparable<Entry>, Cloneable {
 		public int sequenceId;
@@ -68,7 +88,7 @@ public class CramIndex {
 
 		public Entry() {
 		}
-
+		
 		public Entry(String line) {
 			String[] chunks = line.split("\t");
 			if (chunks.length != 6)
@@ -111,15 +131,31 @@ public class CramIndex {
 			return entry;
 		}
 	}
+	
+	public static List<Entry> buildIndexForCramFile(File cramFile) throws IOException {
+		FileInputStream fis = new FileInputStream(cramFile) ;
+		BufferedInputStream bis = new BufferedInputStream(fis) ;
+		CountingInputStream cis = new CountingInputStream(bis) ;
+		List<Entry> index = new ArrayList<CramIndex.Entry>() ;
+		while (true) {
+			long offset = cis.getCount();
+			Container c = CramIO.readContainer(cis); 
+			if (c == null || c.isEOF())
+				break;
+			c.offset = offset;
+			addContainer(c, index);
+		}
+		return index ;
+	}
 
 	public static List<Entry> readIndexFromCraiFile(File file)
 			throws IOException {
 		FileInputStream fis = new FileInputStream(file);
 		GZIPInputStream gis = new GZIPInputStream(fis);
-		return readIndex(gis);
+		return readIndexFromCraiStream(gis);
 	}
 
-	public static List<Entry> readIndex(InputStream is) {
+	private static List<Entry> readIndexFromCraiStream(InputStream is) {
 		List<Entry> list = new LinkedList<CramIndex.Entry>();
 		Scanner scanner = new Scanner(is);
 
