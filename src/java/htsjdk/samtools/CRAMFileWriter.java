@@ -217,7 +217,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 			log.warn("Abnormally high number of mismatches, possibly wrong reference.");
 
 		// mating:
-		Map<String, CramCompressionRecord> mateMap = new TreeMap<String, CramCompressionRecord>();
+		Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
+		Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
 		for (CramCompressionRecord r : cramRecords) {
 			if (!r.isMultiFragment()) {
 				r.setDetached(true);
@@ -228,6 +229,9 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 				r.previous = null;
 			} else {
 				String name = r.readName;
+				Map<String, CramCompressionRecord> mateMap = r
+						.isSecondaryAlignment() ? secondaryMateMap
+						: primaryMateMap;
 				CramCompressionRecord mate = mateMap.get(name);
 				if (mate == null) {
 					mateMap.put(name, r);
@@ -245,7 +249,16 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 			}
 		}
 
-		for (CramCompressionRecord r : mateMap.values()) {
+		for (CramCompressionRecord r : primaryMateMap.values()) {
+			r.setDetached(true);
+
+			r.setHasMateDownStream(false);
+			r.recordsToNextFragment = -1;
+			r.next = null;
+			r.previous = null;
+		}
+
+		for (CramCompressionRecord r : secondaryMateMap.values()) {
 			r.setDetached(true);
 
 			r.setHasMateDownStream(false);
