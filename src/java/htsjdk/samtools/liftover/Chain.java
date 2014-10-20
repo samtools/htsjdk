@@ -314,15 +314,10 @@ class Chain {
      * @return OverlapDetector will all Chains from reader loaded into it.
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
-        final Set<Integer> ids = new HashSet<Integer>();
-        BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
+        final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
         final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
         Chain chain;
         while ((chain = Chain.loadChain(reader, chainFile.toString())) != null) {
-            if (ids.contains(chain.id)) {
-                throw new SAMException("Chain id " + chain.id + " appears more than once in chain file.");
-            }
-            ids.add(chain.id);
             ret.addLhs(chain, chain.interval);
         }
         reader.close();
@@ -336,11 +331,18 @@ class Chain {
      * @return New Chain with associated ContinuousBlocks.
      */
     private static Chain loadChain(final BufferedLineReader reader, final String chainFile) {
-        String line = reader.readLine();
-        if (line == null) {
-            return null;
+        String line;
+        while (true) {
+            line = reader.readLine();
+            if (line == null) {
+                return null;
+            }
+            // Skip comment lines
+            if (!line.startsWith("#")) {
+                break;
+            }
         }
-        String[] chainFields = SPLITTER.split(line);
+        final String[] chainFields = SPLITTER.split(line);
         if (chainFields.length != 13) {
             throwChainFileParseException("chain line has wrong number of fields", chainFile, reader.getLineNumber());
         }
