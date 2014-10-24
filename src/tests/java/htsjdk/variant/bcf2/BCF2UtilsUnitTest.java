@@ -188,6 +188,26 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     }
 
 
+    private void assertListsAreEquivalent(final List<?> a, final List<?> b) {
+        Assert.assertEquals(a.size(), b.size());
+        for (int i=0; i<a.size(); i++)
+            Assert.assertEquals(a.get(i), b.get(i));
+    }
+
+    @DataProvider(name = "toListTestProvider")
+    public Object[][] makeToListTest() {
+        final List<Object[]> tests = new ArrayList<Object[]>();
+        tests.add(new Object[]{Object.class, null, Collections.emptyList()});
+        tests.add(new Object[]{Integer.class, 1, Arrays.asList(1)});
+        tests.add(new Object[]{Integer.class, new int[]{1, 2, 3}, Arrays.asList(1, 2, 3)});
+        tests.add(new Object[]{String.class, Arrays.asList("X", "Y"), Arrays.asList("X", "Y")});
+        return tests.toArray(new Object[][]{});
+    }
+
+    @Test(dataProvider = "toListTestProvider")
+    public void testToList(final Class<?> cls, final Object input, final List<Object> expectedOutput) {
+        assertListsAreEquivalent(BCF2Utils.toList(cls, input), expectedOutput);
+    }
 
 
 }

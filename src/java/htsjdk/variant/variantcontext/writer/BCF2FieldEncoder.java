@@ -363,7 +363,7 @@ public abstract class BCF2FieldEncoder {
                 }
             } else {
                 // handle generic case
-                final List<Double> doubles = toList(Double.class, value);
+                final List<Double> doubles = BCF2Utils.toList(Double.class, value);
                 for ( final Double d : doubles ) {
                     if ( d != null ) { // necessary because .,. => [null, null] in VC
                         encoder.encodeRawFloat(d);
@@ -446,13 +446,13 @@ public abstract class BCF2FieldEncoder {
 
         @Override
         public BCF2Type getDynamicType(final Object value) {
-            return value == null ? BCF2Type.INT8 : BCF2Utils.determineIntegerType(toList(Integer.class, value));
+            return value == null ? BCF2Type.INT8 : BCF2Utils.determineIntegerType(BCF2Utils.toList(Integer.class, value));
         }
 
         @Override
         public void encodeValue(final BCF2Encoder encoder, final Object value, final BCF2Type type, final int minValues) throws IOException {
             int count = 0;
-            for ( final Integer i : toList(Integer.class, value) ) {
+            for ( final Integer i : BCF2Utils.toList(Integer.class, value) ) {
                 if ( i != null ) { // necessary because .,. => [null, null] in VC
                     encoder.encodeRawInt(i, type);
                     count++;
@@ -460,35 +460,5 @@ public abstract class BCF2FieldEncoder {
             }
             for ( ; count < minValues; count++ ) encoder.encodeRawMissingValue(type);
         }
-    }
-
-
-    // ----------------------------------------------------------------------
-    //
-    // Helper methods
-    //
-    // ----------------------------------------------------------------------
-
-    /**
-     * Helper function that takes an object and returns a list representation
-     * of it:
-     *
-     * o == null => []
-     * o is a list => o
-     * else => [o]
-     *
-     * @param c  the class of the object
-     * @param o  the object to convert to a Java List
-     * @return
-     */
-    private final static <T> List<T> toList(final Class<T> c, final Object o) {
-        if ( o == null ) return Collections.emptyList();
-        else if ( o instanceof List ) return (List<T>)o;
-        else if ( o.getClass().isArray() ) {
-            final List<T> l = new ArrayList<T>();
-            Collections.addAll(l, (T[])o);
-            return l;
-        }
-        else return Collections.singletonList((T)o);
     }
 }
