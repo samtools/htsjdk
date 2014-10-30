@@ -115,7 +115,8 @@ public final class VCFConstants {
     public static final String MISSING_DEPTH_v3 = "-1";
     public static final String UNBOUNDED_ENCODING_v4 = ".";
     public static final String UNBOUNDED_ENCODING_v3 = "-1";
-    public static final String PER_ALLELE_COUNT = "A";
+    public static final String PER_ALTERNATE_COUNT = "A";
+    public static final String PER_ALLELE_COUNT = "R";
     public static final String PER_GENOTYPE_COUNT = "G";
     public static final String EMPTY_ALLELE = ".";
     public static final String EMPTY_GENOTYPE = "./.";
