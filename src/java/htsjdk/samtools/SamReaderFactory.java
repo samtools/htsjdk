@@ -10,6 +10,8 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.zip.GZIPInputStream;
@@ -50,7 +52,7 @@ import java.util.zip.GZIPInputStream;
 public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
-
+    
     abstract public SamReader open(final File file);
 
     abstract public SamReader open(final SamInputResource resource);
@@ -92,6 +94,7 @@ public abstract class SamReaderFactory {
     }
 
     private static class SamReaderFactoryImpl extends SamReaderFactory {
+        private final static Log LOG = Log.getInstance(SamReaderFactory.class);
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
         private SAMRecordFactory samRecordFactory;
@@ -103,7 +106,7 @@ public abstract class SamReaderFactory {
             this.validationStringency = validationStringency;
             this.customReaderFactory = CustomReaderFactory.getInstance();
         }
-
+   
         @Override
         public SamReader open(final File file) {
             final SamInputResource r = SamInputResource.of(file);
