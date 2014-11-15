@@ -52,19 +52,25 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     /** Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired. */
 	public VCFFileReader(final File file, final boolean requireIndex) {
-		this.reader = AbstractFeatureReader.getFeatureReader(
-						file.getAbsolutePath(),
-						isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
-						requireIndex);
+	  // Note how we deal with type safety here, just casting to (FeatureCodec)
+	  // in the call to getFeatureReader is not enough for Java 8.
+      FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      this.reader = AbstractFeatureReader.getFeatureReader(
+                      file.getAbsolutePath(),
+                      codec,
+                      requireIndex);
 	}
 
     /** Allows construction of a VCFFileReader with a specified index file. */
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
-        this.reader = AbstractFeatureReader.getFeatureReader(
-                file.getAbsolutePath(),
-                indexFile.getAbsolutePath(),
-                isBCF(file) ? (FeatureCodec) new BCF2Codec() : new VCFCodec(),
-                requireIndex);
+      // Note how we deal with type safety here, just casting to (FeatureCodec)
+      // in the call to getFeatureReader is not enough for Java 8.
+      FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      this.reader = AbstractFeatureReader.getFeatureReader(
+                      file.getAbsolutePath(),
+                      indexFile.getAbsolutePath(),
+                      codec,
+                      requireIndex);
     }
 
     /**
