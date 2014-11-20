@@ -44,6 +44,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     private SortingCollection<SAMRecord> alignmentSorter;
     private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
 	private ProgressLoggerInterface progressLogger = null;
+	private boolean isClosed = false;
 
     // If true, records passed to addAlignment are already in the order specified by sortOrder
     private boolean presorted;
@@ -195,14 +196,17 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      */
     public final void close()
     {
-        if (alignmentSorter != null) {
-            for (final SAMRecord alignment : alignmentSorter) {
-                writeAlignment(alignment);
-	            if (progressLogger != null) progressLogger.record(alignment);
-            }
-            alignmentSorter.cleanup();
-        }
-        finish();
+    	if (!isClosed) {
+	        if (alignmentSorter != null) {
+	            for (final SAMRecord alignment : alignmentSorter) {
+	                writeAlignment(alignment);
+		            if (progressLogger != null) progressLogger.record(alignment);
+	            }
+	            alignmentSorter.cleanup();
+	        }
+	        finish();
+    	}
+    	isClosed = true;
     }
 
     /**
