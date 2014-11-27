@@ -36,8 +36,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+
 
 /**
  * A fasta file driven by an index for fast, concurrent lookups.  Supports two interfaces:
@@ -48,12 +53,18 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * The interface facilitating direct access to the fasta.
      */
     private final FileChannel channel;
-
+    /**
+     * File input stream 
+     */
+    private final FileInputStream stream;
     /**
      * A representation of the sequence index, stored alongside the fasta in a .fasta.fai file.
      */
     private final FastaSequenceIndex index;
-
+    /**
+     * Memory mapping of fasta in Integer.MAX_VALUE chunks
+     */
+    private final List<MappedByteBuffer> mmap;
     /**
      * An iterator into the fasta index, for traversing iteratively across the fasta.
      */
@@ -66,21 +77,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
-        super(file);
-        if (index == null) throw new IllegalArgumentException("Null index for fasta " + file);
-        this.index = index;
-        IOUtil.assertFileIsReadable(file);
-        final FileInputStream in;
-        try {
-            in = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            throw new SAMException("Fasta file should be readable but is not: " + file, e);
-        }
-        channel = in.getChannel();
-        reset();
-
-        if(getSequenceDictionary() != null)
-            sanityCheckDictionaryAgainstIndex(file.getAbsolutePath(),sequenceDictionary,index);
+        this(file, index, Defaults.MEMORY_MAP_REFERENCES);
     }
 
     /**
@@ -90,6 +87,54 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      */
     public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
         this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(file))));
+    }
+    /**
+     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
+     * @param file The file to open.
+     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
+     * @param memoryMapped Should the reference file be memory mapped
+     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+     */
+    public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index, boolean memoryMapped) {
+        super(file);
+        if (index == null) throw new IllegalArgumentException("Null index for fasta " + file);
+        this.index = index;
+        IOUtil.assertFileIsReadable(file);
+        try {
+        	stream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            throw new SAMException("Fasta file should be readable but is not: " + file, e);
+        }
+        channel = stream.getChannel();
+        reset();
+
+        if(getSequenceDictionary() != null)
+            sanityCheckDictionaryAgainstIndex(file.getAbsolutePath(),sequenceDictionary,index);
+        
+        if (memoryMapped) {
+        	try {
+        		mmap = new ArrayList<MappedByteBuffer>();
+        		for (long i = 0; i < file.length(); i++) {
+        			long mapLength = Math.min(file.length() - i, Integer.MAX_VALUE);
+        			mmap.add(channel.map(MapMode.READ_ONLY, i, mapLength));
+        			i += mapLength;
+        		}
+            } catch (IOException e) {
+                throw new SAMException("Fastq file should be readable but unable to memory map file: " + file, e);
+            }
+        } else {
+        	mmap = null;
+        }
+    }
+
+    /**
+     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
+     * @param file The file to open.
+     * @param memoryMapped Should the reference file be memory mapped 
+     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+     */
+    public IndexedFastaSequenceFile(final File file, boolean memoryMapped) throws FileNotFoundException {
+        this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(file))), memoryMapped);
     }
 
 
@@ -183,7 +228,6 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         int length = (int)(stop - start + 1);
 
         byte[] target = new byte[length];
-        ByteBuffer targetBuffer = ByteBuffer.wrap(target);
 
         final int basesPerLine = indexEntry.getBasesPerLine();
         final int bytesPerLine = indexEntry.getBytesPerLine();
@@ -191,47 +235,76 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
 
         long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
 
-        // Allocate a 128K buffer for reading in sequence data.
-        ByteBuffer channelBuffer = ByteBuffer.allocate(Defaults.NON_ZERO_BUFFER_SIZE);
-
-        while(targetBuffer.position() < length) {
-            // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.
-            startOffset += Math.max((int)(startOffset%bytesPerLine - basesPerLine + 1),0);
-
-            try {
-                 startOffset += channel.read(channelBuffer,indexEntry.getLocation()+startOffset);
-            }
-            catch(IOException ex) {
-                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
-            }
-
-            // Reset the buffer for outbound transfers.
-            channelBuffer.flip();
-
-            // Calculate the size of the next run of bases based on the contents we've already retrieved.
-            final int positionInContig = (int)start-1+targetBuffer.position();
-            final int nextBaseSpan = Math.min(basesPerLine-positionInContig%basesPerLine,length-targetBuffer.position());
-            // Cap the bytes to transfer by limiting the nextBaseSpan to the size of the channel buffer.
-            int bytesToTransfer = Math.min(nextBaseSpan,channelBuffer.capacity());
-
-            channelBuffer.limit(channelBuffer.position()+bytesToTransfer);
-
-            while(channelBuffer.hasRemaining()) {
-                targetBuffer.put(channelBuffer);
-
-                bytesToTransfer = Math.min(basesPerLine,length-targetBuffer.position());
-                channelBuffer.limit(Math.min(channelBuffer.position()+bytesToTransfer+terminatorLength,channelBuffer.capacity()));
-                channelBuffer.position(Math.min(channelBuffer.position()+terminatorLength,channelBuffer.capacity()));
-            }
-
-            // Reset the buffer for inbound transfers.
-            channelBuffer.flip();
+        if (mmap == null) {
+	        // Allocate a buffer for reading in sequence data.
+	        ByteBuffer channelBuffer = ByteBuffer.allocate(Math.min(Defaults.NON_ZERO_BUFFER_SIZE, (length % basesPerLine + 2) * bytesPerLine));
+	        ByteBuffer targetBuffer = ByteBuffer.wrap(target);
+	        while(targetBuffer.position() < length) {
+	            // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.
+	            startOffset += Math.max((int)(startOffset%bytesPerLine - basesPerLine + 1),0);
+	
+	            try {
+	                 startOffset += channel.read(channelBuffer,indexEntry.getLocation()+startOffset);
+	            }
+	            catch(IOException ex) {
+	                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
+	            }
+	
+	            // Reset the buffer for outbound transfers.
+	            channelBuffer.flip();
+	
+	            // Calculate the size of the next run of bases based on the contents we've already retrieved.
+	            final int positionInContig = (int)start-1+targetBuffer.position();
+	            final int nextBaseSpan = Math.min(basesPerLine-positionInContig%basesPerLine,length-targetBuffer.position());
+	            // Cap the bytes to transfer by limiting the nextBaseSpan to the size of the channel buffer.
+	            int bytesToTransfer = Math.min(nextBaseSpan,channelBuffer.capacity());
+	
+	            channelBuffer.limit(channelBuffer.position()+bytesToTransfer);
+	
+	            while(channelBuffer.hasRemaining()) {
+	                targetBuffer.put(channelBuffer);
+	
+	                bytesToTransfer = Math.min(basesPerLine,length-targetBuffer.position());
+	                channelBuffer.limit(Math.min(channelBuffer.position()+bytesToTransfer+terminatorLength,channelBuffer.capacity()));
+	                channelBuffer.position(Math.min(channelBuffer.position()+terminatorLength,channelBuffer.capacity()));
+	            }
+	
+	            // Reset the buffer for inbound transfers.
+	            channelBuffer.flip();
+	        }
+        } else {
+        	int transfered = 0;
+        	while (transfered < length) {
+        		long transferStartSequenceOffset = start - 1 + transfered;
+        		long lineNumber = transferStartSequenceOffset / basesPerLine;
+        		long lineOffset = transferStartSequenceOffset % basesPerLine;
+        		long transferStartFilePosition = indexEntry.getLocation() + lineNumber * bytesPerLine + lineOffset;
+        		long transferLength = Math.min(length - transfered, basesPerLine - lineOffset);
+        		if (mmapCopy(target, transfered, transferStartFilePosition, transferLength) != transferLength) {
+        			throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
+        		}
+        		transfered += transferLength;
+        	}
         }
-
         return new ReferenceSequence( contig, indexEntry.getSequenceIndex(), target );
     }
+    private long mmapCopy(byte[] dst, int offset, long pos, long length) {
+    	int bufferIndex = (int)(pos / Integer.MAX_VALUE);
+    	int bufferOffset =  (int)(pos % Integer.MAX_VALUE);
+    	long copied = 0;
+    	while (copied < length && bufferIndex < mmap.size()) {
+    		ByteBuffer bb = mmap.get((int)bufferIndex).duplicate();
+    		bb.position(bufferOffset);
+    		int copyLength = Math.min((int)Math.min(length - copied, Integer.MAX_VALUE), bb.capacity() - bufferOffset);
+    		copied += copyLength;
+    		bb.get(dst, offset, copyLength);
+    		bufferIndex++;
+    		bufferOffset = 0;
+    	}
+    	return copied;
+	}
 
-    /**
+	/**
      * Gets the next sequence if available, or null if not present.
      * @return next sequence if available, or null if not present.
      */
@@ -258,6 +331,10 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
 
     @Override
     public void close() throws IOException {
+    	if (mmap != null) {
+    		mmap.clear();
+    	}
         channel.close();
+        stream.close();
     }
 }

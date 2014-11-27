@@ -17,6 +17,9 @@ public class Defaults {
 
     /** Should asynchronous I/O be used when writing out SAM and BAM files (one thread per file).  Default = false. */
     public static final boolean USE_ASYNC_IO;
+    
+    /** Should indexed fasta reference files be memory mapped. Default = false. */
+    public static final boolean MEMORY_MAP_REFERENCES;
 
     /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
@@ -53,6 +56,7 @@ public class Defaults {
         CREATE_INDEX      = getBooleanProperty("create_index", false);
         CREATE_MD5        = getBooleanProperty("create_md5", false);
         USE_ASYNC_IO      = getBooleanProperty("use_async_io", false);
+        MEMORY_MAP_REFERENCES = getBooleanProperty("memory_map_references", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE       = getIntProperty("buffer_size", 1024 * 128);
         TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", true);
