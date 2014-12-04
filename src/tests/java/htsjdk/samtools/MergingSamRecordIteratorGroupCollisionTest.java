@@ -67,7 +67,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         adapter.setBuilderGroup(builder2, group1);
         builder2.addFrag("read2", 19, 28833, addReadGroup);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -101,7 +101,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         adapter.setBuilderGroup(builder2, group1);
         builder2.addFrag("read2", 19, 28833, addReadGroup);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -135,7 +135,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         adapter.setBuilderGroup(builder2, group1);
         builder2.addFrag("read2", 19, 28833, addReadGroup);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -170,7 +170,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         adapter.setBuilderGroup(builder2, group1);
         builder2.addFrag("read2", 19, 28833, addReadGroup);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -232,7 +232,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         builder2.setProgramRecord(null);
         builder2.addFrag("read3", 19, 28833, false);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -257,7 +257,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         Assert.assertFalse(iterator.hasNext());
     }
 
-    private void assertRecords(SamFileHeaderMerger headerMerger, Collection<SAMFileReader> readers,
+    private void assertRecords(SamFileHeaderMerger headerMerger, Collection<SamReader> readers,
                                GroupAdapter adapter, boolean addReadGroup, String... attrs) {
         final MergingSamRecordIterator iterator = new MergingSamRecordIterator(headerMerger, readers, addReadGroup);
         for (int j=0 ; j < attrs.length ; j++) {
@@ -300,7 +300,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         builder3.addFrag("read3", 19, 28833, false);
 
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
         readers.add(builder3.getSamReader());
@@ -351,7 +351,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         builder2.setReadGroup(createSAMReadGroupRecord("a2.4"));    //collision
         builder2.addFrag("read1", 20, 28833, false);
 
-        final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+        final List<SamReader> readers = new ArrayList<SamReader>();
         readers.add(builder1.getSamReader());
         readers.add(builder2.getSamReader());
 
@@ -410,7 +410,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         /** Attributes equivalent */
         abstract boolean equivalent(AbstractSAMHeaderRecord group1, AbstractSAMHeaderRecord group2) ;
 
-        SAMFileReader newFileReader() {
+        SamReader newFileReader() {
             final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
             builder.addFrag("read_28833_29006_6945", 20, 28833, false); // ok
             return builder.getSamReader();
@@ -432,9 +432,9 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         }
 
         List<? extends AbstractSAMHeaderRecord> createGroups(final String[] groupIds) {
-            final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+            final List<SamReader> readers = new ArrayList<SamReader>();
             for (final String groupId : groupIds) {
-                final SAMFileReader samReader = newFileReader();
+                final SamReader samReader = newFileReader();
                 final List<SAMProgramRecord> records = new ArrayList<SAMProgramRecord>();
                 final SAMProgramRecord record = new SAMProgramRecord(groupId);
                 records.add(record);
@@ -443,7 +443,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
             }
 
             final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
-            for (SAMFileReader reader : readers) {
+            for (SamReader reader : readers) {
                 headers.add(reader.getFileHeader());
             }
             final SamFileHeaderMerger fileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headers, false);
@@ -482,10 +482,10 @@ public class MergingSamRecordIteratorGroupCollisionTest {
         }
 
         List<? extends AbstractSAMHeaderRecord> createGroups(final String[] groupIds) {
-            final List<SAMFileReader> readers = new ArrayList<SAMFileReader>();
+            final List<SamReader> readers = new ArrayList<SamReader>();
 
             for (final String groupId : groupIds) {
-                final SAMFileReader samReader = newFileReader();
+                final SamReader samReader = newFileReader();
                 final List<SAMReadGroupRecord> records = new ArrayList<SAMReadGroupRecord>();
                 final SAMReadGroupRecord record = new SAMReadGroupRecord(groupId);
                 records.add(record);
@@ -493,7 +493,7 @@ public class MergingSamRecordIteratorGroupCollisionTest {
                 readers.add(samReader);
             }
             final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
-            for (SAMFileReader reader : readers) {
+            for (SamReader reader : readers) {
                 headers.add(reader.getFileHeader());
             }
 

@@ -35,7 +35,7 @@ import java.util.Comparator;
  */
 class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements Comparable<ComparableSamRecordIterator> {
     private final Comparator<SAMRecord> comparator;
-    private final SAMFileReader reader;    
+    private final SamReader reader;    
 
     /**
      * Constructs a wrapping iterator around the given iterator that will be able
@@ -44,14 +44,14 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
      * @param iterator the wrapped iterator.
      * @param comparator the Comparator to use to provide ordering fo SAMRecords
      */
-    public ComparableSamRecordIterator(final SAMFileReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
+    public ComparableSamRecordIterator(final SamReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
         super(iterator);
         this.reader = sam;        
         this.comparator = comparator;
     }
 
     /** Returns the reader from which this iterator was constructed. */
-    public SAMFileReader getReader() {
+    public SamReader getReader() {
         return reader;
     }    
 
