@@ -18,7 +18,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         abstract String name();
 
         /** The recommended file extension for SAMs of this type, without a period. */
-        abstract String fileExtension();
+        public abstract String fileExtension();
 
         /** The recommended file extension for SAM indexes of this type, without a period, or null if this type is not associated with indexes. */
         abstract String indexExtension();
@@ -38,7 +38,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
 
             @Override
-            String fileExtension() {
+            public String fileExtension() {
                 return fileExtension;
             }
 
@@ -53,6 +53,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
         }
 
+        public static Type CRAM_TYPE = new TypeImpl("CRAM", "cram", "crai");
         public static Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
         public static Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
     }
@@ -147,7 +148,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * @param sequence  Reference sequence of interest.
      * @param start     1-based, inclusive start of interval of interest. Zero implies start of the reference sequence.
      * @param end       1-based, inclusive end of interval of interest. Zero implies end of the reference sequence.
-     * @param contained If true, each SAMRecord returned is will have its alignment completely contained in the
+     * @param contained If true, each SAMRecord returned will have its alignment completely contained in the
      *                  interval of interest.  If false, the alignment of the returned SAMRecords need only overlap the interval of interest.
      * @return Iterator over the SAMRecords matching the interval.
      */

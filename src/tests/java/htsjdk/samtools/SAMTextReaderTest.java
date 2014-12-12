@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -63,13 +64,13 @@ public class SAMTextReaderTest {
                 "MF:i:18\tNm:i:0\tH0:i:1\tH1:i:0\tRG:Z:L2\n";
 
         final String[] samResults =
-                {"read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\tchr20\t28993\t195\t" + seq1 + "\t" + qual1 +
-                        "\tH0:i:0\tH1:i:0\tMF:i:130\tRG:Z:L1\tNm:i:1",
-                "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\tchr20\t28701\t-168\t" + seq2 + "\t" + qual2 +
-                        "\tH0:i:1\tH1:i:0\tMF:i:18\tRG:Z:L2\tNm:i:0"
-        };
+                {"read_28833_29006_6945\t99\tchr20\t28833\t20\t10M1D25M\t=\t28993\t195\t" + seq1 + "\t" + qual1 +
+                        "\tH0:i:0\tH1:i:0\tMF:i:130\tRG:Z:L1\tNm:i:1\n",
+                        "read_28701_28881_323b\t147\tchr20\t28834\t30\t35M\t=\t28701\t-168\t" + seq2 + "\t" + qual2 +
+                                "\tH0:i:1\tH1:i:0\tMF:i:18\tRG:Z:L2\tNm:i:0\n"
+                };
 
-        final SAMFileReader samReader = createSamFileReader(samExample);
+        final SamReader samReader = createSamFileReader(samExample);
         final SAMFileHeader fileHeader = samReader.getFileHeader();
 
         Assert.assertEquals(fileHeader.getVersion(), fileFormatVersion);
@@ -85,29 +86,29 @@ public class SAMTextReaderTest {
         int i = 0;
         while (iterator.hasNext()) {
             final SAMRecord rec = iterator.next();
-            Assert.assertEquals(rec.format(), samResults[i++]);
+            Assert.assertEquals(rec.getSAMString(), samResults[i++]);
         }
         iterator.close();
         iterator.close();
-        samReader.close();        
+        samReader.close();
     }
 
-    private SAMFileReader createSamFileReader(final String samExample) {
+    private SamReader createSamFileReader(final String samExample) {
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(samExample.getBytes());
-        return new SAMFileReader(inputStream);
+        return SamReaderFactory.makeDefault().open(SamInputResource.of(inputStream));
     }
 
     @Test
     public void testUnmapped() {
         final String alignmentFromKris =
-          "0\t4\t*\t0\t0\t*\t*\t0\t0\tGCCTCGTAGTGCGCCATCAGTCTATCGATGTCGTTG\t44\"44===;;;;;;;;;::::88844\"4\"\"\"\"\"\"\"\"\n";
-        final SAMFileReader samReader = createSamFileReader(alignmentFromKris);
+                "0\t4\t*\t0\t0\t*\t*\t0\t0\tGCCTCGTAGTGCGCCATCAGTCTATCGATGTCGTTG\t44\"44===;;;;;;;;;::::88844\"4\"\"\"\"\"\"\"\"\n";
+        final SamReader samReader = createSamFileReader(alignmentFromKris);
         final CloseableIterator<SAMRecord> iterator = samReader.iterator();
         while (iterator.hasNext()) {
             iterator.next();
         }
         iterator.close();
-
+        CloserUtil.close(samReader);
     }
 
     /**
@@ -120,7 +121,7 @@ public class SAMTextReaderTest {
         samBuilder.addUnmappedFragment("Hi,Mom!");
         final SAMRecord rec = samBuilder.iterator().next();
         final String valueWithColons = "A:B::C:::";
-        rec.setAttribute(SAMTag.CQ.name(),  valueWithColons);
+        rec.setAttribute(SAMTag.CQ.name(), valueWithColons);
         // Write the record as SAM Text
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
         final SAMFileWriter textWriter = new SAMFileWriterFactory().makeSAMWriter(samBuilder.getHeader(),
@@ -128,8 +129,9 @@ public class SAMTextReaderTest {
         textWriter.addAlignment(rec);
         textWriter.close();
 
-        final SAMFileReader reader = new SAMFileReader(new ByteArrayInputStream(os.toByteArray()));
+        final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(new ByteArrayInputStream(os.toByteArray())));
         final SAMRecord recFromText = reader.iterator().next();
         Assert.assertEquals(recFromText.getAttribute(SAMTag.CQ.name()), valueWithColons);
+        CloserUtil.close(reader);
     }
 }

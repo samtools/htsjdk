@@ -16,8 +16,8 @@ public class FTPHelper implements URLHelper {
 
     private URL url;
 
-    public FTPHelper(URL url){
-        if(!url.getProtocol().toLowerCase().equals("ftp")){
+    public FTPHelper(URL url) {
+        if (!url.getProtocol().toLowerCase().equals("ftp")) {
             throw new IllegalArgumentException("FTPHelper can only be used with ftp protocol, not " + url.getProtocol());
         }
         this.url = url;
@@ -43,6 +43,7 @@ public class FTPHelper implements URLHelper {
     }
 
     @Override
+    @Deprecated
     public InputStream openInputStreamForRange(long start, long end) throws IOException {
         throw new UnsupportedOperationException("Cannot perform range operations over FTP");
     }

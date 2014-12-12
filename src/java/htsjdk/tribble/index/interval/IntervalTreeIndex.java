@@ -32,15 +32,17 @@ import java.util.List;
 
 /**
  * Index based on an interval tree
- * @see IntervalTree
+ *
  * @author jrobinso
  * @date Jul 9, 2010
+ * @see IntervalTree
  */
 public class IntervalTreeIndex extends AbstractIndex {
     public static final int INDEX_TYPE = IndexType.INTERVAL_TREE.fileHeaderTypeIdentifier;
 
     /**
      * Load from file.
+     *
      * @param inputStream This method assumes that the input stream is already buffered as appropriate.  Caller
      *                    should close after this object is constructed.
      */
@@ -52,6 +54,7 @@ public class IntervalTreeIndex extends AbstractIndex {
 
     /**
      * Prepare to build an index.
+     *
      * @param featureFile File which we are indexing
      */
     public IntervalTreeIndex(final String featureFile) {
@@ -70,7 +73,8 @@ public class IntervalTreeIndex extends AbstractIndex {
 
     /**
      * Add a new interval to this index
-     * @param chr  Chromosome
+     *
+     * @param chr      Chromosome
      * @param interval
      */
     public void insert(final String chr, final Interval interval) {
@@ -151,7 +155,7 @@ public class IntervalTreeIndex extends AbstractIndex {
             });
 
             // Consolidate blocks  that are close together
-            final List<Block> consolidatedBlocks = new ArrayList(blocks.length);
+            final List<Block> consolidatedBlocks = new ArrayList<Block>(blocks.length);
             Block lastBlock = blocks[0];
             consolidatedBlocks.add(lastBlock);
             for (int i = 1; i < blocks.length; i++) {
@@ -181,7 +185,7 @@ public class IntervalTreeIndex extends AbstractIndex {
                 dos.writeInt(interval.start);
                 dos.writeInt(interval.end);
                 dos.writeLong(interval.getBlock().getStartPosition());
-                dos.writeInt((int)interval.getBlock().getSize());
+                dos.writeInt((int) interval.getBlock().getSize());
             }
 
         }

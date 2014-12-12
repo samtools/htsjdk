@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
  *
  * @author mccowan@broadinstitute.org
  */
+@Deprecated
 public class SAMFileTruncatedReader extends SAMFileReader {
     private class TruncatedIterator implements SAMRecordIterator {
         final SAMRecordIterator i;

@@ -24,8 +24,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.QueryInterval;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.filter.IntervalFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 
@@ -44,15 +44,15 @@ public class SamRecordIntervalIteratorFactory {
     /**
      * @param samReader
      * @param uniqueIntervals list of intervals of interest, with overlaps merged, in coordinate order
-     * @param useIndex if false, do not use a BAM index even if it is present.
+     * @param useIndex        if false, do not use a BAM index even if it is present.
      * @return an iterator that will be filtered so that only SAMRecords overlapping the intervals
      * in uniqueIntervals will be returned.  If a BAM index is available, it will be used to improve performance.
      * Note however that if there are many intervals that cover a great deal of the genome, using the BAM
      * index may actually make performance worse.
      */
-    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(final SAMFileReader samReader,
-                                                               final List<Interval> uniqueIntervals,
-                                                               final boolean useIndex) {
+    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(final SamReader samReader,
+                                                                      final List<Interval> uniqueIntervals,
+                                                                      final boolean useIndex) {
         if (!samReader.hasIndex() || !useIndex) {
             final int stopAfterSequence;
             final int stopAfterPosition;
@@ -70,7 +70,7 @@ public class SamRecordIntervalIteratorFactory {
             final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
             for (int i = 0; i < queryIntervals.length; ++i) {
                 final Interval inputInterval = uniqueIntervals.get(i);
-                queryIntervals[i] = samReader.makeQueryInterval(inputInterval.getSequence(),
+                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getSequence()),
                         inputInterval.getStart(), inputInterval.getEnd());
             }
             return samReader.queryOverlapping(queryIntervals);
@@ -83,7 +83,7 @@ public class SamRecordIntervalIteratorFactory {
      * but that method is called FilteringIterator ctor, so the stopAfter members can't be initialized before
      * it is called.
      * FilteringIterator ctor could take a boolean "advance" that would tell it whether or not to call getNextRecord
-     * in the ctor, so that it could be delayed in the subclass.  If this pattern happens again, we should do that. 
+     * in the ctor, so that it could be delayed in the subclass.  If this pattern happens again, we should do that.
      */
     private class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
         private final int stopAfterSequence;
@@ -105,7 +105,7 @@ public class SamRecordIntervalIteratorFactory {
         /**
          * Returns true if the iteration has more elements.
          *
-         * @return  true if the iteration has more elements.  Otherwise returns false.
+         * @return true if the iteration has more elements.  Otherwise returns false.
          */
         public boolean hasNext() {
             return next != null;
@@ -114,7 +114,7 @@ public class SamRecordIntervalIteratorFactory {
         /**
          * Returns the next element in the iteration.
          *
-         * @return  the next element in the iteration
+         * @return the next element in the iteration
          * @throws java.util.NoSuchElementException
          */
         public SAMRecord next() {

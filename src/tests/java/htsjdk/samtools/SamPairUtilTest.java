@@ -23,43 +23,40 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.PeekableIterator;
+import htsjdk.samtools.SamPairUtil.SetMateInfoIterator;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import htsjdk.samtools.SamPairUtil.SetMateInfoIterator;
 
 
 public class SamPairUtilTest {
 
     @Test(dataProvider = "testGetPairOrientation")
-        public void testGetPairOrientation(final String testName,
-                                           final int read1Start, final int read1Length, final boolean read1Reverse,
-                                           final int read2Start, final int read2Length, final boolean read2Reverse,
-                                           final SamPairUtil.PairOrientation expectedOrientation) {
+    public void testGetPairOrientation(final String testName,
+                                       final int read1Start, final int read1Length, final boolean read1Reverse,
+                                       final int read2Start, final int read2Length, final boolean read2Reverse,
+                                       final SamPairUtil.PairOrientation expectedOrientation) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
         final SAMRecord rec1 = makeSamRecord(header, read1Start, read1Length, read1Reverse, true);
         final SAMRecord rec2 = makeSamRecord(header, read2Start, read2Length, read2Reverse, false);
-        SamPairUtil.setMateInfo(rec1, rec2, header, true);
+        SamPairUtil.setMateInfo(rec1, rec2, true);
         Assert.assertEquals(SamPairUtil.getPairOrientation(rec1), expectedOrientation, testName + " first end");
         Assert.assertEquals(SamPairUtil.getPairOrientation(rec2), expectedOrientation, testName + " second end");
     }
 
     @Test(dataProvider = "testSetMateInfoMateCigar")
     public void testSetMateInfoMateCigar(final String testName,
-                                       final int read1Start, final boolean read1Reverse, final String read1Cigar,
-                                       final int read2Start, final boolean read2Reverse, final String read2Cigar) {
+                                         final int read1Start, final boolean read1Reverse, final String read1Cigar,
+                                         final int read2Start, final boolean read2Reverse, final String read2Cigar) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
         final SAMRecord rec1 = makeSamRecord2(header, read1Start, read1Reverse, read1Cigar, true);
         final SAMRecord rec2 = makeSamRecord2(header, read2Start, read2Reverse, read2Cigar, false);
-        SamPairUtil.setMateInfo(rec1, rec2, header, true);
+        SamPairUtil.setMateInfo(rec1, rec2, true);
         Assert.assertEquals(SAMUtils.getMateCigarString(rec1), rec2.getCigarString(), testName + " first end");
         Assert.assertEquals(SAMUtils.getMateCigarString(rec2), rec1.getCigarString(), testName + " second end");
     }
@@ -71,11 +68,11 @@ public class SamPairUtilTest {
 
     @Test(dataProvider = "testSetMateInfoMateCigarOnSupplementals")
     public void testSetMateInfoMateCigarOnSupplementals(final String testName,
-            final int read1Start, final boolean read1Reverse, final String read1Cigar,
-            final int read1SupplementalStart, final boolean read1SupplementalReverse, final String read1SupplementalCigar,
-            final int read2Start, final boolean read2Reverse, final String read2Cigar,
-            final int read2SupplementalStart, final boolean read2SupplementalReverse, final String read2SupplementalCigar
-            ) {
+                                                        final int read1Start, final boolean read1Reverse, final String read1Cigar,
+                                                        final int read1SupplementalStart, final boolean read1SupplementalReverse, final String read1SupplementalCigar,
+                                                        final int read2Start, final boolean read2Reverse, final String read2Cigar,
+                                                        final int read2SupplementalStart, final boolean read2SupplementalReverse, final String read2SupplementalCigar
+    ) {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
 
@@ -151,7 +148,7 @@ public class SamPairUtilTest {
                                      String cigarString, final boolean firstOfPair, final String name, final boolean isPaired, final boolean isSupplemental) {
         final SAMRecord rec = new SAMRecord(header);
         final StringBuilder sb = new StringBuilder();
-        final Cigar cigar =  TextCigarCodec.getSingleton().decode(cigarString);
+        final Cigar cigar = TextCigarCodec.getSingleton().decode(cigarString);
         final int readLength = cigar.getReadLength();
         rec.setReferenceIndex(0);
         final byte[] quals = new byte[readLength];
@@ -186,7 +183,7 @@ public class SamPairUtilTest {
          * @param read2Reverse
          * @param expectedOrientation
          */
-        return new Object[][] {
+        return new Object[][]{
                 {"normal innie", 1, 100, false, 500, 100, true, SamPairUtil.PairOrientation.FR},
                 {"overlapping innie", 1, 100, false, 50, 100, true, SamPairUtil.PairOrientation.FR},
                 {"second end enclosed innie", 1, 100, false, 50, 50, true, SamPairUtil.PairOrientation.FR},
@@ -216,7 +213,7 @@ public class SamPairUtilTest {
          * @param read2Reverse
          * @param read2Cigar
          */
-        return new Object[][] {
+        return new Object[][]{
                 {"50M/50M", 1, false, "50M", 500, true, "50M"},
                 {"50M/25M5I20M", 1, false, "50M", 500, true, "25M5I20M"},
                 {"25M5I20M/50M", 1, false, "25M5I20M", 500, true, "50M"},
@@ -242,7 +239,7 @@ public class SamPairUtilTest {
          * @param read2SupplementalReverse
          * @param read2SupplementalCigar
          * */
-        return new Object[][] {
+        return new Object[][]{
                 {"fragment", 1, false, "50M", -1, false, null, -1, false, null, -1, false, null},
                 {"fragment with supplemental", 1, false, "50M", 10, false, "50M", -1, false, null, -1, false, null},
                 {"pair", 1, false, "50M", -1, false, null, 1, false, "20M", -1, false, null},

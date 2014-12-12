@@ -53,6 +53,7 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * Prepare to read a SAM text file.
+     *
      * @param stream Need not be buffered, as this class provides buffered reading.
      */
     public SAMTextReader(final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
@@ -64,8 +65,9 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * Prepare to read a SAM text file.
+     *
      * @param stream Need not be buffered, as this class provides buffered reading.
-     * @param file For error reporting only.
+     * @param file   For error reporting only.
      */
     public SAMTextReader(final InputStream stream, final File file, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
         this(stream, validationStringency, factory);
@@ -74,6 +76,7 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * If true, writes the source of every read into the source SAMRecords.
+     *
      * @param enabled true to write source information into each SAMRecord.
      */
     public void enableFileSource(final SamReader reader, final boolean enabled) {
@@ -151,6 +154,7 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * Generally loads data at a given point in the file.  Unsupported for SAMTextReaders.
+     *
      * @param fileSpan The file span.
      * @return An iterator over the given file span.
      */
@@ -160,6 +164,7 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
 
     /**
      * Generally gets a pointer to the first read in the file.  Unsupported for SAMTextReaders.
+     *
      * @return An pointer to the first read in the file.
      */
     public SAMFileSpan getFilePointerSpanningReads() {
@@ -192,7 +197,7 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
     private void readHeader() {
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
         headerCodec.setValidationStringency(validationStringency);
-        mFileHeader = headerCodec.decode(mReader, (mFile != null? mFile.toString(): null));
+        mFileHeader = headerCodec.decode(mReader, (mFile != null ? mFile.toString() : null));
         advanceLine();
     }
 
@@ -200,10 +205,6 @@ class SAMTextReader extends SAMFileReader.ReaderImplementation {
         mCurrentLine = mReader.readLine();
         return mCurrentLine;
     }
-
-
-
-
 
     /**
      * SAMRecord iterator for SAMTextReader

@@ -24,7 +24,6 @@
 
 package htsjdk.samtools;
 
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -122,7 +121,7 @@ public class SamFileValidator {
      * @param reference if null, NM tag validation is skipped
      * @return boolean  true if there are no validation errors, otherwise false
      */
-    public boolean validateSamFileSummary(final SAMFileReader samReader, final ReferenceSequenceFile reference) {
+    public boolean validateSamFileSummary(final SamReader samReader, final ReferenceSequenceFile reference) {
         init(reference, samReader.getFileHeader());
 
         validateSamFile(samReader, out);
@@ -153,7 +152,7 @@ public class SamFileValidator {
      *                  processing will stop after this threshold has been reached
      * @return boolean  true if there are no validation errors, otherwise false
      */
-    public boolean validateSamFileVerbose(final SAMFileReader samReader, final ReferenceSequenceFile reference) {
+    public boolean validateSamFileVerbose(final SamReader samReader, final ReferenceSequenceFile reference) {
         init(reference, samReader.getFileHeader());
 
         try {
@@ -193,9 +192,8 @@ public class SamFileValidator {
         }
     }
 
-    private void validateSamFile(final SAMFileReader samReader, final PrintWriter out) {
+    private void validateSamFile(final SamReader samReader, final PrintWriter out) {
         try {
-            samReader.setValidationStringency(ValidationStringency.SILENT);
             validateHeader(samReader.getFileHeader());
             orderChecker = new SAMSortOrderChecker(samReader.getFileHeader().getSortOrder());
             validateSamRecordsAndQualityFormat(samReader, samReader.getFileHeader());

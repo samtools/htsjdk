@@ -31,7 +31,7 @@ import java.io.InputStream;
 /**
  * A wrapper class to provide buffered read access to a SeekableStream.  Just wrapping such a stream with
  * a BufferedInputStream will not work as it does not support seeking.  In this implementation a
- * seek call is delegated to the wrapped stream, and the buffer reset. 
+ * seek call is delegated to the wrapped stream, and the buffer reset.
  */
 public class SeekableBufferedStream extends SeekableStream {
 
@@ -62,6 +62,7 @@ public class SeekableBufferedStream extends SeekableStream {
         this.position = 0;
         bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
     }
+
     public SeekableBufferedStream(final SeekableStream stream) {
         this(stream, DEFAULT_BUFFER_SIZE);
     }
@@ -76,8 +77,7 @@ public class SeekableBufferedStream extends SeekableStream {
             final long retval = this.bufferedStream.skip(skipLength);
             this.position += retval;
             return retval;
-        }
-        else {
+        } else {
             final long position = this.position + skipLength;
             seek(position);
             return skipLength;
@@ -97,8 +97,16 @@ public class SeekableBufferedStream extends SeekableStream {
     }
 
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
-        final int nBytesRead = bufferedStream.read(buffer, offset, length);
+        int nBytesRead = bufferedStream.read(buffer, offset, length);
         if (nBytesRead > 0) {
+            //if we can't read as many bytes as we are asking for then attempt another read to reset the buffer.
+            if (nBytesRead < length) {
+                final int additionalBytesRead = bufferedStream.read(buffer, nBytesRead + offset, length - nBytesRead);
+                //if there were additional bytes read then update nBytesRead
+                if (additionalBytesRead > 0) {
+                    nBytesRead += additionalBytesRead;
+                }
+            }
             position += nBytesRead;
         }
         return nBytesRead;

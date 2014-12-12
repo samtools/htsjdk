@@ -71,16 +71,14 @@ public class HTTPHelper implements URLHelper {
         try {
             con = openConnection();
             con.setRequestMethod("HEAD");
-            if((con.getResponseCode() != HttpURLConnection.HTTP_OK)) {
+            if ((con.getResponseCode() != HttpURLConnection.HTTP_OK)) {
                 System.out.println("Error (" + con.getResponseMessage() + " ) fetching content length: " + url);
                 return -1;
-            }
-            else {
+            } else {
                 String contentLength = con.getHeaderField("Content-Length");
                 return contentLength == null ? -1 : Long.parseLong(contentLength);
             }
-        }
-        finally {
+        } finally {
             if (con != null) con.disconnect();
         }
     }
@@ -101,6 +99,7 @@ public class HTTPHelper implements URLHelper {
      * @return
      * @throws IOException
      */
+    @Deprecated
     public InputStream openInputStreamForRange(long start, long end) throws IOException {
 
         HttpURLConnection connection = openConnection();
@@ -119,22 +118,20 @@ public class HTTPHelper implements URLHelper {
         return connection;
     }
 
-    public boolean exists() throws IOException{
+    public boolean exists() throws IOException {
         HttpURLConnection con = null;
         try {
             con = openConnection();
             con.setRequestMethod("HEAD");
             return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             // This is what we are testing for, so its not really an exception
             return false;
-        }
-        finally {
+        } finally {
             if (con != null) con.disconnect();
         }
     }
-    
+
     class WrapperInputStream extends FilterInputStream {
 
         HttpURLConnection connection;

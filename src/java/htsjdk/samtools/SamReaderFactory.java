@@ -1,8 +1,11 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -10,8 +13,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.zip.GZIPInputStream;
@@ -59,6 +60,8 @@ public abstract class SamReaderFactory {
 
     abstract public ValidationStringency validationStringency();
 
+    abstract public File referenceSequence();
+
     /** Set this factory's {@link htsjdk.samtools.SAMRecordFactory} to the provided one, then returns itself. */
     abstract public SamReaderFactory samRecordFactory(final SAMRecordFactory samRecordFactory);
 
@@ -67,6 +70,18 @@ public abstract class SamReaderFactory {
 
     /** Disables the provided {@link Option}s, then returns itself. */
     abstract public SamReaderFactory disable(final Option... options);
+
+    /** Sets a specific Option to a boolean value. * */
+    abstract public SamReaderFactory setOption(final Option option, boolean value);
+
+    /** Sets the specified reference sequence * */
+    abstract public SamReaderFactory referenceSequence(File referenceSequence);
+
+    /** Utility method to open the file get the header and close the file */
+    abstract public SAMFileHeader getFileHeader(File samFile);
+
+    /** Reapplies any changed options to the reader * */
+    abstract public void reapplyOptions(SamReader reader);
 
     /** Set this factory's {@link ValidationStringency} to the provided one, then returns itself. */
     abstract public SamReaderFactory validationStringency(final ValidationStringency validationStringency);
@@ -86,7 +101,7 @@ public abstract class SamReaderFactory {
     }
 
     /**
-     * Creates an "empty" factory with no enabled {@link Option}s, {@link ValidationStringency#DEFAULT_STRINGENCY}, and 
+     * Creates an "empty" factory with no enabled {@link Option}s, {@link ValidationStringency#DEFAULT_STRINGENCY}, and
      * {@link htsjdk.samtools.DefaultSAMRecordFactory}.
      */
     public static SamReaderFactory make() {
@@ -99,6 +114,7 @@ public abstract class SamReaderFactory {
         private ValidationStringency validationStringency;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
+        private File referenceSequence;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
@@ -122,6 +138,11 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        public File referenceSequence() {
+            return referenceSequence;
+        }
+
+        @Override
         public SamReaderFactory samRecordFactory(final SAMRecordFactory samRecordFactory) {
             this.samRecordFactory = samRecordFactory;
             return this;
@@ -139,6 +160,36 @@ public abstract class SamReaderFactory {
                 this.enabledOptions.remove(option);
             }
             return this;
+        }
+
+        @Override
+        public SamReaderFactory setOption(final Option option, final boolean value) {
+            if (value) {
+                return enable(option);
+            } else {
+                return disable(option);
+            }
+        }
+
+        @Override
+        public SamReaderFactory referenceSequence(final File referenceSequence) {
+            this.referenceSequence = referenceSequence;
+            return this;
+        }
+
+        @Override
+        public SAMFileHeader getFileHeader(final File samFile) {
+            final SamReader reader = open(samFile);
+            final SAMFileHeader header = reader.getFileHeader();
+            CloserUtil.close(reader);
+            return header;
+        }
+
+        @Override
+        public void reapplyOptions(final SamReader reader) {
+            for (final Option option : enabledOptions) {
+                option.applyTo((SamReader.PrimitiveSamReaderToSamReaderAdapter) reader);
+            }
         }
 
         @Override
@@ -183,12 +234,12 @@ public abstract class SamReaderFactory {
                         throw new SAMFormatException("Unrecognized file format: " + data.asUnbufferedSeekableStream());
                     }
                 } else {
-                    final InputStream bufferedStream =
+                    InputStream bufferedStream =
                             IOUtil.maybeBufferInputStream(
                                     data.asUnbufferedInputStream(),
                                     Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE)
                             );
-                    final File sourceFile = data.asFile();
+                    File sourceFile = data.asFile();
                     final File indexFile = indexMaybe == null ? null : indexMaybe.asFile();
                     if (SamStreams.isBAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
@@ -202,6 +253,19 @@ public abstract class SamReaderFactory {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                    } else if (CramIO.isCRAM(bufferedStream)) {
+                        if (sourceFile == null || !sourceFile.isFile()) {
+                            sourceFile = null;
+                        } else {
+                            bufferedStream.close();
+                            bufferedStream = null;
+                        }
+                        // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
+                        if (referenceSequence != null) {
+                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream, new ReferenceSource(referenceSequence));
+                        } else {
+                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream);
+                        }
                     } else {
                         if (indexDefined) {
                             bufferedStream.close();
@@ -247,6 +311,11 @@ public abstract class SamReaderFactory {
             void applyTo(final SAMTextReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableFileSource(reader, true);
             }
+
+            @Override
+            void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableFileSource(reader, true);
+            }
         },
 
         /**
@@ -265,6 +334,11 @@ public abstract class SamReaderFactory {
             @Override
             void applyTo(final SAMTextReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
+            }
+
+            @Override
+            void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableIndexCaching(true);
             }
         },
 
@@ -285,6 +359,11 @@ public abstract class SamReaderFactory {
             void applyTo(final SAMTextReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
+
+            @Override
+            void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableIndexMemoryMapping(false);
+            }
         },
 
         /**
@@ -299,6 +378,11 @@ public abstract class SamReaderFactory {
 
             @Override
             void applyTo(final SAMTextReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
+            }
+
+            @Override
+            void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
         },
@@ -317,6 +401,12 @@ public abstract class SamReaderFactory {
             void applyTo(final SAMTextReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
+
+            @Override
+            void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
+            }
+
         };
 
         public static EnumSet<Option> DEFAULTS = EnumSet.noneOf(Option.class);
@@ -328,9 +418,12 @@ public abstract class SamReaderFactory {
                 applyTo((BAMFileReader) underlyingReader, reader);
             } else if (underlyingReader instanceof SAMTextReader) {
                 applyTo((SAMTextReader) underlyingReader, reader);
+            } else if (underlyingReader instanceof CRAMFileReader) {
+                applyTo((CRAMFileReader) underlyingReader, reader);
             } else {
                 throw new IllegalArgumentException(String.format("Unrecognized reader type: %s.", underlyingReader.getClass()));
             }
+
         }
 
         private static void logDebugIgnoringOption(final SamReader r, final Option option) {
@@ -342,5 +435,7 @@ public abstract class SamReaderFactory {
         abstract void applyTo(final BAMFileReader underlyingReader, final SamReader reader);
 
         abstract void applyTo(final SAMTextReader underlyingReader, final SamReader reader);
+
+        abstract void applyTo(final CRAMFileReader underlyingReader, final SamReader reader);
     }
 }

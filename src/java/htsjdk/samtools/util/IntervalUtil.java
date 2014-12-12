@@ -40,15 +40,16 @@ public class IntervalUtil {
 
     /** Return true if the sequence/position lie in the provided interval list. */
     public static boolean contains(final IntervalList intervalList, final String sequenceName, final long position) {
-        for (final Interval interval : intervalList.getUniqueIntervals()) {
-           if (contains(interval, sequenceName, position))
-               return true;
+        for (final Interval interval : intervalList.uniqued().getIntervals()) {
+            if (contains(interval, sequenceName, position))
+                return true;
         }
         return false;
     }
-    
+
     /**
      * Throws RuntimeException if the given intervals are not locus ordered and non-overlapping
+     *
      * @param intervals
      * @param sequenceDictionary used to determine order of sequences
      */
@@ -65,7 +66,7 @@ public class IntervalUtil {
             }
             final int thisSequenceIndex = sequenceDictionary.getSequenceIndex(interval.getSequence());
             if (prevSequenceIndex > thisSequenceIndex ||
-                (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
+                    (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
                 throw new SAMException("Intervals not in order: " + prevInterval + "; " + interval);
             }
             prevInterval = interval;

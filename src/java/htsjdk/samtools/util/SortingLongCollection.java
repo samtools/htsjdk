@@ -41,29 +41,29 @@ import java.util.PriorityQueue;
 /**
  * Accumulate a list of longs that can then be sorted in natural order and iterated over.
  * If there are more values accumulated than a specified maximum, values are spilled to disk.
- *
+ * <p/>
  * Note that because this class returns primitive longs rather than Longs, it does not conform to
  * any of the Collection iteration interfaces.  Use as follows:
- *
+ * <p/>
  * 1. ctor
  * 2. call add() as many times as desired.
  * 3. call doneAddingStartIteration().
  * 4. call hasNext() and next() until exhausted or had enough.
  * 5. optionally call cleanup() to free space in temporary directory as soon as possible.
- *
+ * <p/>
  * If there are few enough values so that they all can be kept in RAM, then the array is sorted
  * and iterated over trivially.
- *
+ * <p/>
  * If there are more values that can fit in RAM, then values are sorted and written to a temp file when the max
  * number to be stored in RAM is reached. Multiple temp files are then merged during iteration via PriorityQueue.
- *
+ * <p/>
  * c.f. SortingCollection for more details.
  *
  * @author alecw@broadinstitute.org
  */
 public class SortingLongCollection {
     public static final int SIZEOF = 8;
-    public static final int MAX_ITEMS_IN_RAM = (int)Math.floor((Integer.MAX_VALUE/8)*.999);
+    public static final int MAX_ITEMS_IN_RAM = (int) Math.floor((Integer.MAX_VALUE / 8) * .999);
 
     /**
      * Where files of sorted values go.
@@ -98,8 +98,9 @@ public class SortingLongCollection {
 
     /**
      * Prepare to accumulate values to be sorted
+     *
      * @param maxValuesInRam how many values to accumulate before spilling to disk
-     * @param tmpDir Where to write files of values that will not fit in RAM
+     * @param tmpDir         Where to write files of values that will not fit in RAM
      */
     public SortingLongCollection(final int maxValuesInRam, final File... tmpDir) {
         if (maxValuesInRam <= 0) {
@@ -112,6 +113,7 @@ public class SortingLongCollection {
 
     /**
      * Add a value to the collection.
+     *
      * @param value
      */
     public void add(final long value) {
@@ -143,7 +145,7 @@ public class SortingLongCollection {
         }
 
         this.priorityQueue = new PriorityQueue<PeekFileValueIterator>(files.size(),
-                                                                       new PeekFileValueIteratorComparator());
+                new PeekFileValueIteratorComparator());
         for (final File f : files) {
             final FileValueIterator it = new FileValueIterator(f);
             if (it.hasNext()) {
@@ -172,8 +174,7 @@ public class SortingLongCollection {
                     os.writeLong(ramValues[i]);
                 }
                 os.flush();
-            }
-            finally {
+            } finally {
                 if (os != null) {
                     os.close();
                 }
@@ -182,8 +183,7 @@ public class SortingLongCollection {
             this.numValuesInRam = 0;
             this.files.add(f);
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -219,6 +219,7 @@ public class SortingLongCollection {
 
     /**
      * Call only if hasNext() == true.
+     *
      * @return next value from collection, in natural sort order.
      */
     public long next() {
@@ -255,8 +256,7 @@ public class SortingLongCollection {
             try {
                 is = new DataInputStream(IOUtil.maybeBufferInputStream(new FileInputStream(file)));
                 next();
-            }
-            catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
                 throw new RuntimeIOException(file.getAbsolutePath(), e);
             }
         }
@@ -272,10 +272,10 @@ public class SortingLongCollection {
             final long ret = currentRecord;
             try {
                 currentRecord = is.readLong();
-            } catch (EOFException eof) {
+            } catch (final EOFException eof) {
                 isCurrentRecord = false;
                 currentRecord = 0;
-            } catch(IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
             return ret;
@@ -283,7 +283,6 @@ public class SortingLongCollection {
 
         void close() {
             CloserUtil.close(is);
-            IOUtil.deleteFiles(file);
         }
     }
 
