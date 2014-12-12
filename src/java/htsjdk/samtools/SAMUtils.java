@@ -79,8 +79,27 @@ public final class SAMUtils {
     private static final byte COMPRESSED_K_HIGH = (byte) (COMPRESSED_K_LOW << 4);
     private static final byte COMPRESSED_D_HIGH = (byte) (COMPRESSED_D_LOW << 4);
     private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
-
-
+    
+    private static final byte [] COMPRESSED_LOOKUP_TABLE = 
+            new byte[]{
+                '=',
+                'A',
+                'C',
+                'M',
+                'G',
+                'R',
+                'S',
+                'V',
+                'T',
+                'W',
+                'Y',
+                'H',
+                'K',
+                'D',
+                'B',
+                'N'
+            };
+    
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
@@ -253,6 +272,19 @@ public final class SAMUtils {
                 throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
         }
     }
+    
+    /**
+     * Returns the byte corresponding to a certain nybble
+     * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
+     * @return ASCII base, one of ACGTN=.
+     */
+    private static byte compressedBaseToByte(byte base){
+        try{
+            return COMPRESSED_LOOKUP_TABLE[base];
+        }catch(IndexOutOfBoundsException e){
+            throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
+        }
+    }
 
     /**
      * Convert from BAM nybble representation of a base in low-order nybble to ASCII byte.
@@ -261,46 +293,7 @@ public final class SAMUtils {
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteLow(final int base) {
-        switch (base & 0xf) {
-            case COMPRESSED_EQUAL_LOW:
-                return '=';
-            case COMPRESSED_A_LOW:
-                return 'A';
-            case COMPRESSED_C_LOW:
-                return 'C';
-            case COMPRESSED_G_LOW:
-                return 'G';
-            case COMPRESSED_T_LOW:
-                return 'T';
-            case COMPRESSED_N_LOW:
-                return 'N';
-
-            // IUPAC ambiguity codes
-            case COMPRESSED_M_LOW:
-                return 'M';
-            case COMPRESSED_R_LOW:
-                return 'R';
-            case COMPRESSED_S_LOW:
-                return 'S';
-            case COMPRESSED_V_LOW:
-                return 'V';
-            case COMPRESSED_W_LOW:
-                return 'W';
-            case COMPRESSED_Y_LOW:
-                return 'Y';
-            case COMPRESSED_H_LOW:
-                return 'H';
-            case COMPRESSED_K_LOW:
-                return 'K';
-            case COMPRESSED_D_LOW:
-                return 'D';
-            case COMPRESSED_B_LOW:
-                return 'B';
-
-
-            default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
-        }
+        return compressedBaseToByte((byte)(base & 0xf));
     }
 
     /**
@@ -310,45 +303,7 @@ public final class SAMUtils {
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteHigh(final int base) {
-        switch ((byte) (base & 0xf0)) {
-            case COMPRESSED_EQUAL_HIGH:
-                return '=';
-            case COMPRESSED_A_HIGH:
-                return 'A';
-            case COMPRESSED_C_HIGH:
-                return 'C';
-            case COMPRESSED_G_HIGH:
-                return 'G';
-            case COMPRESSED_T_HIGH:
-                return 'T';
-            case COMPRESSED_N_HIGH:
-                return 'N';
-
-            // IUPAC ambiguity codes
-            case COMPRESSED_M_HIGH:
-                return 'M';
-            case COMPRESSED_R_HIGH:
-                return 'R';
-            case COMPRESSED_S_HIGH:
-                return 'S';
-            case COMPRESSED_V_HIGH:
-                return 'V';
-            case COMPRESSED_W_HIGH:
-                return 'W';
-            case COMPRESSED_Y_HIGH:
-                return 'Y';
-            case COMPRESSED_H_HIGH:
-                return 'H';
-            case COMPRESSED_K_HIGH:
-                return 'K';
-            case COMPRESSED_D_HIGH:
-                return 'D';
-            case COMPRESSED_B_HIGH:
-                return 'B';
-
-            default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
-        }
+        return compressedBaseToByte((byte)((base >> 4) & 0xf));
     }
 
     /**
