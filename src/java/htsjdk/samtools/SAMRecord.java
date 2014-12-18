@@ -556,7 +556,7 @@ public class SAMRecord implements Cloneable
 
     public String getCigarString() {
         if (mCigarString == null && getCigar() != null) {
-            mCigarString = TextCigarCodec.getSingleton().encode(getCigar());
+            mCigarString = TextCigarCodec.encode(getCigar());
         }
         return mCigarString;
     }
@@ -578,7 +578,7 @@ public class SAMRecord implements Cloneable
      */
     public Cigar getCigar() {
         if (mCigar == null && mCigarString != null) {
-            mCigar = TextCigarCodec.getSingleton().decode(mCigarString);
+            mCigar = TextCigarCodec.decode(mCigarString);
             if (getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
                 // Don't know line number, and don't want to force read name to be decoded.
                 SAMUtils.processValidationErrors(this.validateCigar(-1L), -1L, getValidationStringency());

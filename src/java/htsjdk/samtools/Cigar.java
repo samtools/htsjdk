@@ -263,6 +263,6 @@ public class Cigar {
     }
 
     public String toString() {
-        return TextCigarCodec.getSingleton().encode(this);
+        return TextCigarCodec.encode(this);
     }
 }

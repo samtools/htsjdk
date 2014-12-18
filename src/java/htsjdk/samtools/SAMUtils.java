@@ -750,7 +750,7 @@ public final class SAMUtils {
         final String mateCigarString = getMateCigarString(rec);
         Cigar mateCigar = null;
         if (mateCigarString != null) {
-            mateCigar = TextCigarCodec.getSingleton().decode(mateCigarString);
+            mateCigar = TextCigarCodec.decode(mateCigarString);
             if (withValidation && rec.getValidationStringency() != ValidationStringency.SILENT) {
                 final List<AlignmentBlock> alignmentBlocks = getAlignmentBlocks(mateCigar, rec.getMateAlignmentStart(), "mate cigar");
                 SAMUtils.processValidationErrors(validateCigar(rec, mateCigar, rec.getMateReferenceIndex(), alignmentBlocks, -1, "Mate CIGAR"), -1L, rec.getValidationStringency());

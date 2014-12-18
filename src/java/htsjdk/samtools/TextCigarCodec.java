@@ -32,26 +32,13 @@ public class TextCigarCodec
 {
     private static final byte ZERO_BYTE = "0".getBytes()[0];
     private static final byte NINE_BYTE = "9".getBytes()[0];
-    
-    private static final TextCigarCodec singleton = new TextCigarCodec();
-
-    /**
-     * It is not necessary to get the singleton but it is preferable to use the same one
-     * over and over vs. creating a new object for each BAMRecord.  There is no state in this
-     * class so this is thread-safe.
-     * @return A singleton TextCigarCodec useful for converting Cigar classes to and from strings
-     */
-    public static TextCigarCodec getSingleton() {
-        return singleton;
-    }
-
 
     /**
      * Convert from Cigar class representation to String.
      * @param cigar in Cigar class format
      * @return CIGAR in String form ala SAM text file.  "*" means empty CIGAR.
      */
-    public String encode(final Cigar cigar) {
+    public static String encode(final Cigar cigar) {
         if (cigar.isEmpty()) {
             return SAMRecord.NO_ALIGNMENT_CIGAR;
         }
@@ -71,7 +58,7 @@ public class TextCigarCodec
      * @throws RuntimeException if textCigar is invalid at the most basic level.
      * @return cigar in Cigar class format
      */
-    public Cigar decode(final String textCigar) {
+    public static Cigar decode(final String textCigar) {
         if (SAMRecord.NO_ALIGNMENT_CIGAR.equals(textCigar)) {
             return new Cigar();
         }
@@ -91,7 +78,7 @@ public class TextCigarCodec
         return ret;
     }
     
-    private boolean isDigit(final byte c) {
+    private static boolean isDigit(final byte c) {
         return c >= ZERO_BYTE && c <= NINE_BYTE;
     }
 

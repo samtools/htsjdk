@@ -32,50 +32,48 @@ import java.util.List;
  * @author alecw@broadinstitute.org
  */
 public class CigarTest {
-    private final TextCigarCodec codec = TextCigarCodec.getSingleton();
 
     @Test
     public void testPositive() {
-        Assert.assertNotNull(codec);
-        Assert.assertNull(codec.decode("").isValid(null, -1));
-        Assert.assertNull(codec.decode("2M1P4M1P2D1P6D").isValid(null, -1));
-        Assert.assertNull(codec.decode("10M5N1I12M").isValid(null, -1));
-        Assert.assertNull(codec.decode("10M1I5N1I12M").isValid(null, -1));
-        Assert.assertNull(codec.decode("9M1D5N1I12M").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("2M1P4M1P2D1P6D").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("10M5N1I12M").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("10M1I5N1I12M").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("9M1D5N1I12M").isValid(null, -1));
 
         // I followed by D and vice versa is now allowed.
-        Assert.assertNull(codec.decode("1M1I1D1M").isValid(null, -1));
-        Assert.assertNull(codec.decode("1M1D1I1M").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("1M1I1D1M").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("1M1D1I1M").isValid(null, -1));
 
         // Soft-clip inside of hard-clip now allowed.
-        Assert.assertNull(codec.decode("29M1S15H").isValid(null, -1));
+        Assert.assertNull(TextCigarCodec.decode("29M1S15H").isValid(null, -1));
     }
 
     @Test
     public void testNegative() {
         // Cannot have two consecutive insertions
-        List<SAMValidationError> errors = codec.decode("1M1I1I1M").isValid(null, -1);
+        List<SAMValidationError> errors = TextCigarCodec.decode("1M1I1I1M").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR);
 
         // Cannot have two consecutive deletions
-        errors = codec.decode("1M1D1D1M").isValid(null, -1);
+        errors = TextCigarCodec.decode("1M1D1D1M").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR);
 
         // Soft clip must be at end of read or inside of hard clip
-        errors = codec.decode("1M1D1S1M").isValid(null, -1);
+        errors = TextCigarCodec.decode("1M1D1S1M").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
 
         // Soft clip must be at end of read or inside of hard clip
-        errors = codec.decode("1M1D1S1M1H").isValid(null, -1);
+        errors = TextCigarCodec.decode("1M1D1S1M1H").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
 
 /*
         // Zero length for an element not allowed.
-        errors = codec.decode("100M0D10M1D10M").isValid(null, -1);
+        errors = TextCigarCodec.decode("100M0D10M1D10M").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
 */
