@@ -68,17 +68,7 @@ public class CramIO {
 	private static Log log = Log.getInstance(CramIO.class);
 	public static byte[] ZERO_B_EOF_MARKER = ByteBufferUtils
 			.bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 01 00 01 00");
-	
-	public static boolean isCRAM(InputStream is) throws IOException {
-		is.mark(4);
-		final int buffSize = CramHeader.magick.length;
-		DataInputStream dis = new DataInputStream(is);
-		final byte[] buffer = new byte[buffSize];
-		dis.readFully(buffer);
-		is.reset();
 
-		return Arrays.equals(buffer, CramHeader.magick);
-	}
 
 	public static String getFileName(String urlString) {
 		URL url = null;

@@ -24,7 +24,6 @@
 package htsjdk.samtools;
 
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
@@ -684,7 +683,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             } else if (isGzippedSAMFile(bufferedStream)) {
                 mIsBinary = false;
                 mReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-            } else if (CramIO.isCRAM(bufferedStream)) {
+            } else if (SamStreams.isCRAMFile(bufferedStream)) {
                 if (file == null || !file.isFile()) {
                     file = null;
                 } else {
