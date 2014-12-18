@@ -80,33 +80,43 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @return
      */
     public static IntervalList fromVcf(final File file){
+        return fromVcf(file, false);
+    }
+
+    public static IntervalList fromVcf(final File file, final boolean includeFiltered){
         final VCFFileReader vcfFileReader = new VCFFileReader(file, false);
-        final IntervalList intervalList = fromVcf(vcfFileReader);
+        final IntervalList intervalList = fromVcf(vcfFileReader, includeFiltered);
         vcfFileReader.close();
         return intervalList;
     }
 
     /**
-     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
+     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
+     * Will use a "END" tag in the info field as the end of the interval (if exists).
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
      */
+
     public static IntervalList fromVcf(final VCFFileReader vcf){
+        return fromVcf(vcf,false);
+    }
+    public static IntervalList fromVcf(final VCFFileReader vcf, final boolean includeFiltered){
 
         //grab the dictionary from the VCF and use it in the IntervalList
         final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
         final SAMFileHeader samFileHeader = new SAMFileHeader();
         samFileHeader.setSequenceDictionary(dict);
-        final IntervalList list = new IntervalList( samFileHeader);
+        final IntervalList list = new IntervalList(samFileHeader);
 
         int intervals=0;
         for(final VariantContext vc : vcf){
-            if(!vc.isFiltered()){
+            if(includeFiltered || !vc.isFiltered()){
                 String name = vc.getID();
+                final Integer intervalEnd=vc.getCommonInfo().getAttributeAsInt("END",vc.getEnd());
                 if(".".equals(name) || name == null)
                     name = "interval-" + (++intervals);
-                list.add(new Interval(vc.getChr(), vc.getStart(), vc.getEnd(), false, name));
+                list.add(new Interval(vc.getChr(), vc.getStart(), intervalEnd, false, name));
             }
         }
 
