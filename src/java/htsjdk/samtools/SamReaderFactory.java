@@ -1,6 +1,5 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
@@ -253,7 +252,7 @@ public abstract class SamReaderFactory {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-                    } else if (CramIO.isCRAM(bufferedStream)) {
+                    } else if (SamStreams.isCRAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
                             sourceFile = null;
                         } else {
