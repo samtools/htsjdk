@@ -269,7 +269,7 @@ public class CigarUtil {
     // unpack a cigar string into an array of cigarOperators
     // to facilitate sequence manipulation
     public static char[] cigarArrayFromString(String cigar){
-          return cigarArrayFromElements(TextCigarCodec.getSingleton().decode(cigar).getCigarElements());
+          return cigarArrayFromElements(TextCigarCodec.decode(cigar).getCigarElements());
     }
 
     // construct a cigar string from an array of cigarOperators.

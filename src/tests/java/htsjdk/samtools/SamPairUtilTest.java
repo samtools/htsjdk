@@ -148,7 +148,7 @@ public class SamPairUtilTest {
                                      String cigarString, final boolean firstOfPair, final String name, final boolean isPaired, final boolean isSupplemental) {
         final SAMRecord rec = new SAMRecord(header);
         final StringBuilder sb = new StringBuilder();
-        final Cigar cigar = TextCigarCodec.getSingleton().decode(cigarString);
+        final Cigar cigar = TextCigarCodec.decode(cigarString);
         final int readLength = cigar.getReadLength();
         rec.setReferenceIndex(0);
         final byte[] quals = new byte[readLength];

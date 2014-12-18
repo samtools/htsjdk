@@ -29,22 +29,12 @@ import java.nio.ByteBuffer;
  * Converter between disk and in-memory (object, not String) CIGAR representation.
  */
 class BinaryCigarCodec {
-    private static final BinaryCigarCodec singleton = new BinaryCigarCodec();
-
-    /**
-     * It is not necssary to get the singleton but it is preferrable to use the same one
-     * over and over vs. creating a new object for each BAMRecord.  This class has no state
-     * so this is thread-safe.
-     */
-    static BinaryCigarCodec getSingleton() {
-        return singleton;
-    }
 
     /**
      * Convert CIGAR from object representation to disk representation.
      * @return Array of unsigned ints, one for each element of CIGAR.
      */
-    int[] encode(final Cigar cigar) {
+    static int[] encode(final Cigar cigar) {
         if (cigar.numCigarElements() == 0) {
             return new int[0];
         }
@@ -66,7 +56,7 @@ class BinaryCigarCodec {
      * Convert CIGAR from disk representation to object.
      * @param binaryCigar ByteArray that is assumed to have byte order set appropriately for extracting ints.
      */
-    Cigar decode(final ByteBuffer binaryCigar) {
+    static Cigar decode(final ByteBuffer binaryCigar) {
         final Cigar ret = new Cigar();
         while (binaryCigar.hasRemaining()) {
             final int cigarette = binaryCigar.getInt();
@@ -79,7 +69,7 @@ class BinaryCigarCodec {
      * Convert CIGAR from disk representation to object.
      * @param binaryCigar Array of unsigned ints, one for each CIGAR element.
      */
-    Cigar decode(final int[] binaryCigar) {
+    static Cigar decode(final int[] binaryCigar) {
         final Cigar ret = new Cigar();
         for (final int cigarette : binaryCigar) {
             ret.add(binaryCigarToCigarElement(cigarette));
