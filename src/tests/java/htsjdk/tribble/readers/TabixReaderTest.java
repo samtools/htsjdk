@@ -142,7 +142,7 @@ public class TabixReaderTest {
      */
     @Test
     public void testRemoteQuery() throws IOException {
-        String tabixFile = "http://www.broadinstitute.org/igvdata/test/tabix/trioDup.vcf.gz";
+        String tabixFile = "http://www.broadinstitute.org/~picard/testdata/igvdata/tabix/trioDup.vcf.gz";
 
         TabixReader tabixReader = new TabixReader(tabixFile);
 

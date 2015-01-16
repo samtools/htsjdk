@@ -45,6 +45,7 @@ public class TabixIndexTest {
     public void readWriteTest(final File tabixFile) throws Exception {
         final TabixIndex index = new TabixIndex(tabixFile);
         final File indexFile = File.createTempFile("TabixIndexTest.", TabixUtils.STANDARD_INDEX_EXTENSION);
+        indexFile.deleteOnExit();
         final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(indexFile));
         index.write(los);
         los.close();

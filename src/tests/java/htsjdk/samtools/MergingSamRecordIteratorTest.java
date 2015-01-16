@@ -46,7 +46,7 @@ public class MergingSamRecordIteratorTest {
         builder1.addFrag("read_28833_29006_6945", 20, 28833, false); // ok
         builder1.addFrag("read_28701_28881_323b", 22, 28834, false); // ok
 
-        final SAMFileReader samReader = builder1.getSamReader();
+        final SamReader samReader = builder1.getSamReader();
         samReader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
         final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder();
@@ -54,11 +54,11 @@ public class MergingSamRecordIteratorTest {
         builder2.addFrag("read_28701_28881_323b", 22, 28835, false); // ok
         builder2.addFrag("read_28701_28881_323c", 22, 28835, false); // ok
 
-        final SAMFileReader samReader2 = builder2.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
         samReader2.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
 
-        final List<SAMFileReader> readerList = new ArrayList<SAMFileReader>();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
@@ -78,11 +78,12 @@ public class MergingSamRecordIteratorTest {
 
         while (iterator.hasNext()) {
             final SAMRecord rec = iterator.next();
-            System.out.println(rec.format());
+            System.out.println(rec.getSAMString());
             Assert.assertEquals(rec.getAlignmentStart(), startBasesInOrder[i]);
             i++;
         }
         samReader.close();
+        samReader2.close();
     }
 
     @Test
@@ -91,17 +92,17 @@ public class MergingSamRecordIteratorTest {
         builder1.addFrag("a", 20, 28833, false); // ok
         builder1.addFrag("e", 19, 28834, false); // ok
 
-        final SAMFileReader samReader = builder1.getSamReader();
+        final SamReader samReader = builder1.getSamReader();
 
         final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.queryname);
         builder2.addFrag("b", 20, 30000, false); // ok
         builder2.addFrag("c", 22, 28835, false); // ok
         builder2.addFrag("d", 20, 28835, false); // ok
 
-        final SAMFileReader samReader2 = builder2.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
 
 
-        final List<SAMFileReader> readerList = new ArrayList<SAMFileReader>();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
@@ -126,6 +127,7 @@ public class MergingSamRecordIteratorTest {
             i++;
         }
         samReader.close();
+        samReader2.close();
     }
 
     @Test
@@ -134,17 +136,17 @@ public class MergingSamRecordIteratorTest {
         builder1.addFrag("b", 20, 28833, false); // ok
         builder1.addFrag("a", 19, 28834, false); // ok
 
-        final SAMFileReader samReader = builder1.getSamReader();
+        final SamReader samReader = builder1.getSamReader();
 
         final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
         builder2.addFrag("d", 20, 30000, false); // ok
         builder2.addFrag("e", 22, 28835, false); // ok
         builder2.addFrag("c", 20, 28835, false); // ok
 
-        final SAMFileReader samReader2 = builder2.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
 
 
-        final List<SAMFileReader> readerList = new ArrayList<SAMFileReader>();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
@@ -169,6 +171,7 @@ public class MergingSamRecordIteratorTest {
         }
         Assert.assertEquals(i, readNames.length);
         samReader.close();
+        samReader2.close();
     }
 
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
@@ -177,7 +180,7 @@ public class MergingSamRecordIteratorTest {
         builder1.addFrag("read_28833_29006_6945", 20, 28833, false); // ok
         builder1.addFrag("read_28701_28881_323b", 22, 28834, false); // ok
 
-        final SAMFileReader samReader = builder1.getSamReader();
+        final SamReader samReader = builder1.getSamReader();
         samReader.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
         final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder();
@@ -185,7 +188,7 @@ public class MergingSamRecordIteratorTest {
         builder2.addFrag("read_28701_28881_323b", 22, 28835, false); // ok
         builder2.addFrag("read_28701_28881_323c", 22, 28835, false); // ok
 
-        final SAMFileReader samReader2 = builder2.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
         samReader2.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
         //Change one of the header so they are no longer compatible
@@ -193,7 +196,7 @@ public class MergingSamRecordIteratorTest {
         samReader2.getFileHeader().addSequence(sRec);
 
 
-        final List<SAMFileReader> readerList = new ArrayList<SAMFileReader>();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
@@ -214,17 +217,17 @@ public class MergingSamRecordIteratorTest {
         builder1.addFrag("read_28833_29006_6945", 20, 28833, false); // ok
         builder1.addFrag("read_28701_28881_323b", 22, 28834, false); // ok
 
-        final SAMFileReader samReader = builder1.getSamReader();
+        final SamReader samReader = builder1.getSamReader();
 
         final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
 
-        final SAMFileReader samReader2 = builder2.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
 
         builder2.addFrag("read_28701_28881_323b", 22, 28835, false); // ok
         builder2.addFrag("read_28833_29006_6945", 20, 30000, false); // ok
         builder2.addFrag("read_28701_28881_323c", 22, 28835, false); // ok
 
-        final List<SAMFileReader> readerList = new ArrayList<SAMFileReader>();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
@@ -262,5 +265,7 @@ public class MergingSamRecordIteratorTest {
         for (final String comment : mergedComments) {
             Assert.assertTrue(bothComments.contains(comment));
         }
+        builder1.getSamReader().close();
+        builder2.getSamReader().close();
     }
 }

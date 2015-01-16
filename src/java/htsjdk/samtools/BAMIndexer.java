@@ -62,7 +62,8 @@ public class BAMIndexer {
 
     /**
      * Prepare to index a BAM.
-     * @param output Index will be written here.  output will be closed when finish() method is called.
+     *
+     * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
@@ -224,6 +225,7 @@ public class BAMIndexer {
         /**
          * Creates the BAMIndexContent for this reference.
          * Requires all alignments of the reference have already been processed.
+         *
          * @return Null if there are no features for this reference.
          */
         public BAMIndexContent processReference(final int reference) {
@@ -263,9 +265,9 @@ public class BAMIndexer {
      * Generates a BAM index file from an input BAM file
      *
      * @param reader SAMFileReader for input BAM file
-     * @param output  File for output index file
+     * @param output File for output index file
      */
-    public static void createIndex(SAMFileReader reader, File output) {
+    public static void createIndex(SamReader reader, File output) {
         createIndex(reader, output, null);
     }
 
@@ -273,13 +275,12 @@ public class BAMIndexer {
      * Generates a BAM index file from an input BAM file
      *
      * @param reader SAMFileReader for input BAM file
-     * @param output  File for output index file
+     * @param output File for output index file
      */
-    public static void createIndex(SAMFileReader reader, File output, Log log) {
+    public static void createIndex(SamReader reader, File output, Log log) {
 
         BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader());
 
-        reader.enableFileSource(true);
         int totalRecords = 0;
 
         // create and write the content

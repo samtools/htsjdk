@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 
 import java.io.File;
@@ -125,7 +126,7 @@ public class BAMIndexMetaData {
             return;
         }
 
-        if (rec.getFileSource() == null){
+        if (rec.getFileSource() == null) {
             throw new SAMException("BAM cannot be indexed without setting a fileSource for record " + rec);
         }
         final Chunk newChunk = ((BAMFileSpan) rec.getFileSource().getFilePointer()).getSingleChunk();
@@ -136,6 +137,33 @@ public class BAMIndexMetaData {
             unAlignedRecords++;
         } else {
             alignedRecords++;
+        }
+        if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
+            this.firstOffset = start;
+        }
+        if (BlockCompressedFilePointerUtil.compare(lastOffset, end) < 1) {
+            this.lastOffset = end;
+        }
+    }
+
+    /**
+     * @param slice
+     */
+    void recordMetaData(Slice slice) {
+
+        final int alignmentStart = slice.alignmentStart;
+        if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
+            incrementNoCoordinateRecordCount();
+            return;
+        }
+
+        final long start = slice.offset;
+        final long end = slice.offset + 0;
+
+        if (slice.alignmentSpan < 1) {
+            unAlignedRecords += slice.nofRecords;
+        } else {
+            alignedRecords += slice.nofRecords;
         }
         if (BlockCompressedFilePointerUtil.compare(start, firstOffset) < 1 || firstOffset == -1) {
             this.firstOffset = start;
@@ -221,7 +249,7 @@ public class BAMIndexMetaData {
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */
-    static public BAMIndexMetaData[] getIndexStats(final BAMFileReader bam){
+    static public BAMIndexMetaData[] getIndexStats(final BAMFileReader bam) {
 
         AbstractBAMFileIndex index = (AbstractBAMFileIndex) bam.getIndex();
         // read through all the bins of every reference.
@@ -231,12 +259,12 @@ public class BAMIndexMetaData {
             result[i] = index.getMetaData(i);
         }
 
-        if (result[0] == null){
-           result[0] = new BAMIndexMetaData();
+        if (result[0] == null) {
+            result[0] = new BAMIndexMetaData();
         }
         final Long noCoordCount = index.getNoCoordinateCount();
         if (noCoordCount != null)  // null in old index files without metadata
-           result[0].setNoCoordinateRecordCount(noCoordCount);
+            result[0].setNoCoordinateRecordCount(noCoordCount);
 
         return result;
     }

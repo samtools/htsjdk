@@ -30,7 +30,6 @@ import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.testng.Assert;
@@ -42,10 +41,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
-import java.io.StringBufferInputStream;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by IntelliJ IDEA.
@@ -58,7 +60,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     private VCFHeader createHeader(String headerStr) {
         VCFCodec codec = new VCFCodec();
-        VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(LineReaderUtil.fromBufferedStream(new PositionalBufferedStream(new StringBufferInputStream(headerStr)), LineReaderUtil.LineReaderOption.SYNCHRONOUS)));
+        VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(LineReaderUtil.fromStringReader(
+                new StringReader(headerStr), LineReaderUtil.LineReaderOption.SYNCHRONOUS)));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF4headerStringCount);
         return header;
     }
@@ -80,13 +83,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "HiSeq.10000.vcf")));
-        final VCFHeader header = (VCFHeader)codec.readHeader(vcfIterator).getHeaderValue();
+        final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
 
         Assert.assertEquals(header.getNGenotypeSamples(), 1, "Wrong number of samples in remapped header");
         Assert.assertEquals(header.getGenotypeSamples().get(0), "FOOSAMPLE", "Sample name in remapped header has incorrect value");
 
         int recordCount = 0;
-        while ( vcfIterator.hasNext() && recordCount < 10) {
+        while (vcfIterator.hasNext() && recordCount < 10) {
             recordCount++;
             final VariantContext vcfRecord = codec.decode(vcfIterator.next());
 
@@ -95,12 +98,29 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         }
     }
 
+    @Test
+    public void testVCFHeaderDictionaryMerging() {
+        VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false).getFileHeader();
+        VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
+        final List<String> sampleList = new ArrayList<String>();
+        sampleList.addAll(headerOne.getSampleNamesInOrder());
+
+        // Check that the two dictionaries start out the same
+        headerOne.getSequenceDictionary().assertSameDictionary(headerTwo.getSequenceDictionary());
+
+        // Run the merge command
+        final VCFHeader mergedHeader = new VCFHeader(VCFUtils.smartMergeHeaders(Arrays.asList(headerOne, headerTwo), false), sampleList);
+
+        // Check that the mergedHeader's sequence dictionary matches the first two
+        mergedHeader.getSequenceDictionary().assertSameDictionary(headerOne.getSequenceDictionary());
+    }
+
     @Test(expectedExceptions = TribbleException.class)
     public void testVCFHeaderSampleRenamingMultiSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "ex2.vcf")));
-        final VCFHeader header = (VCFHeader)codec.readHeader(vcfIterator).getHeaderValue();
+        final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
     @Test(expectedExceptions = TribbleException.class)
@@ -108,13 +128,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
-        final VCFHeader header = (VCFHeader)codec.readHeader(vcfIterator).getHeaderValue();
+        final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
-        /**
+    /**
      * a little utility function for all tests to md5sum a file
      * Shameless taken from:
-     *
+     * <p/>
      * http://www.javalobby.org/java/forums/t84420.html
      *
      * @param file the file
@@ -143,15 +163,12 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
             BigInteger bigInt = new BigInteger(1, md5sum);
             return bigInt.toString(16);
 
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Unable to process file for MD5", e);
-        }
-        finally {
+        } finally {
             try {
                 is.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new RuntimeException("Unable to close input stream for MD5 calculation", e);
             }
         }
@@ -161,7 +178,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         File myTempFile = null;
         PrintWriter pw = null;
         try {
-            myTempFile = File.createTempFile("VCFHeader","vcf");
+            myTempFile = File.createTempFile("VCFHeader", "vcf");
             myTempFile.deleteOnExit();
             pw = new PrintWriter(myTempFile);
         } catch (IOException e) {
@@ -176,42 +193,42 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public static int VCF4headerStringCount = 16;
 
     public static String VCF4headerStrings =
-                "##fileformat=VCFv4.0\n"+
-                "##filedate=2010-06-21\n"+
-                "##reference=NCBI36\n"+
-                "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n"+
-                "##INFO=<ID=DP, Number=1, Type=Integer, Description=\"Total number of reads in haplotype window\">\n"+
-                "##INFO=<ID=AF, Number=A, Type=Float, Description=\"Dindel estimated population allele frequency\">\n"+
-                "##INFO=<ID=CA, Number=1, Type=String, Description=\"Pilot 1 callability mask\">\n"+
-                "##INFO=<ID=HP, Number=1, Type=Integer, Description=\"Reference homopolymer tract length\">\n"+
-                "##INFO=<ID=NS, Number=1, Type=Integer, Description=\"Number of samples with data\">\n"+
-                "##INFO=<ID=DB, Number=0, Type=Flag, Description=\"dbSNP membership build 129 - type match and indel sequence length match within 25 bp\">\n"+
-                "##INFO=<ID=NR, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on reverse strand\">\n"+
-                "##INFO=<ID=NF, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on forward strand\">\n"+
-                "##FILTER=<ID=NoQCALL, Description=\"Variant called by Dindel but not confirmed by QCALL\">\n"+
-                "##FORMAT=<ID=GT, Number=1, Type=String, Description=\"Genotype\">\n"+
-                "##FORMAT=<ID=HQ, Number=2, Type=Integer, Description=\"Haplotype quality\">\n"+
-                "##FORMAT=<ID=GQ, Number=1, Type=Integer, Description=\"Genotype quality\">\n"+
-                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+            "##fileformat=VCFv4.0\n" +
+                    "##filedate=2010-06-21\n" +
+                    "##reference=NCBI36\n" +
+                    "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n" +
+                    "##INFO=<ID=DP, Number=1, Type=Integer, Description=\"Total number of reads in haplotype window\">\n" +
+                    "##INFO=<ID=AF, Number=A, Type=Float, Description=\"Dindel estimated population allele frequency\">\n" +
+                    "##INFO=<ID=CA, Number=1, Type=String, Description=\"Pilot 1 callability mask\">\n" +
+                    "##INFO=<ID=HP, Number=1, Type=Integer, Description=\"Reference homopolymer tract length\">\n" +
+                    "##INFO=<ID=NS, Number=1, Type=Integer, Description=\"Number of samples with data\">\n" +
+                    "##INFO=<ID=DB, Number=0, Type=Flag, Description=\"dbSNP membership build 129 - type match and indel sequence length match within 25 bp\">\n" +
+                    "##INFO=<ID=NR, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on reverse strand\">\n" +
+                    "##INFO=<ID=NF, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on forward strand\">\n" +
+                    "##FILTER=<ID=NoQCALL, Description=\"Variant called by Dindel but not confirmed by QCALL\">\n" +
+                    "##FORMAT=<ID=GT, Number=1, Type=String, Description=\"Genotype\">\n" +
+                    "##FORMAT=<ID=HQ, Number=2, Type=Integer, Description=\"Haplotype quality\">\n" +
+                    "##FORMAT=<ID=GQ, Number=1, Type=Integer, Description=\"Genotype quality\">\n" +
+                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
 
 
     public static String VCF4headerStrings_with_negativeOne =
-                "##fileformat=VCFv4.0\n"+
-                "##filedate=2010-06-21\n"+
-                "##reference=NCBI36\n"+
-                "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n"+
-                "##INFO=<ID=YY, Number=., Type=Integer, Description=\"Some weird value that has lots of parameters\">\n"+
-                "##INFO=<ID=AF, Number=A, Type=Float, Description=\"Dindel estimated population allele frequency\">\n"+
-                "##INFO=<ID=CA, Number=1, Type=String, Description=\"Pilot 1 callability mask\">\n"+
-                "##INFO=<ID=HP, Number=1, Type=Integer, Description=\"Reference homopolymer tract length\">\n"+
-                "##INFO=<ID=NS, Number=1, Type=Integer, Description=\"Number of samples with data\">\n"+
-                "##INFO=<ID=DB, Number=0, Type=Flag, Description=\"dbSNP membership build 129 - type match and indel sequence length match within 25 bp\">\n"+
-                "##INFO=<ID=NR, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on reverse strand\">\n"+
-                "##INFO=<ID=NF, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on forward strand\">\n"+
-                "##FILTER=<ID=NoQCALL, Description=\"Variant called by Dindel but not confirmed by QCALL\">\n"+
-                "##FORMAT=<ID=GT, Number=1, Type=String, Description=\"Genotype\">\n"+
-                "##FORMAT=<ID=HQ, Number=2, Type=Integer, Description=\"Haplotype quality\">\n"+
-                "##FORMAT=<ID=TT, Number=., Type=Integer, Description=\"Lots of TTs\">\n"+
-                "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
+            "##fileformat=VCFv4.0\n" +
+                    "##filedate=2010-06-21\n" +
+                    "##reference=NCBI36\n" +
+                    "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n" +
+                    "##INFO=<ID=YY, Number=., Type=Integer, Description=\"Some weird value that has lots of parameters\">\n" +
+                    "##INFO=<ID=AF, Number=A, Type=Float, Description=\"Dindel estimated population allele frequency\">\n" +
+                    "##INFO=<ID=CA, Number=1, Type=String, Description=\"Pilot 1 callability mask\">\n" +
+                    "##INFO=<ID=HP, Number=1, Type=Integer, Description=\"Reference homopolymer tract length\">\n" +
+                    "##INFO=<ID=NS, Number=1, Type=Integer, Description=\"Number of samples with data\">\n" +
+                    "##INFO=<ID=DB, Number=0, Type=Flag, Description=\"dbSNP membership build 129 - type match and indel sequence length match within 25 bp\">\n" +
+                    "##INFO=<ID=NR, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on reverse strand\">\n" +
+                    "##INFO=<ID=NF, Number=1, Type=Integer, Description=\"Number of reads covering non-ref variant on forward strand\">\n" +
+                    "##FILTER=<ID=NoQCALL, Description=\"Variant called by Dindel but not confirmed by QCALL\">\n" +
+                    "##FORMAT=<ID=GT, Number=1, Type=String, Description=\"Genotype\">\n" +
+                    "##FORMAT=<ID=HQ, Number=2, Type=Integer, Description=\"Haplotype quality\">\n" +
+                    "##FORMAT=<ID=TT, Number=., Type=Integer, Description=\"Lots of TTs\">\n" +
+                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
 
 }

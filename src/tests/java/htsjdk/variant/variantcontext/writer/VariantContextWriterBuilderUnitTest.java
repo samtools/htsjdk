@@ -45,14 +45,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
+	private static final String TEST_BASENAME = "htsjdk-test.VariantContextWriterBuilderUnitTest";
     private SAMSequenceDictionary dictionary;
 
-    private final File vcf = new File("test.vcf");
-    private final File vcfIdx = new File("test.vcf" + Tribble.STANDARD_INDEX_EXTENSION);
-    private final File vcfMD5 = new File("test.vcf.md5");
-    private final File bcf = new File("test.bcf");
-    private final File bcfIdx = new File("test.bcf" + Tribble.STANDARD_INDEX_EXTENSION);
-    private final File unknown = new File("test.unknown");
+    private File vcf;
+    private File vcfIdx;
+    private File vcfMD5;
+    private File bcf;
+    private File bcfIdx;
+    private File unknown;
 
     private List<File> blockCompressedVCFs;
     private List<File> blockCompressedIndices;
@@ -60,28 +61,34 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     @BeforeSuite
     public void before() throws IOException {
         dictionary = createArtificialSequenceDictionary();
+        vcf = File.createTempFile(TEST_BASENAME, ".vcf");
         vcf.deleteOnExit();
+        vcfIdx = Tribble.indexFile(vcf);
         vcfIdx.deleteOnExit();
+        vcfMD5 = new File(vcf.getAbsolutePath() + ".md5");
         vcfMD5.deleteOnExit();
+        bcf = File.createTempFile(TEST_BASENAME, ".bcf");
         bcf.deleteOnExit();
+        bcfIdx = Tribble.indexFile(bcf);
         bcfIdx.deleteOnExit();
+        unknown = File.createTempFile(TEST_BASENAME, ".unknown");
         unknown.deleteOnExit();
 
         blockCompressedVCFs = new ArrayList<File>();
         blockCompressedIndices = new ArrayList<File>();
         for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
-            final File blockCompressed = new File("test.vcf" + extension);
+            final File blockCompressed = File.createTempFile(TEST_BASENAME, ".vcf" + extension);
             blockCompressed.deleteOnExit();
             blockCompressedVCFs.add(blockCompressed);
 
-            final File index = new File("test.vcf" + extension + TabixUtils.STANDARD_INDEX_EXTENSION);
+            final File index = new File(blockCompressed.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
             index.deleteOnExit();
             blockCompressedIndices.add(index);
         }
     }
 
     @Test
-    public void testSetOutputFile() {
+    public void testSetOutputFile() throws IOException {
         final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
                 .setReferenceDictionary(dictionary);
 
@@ -94,9 +101,9 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertFalse(((VCFWriter)writer).getOutputStream() instanceof BlockCompressedOutputStream, "testSetOutputFile VCF File was compressed");
 
         for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
-            final String filename = "test.vcf" + extension;
-            final File file = new File(filename);
+            final File file = File.createTempFile(TEST_BASENAME + ".setoutput", extension);
             file.deleteOnExit();
+            final String filename = file.getAbsolutePath();
 
             writer = builder.setOutputFile(filename).build();
             Assert.assertTrue(writer instanceof VCFWriter, "testSetOutputFile " + extension + " String");

@@ -592,8 +592,8 @@ public class BinaryCodec implements Closeable {
             if (this.isWriting) {
                 // To the degree possible, make sure the bytes get forced to the file system,
                 // or else cause an exception to be thrown.
+                this.outputStream.flush();
                 if (this.outputStream instanceof FileOutputStream) {
-                    this.outputStream.flush();
                     FileOutputStream fos = (FileOutputStream)this.outputStream;
                     try {
                         fos.getFD().sync();

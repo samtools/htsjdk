@@ -71,7 +71,7 @@ public class SortingLongCollectionTest {
 
     @DataProvider(name = "test1")
     public Object[][] createTestData() {
-        return new Object[][] {
+        return new Object[][]{
                 {"empty", 0, 100},
                 {"less than threshold", 100, 200},
                 {"greater than threshold", 550, 100},
@@ -84,6 +84,7 @@ public class SortingLongCollectionTest {
     /**
      * Generate some values, put into SortingLongCollection, confirm that the right number of
      * values come out, and in the right order.
+     *
      * @param numValuesToGenerate
      * @param maxValuesInRam
      */
@@ -111,7 +112,7 @@ public class SortingLongCollectionTest {
         int i = 0;
         sortingCollection.doneAddingStartIteration();
         while (sortingCollection.hasNext()) {
-            Assert.assertEquals(sortingCollection.next(), values[i++], "values failed.  i: " + (i-1) + "; values[i]" + values[i-1]);
+            Assert.assertEquals(sortingCollection.next(), values[i++], "values failed.  i: " + (i - 1) + "; values[i]" + values[i - 1]);
         }
         Assert.assertEquals(i, values.length);
     }

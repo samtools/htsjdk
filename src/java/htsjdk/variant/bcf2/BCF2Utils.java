@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -271,18 +272,21 @@ public final class BCF2Utils {
      * o is a list => o
      * else => [o]
      *
-     * @param o
+     * @param c  the class of the object
+     * @param o  the object to convert to a Java List
      * @return
      */
-    public static List<Object> toList(final Object o) {
+    public static <T> List<T> toList(final Class<T> c, final Object o) {
         if ( o == null ) return Collections.emptyList();
-        else if ( o instanceof List ) return (List<Object>)o;
+        else if ( o instanceof List ) return (List<T>)o;
         else if ( o.getClass().isArray() ) {
-            final List<Object> l = new ArrayList<Object>();
-            Collections.addAll(l, (int[])o);
-            return l;
+            final int arraySize = Array.getLength(o);
+            final List<T> list = new ArrayList<T>(arraySize);
+            for (int i=0; i<arraySize; i++)
+                list.add((T)Array.get(o, i));
+            return list;
         }
-        else return Collections.singletonList(o);
+        else return Collections.singletonList((T)o);
     }
 
     /**

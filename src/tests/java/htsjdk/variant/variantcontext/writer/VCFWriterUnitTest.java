@@ -42,9 +42,6 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -58,6 +55,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
 /**
  * @author aaron
  *         <p/>
@@ -68,13 +71,31 @@ import java.util.Set;
 public class VCFWriterUnitTest extends VariantBaseTest {
     private Set<VCFHeaderLine> metaData;
     private Set<String> additionalColumns;
+    private File tempDir;
+
+    @BeforeClass
+    private void createTemporaryDirectory() {
+        tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
+    }
+
+    @AfterClass
+    private void deleteTemporaryDirectory() {
+        for (File f : tempDir.listFiles()) {
+            f.delete();
+        }
+        tempDir.delete();
+    }
 
     /** test, using the writer and reader, that we can output and input a VCF file without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testBasicWriteAndRead(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension);
         fakeVCFFile.deleteOnExit();
-        Tribble.indexFile(fakeVCFFile).deleteOnExit();
+        if (".vcf.gz".equals(extension)) {
+            new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
+        } else {
+            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+        }
         metaData = new HashSet<VCFHeaderLine>();
         additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
@@ -189,10 +210,6 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary dict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData,Columns, dict);
 
-        final File tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
-
-        tempDir.deleteOnExit();
-
         final File vcf = new File(tempDir, "test" + extension);
         final String indexExtension;
         if (extension.equals(".vcf.gz")) {
@@ -201,6 +218,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             indexExtension = Tribble.STANDARD_INDEX_EXTENSION;
         }
         final File vcfIndex = new File(vcf.getAbsolutePath() + indexExtension);
+        vcfIndex.deleteOnExit();
 
         for(int count=1;count<2; count++){
             final VariantContextWriter writer =  new VariantContextWriterBuilder()

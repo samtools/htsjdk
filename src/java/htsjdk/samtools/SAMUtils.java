@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.StringUtil;
@@ -43,8 +44,7 @@ import java.util.TreeMap;
 /**
  * Utilty methods.
  */
-public final class SAMUtils
-{
+public final class SAMUtils {
     // Representation of bases, one for when in low-order nybble, one for when in high-order nybble.
     private static final byte COMPRESSED_EQUAL_LOW = 0;
     private static final byte COMPRESSED_A_LOW = 1;
@@ -66,39 +66,59 @@ public final class SAMUtils
     private static final byte COMPRESSED_A_HIGH = COMPRESSED_A_LOW << 4;
     private static final byte COMPRESSED_C_HIGH = COMPRESSED_C_LOW << 4;
     private static final byte COMPRESSED_G_HIGH = COMPRESSED_G_LOW << 4;
-    private static final byte COMPRESSED_T_HIGH = (byte)(COMPRESSED_T_LOW << 4);
-    private static final byte COMPRESSED_N_HIGH = (byte)(COMPRESSED_N_LOW << 4);
+    private static final byte COMPRESSED_T_HIGH = (byte) (COMPRESSED_T_LOW << 4);
+    private static final byte COMPRESSED_N_HIGH = (byte) (COMPRESSED_N_LOW << 4);
 
-    private static final byte COMPRESSED_M_HIGH = (byte)(COMPRESSED_M_LOW << 4);
-    private static final byte COMPRESSED_R_HIGH = (byte)(COMPRESSED_R_LOW << 4);
-    private static final byte COMPRESSED_S_HIGH = (byte)(COMPRESSED_S_LOW << 4);
-    private static final byte COMPRESSED_V_HIGH = (byte)(COMPRESSED_V_LOW << 4);
-    private static final byte COMPRESSED_W_HIGH = (byte)(COMPRESSED_W_LOW << 4);
-    private static final byte COMPRESSED_Y_HIGH = (byte)(COMPRESSED_Y_LOW << 4);
-    private static final byte COMPRESSED_H_HIGH = (byte)(COMPRESSED_H_LOW << 4);
-    private static final byte COMPRESSED_K_HIGH = (byte)(COMPRESSED_K_LOW << 4);
-    private static final byte COMPRESSED_D_HIGH = (byte)(COMPRESSED_D_LOW << 4);
-    private static final byte COMPRESSED_B_HIGH = (byte)(COMPRESSED_B_LOW << 4);
-
-
+    private static final byte COMPRESSED_M_HIGH = (byte) (COMPRESSED_M_LOW << 4);
+    private static final byte COMPRESSED_R_HIGH = (byte) (COMPRESSED_R_LOW << 4);
+    private static final byte COMPRESSED_S_HIGH = (byte) (COMPRESSED_S_LOW << 4);
+    private static final byte COMPRESSED_V_HIGH = (byte) (COMPRESSED_V_LOW << 4);
+    private static final byte COMPRESSED_W_HIGH = (byte) (COMPRESSED_W_LOW << 4);
+    private static final byte COMPRESSED_Y_HIGH = (byte) (COMPRESSED_Y_LOW << 4);
+    private static final byte COMPRESSED_H_HIGH = (byte) (COMPRESSED_H_LOW << 4);
+    private static final byte COMPRESSED_K_HIGH = (byte) (COMPRESSED_K_LOW << 4);
+    private static final byte COMPRESSED_D_HIGH = (byte) (COMPRESSED_D_LOW << 4);
+    private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
+    
+    private static final byte [] COMPRESSED_LOOKUP_TABLE = 
+            new byte[]{
+                '=',
+                'A',
+                'C',
+                'M',
+                'G',
+                'R',
+                'S',
+                'V',
+                'T',
+                'W',
+                'Y',
+                'H',
+                'K',
+                'D',
+                'B',
+                'N'
+            };
+    
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
      * Convert from a byte array containing =AaCcGgTtNn represented as ASCII, to a byte array half as long,
      * with =, A, C, G, T converted to 0, 1, 2, 4, 8, 15.
+     *
      * @param readBases Bases as ASCII bytes.
      * @return New byte array with bases represented as nybbles, in BAM binary format.
      */
     static byte[] bytesToCompressedBases(final byte[] readBases) {
-        final byte[] compressedBases = new byte[(readBases.length + 1)/2];
+        final byte[] compressedBases = new byte[(readBases.length + 1) / 2];
         int i;
-        for (i = 1; i < readBases.length; i+=2) {
-            compressedBases[i/2] = (byte)(charToCompressedBaseHigh(readBases[i-1]) |
-                                    charToCompressedBaseLow(readBases[i]));
+        for (i = 1; i < readBases.length; i += 2) {
+            compressedBases[i / 2] = (byte) (charToCompressedBaseHigh(readBases[i - 1]) |
+                    charToCompressedBaseLow(readBases[i]));
         }
         // Last nybble
         if (i == readBases.length) {
-            compressedBases[i/2] = charToCompressedBaseHigh((char)readBases[i-1]);
+            compressedBases[i / 2] = charToCompressedBaseHigh((char) readBases[i - 1]);
         }
         return compressedBases;
     }
@@ -106,6 +126,7 @@ public final class SAMUtils
     /**
      * Convert from a byte array with basese stored in nybbles, with =, A, C, G, T represented as 0, 1, 2, 4, 8, 15,
      * to a a byte array containing =AaCcGgTtNn represented as ASCII.
+     *
      * @param length Number of bases (not bytes) to convert.
      * @param compressedBases Bases represented as nybbles, in BAM binary format.
      * @param compressedOffset Byte offset in compressedBases to start.
@@ -114,20 +135,21 @@ public final class SAMUtils
     public static byte[] compressedBasesToBytes(final int length, final byte[] compressedBases, final int compressedOffset) {
         final byte[] ret = new byte[length];
         int i;
-        for (i = 1; i < length; i+=2) {
+        for (i = 1; i < length; i += 2) {
             final int compressedIndex = i / 2 + compressedOffset;
-            ret[i-1] = compressedBaseToByteHigh(compressedBases[compressedIndex]);
+            ret[i - 1] = compressedBaseToByteHigh(compressedBases[compressedIndex]);
             ret[i] = compressedBaseToByteLow(compressedBases[compressedIndex]);
         }
         // Last nybble
         if (i == length) {
-            ret[i-1] = compressedBaseToByteHigh(compressedBases[i/2 + compressedOffset]);
+            ret[i - 1] = compressedBaseToByteHigh(compressedBases[i / 2 + compressedOffset]);
         }
         return ret;
     }
 
     /**
      * Convert from ASCII byte to BAM nybble representation of a base in low-order nybble.
+     *
      * @param base One of =AaCcGgTtNn.
      * @return Low-order nybble-encoded equivalent.
      */
@@ -190,6 +212,7 @@ public final class SAMUtils
 
     /**
      * Convert from ASCII byte to BAM nybble representation of a base in high-order nybble.
+     *
      * @param base One of =AaCcGgTtNn.
      * @return High-order nybble-encoded equivalent.
      */
@@ -249,84 +272,43 @@ public final class SAMUtils
                 throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
         }
     }
+    
+    /**
+     * Returns the byte corresponding to a certain nybble
+     * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
+     * @return ASCII base, one of ACGTN=.
+     */
+    private static byte compressedBaseToByte(byte base){
+        try{
+            return COMPRESSED_LOOKUP_TABLE[base];
+        }catch(IndexOutOfBoundsException e){
+            throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
+        }
+    }
 
     /**
      * Convert from BAM nybble representation of a base in low-order nybble to ASCII byte.
+     *
      * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteLow(final int base) {
-        switch (base & 0xf) {
-            case COMPRESSED_EQUAL_LOW:
-                return '=';
-            case COMPRESSED_A_LOW:
-                return 'A';
-            case COMPRESSED_C_LOW:
-                return 'C';
-            case COMPRESSED_G_LOW:
-                return 'G';
-            case COMPRESSED_T_LOW:
-                return 'T';
-            case COMPRESSED_N_LOW:
-                return 'N';
-
-            // IUPAC ambiguity codes
-            case COMPRESSED_M_LOW: return 'M';
-            case COMPRESSED_R_LOW: return 'R';
-            case COMPRESSED_S_LOW: return 'S';
-            case COMPRESSED_V_LOW: return 'V';
-            case COMPRESSED_W_LOW: return 'W';
-            case COMPRESSED_Y_LOW: return 'Y';
-            case COMPRESSED_H_LOW: return 'H';
-            case COMPRESSED_K_LOW: return 'K';
-            case COMPRESSED_D_LOW: return 'D';
-            case COMPRESSED_B_LOW: return 'B';
-
-
-            default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
-        }
+        return compressedBaseToByte((byte)(base & 0xf));
     }
 
     /**
      * Convert from BAM nybble representation of a base in high-order nybble to ASCII byte.
+     *
      * @param base One of COMPRESSED_*_HIGH, a high-order nybble encoded base.
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteHigh(final int base) {
-        switch ((byte)(base & 0xf0)) {
-            case COMPRESSED_EQUAL_HIGH:
-                return '=';
-            case COMPRESSED_A_HIGH:
-                return 'A';
-            case COMPRESSED_C_HIGH:
-                return 'C';
-            case COMPRESSED_G_HIGH:
-                return 'G';
-            case COMPRESSED_T_HIGH:
-                return 'T';
-            case COMPRESSED_N_HIGH:
-                return 'N';
-
-            // IUPAC ambiguity codes
-            case COMPRESSED_M_HIGH: return 'M';
-            case COMPRESSED_R_HIGH: return 'R';
-            case COMPRESSED_S_HIGH: return 'S';
-            case COMPRESSED_V_HIGH: return 'V';
-            case COMPRESSED_W_HIGH: return 'W';
-            case COMPRESSED_Y_HIGH: return 'Y';
-            case COMPRESSED_H_HIGH: return 'H';
-            case COMPRESSED_K_HIGH: return 'K';
-            case COMPRESSED_D_HIGH: return 'D';
-            case COMPRESSED_B_HIGH: return 'B';
-
-            default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
-        }
+        return compressedBaseToByte((byte)((base >> 4) & 0xf));
     }
 
     /**
      * Convert bases in place into canonical form, upper case, and with no-call represented as N.
+     *
      * @param bases
      */
     static void normalizeBases(final byte[] bases) {
@@ -341,7 +323,7 @@ public final class SAMUtils
     /**
      * Convert an array of bytes, in which each byte is a binary phred quality score, to
      * printable ASCII representation of the quality scores, ala FASTQ format.
-     *
+     * <p/>
      * Equivalent to phredToFastq(data, 0, data.length)
      *
      * @param data Array of bytes in which each byte is a binar phred score.
@@ -357,6 +339,7 @@ public final class SAMUtils
     /**
      * Convert an array of bytes, in which each byte is a binary phred quality score, to
      * printable ASCII representation of the quality scores, ala FASTQ format.
+     *
      * @param buffer Array of bytes in which each byte is a binar phred score.
      * @param offset Where in buffer to start conversion.
      * @param length How many bytes of buffer to convert.
@@ -365,13 +348,14 @@ public final class SAMUtils
     public static String phredToFastq(final byte[] buffer, final int offset, final int length) {
         final char[] chars = new char[length];
         for (int i = 0; i < length; i++) {
-            chars[i] = phredToFastq(buffer[offset+i] & 0xFF);
+            chars[i] = phredToFastq(buffer[offset + i] & 0xFF);
         }
         return new String(chars);
     }
 
     /**
      * Convert a single binary phred score to printable ASCII representation, ala FASTQ format.
+     *
      * @param phredScore binary phred score.
      * @return Printable ASCII representation of phred score.
      */
@@ -385,6 +369,7 @@ public final class SAMUtils
     /**
      * Convert a string with phred scores in printable ASCII FASTQ format to an array
      * of binary phred scores.
+     *
      * @param fastq Phred scores in FASTQ printable ASCII format.
      * @return byte array of binary phred scores in which each byte corresponds to a character in the input string.
      */
@@ -405,12 +390,13 @@ public final class SAMUtils
      */
     public static void fastqToPhred(final byte[] fastq) {
         for (int i = 0; i < fastq.length; ++i) {
-            fastq[i] = (byte)fastqToPhred((char)(fastq[i] & 0xff));
+            fastq[i] = (byte) fastqToPhred((char) (fastq[i] & 0xff));
         }
     }
 
     /**
      * Convert a single printable ASCII FASTQ format phred score to binary phred score.
+     *
      * @param ch Printable ASCII FASTQ format phred score.
      * @return Binary phred score.
      */
@@ -424,34 +410,34 @@ public final class SAMUtils
     /**
      * calculate the bin given an alignment in [beg,end)
      * Copied from SAM spec.
+     *
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      * @deprecated Use GenomicIndexUtil.reg2bin
      */
-    static int reg2bin(final int beg, final int end)
-    {
+    static int reg2bin(final int beg, final int end) {
         return GenomicIndexUtil.reg2bin(beg, end);
     }
 
     /**
      * Handle a list of validation errors according to the validation stringency.
+     *
      * @param validationErrors List of errors to report, or null if there are no errors.
      * @param samRecordIndex Record number of the SAMRecord corresponding to the validation errors, or -1 if
      * the record number is not known.
      * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, print the validation
      * errors to stderr.  If SILENT, do nothing.
      */
-    static void processValidationErrors(final List<SAMValidationError> validationErrors,
-                                        final long samRecordIndex,
-                                        final ValidationStringency validationStringency) {
+    public static void processValidationErrors(final List<SAMValidationError> validationErrors,
+                                               final long samRecordIndex,
+                                               final ValidationStringency validationStringency) {
         if (validationErrors != null && validationErrors.size() > 0) {
             for (final SAMValidationError validationError : validationErrors) {
                 validationError.setRecordNumber(samRecordIndex);
             }
             if (validationStringency == ValidationStringency.STRICT) {
                 throw new SAMFormatException("SAM validation error: " + validationErrors.get(0));
-            }
-            else if (validationStringency == ValidationStringency.LENIENT) {
+            } else if (validationStringency == ValidationStringency.LENIENT) {
                 for (final SAMValidationError error : validationErrors) {
                     System.err.println("Ignoring SAM validation error: " + error);
                 }
@@ -460,73 +446,73 @@ public final class SAMUtils
     }
 
     public static void processValidationError(final SAMValidationError validationError,
-                                       final ValidationStringency validationStringency) {
+                                              final ValidationStringency validationStringency) {
         if (validationStringency == ValidationStringency.STRICT) {
             throw new SAMFormatException("SAM validation error: " + validationError);
-        }
-        else if (validationStringency == ValidationStringency.LENIENT) {
+        } else if (validationStringency == ValidationStringency.LENIENT) {
             System.err.println("Ignoring SAM validation error: " + validationError);
         }
-        
+
     }
 
-	private static final SAMHeaderRecordComparator<SAMReadGroupRecord> HEADER_RECORD_COMPARATOR =
-			new SAMHeaderRecordComparator<SAMReadGroupRecord>(
-					SAMReadGroupRecord.PLATFORM_UNIT_TAG,
-					SAMReadGroupRecord.LIBRARY_TAG,
-					SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG,
-					SAMReadGroupRecord.READ_GROUP_SAMPLE_TAG,
-					SAMReadGroupRecord.SEQUENCING_CENTER_TAG,
-					SAMReadGroupRecord.PLATFORM_TAG,
-					SAMReadGroupRecord.DESCRIPTION_TAG,
-					SAMReadGroupRecord.READ_GROUP_ID_TAG    // We don't actually want to compare with ID but it's suitable
-					// "just in case" since it's the only one that's actually required
-			);
+    private static final SAMHeaderRecordComparator<SAMReadGroupRecord> HEADER_RECORD_COMPARATOR =
+            new SAMHeaderRecordComparator<SAMReadGroupRecord>(
+                    SAMReadGroupRecord.PLATFORM_UNIT_TAG,
+                    SAMReadGroupRecord.LIBRARY_TAG,
+                    SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG,
+                    SAMReadGroupRecord.READ_GROUP_SAMPLE_TAG,
+                    SAMReadGroupRecord.SEQUENCING_CENTER_TAG,
+                    SAMReadGroupRecord.PLATFORM_TAG,
+                    SAMReadGroupRecord.DESCRIPTION_TAG,
+                    SAMReadGroupRecord.READ_GROUP_ID_TAG    // We don't actually want to compare with ID but it's suitable
+                    // "just in case" since it's the only one that's actually required
+            );
 
-	/**
-	 * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
-	 * header. This hash code changes any time read groups are added or removed. Comparing one file's
-	 * hash code to another's tells you if the read groups in the BAM files are different.
-	 */
-	public static String calculateReadGroupRecordChecksum(final File input) {
-		final String ENCODING = "UTF-8";
+    /**
+     * Calculate a hash code from identifying information in the RG (read group) records in a SAM file's
+     * header. This hash code changes any time read groups are added or removed. Comparing one file's
+     * hash code to another's tells you if the read groups in the BAM files are different.
+     */
+    public static String calculateReadGroupRecordChecksum(final File input, final File referenceFasta) {
+        final String ENCODING = "UTF-8";
 
-		final MessageDigest digest;
-		try {
-			digest = MessageDigest.getInstance("MD5");
-		} catch (final NoSuchAlgorithmException nsae) {
-			throw new Error("No MD5 algorithm was available in a Java JDK? Unheard-of!");
-		}
+        final MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("MD5");
+        } catch (final NoSuchAlgorithmException nsae) {
+            throw new Error("No MD5 algorithm was available in a Java JDK? Unheard-of!");
+        }
 
-		// Sort the read group records by their first
-		final SAMFileReader reader = new SAMFileReader(input);
-		final List<SAMReadGroupRecord> sortedRecords = new ArrayList<SAMReadGroupRecord>(reader.getFileHeader().getReadGroups());
-		Collections.sort(sortedRecords, HEADER_RECORD_COMPARATOR);
+        // Sort the read group records by their first
+        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(referenceFasta).open(input);
+        final List<SAMReadGroupRecord> sortedRecords = new ArrayList<SAMReadGroupRecord>(reader.getFileHeader().getReadGroups());
+        Collections.sort(sortedRecords, HEADER_RECORD_COMPARATOR);
 
-		for (final SAMReadGroupRecord rgRecord : sortedRecords) {
-			final TreeMap<String, String> sortedAttributes = new TreeMap<String, String>();
-			for (final Map.Entry<String, String> attributeEntry : rgRecord.getAttributes()) {
-				sortedAttributes.put(attributeEntry.getKey(), attributeEntry.getValue());
-			}
+        for (final SAMReadGroupRecord rgRecord : sortedRecords) {
+            final TreeMap<String, String> sortedAttributes = new TreeMap<String, String>();
+            for (final Map.Entry<String, String> attributeEntry : rgRecord.getAttributes()) {
+                sortedAttributes.put(attributeEntry.getKey(), attributeEntry.getValue());
+            }
 
-			try {
-				for (final Map.Entry<String, String> sortedEntry : sortedAttributes.entrySet()) {
-					if ( ! sortedEntry.getKey().equals(SAMReadGroupRecord.READ_GROUP_ID_TAG)) { // Redundant check, safety first
-						digest.update(sortedEntry.getKey().getBytes(ENCODING));
-						digest.update(sortedEntry.getValue().getBytes(ENCODING));
-					}
-				}
-			} catch (final UnsupportedEncodingException uee) {
-				throw new Error("No " + ENCODING + "!? WTH?");
-			}
-		}
+            try {
+                for (final Map.Entry<String, String> sortedEntry : sortedAttributes.entrySet()) {
+                    if (!sortedEntry.getKey().equals(SAMReadGroupRecord.READ_GROUP_ID_TAG)) { // Redundant check, safety first
+                        digest.update(sortedEntry.getKey().getBytes(ENCODING));
+                        digest.update(sortedEntry.getValue().getBytes(ENCODING));
+                    }
+                }
+            } catch (final UnsupportedEncodingException uee) {
+                throw new Error("No " + ENCODING + "!? WTH?");
+            }
+        }
 
-		// Convert to a String and pad to get the full 32 chars.
-		final StringBuilder hashText = new StringBuilder((new BigInteger(1, digest.digest())).toString(16));
-		while (hashText.length() < 32 ) hashText.insert(0, "0");
+        // Convert to a String and pad to get the full 32 chars.
+        final StringBuilder hashText = new StringBuilder((new BigInteger(1, digest.digest())).toString(16));
+        while (hashText.length() < 32) hashText.insert(0, "0");
 
-		return hashText.toString();
-	}
+        CloserUtil.close(reader);
+        return hashText.toString();
+    }
 
     /**
      * Chains <code>program</code> in front of the first "head" item in the list of
@@ -597,15 +583,14 @@ public final class SAMUtils
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
         return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
     }
-    
+
     /**
-     *
      * @return negative if mapq1 < mapq2, etc.
      * Note that MAPQ(0) < MAPQ(255) < MAPQ(1)
      */
     public static int compareMapqs(final int mapq1, final int mapq2) {
         if (mapq1 == mapq2) return 0;
-        if (mapq1 == 0)  return -1;
+        if (mapq1 == 0) return -1;
         else if (mapq2 == 0) return 1;
         else if (mapq1 == 255) return -1;
         else if (mapq2 == 255) return 1;
@@ -636,8 +621,11 @@ public final class SAMUtils
      * offset after skipping over the text header and the sequence records.
      */
     public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
-        try { return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile); }
-        catch (final IOException ioe) { throw new RuntimeEOFException(ioe); }
+        try {
+            return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile);
+        } catch (final IOException ioe) {
+            throw new RuntimeEOFException(ioe);
+        }
     }
 
     /**
@@ -655,25 +643,36 @@ public final class SAMUtils
 
         final List<AlignmentBlock> alignmentBlocks = new ArrayList<AlignmentBlock>();
         int readBase = 1;
-        int refBase  = alignmentStart;
+        int refBase = alignmentStart;
 
         for (final CigarElement e : cigar.getCigarElements()) {
             switch (e.getOperator()) {
-                case H : break; // ignore hard clips
-                case P : break; // ignore pads
-                case S : readBase += e.getLength(); break; // soft clip read bases
-                case N : refBase += e.getLength(); break;  // reference skip
-                case D : refBase += e.getLength(); break;
-                case I : readBase += e.getLength(); break;
-                case M :
-                case EQ :
-                case X :
+                case H:
+                    break; // ignore hard clips
+                case P:
+                    break; // ignore pads
+                case S:
+                    readBase += e.getLength();
+                    break; // soft clip read bases
+                case N:
+                    refBase += e.getLength();
+                    break;  // reference skip
+                case D:
+                    refBase += e.getLength();
+                    break;
+                case I:
+                    readBase += e.getLength();
+                    break;
+                case M:
+                case EQ:
+                case X:
                     final int length = e.getLength();
                     alignmentBlocks.add(new AlignmentBlock(readBase, refBase, length));
                     readBase += length;
-                    refBase  += length;
+                    refBase += length;
                     break;
-                default : throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator());
+                default:
+                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator());
             }
         }
         return Collections.unmodifiableList(alignmentBlocks);
@@ -685,7 +684,7 @@ public final class SAMUtils
      * @return the alignment start (1-based, inclusive) adjusted for clipped bases.  For example if the read
      * has an alignment start of 100 but the first 4 bases were clipped (hard or soft clipped)
      * then this method will return 96.
-     *
+     * <p/>
      * Invalid to call on an unmapped read.
      * Invalid to call with cigar = null
      */
@@ -695,8 +694,7 @@ public final class SAMUtils
             final CigarOperator op = cig.getOperator();
             if (op == CigarOperator.SOFT_CLIP || op == CigarOperator.HARD_CLIP) {
                 unClippedStart -= cig.getLength();
-            }
-            else {
+            } else {
                 break;
             }
         }
@@ -710,21 +708,20 @@ public final class SAMUtils
      * @return the alignment end (1-based, inclusive) adjusted for clipped bases.  For example if the read
      * has an alignment end of 100 but the last 7 bases were clipped (hard or soft clipped)
      * then this method will return 107.
-     *
+     * <p/>
      * Invalid to call on an unmapped read.
      * Invalid to call with cigar = null
      */
     public static int getUnclippedEnd(final int alignmentEnd, final Cigar cigar) {
         int unClippedEnd = alignmentEnd;
         final List<CigarElement> cigs = cigar.getCigarElements();
-        for (int i=cigs.size() - 1; i>=0; --i) {
+        for (int i = cigs.size() - 1; i >= 0; --i) {
             final CigarElement cig = cigs.get(i);
             final CigarOperator op = cig.getOperator();
 
             if (op == CigarOperator.SOFT_CLIP || op == CigarOperator.HARD_CLIP) {
                 unClippedEnd += cig.getLength();
-            }
-            else {
+            } else {
                 break;
             }
         }
@@ -734,6 +731,7 @@ public final class SAMUtils
 
     /**
      * Returns the Mate Cigar String as stored in the attribute 'MC'.
+     *
      * @param rec the SAM record
      * @return Mate Cigar String, or null if there is none.
      */
@@ -743,6 +741,7 @@ public final class SAMUtils
 
     /**
      * Returns the Mate Cigar or null if there is none.
+     *
      * @param rec the SAM record
      * @param withValidation true if we are to validate the mate cigar before returning, false otherwise.
      * @return Cigar object for the read's mate, or null if there is none.
@@ -751,7 +750,7 @@ public final class SAMUtils
         final String mateCigarString = getMateCigarString(rec);
         Cigar mateCigar = null;
         if (mateCigarString != null) {
-            mateCigar = TextCigarCodec.getSingleton().decode(mateCigarString);
+            mateCigar = TextCigarCodec.decode(mateCigarString);
             if (withValidation && rec.getValidationStringency() != ValidationStringency.SILENT) {
                 final List<AlignmentBlock> alignmentBlocks = getAlignmentBlocks(mateCigar, rec.getMateAlignmentStart(), "mate cigar");
                 SAMUtils.processValidationErrors(validateCigar(rec, mateCigar, rec.getMateReferenceIndex(), alignmentBlocks, -1, "Mate CIGAR"), -1L, rec.getValidationStringency());
@@ -762,6 +761,7 @@ public final class SAMUtils
 
     /**
      * Returns the Mate Cigar or null if there is none.  No validation is done on the returned cigar.
+     *
      * @param rec the SAM record
      * @return Cigar object for the read's mate, or null if there is none.
      */
@@ -780,6 +780,7 @@ public final class SAMUtils
 
     /**
      * This method uses the MateCigar value as determined from the attribute MC.  It must be non-null.
+     *
      * @param rec the SAM record
      * @return 1-based inclusive rightmost position of the clipped mate sequence, or 0 read if unmapped.
      */
@@ -799,7 +800,7 @@ public final class SAMUtils
      * @return the mate alignment start (1-based, inclusive) adjusted for clipped bases.  For example if the mate
      * has an alignment start of 100 but the first 4 bases were clipped (hard or soft clipped)
      * then this method will return 96.
-     *
+     * <p/>
      * Invalid to call on an unmapped read.
      */
     public static int getMateUnclippedStart(final SAMRecord rec) {
@@ -818,7 +819,7 @@ public final class SAMUtils
      * @return the mate alignment end (1-based, inclusive) adjusted for clipped bases.  For example if the mate
      * has an alignment end of 100 but the last 7 bases were clipped (hard or soft clipped)
      * then this method will return 107.
-     *
+     * <p/>
      * Invalid to call on an unmapped read.
      */
     public static int getMateUnclippedEnd(final SAMRecord rec) {
@@ -845,6 +846,7 @@ public final class SAMUtils
     /**
      * Run all validations of the mate's CIGAR.  These include validation that the CIGAR makes sense independent of
      * placement, plus validation that CIGAR + placement yields all bases with M operator within the range of the reference.
+     *
      * @param rec the SAM record
      * @param cigar The cigar containing the alignment information
      * @param referenceIndex The reference index
@@ -855,11 +857,11 @@ public final class SAMUtils
      */
 
     public static List<SAMValidationError> validateCigar(final SAMRecord rec,
-                                                  final Cigar cigar,
-                                                   final Integer referenceIndex,
-                                                   final List<AlignmentBlock> alignmentBlocks,
-                                                   final long recordNumber,
-                                                   final String cigarTypeName) {
+                                                         final Cigar cigar,
+                                                         final Integer referenceIndex,
+                                                         final List<AlignmentBlock> alignmentBlocks,
+                                                         final long recordNumber,
+                                                         final String cigarTypeName) {
         // Don't know line number, and don't want to force read name to be decoded.
         List<SAMValidationError> ret = cigar.isValid(rec.getReadName(), recordNumber);
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
@@ -880,6 +882,7 @@ public final class SAMUtils
     /**
      * Run all validations of the mate's CIGAR.  These include validation that the CIGAR makes sense independent of
      * placement, plus validation that CIGAR + placement yields all bases with M operator within the range of the reference.
+     *
      * @param rec the SAM record
      * @param recordNumber For error reporting.  -1 if not known.
      * @return List of errors, or null if no errors.
@@ -899,8 +902,7 @@ public final class SAMUtils
                         // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
                                 "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped", rec.getReadName(), recordNumber));
-                    }
-                    else {
+                    } else {
                         // If the Mate is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
                                 "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
@@ -915,6 +917,7 @@ public final class SAMUtils
     /**
      * Checks to see if it is valid for this record to have a mate CIGAR (MC) and then if there is a mate CIGAR available.  This is done by
      * checking that this record is paired, its mate is mapped, and that it returns a non-null mate CIGAR.
+     *
      * @param rec
      * @return
      */
@@ -926,6 +929,7 @@ public final class SAMUtils
     /**
      * Returns a string that is the the read group ID and read name separated by a colon.  This is meant to cannonically
      * identify a given record within a set of records.
+     *
      * @param record
      * @return
      */

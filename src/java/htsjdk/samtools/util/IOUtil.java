@@ -36,13 +36,6 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.URL;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -54,6 +47,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,6 +79,12 @@ public class IOUtil {
 
     /** Possible extensions for VCF files and related formats. */
     public static final String[] VCF_EXTENSIONS = new String[] {".vcf", ".vcf.gz", ".bcf"};
+
+    public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
+
+    public static final String SAM_FILE_EXTENSION = ".sam";
+
+    public static final String DICT_FILE_EXTENSION = ".dict";
 
     /**
      * Wrap the given stream in a BufferedInputStream, if it isn't already wrapper
@@ -264,6 +265,35 @@ public class IOUtil {
             return full;
         }
     }
+    
+    /**
+     * Checks that an input is  is non-null, a URL or a file, exists, 
+     * and if its a file then it is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param input the input to check for validity
+     */
+    public static void assertInputIsValid(final String input) {
+      if (input == null) {
+        throw new IllegalArgumentException("Cannot check validity of null input.");
+      }
+      if (!isUrl(input)) {
+        assertFileIsReadable(new File(input));
+      }
+    }
+    
+    /** 
+     * Returns true iff the string is a url. 
+     * Helps distinguish url inputs form file path inputs.
+     */
+    public static boolean isUrl(final String input) {
+      try {
+        new URL(input);
+        return true;
+      } catch (MalformedURLException e) {
+        return false;
+      }
+    }
 
     /**
      * Checks that a file is non-null, exists, is not a directory and is readable.  If any
@@ -283,6 +313,27 @@ public class IOUtil {
         else if (!file.canRead()) {
             throw new SAMException("File exists but is not readable: " + file.getAbsolutePath());
         }
+    }
+
+    /**
+     * Checks that each file is non-null, exists, is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for readability
+     */
+    public static void assertFilesAreReadable(final List<File> files) {
+        for (final File file : files) assertFileIsReadable(file);
+    }
+    
+    /**
+     * Checks that each string is non-null, exists or is a URL, 
+     * and if it is a file then not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for readability
+     */
+    public static void assertInputsAreValid(final List<String> inputs) {
+        for (final String input : inputs) assertInputIsValid(input);
     }
 
     /**
@@ -317,6 +368,17 @@ public class IOUtil {
         else if (!file.canWrite()) {
             throw new SAMException("File exists but is not writable: " + file.getAbsolutePath());
         }
+    }
+
+    /**
+     * Checks that each file is non-null, and is either extent and writable, or non-existent but
+     * that the parent directory exists and is writable. If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param files the list of files to check for writability
+     */
+    public static void assertFilesAreWritable(final List<File> files) {
+        for (final File file : files) assertFileIsWritable(file);
     }
 
     /**

@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Iterables;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StopWatch;
+
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -221,5 +222,47 @@ public class SamReaderFactoryTest {
             LOG.info("Skipping query operation: no index.");
         }
         reader.close();
+    }
+    
+    @Test
+    public void customReaderFactoryTest() throws IOException {
+        try {
+          CustomReaderFactory.setInstance(new CustomReaderFactory(
+              "https://www.googleapis.com/genomics/v1beta/reads/," +
+              "htsjdk.samtools.SamReaderFactoryTest$TestReaderFactory"));
+          final SamReader reader = SamReaderFactory.makeDefault().open(
+              SamInputResource.of(
+              "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam"));
+          int i = 0;
+          for (@SuppressWarnings("unused") final SAMRecord ignored : reader) {
+              ++i;
+          }
+          reader.close();
+  
+          Assert.assertTrue(i > 0);
+        } finally {
+          CustomReaderFactory.resetToDefaultInstance();
+        }
+    }
+    
+    public static class TestReaderFactory implements CustomReaderFactory.ICustomReaderFactory {
+      @Override
+      public SamReader open(URL url) {
+        final File file = new File(TEST_DATA_DIR, url.getQuery());
+        LOG.info("Opening customr reader for " + file.toString());
+        return SamReaderFactory.makeDefault().open(file);
+      }
+    }
+    
+    @Test
+    public void inputResourceFromStringTest() throws IOException {
+      Assert.assertEquals(SamInputResource.of("http://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("https://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("ftp://test.url").data().type(),
+          InputResource.Type.URL);
+      Assert.assertEquals(SamInputResource.of("/a/b/c").data().type(),
+          InputResource.Type.FILE);
     }
 }

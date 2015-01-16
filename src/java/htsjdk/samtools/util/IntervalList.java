@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2014 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -61,6 +61,8 @@ import java.util.TreeSet;
  * @author Yossi Farjoun
  */
 public class IntervalList implements Iterable<Interval> {
+    public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
+
     private final SAMFileHeader header;
     private final List<Interval> intervals = new ArrayList<Interval>();
 
@@ -299,6 +301,19 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
+     * Creates an IntervalList from the given sequence name
+     * @param header header to use to create IntervalList
+     * @param sequenceName name of sequence in header
+     * @return a new intervalList with given header that contains the reference name
+     */
+    public static IntervalList fromName(final SAMFileHeader header, final String sequenceName) {
+        final IntervalList ref = new IntervalList(header);
+        ref.add(new Interval(sequenceName, 1, header.getSequence(sequenceName).getSequenceLength()));
+
+        return ref;
+    }
+
+    /**
      * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
      */
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
@@ -308,7 +323,7 @@ public class IntervalList implements Iterable<Interval> {
         }
         return IntervalList.union(intervalLists);
     }
-    
+
     /**
      * Parses an interval list from a reader in a stream based fashion.
      * @param in a BufferedReader that can be read from
@@ -482,9 +497,6 @@ public class IntervalList implements Iterable<Interval> {
         return intersection;
     }
 
-
-
-
     /**
      * A utility function for merging a list of IntervalLists, checks for equal dictionaries.
      * Merging does not look for overlapping intervals nor uniquify
@@ -508,11 +520,10 @@ public class IntervalList implements Iterable<Interval> {
                     in.getHeader().getSequenceDictionary());
 
             merged.addall(in.intervals);
-            }
+        }
+
         return merged;
     }
-
-
 
     /**
      * A utility function for finding the union of a list of IntervalLists, checks for equal dictionaries.
@@ -526,12 +537,10 @@ public class IntervalList implements Iterable<Interval> {
         return merged.uniqued();
     }
 
-
     public static IntervalList union(final IntervalList list1, final IntervalList list2) {
         final Collection<IntervalList> duo = CollectionUtil.makeList(list1, list2);
         return IntervalList.union(duo);
     }
-
 
     /** inverts an IntervalList and returns one that has exactly all the bases in the dictionary that the original one does not.
      *
@@ -548,8 +557,8 @@ public class IntervalList implements Iterable<Interval> {
             map.add(list.getHeader().getSequenceIndex(i.getSequence()),i);
         }
 
-        int intervals = 0; // a counter to supply newly-created intervals with a name
-
+        // a counter to supply newly-created intervals with a name
+        int intervals = 0;
 
         //iterate over the contigs in the dictionary
         for (final SAMSequenceRecord samSequenceRecord : list.getHeader().getSequenceDictionary().getSequences()) {
@@ -574,21 +583,32 @@ public class IntervalList implements Iterable<Interval> {
         return inverse;
     }
 
-
     /**
      * A utility function for subtracting a collection of IntervalLists from another. Resulting loci are those that are in the first collection
      * but not the second.
      *
-     * @param listsToSubtractFrom the collection of IntervalList from which to subtract intervals
-     * @param listsToSubtract the collection of intervals to subtract
-     * @return an IntervalLists comprising all loci that are in first collection but not second.
+     * @param lhs the collection of IntervalList from which to subtract intervals
+     * @param rhs the collection of intervals to subtract
+     * @return an IntervalList comprising all loci that are in the first collection but not the second  lhs-rhs=answer.
      */
-    public static IntervalList subtract(final Collection<IntervalList> listsToSubtractFrom, final Collection<IntervalList> listsToSubtract) {
+    public static IntervalList subtract(final Collection<IntervalList> lhs, final Collection<IntervalList> rhs) {
         return intersection(
-                union(listsToSubtractFrom),
-                invert(union(listsToSubtract)));
+                union(lhs),
+                invert(union(rhs)));
     }
 
+    /**
+     * A utility function for subtracting a single IntervalList from another. Resulting loci are those that are in the first List
+     * but not the second.
+     *
+     * @param lhs the IntervalList from which to subtract intervals
+     * @param rhs the IntervalList to subtract
+     * @return an IntervalList comprising all loci that are in first IntervalList but not the second. lhs-rhs=answer
+     */
+    public static IntervalList subtract(final IntervalList lhs, final IntervalList rhs) {
+        return subtract(Collections.singletonList(lhs),
+                Collections.singletonList(rhs));
+    }
 
     /**
      * A utility function for finding the difference between two IntervalLists.
@@ -602,7 +622,6 @@ public class IntervalList implements Iterable<Interval> {
                 subtract(lists1, lists2),
                 subtract(lists2, lists1));
     }
-
 
     @Override
     public boolean equals(final Object o) {
@@ -621,6 +640,7 @@ public class IntervalList implements Iterable<Interval> {
         return result;
     }
 }
+
 /**
  * Comparator that orders intervals based on their sequence index, by coordinate
  * then by strand and finally by name.

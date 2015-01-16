@@ -19,7 +19,7 @@ import java.util.List;
 
 public class BamFileIoUtils {
     private static final Log LOG = Log.getInstance(BamFileIoUtils.class);
-    
+
     public static final String BAM_FILE_EXTENSION = ".bam";
 
     public static boolean isBamFile(final File file) {
@@ -32,11 +32,12 @@ public class BamFileIoUtils {
 
     /**
      * Copy a BAM file but replacing the header
+     *
      * @param samFileHeader The header to use in the new file
-     * @param inputFile The BAM file to copy, sans header
-     * @param outputFile The new BAM file, constructed with the new header and the content from inputFile
-     * @param createMd5 Whether or not to create an MD5 file for the new BAM
-     * @param createIndex Whether or not to create an index file for the new BAM
+     * @param inputFile     The BAM file to copy, sans header
+     * @param outputFile    The new BAM file, constructed with the new header and the content from inputFile
+     * @param createMd5     Whether or not to create an MD5 file for the new BAM
+     * @param createIndex   Whether or not to create an index file for the new BAM
      */
     public static void reheaderBamFile(final SAMFileHeader samFileHeader, final File inputFile, final File outputFile, final boolean createMd5, final boolean createIndex) {
         IOUtil.assertFileIsReadable(inputFile);
@@ -61,9 +62,9 @@ public class BamFileIoUtils {
     /**
      * Copy data from a BAM file to an OutputStream by directly copying the gzip blocks
      *
-     * @param inputFile The file to be copied
-     * @param outputStream The stream to write the copied data to
-     * @param skipHeader If true, the header of the input file will not be copied to the output stream
+     * @param inputFile      The file to be copied
+     * @param outputStream   The stream to write the copied data to
+     * @param skipHeader     If true, the header of the input file will not be copied to the output stream
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
     public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
@@ -122,7 +123,7 @@ public class BamFileIoUtils {
     public static void gatherWithBlockCopying(final List<File> bams, final File output, final boolean createIndex, final boolean createMd5) {
         try {
             OutputStream out = new FileOutputStream(output);
-            if (createMd5) out   = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
+            if (createMd5) out = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
             File indexFile = null;
             if (createIndex) {
                 indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix);
@@ -149,24 +150,29 @@ public class BamFileIoUtils {
                     System.err.print(String.format("Index file is older than BAM file for %s and unable to resolve this", output.getAbsolutePath()));
                 }
             }
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
         }
     }
 
     private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
         OutputStream outputStream = new FileOutputStream(outputFile);
-        if (createMd5) outputStream   = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
-        if (createIndex) outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAMIndexSuffix));
+        if (createMd5) {
+            outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
+        }
+        if (createIndex) {
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAMIndexSuffix));
+        }
         return outputStream;
     }
 
     private static void assertSortOrdersAreEqual(final SAMFileHeader newHeader, final File inputFile) throws IOException {
-        final SAMFileHeader origHeader = new SAMFileReader(inputFile).getFileHeader();
+        final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
+        final SAMFileHeader origHeader = reader.getFileHeader();
         final SAMFileHeader.SortOrder newSortOrder = newHeader.getSortOrder();
         if (newSortOrder != SAMFileHeader.SortOrder.unsorted && newSortOrder != origHeader.getSortOrder()) {
             throw new SAMException("Sort order of new header does not match the original file, needs to be " + origHeader.getSortOrder());
         }
+        reader.close();
     }
 }

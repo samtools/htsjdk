@@ -27,16 +27,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** An implementation of an interval tree, following the explanation.
+/**
+ * An implementation of an interval tree, following the explanation.
  * from CLR. For efficiently finding all intervals which overlap a given
  * interval or point.
- *
+ * <p/>
  * References:
  * http://en.wikipedia.org/wiki/Interval_tree
- *
+ * <p/>
  * Cormen, Thomas H.; Leiserson, Charles E., Rivest, Ronald L. (1990). Introduction to Algorithms (1st ed.). MIT Press and McGraw-Hill. ISBN 0-262-03141-8
- *
- *
  */
 public class IntervalTree {
 
@@ -63,15 +62,15 @@ public class IntervalTree {
     /**
      * The estimated size of the tree. We keep a running count
      * on each insert, this getter returns that count.
-     * @see #size()
+     *
      * @return
+     * @see #size()
      */
     public int getSize() {
         return size;
     }
 
     /**
-     *
      * @param interval
      * @return all matches as a list of Intervals
      */
@@ -81,7 +80,7 @@ public class IntervalTree {
             return Collections.emptyList();
         }
 
-        List<Interval> results = new ArrayList();
+        List<Interval> results = new ArrayList<Interval>();
         searchAll(interval, root(), results);
         return results;
     }
@@ -106,13 +105,14 @@ public class IntervalTree {
     /**
      * Return all intervals in tree.
      * TODO: an iterator would be more effecient.
+     *
      * @return
      */
     public List<Interval> getIntervals() {
         if (root().isNull()) {
             return Collections.emptyList();
         }
-        List<Interval> results = new ArrayList(size);
+        List<Interval> results = new ArrayList<Interval>(size);
         getAll(root(), results);
         return results;
     }
@@ -120,6 +120,7 @@ public class IntervalTree {
     /**
      * Get all nodes which are descendants of {@code node}, inclusive.
      * {@code results} is modified in place
+     *
      * @param node
      * @param results
      * @return the total list of descendants, including original {@code results}
@@ -322,9 +323,9 @@ public class IntervalTree {
     }
 
     /**
-     * @see #getSize()
      * @return Returns the number of nodes in the tree.
-     *         Recalculated each call
+     * Recalculated each call
+     * @see #getSize()
      */
     public int size() {
         return _size(this.root);
@@ -498,7 +499,7 @@ public class IntervalTree {
         public String toString() {
 
             // Make some shorthand for the nodes
-            Map<Interval, Integer> keys = new LinkedHashMap();
+            Map<Interval, Integer> keys = new LinkedHashMap<Interval, Integer>();
 
             if (this == NIL) {
                 return "nil";

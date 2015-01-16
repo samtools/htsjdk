@@ -101,7 +101,7 @@ public class TabixUtils {
                 if (buf[i] == 0) {
                     byte[] b = new byte[i - j];
                     System.arraycopy(buf, j, b, 0, b.length);
-                    sequences.add(new SAMSequenceRecord(new String(b)));
+                    sequences.add(new SAMSequenceRecord(new String(b), b.length));
                     j = i + 1;
                 }
             }

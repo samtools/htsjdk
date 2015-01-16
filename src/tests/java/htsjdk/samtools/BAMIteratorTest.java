@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -38,29 +39,31 @@ public class BAMIteratorTest {
 
     @Test(dataProvider = "dataProvider")
     public void testIterateEmptyBam(final String bam) throws Exception {
-        final SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, bam));
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
         int numRecords = 0;
         for (final SAMRecord rec : reader) {
             ++numRecords;
         }
         Assert.assertEquals(numRecords, 0);
+        CloserUtil.close(reader);
     }
 
     @Test(dataProvider = "dataProvider")
     public void testQueryUnmappedEmptyBam(final String bam) throws Exception {
-        SAMFileReader reader = new SAMFileReader(new File(TEST_DATA_DIR, bam));
-        CloseableIterator<SAMRecord> it = reader.queryUnmapped();
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
+        final CloseableIterator<SAMRecord> it = reader.queryUnmapped();
         int numRecords = 0;
         while (it.hasNext()) {
             it.next();
             ++numRecords;
         }
         Assert.assertEquals(numRecords, 0);
+        CloserUtil.close(reader);
     }
 
     @DataProvider(name = "dataProvider")
     public Object[][] bams() {
-        return new Object[][] {
+        return new Object[][]{
                 {"empty.bam"},
                 {"empty_no_empty_gzip_block.bam"}
         };

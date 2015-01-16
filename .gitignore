@@ -8,6 +8,6 @@ contracts
 atlassian-ide-plugin.xml
 intellij.testclasses
 intellij.classes
-
+/htsjdk.version.properties
 /bin
-/htsjdk.version.property.xml
+/test-output

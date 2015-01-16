@@ -32,14 +32,13 @@ import java.io.File;
 /**
  * Command line utility for manipulating SAM/BAM files.
  */
-public class SAMTools
-{
+public class SAMTools {
     private String mCommand = null;
     private File mInputFile = null;
 
 
     public static void main(final String[] args)
-        throws Exception {
+            throws Exception {
         final int status = new SAMTools().run(args);
         if (status != 0) {
             System.exit(status);
@@ -94,7 +93,7 @@ public class SAMTools
     }
 
     private int run(final String[] args)
-        throws Exception {
+            throws Exception {
         if (!parseArguments(args)) {
             return 1;
         }
@@ -108,11 +107,11 @@ public class SAMTools
     }
 
     private int runView() {
-        final SAMFileReader reader = new SAMFileReader(mInputFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(mInputFile);
         final CloseableIterator<SAMRecord> iterator = reader.iterator();
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
-            System.out.println(record.format());
+            System.out.println(record.getSAMString());
         }
         iterator.close();
         return 0;

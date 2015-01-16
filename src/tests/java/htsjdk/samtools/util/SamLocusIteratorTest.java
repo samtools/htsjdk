@@ -23,7 +23,9 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -33,12 +35,12 @@ import java.io.ByteArrayInputStream;
  * @author alecw@broadinstitute.org
  */
 public class SamLocusIteratorTest {
-    private SAMFileReader createSamFileReader(final String samExample) {
+    private SamReader createSamFileReader(final String samExample) {
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(samExample.getBytes());
-        return new SAMFileReader(inputStream);
+        return SamReaderFactory.makeDefault().open(SamInputResource.of(inputStream));
     }
 
-    private SamLocusIterator createSamLocusIterator(final SAMFileReader samReader) {
+    private SamLocusIterator createSamLocusIterator(final SamReader samReader) {
         final SamLocusIterator ret = new SamLocusIterator(samReader);
         ret.setEmitUncoveredLoci(false);
         return ret;
@@ -48,14 +50,13 @@ public class SamLocusIteratorTest {
     public void testBasicIterator() {
 
         final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1  = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
+        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
         final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
         final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String exampleSam = sqHeader + s1 + s1;
 
-        final SAMFileReader samReader = createSamFileReader(exampleSam);
+        final SamReader samReader = createSamFileReader(exampleSam);
         final SamLocusIterator sli = createSamLocusIterator(samReader);
-
 
 
         // make sure we accumulated depth of 2 for each position
@@ -71,12 +72,12 @@ public class SamLocusIteratorTest {
     public void testEmitUncoveredLoci() {
 
         final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1  = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
+        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
         final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
         final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String exampleSam = sqHeader + s1 + s1;
 
-        final SAMFileReader samReader = createSamFileReader(exampleSam);
+        final SamReader samReader = createSamFileReader(exampleSam);
         final SamLocusIterator sli = new SamLocusIterator(samReader);
 
         // make sure we accumulated depth of 2 for each position
@@ -101,14 +102,14 @@ public class SamLocusIteratorTest {
     public void testQualityFilter() {
 
         final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1  = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
+        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
         final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
         final String qual2 = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*"; // phred 10,9...
         final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String s2 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual2 + "\n";
         final String exampleSam = sqHeader + s1 + s2;
 
-        final SAMFileReader samReader = createSamFileReader(exampleSam);
+        final SamReader samReader = createSamFileReader(exampleSam);
         final SamLocusIterator sli = createSamLocusIterator(samReader);
         sli.setQualityScoreCutoff(10);
 
@@ -116,7 +117,7 @@ public class SamLocusIteratorTest {
         // make sure we accumulated depth 2 for even positions, 1 for odd positions
         int pos = 165;
         for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals((pos%2==0)?1:2, li.getRecordAndPositions().size());
+            Assert.assertEquals((pos % 2 == 0) ? 1 : 2, li.getRecordAndPositions().size());
             Assert.assertEquals(pos++, li.getPosition());
         }
 
@@ -128,18 +129,17 @@ public class SamLocusIteratorTest {
     @Test
     public void testSimpleGappedAlignment() {
         final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1  = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
+        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
         final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
         final String s1 = "3851612\t16\tchrM\t165\t255\t3S3M3N3M3D3M3I18M3S\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String exampleSam = sqHeader + s1 + s1;
 
-        final SAMFileReader samReader = createSamFileReader(exampleSam);
+        final SamReader samReader = createSamFileReader(exampleSam);
         final SamLocusIterator sli = createSamLocusIterator(samReader);
 
 
-
         // make sure we accumulated depth of 2 for each position
-        final int[] expectedReferencePositions = new int[] {
+        final int[] expectedReferencePositions = new int[]{
                 // 3S
                 165, 166, 167, // 3M
                 // 3N
@@ -149,9 +149,9 @@ public class SamLocusIteratorTest {
                 // 3I
                 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197}; // 18M
 
-        final int[] expectedReadOffsets = new int[] {
+        final int[] expectedReadOffsets = new int[]{
                 // 3S
-                3,4,5, // 3M
+                3, 4, 5, // 3M
                 // 3N
                 6, 7, 8, // 3M
                 // 3D
@@ -175,14 +175,14 @@ public class SamLocusIteratorTest {
     @Test
     public void testOverlappingGappedAlignments() {
         final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1  = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
+        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
         final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
         // Were it not for the gap, these two reads would not overlap
         final String s1 = "3851612\t16\tchrM\t165\t255\t18M10D18M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String s2 = "3851613\t16\tchrM\t206\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
         final String exampleSam = sqHeader + s1 + s2;
 
-        final SAMFileReader samReader = createSamFileReader(exampleSam);
+        final SamReader samReader = createSamFileReader(exampleSam);
         final SamLocusIterator sli = createSamLocusIterator(samReader);
         // 5 base overlap btw the two reads
         final int numBasesCovered = 36 + 36 - 5;
@@ -195,26 +195,26 @@ public class SamLocusIteratorTest {
         for (i = 0; i < 18; ++i) {
             expectedReferencePositions[i] = 165 + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[] {i};
+            expectedReadOffsets[i] = new int[]{i};
         }
         // Gap of 10, then 13 bases from the first read
         for (; i < 36 - 5; ++i) {
             expectedReferencePositions[i] = 165 + 10 + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[] {i};
+            expectedReadOffsets[i] = new int[]{i};
         }
         // Last 5 bases of first read overlap first 5 bases of second read
         for (; i < 36; ++i) {
             expectedReferencePositions[i] = 165 + 10 + i;
             expectedDepths[i] = 2;
-            expectedReadOffsets[i] = new int[] {i, i - 31};
+            expectedReadOffsets[i] = new int[]{i, i - 31};
 
         }
         // Last 31 bases of 2nd read
         for (; i < 36 + 36 - 5; ++i) {
             expectedReferencePositions[i] = 165 + 10 + i;
             expectedDepths[i] = 1;
-            expectedReadOffsets[i] = new int[] {i - 31};
+            expectedReadOffsets[i] = new int[]{i - 31};
         }
 
         i = 0;

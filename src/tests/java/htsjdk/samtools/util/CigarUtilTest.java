@@ -42,13 +42,11 @@ import java.util.List;
  */
 public class CigarUtilTest {
 
-    TextCigarCodec codec = TextCigarCodec.getSingleton();
-
    @Test(dataProvider="clipData")
     public void basicTest(final String testName, final int start, final String inputCigar, final boolean negativeStrand,
                           final int clipPosition,
                           final String expectedCigar, final int expectedAdjustedStart) throws IOException {
-      List<CigarElement> cigar =  codec.decode(inputCigar).getCigarElements();
+      List<CigarElement> cigar =  TextCigarCodec.decode(inputCigar).getCigarElements();
       if (negativeStrand){
           List<CigarElement> copiedList = new ArrayList<CigarElement>(cigar);
           Collections.reverse(copiedList);
@@ -67,7 +65,7 @@ public class CigarUtilTest {
            Assert.assertEquals(start + sizeChange, expectedAdjustedStart, sizeChange + " " +  testName);
            Assert.assertTrue(sizeChange >= 0, "sizeChange >= 0. " + sizeChange);
       }
-       Assert.assertEquals (codec.encode(newCigar), expectedCigar, testName);
+       Assert.assertEquals (TextCigarCodec.encode(newCigar), expectedCigar, testName);
        Assert.assertEquals(newCigar.getReadLength(), oldCigar.getReadLength());
        Assert.assertNull(newCigar.isValid(testName, -1));
     }
@@ -115,7 +113,7 @@ public class CigarUtilTest {
      public void addingSoftClippedBasesTest(final String testName, final String cigar, final boolean negativeStrand,
                            final int threePrimeEnd, final int fivePrimeEnd, final String expectedCigar) throws IOException {
 
-        Assert.assertEquals(CigarUtil.addSoftClippedBasesToEndsOfCigar(codec.decode(cigar), negativeStrand,
+        Assert.assertEquals(CigarUtil.addSoftClippedBasesToEndsOfCigar(TextCigarCodec.decode(cigar), negativeStrand,
                 threePrimeEnd, fivePrimeEnd).toString(), expectedCigar, testName);
      }
 

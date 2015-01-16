@@ -35,7 +35,6 @@ import java.util.Arrays;
  * Class for translating between in-memory and disk representation of BAMRecord.
  */
 public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
-    private final BinaryCigarCodec cigarCodec = new BinaryCigarCodec();
     private final SAMFileHeader header;
     private final BinaryCodec binaryCodec = new BinaryCodec();
     private final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCodec);
@@ -145,7 +144,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 "; quals length: " + alignment.getBaseQualities().length);
             }
             this.binaryCodec.writeString(alignment.getReadName(), false, true);
-            final int[] binaryCigar = cigarCodec.encode(alignment.getCigar());
+            final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
             for (final int cigarElement : binaryCigar) {
                 // Assumption that this will fit into an integer, despite the fact
                 // that it is specced as a uint.

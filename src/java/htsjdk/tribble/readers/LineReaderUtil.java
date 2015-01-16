@@ -7,10 +7,11 @@ import htsjdk.tribble.TribbleException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 
 /**
  * A collection of factories for generating {@link LineReader}s.
- * 
+ *
  * @author mccowan
  */
 public class LineReaderUtil {
@@ -25,6 +26,37 @@ public class LineReaderUtil {
      */
     public static LineReader fromBufferedStream(final InputStream stream) {
         return fromBufferedStream(stream, Defaults.USE_ASYNC_IO ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+    }
+
+    public static LineReader fromStringReader(final StringReader reader) {
+        return fromStringReader(reader, Defaults.USE_ASYNC_IO ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+    }
+
+    public static LineReader fromStringReader(final StringReader stringReader, final LineReaderOption lineReaderOption) {
+        switch (lineReaderOption) {
+            case ASYNCHRONOUS:
+                return new AsynchronousLineReader(stringReader);
+            case SYNCHRONOUS:
+                return new LineReader() {
+                    final LongLineBufferedReader reader = new LongLineBufferedReader(stringReader);
+
+                    @Override
+                    public String readLine() {
+                        try {
+                            return reader.readLine();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    @Override
+                    public void close() {
+                        CloserUtil.close(reader);
+                    }
+                };
+            default:
+                throw new TribbleException(String.format("Unrecognized LineReaderUtil option: %s.", lineReaderOption));
+        }
     }
 
     /**

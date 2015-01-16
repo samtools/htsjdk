@@ -177,8 +177,8 @@ public abstract class BCF2FieldWriter {
             // the only value that is dynamic are integers
             final List<Integer> values = new ArrayList<Integer>(vc.getNSamples());
             for ( final Genotype g : vc.getGenotypes() ) {
-                for ( final Object i : BCF2Utils.toList(g.getExtendedAttribute(getField(), null)) ) {
-                    if ( i != null ) values.add((Integer)i); // we know they are all integers
+                for ( final Integer i : BCF2Utils.toList(Integer.class, g.getExtendedAttribute(getField(), null)) ) {
+                    if ( i != null ) values.add(i);
                 }
             }
 

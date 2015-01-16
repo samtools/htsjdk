@@ -30,18 +30,15 @@ import java.util.Arrays;
 
 public class CigarCodecTest {
 
-    private final BinaryCigarCodec binaryCigarCodec = new BinaryCigarCodec();
-    private final TextCigarCodec textCigarCodec = new TextCigarCodec();
-
 
     @Test
     public void testDefault() {
         final Cigar emptyCigar = new Cigar();
-        Assert.assertEquals(emptyCigar, binaryCigarCodec.decode(new int[0]));
-        final int[] binaryCigar = binaryCigarCodec.encode(emptyCigar);
+        Assert.assertEquals(emptyCigar, BinaryCigarCodec.decode(new int[0]));
+        final int[] binaryCigar = BinaryCigarCodec.encode(emptyCigar);
         Assert.assertEquals(0, binaryCigar.length);
-        Assert.assertEquals(emptyCigar, textCigarCodec.decode(SAMRecord.NO_ALIGNMENT_CIGAR));
-        Assert.assertEquals(textCigarCodec.encode(emptyCigar), SAMRecord.NO_ALIGNMENT_CIGAR);
+        Assert.assertEquals(emptyCigar, TextCigarCodec.decode(SAMRecord.NO_ALIGNMENT_CIGAR));
+        Assert.assertEquals(TextCigarCodec.encode(emptyCigar), SAMRecord.NO_ALIGNMENT_CIGAR);
     }
 
     private static class Cigarette {
@@ -102,11 +99,11 @@ public class CigarCodecTest {
         };
         final String textCigar = makeTextCigar(cigarettes);
         final int[] binaryCigar = makeBinaryCigar(cigarettes);
-        final Cigar fromText = textCigarCodec.decode(textCigar);
-        final Cigar fromBinary = binaryCigarCodec.decode(binaryCigar);
+        final Cigar fromText = TextCigarCodec.decode(textCigar);
+        final Cigar fromBinary = BinaryCigarCodec.decode(binaryCigar);
         Assert.assertEquals(fromText, fromBinary);
-        final String anotherTextCigar = textCigarCodec.encode(fromBinary);
-        final int[] anotherBinaryCigar = binaryCigarCodec.encode(fromText);
+        final String anotherTextCigar = TextCigarCodec.encode(fromBinary);
+        final int[] anotherBinaryCigar = BinaryCigarCodec.encode(fromText);
         Assert.assertEquals(anotherTextCigar, textCigar);
         Assert.assertTrue(Arrays.equals(anotherBinaryCigar, binaryCigar));
     }

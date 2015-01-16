@@ -35,25 +35,25 @@ import java.util.Comparator;
  */
 class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements Comparable<ComparableSamRecordIterator> {
     private final Comparator<SAMRecord> comparator;
-    private final SAMFileReader reader;    
+    private final SamReader reader;
 
     /**
      * Constructs a wrapping iterator around the given iterator that will be able
      * to compare itself to other ComparableSamRecordIterators using the given comparator.
      *
-     * @param iterator the wrapped iterator.
+     * @param iterator   the wrapped iterator.
      * @param comparator the Comparator to use to provide ordering fo SAMRecords
      */
-    public ComparableSamRecordIterator(final SAMFileReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
+    public ComparableSamRecordIterator(final SamReader sam, final CloseableIterator<SAMRecord> iterator, final Comparator<SAMRecord> comparator) {
         super(iterator);
-        this.reader = sam;        
+        this.reader = sam;
         this.comparator = comparator;
     }
 
     /** Returns the reader from which this iterator was constructed. */
-    public SAMFileReader getReader() {
+    public SamReader getReader() {
         return reader;
-    }    
+    }
 
     /**
      * Compares this iterator to another comparable iterator based on the next record
@@ -79,7 +79,7 @@ class ComparableSamRecordIterator extends PeekableIterator<SAMRecord> implements
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        return compareTo((ComparableSamRecordIterator)o) == 0;
+        return compareTo((ComparableSamRecordIterator) o) == 0;
     }
 
     @Override

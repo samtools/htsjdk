@@ -1,8 +1,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -66,9 +67,8 @@ public class QualityEncodingDetectorTest {
 
     @Test(dataProvider = "BAM_TESTCASES", groups = {"unix"})
     public void testBamQualityInference(final File input, final FastqQualityFormat expectedQualityFormat) {
-        final SAMFileReader reader = new SAMFileReader(input);
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
         Assert.assertEquals(QualityEncodingDetector.detect(reader), expectedQualityFormat);
-        reader.close();
     }
 
     @Test
@@ -85,7 +85,7 @@ public class QualityEncodingDetectorTest {
                 FastqQualityFormat.Standard), FastqQualityFormat.Standard);
     }
 
-    @Test (expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = SAMException.class)
     public void testQualitySanity() {
         final SAMRecordSetBuilder samRecordSetBuilder = createSmallUnmappedSam();
         QualityEncodingDetector.detect(samRecordSetBuilder.getSamReader(),

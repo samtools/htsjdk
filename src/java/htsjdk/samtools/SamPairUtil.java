@@ -24,8 +24,14 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.PeekableIterator;
+import htsjdk.samtools.util.ProgressLogger;
+
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * Utility methods for pairs of SAMRecords
@@ -181,10 +187,9 @@ public class SamPairUtil {
      * Write the mate info for two SAMRecords
      * @param rec1 the first SAM record
      * @param rec2 the second SAM record
-     * @param header the SAM file header
      * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
      */
-    public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header, final boolean setMateCigar) {
+    public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final boolean setMateCigar) {
         // If neither read is unmapped just set their mate info
         if (!rec1.getReadUnmappedFlag() && !rec2.getReadUnmappedFlag()) {
             rec1.setMateReferenceIndex(rec2.getReferenceIndex());
@@ -261,13 +266,25 @@ public class SamPairUtil {
     }
 
     /**
+     * Write the mate info for two SAMRecords
+     * @param rec1 the first SAM record
+     * @param rec2 the second SAM record
+     * @param header the SAM file header
+     * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+     */
+    @Deprecated
+    public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header, final boolean setMateCigar) {
+        setMateInfo(rec1, rec2, setMateCigar);
+    }
+
+    /**
      * Write the mate info for two SAMRecords.  This will always clear/remove any mate cigar tag that is present.
      * @param rec1 the first SAM record
      * @param rec2 the second SAM record
      * @param header the SAM file header
      */
     public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header) {
-        setMateInfo(rec1, rec2, header, false);
+        setMateInfo(rec1, rec2, false);
     }
 
     /**
@@ -334,5 +351,115 @@ public class SamPairUtil {
                 : false;
         rec1.setProperPairFlag(properPair);
         rec2.setProperPairFlag(properPair);
+    }
+
+    /**
+     * A class to iterate through SAMRecords and set mate information on the given records, and optionally
+     * set the mate cigar tag (true by default).
+     */
+    public static class SetMateInfoIterator extends PeekableIterator<SAMRecord> {
+
+        private final Queue<SAMRecord> records = new LinkedList<SAMRecord>();
+        private final boolean setMateCigar;
+        private long numMateCigarsAdded = 0;
+
+        /**
+         * By default, the mate cigar tag is set
+         * @param iterator the iterator to wrap
+         */
+        public SetMateInfoIterator(final Iterator<SAMRecord> iterator) {
+            this(iterator, true);
+        }
+
+        /**
+         * @param iterator the iterator to wrap
+         * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+         */
+        public SetMateInfoIterator(final Iterator<SAMRecord> iterator, final boolean setMateCigar) {
+            super(iterator);
+            this.setMateCigar = setMateCigar;
+        }
+
+        /**
+         * @return the current number of mate cigars added.  This could be more than the number of records returned.
+         */
+        public long getNumMateCigarsAdded() { return this.numMateCigarsAdded; }
+
+        public boolean hasNext() {
+            return (!records.isEmpty() || super.hasNext());
+        }
+
+        /**
+         * Populate this.records if necessary.
+         */
+        private void advance() {
+
+            // No need to advance if we have records remaining
+            if (!records.isEmpty()) return;
+
+            /**
+             * Get all records with the same name, and then identify the canonical first and second end to which we
+             * want to set mate info.
+             */
+            SAMRecord firstPrimaryRecord = null, secondPrimaryRecord = null;
+            final SAMRecord first = super.peek(); // peek so we consider it in the following loop
+            boolean containsSupplementalRecord = false;
+            while (super.hasNext() && super.peek().getReadName().equals(first.getReadName())) {
+                final SAMRecord record = super.next();
+                // We must make sure that we find only one "primary" alignments for each end
+                if (record.getReadPairedFlag()) {
+                    if (!record.isSecondaryOrSupplementary()) {
+                        if (record.getFirstOfPairFlag()) {
+                            if (null != firstPrimaryRecord) {
+                                throw new SAMException("Found two records that are paired, not supplementary, and first of the pair");
+                            }
+                            firstPrimaryRecord = record;
+                        }
+                        else if (record.getSecondOfPairFlag()) {
+                            if (null != secondPrimaryRecord) {
+                                throw new SAMException("Found two records that are paired, not supplementary, and second of the pair");
+                            }
+                            secondPrimaryRecord = record;
+                        }
+                    }
+                    if (record.getSupplementaryAlignmentFlag()) containsSupplementalRecord = true;
+                }
+                records.add(record);
+            }
+
+            // we must find both records to update the mate info
+            if (null != firstPrimaryRecord && null != secondPrimaryRecord) {
+                // Update mate info
+                SamPairUtil.setMateInfo(firstPrimaryRecord, secondPrimaryRecord, this.setMateCigar);
+                if (this.setMateCigar) this.numMateCigarsAdded += 2;
+            }
+
+            // Set mate information on supplemental records
+            if (containsSupplementalRecord) {
+                for (final SAMRecord record : records) {
+                    if (record.getReadPairedFlag() && record.getSupplementaryAlignmentFlag()) {
+                        if (record.getFirstOfPairFlag()) {
+                            SamPairUtil.setMateInformationOnSupplementalAlignment(record, secondPrimaryRecord, this.setMateCigar);
+                        }
+                        else {
+                            SamPairUtil.setMateInformationOnSupplementalAlignment(record, firstPrimaryRecord, this.setMateCigar);
+                        }
+                        this.numMateCigarsAdded++;
+                    }
+                }
+            }
+        }
+
+        public SAMRecord next() {
+            advance();
+            if (records.isEmpty()) throw new IllegalStateException("Unexpectedly found an empty record list");
+            return this.records.poll();
+        }
+
+        public SAMRecord peek() {
+            advance();
+            if (records.isEmpty()) throw new IllegalStateException("Unexpectedly found an empty record list");
+            return this.records.peek();
+        }
     }
 }

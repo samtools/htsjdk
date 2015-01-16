@@ -116,8 +116,7 @@ public class SequenceUtilTest {
 
     @Test(dataProvider = "countInsertedAndDeletedBasesTestCases")
     public void testCountInsertedAndDeletedBases(final String cigarString, final int insertedBases, final int deletedBases) {
-        final TextCigarCodec codec = new TextCigarCodec();
-        final Cigar cigar = codec.decode(cigarString);
+        final Cigar cigar = TextCigarCodec.decode(cigarString);
         Assert.assertEquals(SequenceUtil.countInsertedBases(cigar), insertedBases);
         Assert.assertEquals(SequenceUtil.countDeletedBases(cigar), deletedBases);
     }

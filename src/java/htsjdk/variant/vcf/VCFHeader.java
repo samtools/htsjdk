@@ -206,13 +206,22 @@ public class VCFHeader {
 	 * Completely replaces the contig records in this header with those in the given SAMSequenceDictionary.
 	 */
 	public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
-		this.contigMetaData.clear();
-		for (final SAMSequenceRecord record : dictionary.getSequences()) {
-			contigMetaData.add(new VCFContigHeaderLine(record, null));
-		}
+        this.contigMetaData.clear();
 
-		this.mMetaData.addAll(contigMetaData);
-	}
+        // Also need to remove contig record lines from mMetaData
+        final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
+        for (final VCFHeaderLine line : mMetaData) {
+            if (line instanceof VCFContigHeaderLine) {
+                toRemove.add(line);
+            }
+        }
+        mMetaData.removeAll(toRemove);
+        for (final SAMSequenceRecord record : dictionary.getSequences()) {
+            contigMetaData.add(new VCFContigHeaderLine(record, record.getAssembly()));
+        }
+
+        this.mMetaData.addAll(contigMetaData);
+    }
 
 	public VariantContextComparator getVCFRecordComparator() {
 		return new VariantContextComparator(this.getContigLines());
