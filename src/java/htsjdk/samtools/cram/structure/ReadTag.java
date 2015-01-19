@@ -267,18 +267,22 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     // yeah, I'm that risky:
-    private static final ByteBuffer buf = ByteBuffer
-            .allocateDirect(10 * 1024 * 1024);
-
-    static {
-        buf.order(ByteOrder.LITTLE_ENDIAN);
-    }
+    // with a little less thread risky.
+    private static final ThreadLocal<ByteBuffer> bufLocal = new ThreadLocal<ByteBuffer>() {
+        @Override
+        protected ByteBuffer initialValue() {
+            final ByteBuffer buf = ByteBuffer.allocateDirect(10 * 1024 * 1024);
+            buf.order(ByteOrder.LITTLE_ENDIAN);
+            return buf;
+        }
+    };
 
     private static final Charset charset = Charset.forName("US-ASCII");
 
     public static byte[] writeSingleValue(byte tagType, Object value,
                                           boolean isUnsignedArray) {
 
+        final ByteBuffer buf = bufLocal.get();
         buf.clear();
         switch (tagType) {
             case 'Z':
