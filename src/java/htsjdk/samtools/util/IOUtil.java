@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -85,6 +86,23 @@ public class IOUtil {
     public static final String SAM_FILE_EXTENSION = ".sam";
 
     public static final String DICT_FILE_EXTENSION = ".dict";
+
+    private static int defaultCompressionLevel = Defaults.COMPRESSION_LEVEL;
+
+    /**
+     * Sets the GZip compression level for subsequent GZIPOutputStream object creation.
+     * @param compressionLevel 0 <= compressionLevel <= 9
+     */
+    public static void setDefaultCompressionLevel(final int compressionLevel) {
+        if (compressionLevel < Deflater.NO_COMPRESSION || compressionLevel > Deflater.BEST_COMPRESSION) {
+            throw new IllegalArgumentException("Invalid compression level: " + compressionLevel);
+        }
+        defaultCompressionLevel = compressionLevel;
+    }
+
+    public static int getDefaultCompressionLevel() {
+        return defaultCompressionLevel;
+    }
 
     /**
      * Wrap the given stream in a BufferedInputStream, if it isn't already wrapper
@@ -579,9 +597,9 @@ public class IOUtil {
             if (Defaults.BUFFER_SIZE > 0) {
             return new CustomGzipOutputStream(new FileOutputStream(file, append),
                                               Defaults.BUFFER_SIZE,
-                                              Defaults.COMPRESSION_LEVEL);
+                                              defaultCompressionLevel);
             } else {
-                return new CustomGzipOutputStream(new FileOutputStream(file, append), Defaults.COMPRESSION_LEVEL);
+                return new CustomGzipOutputStream(new FileOutputStream(file, append), defaultCompressionLevel);
             }
         }
         catch (IOException ioe) {
