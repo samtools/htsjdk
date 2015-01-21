@@ -58,7 +58,7 @@ public class Binning {
     // 25-29 27
     // 30-34 33
     // 35-39 37
-    // >=40 40
+    // ≥40 40
     // @formatter:on
     public static byte[] Illumina_binning_matrix = new byte[]{
             // @formatter:off
