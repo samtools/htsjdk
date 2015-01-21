@@ -7,11 +7,11 @@ import htsjdk.samtools.cram.ref.ReferenceTracks;
 import java.util.List;
 
 public class CramBuilder {
-	ReferenceTracks tracks;
-	Sam2CramRecordFactory factory;
-	ReferenceSource source;
+    ReferenceTracks tracks;
+    Sam2CramRecordFactory factory;
+    ReferenceSource source;
 
-	public void build(List<SAMRecord> samRecords) {
-		
-	}
+    public void build(List<SAMRecord> samRecords) {
+
+    }
 }

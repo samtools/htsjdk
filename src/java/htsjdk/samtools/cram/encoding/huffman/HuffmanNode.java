@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,11 +16,11 @@
 package htsjdk.samtools.cram.encoding.huffman;
 
 public class HuffmanNode<T> extends HuffmanTree<T> {
-	public final HuffmanTree<T> left, right;
+    public final HuffmanTree<T> left, right;
 
-	public HuffmanNode(HuffmanTree<T> l, HuffmanTree<T> r) {
-		super(l.frequency + r.frequency);
-		left = l;
-		right = r;
-	}
+    public HuffmanNode(HuffmanTree<T> l, HuffmanTree<T> r) {
+        super(l.frequency + r.frequency);
+        left = l;
+        right = r;
+    }
 }
