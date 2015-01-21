@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.structure.EncodingParams;
 import java.io.InputStream;
 import java.util.Map;
 
-
 public class ExternalIntegerEncoding implements Encoding<Integer> {
     public static final EncodingID encodingId = EncodingID.EXTERNAL;
     public int contentId = -1;

@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-
 public class GolombRiceIntegerEncoding implements Encoding<Integer> {
     public static final EncodingID ENCODING_ID = EncodingID.GOLOMB_RICE;
     private int offset;

@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-
 public class GolombLongEncoding implements Encoding<Long> {
     public static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
     private int m;
