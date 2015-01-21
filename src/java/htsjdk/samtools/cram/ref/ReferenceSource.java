@@ -94,6 +94,12 @@ public class ReferenceSource {
                 byte[] bases = findInCache(md5);
                 if (bases != null)
                     return bases;
+                bases = findInCache(md5.toLowerCase());
+                if (bases != null)
+                    return bases;
+                bases = findInCache(md5.toUpperCase());
+                if (bases != null)
+                    return bases;
             }
         }
 
@@ -112,7 +118,7 @@ public class ReferenceSource {
         { // try to fetch sequence by md5:
             if (md5 != null)
                 try {
-                    bases = findBasesByMD5(md5);
+                    bases = findBasesByMD5(md5.toLowerCase());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -138,10 +144,6 @@ public class ReferenceSource {
             else
                 sequence = null;
 
-        if (sequence != null)
-            return sequence.getBases();
-
-        sequence = rsFile.getSequence(name);
         if (sequence != null)
             return sequence.getBases();
 
