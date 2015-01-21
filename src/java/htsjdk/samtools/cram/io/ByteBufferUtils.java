@@ -15,6 +15,14 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.cram.encoding.rans.RANS;
+import htsjdk.samtools.cram.encoding.rans.RANS.ORDER;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.tools.bzip2.CBZip2InputStream;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -23,6 +31,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.Adler32;
@@ -277,6 +287,14 @@ public class ByteBufferUtils {
         return array;
     }
 
+    public static final byte[] writeUnsignedLTF8(long value) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(20);
+        ByteBufferUtils.writeUnsignedLTF8(value, baos);
+
+        byte[] array = new byte[baos.size()];
+        return baos.toByteArray();
+    }
+
     public static final int readUnsignedITF8(ByteBuffer buf) {
         int b1 = 0xFF & buf.get();
 
@@ -516,12 +534,17 @@ public class ByteBufferUtils {
         }
     }
 
-    private static String toHex(byte[] bytes) {
+    public static String toHex(byte[] bytes) {
         StringBuffer sb = new StringBuffer();
         for (byte t : bytes) {
-            sb.append(Integer.toHexString(0xFF & t));
+            sb.append(String.format("%02x", (0xFF & t)).toUpperCase()).append(
+                    ' ');
         }
         return sb.toString();
+    }
+
+    public static String toHexString(byte[] bytes) {
+        return toHex(bytes).replace(" ", "");
     }
 
     /**
@@ -618,9 +641,55 @@ public class ByteBufferUtils {
         return readFully(gis);
     }
 
-    public static int GZIP_COMPRESSION_LEVEL = Integer.valueOf(System.getProperty("gzip.compression.level", "5"));
+    public static byte[] bunzip2(byte[] data) throws IOException {
+        CBZip2InputStream bis = null;
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(
+                data);
+        // hello, apache!
+        byteArrayInputStream.read();
+        byteArrayInputStream.read();
+        bis = new CBZip2InputStream(byteArrayInputStream);
+        return readFully(bis);
+    }
+
+    public static byte[] unrans(byte[] data) {
+        ByteBuffer buf = RANS.uncompress(ByteBuffer.wrap(data), null);
+        return toByteArray(buf);
+    }
+
+    public static byte[] rans(byte[] data, ORDER order) {
+        ByteBuffer buf = RANS.compress(ByteBuffer.wrap(data), order, null);
+        return toByteArray(buf);
+    }
+
+    public static byte[] rans(byte[] data, int order) {
+        ByteBuffer buf = RANS.compress(ByteBuffer.wrap(data),
+                ORDER.fromInt(order), null);
+        return toByteArray(buf);
+    }
+
+    public static byte[] unxz(byte[] data) throws IOException {
+        XZCompressorInputStream is = new XZCompressorInputStream(
+                new ByteArrayInputStream(data));
+        return readFully(is);
+    }
+
+    public static byte[] xz(byte[] data) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 2);
+        XZCompressorOutputStream os = new XZCompressorOutputStream(baos);
+        os.write(data);
+        os.close();
+        return baos.toByteArray();
+    }
+
+    public static int GZIP_COMPRESSION_LEVEL = Integer.valueOf(System
+            .getProperty("gzip.compression.level", "5"));
 
     public static byte[] gzip(byte[] data) throws IOException {
+        return gzip(data, GZIP_COMPRESSION_LEVEL);
+    }
+
+    public static byte[] gzip(byte[] data, final int level) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         GZIPOutputStream gos = new GZIPOutputStream(baos) {
             {
@@ -630,6 +699,19 @@ public class ByteBufferUtils {
         long count = copyLarge(new ByteArrayInputStream(data), gos);
         gos.close();
 
+        return baos.toByteArray();
+    }
+
+    public static byte[] bzip2(byte[] data) throws IOException {
+        return readFully(new BZip2CompressorInputStream(
+                new ByteArrayInputStream(data)));
+    }
+
+    public static byte[] unbzip2(byte[] data) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 2);
+        BZip2CompressorOutputStream os = new BZip2CompressorOutputStream(baos);
+        os.write(data);
+        os.close();
         return baos.toByteArray();
     }
 
@@ -703,12 +785,22 @@ public class ByteBufferUtils {
         return data;
     }
 
+    public static byte[] toByteArray(ByteBuffer buf) {
+        if (buf.hasArray() && buf.arrayOffset() == 0
+                && buf.array().length == buf.limit())
+            return buf.array();
+
+        byte[] bytes = new byte[buf.remaining()];
+        buf.get(bytes);
+        return bytes;
+    }
+
     public static void reverse(byte[] array, int offset, int size) {
         if (array == null) {
             return;
         }
         int i = offset;
-        int j = size - 1;
+        int j = offset + size - 1;
         byte tmp;
         while (j > i) {
             tmp = array[j];
@@ -729,6 +821,56 @@ public class ByteBufferUtils {
                 ptr.put(i, ptr.get(ptr.limit() - i - 1));
                 ptr.put(ptr.limit() - i - 1, tmp);
             }
+        }
+    }
+
+    public static void backwardsPut(ByteBuffer buf, int value) {
+        buf.position(buf.position() - 1);
+        buf.put((byte) value);
+    }
+
+    public static class CRC32SUM {
+        private long value;
+        CRC32 crc32 = new CRC32();
+
+        public void add(byte[] data) {
+            crc32.reset();
+            crc32.update(data);
+            value += crc32.getValue();
+        }
+
+        public long getLongValue() {
+            return value;
+        }
+
+        public byte[] getByteValue() {
+            return new byte[]{(byte) (0xFF & (value >> 24)),
+                    (byte) (0xFF & (value >> 16)),
+                    (byte) (0xFF & (value >> 8)), (byte) (0xFF & value)};
+        }
+    }
+
+    public static class SHA512SUM {
+        byte[] digest = new byte[64];
+        MessageDigest md;
+
+        public SHA512SUM() {
+            try {
+                md = MessageDigest.getInstance("SHA-512");
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public void add(byte[] data) {
+            md.reset();
+            byte[] d = md.digest(data);
+            for (int i = 0; i < digest.length; i++)
+                digest[i] += d[i];
+        }
+
+        public byte[] getByteValue() {
+            return digest;
         }
     }
 }
