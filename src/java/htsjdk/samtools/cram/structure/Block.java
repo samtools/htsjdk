@@ -28,6 +28,7 @@ public class Block {
     public int contentId;
     private int compressedContentSize;
     private int rawContentSize;
+    private int checksum;
 
     private byte[] rawContent, compressedContent;
 
@@ -47,6 +48,13 @@ public class Block {
 
     public Block(InputStream is, boolean readContent, boolean uncompress)
             throws IOException {
+        this(2, is, readContent, uncompress);
+    }
+
+    public Block(int major, InputStream is, boolean readContent,
+                 boolean uncompress) throws IOException {
+        if (major >= 3)
+            is = new CRC32_InputStream(is);
         method = BlockCompressionMethod.values()[is.read()];
 
         int contentTypeId = is.read();
@@ -59,6 +67,14 @@ public class Block {
         if (readContent) {
             compressedContent = new byte[compressedContentSize];
             ByteBufferUtils.readFully(compressedContent, is);
+            if (major >= 3) {
+                int actualChecksum = ((CRC32_InputStream) is).getCRC32();
+                checksum = ByteBufferUtils.int32(is);
+                if (checksum != actualChecksum)
+                    throw new RuntimeException(String.format(
+                            "Block CRC32 mismatch: %04x vs %04x", checksum,
+                            actualChecksum));
+            }
 
             if (uncompress)
                 uncompress();
@@ -68,14 +84,15 @@ public class Block {
     @Override
     public String toString() {
         String raw = rawContent == null ? "NULL" : Arrays.toString(Arrays
-                .copyOf(rawContent, 20));
+                .copyOf(rawContent, Math.min(5, rawContent.length)));
         String comp = compressedContent == null ? "NULL" : Arrays
-                .toString(Arrays.copyOf(compressedContent, 20));
+                .toString(Arrays.copyOf(compressedContent,
+                        Math.min(5, compressedContent.length)));
 
         return String
-                .format("method=%d, type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.",
-                        method, contentType.name(), contentId, rawContentSize,
-                        compressedContentSize, raw, comp);
+                .format("method=%s, type=%s, id=%d, raw size=%d, compressed size=%d, raw=%s, comp=%s.",
+                        method.name(), contentType.name(), contentId,
+                        rawContentSize, compressedContentSize, raw, comp);
     }
 
     public boolean isCompressed() {
@@ -102,6 +119,21 @@ public class Block {
 
     public int getRawContentSize() {
         return rawContentSize;
+    }
+
+    public void setContent(byte[] raw, byte[] compressed) {
+        rawContent = raw;
+        compressedContent = compressed;
+
+        if (raw == null)
+            rawContentSize = 0;
+        else
+            rawContentSize = raw.length;
+
+        if (compressed == null)
+            compressedContentSize = 0;
+        else
+            compressedContentSize = compressed.length;
     }
 
     public void setCompressedContent(byte[] compressed) {
@@ -135,6 +167,10 @@ public class Block {
                 }
                 compressedContentSize = compressedContent.length;
                 break;
+            case RANS:
+                compressedContent = ByteBufferUtils.rans(rawContent, 1);
+                compressedContentSize = compressedContent.length;
+                break;
             default:
                 break;
         }
@@ -156,6 +192,23 @@ public class Block {
                     throw new RuntimeException("This should have never happned.", e);
                 }
                 break;
+            case BZIP2:
+                try {
+                    rawContent = ByteBufferUtils.bunzip2(compressedContent);
+                } catch (IOException e) {
+                    throw new RuntimeException("This should have never happned.", e);
+                }
+                break;
+            case LZMA:
+                try {
+                    rawContent = ByteBufferUtils.unxz(compressedContent);
+                } catch (IOException e) {
+                    throw new RuntimeException("This should have never happned.", e);
+                }
+                break;
+            case RANS:
+                rawContent = ByteBufferUtils.unrans(compressedContent);
+                break;
             default:
                 throw new RuntimeException("Unknown block compression method: "
                         + method.name());
@@ -163,18 +216,22 @@ public class Block {
     }
 
     public void write(OutputStream os) throws IOException {
+        CRC32_OutputStream cos = new CRC32_OutputStream(os);
+
         if (!isCompressed())
             compress();
         if (!isUncompressed())
             uncompress();
 
-        os.write(method.ordinal());
-        os.write(contentType.ordinal());
-        os.write(contentId);
+        cos.write(method.ordinal());
+        cos.write(contentType.ordinal());
 
-        ByteBufferUtils.writeUnsignedITF8(compressedContentSize, os);
-        ByteBufferUtils.writeUnsignedITF8(rawContentSize, os);
+        ByteBufferUtils.writeUnsignedITF8(contentId, cos);
+        ByteBufferUtils.writeUnsignedITF8(compressedContentSize, cos);
+        ByteBufferUtils.writeUnsignedITF8(rawContentSize, cos);
 
-        os.write(getCompressedContent());
+        cos.write(getCompressedContent());
+
+        os.write(cos.getCrc32_LittleEndian());
     }
 }

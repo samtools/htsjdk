@@ -30,6 +30,7 @@ public class Container {
     public long bases = 0;
     public int blockCount = -1;
     public int[] landmarks;
+    public int checksum = 0;
 
     /**
      * Container data
@@ -56,12 +57,21 @@ public class Container {
 
     @Override
     public String toString() {
-        return String.format("seqid=%d, astart=%d, aspan=%d, records=%d, slices=%d, blocks=%d.", sequenceId,
-                alignmentStart, alignmentSpan, nofRecords, slices == null ? -1 : slices.length, blockCount);
+        return String
+                .format("seqid=%d, astart=%d, aspan=%d, records=%d, slices=%d, blocks=%d.",
+                        sequenceId, alignmentStart, alignmentSpan, nofRecords,
+                        slices == null ? -1 : slices.length, blockCount);
     }
 
     public boolean isEOF() {
-        return containerByteSize == 11 && sequenceId == -1 && alignmentStart == 4542278 && blockCount == 1
+        boolean v3 = containerByteSize == 15 && sequenceId == -1
+                && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (slices == null || slices.length == 0);
+
+        boolean v2 = containerByteSize == 11 && sequenceId == -1
+                && alignmentStart == 4542278 && blockCount == 1
+                && nofRecords == 0 && (slices == null || slices.length == 0);
+
+        return v3 || v2;
     }
 }

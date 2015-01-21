@@ -18,6 +18,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class Slice {
     public int nofBlocks = -1;
     public int[] contentIDs;
     public int embeddedRefBlockContentID = -1;
-    public byte[] refMD5;
+    public byte[] refMD5 = new byte[16];
 
     // content associated with ids:
     public Block headerBlock;
@@ -55,6 +56,8 @@ public class Slice {
     // to pass this to the container:
     public long bases;
 
+    public SAMBinaryTagAndValue sliceTags;
+
     private static final int shoulder = 10;
 
     /**
@@ -67,15 +70,15 @@ public class Slice {
             throw new NullPointerException("Mapped slice reference is null.");
 
         if (alignmentStart > ref.length) {
-            log.error(String.format("Slice mapped outside of reference: seqid=%d, alstart=%d, counter=%d.", sequenceId,
-                    alignmentStart, globalRecordCounter));
+            log.error(String.format("Slice mapped outside of reference: seqid=%d, alstart=%d, counter=%d.", sequenceId, alignmentStart,
+                    globalRecordCounter));
             throw new RuntimeException("Slice mapped outside of the reference.");
         }
 
         if (alignmentStart - 1 + alignmentSpan > ref.length) {
-            log.warn(String.format(
-                    "Slice partially mapped outside of reference: seqid=%d, alstart=%d, alspan=%d, counter=%d.",
-                    sequenceId, alignmentStart, alignmentSpan, globalRecordCounter));
+            log.warn(String.format("Slice partially mapped outside of reference: seqid=%d, alstart=%d, alspan=%d, counter=%d.",
+                    sequenceId, alignmentStart, alignmentSpan,
+                    globalRecordCounter));
             return false;
         }
 
@@ -124,6 +127,15 @@ public class Slice {
             sb.append(new String(Arrays.copyOfRange(bases, to_exc - shoulderLength, to_exc)));
         }
 
+        return sb.toString();
+    }
+
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        sb.append(String.format(
+                "slice: seqid %d, start %d, span %d, records %d.", sequenceId,
+                alignmentStart, alignmentSpan, nofRecords));
         return sb.toString();
     }
 
@@ -245,6 +257,87 @@ public class Slice {
             log.debug(String.format("Slice md5: %s for %d:%d-%d, %s",
                     String.format("%032x", new BigInteger(1, refMD5)), sequenceId, alignmentStart, alignmentStart
                             + span - 1, sb.toString()));
+        }
+    }
+
+    /**
+     * Hijacking attributes-related methods from SAMRecord:
+     */
+
+    /**
+     * @param tag
+     * @return
+     */
+    public Object getAttribute(final short tag) {
+        if (this.sliceTags == null)
+            return null;
+        else {
+            final SAMBinaryTagAndValue tmp = this.sliceTags.find(tag);
+            if (tmp != null)
+                return tmp.value;
+            else
+                return null;
+        }
+    }
+
+    public void setAttribute(final String tag, final Object value) {
+        if (value != null && value.getClass().isArray()
+                && Array.getLength(value) == 0) {
+            throw new IllegalArgumentException("Empty value passed for tag "
+                    + tag);
+        }
+        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
+    }
+
+    public void setUnsignedArrayAttribute(final String tag, final Object value) {
+        if (!value.getClass().isArray()) {
+            throw new IllegalArgumentException(
+                    "Non-array passed to setUnsignedArrayAttribute for tag "
+                            + tag);
+        }
+        if (Array.getLength(value) == 0) {
+            throw new IllegalArgumentException(
+                    "Empty array passed to setUnsignedArrayAttribute for tag "
+                            + tag);
+        }
+        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
+    }
+
+    protected void setAttribute(final short tag, final Object value) {
+        setAttribute(tag, value, false);
+    }
+
+    protected void setAttribute(final short tag, final Object value,
+                                final boolean isUnsignedArray) {
+        if (value != null
+                && !(value instanceof Byte || value instanceof Short
+                || value instanceof Integer || value instanceof String
+                || value instanceof Character || value instanceof Float
+                || value instanceof byte[] || value instanceof short[]
+                || value instanceof int[] || value instanceof float[])) {
+            throw new SAMException("Attribute type " + value.getClass()
+                    + " not supported. Tag: "
+                    + SAMTagUtil.getSingleton().makeStringTag(tag));
+        }
+        if (value == null) {
+            if (this.sliceTags != null)
+                this.sliceTags = this.sliceTags.remove(tag);
+        } else {
+            final SAMBinaryTagAndValue tmp;
+            if (!isUnsignedArray) {
+                tmp = new SAMBinaryTagAndValue(tag, value);
+            } else {
+                if (!value.getClass().isArray() || value instanceof float[]) {
+                    throw new SAMException("Attribute type " + value.getClass()
+                            + " cannot be encoded as an unsigned array. Tag: "
+                            + SAMTagUtil.getSingleton().makeStringTag(tag));
+                }
+                tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
+            }
+            if (this.sliceTags == null)
+                this.sliceTags = tmp;
+            else
+                this.sliceTags = this.sliceTags.insert(tmp);
         }
     }
 }

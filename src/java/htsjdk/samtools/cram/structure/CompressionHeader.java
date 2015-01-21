@@ -15,6 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.NullEncoding;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.util.Log;
@@ -27,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -46,6 +48,7 @@ public class CompressionHeader {
 
     public Map<EncodingKey, EncodingParams> eMap;
     public Map<Integer, EncodingParams> tMap;
+    public Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
 
     public SubstitutionMatrix substitutionMatrix;
 
@@ -82,7 +85,7 @@ public class CompressionHeader {
         byte[][][] array = new byte[dictionary.size()][][];
         for (int i = 0; i < dictionary.size(); i++) {
             List<byte[]> list = dictionary.get(i);
-            array[i] = (byte[][]) list.toArray(new byte[list.size()][]);
+            array[i] = list.toArray(new byte[list.size()][]);
         }
 
         return array;

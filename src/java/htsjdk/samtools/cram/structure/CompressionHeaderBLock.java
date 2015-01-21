@@ -40,12 +40,11 @@ public class CompressionHeaderBLock extends Block {
         setRawContent(bytes);
     }
 
-    public CompressionHeaderBLock(InputStream is) throws IOException {
-        super(is, true, true);
+    public CompressionHeaderBLock(int major, InputStream is) throws IOException {
+        super(major, is, true, true);
 
         if (contentType != BlockContentType.COMPRESSION_HEADER)
-            throw new RuntimeException("Content type does not match: "
-                    + contentType.name());
+            throw new RuntimeException("Content type does not match: " + contentType.name());
 
         compressionHeader = new CompressionHeader();
         compressionHeader.read(getRawContent());
