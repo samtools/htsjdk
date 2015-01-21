@@ -19,6 +19,7 @@ import java.util.Arrays;
 
 public class ReferenceTracks {
     private int sequenceId;
+    private String sequenceName;
     private byte[] reference;
 
     private int position;
@@ -29,14 +30,15 @@ public class ReferenceTracks {
     private final short[] mismatches;
 
 
-    public ReferenceTracks(int sequenceId,
+    public ReferenceTracks(int sequenceId, String sequenceName,
                            byte[] reference) {
-        this(sequenceId, reference, 1000000);
+        this(sequenceId, sequenceName, reference, 1000000);
     }
 
-    public ReferenceTracks(int sequenceId,
+    public ReferenceTracks(int sequenceId, String sequenceName,
                            byte[] reference, int windowSize) {
         this.sequenceId = sequenceId;
+        this.sequenceName = sequenceName;
         this.reference = reference;
 
         bases = new byte[Math.min(windowSize, reference.length)];
@@ -49,6 +51,10 @@ public class ReferenceTracks {
 
     public int getSequenceId() {
         return sequenceId;
+    }
+
+    public String getSequenceName() {
+        return sequenceName;
     }
 
     public int getWindowPosition() {
