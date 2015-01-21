@@ -22,7 +22,6 @@ import htsjdk.samtools.cram.structure.EncodingParams;
 import java.io.InputStream;
 import java.util.Map;
 
-
 public class NullEncoding<T> implements Encoding<T> {
     public static final EncodingID ENCODING_ID = EncodingID.NULL;
 

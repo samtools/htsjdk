@@ -21,7 +21,6 @@ import htsjdk.samtools.cram.structure.EncodingID;
 import java.io.InputStream;
 import java.util.Map;
 
-
 public interface Encoding<T> {
 
     public EncodingID id();

@@ -125,6 +125,12 @@ public abstract class AbstractReader {
     @DataSeries(key = EncodingKey.RS_RefSkip, type = DataSeriesType.INT)
     public DataReader<Integer> refSkipCodec;
 
+    @DataSeries(key = EncodingKey.BB_bases, type = DataSeriesType.BYTE_ARRAY)
+    public DataReader<byte[]> basesCodec;
+
+    @DataSeries(key = EncodingKey.QQ_scores, type = DataSeriesType.BYTE_ARRAY)
+    public DataReader<byte[]> scoresCodec;
+
     public int refId;
     public SubstitutionMatrix substitutionMatrix;
     public boolean AP_delta = true;

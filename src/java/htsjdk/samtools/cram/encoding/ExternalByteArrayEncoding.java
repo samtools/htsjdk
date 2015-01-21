@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.structure.EncodingParams;
 import java.io.InputStream;
 import java.util.Map;
 
-
 public class ExternalByteArrayEncoding implements Encoding<byte[]> {
     public static final EncodingID encodingId = EncodingID.EXTERNAL;
     public int contentId = -1;

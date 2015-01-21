@@ -16,6 +16,7 @@
 package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
+import htsjdk.samtools.cram.encoding.read_features.Bases;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.HardClip;
 import htsjdk.samtools.cram.encoding.read_features.InsertBase;
@@ -24,6 +25,7 @@ import htsjdk.samtools.cram.encoding.read_features.Padding;
 import htsjdk.samtools.cram.encoding.read_features.ReadBase;
 import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
+import htsjdk.samtools.cram.encoding.read_features.Scores;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -49,8 +51,12 @@ public class CramRecordReader extends AbstractReader {
             r.compressionFlags = compBitFlagsC.readData();
             if (refId == -2)
                 r.sequenceId = refIdCodec.readData();
-            else
-                r.sequenceId = refId;
+            else {
+                if (r.isSegmentUnmapped())
+                    r.sequenceId = -1;
+                else
+                    r.sequenceId = refId;
+            }
 
             r.readLength = readLengthC.readData();
             if (AP_delta)
@@ -95,7 +101,7 @@ public class CramRecordReader extends AbstractReader {
             }
 
             if (!r.isSegmentUnmapped()) {
-                // writing read features:
+                // reading read features:
                 int size = nfc.readData();
                 int prevPos = 0;
                 java.util.List<ReadFeature> rf = new LinkedList<ReadFeature>();
@@ -149,6 +155,14 @@ public class CramRecordReader extends AbstractReader {
                         case BaseQualityScore.operator:
                             BaseQualityScore bqs = new BaseQualityScore(pos, qc.readData());
                             rf.add(bqs);
+                            break;
+                        case Bases.operator:
+                            Bases bases = new Bases(pos, basesCodec.readData());
+                            rf.add(bases);
+                            break;
+                        case Scores.operator:
+                            Scores scores = new Scores(pos, basesCodec.readData());
+                            rf.add(scores);
                             break;
                         default:
                             throw new RuntimeException("Unknown read feature operator: " + operator);
