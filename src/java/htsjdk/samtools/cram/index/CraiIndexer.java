@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,43 +31,43 @@ import java.io.InputStream;
 import java.util.zip.GZIPOutputStream;
 
 class CraiIndexer {
-	private static Log log = Log.getInstance(CraiIndexer.class);
+    private static Log log = Log.getInstance(CraiIndexer.class);
 
-	private CountingInputStream is;
-	private SAMFileHeader samFileHeader;
-	private CramIndex index;
+    private CountingInputStream is;
+    private SAMFileHeader samFileHeader;
+    private CramIndex index;
 
-	public CraiIndexer(InputStream is, File output)
-			throws FileNotFoundException, IOException {
-		this.is = new CountingInputStream(is);
-		CramHeader cramHeader = CramIO.readCramHeader(this.is);
-		samFileHeader = cramHeader.getSamFileHeader();
+    public CraiIndexer(InputStream is, File output)
+            throws FileNotFoundException, IOException {
+        this.is = new CountingInputStream(is);
+        CramHeader cramHeader = CramIO.readCramHeader(this.is);
+        samFileHeader = cramHeader.getSamFileHeader();
 
-		index = new CramIndex(new GZIPOutputStream(new BufferedOutputStream(
-				new FileOutputStream(output))));
+        index = new CramIndex(new GZIPOutputStream(new BufferedOutputStream(
+                new FileOutputStream(output))));
 
-	}
+    }
 
-	private boolean nextContainer() throws IOException {
-		long offset = is.getCount();
-		Container c = CramIO.readContainer(is);
-		if (c == null)
-			return false;
-		c.offset = offset;
-		index.addContainer(c);
-		log.info("INDEXED: " + c.toString());
-		return true;
-	}
+    private boolean nextContainer() throws IOException {
+        long offset = is.getCount();
+        Container c = CramIO.readContainer(is);
+        if (c == null)
+            return false;
+        c.offset = offset;
+        index.addContainer(c);
+        log.info("INDEXED: " + c.toString());
+        return true;
+    }
 
-	private void index() throws IOException {
-		while (true) {
-			if (!nextContainer())
-				break;
-		}
-	}
+    private void index() throws IOException {
+        while (true) {
+            if (!nextContainer())
+                break;
+        }
+    }
 
-	public void run() throws IOException {
-		index();
-		index.close();
-	}
+    public void run() throws IOException {
+        index();
+        index.close();
+    }
 }
