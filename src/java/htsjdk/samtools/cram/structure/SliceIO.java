@@ -25,9 +25,11 @@ import java.io.OutputStream;
 import java.util.HashMap;
 
 public class SliceIO {
+    private static Log log = Log.getInstance(SliceIO.class);
 
-    public void readSliceHeadBlock(Slice s, InputStream is) throws IOException {
-        s.headerBlock = new Block(is, true, true);
+    public void readSliceHeadBlock(int major, Slice s, InputStream is)
+            throws IOException {
+        s.headerBlock = new Block(major, is, true, true);
         parseSliceHeaderBlock(s);
     }
 
@@ -46,6 +48,17 @@ public class SliceIO {
         s.embeddedRefBlockContentID = ByteBufferUtils.readUnsignedITF8(is);
         s.refMD5 = new byte[16];
         ByteBufferUtils.readFully(s.refMD5, is);
+
+        byte[] bytes = ByteBufferUtils.readFully(is);
+        s.sliceTags = BinaryTagCodec.readTags(bytes, 0, bytes.length,
+                ValidationStringency.DEFAULT_STRINGENCY);
+
+        SAMBinaryTagAndValue tags = s.sliceTags;
+        while (tags != null) {
+            log.debug(String.format("Found slice tag: %s", SAMTagUtil
+                    .getSingleton().makeStringTag(tags.tag)));
+            tags = tags.getNext();
+        }
     }
 
     public byte[] createSliceHeaderBlockContent(Slice s) throws IOException {
@@ -64,9 +77,20 @@ public class SliceIO {
         ByteBufferUtils.write(s.contentIDs, baos);
         ByteBufferUtils.writeUnsignedITF8(s.embeddedRefBlockContentID, baos);
         baos.write(s.refMD5 == null ? new byte[16] : s.refMD5);
-        ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
-        ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
-        ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
+
+        if (s.sliceTags != null) {
+            BinaryCodec bc = new BinaryCodec(baos);
+            BinaryTagCodec tc = new BinaryTagCodec(bc);
+            SAMBinaryTagAndValue tv = s.sliceTags;
+            do {
+                log.debug("Writing slice tag: "
+                        + SAMTagUtil.getSingleton().makeStringTag(tv.tag));
+                tc.writeTag(tv.tag, tv.value, tv.isUnsignedArray());
+            } while ((tv = tv.getNext()) != null);
+            // BinaryCodec doesn't seem to cache things.
+            // In any case, not calling bc.close() because it's behaviour is
+            // irrelevant here.
+        }
 
         return baos.toByteArray();
     }
@@ -77,11 +101,11 @@ public class SliceIO {
                 BlockContentType.MAPPED_SLICE, 0, rawContent, null);
     }
 
-    public void readSliceBlocks(Slice s, boolean uncompressBlocks,
+    public void readSliceBlocks(int major, Slice s, boolean uncompressBlocks,
                                 InputStream is) throws IOException {
         s.external = new HashMap<Integer, Block>();
         for (int i = 0; i < s.nofBlocks; i++) {
-            Block b1 = new Block(is, true, uncompressBlocks);
+            Block b1 = new Block(major, is, true, uncompressBlocks);
 
             switch (b1.contentType) {
                 case CORE:
@@ -103,8 +127,8 @@ public class SliceIO {
 
     public void write(Slice s, OutputStream os) throws IOException {
 
-        s.nofBlocks = 1 + s.external.size() + (s.embeddedRefBlock == null ? 0
-                : 1);
+        s.nofBlocks = 1 + s.external.size()
+                + (s.embeddedRefBlock == null ? 0 : 1);
 
         {
             s.contentIDs = new int[s.external.size()];
@@ -121,8 +145,8 @@ public class SliceIO {
             e.write(os);
     }
 
-    public void read(Slice s, InputStream is) throws IOException {
-        readSliceHeadBlock(s, is);
-        readSliceBlocks(s, true, is);
+    public void read(int major, Slice s, InputStream is) throws IOException {
+        readSliceHeadBlock(major, s, is);
+        readSliceBlocks(major, s, true, is);
     }
 }

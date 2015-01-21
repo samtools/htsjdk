@@ -53,8 +53,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
     public ReadTag(int id, byte[] dataAsByteArray) {
         this.type = (char) (0xFF & id);
-        key = new String(new char[]{(char) ((id >> 16) & 0xFF),
-                (char) ((id >> 8) & 0xFF)});
+        key = new String(new char[]{(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
         value = restoreValueFromByteArray(type, dataAsByteArray);
         keyType3Bytes = this.key + this.type;
 
@@ -127,14 +126,11 @@ public class ReadTag implements Comparable<ReadTag> {
         return new SAMTagAndValue(key, value);
     }
 
-    public static ReadTag deriveTypeFromKeyAndType(String keyAndType,
-                                                   Object value) {
+    public static ReadTag deriveTypeFromKeyAndType(String keyAndType, Object value) {
         if (keyAndType.length() != 4)
-            throw new RuntimeException("Tag key and type must be 4 char long: "
-                    + keyAndType);
+            throw new RuntimeException("Tag key and type must be 4 char long: " + keyAndType);
 
-        return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3),
-                value);
+        return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3), value);
     }
 
     public static ReadTag deriveTypeFromValue(String key, Object value) {

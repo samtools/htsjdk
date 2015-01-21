@@ -24,7 +24,13 @@ import java.io.OutputStream;
 
 public class ContainerHeaderIO {
 
-    public boolean readContainerHeader(Container c, InputStream is) throws IOException {
+    public boolean readContainerHeader(Container c, InputStream is)
+            throws IOException {
+        return readContainerHeader(2, c, is);
+    }
+
+    public boolean readContainerHeader(int major, Container c, InputStream is)
+            throws IOException {
         byte[] peek = new byte[4];
         int ch = is.read();
         if (ch == -1)
@@ -47,20 +53,28 @@ public class ContainerHeaderIO {
         c.bases = ByteBufferUtils.readUnsignedLTF8(is);
         c.blockCount = ByteBufferUtils.readUnsignedITF8(is);
         c.landmarks = ByteBufferUtils.array(is);
+        if (major >= 3)
+            c.checksum = ByteBufferUtils.int32(is);
 
         return true;
     }
 
-    public int writeContainerHeader(Container c, OutputStream os) throws IOException {
-        int len = ByteBufferUtils.writeInt32(c.containerByteSize, os);
-        len += ByteBufferUtils.writeUnsignedITF8(c.sequenceId, os);
-        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentStart, os);
-        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentSpan, os);
-        len += ByteBufferUtils.writeUnsignedITF8(c.nofRecords, os);
-        len += ByteBufferUtils.writeUnsignedLTF8(c.globalRecordCounter, os);
-        len += ByteBufferUtils.writeUnsignedLTF8(c.bases, os);
-        len += ByteBufferUtils.writeUnsignedITF8(c.blockCount, os);
-        len += ByteBufferUtils.write(c.landmarks, os);
+    public int writeContainerHeader(Container c, OutputStream os)
+            throws IOException {
+        CRC32_OutputStream cos = new CRC32_OutputStream(os);
+
+        int len = ByteBufferUtils.writeInt32(c.containerByteSize, cos);
+        len += ByteBufferUtils.writeUnsignedITF8(c.sequenceId, cos);
+        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentStart, cos);
+        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentSpan, cos);
+        len += ByteBufferUtils.writeUnsignedITF8(c.nofRecords, cos);
+        len += ByteBufferUtils.writeUnsignedLTF8(c.globalRecordCounter, cos);
+        len += ByteBufferUtils.writeUnsignedLTF8(c.bases, cos);
+        len += ByteBufferUtils.writeUnsignedITF8(c.blockCount, cos);
+        len += ByteBufferUtils.write(c.landmarks, cos);
+
+        os.write(cos.getCrc32_LittleEndian());
+        len += 4;
 
         return len;
     }

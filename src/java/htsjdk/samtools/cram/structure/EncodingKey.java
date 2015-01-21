@@ -22,7 +22,7 @@ public enum EncodingKey {
     RN_ReadName, NP_NextFragmentAlignmentStart, TS_InsetSize, FN_NumberOfReadFeatures,
     BS_BaseSubstitutionCode, IN_Insertion, TC_TagCount, MF_MateBitFlags,
     NS_NextFragmentReferenceSequenceID, CF_CompressionBitFlags, TV_TestMark, TM_TestMark,
-    TL_TagIdList, RI_RefId, RS_RefSkip, SC_SoftClip, HC_HardClip, PD_padding;
+    TL_TagIdList, RI_RefId, RS_RefSkip, SC_SoftClip, HC_HardClip, PD_padding, BB_bases, QQ_scores;
 
     public static final EncodingKey byFirstTwoChars(String chars) {
         for (EncodingKey k : values()) {
