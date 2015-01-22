@@ -67,24 +67,33 @@ public class CompressionHeaderFactory {
 
         int baseID = exCounter++;
         h.externalIds.add(baseID);
+        h.externalCompressors.put(baseID,
+                ExternalCompressor.createRANS(ORDER.ONE));
 
         int qualityScoreID = exCounter++;
         h.externalIds.add(qualityScoreID);
+        h.externalCompressors.put(qualityScoreID,
+                ExternalCompressor.createRANS(ORDER.ONE));
 
         int readNameID = exCounter++;
         h.externalIds.add(readNameID);
+        h.externalCompressors.put(readNameID, ExternalCompressor.createGZIP(5));
 
         int mateInfoID = exCounter++;
         h.externalIds.add(mateInfoID);
+        h.externalCompressors.put(mateInfoID,
+                ExternalCompressor.createRANS(ORDER.ONE));
 
-        int tagValueExtID = exCounter++;
-        h.externalIds.add(tagValueExtID);
+        // int tagValueExtID = exCounter++;
+        // h.externalIds.add(tagValueExtID);
+        // h.externalCompressors.put(tagValueExtID,
+        // ExternalCompressor.createGZIP(5));
 
         log.debug("Assigned external id to bases: " + baseID);
         log.debug("Assigned external id to quality scores: " + qualityScoreID);
         log.debug("Assigned external id to read names: " + readNameID);
         log.debug("Assigned external id to mate info: " + mateInfoID);
-        log.debug("Assigned external id to tag values: " + tagValueExtID);
+        // log.debug("Assigned external id to tag values: " + tagValueExtID);
 
         h.eMap = new TreeMap<EncodingKey, EncodingParams>();
         for (EncodingKey key : EncodingKey.values())
@@ -124,23 +133,24 @@ public class CompressionHeaderFactory {
             calculator.calculate();
 
             h.eMap.put(EncodingKey.RN_ReadName, ByteArrayLenEncoding.toParam(
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()),
-                    ExternalByteArrayEncoding.toParam(readNameID)));
-            // h.eMap.put(EncodingKey.RN_ReadName,
-            // ByteArrayStopEncoding.toParam((byte) 0, readNameID));
+                    HuffmanIntegerEncoding.toParam(calculator.values(),
+                            calculator.bitLens()), ExternalByteArrayEncoding
+                            .toParam(readNameID)));
         }
 
         { // records to next fragment
-            IntegerEncodingCalculator calc = new IntegerEncodingCalculator(EncodingKey.NF_RecordsToNextFragment.name(),
-                    0);
+            IntegerEncodingCalculator calc = new IntegerEncodingCalculator(
+                    EncodingKey.NF_RecordsToNextFragment.name(), 0);
             for (CramCompressionRecord r : records) {
                 if (r.isHasMateDownStream())
                     calc.addValue(r.recordsToNextFragment);
             }
 
             Encoding<Integer> bestEncoding = calc.getBestEncoding();
-            h.eMap.put(EncodingKey.NF_RecordsToNextFragment,
-                    new EncodingParams(bestEncoding.id(), bestEncoding.toByteArray()));
+            h.eMap.put(
+                    EncodingKey.NF_RecordsToNextFragment,
+                    new EncodingParams(bestEncoding.id(), bestEncoding
+                            .toByteArray()));
         }
 
         { // tag count
@@ -149,8 +159,8 @@ public class CompressionHeaderFactory {
                 calculator.add(r.tags == null ? 0 : r.tags.length);
             calculator.calculate();
 
-            h.eMap.put(EncodingKey.TC_TagCount,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()));
+            h.eMap.put(EncodingKey.TC_TagCount, HuffmanIntegerEncoding.toParam(
+                    calculator.values(), calculator.bitLens()));
         }
 
         { // tag name and type
@@ -163,8 +173,8 @@ public class CompressionHeaderFactory {
             }
             calculator.calculate();
 
-            h.eMap.put(EncodingKey.TN_TagNameAndType,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()));
+            h.eMap.put(EncodingKey.TN_TagNameAndType, HuffmanIntegerEncoding
+                    .toParam(calculator.values(), calculator.bitLens()));
         }
 
         {
@@ -248,61 +258,35 @@ public class CompressionHeaderFactory {
         { // tag values
             Map<Integer, HuffmanParamsCalculator> cc = new TreeMap<Integer, HuffmanParamsCalculator>();
 
+            Set<Integer> tagIdSet = new HashSet<Integer>();
             for (CramCompressionRecord r : records) {
                 if (r.tags == null)
                     continue;
 
-                for (ReadTag tag : r.tags) {
-                    switch (tag.keyType3BytesAsInt) {
-                        // case ReadTag.OQZ:
-                        // case ReadTag.BQZ:
-                        // EncodingParams params = h.tMap
-                        // .get(tag.keyType3BytesAsInt);
-                        // if (params == null) {
-                        // h.tMap.put(tag.keyType3BytesAsInt,
-                        // ByteArrayStopEncoding.toParam((byte) 1,
-                        // tagValueExtID));
-                        // }
-                        // break;
-
-                        default:
-                            HuffmanParamsCalculator c = cc.get(tag.keyType3BytesAsInt);
-                            if (c == null) {
-                                c = new HuffmanParamsCalculator();
-                                cc.put(tag.keyType3BytesAsInt, c);
-                            }
-                            c.add(tag.getValueAsByteArray().length);
-                            break;
-                    }
-                }
+                for (ReadTag tag : r.tags)
+                    tagIdSet.add(tag.keyType3BytesAsInt);
             }
 
-            if (!cc.isEmpty())
-                for (Integer key : cc.keySet()) {
-                    HuffmanParamsCalculator c = cc.get(key);
-                    c.calculate();
+            for (int id : tagIdSet) {
+                int externalID;
+                byte type = (byte) (id & 0xFF);
+                switch (type) {
+                    case 'Z':
+                    case 'B':
+                        externalID = id;
+                        break;
 
-                    h.tMap.put(key, ByteArrayLenEncoding.toParam(
-                            HuffmanIntegerEncoding.toParam(c.values(), c.bitLens()),
-                            ExternalByteArrayEncoding.toParam(tagValueExtID)));
+                    default:
+                        externalID = unsortedTagValueExternalID;
+                        break;
                 }
 
-            for (Integer key : h.tMap.keySet()) {
-                log.debug(String.format("TAG ENCODING: %d, %s", key, h.tMap.get(key)));
+                h.externalIds.add(externalID);
+                h.externalCompressors.put(externalID,
+                        ExternalCompressor.createRANS(ORDER.ONE));
+                h.tMap.put(externalID,
+                        ByteArrayStopEncoding.toParam((byte) 1, externalID));
             }
-
-            // for (CramRecord r : records) {
-            // if (r.tags == null || r.tags.isEmpty())
-            // continue;
-            // for (ReadTag tag : r.tags) {
-            // EncodingParams params = h.tMap.get(tag.keyType3BytesAsInt);
-            // if (params == null) {
-            // h.tMap.put(tag.keyType3BytesAsInt,
-            // ByteArrayStopEncoding.toParam((byte) 0,
-            // tagValueExtID));
-            // }
-            // }
-            // }
         }
 
         { // number of read features
@@ -342,8 +326,8 @@ public class CompressionHeaderFactory {
                         calculator.add(rf.getOperator());
             calculator.calculate();
 
-            h.eMap.put(EncodingKey.FC_FeatureCode,
-                    HuffmanByteEncoding.toParam(calculator.valuesAsBytes(), calculator.bitLens));
+            h.eMap.put(EncodingKey.FC_FeatureCode, HuffmanByteEncoding.toParam(
+                    calculator.valuesAsBytes(), calculator.bitLens));
         }
 
         { // bases:
@@ -519,8 +503,10 @@ public class CompressionHeaderFactory {
                 h.eMap.put(EncodingKey.NS_NextFragmentReferenceSequenceID, NullEncoding.toParam());
 
             h.eMap.put(EncodingKey.NS_NextFragmentReferenceSequenceID,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()));
-            log.debug("NS: " + h.eMap.get(EncodingKey.NS_NextFragmentReferenceSequenceID));
+                    HuffmanIntegerEncoding.toParam(calculator.values(),
+                            calculator.bitLens()));
+            log.debug("NS: "
+                    + h.eMap.get(EncodingKey.NS_NextFragmentReferenceSequenceID));
         }
 
         { // next fragment alignment start

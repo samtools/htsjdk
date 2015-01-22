@@ -53,7 +53,7 @@ public class CramNormalizer {
     }
 
     public void normalize(ArrayList<CramCompressionRecord> records, boolean resetPairing,
-                          byte[] ref, int alignmentStart,
+                          byte[] ref, int refOffset_zeroBased,
                           SubstitutionMatrix substitutionMatrix, boolean AP_delta) {
 
         int startCounter = readCounter;
@@ -130,10 +130,11 @@ public class CramNormalizer {
                 continue;
 
             byte[] refBases = ref;
-            if (referenceSource != null)
+            if (ref == null && referenceSource != null)
                 refBases = referenceSource.getReferenceBases(header.getSequence(r.sequenceId), true);
 
-            byte[] bases = restoreReadBases(r, refBases, substitutionMatrix);
+            byte[] bases = restoreReadBases(r, refBases, refOffset_zeroBased,
+                    substitutionMatrix);
             r.readBases = bases;
         }
 
@@ -218,7 +219,7 @@ public class CramNormalizer {
     }
 
     private static final byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
-                                                 SubstitutionMatrix substitutionMatrix) {
+                                                 int refOffset_zeroBased, SubstitutionMatrix substitutionMatrix) {
         int readLength = record.readLength;
         byte[] bases = new byte[readLength];
 
@@ -227,24 +228,32 @@ public class CramNormalizer {
 
         int posInSeq = 0;
         if (record.readFeatures == null || record.readFeatures.isEmpty()) {
-            if (ref.length < alignmentStart + bases.length) {
+            if (ref.length + refOffset_zeroBased < alignmentStart
+                    + bases.length) {
                 Arrays.fill(bases, (byte) 'N');
-                System.arraycopy(ref, alignmentStart, bases, 0,
-                        Math.min(bases.length, ref.length - alignmentStart));
+                System.arraycopy(
+                        ref,
+                        alignmentStart - refOffset_zeroBased,
+                        bases,
+                        0,
+                        Math.min(bases.length, ref.length + refOffset_zeroBased
+                                - alignmentStart));
             } else
-                System.arraycopy(ref, alignmentStart, bases, 0, bases.length);
+                System.arraycopy(ref, alignmentStart - refOffset_zeroBased,
+                        bases, 0, bases.length);
             return bases;
         }
         List<ReadFeature> variations = record.readFeatures;
         for (ReadFeature v : variations) {
             for (; posInRead < v.getPosition(); posInRead++)
-                bases[posInRead - 1] = ref[alignmentStart + posInSeq++];
+                bases[posInRead - 1] = ref[alignmentStart + posInSeq++
+                        - refOffset_zeroBased];
 
             switch (v.getOperator()) {
                 case Substitution.operator:
                     Substitution sv = (Substitution) v;
                     byte refBase = Utils.normalizeBase(ref[alignmentStart
-                            + posInSeq]);
+                            + posInSeq - refOffset_zeroBased]);
                     byte base = substitutionMatrix.base(refBase, sv.getCode());
                     sv.setBase(base);
                     sv.setRefernceBase(refBase);
@@ -272,7 +281,8 @@ public class CramNormalizer {
             }
         }
         for (; posInRead <= readLength; posInRead++)
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq++];
+            bases[posInRead - 1] = ref[alignmentStart + posInSeq++
+                    - refOffset_zeroBased];
 
         // ReadBase overwrites bases:
         for (ReadFeature v : variations) {
