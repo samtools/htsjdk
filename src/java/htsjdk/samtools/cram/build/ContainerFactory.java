@@ -95,7 +95,7 @@ public class ContainerFactory {
 
         long time4 = System.nanoTime();
 
-        c.slices = (Slice[]) slices.toArray(new Slice[slices.size()]);
+        c.slices = slices.toArray(new Slice[slices.size()]);
         calculateAlignmentBoundaries(c);
 
         c.buildHeaderTime = time2 - time1;
@@ -137,8 +137,9 @@ public class ContainerFactory {
         Slice slice = new Slice();
         slice.nofRecords = records.size();
 
+        int minAlStart = Integer.MAX_VALUE;
+        int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
         {
-
             // @formatter:off
             /*
 			 * 1) Count slice bases. 
@@ -147,10 +148,10 @@ public class ContainerFactory {
 			 */
             // @formatter:on
             slice.sequenceId = Slice.UNMAPPED_OR_NOREF;
-            int minAlStart = Integer.MAX_VALUE;
-            int maxAlEnd = SAMRecord.NO_ALIGNMENT_START;
+            ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
             for (CramCompressionRecord r : records) {
                 slice.bases += r.readLength;
+                hasher.add(r);
 
                 if (slice.sequenceId != Slice.MUTLIREF
                         && r.alignmentStart != SAMRecord.NO_ALIGNMENT_START
@@ -173,18 +174,16 @@ public class ContainerFactory {
                 }
             }
 
-			/*
-			 * Set the slice boundaries if the slice have records mapped to a
-			 * single ref.
-			 */
-            if (slice.sequenceId == Slice.MUTLIREF
-                    || minAlStart == Integer.MAX_VALUE) {
-                slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-                slice.alignmentSpan = 0;
-            } else {
-                slice.alignmentStart = minAlStart;
-                slice.alignmentSpan = maxAlEnd - minAlStart + 1;
-            }
+            slice.sliceTags = hasher.getAsTags();
+        }
+
+        if (slice.sequenceId == Slice.MUTLIREF
+                || minAlStart == Integer.MAX_VALUE) {
+            slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+            slice.alignmentSpan = 0;
+        } else {
+            slice.alignmentStart = minAlStart;
+            slice.alignmentSpan = maxAlEnd - minAlStart + 1;
         }
 
         Writer writer = f.buildWriter(bos, map, h, slice.sequenceId);
@@ -209,22 +208,17 @@ public class ContainerFactory {
             ExposedByteArrayOutputStream os = map.get(i);
 
             Block externalBlock = new Block();
-            externalBlock.contentType = BlockContentType.EXTERNAL;
-            externalBlock.method = BlockCompressionMethod.GZIP;
             externalBlock.contentId = i;
+            externalBlock.contentType = BlockContentType.EXTERNAL;
 
-            externalBlock.setRawContent(os.toByteArray());
+            ExternalCompressor compressor = h.externalCompressors.get(i);
+            byte[] rawData = os.toByteArray();
+            byte[] compressed = compressor.compress(rawData);
+            externalBlock.setContent(rawData, compressed);
+            externalBlock.method = compressor.getMethod();
             slice.external.put(i, externalBlock);
         }
 
         return slice;
-    }
-
-    public boolean isPreserveReadNames() {
-        return preserveReadNames;
-    }
-
-    public void setPreserveReadNames(boolean preserveReadNames) {
-        this.preserveReadNames = preserveReadNames;
     }
 }

@@ -79,10 +79,7 @@ public class ContainerParser {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (s.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
-
-                break;
             case -2:
-
                 break;
 
             default:
@@ -95,6 +92,7 @@ public class ContainerParser {
         DataReaderFactory f = new DataReaderFactory();
         Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
         for (Integer exId : s.external.keySet()) {
+            log.debug("Adding external data: " + exId);
             inputMap.put(exId, new ByteArrayInputStream(s.external.get(exId)
                     .getRawContent()));
         }
@@ -125,6 +123,7 @@ public class ContainerParser {
 
             if (r.sequenceId == s.sequenceId)
                 r.sequenceName = seqName;
+                r.sequenceId = s.sequenceId;
             else {
                 if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
                     r.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
@@ -156,5 +155,11 @@ public class ContainerParser {
         }
 
         return records;
+    }
+
+    public List<CramCompressionRecord> getRecords(Slice s, CompressionHeader h)
+            throws IllegalArgumentException, IllegalAccessException,
+            IOException {
+        return getRecords(null, s, h);
     }
 }

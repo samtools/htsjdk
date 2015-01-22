@@ -62,13 +62,37 @@ import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.CRC32;
 
 public class CramIO {
     public static int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
+    private static final byte[] CHECK = "".getBytes();
     private static Log log = Log.getInstance(CramIO.class);
     public static byte[] ZERO_B_EOF_MARKER = ByteBufferUtils
             .bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 01 00 01 00");
+    public static byte[] ZERO_F_EOF_MARKER = ByteBufferUtils
+            .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 06 06 01 00 01 00 01 00 ee 63 01" +
+                    " 4b");
 
+    public static void main(String[] args) throws IOException {
+        CRC32 c = new CRC32();
+        c.update(ByteBufferUtils
+                .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00"));
+        int value = (int) (0xFFFFFFFF & c.getValue());
+        System.out.println(Integer.toHexString(value));
+        System.out.println(value);
+
+        c = new CRC32();
+        c.update(ByteBufferUtils
+                .bytesFromHex("00 01 00 06 06 01 00 01 00 01 00"));
+        value = (int) (0xFFFFFFFF & c.getValue());
+        System.out.println(Integer.toHexString(value));
+        System.out.println(value);
+
+        Container container = readContainer(3, new ByteArrayInputStream(
+                ZERO_F_EOF_MARKER));
+        assertThat(container.isEOF(), is(true));
+    }
 
     public static String getFileName(String urlString) {
         URL url = null;
@@ -80,8 +104,8 @@ public class CramIO {
         }
     }
 
-    public static InputStream openInputStreamFromURL(String source) throws SocketException, IOException,
-            URISyntaxException {
+    public static InputStream openInputStreamFromURL(String source)
+            throws SocketException, IOException, URISyntaxException {
         URL url = null;
         try {
             url = new URL(source);
@@ -159,27 +183,27 @@ public class CramIO {
             is = openInputStreamFromURL(cramURL);
 
         if (decrypt) {
-            //disabled due to unresolved dependency to SeekableCipherStream_256 and CipherInputStream_256
-            throw new SAMException("Encryption not supported in this version.");
-//			char[] pass = null;
-//			if (password == null) {
-//				if (System.console() == null)
-//					throw new RuntimeException("Cannot access console.");
-//				pass = System.console().readPassword();
-//			} else
-//				pass = password.toCharArray();
-//
-//			if (is instanceof SeekableStream)
-//				is = new SeekableCipherStream_256((SeekableStream) is, pass, 1, 128);
-//			else
-//				is = new CipherInputStream_256(is, pass, 128).getCipherInputStream();
+            char[] pass = null;
+            if (password == null) {
+                if (System.console() == null)
+                    throw new RuntimeException("Cannot access console.");
+                pass = System.console().readPassword();
+            } else
+                pass = password.toCharArray();
+
+            if (is instanceof SeekableStream)
+                is = new SeekableCipherStream_256((SeekableStream) is, pass, 1,
+                        128);
+            else
+                is = new CipherInputStream_256(is, pass, 128)
+                        .getCipherInputStream();
 
         }
 
         if (is instanceof SeekableStream) {
             CramHeader cramHeader = CramIO.readFormatDefinition(is, new CramHeader());
             SeekableStream s = (SeekableStream) is;
-            if (!CramIO.hasZeroB_EOF_marker(s))
+            if (!CramIO.hasZeroB_EOF_marker(s) && CramIO.hasZeroF_EOF_marker(s))
                 eofNotFound(cramHeader.getMajorVersion(), cramHeader.getMinorVersion());
             s.seek(0);
         } else
@@ -207,11 +231,12 @@ public class CramIO {
      * @throws IOException
      */
     public static Container readContainer(CramHeader cramHeader, InputStream is) throws IOException {
-        Container c = CramIO.readContainer(is);
+        Container c = CramIO.readContainer(cramHeader.majorVersion, is);
         if (c == null) {
             // this will cause System.exit(1):
-            eofNotFound(cramHeader.getMajorVersion(), cramHeader.getMinorVersion());
-            return CramIO.readContainer(new ByteArrayInputStream(CramIO.ZERO_B_EOF_MARKER));
+            eofNotFound(cramHeader.majorVersion, cramHeader.minorVersion);
+            return CramIO.readContainer(new ByteArrayInputStream(
+                    CramIO.ZERO_B_EOF_MARKER));
         }
         if (c.isEOF())
             log.debug("EOF marker found, file/stream is complete.");
@@ -219,12 +244,38 @@ public class CramIO {
         return c;
     }
 
-    public static long issueZeroB_EOF_marker(OutputStream os) throws IOException {
+    private static final boolean check(InputStream is) throws IOException {
+        DataInputStream dis = new DataInputStream(is);
+        byte[] bytes = new byte[CHECK.length];
+        dis.readFully(bytes);
+
+        boolean result = Arrays.equals(CHECK, bytes);
+
+        if (!result)
+            log.error("Expected %s but got %s.\n", new String(CHECK),
+                    new String(bytes));
+
+        return result;
+    }
+
+    private static final void check(OutputStream os) throws IOException {
+        os.write(CHECK);
+    }
+
+    public static long issueZeroB_EOF_marker(OutputStream os)
+            throws IOException {
         os.write(ZERO_B_EOF_MARKER);
         return ZERO_B_EOF_MARKER.length;
     }
 
-    public static boolean hasZeroB_EOF_marker(SeekableStream s) throws IOException {
+    public static long issueZeroF_EOF_marker(OutputStream os)
+            throws IOException {
+        os.write(ZERO_F_EOF_MARKER);
+        return ZERO_F_EOF_MARKER.length;
+    }
+
+    public static boolean hasZeroB_EOF_marker(SeekableStream s)
+            throws IOException {
         byte[] tail = new byte[ZERO_B_EOF_MARKER.length];
 
         s.seek(s.length() - ZERO_B_EOF_MARKER.length);
@@ -233,6 +284,18 @@ public class CramIO {
         // relaxing the ITF8 hanging bits:
         tail[8] |= 0xf0;
         return Arrays.equals(tail, ZERO_B_EOF_MARKER);
+    }
+
+    public static boolean hasZeroF_EOF_marker(SeekableStream s)
+            throws IOException {
+        byte[] tail = new byte[ZERO_F_EOF_MARKER.length];
+
+        s.seek(s.length() - ZERO_F_EOF_MARKER.length);
+        ByteBufferUtils.readFully(tail, s);
+
+        // relaxing the ITF8 hanging bits:
+        tail[8] |= 0xf0;
+        return Arrays.equals(tail, ZERO_F_EOF_MARKER);
     }
 
     public static boolean hasZeroB_EOF_marker(File file) throws IOException {
@@ -254,6 +317,9 @@ public class CramIO {
     }
 
     public static long writeCramHeader(CramHeader h, OutputStream os) throws IOException {
+        if (h.majorVersion < 3)
+            throw new RuntimeException("Deprecated CRAM version: "
+                    + h.majorVersion);
         os.write("CRAM".getBytes("US-ASCII"));
         os.write(h.getMajorVersion());
         os.write(h.getMinorVersion());
@@ -338,26 +404,41 @@ public class CramIO {
      * @return CRAM container or null if no more data
      * @throws IOException
      */
-    public static Container readContainer(InputStream is) throws IOException {
-        return readContainer(is, 0, Integer.MAX_VALUE);
+    public static Container readContainer(int major, InputStream is)
+            throws IOException {
+        return readContainer(major, is, 0, Integer.MAX_VALUE);
     }
 
-    public static Container readContainerHeader(InputStream is) throws IOException {
+    public static Container readContainer(InputStream is) throws IOException {
+        return readContainer(2, is, 0, Integer.MAX_VALUE);
+    }
+
+    public static Container readContainerHeader(InputStream is)
+            throws IOException {
+        return readContainerHeader(2, is);
+    }
+
+    public static Container readContainerHeader(int major, InputStream is)
+            throws IOException {
         Container c = new Container();
         ContainerHeaderIO chio = new ContainerHeaderIO();
-        if (!chio.readContainerHeader(c, is))
-            return null;
+        if (!chio.readContainerHeader(major, c, is)) {
+            chio.readContainerHeader(c, new ByteArrayInputStream(
+                    (major >= 3 ? ZERO_F_EOF_MARKER : ZERO_B_EOF_MARKER)));
+            return c;
+        }
         return c;
     }
 
-    private static Container readContainer(InputStream is, int fromSlice, int howManySlices) throws IOException {
+    private static Container readContainer(int major, InputStream is,
+                                           int fromSlice, int howManySlices) throws IOException {
 
         long time1 = System.nanoTime();
-        Container c = readContainerHeader(is);
-        if (c == null)
-            return null;
+        Container c = readContainerHeader(major, is);
+        if (c.isEOF())
+            return c;
 
-        CompressionHeaderBLock chb = new CompressionHeaderBLock(is);
+        CompressionHeaderBLock chb = new CompressionHeaderBLock(major, is);
         c.h = chb.getCompressionHeader();
         howManySlices = Math.min(c.landmarks.length, howManySlices);
 
@@ -369,8 +450,8 @@ public class CramIO {
         for (int s = fromSlice; s < howManySlices - fromSlice; s++) {
             Slice slice = new Slice();
             slice.index = s;
-            sio.readSliceHeadBlock(slice, is);
-            sio.readSliceBlocks(slice, true, is);
+            sio.readSliceHeadBlock(major, slice, is);
+            sio.readSliceBlocks(major, slice, true, is);
             slices.add(slice);
         }
 
@@ -429,7 +510,8 @@ public class CramIO {
 
     private static long writeContainerForSamFileHeader(SAMFileHeader samFileHeader, OutputStream os) throws IOException {
         byte[] data = toByteArray(samFileHeader);
-        return writeContainerForSamFileHeaderData(data, 0, Math.max(1024, data.length + data.length / 2), os);
+        return writeContainerForSamFileHeaderData(data, 0,
+                Math.max(1024, data.length + data.length / 2), os);
     }
 
     private static long writeContainerForSamFileHeaderData(byte[] data, int offset, int len, OutputStream os)
@@ -466,9 +548,25 @@ public class CramIO {
         return containerHeaderByteSize + baos.size();
     }
 
-    public static SAMFileHeader readSAMFileHeader(String id, InputStream is) throws IOException {
-        readContainerHeader(is);
-        Block b = new Block(is, true, true);
+    public static SAMFileHeader readSAMFileHeader(CramHeader header,
+                                                  InputStream is) throws IOException {
+        Container container = readContainerHeader(header.majorVersion, is);
+        Block b = null;
+        {
+            if (header.majorVersion >= 3) {
+                byte[] bytes = new byte[container.containerByteSize];
+                ByteBufferUtils.readFully(bytes, is);
+                b = new Block(header.majorVersion, new ByteArrayInputStream(
+                        bytes), true, true);
+                // ignore the rest of the container
+            } else {
+                /*
+                 * pending issue: container.containerByteSize is 2 bytes shorter
+				 * then needed in the v21 test cram files.
+				 */
+                b = new Block(header.majorVersion, is, true, true);
+            }
+        }
 
         is = new ByteArrayInputStream(b.getRawContent());
 
@@ -483,10 +581,10 @@ public class CramIO {
         byte[] bytes = new byte[size];
         dis.readFully(bytes);
 
-        BufferedLineReader r = new BufferedLineReader(new ByteArrayInputStream(bytes));
+        BufferedLineReader r = new BufferedLineReader(new ByteArrayInputStream(
+                bytes));
         SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-        SAMFileHeader header = codec.decode(r, id);
-        return header;
+        return codec.decode(r, new String(header.id));
     }
 
     public static boolean replaceCramHeader(File file, CramHeader newHeader) throws IOException {
