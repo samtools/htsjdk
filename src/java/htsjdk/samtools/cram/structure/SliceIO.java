@@ -15,7 +15,13 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.BinaryTagCodec;
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMTagUtil;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

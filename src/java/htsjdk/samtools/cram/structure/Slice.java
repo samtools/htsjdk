@@ -15,6 +15,10 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.SAMBinaryTagAndUnsignedArrayValue;
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 

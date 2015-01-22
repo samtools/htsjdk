@@ -33,7 +33,7 @@ import java.nio.ByteOrder;
 /**
  * Converter between disk and in-memory representation of a SAMRecord tag.
  */
-class BinaryTagCodec {
+public class BinaryTagCodec {
     // Size in bytes of the fixed part of the disk representation of a tag,
     // i.e. the number of bytes occupied by the tag name and tag type fields.
     private static final int FIXED_TAG_SIZE = 3;
@@ -58,7 +58,7 @@ class BinaryTagCodec {
      * For reading tags, a BinaryCodec is not used.  See readTags() below.
      * @param binaryCodec where to write the file rep of the tags
      */
-    BinaryTagCodec(final BinaryCodec binaryCodec) {
+    public BinaryTagCodec(final BinaryCodec binaryCodec) {
         this.binaryCodec = binaryCodec;
     }
 
@@ -183,7 +183,7 @@ class BinaryTagCodec {
     /**
      * Write the given tag name and value to disk.
      */
-    void writeTag(final short tag, final Object value, final boolean isUnsignedArray) {
+    public void writeTag(final short tag, final Object value, final boolean isUnsignedArray) {
         binaryCodec.writeShort(tag);
         final char tagValueType = getTagValueType(value);
         binaryCodec.writeByte(tagValueType);
@@ -266,8 +266,8 @@ class BinaryTagCodec {
      * @param offset Where in binaryRep tags start.
      * @param length How many bytes in binaryRep are tag storage.
      */
-    static SAMBinaryTagAndValue readTags(final byte[] binaryRep, final int offset,
-                                         final int length, final ValidationStringency validationStringency) {
+    public static SAMBinaryTagAndValue readTags(final byte[] binaryRep, final int offset,
+                                                final int length, final ValidationStringency validationStringency) {
         final ByteBuffer byteBuffer = ByteBuffer.wrap(binaryRep, offset, length);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 

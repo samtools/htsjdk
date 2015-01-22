@@ -36,9 +36,7 @@
       </profile>
     </annotationProcessing>
   </component>
-  <component name="CopyrightManager" default="">
-    <module2copyright />
-  </component>
+  <component name="CopyrightManager" default="" />
   <component name="DependencyValidationManager">
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
@@ -91,8 +89,6 @@
         <inspection_tool class="LocalCanBeFinal" enabled="true" level="WARNING" enabled_by_default="true">
           <option name="REPORT_VARIABLES" value="true" />
           <option name="REPORT_PARAMETERS" value="true" />
-          <option name="REPORT_CATCH_PARAMETERS" value="true" />
-          <option name="REPORT_FOREACH_PARAMETERS" value="true" />
         </inspection_tool>
         <inspection_tool class="SqlNoDataSourceInspection" enabled="false" level="WARNING" enabled_by_default="false" />
         <inspection_tool class="UnusedDeclaration" enabled="false" level="WARNING" enabled_by_default="false">
@@ -348,5 +344,27 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
+  <component name="libraryTable">
+    <library name="apache-ant-1.8.2-bzip2">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/apache-ant-1.8.2-bzip2.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="commons-compress-1.4.1">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/commons-compress-1.4.1.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="xz-1.5">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/lib/xz-1.5.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+  </component>
 </project>
-

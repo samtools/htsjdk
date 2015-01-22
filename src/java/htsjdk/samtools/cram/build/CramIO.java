@@ -15,7 +15,6 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
