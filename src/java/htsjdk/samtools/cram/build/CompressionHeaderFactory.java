@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.encoding.ExternalByteArrayEncoding;
 import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
+import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
 import htsjdk.samtools.cram.encoding.GammaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.HuffmanByteEncoding;
@@ -31,6 +32,7 @@ import htsjdk.samtools.cram.encoding.NullEncoding;
 import htsjdk.samtools.cram.encoding.SubexpIntegerEncoding;
 import htsjdk.samtools.cram.encoding.huffman.HuffmanCode;
 import htsjdk.samtools.cram.encoding.huffman.HuffmanTree;
+import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.HardClip;
 import htsjdk.samtools.cram.encoding.read_features.Padding;
@@ -50,8 +52,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class CompressionHeaderFactory {
@@ -68,12 +72,12 @@ public class CompressionHeaderFactory {
         int baseID = exCounter++;
         h.externalIds.add(baseID);
         h.externalCompressors.put(baseID,
-                ExternalCompressor.createRANS(ORDER.ONE));
+                ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
         int qualityScoreID = exCounter++;
         h.externalIds.add(qualityScoreID);
         h.externalCompressors.put(qualityScoreID,
-                ExternalCompressor.createRANS(ORDER.ONE));
+                ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
         int readNameID = exCounter++;
         h.externalIds.add(readNameID);
@@ -82,7 +86,7 @@ public class CompressionHeaderFactory {
         int mateInfoID = exCounter++;
         h.externalIds.add(mateInfoID);
         h.externalCompressors.put(mateInfoID,
-                ExternalCompressor.createRANS(ORDER.ONE));
+                ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
         // int tagValueExtID = exCounter++;
         // h.externalIds.add(tagValueExtID);
@@ -256,7 +260,10 @@ public class CompressionHeaderFactory {
         }
 
         { // tag values
-            Map<Integer, HuffmanParamsCalculator> cc = new TreeMap<Integer, HuffmanParamsCalculator>();
+            int unsortedTagValueExternalID = exCounter++;
+            h.externalIds.add(unsortedTagValueExternalID);
+            h.externalCompressors.put(unsortedTagValueExternalID,
+                    ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
             Set<Integer> tagIdSet = new HashSet<Integer>();
             for (CramCompressionRecord r : records) {
@@ -283,7 +290,7 @@ public class CompressionHeaderFactory {
 
                 h.externalIds.add(externalID);
                 h.externalCompressors.put(externalID,
-                        ExternalCompressor.createRANS(ORDER.ONE));
+                        ExternalCompressor.createRANS(RANS.ORDER.ONE));
                 h.tMap.put(externalID,
                         ByteArrayStopEncoding.toParam((byte) 1, externalID));
             }

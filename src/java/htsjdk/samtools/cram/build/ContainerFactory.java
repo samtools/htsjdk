@@ -142,7 +142,7 @@ public class ContainerFactory {
         {
             // @formatter:off
             /*
-			 * 1) Count slice bases. 
+             * 1) Count slice bases.
 			 * 2) Decide if the slice is single ref, unmapped or multiref. 
 			 * 3) Detect alignment boundaries for the slice if not multiref.
 			 */
