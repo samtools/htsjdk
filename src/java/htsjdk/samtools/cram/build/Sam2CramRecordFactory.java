@@ -309,18 +309,6 @@ public class Sam2CramRecordFactory {
             ib.setPosition(zeroBasedPositionInRead + 1 + i);
             ib.setBase(insertedBases[i]);
             features.add(ib);
-            if (losslessQS || scores == null || scores.length < bases.length)
-                continue;
-            boolean qualityMasked = (scores[i] < uncategorisedQualityScoreCutoff);
-            if (captureInsertScores || qualityMasked) {
-                byte score = (byte) (QS_asciiOffset + scores[zeroBasedPositionInRead
-                        + i]);
-                // if (score >= QS_asciiOffset) {
-                features.add(new BaseQualityScore(zeroBasedPositionInRead + 1
-                        + i, score));
-                landedTotalScores++;
-                // }
-            }
         }
     }
 
@@ -356,14 +344,6 @@ public class Sam2CramRecordFactory {
 
                 if (losslessQS || noQS)
                     continue;
-
-                if (captureSubtitutionScores) {
-                    byte score = (byte) (QS_asciiOffset + qualityScore[i
-                            + fromPosInRead]);
-                    features.add(new BaseQualityScore(oneBasedPositionInRead,
-                            score));
-                    qualityAdded = true;
-                }
             }
 
             if (noQS)
@@ -390,14 +370,6 @@ public class Sam2CramRecordFactory {
                     qualityAdded = true;
                     landedPiledScores++;
                 }
-            }
-
-            qualityMasked = (qualityScore[i + fromPosInRead] < uncategorisedQualityScoreCutoff);
-            if (!qualityAdded && qualityMasked) {
-                byte score = (byte) (QS_asciiOffset + qualityScore[i
-                        + fromPosInRead]);
-                features.add(new BaseQualityScore(oneBasedPositionInRead, score));
-                qualityAdded = true;
             }
 
             if (qualityAdded)

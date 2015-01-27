@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 public class ReferenceSource {
     private static Log log = Log.getInstance(ReferenceSource.class);
     private ReferenceSequenceFile rsFile;
-    private FastaSequenceIndex fastaSequenceIndex;
     private int downloadTriesBeforeFailing = 2;
 
     private Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
@@ -51,14 +50,8 @@ public class ReferenceSource {
     }
 
     public ReferenceSource(File file) {
-        if (file != null) {
-            rsFile = ReferenceSequenceFileFactory
-                    .getReferenceSequenceFile(file);
-
-            File indexFile = new File(file.getAbsoluteFile() + ".fai");
-            if (indexFile.exists())
-                fastaSequenceIndex = new FastaSequenceIndex(indexFile);
-        }
+        if (file != null)
+            rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(file);
     }
 
     public ReferenceSource(ReferenceSequenceFile rsFile) {
@@ -138,11 +131,11 @@ public class ReferenceSource {
             return null;
 
         ReferenceSequence sequence = null;
-        if (fastaSequenceIndex != null)
-            if (fastaSequenceIndex.hasIndexEntry(name))
-                sequence = rsFile.getSequence(name);
-            else
-                sequence = null;
+        try {
+            sequence = rsFile.getSequence(name);
+        } catch (SAMException e) {
+            // the only way to test if rsFile contains the sequence is to try and catch exception.
+        }
 
         if (sequence != null)
             return sequence.getBases();

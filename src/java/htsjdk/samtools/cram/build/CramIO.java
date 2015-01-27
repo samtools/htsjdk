@@ -72,26 +72,26 @@ public class CramIO {
     public static byte[] ZERO_F_EOF_MARKER = ByteBufferUtils
             .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 06 06 01 00 01 00 01 00 ee 63 01" +
                     " 4b");
-
-    public static void main(String[] args) throws IOException {
-        CRC32 c = new CRC32();
-        c.update(ByteBufferUtils
-                .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00"));
-        int value = (int) (0xFFFFFFFF & c.getValue());
-        System.out.println(Integer.toHexString(value));
-        System.out.println(value);
-
-        c = new CRC32();
-        c.update(ByteBufferUtils
-                .bytesFromHex("00 01 00 06 06 01 00 01 00 01 00"));
-        value = (int) (0xFFFFFFFF & c.getValue());
-        System.out.println(Integer.toHexString(value));
-        System.out.println(value);
-
-        Container container = readContainer(3, new ByteArrayInputStream(
-                ZERO_F_EOF_MARKER));
-        assertThat(container.isEOF(), is(true));
-    }
+// TOD: move to tests
+//    public static void main(String[] args) throws IOException {
+//        CRC32 c = new CRC32();
+//        c.update(ByteBufferUtils
+//                .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00"));
+//        int value = (int) (0xFFFFFFFF & c.getValue());
+//        System.out.println(Integer.toHexString(value));
+//        System.out.println(value);
+//
+//        c = new CRC32();
+//        c.update(ByteBufferUtils
+//                .bytesFromHex("00 01 00 06 06 01 00 01 00 01 00"));
+//        value = (int) (0xFFFFFFFF & c.getValue());
+//        System.out.println(Integer.toHexString(value));
+//        System.out.println(value);
+//
+//        Container container = readContainer(3, new ByteArrayInputStream(
+//                ZERO_F_EOF_MARKER));
+//        assertThat(container.isEOF(), is(true));
+//    }
 
     public static String getFileName(String urlString) {
         URL url = null;
@@ -164,8 +164,7 @@ public class CramIO {
      * not found for files with version 2.1 or greater. For version below 2.1 a
      * warning will be issued.
      *
-     * @param cramFile CRAM file to be read
-     * @param fromIS   input stream to be read
+     * @param cramURL CRAM url to be read
      * @param decrypt  decrypt the input stream
      * @param password a password to use for decryption
      * @return an InputStream ready to be used for reading CRAM file definition
@@ -182,20 +181,21 @@ public class CramIO {
             is = openInputStreamFromURL(cramURL);
 
         if (decrypt) {
-            char[] pass = null;
-            if (password == null) {
-                if (System.console() == null)
-                    throw new RuntimeException("Cannot access console.");
-                pass = System.console().readPassword();
-            } else
-                pass = password.toCharArray();
-
-            if (is instanceof SeekableStream)
-                is = new SeekableCipherStream_256((SeekableStream) is, pass, 1,
-                        128);
-            else
-                is = new CipherInputStream_256(is, pass, 128)
-                        .getCipherInputStream();
+            // TODO: cipher lib not available, import or move this code outside of the htsjdk
+//            char[] pass = null;
+//            if (password == null) {
+//                if (System.console() == null)
+//                    throw new RuntimeException("Cannot access console.");
+//                pass = System.console().readPassword();
+//            } else
+//                pass = password.toCharArray();
+//
+//            if (is instanceof SeekableStream)
+//                is = new SeekableCipherStream_256((SeekableStream) is, pass, 1,
+//                        128);
+//            else
+//                is = new CipherInputStream_256(is, pass, 128)
+//                        .getCipherInputStream();
 
         }
 
@@ -230,10 +230,10 @@ public class CramIO {
      * @throws IOException
      */
     public static Container readContainer(CramHeader cramHeader, InputStream is) throws IOException {
-        Container c = CramIO.readContainer(cramHeader.majorVersion, is);
+        Container c = CramIO.readContainer(cramHeader.getMajorVersion(), is);
         if (c == null) {
             // this will cause System.exit(1):
-            eofNotFound(cramHeader.majorVersion, cramHeader.minorVersion);
+            eofNotFound(cramHeader.getMajorVersion(), cramHeader.getMinorVersion());
             return CramIO.readContainer(new ByteArrayInputStream(
                     CramIO.ZERO_B_EOF_MARKER));
         }
@@ -316,9 +316,9 @@ public class CramIO {
     }
 
     public static long writeCramHeader(CramHeader h, OutputStream os) throws IOException {
-        if (h.majorVersion < 3)
+        if (h.getMajorVersion() < 3)
             throw new RuntimeException("Deprecated CRAM version: "
-                    + h.majorVersion);
+                    + h.getMajorVersion());
         os.write("CRAM".getBytes("US-ASCII"));
         os.write(h.getMajorVersion());
         os.write(h.getMinorVersion());
@@ -351,7 +351,7 @@ public class CramIO {
 
         readFormatDefinition(is, header);
 
-        header.setSamFileHeader(readSAMFileHeader(new String(header.id), is));
+        header.setSamFileHeader(readSAMFileHeader(header, is));
         return header;
     }
 
@@ -549,13 +549,13 @@ public class CramIO {
 
     public static SAMFileHeader readSAMFileHeader(CramHeader header,
                                                   InputStream is) throws IOException {
-        Container container = readContainerHeader(header.majorVersion, is);
+        Container container = readContainerHeader(header.getMajorVersion(), is);
         Block b = null;
         {
-            if (header.majorVersion >= 3) {
+            if (header.getMajorVersion() >= 3) {
                 byte[] bytes = new byte[container.containerByteSize];
                 ByteBufferUtils.readFully(bytes, is);
-                b = new Block(header.majorVersion, new ByteArrayInputStream(
+                b = new Block(header.getMajorVersion(), new ByteArrayInputStream(
                         bytes), true, true);
                 // ignore the rest of the container
             } else {
@@ -563,7 +563,7 @@ public class CramIO {
                  * pending issue: container.containerByteSize is 2 bytes shorter
 				 * then needed in the v21 test cram files.
 				 */
-                b = new Block(header.majorVersion, is, true, true);
+                b = new Block(header.getMajorVersion(), is, true, true);
             }
         }
 

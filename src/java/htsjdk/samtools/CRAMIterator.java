@@ -95,7 +95,7 @@ public class CRAMIterator implements SAMRecordIterator {
         recordCounter = 0;
 
         containerOffset = is.getCount();
-        container = CramIO.readContainer(is);
+        container = CramIO.readContainer(cramHeader.getMajorVersion(), is);
         if (container == null || container.isEOF()) {
             records.clear();
             nextRecord = null;
@@ -146,7 +146,7 @@ public class CRAMIterator implements SAMRecordIterator {
             throw new RuntimeException(e1);
         }
 
-        normalizer.normalize(cramRecords, true, refs, container.alignmentStart,
+        normalizer.normalize(cramRecords, true, refs, 0,
                 container.h.substitutionMatrix, container.h.AP_seriesDelta);
 
         Cram2SamRecordFactory c2sFactory = new Cram2SamRecordFactory(

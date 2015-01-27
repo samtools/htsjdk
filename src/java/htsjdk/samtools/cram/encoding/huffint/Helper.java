@@ -34,8 +34,6 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import static org.junit.Assert.fail;
-
 class Helper {
     TreeMap<Integer, HuffmanBitCode> codes;
 
@@ -209,67 +207,67 @@ class Helper {
         i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
         return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
     }
-
-    public static void main(String[] args) throws IOException {
-        int size = 1000000;
-
-        long time5 = System.nanoTime();
-        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
-        cal.add(ReadTag.nameType3BytesToInt("OQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XA", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XC", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XT", 'A'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OP", 'i'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OC", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("BQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("AM", 'c'), size);
-
-        cal.calculate();
-
-        Helper helper = new Helper(cal.values(), cal.bitLens());
-        long time6 = System.nanoTime();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
-
-        long time1 = System.nanoTime();
-        for (int i = 0; i < size; i++) {
-            for (int b : cal.values()) {
-                helper.write(bos, b);
-            }
-        }
-
-        bos.close();
-        long time2 = System.nanoTime();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        DefaultBitInputStream bis = new DefaultBitInputStream(bais);
-
-        long time3 = System.nanoTime();
-        int counter = 0;
-        for (int i = 0; i < size; i++) {
-            for (int b : cal.values()) {
-                int v = helper.read(bis);
-                if (v != b)
-                    fail("Mismatch: " + v + " vs " + b + " at " + counter);
-
-                counter++;
-            }
-        }
-        long time4 = System.nanoTime();
-
-        System.out
-                .printf("Size: %d bytes, bits per value: %.2f, create time %dms, write time %d ms, read time %d ms.",
-                        baos.size(), 8f * baos.size() / size
-                                / cal.values().length,
-                        (time6 - time5) / 1000000, (time2 - time1) / 1000000,
-                        (time4 - time3) / 1000000);
-    }
+// TODO: move to a test
+//    public static void main(String[] args) throws IOException {
+//        int size = 1000000;
+//
+//        long time5 = System.nanoTime();
+//        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
+//        cal.add(ReadTag.nameType3BytesToInt("OQ", 'Z'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X0", 'C'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X0", 'c'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X0", 's'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X1", 'C'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X1", 'c'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("X1", 's'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("XA", 'Z'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("XC", 'c'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("XT", 'A'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("OP", 'i'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("OC", 'Z'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("BQ", 'Z'), size);
+//        cal.add(ReadTag.nameType3BytesToInt("AM", 'c'), size);
+//
+//        cal.calculate();
+//
+//        Helper helper = new Helper(cal.values(), cal.bitLens());
+//        long time6 = System.nanoTime();
+//
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
+//
+//        long time1 = System.nanoTime();
+//        for (int i = 0; i < size; i++) {
+//            for (int b : cal.values()) {
+//                helper.write(bos, b);
+//            }
+//        }
+//
+//        bos.close();
+//        long time2 = System.nanoTime();
+//
+//        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+//        DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+//
+//        long time3 = System.nanoTime();
+//        int counter = 0;
+//        for (int i = 0; i < size; i++) {
+//            for (int b : cal.values()) {
+//                int v = helper.read(bis);
+//                if (v != b)
+//                    fail("Mismatch: " + v + " vs " + b + " at " + counter);
+//
+//                counter++;
+//            }
+//        }
+//        long time4 = System.nanoTime();
+//
+//        System.out
+//                .printf("Size: %d bytes, bits per value: %.2f, create time %dms, write time %d ms, read time %d ms.",
+//                        baos.size(), 8f * baos.size() / size
+//                                / cal.values().length,
+//                        (time6 - time5) / 1000000, (time2 - time1) / 1000000,
+//                        (time4 - time3) / 1000000);
+//    }
 
 }

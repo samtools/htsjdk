@@ -73,9 +73,9 @@ public class ContainerParser {
         return records;
     }
 
-    public List<CramCompressionRecord> getRecords(Slice s, CompressionHeader h)
-            throws IllegalArgumentException, IllegalAccessException,
-            IOException {
+    public ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
+                                            Slice s, CompressionHeader h) throws IllegalArgumentException,
+            IllegalAccessException, IOException {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (s.sequenceId) {
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
@@ -103,13 +103,13 @@ public class ContainerParser {
                         new ByteArrayInputStream(s.coreBlock.getRawContent())),
                 inputMap, h, s.sequenceId);
 
-        List<CramCompressionRecord> records = new ArrayList<CramCompressionRecord>();
+        if (records == null)
+            records = new ArrayList<CramCompressionRecord>(s.nofRecords);
 
         long readNanos = 0;
         int prevStart = s.alignmentStart;
         for (int i = 0; i < s.nofRecords; i++) {
             CramCompressionRecord r = new CramCompressionRecord();
-            r.sliceIndex = s.index;
             r.index = i;
 
             try {
@@ -121,10 +121,10 @@ public class ContainerParser {
                 throw e;
             }
 
-            if (r.sequenceId == s.sequenceId)
+            if (r.sequenceId == s.sequenceId) {
                 r.sequenceName = seqName;
-            r.sequenceId = s.sequenceId;
-            else{
+                r.sequenceId = s.sequenceId;
+            } else {
                 if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
                     r.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
                 else {
@@ -153,7 +153,6 @@ public class ContainerParser {
                 value = nanoMap.get(key);
             nanoMap.put(key, value + statMap.get(key).nanos);
         }
-
         return records;
     }
 

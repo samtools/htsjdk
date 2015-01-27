@@ -1,9 +1,9 @@
 package htsjdk.samtools.cram.encoding.read_features;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
-import net.sf.samtools.Cigar;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.CigarOperator;
 
 import java.util.ArrayList;
 import java.util.List;

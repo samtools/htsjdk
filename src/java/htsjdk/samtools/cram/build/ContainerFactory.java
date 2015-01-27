@@ -17,6 +17,8 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.digest.ContentDigests;
+import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.writer.DataWriterFactory;
 import htsjdk.samtools.cram.encoding.writer.Writer;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
@@ -220,5 +222,13 @@ public class ContainerFactory {
         }
 
         return slice;
+    }
+
+    public boolean isPreserveReadNames() {
+        return preserveReadNames;
+    }
+
+    public void setPreserveReadNames(final boolean preserveReadNames) {
+        this.preserveReadNames = preserveReadNames;
     }
 }
