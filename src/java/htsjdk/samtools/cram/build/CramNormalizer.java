@@ -252,8 +252,7 @@ public class CramNormalizer {
             switch (v.getOperator()) {
                 case Substitution.operator:
                     Substitution sv = (Substitution) v;
-                    byte refBase = Utils.normalizeBase(ref[alignmentStart
-                            + posInSeq - refOffset_zeroBased]);
+                    byte refBase = Utils.normalizeBase(ref[alignmentStart + posInSeq - refOffset_zeroBased]);
                     byte base = substitutionMatrix.base(refBase, sv.getCode());
                     sv.setBase(base);
                     sv.setRefernceBase(refBase);

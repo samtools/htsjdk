@@ -572,6 +572,15 @@ public class ByteBufferUtils {
         return 4;
     }
 
+    public static byte[] writeInt32(int value) {
+        byte[] data = new byte[4] ;
+        data[0] = (byte) (value & 0xFF);
+        data[1] = (byte) (value >> 8 & 0xFF);
+        data[2] = (byte) (value >> 16 & 0xFF);
+        data[3] = (byte) (value >> 24 & 0xFF);
+        return data;
+    }
+
     /**
      * Unsigned little-endiann 4 byte integer
      *

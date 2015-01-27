@@ -45,7 +45,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private static final int REF_SEQ_INDEX_NOT_INITED = -2;
     private static final int DEFAULT_RECORDS_PER_SLICE = 10000;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
-    private static final Version cramVersion = CramVersions.CRAM_v2_1;
+    private static final Version cramVersion = CramVersions.CRAM_v3;
 
     private String fileName;
     private List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
@@ -151,11 +151,14 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             IllegalAccessException, IOException {
 
         byte[] refs;
+        String refSeqName = null ;
         if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
             refs = new byte[0];
-        else
-            refs = source.getReferenceBases(
-                    samFileHeader.getSequence(refSeqIndex), true);
+        else {
+            final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
+            refs = source.getReferenceBases(sequence, true);
+            refSeqName = sequence.getSequenceName() ;
+        }
 
         int start = SAMRecord.NO_ALIGNMENT_START;
         int stop = SAMRecord.NO_ALIGNMENT_START;
@@ -172,8 +175,9 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
         ReferenceTracks tracks = null;
         if (preservation != null && preservation.areReferenceTracksRequired()) {
-            if (tracks == null || tracks.getSequenceId() != refSeqIndex)
-                tracks = new ReferenceTracks(refSeqIndex, refs);
+            if (tracks.getSequenceId() != refSeqIndex)
+                tracks = new ReferenceTracks(refSeqIndex, refSeqName, refs);
+
             tracks.ensureRange(start, stop - start + 1);
             updateTracks(samRecords, tracks);
         }

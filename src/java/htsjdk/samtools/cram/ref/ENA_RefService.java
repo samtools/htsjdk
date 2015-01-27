@@ -1,8 +1,7 @@
 package htsjdk.samtools.cram.ref;
 
 import htsjdk.samtools.cram.io.ByteBufferUtils;
-import net.sf.picard.util.Log;
-import net.sf.picard.util.Log.LogLevel;
+import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +24,7 @@ public class ENA_RefService {
     private int restBetweenTries_ms = 0;
 
     public static void main(String[] args) throws IOException {
-        Log.setGlobalLogLevel(LogLevel.INFO);
+        Log.setGlobalLogLevel(Log.LogLevel.INFO);
         test("57151e6196306db5d9f33133572a5482");
         test("0000088cbcebe818eb431d58c908c698");
     }

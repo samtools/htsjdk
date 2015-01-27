@@ -1,11 +1,11 @@
 package htsjdk.samtools.cram.digest;
 
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import net.sf.picard.util.Log;
-import net.sf.samtools.SAMBinaryTagAndValue;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMTagUtil;
+import htsjdk.samtools.util.Log;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

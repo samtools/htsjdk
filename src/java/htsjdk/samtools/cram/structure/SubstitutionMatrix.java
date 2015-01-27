@@ -64,8 +64,12 @@ public class SubstitutionMatrix {
 
     public void dump() {
         log.debug("Subs matrix: " + Arrays.toString(bytes) + ": " + BitwiseUtils.toBitString(bytes));
+        log.debug("Subs matrix decoded: "+toString());
+    }
 
-        StringBuffer sb = new StringBuffer("Subs matrix decoded: ");
+    @Override
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
         for (byte r : "ACGTN".getBytes()) {
             sb.append((char) r);
             sb.append(":");
@@ -74,7 +78,7 @@ public class SubstitutionMatrix {
             }
             sb.append("\t");
         }
-        log.debug(sb.toString());
+        return sb.toString();
     }
 
     public SubstitutionMatrix(byte[] matrix) {
