@@ -307,6 +307,11 @@
         <w>tribble</w>
       </words>
     </dictionary>
+    <dictionary name="vadim">
+      <words>
+        <w>lossy</w>
+      </words>
+    </dictionary>
   </component>
   <component name="ProjectModuleManager">
     <modules>

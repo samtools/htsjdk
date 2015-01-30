@@ -88,17 +88,6 @@ public class CompressionHeaderFactory {
         h.externalCompressors.put(mateInfoID,
                 ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
-        // int tagValueExtID = exCounter++;
-        // h.externalIds.add(tagValueExtID);
-        // h.externalCompressors.put(tagValueExtID,
-        // ExternalCompressor.createGZIP(5));
-
-        log.debug("Assigned external id to bases: " + baseID);
-        log.debug("Assigned external id to quality scores: " + qualityScoreID);
-        log.debug("Assigned external id to read names: " + readNameID);
-        log.debug("Assigned external id to mate info: " + mateInfoID);
-        // log.debug("Assigned external id to tag values: " + tagValueExtID);
-
         h.eMap = new TreeMap<EncodingKey, EncodingParams>();
         for (EncodingKey key : EncodingKey.values())
             h.eMap.put(key, NullEncoding.toParam());
