@@ -39,11 +39,7 @@
     <property name="javac.debug" value="true"/>
 
     <!-- Get GIT hash, if available, otherwise leave it blank.  -->
-    <exec executable="git" outputproperty="repository.revision" failifexecutionfails="true" errorproperty="">
-        <arg value="log"/>
-        <arg value="-1"/>
-        <arg value="--pretty=format:%H_%at"/>
-    </exec>
+
     <property name="repository.revision" value=""/>
     <property name="htsjdk-version" value="1.129"/>
     <property name="htsjdk-version-file" value="htsjdk.version.properties"/>

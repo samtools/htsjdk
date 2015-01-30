@@ -110,6 +110,7 @@ public class ContainerParser {
         int prevStart = s.alignmentStart;
         for (int i = 0; i < s.nofRecords; i++) {
             CramCompressionRecord r = new CramCompressionRecord();
+            r.sliceIndex = s.index;
             r.index = i;
 
             try {
