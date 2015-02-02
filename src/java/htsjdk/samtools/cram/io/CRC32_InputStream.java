@@ -1,19 +1,24 @@
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.CRC32;
 
-public class CRC32C_InputStream extends InputStream {
+/**
+ * An input stream that calculates CRC32 of all the bytes passed through it. The java {@link java.util.zip.CRC32}
+ * class is used to internally.
+ */
+public class CRC32_InputStream extends InputStream {
     private InputStream delegate;
-    private CRC32C crc32 = new CRC32C();
+    private CRC32 crc32 = new CRC32();
 
-    public CRC32C_InputStream(InputStream delegate) {
+    public CRC32_InputStream(InputStream delegate) {
         super();
         this.delegate = delegate;
     }
 
-    public int getCRC32C() {
-        return crc32.getIntValue();
+    public int getCRC32() {
+        return (int) (0xFFFFFFFF & crc32.getValue());
     }
 
     @Override
