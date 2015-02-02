@@ -1,10 +1,14 @@
-package htsjdk.samtools.cram.structure;
+package htsjdk.samtools.cram.io;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.CRC32;
 
+/**
+ * An output stream that calculates CRC32 checksum of all the bytes written through the stream. The java {@link java.util.zip.CRC32}
+ * class is used to internally.
+ */
 public class CRC32_OutputStream extends FilterOutputStream {
 
     private CRC32 crc32 = new CRC32();

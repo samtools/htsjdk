@@ -31,7 +31,6 @@ import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
 import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
-import htsjdk.samtools.cram.mask.RefMaskUtils;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
@@ -57,7 +56,6 @@ public class Sam2CramRecordFactory {
 
     private byte[] refBases;
     private byte[] refSNPs;
-    private RefMaskUtils.RefMask refPile;
 
     private static Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
@@ -361,17 +359,6 @@ public class Sam2CramRecordFactory {
                 }
             }
 
-            if (!qualityAdded && refPile != null) {
-                if (refPile.shouldStore(refCoord, refBase)) {
-                    byte score = (byte) (QS_asciiOffset + qualityScore[i
-                            + fromPosInRead]);
-                    features.add(new BaseQualityScore(oneBasedPositionInRead,
-                            score));
-                    qualityAdded = true;
-                    landedPiledScores++;
-                }
-            }
-
             if (qualityAdded)
                 landedTotalScores++;
         }
@@ -405,17 +392,10 @@ public class Sam2CramRecordFactory {
         this.refSNPs = refSNPs;
     }
 
-    public RefMaskUtils.RefMask getRefPile() {
-        return refPile;
-    }
-
     public Map<String, Integer> getReadGroupMap() {
         return readGroupMap;
     }
 
-    public void setRefPile(RefMaskUtils.RefMask refPile) {
-        this.refPile = refPile;
-    }
 
     public long getBaseCount() {
         return baseCount;

@@ -584,7 +584,7 @@ public class ByteBufferUtils {
     /**
      * Unsigned little-endiann 4 byte integer
      *
-     * @param is byte buffer to read from
+     * @param buf byte buffer to read from
      * @return an integer value read
      * @throws IOException
      */

@@ -17,6 +17,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.common.NullOutputStream;
 import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.cram.io.CRC32_OutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
