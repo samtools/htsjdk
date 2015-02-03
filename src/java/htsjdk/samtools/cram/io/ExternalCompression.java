@@ -1,0 +1,152 @@
+package htsjdk.samtools.cram.io;
+
+import htsjdk.samtools.cram.encoding.rans.RANS;
+import htsjdk.samtools.util.IOUtil;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.tools.bzip2.CBZip2InputStream;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+/**
+ * Methods to provide CRAM external compression/decompression features.
+ */
+public class ExternalCompression {
+    private static final int GZIP_COMPRESSION_LEVEL = Integer.valueOf(System.getProperty("gzip.compression.level", "5"));
+
+    /**
+     * Compress a byte array into GZIP blob. The method obeys {@link ExternalCompression#GZIP_COMPRESSION_LEVEL} compression level.
+     *
+     * @param data byte array to compress
+     * @return compressed blob
+     */
+    public static byte[] gzip(final byte[] data) throws IOException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final GZIPOutputStream gos = new GZIPOutputStream(baos) {
+            {
+                def.setLevel(GZIP_COMPRESSION_LEVEL);
+            }
+        };
+        IOUtil.copyStream(new ByteArrayInputStream(data), gos);
+        gos.close();
+
+        return baos.toByteArray();
+    }
+
+    /**
+     * Uncompress a GZIP data blob into a new byte array.
+     *
+     * @param data compressed data blob
+     * @return uncompressed data
+     * @throws IOException as per java IO contract
+     */
+    public static byte[] gunzip(final byte[] data) throws IOException {
+        final GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(data));
+        return InputStreamUtils.readFully(gis);
+    }
+
+    /**
+     * Compress a byte array into BZIP2 blob.
+     *
+     * @param data byte array to compress
+     * @return compressed blob
+     */
+    public static byte[] bzip2(final byte[] data) throws IOException {
+        return InputStreamUtils.readFully(new BZip2CompressorInputStream(new ByteArrayInputStream(data)));
+    }
+
+    /**
+     * Uncompress a BZIP2 data blob into a new byte array.
+     *
+     * @param data compressed data blob
+     * @return uncompressed data
+     * @throws IOException as per java IO contract
+     */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public static byte[] unbzip2(final byte[] data) throws IOException {
+        final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
+        // hello, apache!
+        byteArrayInputStream.read();
+        byteArrayInputStream.read();
+        return InputStreamUtils.readFully(new CBZip2InputStream(byteArrayInputStream));
+    }
+
+    /**
+     * Compress a byte array into rANS blob.
+     *
+     * @param data  byte array to compress
+     * @param order rANS order
+     * @return compressed blob
+     */
+    public static byte[] rans(final byte[] data, final RANS.ORDER order) {
+        final ByteBuffer buf = RANS.compress(ByteBuffer.wrap(data), order, null);
+        return toByteArray(buf);
+    }
+
+    /**
+     * Compress a byte array into rANS blob.
+     *
+     * @param data  byte array to compress
+     * @param order rANS order
+     * @return compressed blob
+     */
+    public static byte[] rans(final byte[] data, final int order) {
+        final ByteBuffer buf = RANS.compress(ByteBuffer.wrap(data), RANS.ORDER.fromInt(order), null);
+        return toByteArray(buf);
+    }
+
+    /**
+     * Uncompress a rANS data blob into a new byte array.
+     *
+     * @param data compressed data blob
+     * @return uncompressed data
+     * @throws IOException as per java IO contract
+     */
+    public static byte[] unrans(final byte[] data) {
+        final ByteBuffer buf = RANS.uncompress(ByteBuffer.wrap(data), null);
+        return toByteArray(buf);
+    }
+
+
+    /**
+     * Compress a byte array into XZ blob.
+     *
+     * @param data byte array to compress
+     * @return compressed blob
+     */
+    public static byte[] xz(final byte[] data) throws IOException {
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length * 2);
+        final XZCompressorOutputStream os = new XZCompressorOutputStream(baos);
+        os.write(data);
+        os.close();
+        return baos.toByteArray();
+    }
+
+
+    /**
+     * Uncompress a XZ data blob into a new byte array.
+     *
+     * @param data compressed data blob
+     * @return uncompressed data
+     * @throws IOException as per java IO contract
+     */
+    public static byte[] unxz(final byte[] data) throws IOException {
+        final XZCompressorInputStream is = new XZCompressorInputStream(new ByteArrayInputStream(data));
+        return InputStreamUtils.readFully(is);
+    }
+
+
+    private static byte[] toByteArray(final ByteBuffer buf) {
+        if (buf.hasArray() && buf.arrayOffset() == 0 && buf.array().length == buf.limit()) return buf.array();
+
+        final byte[] bytes = new byte[buf.remaining()];
+        buf.get(bytes);
+        return bytes;
+    }
+}

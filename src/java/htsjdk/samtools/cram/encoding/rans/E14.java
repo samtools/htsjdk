@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.encoding.rans;
 
 import htsjdk.samtools.cram.encoding.rans.Encoding.RansEncSymbol;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -79,7 +78,7 @@ class E14 {
         ptr.putInt(rans0);
         ptr.flip();
         compressedBlob_size = ptr.limit();
-        ByteBufferUtils.reverse(ptr);
+        Utils.reverse(ptr);
         /*
          * Depletion of the in buffer cannot be confirmed because of the get(int
 		 * position) method use during encoding, hence enforcing:

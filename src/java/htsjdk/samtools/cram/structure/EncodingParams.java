@@ -17,6 +17,8 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.cram.io.BitwiseUtils;
 
+import java.util.Arrays;
+
 public class EncodingParams {
 
     public EncodingID id;
@@ -30,7 +32,7 @@ public class EncodingParams {
 
     @Override
     public String toString() {
-        return id.name() + ":" + BitwiseUtils.toHexString(params, 20);
+        return id.name() + ":" +javax.xml.bind.DatatypeConverter.printHexBinary(Arrays.copyOfRange(params, 0, Math.max(20, params.length))) ;
     }
 
 }

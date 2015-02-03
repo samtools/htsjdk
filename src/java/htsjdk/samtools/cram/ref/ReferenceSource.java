@@ -18,8 +18,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
-import htsjdk.samtools.reference.FastaSequenceIndex;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
@@ -164,7 +163,7 @@ public class ReferenceSource {
                 return null;
 
             log.debug("Downloading reference sequence: " + url);
-            byte[] data = ByteBufferUtils.readFully(is);
+            byte[] data = InputStreamUtils.readFully(is);
             log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
             is.close();
 

@@ -15,8 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -37,11 +37,11 @@ public class ExternalIntegerEncoding implements Encoding<Integer> {
     }
 
     public byte[] toByteArray() {
-        return ByteBufferUtils.writeUnsignedITF8(contentId);
+        return ITF8.writeUnsignedITF8(contentId);
     }
 
     public void fromByteArray(byte[] data) {
-        contentId = ByteBufferUtils.readUnsignedITF8(data);
+        contentId = ITF8.readUnsignedITF8(data);
     }
 
     @Override

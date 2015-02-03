@@ -16,8 +16,8 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.encoding.huffint.CanonicalHuffmanIntegerCodec2;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -43,13 +43,13 @@ public class HuffmanIntegerEncoding implements Encoding<Integer> {
     @Override
     public byte[] toByteArray() {
         buf.clear();
-        ByteBufferUtils.writeUnsignedITF8(values.length, buf);
+        ITF8.writeUnsignedITF8(values.length, buf);
         for (int value : values)
-            ByteBufferUtils.writeUnsignedITF8(value, buf);
+            ITF8.writeUnsignedITF8(value, buf);
 
-        ByteBufferUtils.writeUnsignedITF8(bitLengths.length, buf);
+        ITF8.writeUnsignedITF8(bitLengths.length, buf);
         for (int value : bitLengths)
-            ByteBufferUtils.writeUnsignedITF8(value, buf);
+            ITF8.writeUnsignedITF8(value, buf);
 
         buf.flip();
         byte[] array = new byte[buf.limit()];
@@ -60,16 +60,16 @@ public class HuffmanIntegerEncoding implements Encoding<Integer> {
     @Override
     public void fromByteArray(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
-        int size = ByteBufferUtils.readUnsignedITF8(buf);
+        int size = ITF8.readUnsignedITF8(buf);
         values = new int[size];
 
         for (int i = 0; i < size; i++)
-            values[i] = ByteBufferUtils.readUnsignedITF8(buf);
+            values[i] = ITF8.readUnsignedITF8(buf);
 
-        size = ByteBufferUtils.readUnsignedITF8(buf);
+        size = ITF8.readUnsignedITF8(buf);
         bitLengths = new int[size];
         for (int i = 0; i < size; i++)
-            bitLengths[i] = ByteBufferUtils.readUnsignedITF8(buf);
+            bitLengths[i] = ITF8.readUnsignedITF8(buf);
     }
 
     @Override

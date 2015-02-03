@@ -15,8 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -56,8 +56,8 @@ public class SubexpIntegerEncoding implements Encoding<Integer> {
     @Override
     public byte[] toByteArray() {
         ByteBuffer buf = ByteBuffer.allocate(10);
-        ByteBufferUtils.writeUnsignedITF8(offset, buf);
-        ByteBufferUtils.writeUnsignedITF8(k, buf);
+        ITF8.writeUnsignedITF8(offset, buf);
+        ITF8.writeUnsignedITF8(k, buf);
         buf.flip();
         byte[] bytes = new byte[buf.limit()];
         buf.get(bytes);
@@ -67,8 +67,8 @@ public class SubexpIntegerEncoding implements Encoding<Integer> {
     @Override
     public void fromByteArray(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
-        offset = ByteBufferUtils.readUnsignedITF8(buf);
-        k = ByteBufferUtils.readUnsignedITF8(buf);
+        offset = ITF8.readUnsignedITF8(buf);
+        k = ITF8.readUnsignedITF8(buf);
     }
 
     @Override

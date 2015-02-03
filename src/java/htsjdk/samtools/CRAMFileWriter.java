@@ -280,7 +280,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         Container container = containerFactory.buildContainer(cramRecords);
         for (Slice slice : container.slices)
             slice.setRefMD5(refs);
-        CramIO.writeContainer(container, os);
+        CramIO.writeContainer(cramVersion.major, container, os);
         samRecords.clear();
     }
 

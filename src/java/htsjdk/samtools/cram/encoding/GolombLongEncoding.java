@@ -15,8 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -47,8 +47,8 @@ public class GolombLongEncoding implements Encoding<Long> {
     @Override
     public byte[] toByteArray() {
         ByteBuffer buf = ByteBuffer.allocate(10);
-        ByteBufferUtils.writeUnsignedITF8(offset, buf);
-        ByteBufferUtils.writeUnsignedITF8(m, buf);
+        ITF8.writeUnsignedITF8(offset, buf);
+        ITF8.writeUnsignedITF8(m, buf);
         buf.flip();
         byte[] array = new byte[buf.limit()];
         buf.get(array);
@@ -58,8 +58,8 @@ public class GolombLongEncoding implements Encoding<Long> {
     @Override
     public void fromByteArray(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
-        offset = ByteBufferUtils.readUnsignedITF8(buf);
-        m = ByteBufferUtils.readUnsignedITF8(buf);
+        offset = ITF8.readUnsignedITF8(buf);
+        m = ITF8.readUnsignedITF8(buf);
     }
 
     @Override

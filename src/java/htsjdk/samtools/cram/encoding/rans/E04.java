@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.encoding.rans;
 
 import htsjdk.samtools.cram.encoding.rans.Encoding.RansEncSymbol;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 
 import java.nio.ByteBuffer;
 
@@ -53,7 +52,7 @@ class E04 {
         cdata_size = ptr.limit();
         // reverse the compressed bytes, so that they become in REVERSE
         // order:
-        ByteBufferUtils.reverse(ptr);
+        Utils.reverse(ptr);
         in.position(in.limit());
         return cdata_size;
     }

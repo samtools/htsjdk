@@ -17,7 +17,7 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.cram.io.ITF8;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,18 +49,18 @@ public class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
 
     @Override
     public Integer read(BitInputStream bis) throws IOException {
-        return ByteBufferUtils.readUnsignedITF8(is);
+        return ITF8.readUnsignedITF8(is);
     }
 
     @Override
     public long write(BitOutputStream bos, Integer value) throws IOException {
-        return ByteBufferUtils.writeUnsignedITF8(value, os);
+        return ITF8.writeUnsignedITF8(value, os);
     }
 
     @Override
     public long numberOfBits(Integer value) {
         try {
-            return ByteBufferUtils.writeUnsignedITF8(value, nullOS);
+            return ITF8.writeUnsignedITF8(value, nullOS);
         } catch (IOException e) {
             // this should never happened but still:
             throw new RuntimeException(e);

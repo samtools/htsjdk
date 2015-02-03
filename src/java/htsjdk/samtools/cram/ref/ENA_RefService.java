@@ -1,6 +1,6 @@
 package htsjdk.samtools.cram.ref;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
@@ -86,7 +86,7 @@ public class ENA_RefService {
                             throw new RuntimeException("Failed to download sequence for md5: " + md5);
 
                         log.info("Downloading reference sequence: " + urlString);
-                        byte[] bases = ByteBufferUtils.readFully(is);
+                        byte[] bases = InputStreamUtils.readFully(is);
                         log.info("Downloaded " + bases.length + " bases.");
                         return bases;
                     case HTTP_NOT_FOUND:

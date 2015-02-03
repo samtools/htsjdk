@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.encoding.rans.RANS.ORDER;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.cram.io.ExternalCompression;
 import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 
 import java.io.IOException;
@@ -35,7 +35,7 @@ public abstract class ExternalCompressor {
             @Override
             public byte[] compress(byte[] data) {
                 try {
-                    return ByteBufferUtils.gzip(data);
+                    return ExternalCompression.gzip(data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -49,7 +49,7 @@ public abstract class ExternalCompressor {
             @Override
             public byte[] compress(byte[] data) {
                 try {
-                    return ByteBufferUtils.xz(data);
+                    return ExternalCompression.xz(data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -63,7 +63,7 @@ public abstract class ExternalCompressor {
             @Override
             public byte[] compress(byte[] data) {
                 try {
-                    return ByteBufferUtils.bzip2(data);
+                    return ExternalCompression.bzip2(data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -77,7 +77,7 @@ public abstract class ExternalCompressor {
 
             @Override
             public byte[] compress(byte[] data) {
-                return ByteBufferUtils.rans(data, order);
+                return ExternalCompression.rans(data, order);
             }
         };
     }
