@@ -15,28 +15,57 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.io;
 
+import java.io.Closeable;
+import java.io.Flushable;
 import java.io.IOException;
+import java.io.OutputStream;
 
-public interface BitOutputStream {
 
-    public void write(int b, int nbits) throws IOException;
+/**
+ * An interface to describe the requirements for writing out bits as opposed to bytes. Implementors must keep track of the amount of data
+ * written similar to {@link OutputStream} concept and provide flush/close functionality accordingly.
+ */
+public interface BitOutputStream extends Closeable, Flushable{
 
-    public void write(long b, int nbits) throws IOException;
+    /**
+     * Write specified number of bits supplied in the integer value. The method is naturally limited to 32 bits max.
+     * @param bitContainer an integer containing the bits to be written out
+     * @param nofBits the number of bits to written out, minimum 0, maximum 32.
+     * @throws IOException as per streaming contract in java.
+     */
+    public void write(int bitContainer, int nofBits) throws IOException;
 
-    public void write(byte b, int nbits) throws IOException;
 
+    /**
+     * Write specified number of bits supplied in the long value. The method is naturally limited to 64 bits max.
+     * @param bitContainer an integer containing the bits to be written out
+     * @param nofBits the number of bits to written out, minimum 0, maximum 64.
+     * @throws IOException as per streaming contract in java.
+     */
+    public void write(long bitContainer, int nofBits) throws IOException;
+
+
+    /**
+     * Write specified number of bits supplied in the byte value. The method is naturally limited to 8 bits max.
+     * @param bitContainer an integer containing the bits to be written out
+     * @param nofBits the number of bits to written out, minimum 0, maximum 8.
+     * @throws IOException as per streaming contract in java.
+     */
+    public void write(byte bitContainer, int nofBits) throws IOException;
+
+
+    /**
+     * Write a single bit specified in the boolean argument.
+     * @param bit emit 1 if true, 0 otherwise.
+     * @throws IOException as per streaming contract in java.
+     */
     public void write(boolean bit) throws IOException;
 
+    /**
+     * Write a single bit specified in the boolean argument repeatedly.
+     * @param bit emit 1 if true, 0 otherwise.
+     * @param repeat the number of bits to emit.
+     * @throws IOException as per streaming contract in java.
+     */
     public void write(boolean bit, long repeat) throws IOException;
-
-    public void flush() throws IOException;
-
-    public void close() throws IOException;
-
-    public int alignToByte() throws IOException;
-
-    public void write(byte[] data) throws IOException;
-
-    public void write(byte b) throws IOException;
-
 }

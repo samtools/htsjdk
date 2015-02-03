@@ -42,7 +42,6 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
 
     @Override
     public void write(int value) throws IOException {
-        // write(toBytes(value));
         out.write(value);
     }
 
@@ -61,23 +60,23 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
                 + BitwiseUtils.toBitString(new byte[]{(byte) bufferByte}).substring(0, bufferedNumberOfBits);
     }
 
-    public void write(long value, int nofBitsToWrite) throws IOException {
-        if (nofBitsToWrite == 0)
+    public void write(long bitContainer, int nofBits) throws IOException {
+        if (nofBits == 0)
             return;
 
-        if (nofBitsToWrite < 1 || nofBitsToWrite > 64)
-            throw new IOException("Expecting 1 to 64 bits, got: value=" + value + ", nofBits=" + nofBitsToWrite);
+        if (nofBits < 1 || nofBits > 64)
+            throw new IOException("Expecting 1 to 64 bits, got: value=" + bitContainer + ", nofBits=" + nofBits);
 
-        if (nofBitsToWrite <= 8)
-            write((byte) value, nofBitsToWrite);
+        if (nofBits <= 8)
+            write((byte) bitContainer, nofBits);
         else {
-            for (int i = nofBitsToWrite - 8; i >= 0; i -= 8) {
-                final byte v = (byte) (value >>> i);
+            for (int i = nofBits - 8; i >= 0; i -= 8) {
+                final byte v = (byte) (bitContainer >>> i);
                 writeByte(v);
             }
-            if (nofBitsToWrite % 8 != 0) {
-                final byte v = (byte) value;
-                write(v, nofBitsToWrite % 8);
+            if (nofBits % 8 != 0) {
+                final byte v = (byte) bitContainer;
+                write(v, nofBits % 8);
             }
         }
     }
@@ -103,23 +102,8 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         }
     }
 
-    public void write(int value, int nofBitsToWrite) throws IOException {
-        write_int_LSB_0(value, nofBitsToWrite);
-        // if (nofBitsToWrite < 1 || nofBitsToWrite > 32)
-        // throw new IOException("Expecting 1 to 32 bits.");
-        //
-        // if (nofBitsToWrite <= 8)
-        // write((byte) value, nofBitsToWrite);
-        // else {
-        // for (int i = 0;; i += 8) {
-        // final int v = value >>> (24 - i);
-        // if (i >= nofBitsToWrite) {
-        // write((byte) v, i % 8);
-        // break;
-        // } else
-        // write((byte) v, 8);
-        // }
-        // }
+    public void write(int bitContainer, int nofBits) throws IOException {
+        write_int_LSB_0(bitContainer, nofBits);
     }
 
     private void writeByte(int value) throws IOException {
@@ -132,31 +116,31 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         }
     }
 
-    public void write(byte value, int nofBitsToWrite) throws IOException {
-        if (nofBitsToWrite < 0 || nofBitsToWrite > 8)
+    public void write(byte bitContainer, int nofBits) throws IOException {
+        if (nofBits < 0 || nofBits > 8)
             throw new IOException("Expecting 0 to 8 bits.");
 
-        if (nofBitsToWrite == 8)
-            writeByte(value);
+        if (nofBits == 8)
+            writeByte(bitContainer);
         else {
             if (bufferedNumberOfBits == 0) {
-                bufferByte = (value << (8 - nofBitsToWrite)) & 0xFF;
-                bufferedNumberOfBits = nofBitsToWrite;
+                bufferByte = (bitContainer << (8 - nofBits)) & 0xFF;
+                bufferedNumberOfBits = nofBits;
             } else {
-                value = (byte) (value & ~bitMasks[8 - nofBitsToWrite]);
-                int bits = 8 - bufferedNumberOfBits - nofBitsToWrite;
+                bitContainer = (byte) (bitContainer & ~bitMasks[8 - nofBits]);
+                int bits = 8 - bufferedNumberOfBits - nofBits;
                 if (bits < 0) {
                     bits = -bits;
-                    bufferByte |= (value >>> bits);
+                    bufferByte |= (bitContainer >>> bits);
                     out.write(bufferByte);
-                    bufferByte = (value << (8 - bits)) & 0xFF;
+                    bufferByte = (bitContainer << (8 - bits)) & 0xFF;
                     bufferedNumberOfBits = bits;
                 } else if (bits == 0) {
-                    bufferByte = bufferByte | value;
+                    bufferByte = bufferByte | bitContainer;
                     out.write(bufferByte);
                     bufferedNumberOfBits = 0;
                 } else {
-                    bufferByte = bufferByte | (value << bits);
+                    bufferByte = bufferByte | (bitContainer << bits);
                     bufferedNumberOfBits = 8 - bits;
                 }
             }
@@ -169,7 +153,6 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
     }
 
     public void write(boolean bit, long repeat) throws IOException {
-        // optimise later:
         for (long i = 0; i < repeat; i++)
             write(bit);
     }
@@ -193,7 +176,6 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         return out;
     }
 
-    @Override
     public int alignToByte() throws IOException {
         int bitsFlushed = bufferedNumberOfBits;
 
