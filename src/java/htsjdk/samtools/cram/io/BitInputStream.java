@@ -16,24 +16,34 @@
 package htsjdk.samtools.cram.io;
 
 import java.io.IOException;
+import java.io.InputStream;
 
+/**
+ * An interface to describe the requirements for reading bit data as opposed to bytes. Implementors must keep track of the amount of data
+ * read similar to {@link InputStream} concept.
+ */
 public interface BitInputStream {
 
+    /**
+     * Reads a single bit from the stream.
+     *
+     * @throws IOException as per streaming contract in java.
+     */
     public boolean readBit() throws IOException;
 
+    /**
+     * Read specified number of bits from the stream. The bits are return in an integer value.
+     *
+     * @param len number of bits to read
+     * @throws IOException as per streaming contract in java.
+     */
     public int readBits(int len) throws IOException;
 
+    /**
+     * Read specified number of bits from the stream. The bits are return in a long value.
+     *
+     * @param len number of bits to read
+     * @throws IOException as per streaming contract in java.
+     */
     public long readLongBits(int len) throws IOException;
-
-    public boolean endOfStream() throws IOException;
-
-    public boolean putBack(long b, int numBits);
-
-    public void alignToByte() throws IOException;
-
-    public int readAlignedBytes(byte[] array) throws IOException;
-
-    public byte readByte() throws IOException;
-
-    public boolean ensureMarker(long marker, int nofBits) throws IOException;
 }

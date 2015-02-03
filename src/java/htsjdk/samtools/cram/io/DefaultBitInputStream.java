@@ -147,36 +147,11 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
         byteBuffer = 0;
     }
 
-    @Override
     public boolean endOfStream() throws IOException {
         return endOfStream;
     }
 
     public int getNofBufferedBits() {
         return nofBufferedBits;
-    }
-
-    @Override
-    public boolean putBack(long b, int numBits) {
-        return false;
-    }
-
-    @Override
-    public void alignToByte() throws IOException {
-        nofBufferedBits = 0;
-        byteBuffer = 0;
-        byteAligned = true;
-    }
-
-    @Override
-    public int readAlignedBytes(byte[] array) throws IOException {
-        readFully(array);
-        return array.length * 8;
-    }
-
-    @Override
-    public boolean ensureMarker(long marker, int nofBits) throws IOException {
-        long actual = readBits(nofBits);
-        return actual == marker;
     }
 }
