@@ -17,8 +17,8 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -59,7 +59,7 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         ByteBuffer buf = ByteBuffer.allocate(1024);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put(stopByte);
-        ByteBufferUtils.writeUnsignedITF8(externalId, buf);
+        ITF8.writeUnsignedITF8(externalId, buf);
 
         buf.flip();
         byte[] array = new byte[buf.limit()];
@@ -72,7 +72,7 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         ByteBuffer buf = ByteBuffer.wrap(data);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         stopByte = buf.get();
-        externalId = ByteBufferUtils.readUnsignedITF8(buf);
+        externalId = ITF8.readUnsignedITF8(buf);
     }
 
     @Override

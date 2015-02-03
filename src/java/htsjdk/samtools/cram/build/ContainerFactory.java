@@ -200,24 +200,21 @@ public class ContainerFactory {
                 : BlockContentType.RESERVED;
 
         bos.close();
-        slice.coreBlock = new Block();
-        slice.coreBlock.method = BlockCompressionMethod.RAW;
-        slice.coreBlock.setRawContent(bitBAOS.toByteArray());
-        slice.coreBlock.contentType = BlockContentType.CORE;
+        slice.coreBlock = Block.buildNewSliceHeaderBlock(bitBAOS.toByteArray()) ;
 
         slice.external = new HashMap<Integer, Block>();
         for (Integer i : map.keySet()) {
             ExposedByteArrayOutputStream os = map.get(i);
 
             Block externalBlock = new Block();
-            externalBlock.contentId = i;
-            externalBlock.contentType = BlockContentType.EXTERNAL;
+            externalBlock.setContentId(i);
+            externalBlock.setContentType(BlockContentType.EXTERNAL);
 
             ExternalCompressor compressor = h.externalCompressors.get(i);
             byte[] rawData = os.toByteArray();
             byte[] compressed = compressor.compress(rawData);
             externalBlock.setContent(rawData, compressed);
-            externalBlock.method = compressor.getMethod();
+            externalBlock.setMethod(compressor.getMethod());
             slice.external.put(i, externalBlock);
         }
 

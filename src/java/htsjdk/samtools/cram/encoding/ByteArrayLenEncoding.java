@@ -17,8 +17,8 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -46,11 +46,11 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             baos.write((byte) lenParams.id.ordinal());
-            ByteBufferUtils.writeUnsignedITF8(lenParams.params.length, baos);
+            ITF8.writeUnsignedITF8(lenParams.params.length, baos);
             baos.write(lenParams.params);
 
             baos.write((byte) byteParams.id.ordinal());
-            ByteBufferUtils.writeUnsignedITF8(byteParams.params.length, baos);
+            ITF8.writeUnsignedITF8(byteParams.params.length, baos);
             baos.write(byteParams.params);
         } catch (IOException e) {
             throw new RuntimeException("It never happened. ");
@@ -78,12 +78,12 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
         try {
             baos.write((byte) lenEncoding.id().ordinal());
             byte[] lenBytes = lenEncoding.toByteArray();
-            ByteBufferUtils.writeUnsignedITF8(lenBytes.length, baos);
+            ITF8.writeUnsignedITF8(lenBytes.length, baos);
             baos.write(lenBytes);
 
             baos.write((byte) byteEncoding.id().ordinal());
             byte[] byteBytes = byteEncoding.toByteArray();
-            ByteBufferUtils.writeUnsignedITF8(byteBytes.length, baos);
+            ITF8.writeUnsignedITF8(byteBytes.length, baos);
             baos.write(byteBytes);
         } catch (IOException e) {
             throw new RuntimeException("It never happened. ");
@@ -115,14 +115,14 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
 
         EncodingID lenID = EncodingID.values()[buf.get()];
         lenEncoding = f.createEncoding(DataSeriesType.INT, lenID);
-        int len = ByteBufferUtils.readUnsignedITF8(buf);
+        int len = ITF8.readUnsignedITF8(buf);
         byte[] bytes = new byte[len];
         buf.get(bytes);
         lenEncoding.fromByteArray(bytes);
 
         EncodingID byteID = EncodingID.values()[buf.get()];
         byteEncoding = f.createEncoding(DataSeriesType.BYTE_ARRAY, byteID);
-        len = ByteBufferUtils.readUnsignedITF8(buf);
+        len = ITF8.readUnsignedITF8(buf);
         bytes = new byte[len];
         buf.get(bytes);
         byteEncoding.fromByteArray(bytes);

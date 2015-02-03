@@ -17,13 +17,13 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.structure.Block;
 import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 import htsjdk.samtools.cram.structure.BlockContentType;
-import htsjdk.samtools.cram.structure.CompressionHeaderBLock;
+import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerHeaderIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -55,23 +55,26 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.zip.CRC32;
 
 public class CramIO {
     public static int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
     private static final byte[] CHECK = "".getBytes();
     private static Log log = Log.getInstance(CramIO.class);
-    public static byte[] ZERO_B_EOF_MARKER = ByteBufferUtils
-            .bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 01 00 01 00");
-    public static byte[] ZERO_F_EOF_MARKER = ByteBufferUtils
-            .bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 06 06 01 00 01 00 01 00 ee 63 01" +
-                    " 4b");
+    public static byte[] ZERO_B_EOF_MARKER = bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 01 00 01 00");
+    public static byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 06 06 01 00 01 00 01 00 ee 63 01 4b");
+    private static byte[] bytesFromHex(String s) {
+        String clean = s.replaceAll("[^0-9a-f]", "");
+        if (clean.length() % 2 != 0)
+            throw new RuntimeException("Not a hex string: " + s);
+        byte data[] = new byte[clean.length() / 2];
+        for (int i = 0; i < clean.length(); i += 2) {
+            data[i / 2] = (Integer.decode("0x" + clean.charAt(i) + clean.charAt(i + 1))).byteValue();
+        }
+        return data;
+    }
 // TOD: move to tests
 //    public static void main(String[] args) throws IOException {
 //        CRC32 c = new CRC32();
@@ -278,7 +281,7 @@ public class CramIO {
         byte[] tail = new byte[ZERO_B_EOF_MARKER.length];
 
         s.seek(s.length() - ZERO_B_EOF_MARKER.length);
-        ByteBufferUtils.readFully(tail, s);
+        InputStreamUtils.readFully(s, tail, 0, tail.length);
 
         // relaxing the ITF8 hanging bits:
         tail[8] |= 0xf0;
@@ -290,7 +293,7 @@ public class CramIO {
         byte[] tail = new byte[ZERO_F_EOF_MARKER.length];
 
         s.seek(s.length() - ZERO_F_EOF_MARKER.length);
-        ByteBufferUtils.readFully(tail, s);
+        InputStreamUtils.readFully(s, tail, 0, tail.length);
 
         // relaxing the ITF8 hanging bits:
         tail[8] |= 0xf0;
@@ -326,7 +329,7 @@ public class CramIO {
         for (int i = h.id.length; i < 20; i++)
             os.write(0);
 
-        long len = writeContainerForSamFileHeader(h.getSamFileHeader(), os);
+        long len = writeContainerForSamFileHeader(h.getMajorVersion(), h.getSamFileHeader(), os);
 
         return DEFINITION_LENGTH + len;
     }
@@ -355,13 +358,23 @@ public class CramIO {
         return header;
     }
 
-    public static int writeContainer(Container c, OutputStream os) throws IOException {
+    public static int writeContainer(int major, Container c, OutputStream os) throws IOException {
 
         long time1 = System.nanoTime();
         ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
 
-        Block block = new CompressionHeaderBLock(c.h);
-        block.write(baos);
+        Block block = new Block();
+        block.setContentType(BlockContentType.COMPRESSION_HEADER);
+        block.setContentId(0);
+        block.setMethod(BlockCompressionMethod.RAW);
+        byte[] bytes;
+        try {
+            bytes = c.h.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("This should have never happend.");
+        }
+        block.setRawContent(bytes);
+        block.write(major, baos);
         c.blockCount = 1;
 
         List<Integer> landmarks = new ArrayList<Integer>();
@@ -369,7 +382,7 @@ public class CramIO {
         for (int i = 0; i < c.slices.length; i++) {
             Slice s = c.slices[i];
             landmarks.add(baos.size());
-            sio.write(s, baos);
+            sio.write(major, s, baos);
             c.blockCount++;
             c.blockCount++;
             if (s.embeddedRefBlock != null)
@@ -437,8 +450,12 @@ public class CramIO {
         if (c.isEOF())
             return c;
 
-        CompressionHeaderBLock chb = new CompressionHeaderBLock(major, is);
-        c.h = chb.getCompressionHeader();
+        Block chb = Block.readFromInputStream(major, is) ;
+        if (chb.getContentType() != BlockContentType.COMPRESSION_HEADER)
+            throw new RuntimeException("Content type does not match: " + chb.getContentType().name());
+        c.h = new CompressionHeader() ;
+        c.h.read(chb.getRawContent());
+
         howManySlices = Math.min(c.landmarks.length, howManySlices);
 
         if (fromSlice > 0)
@@ -450,7 +467,7 @@ public class CramIO {
             Slice slice = new Slice();
             slice.index = s;
             sio.readSliceHeadBlock(major, slice, is);
-            sio.readSliceBlocks(major, slice, true, is);
+            sio.readSliceBlocks(major, slice, is);
             slices.add(slice);
         }
 
@@ -507,22 +524,17 @@ public class CramIO {
         return headerOS.toByteArray();
     }
 
-    private static long writeContainerForSamFileHeader(SAMFileHeader samFileHeader, OutputStream os) throws IOException {
+    private static long writeContainerForSamFileHeader(int major, SAMFileHeader samFileHeader, OutputStream os) throws IOException {
         byte[] data = toByteArray(samFileHeader);
-        return writeContainerForSamFileHeaderData(data, 0,
+        return writeContainerForSamFileHeaderData(major, data, 0,
                 Math.max(1024, data.length + data.length / 2), os);
     }
 
-    private static long writeContainerForSamFileHeaderData(byte[] data, int offset, int len, OutputStream os)
+    private static long writeContainerForSamFileHeaderData(int major, byte[] data, int offset, int len, OutputStream os)
             throws IOException {
-        Block block = new Block();
         byte[] blockContent = new byte[len];
         System.arraycopy(data, 0, blockContent, offset, Math.min(data.length - offset, len));
-        block.setRawContent(blockContent);
-        block.method = BlockCompressionMethod.RAW;
-        block.contentId = 0;
-        block.contentType = BlockContentType.FILE_HEADER;
-        block.compress();
+        Block block = Block.buildNewFileHeaderBlock(blockContent) ;
 
         Container c = new Container();
         c.blockCount = 1;
@@ -537,7 +549,7 @@ public class CramIO {
         c.sequenceId = 0;
 
         ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-        block.write(baos);
+        block.write(major, baos);
         c.containerByteSize = baos.size();
 
         ContainerHeaderIO chio = new ContainerHeaderIO();
@@ -554,16 +566,15 @@ public class CramIO {
         {
             if (header.getMajorVersion() >= 3) {
                 byte[] bytes = new byte[container.containerByteSize];
-                ByteBufferUtils.readFully(bytes, is);
-                b = new Block(header.getMajorVersion(), new ByteArrayInputStream(
-                        bytes), true, true);
+                InputStreamUtils.readFully(is, bytes, 0, bytes.length);
+                b = Block.readFromInputStream(header.getMajorVersion(), new ByteArrayInputStream(bytes));
                 // ignore the rest of the container
             } else {
                 /*
                  * pending issue: container.containerByteSize is 2 bytes shorter
 				 * then needed in the v21 test cram files.
 				 */
-                b = new Block(header.getMajorVersion(), is, true, true);
+                b = Block.readFromInputStream(header.getMajorVersion(), is);
             }
         }
 
@@ -588,7 +599,6 @@ public class CramIO {
 
     public static boolean replaceCramHeader(File file, CramHeader newHeader) throws IOException {
 
-        int MAP_SIZE = (int) Math.min(1024 * 1024, file.length());
         FileInputStream inputStream = new FileInputStream(file);
         CountingInputStream cis = new CountingInputStream(inputStream);
 
@@ -602,9 +612,9 @@ public class CramIO {
             return false;
         }
 
+        long containerStart = cis.getCount();
         readContainerHeader(cis);
-        Block b = new Block(cis, false, false);
-        long dataStart = cis.getCount();
+        Block b = Block.readFromInputStream(newHeader.getMajorVersion(), cis);
         cis.close();
 
         byte[] data = toByteArray(newHeader.getSamFileHeader());
@@ -614,13 +624,13 @@ public class CramIO {
             return false;
         }
 
-        RandomAccessFile raf = new RandomAccessFile(file, "rw");
-        FileChannel channelOut = raf.getChannel();
-        MappedByteBuffer mapOut = channelOut.map(MapMode.READ_WRITE, dataStart, MAP_SIZE - dataStart);
-        mapOut.put(data);
-        mapOut.force();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream() ;
+        writeContainerForSamFileHeaderData(newHeader.getMajorVersion(), data, 0, b.getRawContentSize(), baos) ;
+        baos.close();
 
-        channelOut.close();
+        RandomAccessFile raf = new RandomAccessFile(file, "rw");
+        raf.seek(containerStart);
+        raf.write(baos.toByteArray());
         raf.close();
 
         return true;

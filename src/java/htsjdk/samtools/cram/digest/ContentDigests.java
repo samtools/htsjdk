@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.digest;
 import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTagUtil;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.util.Log;
 
@@ -106,8 +105,8 @@ public class ContentDigests {
             byte[] expected = (byte[]) foundTag.value;
             byte[] actual = digester.digest.asByteArray();
             if (!Arrays.equals(expected, actual)) {
-                String expectedString = ByteBufferUtils.toHexString(expected);
-                String actualString = ByteBufferUtils.toHexString(actual);
+                String expectedString = toHexString(expected);
+                String actualString = toHexString(actual);
                 log.error(String
                         .format("Content hash mismatch for tag %s, actual: %s; expected: %s",
                                 digester.tagID, actualString, expectedString));
@@ -116,6 +115,19 @@ public class ContentDigests {
                 log.debug("Content digest ok: " + digester.tagID);
         }
         return true;
+    }
+
+    private static String toHex(byte[] bytes) {
+        StringBuffer sb = new StringBuffer();
+        for (byte t : bytes) {
+            sb.append(String.format("%02x", (0xFF & t)).toUpperCase()).append(
+                    ' ');
+        }
+        return sb.toString();
+    }
+
+    private static String toHexString(byte[] bytes) {
+        return toHex(bytes).replace(" ", "");
     }
 
     private static class Digester {

@@ -15,9 +15,11 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.common.NullOutputStream;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.CRC32_OutputStream;
+import htsjdk.samtools.cram.io.CramArray;
+import htsjdk.samtools.cram.io.CramInt;
+import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.io.LTF8;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,17 +47,17 @@ public class ContainerHeaderIO {
             peek[i] = (byte) ch;
         }
 
-        c.containerByteSize = ByteBufferUtils.int32(peek);
-        c.sequenceId = ByteBufferUtils.readUnsignedITF8(is);
-        c.alignmentStart = ByteBufferUtils.readUnsignedITF8(is);
-        c.alignmentSpan = ByteBufferUtils.readUnsignedITF8(is);
-        c.nofRecords = ByteBufferUtils.readUnsignedITF8(is);
-        c.globalRecordCounter = ByteBufferUtils.readUnsignedLTF8(is);
-        c.bases = ByteBufferUtils.readUnsignedLTF8(is);
-        c.blockCount = ByteBufferUtils.readUnsignedITF8(is);
-        c.landmarks = ByteBufferUtils.array(is);
+        c.containerByteSize = CramInt.int32(peek);
+        c.sequenceId = ITF8.readUnsignedITF8(is);
+        c.alignmentStart = ITF8.readUnsignedITF8(is);
+        c.alignmentSpan = ITF8.readUnsignedITF8(is);
+        c.nofRecords = ITF8.readUnsignedITF8(is);
+        c.globalRecordCounter = LTF8.readUnsignedLTF8(is);
+        c.bases = LTF8.readUnsignedLTF8(is);
+        c.blockCount = ITF8.readUnsignedITF8(is);
+        c.landmarks = CramArray.array(is);
         if (major >= 3)
-            c.checksum = ByteBufferUtils.int32(is);
+            c.checksum = CramInt.int32(is);
 
         return true;
     }
@@ -64,15 +66,15 @@ public class ContainerHeaderIO {
             throws IOException {
         CRC32_OutputStream cos = new CRC32_OutputStream(os);
 
-        int len = ByteBufferUtils.writeInt32(c.containerByteSize, cos);
-        len += ByteBufferUtils.writeUnsignedITF8(c.sequenceId, cos);
-        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentStart, cos);
-        len += ByteBufferUtils.writeUnsignedITF8(c.alignmentSpan, cos);
-        len += ByteBufferUtils.writeUnsignedITF8(c.nofRecords, cos);
-        len += ByteBufferUtils.writeUnsignedLTF8(c.globalRecordCounter, cos);
-        len += ByteBufferUtils.writeUnsignedLTF8(c.bases, cos);
-        len += ByteBufferUtils.writeUnsignedITF8(c.blockCount, cos);
-        len += ByteBufferUtils.write(c.landmarks, cos);
+        int len = CramInt.writeInt32(c.containerByteSize, cos);
+        len += ITF8.writeUnsignedITF8(c.sequenceId, cos);
+        len += ITF8.writeUnsignedITF8(c.alignmentStart, cos);
+        len += ITF8.writeUnsignedITF8(c.alignmentSpan, cos);
+        len += ITF8.writeUnsignedITF8(c.nofRecords, cos);
+        len += LTF8.writeUnsignedLTF8(c.globalRecordCounter, cos);
+        len += LTF8.writeUnsignedLTF8(c.bases, cos);
+        len += ITF8.writeUnsignedITF8(c.blockCount, cos);
+        len += CramArray.write(c.landmarks, cos);
 
         os.write(cos.getCrc32_LittleEndian());
         len += 4;
@@ -81,7 +83,11 @@ public class ContainerHeaderIO {
     }
 
     public int sizeOfContainerHeader(Container c) throws IOException {
-        NullOutputStream nos = new NullOutputStream();
+        OutputStream nos = new OutputStream (){
+            @Override
+            public void write(int b) throws IOException {
+            }
+        };
         return writeContainerHeader(c, nos);
     }
 }

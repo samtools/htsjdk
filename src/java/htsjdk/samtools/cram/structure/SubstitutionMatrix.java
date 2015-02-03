@@ -58,13 +58,6 @@ public class SubstitutionMatrix {
                 bases[BASES_LC[i]][codes[r][b]] = b;
             }
         }
-
-        dump();
-    }
-
-    public void dump() {
-        log.debug("Subs matrix: " + Arrays.toString(bytes) + ": " + BitwiseUtils.toBitString(bytes));
-        log.debug("Subs matrix decoded: "+toString());
     }
 
     @Override
@@ -124,8 +117,6 @@ public class SubstitutionMatrix {
             for (byte code = 0; code < 4; code++)
                 codes[refBase][bases[refBase][code]] = code;
         }
-
-        dump();
     }
 
     public byte[] getEncodedMatrix() {

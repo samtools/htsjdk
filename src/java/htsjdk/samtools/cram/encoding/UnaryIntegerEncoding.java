@@ -15,8 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
+import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
@@ -48,7 +48,7 @@ public class UnaryIntegerEncoding implements Encoding<Integer> {
     @Override
     public byte[] toByteArray() {
         ByteBuffer buf = ByteBuffer.allocate(10);
-        ByteBufferUtils.writeUnsignedITF8(offset, buf);
+        ITF8.writeUnsignedITF8(offset, buf);
         buf.put((byte) (stopBit ? 1 : 0));
         buf.flip();
         byte[] array = new byte[buf.limit()];
@@ -59,7 +59,7 @@ public class UnaryIntegerEncoding implements Encoding<Integer> {
     @Override
     public void fromByteArray(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
-        offset = ByteBufferUtils.readUnsignedITF8(buf);
+        offset = ITF8.readUnsignedITF8(buf);
         stopBit = buf.get() == 1;
     }
 
