@@ -52,8 +52,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
     private ContainerFactory containerFactory;
     protected int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
-    protected int containerSize = recordsPerSlice
-            * DEFAULT_SLICES_PER_CONTAINER;
+    protected int containerSize = recordsPerSlice * DEFAULT_SLICES_PER_CONTAINER;
 
     private Sam2CramRecordFactory sam2CramRecordFactory;
     private OutputStream os;
@@ -69,8 +68,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private Set<String> captureTags = new TreeSet<String>();
     private Set<String> ignoreTags = new TreeSet<String>();
 
-    public CRAMFileWriter(OutputStream os, ReferenceSource source,
-                          SAMFileHeader samFileHeader, String fileName) {
+    public CRAMFileWriter(OutputStream os, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
         this.os = os;
         this.source = source;
         this.samFileHeader = samFileHeader;
@@ -78,34 +76,27 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         setSortOrder(samFileHeader.getSortOrder(), true);
         setHeader(samFileHeader);
 
-        if (this.source == null)
-            this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
+        if (this.source == null) this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
 
         containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
     }
 
     /**
-     * Decide if the current container should be completed and flushed. The
-     * decision is based on a) number of records and b) if the reference
-     * sequence id has changed.
+     * Decide if the current container should be completed and flushed. The decision is based on a) number of records and b) if the
+     * reference sequence id has changed.
      *
      * @param nextRecord the record to be added into the current or next container
-     * @return true if the current container should be flushed and the following
-     * records should go into a new container; false otherwise.
+     * @return true if the current container should be flushed and the following records should go into a new container; false otherwise.
      */
     protected boolean shouldFlushContainer(SAMRecord nextRecord) {
-        if (samRecords.size() >= containerSize)
-            return true;
+        if (samRecords.size() >= containerSize) return true;
 
-        if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED
-                && refSeqIndex != nextRecord.getReferenceIndex())
-            return true;
+        if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED && refSeqIndex != nextRecord.getReferenceIndex()) return true;
 
         return false;
     }
 
-    private static void updateTracks(List<SAMRecord> samRecords,
-                                     ReferenceTracks tracks) {
+    private static void updateTracks(List<SAMRecord> samRecords, ReferenceTracks tracks) {
         for (SAMRecord samRecord : samRecords) {
             if (samRecord.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
                 int refPos = samRecord.getAlignmentStart();
@@ -120,11 +111,9 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
                         case X:
                         case EQ:
                             for (int i = readPos; i < ce.getLength(); i++) {
-                                byte readBase = samRecord.getReadBases()[readPos
-                                        + i];
+                                byte readBase = samRecord.getReadBases()[readPos + i];
                                 byte refBase = tracks.baseAt(refPos + i);
-                                if (readBase != refBase)
-                                    tracks.addMismatches(refPos + i, 1);
+                                if (readBase != refBase) tracks.addMismatches(refPos + i, 1);
                             }
                             break;
 
@@ -132,10 +121,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
                             break;
                     }
 
-                    readPos += ce.getOperator().consumesReadBases() ? ce
-                            .getLength() : 0;
-                    refPos += ce.getOperator().consumesReferenceBases() ? ce
-                            .getLength() : 0;
+                    readPos += ce.getOperator().consumesReadBases() ? ce.getLength() : 0;
+                    refPos += ce.getOperator().consumesReferenceBases() ? ce.getLength() : 0;
                 }
             }
         }
@@ -148,27 +135,23 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      * @throws IllegalAccessException
      * @throws IOException
      */
-    protected void flushContainer() throws IllegalArgumentException,
-            IllegalAccessException, IOException {
+    protected void flushContainer() throws IllegalArgumentException, IllegalAccessException, IOException {
 
         byte[] refs;
-        String refSeqName = null ;
-        if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-            refs = new byte[0];
+        String refSeqName = null;
+        if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) refs = new byte[0];
         else {
             final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
             refs = source.getReferenceBases(sequence, true);
-            refSeqName = sequence.getSequenceName() ;
+            refSeqName = sequence.getSequenceName();
         }
 
         int start = SAMRecord.NO_ALIGNMENT_START;
         int stop = SAMRecord.NO_ALIGNMENT_START;
         for (SAMRecord r : samRecords) {
-            if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START)
-                continue;
+            if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) continue;
 
-            if (start == SAMRecord.NO_ALIGNMENT_START)
-                start = r.getAlignmentStart();
+            if (start == SAMRecord.NO_ALIGNMENT_START) start = r.getAlignmentStart();
 
             start = Math.min(r.getAlignmentStart(), start);
             stop = Math.max(r.getAlignmentEnd(), stop);
@@ -176,18 +159,15 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
         ReferenceTracks tracks = null;
         if (preservation != null && preservation.areReferenceTracksRequired()) {
-            if (tracks.getSequenceId() != refSeqIndex)
-                tracks = new ReferenceTracks(refSeqIndex, refSeqName, refs);
+            if (tracks.getSequenceId() != refSeqIndex) tracks = new ReferenceTracks(refSeqIndex, refSeqName, refs);
 
             tracks.ensureRange(start, stop - start + 1);
             updateTracks(samRecords, tracks);
         }
 
-        List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(
-                samRecords.size());
+        List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(samRecords.size());
 
-        sam2CramRecordFactory = new Sam2CramRecordFactory(refSeqIndex, refs,
-                samFileHeader);
+        sam2CramRecordFactory = new Sam2CramRecordFactory(refSeqIndex, refs, samFileHeader);
         sam2CramRecordFactory.preserveReadNames = preserveReadNames;
         sam2CramRecordFactory.captureAllTags = captureAllTags;
         sam2CramRecordFactory.captureTags.addAll(captureTags);
@@ -197,26 +177,21 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         int index = 0;
         int prevAlStart = start;
         for (SAMRecord samRecord : samRecords) {
-            CramCompressionRecord cramRecord = sam2CramRecordFactory
-                    .createCramRecord(samRecord);
+            CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(samRecord);
             cramRecord.index = ++index;
-            cramRecord.alignmentDelta = samRecord.getAlignmentStart()
-                    - prevAlStart;
+            cramRecord.alignmentDelta = samRecord.getAlignmentStart() - prevAlStart;
             cramRecord.alignmentStart = samRecord.getAlignmentStart();
             prevAlStart = samRecord.getAlignmentStart();
 
             cramRecords.add(cramRecord);
 
-            if (preservation != null)
-                preservation.addQualityScores(samRecord, cramRecord, tracks);
-            else
-                cramRecord.setForcePreserveQualityScores(true);
+            if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
+            else cramRecord.setForcePreserveQualityScores(true);
         }
 
         // samRecords.clear();
 
-        if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory
-                .getFeatureCount())
+        if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
             log.warn("Abnormally high number of mismatches, possibly wrong reference.");
 
         // mating:
@@ -232,9 +207,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
                 r.previous = null;
             } else {
                 String name = r.readName;
-                Map<String, CramCompressionRecord> mateMap = r
-                        .isSecondaryAlignment() ? secondaryMateMap
-                        : primaryMateMap;
+                Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
                 CramCompressionRecord mate = mateMap.get(name);
                 if (mate == null) {
                     mateMap.put(name, r);
@@ -270,12 +243,24 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             r.previous = null;
         }
 
-        Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
-        for (int i = 0; i < samRecords.size(); i++) {
-            String s1 = samRecords.get(i).getSAMString();
-            SAMRecord r = f.create(cramRecords.get(i));
-            String s2 = r.getSAMString();
-            assert (s1.equals(s2));
+
+        {
+            /**
+             * The following passage is for paranoid mode only. When java is run with asserts on it will throw an {@link AssertionError} if
+             * read bases or quality scores of a restored SAM record mismatch the original. This is effectively a runtime roundtrip test.
+             */
+            @SuppressWarnings("UnusedAssignment") boolean assertsEnabled = false;
+            assert assertsEnabled = true;
+            if (assertsEnabled) {
+                Cram2SamRecordFactory f = new Cram2SamRecordFactory(samFileHeader);
+                for (int i = 0; i < samRecords.size(); i++) {
+                    SAMRecord restoredSamRecord = f.create(cramRecords.get(i));
+                    assert (restoredSamRecord.getAlignmentStart() == samRecords.get(i).getAlignmentStart());
+                    assert (restoredSamRecord.getReferenceName().equals(samRecords.get(i).getReferenceName()));
+                    assert (restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString()));
+                    assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));
+                }
+            }
         }
 
         Container container = containerFactory.buildContainer(cramRecords);
@@ -287,12 +272,11 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeAlignment(SAMRecord alignment) {
-        if (shouldFlushContainer(alignment))
-            try {
-                flushContainer();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        if (shouldFlushContainer(alignment)) try {
+            flushContainer();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         updateReferenceContext(alignment.getReferenceIndex());
 
@@ -300,8 +284,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     }
 
     /**
-     * Check if the reference has changed and create a new record factory using
-     * the new reference.
+     * Check if the reference has changed and create a new record factory using the new reference.
      *
      * @param samRecordReferenceIndex index of the new reference sequence
      */
@@ -319,9 +302,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     @Override
     protected void writeHeader(String textHeader) {
         // TODO: header must be written exactly once per writer life cycle.
-        SAMFileHeader header = new SAMTextHeaderCodec().decode(
-                new StringLineReader(textHeader), (fileName != null ? fileName
-                        : null));
+        SAMFileHeader header = new SAMTextHeaderCodec().decode(new StringLineReader(textHeader), (fileName != null ? fileName : null));
 
         containerFactory = new ContainerFactory(header, recordsPerSlice);
 
@@ -336,8 +317,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     @Override
     protected void finish() {
         try {
-            if (!samRecords.isEmpty())
-                flushContainer();
+            if (!samRecords.isEmpty()) flushContainer();
             CramIO.issueEOF(cramVersion, os);
             os.flush();
         } catch (Exception e) {
