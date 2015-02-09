@@ -25,16 +25,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ContainerHeaderIO {
+class ContainerHeaderIO {
 
-    public boolean readContainerHeader(Container c, InputStream is)
+    public boolean readContainerHeader(final Container c, final InputStream is)
             throws IOException {
         return readContainerHeader(2, c, is);
     }
 
-    public boolean readContainerHeader(int major, Container c, InputStream is)
+    public boolean readContainerHeader(final int major, final Container c, final InputStream is)
             throws IOException {
-        byte[] peek = new byte[4];
+        final byte[] peek = new byte[4];
         int ch = is.read();
         if (ch == -1)
             return false;
@@ -62,9 +62,9 @@ public class ContainerHeaderIO {
         return true;
     }
 
-    public int writeContainerHeader(Container c, OutputStream os)
+    public int writeContainerHeader(final int major, final Container c, final OutputStream os)
             throws IOException {
-        CRC32_OutputStream cos = new CRC32_OutputStream(os);
+        final CRC32_OutputStream cos = new CRC32_OutputStream(os);
 
         int len = CramInt.writeInt32(c.containerByteSize, cos);
         len += ITF8.writeUnsignedITF8(c.sequenceId, cos);
@@ -76,18 +76,11 @@ public class ContainerHeaderIO {
         len += ITF8.writeUnsignedITF8(c.blockCount, cos);
         len += CramArray.write(c.landmarks, cos);
 
-        os.write(cos.getCrc32_LittleEndian());
-        len += 4;
+        if (major >= 3) {
+            os.write(cos.getCrc32_LittleEndian());
+            len += 4;
+        }
 
         return len;
-    }
-
-    public int sizeOfContainerHeader(Container c) throws IOException {
-        OutputStream nos = new OutputStream (){
-            @Override
-            public void write(int b) throws IOException {
-            }
-        };
-        return writeContainerHeader(c, nos);
     }
 }

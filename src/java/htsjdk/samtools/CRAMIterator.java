@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
@@ -37,7 +38,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -95,8 +95,8 @@ public class CRAMIterator implements SAMRecordIterator {
         recordCounter = 0;
 
         containerOffset = is.getCount();
-        container = CramIO.readContainer(cramHeader.getMajorVersion(), is);
-        if (container == null || container.isEOF()) {
+        container = ContainerIO.readContainer(cramHeader.getVersion(), is);
+        if (container.isEOF()) {
             records.clear();
             nextRecord = null;
             recordCounter = -1;
@@ -130,20 +130,15 @@ public class CRAMIterator implements SAMRecordIterator {
             prevSeqId = container.sequenceId;
         }
 
-        try {
-            for (int i = 0; i < container.slices.length; i++) {
-                Slice s = container.slices[i];
-                if (s.sequenceId < 0)
-                    continue;
-                if (!s.validateRefMD5(refs)) {
-                    log.error(String
-                            .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s",
-                                    s.sequenceId, s.alignmentStart, s.alignmentSpan,
-                                    String.format("%032x", new BigInteger(1, s.refMD5))));
-                }
+        for (int i = 0; i < container.slices.length; i++) {
+            Slice s = container.slices[i];
+            if (s.sequenceId < 0)
+                continue;
+            if (!s.validateRefMD5(refs)) {
+                log.error(String
+                        .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s", s.sequenceId,
+                                s.alignmentStart, s.alignmentSpan, String.format("%032x", new BigInteger(1, s.refMD5))));
             }
-        } catch (NoSuchAlgorithmException e1) {
-            throw new RuntimeException(e1);
         }
 
         normalizer.normalize(cramRecords, true, refs, 0,

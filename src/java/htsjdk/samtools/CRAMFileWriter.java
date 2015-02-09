@@ -26,6 +26,7 @@ import htsjdk.samtools.cram.lossy.QualityScorePreservation;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
@@ -45,7 +46,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private static final int REF_SEQ_INDEX_NOT_INITED = -2;
     private static final int DEFAULT_RECORDS_PER_SLICE = 10000;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
-    private static final Version cramVersion = CramVersions.CRAM_v3;
+    private static final Version cramVersion = CramVersions.CRAM_v2_1;
 
     private String fileName;
     private List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
@@ -280,7 +281,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         Container container = containerFactory.buildContainer(cramRecords);
         for (Slice slice : container.slices)
             slice.setRefMD5(refs);
-        CramIO.writeContainer(cramVersion.major, container, os);
+        ContainerIO.writeContainer(cramVersion, container, os);
         samRecords.clear();
     }
 
@@ -324,8 +325,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
         containerFactory = new ContainerFactory(header, recordsPerSlice);
 
-        CramHeader cramHeader = new CramHeader(cramVersion.major,
-                cramVersion.minor, fileName, header);
+        CramHeader cramHeader = new CramHeader(cramVersion, fileName, header);
         try {
             CramIO.writeCramHeader(cramHeader, os);
         } catch (IOException e) {
@@ -338,7 +338,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         try {
             if (!samRecords.isEmpty())
                 flushContainer();
-            CramIO.issueZeroB_EOF_marker(os);
+            CramIO.issueEOF(cramVersion, os);
             os.flush();
         } catch (Exception e) {
             throw new RuntimeException(e);

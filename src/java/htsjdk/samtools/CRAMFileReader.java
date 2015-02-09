@@ -17,9 +17,9 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
-import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
@@ -260,7 +260,7 @@ public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
             final long containerOffset = filePointers[i] >>> 16;
             try {
                 s.seek(containerOffset);
-                c = CramIO.readContainerHeader(s);
+                c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
                 if (c.alignmentStart + c.alignmentSpan > start) {
                     s.seek(containerOffset);
                     return si;
