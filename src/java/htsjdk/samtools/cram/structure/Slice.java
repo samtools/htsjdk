@@ -24,7 +24,6 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import java.lang.reflect.Array;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -46,7 +45,6 @@ public class Slice {
 
     // content associated with ids:
     public Block headerBlock;
-    public BlockContentType contentType;
     public Block coreBlock;
     public Block embeddedRefBlock;
     public Map<Integer, Block> external;
@@ -62,16 +60,8 @@ public class Slice {
 
     public SAMBinaryTagAndValue sliceTags;
 
-    private static final int shoulder = 10;
-
-    /**
-     * @param ref
-     * @return true if the slice is completely within the reference and false if
-     * the slice's end is beyond the reference.
-     */
-    private boolean alignmentBordersSanityCheck(byte[] ref) {
-        if (alignmentStart > 0 && sequenceId >= 0 && ref == null)
-            throw new NullPointerException("Mapped slice reference is null.");
+    private void alignmentBordersSanityCheck(byte[] ref) {
+        if (alignmentStart > 0 && sequenceId >= 0 && ref == null) throw new NullPointerException("Mapped slice reference is null.");
 
         if (alignmentStart > ref.length) {
             log.error(String.format("Slice mapped outside of reference: seqid=%d, alstart=%d, counter=%d.", sequenceId, alignmentStart,
@@ -81,28 +71,25 @@ public class Slice {
 
         if (alignmentStart - 1 + alignmentSpan > ref.length) {
             log.warn(String.format("Slice partially mapped outside of reference: seqid=%d, alstart=%d, alspan=%d, counter=%d.",
-                    sequenceId, alignmentStart, alignmentSpan,
-                    globalRecordCounter));
-            return false;
+                    sequenceId, alignmentStart, alignmentSpan, globalRecordCounter));
         }
-
-        return true;
     }
 
-    public boolean validateRefMD5(byte[] ref) throws NoSuchAlgorithmException {
+    public boolean validateRefMD5(byte[] ref) {
         alignmentBordersSanityCheck(ref);
 
         if (!validateRefMD5(ref, alignmentStart, alignmentSpan, refMD5)) {
-            String excerpt = getBrief(alignmentStart, alignmentSpan, ref, shoulder, null);
+            final int shoulderLength = 10;
+            String excerpt = getBrief(alignmentStart, alignmentSpan, ref, shoulderLength);
 
             if (validateRefMD5(ref, alignmentStart, alignmentSpan - 1, refMD5)) {
-                log.warn(String.format("Reference MD5 matches partially for slice %d:%d-%d, %s", sequenceId,
-                        alignmentStart, alignmentStart + alignmentSpan - 1, excerpt));
+                log.warn(String.format("Reference MD5 matches partially for slice %d:%d-%d, %s", sequenceId, alignmentStart,
+                        alignmentStart + alignmentSpan - 1, excerpt));
                 return true;
             }
 
-            log.error(String.format("Reference MD5 mismatch for slice %d:%d-%d, %s", sequenceId, alignmentStart,
-                    alignmentStart + alignmentSpan - 1, excerpt));
+            log.error(String.format("Reference MD5 mismatch for slice %d:%d-%d, %s", sequenceId, alignmentStart, alignmentStart +
+                    alignmentSpan - 1, excerpt));
             return false;
         }
 
@@ -115,9 +102,8 @@ public class Slice {
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
-    private static String getBrief(int start_1based, int span, byte[] bases, int shoulderLength, StringBuffer sb) {
-        if (sb == null)
-            sb = new StringBuffer();
+    private static String getBrief(int start_1based, int span, byte[] bases, int shoulderLength) {
+        StringBuffer sb = new StringBuffer();
         int from_inc = start_1based - 1;
 
         int to_exc = start_1based + span - 1;
@@ -136,103 +122,7 @@ public class Slice {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
-        sb.append(String.format(
-                "slice: seqid %d, start %d, span %d, records %d.", sequenceId,
-                alignmentStart, alignmentSpan, nofRecords));
-        return sb.toString();
-    }
-
-    public static void main(String[] args) {
-        String s = "0123456789";
-        byte[] bases = s.getBytes();
-        StringBuffer sb;
-        int start, span, shoulder;
-        String format = "start %d, span %d, shoulder %d:\t";
-
-        start = 1;
-        span = 1;
-        shoulder = 1;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 1;
-        span = 11;
-        shoulder = 1;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 1;
-        span = 10;
-        shoulder = 10;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 1;
-        shoulder = 1;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 11;
-        shoulder = 1;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 10;
-        shoulder = 10;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 2;
-        shoulder = 2;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 4;
-        shoulder = 2;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 5;
-        shoulder = 2;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 10;
-        shoulder = 4;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 10;
-        shoulder = 5;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
-
-        start = 2;
-        span = 10;
-        shoulder = 6;
-        sb = new StringBuffer(String.format(format, start, span, shoulder));
-        getBrief(start, span, bases, shoulder, sb);
-        System.out.println(sb.toString());
+        return String.format("slice: seqid %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, nofRecords);
     }
 
     public void setRefMD5(byte[] ref) {
@@ -247,20 +137,18 @@ public class Slice {
 
             int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
 
-            if (alignmentStart + span > ref.length + 1)
-                throw new RuntimeException("Invalid alignment boundaries.");
+            if (alignmentStart + span > ref.length + 1) throw new RuntimeException("Invalid alignment boundaries.");
 
             refMD5 = SequenceUtil.calculateMD5(ref, alignmentStart - 1, span);
 
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             int shoulder = 10;
             sb.append(new String(Arrays.copyOfRange(ref, alignmentStart - 1, alignmentStart + shoulder)));
             sb.append("...");
             sb.append(new String(Arrays.copyOfRange(ref, alignmentStart - 1 + span - shoulder, alignmentStart + span)));
 
-            log.debug(String.format("Slice md5: %s for %d:%d-%d, %s",
-                    String.format("%032x", new BigInteger(1, refMD5)), sequenceId, alignmentStart, alignmentStart
-                            + span - 1, sb.toString()));
+            log.debug(String.format("Slice md5: %s for %d:%d-%d, %s", String.format("%032x", new BigInteger(1, refMD5)), sequenceId,
+                    alignmentStart, alignmentStart + span - 1, sb.toString()));
         }
     }
 
@@ -273,36 +161,27 @@ public class Slice {
      * @return
      */
     public Object getAttribute(final short tag) {
-        if (this.sliceTags == null)
-            return null;
+        if (this.sliceTags == null) return null;
         else {
             final SAMBinaryTagAndValue tmp = this.sliceTags.find(tag);
-            if (tmp != null)
-                return tmp.value;
-            else
-                return null;
+            if (tmp != null) return tmp.value;
+            else return null;
         }
     }
 
     public void setAttribute(final String tag, final Object value) {
-        if (value != null && value.getClass().isArray()
-                && Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty value passed for tag "
-                    + tag);
+        if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
+            throw new IllegalArgumentException("Empty value passed for tag " + tag);
         }
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
     }
 
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
         if (!value.getClass().isArray()) {
-            throw new IllegalArgumentException(
-                    "Non-array passed to setUnsignedArrayAttribute for tag "
-                            + tag);
+            throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
         }
         if (Array.getLength(value) == 0) {
-            throw new IllegalArgumentException(
-                    "Empty array passed to setUnsignedArrayAttribute for tag "
-                            + tag);
+            throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
     }
@@ -311,37 +190,28 @@ public class Slice {
         setAttribute(tag, value, false);
     }
 
-    protected void setAttribute(final short tag, final Object value,
-                                final boolean isUnsignedArray) {
-        if (value != null
-                && !(value instanceof Byte || value instanceof Short
-                || value instanceof Integer || value instanceof String
-                || value instanceof Character || value instanceof Float
-                || value instanceof byte[] || value instanceof short[]
-                || value instanceof int[] || value instanceof float[])) {
-            throw new SAMException("Attribute type " + value.getClass()
-                    + " not supported. Tag: "
-                    + SAMTagUtil.getSingleton().makeStringTag(tag));
+    protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
+        if (value != null && !(value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof String ||
+                value instanceof Character || value instanceof Float || value instanceof byte[] || value instanceof short[] || value
+                instanceof int[] || value instanceof float[])) {
+            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " + SAMTagUtil.getSingleton()
+                    .makeStringTag(tag));
         }
         if (value == null) {
-            if (this.sliceTags != null)
-                this.sliceTags = this.sliceTags.remove(tag);
+            if (this.sliceTags != null) this.sliceTags = this.sliceTags.remove(tag);
         } else {
             final SAMBinaryTagAndValue tmp;
             if (!isUnsignedArray) {
                 tmp = new SAMBinaryTagAndValue(tag, value);
             } else {
                 if (!value.getClass().isArray() || value instanceof float[]) {
-                    throw new SAMException("Attribute type " + value.getClass()
-                            + " cannot be encoded as an unsigned array. Tag: "
-                            + SAMTagUtil.getSingleton().makeStringTag(tag));
+                    throw new SAMException("Attribute type " + value.getClass() + " cannot be encoded as an unsigned array. Tag: " +
+                            SAMTagUtil.getSingleton().makeStringTag(tag));
                 }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
-            if (this.sliceTags == null)
-                this.sliceTags = tmp;
-            else
-                this.sliceTags = this.sliceTags.insert(tmp);
+            if (this.sliceTags == null) this.sliceTags = tmp;
+            else this.sliceTags = this.sliceTags.insert(tmp);
         }
     }
 }

@@ -196,11 +196,8 @@ public class ContainerFactory {
             writer.write(r);
         }
 
-        slice.contentType = slice.alignmentSpan > -1 ? BlockContentType.MAPPED_SLICE
-                : BlockContentType.RESERVED;
-
         bos.close();
-        slice.coreBlock = Block.buildNewSliceHeaderBlock(bitBAOS.toByteArray()) ;
+        slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray()) ;
 
         slice.external = new HashMap<Integer, Block>();
         for (Integer i : map.keySet()) {
