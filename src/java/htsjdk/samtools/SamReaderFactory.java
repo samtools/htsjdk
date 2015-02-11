@@ -276,7 +276,7 @@ public abstract class SamReaderFactory {
 
                 // Apply the options defined by this factory to this reader
                 final SamReader.PrimitiveSamReaderToSamReaderAdapter reader =
-                        new SamReader.PrimitiveSamReaderToSamReaderAdapter(primitiveSamReader);
+                        new SamReader.PrimitiveSamReaderToSamReaderAdapter(primitiveSamReader, resource);
 
                 for (final Option option : enabledOptions) {
                     option.applyTo(reader);
