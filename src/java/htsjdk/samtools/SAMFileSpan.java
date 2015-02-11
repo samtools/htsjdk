@@ -66,7 +66,7 @@ public interface SAMFileSpan extends Cloneable {
  * @author mhanna
  * @version 0.1
  */
-class BAMFileSpan implements SAMFileSpan, Serializable {
+public class BAMFileSpan implements SAMFileSpan, Serializable {
     private static final long serialVersionUID = 1L;    
 
     /**
