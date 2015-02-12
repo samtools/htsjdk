@@ -18,8 +18,6 @@ libraryDependencies += "org.testng" % "testng" % "6.8.8"
 
 javaSource in Compile := baseDirectory.value / "src/java"
 
-excludeFilter in javaSource := "src/tests"
-
 javaSource in Test := baseDirectory.value / "src/tests"
 
 assemblySettings
@@ -43,12 +41,13 @@ publishArtifact in Test := false
 pomIncludeRepository := { _ => false }
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
-  artifact.name + "-" + module.revision + "." + artifact.extension
+  val classifierStr = artifact.classifier match { case None => ""; case Some(c) => "-" + c }
+  artifact.name + "-" + module.revision + classifierStr + "." + artifact.extension
 }
 
 crossPaths := false
 
-javacOptions in (Compile) ++= Seq("-source", "1.6")
+javacOptions in Compile ++= Seq("-source", "1.6")
  
 javacOptions in (Compile, compile) ++= Seq("-target", "1.6")
 
