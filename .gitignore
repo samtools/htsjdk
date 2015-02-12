@@ -11,3 +11,6 @@ intellij.classes
 /htsjdk.version.properties
 /bin
 /test-output
+target
+.idea/libraries
+.idea/workspace.xml

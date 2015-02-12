@@ -1,0 +1,20 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+
+<suite name="HTSJDK" verbose="2" parallel="methods" thread-count="8" data-provider-thread-count="8">
+
+    <test name="samtools">
+        <packages>
+            <package name="htsjdk.samtools"/>
+        </packages>
+    </test>
+    <test name="tribble">
+        <packages>
+            <package name="htsjdk.tribble"/>
+        </packages>
+    </test>
+    <test name="variant">
+        <packages>
+            <package name="htsjdk.variant"/>
+        </packages>
+    </test>
+</suite>
