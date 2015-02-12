@@ -38,7 +38,7 @@ import java.io.InputStream;
  *
  * @author vadim
  */
-public class CRAMFileReader extends SAMFileReader.ReaderImplementation {
+public class CRAMFileReader extends SamReader.ReaderImplementation {
     private File file;
     private final ReferenceSource referenceSource;
     private InputStream is;

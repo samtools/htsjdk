@@ -43,7 +43,7 @@ import java.util.NoSuchElementException;
 /**
  * Class for reading and querying BAM files.
  */
-class BAMFileReader extends SAMFileReader.ReaderImplementation {
+class BAMFileReader extends SamReader.ReaderImplementation {
     // True if reading from a File rather than an InputStream
     private boolean mIsSeekable = false;
 
