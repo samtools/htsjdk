@@ -106,9 +106,14 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMFileHeader getFileHeader();
 
     /**
-     * @return Answers {@code true} if this is a BAM reader.
+     * @return the {@link htsjdk.samtools.SamReader.Type} of this {@link htsjdk.samtools.SamReader}
      */
     public Type type();
+
+    /**
+     * @return a human readable description of the resource backing this sam reader
+     */
+    public String getResourceDescription();
 
     /**
      * @return true if ths is a BAM file, and has an index
@@ -333,9 +338,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /** Decorator for a {@link SamReader.PrimitiveSamReader} that expands its functionality into a {@link SamReader}. */
     class PrimitiveSamReaderToSamReaderAdapter implements SamReader, Indexing {
         final PrimitiveSamReader p;
+        final SamInputResource resource;
 
-        public PrimitiveSamReaderToSamReaderAdapter(final PrimitiveSamReader p) {
+        public PrimitiveSamReaderToSamReaderAdapter(final PrimitiveSamReader p, final SamInputResource resource) {
             this.p = p;
+            this.resource = resource;
         }
 
         PrimitiveSamReader underlyingReader() {
@@ -447,6 +454,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         @Override
         public Type type() {
             return p.type();
+        }
+
+        @Override
+        public String getResourceDescription() {
+            return this.resource.toString();
         }
 
         @Override

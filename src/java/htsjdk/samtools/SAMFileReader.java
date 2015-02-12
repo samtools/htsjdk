@@ -341,6 +341,11 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         return mReader.type();
     }
 
+    @Override
+    public String getResourceDescription() {
+        return this.toString();
+    }
+
     /**
      * Control validation of SAMRecords as they are read from file.
      * In order to control validation stringency for SAM Header, call SAMFileReader.setDefaultValidationStringency
