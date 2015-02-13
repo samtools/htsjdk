@@ -109,6 +109,7 @@ public class Cram2SamRecordFactory {
         sr.setNotPrimaryAlignmentFlag(cr.isSecondaryAlignment());
         sr.setReadFailsVendorQualityCheckFlag(cr.isVendorFiltered());
         sr.setDuplicateReadFlag(cr.isDuplicate());
+        sr.setSupplementaryAlignmentFlag(cr.isSupplementary());
     }
 
     private static final Cigar getCigar2(Collection<ReadFeature> features,
