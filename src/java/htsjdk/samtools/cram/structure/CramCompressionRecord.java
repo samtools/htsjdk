@@ -36,6 +36,7 @@ public class CramCompressionRecord {
     public static final int SECONDARY_ALIGNMENT_FLAG = 0x100;
     public static final int VENDOR_FILTERED_FLAG = 0x200;
     public static final int DUPLICATE_FLAG = 0x400;
+    public static final int SUPPLEMENTARY_FLAG = 0x800;
 
     public static final int MATE_NEG_STRAND_FLAG = 0x1;
     public static final int MATE_UNMAPPED_FLAG = 0x2;
@@ -98,88 +99,64 @@ public class CramCompressionRecord {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof CramCompressionRecord))
-            return false;
+        if (!(obj instanceof CramCompressionRecord)) return false;
 
         CramCompressionRecord r = (CramCompressionRecord) obj;
 
-        if (alignmentStart != r.alignmentStart)
-            return false;
-        if (isNegativeStrand() != r.isNegativeStrand())
-            return false;
-        if (isVendorFiltered() != r.isVendorFiltered())
-            return false;
-        if (isSegmentUnmapped() != r.isSegmentUnmapped())
-            return false;
-        if (readLength != r.readLength)
-            return false;
-        if (isLastSegment() != r.isLastSegment())
-            return false;
-        if (recordsToNextFragment != r.recordsToNextFragment)
-            return false;
-        if (isFirstSegment() != r.isFirstSegment())
-            return false;
-        if (mappingQuality != r.mappingQuality)
-            return false;
+        if (alignmentStart != r.alignmentStart) return false;
+        if (isNegativeStrand() != r.isNegativeStrand()) return false;
+        if (isVendorFiltered() != r.isVendorFiltered()) return false;
+        if (isSegmentUnmapped() != r.isSegmentUnmapped()) return false;
+        if (readLength != r.readLength) return false;
+        if (isLastSegment() != r.isLastSegment()) return false;
+        if (recordsToNextFragment != r.recordsToNextFragment) return false;
+        if (isFirstSegment() != r.isFirstSegment()) return false;
+        if (mappingQuality != r.mappingQuality) return false;
 
-        if (!deepEquals(readFeatures, r.readFeatures))
-            return false;
+        if (!deepEquals(readFeatures, r.readFeatures)) return false;
 
-        if (!Arrays.equals(readBases, r.readBases))
-            return false;
-        if (!Arrays.equals(qualityScores, r.qualityScores))
-            return false;
+        if (!Arrays.equals(readBases, r.readBases)) return false;
+        if (!Arrays.equals(qualityScores, r.qualityScores)) return false;
 
-        if (!areEqual(flags, r.flags))
-            return false;
+        if (!areEqual(flags, r.flags)) return false;
 
-        if (!areEqual(readName, r.readName))
-            return false;
+        if (!areEqual(readName, r.readName)) return false;
 
         return true;
     }
 
     private boolean areEqual(Object o1, Object o2) {
-        if (o1 == null && o2 == null)
-            return true;
+        if (o1 == null && o2 == null) return true;
         return o1 != null && o1.equals(o2);
     }
 
     private boolean deepEquals(Collection<?> c1, Collection<?> c2) {
-        if ((c1 == null || c1.isEmpty()) && (c2 == null || c2.isEmpty()))
-            return true;
-        if (c1 != null)
-            return c1.equals(c2);
+        if ((c1 == null || c1.isEmpty()) && (c2 == null || c2.isEmpty())) return true;
+        if (c1 != null) return c1.equals(c2);
         return false;
     }
 
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer("[");
-        if (readName != null)
-            sb.append(readName).append("; ");
+        if (readName != null) sb.append(readName).append("; ");
         sb.append("flags=").append(flags);
         sb.append("; aloffset=").append(alignmentDelta);
         sb.append("; mateoffset=").append(recordsToNextFragment);
         sb.append("; mappingQuality=").append(mappingQuality);
 
-        if (readFeatures != null)
-            for (ReadFeature feature : readFeatures)
-                sb.append("; ").append(feature.toString());
+        if (readFeatures != null) for (ReadFeature feature : readFeatures)
+            sb.append("; ").append(feature.toString());
 
-        if (readBases != null)
-            sb.append("; ").append("bases: ").append(new String(readBases));
-        if (qualityScores != null)
-            sb.append("; ").append("qscores: ")
-                    .append(new String(qualityScores));
+        if (readBases != null) sb.append("; ").append("bases: ").append(new String(readBases));
+        if (qualityScores != null) sb.append("; ").append("qscores: ").append(new String(qualityScores));
 
         sb.append("]");
         return sb.toString();
     }
 
     public int getAlignmentSpan() {
-        if (alignmentSpan < 0)
-            calculateAlignmentBoundaries();
+        if (alignmentSpan < 0) calculateAlignmentBoundaries();
         return alignmentSpan;
     }
 
@@ -213,8 +190,7 @@ public class CramCompressionRecord {
     }
 
     public int getAlignmentEnd() {
-        if (alignmentEnd < 0)
-            calculateAlignmentBoundaries();
+        if (alignmentEnd < 0) calculateAlignmentBoundaries();
         return alignmentEnd;
     }
 
@@ -223,8 +199,7 @@ public class CramCompressionRecord {
     }
 
     public void setMultiFragment(boolean multiFragment) {
-        flags = multiFragment ? flags | MULTIFRAGMENT_FLAG : flags
-                & ~MULTIFRAGMENT_FLAG;
+        flags = multiFragment ? flags | MULTIFRAGMENT_FLAG : flags & ~MULTIFRAGMENT_FLAG;
     }
 
     public boolean isSegmentUnmapped() {
@@ -232,8 +207,7 @@ public class CramCompressionRecord {
     }
 
     public void setSegmentUnmapped(boolean segmentUnmapped) {
-        flags = segmentUnmapped ? flags | SEGMENT_UNMAPPED_FLAG : flags
-                & ~SEGMENT_UNMAPPED_FLAG;
+        flags = segmentUnmapped ? flags | SEGMENT_UNMAPPED_FLAG : flags & ~SEGMENT_UNMAPPED_FLAG;
     }
 
     public boolean isFirstSegment() {
@@ -241,8 +215,7 @@ public class CramCompressionRecord {
     }
 
     public void setFirstSegment(boolean firstSegment) {
-        flags = firstSegment ? flags | FIRST_SEGMENT_FLAG : flags
-                & ~FIRST_SEGMENT_FLAG;
+        flags = firstSegment ? flags | FIRST_SEGMENT_FLAG : flags & ~FIRST_SEGMENT_FLAG;
     }
 
     public boolean isLastSegment() {
@@ -250,8 +223,7 @@ public class CramCompressionRecord {
     }
 
     public void setLastSegment(boolean lastSegment) {
-        flags = lastSegment ? flags | LAST_SEGMENT_FLAG : flags
-                & ~LAST_SEGMENT_FLAG;
+        flags = lastSegment ? flags | LAST_SEGMENT_FLAG : flags & ~LAST_SEGMENT_FLAG;
     }
 
     public boolean isSecondaryAlignment() {
@@ -259,8 +231,7 @@ public class CramCompressionRecord {
     }
 
     public void setSecondaryAlignment(boolean secondaryAlignment) {
-        flags = secondaryAlignment ? flags | SECONDARY_ALIGNMENT_FLAG : flags
-                & ~SECONDARY_ALIGNMENT_FLAG;
+        flags = secondaryAlignment ? flags | SECONDARY_ALIGNMENT_FLAG : flags & ~SECONDARY_ALIGNMENT_FLAG;
     }
 
     public boolean isVendorFiltered() {
@@ -268,8 +239,7 @@ public class CramCompressionRecord {
     }
 
     public void setVendorFiltered(boolean vendorFiltered) {
-        flags = vendorFiltered ? flags | VENDOR_FILTERED_FLAG : flags
-                & ~VENDOR_FILTERED_FLAG;
+        flags = vendorFiltered ? flags | VENDOR_FILTERED_FLAG : flags & ~VENDOR_FILTERED_FLAG;
     }
 
     public boolean isProperPair() {
@@ -277,8 +247,7 @@ public class CramCompressionRecord {
     }
 
     public void setProperPair(boolean properPair) {
-        flags = properPair ? flags | PROPER_PAIR_FLAG : flags
-                & ~PROPER_PAIR_FLAG;
+        flags = properPair ? flags | PROPER_PAIR_FLAG : flags & ~PROPER_PAIR_FLAG;
     }
 
     public boolean isDuplicate() {
@@ -294,8 +263,7 @@ public class CramCompressionRecord {
     }
 
     public void setNegativeStrand(boolean negativeStrand) {
-        flags = negativeStrand ? flags | NEGATIVE_STRAND_FLAG : flags
-                & ~NEGATIVE_STRAND_FLAG;
+        flags = negativeStrand ? flags | NEGATIVE_STRAND_FLAG : flags & ~NEGATIVE_STRAND_FLAG;
     }
 
     public boolean isMateUmapped() {
@@ -303,8 +271,7 @@ public class CramCompressionRecord {
     }
 
     public void setMateUmapped(boolean mateUmapped) {
-        mateFlags = mateUmapped ? mateFlags | MATE_UNMAPPED_FLAG : mateFlags
-                & ~MATE_UNMAPPED_FLAG;
+        mateFlags = mateUmapped ? mateFlags | MATE_UNMAPPED_FLAG : mateFlags & ~MATE_UNMAPPED_FLAG;
     }
 
     public boolean isMateNegativeStrand() {
@@ -312,8 +279,7 @@ public class CramCompressionRecord {
     }
 
     public void setMateNegativeStrand(boolean mateNegativeStrand) {
-        mateFlags = mateNegativeStrand ? mateFlags | MATE_NEG_STRAND_FLAG
-                : mateFlags & ~MATE_NEG_STRAND_FLAG;
+        mateFlags = mateNegativeStrand ? mateFlags | MATE_NEG_STRAND_FLAG : mateFlags & ~MATE_NEG_STRAND_FLAG;
     }
 
     public boolean isHasMateDownStream() {
@@ -321,9 +287,7 @@ public class CramCompressionRecord {
     }
 
     public void setHasMateDownStream(boolean hasMateDownStream) {
-        compressionFlags = hasMateDownStream ? compressionFlags
-                | HAS_MATE_DOWNSTREAM_FLAG : compressionFlags
-                & ~HAS_MATE_DOWNSTREAM_FLAG;
+        compressionFlags = hasMateDownStream ? compressionFlags | HAS_MATE_DOWNSTREAM_FLAG : compressionFlags & ~HAS_MATE_DOWNSTREAM_FLAG;
     }
 
     public boolean isDetached() {
@@ -331,8 +295,7 @@ public class CramCompressionRecord {
     }
 
     public void setDetached(boolean detached) {
-        compressionFlags = detached ? compressionFlags | DETACHED_FLAG
-                : compressionFlags & ~DETACHED_FLAG;
+        compressionFlags = detached ? compressionFlags | DETACHED_FLAG : compressionFlags & ~DETACHED_FLAG;
     }
 
     public boolean isForcePreserveQualityScores() {
@@ -340,9 +303,16 @@ public class CramCompressionRecord {
     }
 
     public void setForcePreserveQualityScores(boolean forcePreserveQualityScores) {
-        compressionFlags = forcePreserveQualityScores ? compressionFlags
-                | FORCE_PRESERVE_QS_FLAG : compressionFlags
-                & ~FORCE_PRESERVE_QS_FLAG;
+        compressionFlags = forcePreserveQualityScores ? compressionFlags | FORCE_PRESERVE_QS_FLAG : compressionFlags &
+                ~FORCE_PRESERVE_QS_FLAG;
+    }
+
+    public boolean isSupplementary() {
+        return (flags & SUPPLEMENTARY_FLAG) != 0;
+    }
+
+    public void setSupplementary(boolean supplementary) {
+        flags = supplementary ? flags | SUPPLEMENTARY_FLAG : flags & ~SUPPLEMENTARY_FLAG;
     }
 
     public static class BAM_FLAGS {
@@ -357,14 +327,13 @@ public class CramCompressionRecord {
         public static final int NOT_PRIMARY_ALIGNMENT_FLAG = 0x100;
         public static final int READ_FAILS_VENDOR_QUALITY_CHECK_FLAG = 0x200;
         public static final int DUPLICATE_READ_FLAG = 0x400;
+        public static final int SUPPLEMENTARY_FLAG = 0x800;
     }
 
     public static int getBAMFlags(int cramFlags, byte cramMateFlags) {
         int value = cramFlags;
-        if ((cramMateFlags & MATE_NEG_STRAND_FLAG) != 0)
-            value |= BAM_FLAGS.MATE_STRAND_FLAG;
-        if ((cramMateFlags & MATE_UNMAPPED_FLAG) != 0)
-            value |= BAM_FLAGS.MATE_UNMAPPED_FLAG;
+        if ((cramMateFlags & MATE_NEG_STRAND_FLAG) != 0) value |= BAM_FLAGS.MATE_STRAND_FLAG;
+        if ((cramMateFlags & MATE_UNMAPPED_FLAG) != 0) value |= BAM_FLAGS.MATE_UNMAPPED_FLAG;
         return value;
     }
 }
