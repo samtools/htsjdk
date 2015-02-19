@@ -514,13 +514,6 @@ public class SAMRecord implements Cloneable
     }
 
     /**
-     * Unsupported.  This property is derived from alignment start and CIGAR. 
-     */
-    public void setAlignmentEnd(final int value) {
-        throw new UnsupportedOperationException("Not supported: setAlignmentEnd");
-    }
-
-    /**
      * @return 1-based inclusive leftmost position of the clipped mate sequence, or 0 if there is no position.
      */
     public int getMateAlignmentStart() {
