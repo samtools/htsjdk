@@ -14,7 +14,7 @@ libraryDependencies += "commons-logging" % "commons-logging" % "1.2"
 
 libraryDependencies += "org.xerial.snappy" % "snappy-java" % "1.1.1.3"
 
-libraryDependencies += "org.testng" % "testng" % "6.8.8"
+libraryDependencies += "org.testng" % "testng" % "6.8.8" % Test
 
 javaSource in Compile := baseDirectory.value / "src/java"
 
@@ -33,6 +33,8 @@ publishTo := {
   else
     Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
+
+autoScalaLibrary := false
 
 publishMavenStyle := true
 
