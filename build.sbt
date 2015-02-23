@@ -2,7 +2,7 @@ import de.johoop.testngplugin.TestNGPlugin._
 
 name := "htsjdk"
 
-version := "1.128"
+version := "1.129"
 
 scalaVersion := "2.11.4"
 
