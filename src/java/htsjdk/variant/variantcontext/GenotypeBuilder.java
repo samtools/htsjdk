@@ -230,18 +230,14 @@ public final class GenotypeBuilder {
         return this;
     }
 
-    /**
-     * Adaptor interface from the pLog10Error system.
-     *
-     * Will be retired when
+    /**  Set the GQ with a log10PError value
      *
      * @param pLog10Error
      * @return
      */
-    @Deprecated
     public GenotypeBuilder log10PError(final double pLog10Error) {
         if ( pLog10Error == CommonInfo.NO_LOG10_PERROR )
-            return GQ(-1);
+            return noGQ();
         else
             return GQ((int)Math.round(pLog10Error * -10));
     }
