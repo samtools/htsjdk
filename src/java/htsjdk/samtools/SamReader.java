@@ -8,6 +8,10 @@ import java.text.MessageFormat;
 /**
  * Describes functionality for objects that produce {@link SAMRecord}s and associated information.
  *
+ * Currently, only deprecated readers implement this directly; actual readers implement this
+ * via {@link ReaderImplementation} and {@link PrimitiveSamReader}, which {@link SamReaderFactory}
+ * converts into full readers by using {@link PrimitiveSamReaderToSamReaderAdapter}.
+ *
  * @author mccowan
  */
 public interface SamReader extends Iterable<SAMRecord>, Closeable {
@@ -300,10 +304,14 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      */
     public SAMRecord queryMate(final SAMRecord rec);
 
-
     /**
-     * The minimal subset of functionality to implement to conform with the requirements of
-     * {@link SamReader.PrimitiveSamReaderToSamReaderAdapter}.
+     * The minimal subset of functionality needed for a {@link SAMRecord} data source.
+     * {@link SamReader} itself is somewhat large and bulky, but the core functionality can be captured in
+     * relatively few methods, which are included here. For documentation, see the corresponding methods
+     * in {@link SamReader}.
+     *
+     * See also: {@link PrimitiveSamReaderToSamReaderAdapter}, {@link ReaderImplementation}
+     *
      */
     public interface PrimitiveSamReader {
         Type type();
@@ -331,7 +339,14 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         ValidationStringency getValidationStringency();
     }
 
-    /** Decorator for a {@link SamReader.PrimitiveSamReader} that expands its functionality into a {@link SamReader}. */
+    /**
+     * Decorator for a {@link SamReader.PrimitiveSamReader} that expands its functionality into a {@link SamReader},
+     * given the backing {@link SamInputResource}.
+     *
+     * Wraps the {@link Indexing} interface as well, which was originally separate from {@link SamReader} but in practice
+     * the two are always implemented by the same class.
+     *
+     */
     class PrimitiveSamReaderToSamReaderAdapter implements SamReader, Indexing {
         final PrimitiveSamReader p;
         final SamInputResource resource;
@@ -365,6 +380,12 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             return query(intervals, true);
         }
 
+        /**
+         * Wraps the boilerplate code for querying a record's mate, which is common across many implementations.
+         *
+         * @param rec Record for which mate is sought.  Must be a paired read.
+         * @return
+         */
         @Override
         public SAMRecord queryMate(final SAMRecord rec) {
             if (!rec.getReadPairedFlag()) {
@@ -549,8 +570,15 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     }
 
     /**
-     * Internal interface for SAM/BAM file reader implementations.
+     * Internal interface for SAM/BAM/CRAM file reader implementations,
+     * as distinct from non-file-based readers.
+     *
      * Implemented as an abstract class to enforce better access control.
+     *
+     * TODO -- Many of these methods only apply for a subset of implementations,
+     * TODO -- and either no-op or throw an exception for the others.
+     * TODO -- We should consider refactoring things to avoid this;
+     * TODO -- perhaps we can get away with not having this class at all.
      */
     abstract class ReaderImplementation implements PrimitiveSamReader {
         abstract void enableFileSource(final SamReader reader, final boolean enabled);
