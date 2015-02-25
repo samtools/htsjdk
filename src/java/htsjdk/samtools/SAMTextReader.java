@@ -34,7 +34,7 @@ import java.io.InputStream;
 /**
  * Internal class for reading SAM text files.
  */
-class SAMTextReader extends SAMFileReader.ReaderImplementation {
+class SAMTextReader extends SamReader.ReaderImplementation {
 
 
     private SAMRecordFactory samRecordFactory;

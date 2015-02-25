@@ -110,24 +110,6 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         }
     }
 
-    /**
-     * Internal interface for SAM/BAM file reader implementations.
-     * Implemented as an abstract class to enforce better access control.
-     */
-    public static abstract class ReaderImplementation implements PrimitiveSamReader {
-        abstract void enableFileSource(final SamReader reader, final boolean enabled);
-
-        abstract void enableIndexCaching(final boolean enabled);
-
-        abstract void enableIndexMemoryMapping(final boolean enabled);
-
-        abstract void enableCrcChecking(final boolean enabled);
-
-        abstract void setSAMRecordFactory(final SAMRecordFactory factory);
-
-        abstract void setValidationStringency(final ValidationStringency validationStringency);
-    }
-
 
     /**
      * Prepare to read a SAM or BAM file.  Indexed lookup not allowed because reading from InputStream.
@@ -477,8 +459,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
      * is in the query region.
      *
      * @param intervals Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
-     *                  and abutting intervals merged.  This can be done with
-     *                  htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
+     *                  and abutting intervals merged.  This can be done with {@link htsjdk.samtools.QueryInterval#optimizeIntervals}
      * @param contained If true, each SAMRecord returned is will have its alignment completely contained in one of the
      *                  intervals of interest.  If false, the alignment of the returned SAMRecords need only overlap one of
      *                  the intervals of interest.
@@ -504,8 +485,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
      * is in the query region.
      *
      * @param intervals Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
-     *                  and abutting intervals merged.  This can be done with
-     *                  htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
+     *                  and abutting intervals merged.  This can be done with {@link htsjdk.samtools.QueryInterval#optimizeIntervals}
      * @return Iterator over the SAMRecords overlapping any of the intervals.
      */
     public SAMRecordIterator queryOverlapping(final QueryInterval[] intervals) {
@@ -528,8 +508,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
      * is in the query region.
      *
      * @param intervals Intervals to be queried.  The intervals must be optimized, i.e. in order, with overlapping
-     *                  and abutting intervals merged.  This can be done with
-     *                  htsjdk.samtools.SAMFileReader.QueryInterval#optimizeIntervals(htsjdk.samtools.SAMFileReader.QueryInterval[])
+     *                  and abutting intervals merged.  This can be done with {@link htsjdk.samtools.QueryInterval#optimizeIntervals}
      * @return Iterator over the SAMRecords contained in any of the intervals.
      */
     public SAMRecordIterator queryContained(final QueryInterval[] intervals) {
