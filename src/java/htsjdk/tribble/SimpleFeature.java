@@ -24,31 +24,33 @@ package htsjdk.tribble;
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * Trivial feature -- all it holds is the key information.
- *
- * @author Mark DePristo
- * @since 5/3/12
- */
-public class BasicFeature implements Feature {
-    private final String chr;
-    private final int start, stop;
+import htsjdk.samtools.util.SimpleInterval;
 
-    public BasicFeature(final String chr, final int start, final int stop) {
-        this.chr = chr;
-        this.start = start;
-        this.stop = stop;
+/**
+ * A simple concrete Feature.
+ */
+public class SimpleFeature implements Feature {
+
+    private final SimpleInterval simpleInterval;
+
+    public SimpleFeature(final String contig, final int start, final int end) {
+        simpleInterval = new SimpleInterval(contig, start, end);
     }
 
+    @Deprecated
     public String getChr() {
-        return chr;
+        return getContig();
+    }
+
+    public String getContig() {
+        return simpleInterval.getContig();
     }
 
     public int getStart() {
-        return start;
+        return simpleInterval.getStart();
     }
 
     public int getEnd() {
-        return stop;
+        return simpleInterval.getEnd();
     }
 }

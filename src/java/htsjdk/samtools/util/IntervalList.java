@@ -199,7 +199,7 @@ public class IntervalList implements Iterable<Interval> {
             else if (current.intersects(next) || current.abuts(next)) {
                 if (enforceSameStrands && current.isNegativeStrand() != next.isNegativeStrand()) throw new SAMException("Strands were not equal for: " + current.toString() + " and " + next.toString());
                 toBeMerged.add(next);
-                current = new Interval(current.getSequence(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
+                current = new Interval(current.getContig(), current.getStart(), Math.max(current.getEnd(), next.getEnd()), current.isNegativeStrand(), null);
             }
             else {
                 // Emit merged/unique interval
@@ -235,7 +235,7 @@ public class IntervalList implements Iterable<Interval> {
 
     /** Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name. */
     static Interval merge(final SortedSet<Interval> intervals, final boolean concatenateNames) {
-        final String chrom = intervals.first().getSequence();
+        final String chrom = intervals.first().getContig();
         int start = intervals.first().getStart();
         int end   = intervals.last().getEnd();
         final boolean neg  = intervals.first().isNegativeStrand();
@@ -417,7 +417,7 @@ public class IntervalList implements Iterable<Interval> {
 
             // Write out the intervals
             for (final Interval interval : this) {
-                out.write(interval.getSequence());
+                out.write(interval.getContig());
                 out.write('\t');
                 out.write(format.format(interval.getStart()));
                 out.write('\t');
@@ -554,7 +554,7 @@ public class IntervalList implements Iterable<Interval> {
 
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for(final Interval i : list.uniqued().getIntervals()){
-            map.add(list.getHeader().getSequenceIndex(i.getSequence()),i);
+            map.add(list.getHeader().getSequenceIndex(i.getContig()),i);
         }
 
         // a counter to supply newly-created intervals with a name
@@ -654,8 +654,8 @@ class IntervalCoordinateComparator implements Comparator<Interval> {
     }
 
     public int compare(final Interval lhs, final Interval rhs) {
-        final int lhsIndex = this.header.getSequenceIndex(lhs.getSequence());
-        final int rhsIndex = this.header.getSequenceIndex(rhs.getSequence());
+        final int lhsIndex = this.header.getSequenceIndex(lhs.getContig());
+        final int rhsIndex = this.header.getSequenceIndex(rhs.getContig());
         int retval = lhsIndex - rhsIndex;
 
         if (retval == 0) retval = lhs.getStart() - rhs.getStart();

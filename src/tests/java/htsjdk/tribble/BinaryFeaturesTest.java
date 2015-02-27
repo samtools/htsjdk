@@ -45,7 +45,7 @@ public class BinaryFeaturesTest {
             Assert.assertTrue(bit.hasNext(), "Original iterator has items, but there's no items left in binary iterator");
             final Feature bf = bit.next();
 
-            Assert.assertEquals(bf.getChr(), of.getChr(), "Chr not equal between original and binary encoding");
+            Assert.assertEquals(bf.getContig(), of.getContig(), "Chr not equal between original and binary encoding");
             Assert.assertEquals(bf.getStart(), of.getStart(), "Start not equal between original and binary encoding");
             Assert.assertEquals(bf.getEnd(), of.getEnd(), "End not equal between original and binary encoding");
         }

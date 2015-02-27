@@ -315,7 +315,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 readNextRecord();
             } catch (IOException e) {
                 throw new RuntimeException("Unable to read the next record, the last record was at " +
-                        ret.getChr() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
+                        ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;
         }
@@ -390,7 +390,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
             // The feature chromosome might not be the query chromosome, due to alias definitions.  We assume
             // the chromosome of the first record is correct and record it here.  This is not pretty.
-            chrAlias = (currentRecord == null ? chr : currentRecord.getChr());
+            chrAlias = (currentRecord == null ? chr : currentRecord.getContig());
 
         }
 
@@ -405,7 +405,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 readNextRecord();
             } catch (IOException e) {
                 throw new RuntimeException("Unable to read the next record, the last record was at " +
-                        ret.getChr() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
+                        ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;
         }
@@ -450,7 +450,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                         if (f == null) {
                             continue;   // Skip
                         }
-                        if ((chrAlias != null && !f.getChr().equals(chrAlias)) || f.getStart() > end) {
+                        if ((chrAlias != null && !f.getContig().equals(chrAlias)) || f.getStart() > end) {
                             if (blockIterator.hasNext()) {
                                 advanceBlock();
                                 continue;

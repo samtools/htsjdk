@@ -25,6 +25,8 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.SimpleInterval;
 import htsjdk.samtools.util.StringUtil;
 
 import java.lang.reflect.Array;
@@ -80,7 +82,7 @@ import java.util.List;
  * @author alecw@broadinstitute.org
  * @author mishali.naik@intel.com
  */
-public class SAMRecord implements Cloneable
+public class SAMRecord implements Cloneable, Locatable
 {
     /**
      * Alignment score for a good alignment, but where computing a Phred-score is not feasible. 
@@ -1177,6 +1179,48 @@ public class SAMRecord implements Cloneable
      */
     protected SAMBinaryTagAndValue getBinaryAttributes() {
         return mAttributes;
+    }
+
+    /**
+     * Interval covering the aligned, unclipped, bases in this read as reported by getAlignmentStart() and getAlignmentEnd()
+     * @return the aligned interval or null if getReadUnmappedFlag()
+     */
+    public SimpleInterval getLocation() {
+        if (getReadUnmappedFlag()) {
+            return null;
+        } else {
+            return new SimpleInterval(getReferenceName(), getAlignmentStart(), getAlignmentEnd());
+        }
+    }
+
+    /**
+     * @return reference name, null if this is unmapped
+     */
+    @Override
+    public String getContig() {
+        if( getReadUnmappedFlag()) {
+            return null;
+        } else {
+            return getReferenceName();
+        }
+    }
+
+    /**
+     * an alias of {@link #getAlignmentStart()
+     * @return 1-based inclusive leftmost position of the clipped sequence, or 0 if there is no position.
+     */
+    @Override
+    public int getStart() {
+        return getAlignmentStart();
+    }
+
+    /**
+     * an alias of {@link #getAlignmentEnd()}
+     * @return 1-based inclusive rightmost position of the clipped sequence, or 0 read if unmapped.
+     */
+    @Override
+    public int getEnd() {
+        return getAlignmentEnd();
     }
 
     /**

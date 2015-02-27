@@ -55,7 +55,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
             lastPosition = 0;
         } else {
             final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
-            lastSequenceIndex = header.getSequenceIndex((lastInterval.getSequence()));
+            lastSequenceIndex = header.getSequenceIndex((lastInterval.getContig()));
             lastPosition = lastInterval.getEnd();
         }
         intervalIterator = new PeekableIterator<Interval>(uniqueIntervals.iterator());
@@ -91,7 +91,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
             currentBitSet.clear();
             while (intervalIterator.hasNext()) {
                 final Interval interval = intervalIterator.peek();
-                final int nextSequenceIndex = header.getSequenceIndex(interval.getSequence());
+                final int nextSequenceIndex = header.getSequenceIndex(interval.getContig());
                 if (nextSequenceIndex < sequenceIndex) {
                     intervalIterator.next();
                 } else if (nextSequenceIndex == sequenceIndex) {

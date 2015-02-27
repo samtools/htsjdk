@@ -55,7 +55,7 @@ public class OverlapDetector<T> {
 
     /** Adds a mapping to the set of mappings against which to match candidates. */
     public void addLhs(T object, Interval interval) {
-        Object seqId = interval.getSequence();
+        Object seqId = interval.getContig();
 
         IntervalTree<Set<T>> tree = this.cache.get(seqId);
         if (tree == null) {
@@ -106,7 +106,7 @@ public class OverlapDetector<T> {
     public Collection<T> getOverlaps(Interval rhs)  {
         Collection<T> matches = new ArrayList<T>();
 
-        Object seqId = rhs.getSequence();
+        Object seqId = rhs.getContig();
         IntervalTree<Set<T>> tree = this.cache.get(seqId);
         int start = rhs.getStart() + this.rhsBuffer;
         int end = rhs.getEnd() - this.rhsBuffer;

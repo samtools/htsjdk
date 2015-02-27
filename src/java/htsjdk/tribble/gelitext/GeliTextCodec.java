@@ -49,7 +49,9 @@ import java.util.Arrays;
  * likelihoods        the array of all genotype likelihoods, in ordinal ordering (array of 10 doubles, in ordinal order)
  *
  * @author aaron
+ * @deprecated This is deprecated and unsupported.
  */
+@Deprecated
 public class GeliTextCodec extends AsciiFeatureCodec<GeliTextFeature> {
     public GeliTextCodec() {
         super(GeliTextFeature.class);

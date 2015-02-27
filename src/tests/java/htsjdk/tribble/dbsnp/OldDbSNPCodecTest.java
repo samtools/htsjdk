@@ -22,6 +22,7 @@ import java.util.Iterator;
  *         <p/>
  *         tests out the basics of a dbsnp feature
  */
+@Deprecated
 public class OldDbSNPCodecTest {
 
     public static final File testFile = new File(TestUtils.DATA_DIR + "basicDbSNP.dbsnp");

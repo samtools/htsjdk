@@ -35,7 +35,9 @@ import java.util.Arrays;
  *         This is a feature for the Geli text object, which is the text version of the Geli binary genotyping format.
  *
  * @author aaron
+ * @deprecated this is deprecated and no longer supported
  */
+@Deprecated
 public class GeliTextFeature implements Feature {
 
     private final String contig;                // the contig name
@@ -82,7 +84,13 @@ public class GeliTextFeature implements Feature {
     }
 
     /** Return the features reference sequence name, e.g chromosome or contig */
+    @Deprecated
     public String getChr() {
+        return getContig();
+    }
+
+    @Override
+    public String getContig() {
         return this.contig;
     }
 
@@ -142,4 +150,5 @@ public class GeliTextFeature implements Feature {
         if (!(Math.abs(LODBestToNext - other.LODBestToNext) < Epsilon)) return false;
         return true;
     }
+
 }
