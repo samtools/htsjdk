@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.PositionalOutputStream;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
@@ -179,41 +180,5 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
             final String length = String.valueOf(seq.getSequenceLength());
             indexCreator.addProperty(contig,length);
         }
-    }
-}
-
-/**
- * Wraps output stream in a manner which keeps track of the position within the file and allowing writes
- * at arbitrary points
- */
-final class PositionalOutputStream extends OutputStream implements LocationAware
-{
-    private final OutputStream out;
-    private long position = 0;
-
-    public PositionalOutputStream(final OutputStream out) {
-        this.out = out;
-    }
-
-    public final void write(final byte[] bytes) throws IOException {
-        write(bytes, 0, bytes.length);
-    }
-
-    public final void write(final byte[] bytes, final int startIndex, final int numBytes) throws IOException {
-        position += numBytes;
-        out.write(bytes, startIndex, numBytes);
-    }
-
-    public final void write(final int c)  throws IOException {
-        position++;
-        out.write(c);
-    }
-
-    public final long getPosition() { return position; }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-        out.close();
     }
 }
