@@ -39,6 +39,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 
 /**
  * this class writes VCF files
@@ -107,7 +108,16 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
             outputStream = positionalOutputStream;
         }
     }
-
+    
+    /** return true is the underlying stream is a PrintStream and 
+     * its checkError returned true. Used to stop linux pipelines 
+     */
+    @Override
+    public boolean checkError() {
+        return (getOutputStream() instanceof PrintStream) && 
+                PrintStream.class.cast(getOutputStream()).checkError();
+    }
+    
     public OutputStream getOutputStream() {
         return outputStream;
     }
