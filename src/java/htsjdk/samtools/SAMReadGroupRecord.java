@@ -52,6 +52,13 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String PLATFORM_UNIT_TAG = "PU";
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
 
+    /* Platform values for the @RG-PL tag */
+    public enum PlatformValue {
+        CAPILLARY, LS454, ILLUMINA,
+        SOLID, HELICOS, IONTORRENT, 
+        ONT, PACBIO
+    }
+
     public static final Set<String> STANDARD_TAGS =
             new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
                     DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
