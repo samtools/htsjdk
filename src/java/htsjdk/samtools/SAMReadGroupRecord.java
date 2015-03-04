@@ -39,21 +39,24 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 {
     private String mReadGroupId = null;
     public static final String READ_GROUP_ID_TAG = "ID";
-    public static final String READ_GROUP_SAMPLE_TAG = "SM";
-    public static final String PREDICTED_MEDIAN_INSERT_SIZE_TAG = "PI";
+    public static final String SEQUENCING_CENTER_TAG = "CN";
+    public static final String DESCRIPTION_TAG = "DS";
     public static final String DATE_RUN_PRODUCED_TAG = "DT";
     public static final String FLOW_ORDER_TAG = "FO";
     public static final String KEY_SEQUENCE_TAG = "KS";
-    public static final String DESCRIPTION_TAG = "DS";
-    public static final String PLATFORM_UNIT_TAG = "PU";
-    public static final String SEQUENCING_CENTER_TAG = "CN";
-    public static final String PLATFORM_TAG = "PL";
     public static final String LIBRARY_TAG = "LB";
+    public static final String PROGRAM_GROUP_TAG = "PG";
+    public static final String PREDICTED_MEDIAN_INSERT_SIZE_TAG = "PI";
+    public static final String PLATFORM_TAG = "PL";
+    public static final String PLATFORM_MODEL_TAG = "PM";
+    public static final String PLATFORM_UNIT_TAG = "PU";
+    public static final String READ_GROUP_SAMPLE_TAG = "SM";
 
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, READ_GROUP_SAMPLE_TAG, LIBRARY_TAG,
-        DESCRIPTION_TAG, PLATFORM_UNIT_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, SEQUENCING_CENTER_TAG,
-            DATE_RUN_PRODUCED_TAG, PLATFORM_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG));
+            new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
+                    DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
+                    PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
+                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));
 
     public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
 
@@ -117,6 +120,12 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         setAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG, (predictedMedianInsertSize == null? null: predictedMedianInsertSize.toString())); 
     }
 
+    public String getProgramGroup() { return getAttribute(PROGRAM_GROUP_TAG); }
+    public void setProgramGroup(final String programGroup) { setAttribute(PROGRAM_GROUP_TAG, programGroup); }
+
+    public String getPlatformModel() { return getAttribute(PLATFORM_MODEL_TAG); }
+    public void setPlatformModel(final String platformModel) { setAttribute(PLATFORM_MODEL_TAG, platformModel); }
+    
     /**
      * @return true if this == that except for the read group ID, which is arbitrary
      */
