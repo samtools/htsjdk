@@ -520,8 +520,17 @@ public class SamFileValidator {
                         "A platform (PL) attribute was not found for read group ",
                         readGroupID));
             }
+            else { 
+                // NB: cannot be null, so not catching a NPE
+                try {
+                    SAMReadGroupRecord.PlatformValue.valueOf(platformValue.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    addError(new SAMValidationError(Type.INVALID_PLATFORM_VALUE, 
+                            "The platform (PL) attribute (" + platformValue + ") + was not one of the valid values for read group ",
+                            readGroupID));
+                }
+            }
         }
-
     }
 
     private void addError(final SAMValidationError error) {

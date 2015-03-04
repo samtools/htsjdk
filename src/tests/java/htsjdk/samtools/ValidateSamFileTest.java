@@ -374,6 +374,14 @@ public class ValidateSamFileTest {
         final Histogram<String> results = executeValidation(samReader, null);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISSING_PLATFORM_VALUE.getHistogramString()).getValue(), 1.0);
     }
+    
+    @Test
+    public void testPlatformInvalid() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+                .open((new File(TEST_DATA_DIR, "invalid_platform_unit.sam")));
+        final Histogram<String> results = executeValidation(samReader, null);
+        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_PLATFORM_VALUE.getHistogramString()).getValue(), 1.0);
+    }
 
     @Test
     public void testDuplicateRGIDs() throws Exception {
