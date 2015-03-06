@@ -24,6 +24,9 @@ public class Defaults {
     /** Buffer size, in bytes, used whenever reading/writing files or streams.  Default = 128k. */
     public static final int BUFFER_SIZE;
 
+    /** The output format of the flag field when reading and writing SAM text. */
+    public static final SamFlagField SAM_FLAG_FIELD_FORMAT;
+
     /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
      * this == BUFFER_SIZE
@@ -75,6 +78,7 @@ public class Defaults {
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
         EBI_REFERENCE_SEVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
+        SAM_FLAG_FIELD_FORMAT = SamFlagField.DEFAULT;
     }
 
     /** Gets a string system property, prefixed with "samjdk." using the default if the property does not exist. */

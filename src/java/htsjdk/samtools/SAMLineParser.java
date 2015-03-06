@@ -69,6 +69,7 @@ public class SAMLineParser {
     private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
     private final File mFile;
+    private final SamFlagField samFlagField;
 
     private final TextTagCodec tagCodec = new TextTagCodec();
 
@@ -106,6 +107,7 @@ public class SAMLineParser {
                 samFileReader, samFile);
     }
 
+
     /**
      * Public constructor.
      *
@@ -119,6 +121,23 @@ public class SAMLineParser {
                          final ValidationStringency validationStringency,
                          final SAMFileHeader samFileHeader, final SamReader samFileReader,
                          final File samFile) {
+        this(samRecordFactory, validationStringency, samFileHeader, samFileReader, samFile, SamFlagField.DEFAULT);
+    }
+
+    /**
+     * Public constructor.
+     *
+     * @param samRecordFactory     SamRecord Factory
+     * @param validationStringency validation stringency
+     * @param samFileHeader        SAM file header
+     * @param samFileReader        SAM file reader For passing to SAMRecord.setFileSource, may be null.
+     * @param samFile              SAM file being read (for error message only, may be null)
+     */
+    public SAMLineParser(final SAMRecordFactory samRecordFactory,
+                         final ValidationStringency validationStringency,
+                         final SAMFileHeader samFileHeader, final SamReader samFileReader,
+                         final File samFile,
+                         final SamFlagField samFlagField) {
 
         if (samRecordFactory == null)
             throw new NullPointerException("The SamRecordFactory must be set");
@@ -138,6 +157,8 @@ public class SAMLineParser {
 
         // Can be null
         this.mFile = samFile;
+        
+        this.samFlagField = samFlagField;
     }
 
     /**
@@ -164,6 +185,17 @@ public class SAMLineParser {
         final int ret;
         try {
             ret = Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            throw reportFatalErrorParsingLine("Non-numeric value in "
+                    + fieldName + " column");
+        }
+        return ret;
+    }
+    
+    private int parseFlag(final String s, final String fieldName) {
+        final int ret;
+        try {
+            ret = samFlagField.parse(s);
         } catch (NumberFormatException e) {
             throw reportFatalErrorParsingLine("Non-numeric value in "
                     + fieldName + " column");
@@ -232,7 +264,7 @@ public class SAMLineParser {
         samRecord.setHeader(this.mFileHeader);
         samRecord.setReadName(mFields[QNAME_COL]);
 
-        final int flags = parseInt(mFields[FLAG_COL], "FLAG");
+        final int flags = parseFlag(mFields[FLAG_COL], "FLAG");
         samRecord.setFlags(flags);
 
         String rname = mFields[RNAME_COL];

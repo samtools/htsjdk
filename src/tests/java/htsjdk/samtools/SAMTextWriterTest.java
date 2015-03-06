@@ -41,11 +41,10 @@ public class SAMTextWriterTest {
         ret.addFrag("readD", 20, 140, false);
         return ret;
     }
-
-    @Test
-    public void testBasic() throws Exception {
+    
+    public void testBasicHelper(final SamFlagField samFlagField) throws Exception {
         final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
-        SamReader inputSAM = recordSetBuilder.getSamReader();
+        SamReader inputSAM = recordSetBuilder.getSamReader(samFlagField);
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
         final Map<String, Object> tagMap = new HashMap<String, Object>();
@@ -56,7 +55,7 @@ public class SAMTextWriterTest {
         for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
             inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
         }
-        final SAMFileWriter samWriter = new SAMFileWriterFactory().makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
+        final SAMFileWriter samWriter = new SAMFileWriterFactory().setSamFlagFieldOutput(samFlagField).makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
         for (final SAMRecord samRecord : inputSAM) {
             samWriter.addAlignment(samRecord);
         }
@@ -69,7 +68,7 @@ public class SAMTextWriterTest {
             inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
         }
 
-        final SamReader newSAM = SamReaderFactory.makeDefault().open(samFile);
+        final SamReader newSAM = SamReaderFactory.makeDefault().setSamFlagFieldInput(samFlagField).open(samFile);
         Assert.assertEquals(newSAM.getFileHeader(), inputSAM.getFileHeader());
         final Iterator<SAMRecord> inputIt = inputSAM.iterator();
         final Iterator<SAMRecord> newSAMIt = newSAM.iterator();
@@ -91,5 +90,20 @@ public class SAMTextWriterTest {
         }
         Assert.assertFalse(newSAMIt.hasNext());
         inputSAM.close();
+    }
+
+    @Test
+    public void testBasic() throws Exception {
+        testBasicHelper(SamFlagField.DEFAULT);
+    }
+
+    @Test
+    public void testBasicHexFlag() throws Exception {
+        testBasicHelper(SamFlagField.HEXADECIMAL);
+    }
+
+    @Test
+    public void testBasicStringFlag() throws Exception {
+        testBasicHelper(SamFlagField.STRING);
     }
 }

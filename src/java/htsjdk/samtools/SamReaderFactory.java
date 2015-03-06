@@ -97,6 +97,8 @@ public abstract class SamReaderFactory {
         DEFAULT = new SamReaderFactoryImpl(Option.DEFAULTS, defaultValidationStringency, DefaultSAMRecordFactory.getInstance());
     }
 
+    abstract public SamReaderFactory setSamFlagFieldInput(final SamFlagField samFlagFieldInput);
+
     /** Creates a copy of the default {@link SamReaderFactory}. */
     public static SamReaderFactory makeDefault() {
         return SamReaderFactoryImpl.copyOf(DEFAULT);
@@ -117,6 +119,7 @@ public abstract class SamReaderFactory {
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
         private ReferenceSource referenceSource;
+        private SamFlagField samFlagFieldInput = SamFlagField.NONE;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
@@ -205,6 +208,13 @@ public abstract class SamReaderFactory {
             this.validationStringency = validationStringency;
             return this;
         }
+        
+        @Override
+        public SamReaderFactory setSamFlagFieldInput(final SamFlagField samFlagFieldInput) {
+            this.samFlagFieldInput = samFlagFieldInput;
+            return this;
+        }
+        
 
         @Override
         public SamReader open(final SamInputResource resource) {
@@ -213,6 +223,14 @@ public abstract class SamReaderFactory {
                 final InputResource data = resource.data();
                 final InputResource indexMaybe = resource.indexMaybe();
                 final boolean indexDefined = indexMaybe != null;
+
+                /**
+                 * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldInput value has not been set.  This should
+                 * be SamFlagField.DEFAULT when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+                 */
+                if (samFlagFieldInput == SamFlagField.NONE) {
+                    samFlagFieldInput = Defaults.SAM_FLAG_FIELD_FORMAT;
+                }
 
                 final InputResource.Type type = data.type();
                 if (type == InputResource.Type.URL) {
@@ -258,9 +276,9 @@ public abstract class SamReaderFactory {
                             primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, validationStringency, this.samRecordFactory);
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
-                        primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                        primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samFlagFieldInput, this.samRecordFactory);
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
-                        primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                        primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samFlagFieldInput, this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
                             sourceFile = null;
@@ -279,7 +297,7 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             throw new RuntimeException("Cannot use index file with textual SAM file");
                         }
-                        primitiveSamReader = new SAMTextReader(bufferedStream, sourceFile, validationStringency, this.samRecordFactory);
+                        primitiveSamReader = new SAMTextReader(bufferedStream, sourceFile, validationStringency, this.samFlagFieldInput, this.samRecordFactory);
                     }
                 }
 

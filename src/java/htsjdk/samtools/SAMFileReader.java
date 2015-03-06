@@ -54,6 +54,7 @@ import java.util.zip.GZIPInputStream;
 public class SAMFileReader implements SamReader, SamReader.Indexing {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
+    private static SamFlagField samFlagFieldInput = SamFlagField.NONE;
 
     public static ValidationStringency getDefaultValidationStringency() {
         return defaultValidationStringency;
@@ -70,6 +71,11 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
     public static void setDefaultValidationStringency(final ValidationStringency defaultValidationStringency) {
         SAMFileReader.defaultValidationStringency = defaultValidationStringency;
     }
+
+    public static void setSamFlagFieldInput(final SamFlagField samFlagFieldInput) {
+        SAMFileReader.samFlagFieldInput = samFlagFieldInput;
+    }
+
 
     /**
      * Returns the SAMSequenceDictionary from the provided FASTA.
@@ -643,8 +649,21 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
 
     private void init(final InputStream stream, File file, final File indexFile, final boolean eagerDecode,
                       final ValidationStringency validationStringency) {
+        init(stream, file, indexFile, eagerDecode, validationStringency, SAMFileReader.samFlagFieldInput);
+    }
+
+    private void init(final InputStream stream, File file, final File indexFile, final boolean eagerDecode,
+                      final ValidationStringency validationStringency, SamFlagField samFlagFieldInput) {
         if (stream != null && file != null) throw new IllegalArgumentException("stream and file are mutually exclusive");
         this.samFile = file;
+
+        /**
+         * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldInput value has not been set.  This should
+         * be SamFlagField.DEFAULT when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+         */
+        if (samFlagFieldInput == SamFlagField.NONE) {
+            samFlagFieldInput = Defaults.SAM_FLAG_FIELD_FORMAT;
+        }
 
         try {
             BufferedInputStream bufferedStream;
@@ -663,10 +682,10 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
                 }
             } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                 mIsBinary = false;
-                mReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                mReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, samFlagFieldInput, this.samRecordFactory);
             } else if (isGzippedSAMFile(bufferedStream)) {
                 mIsBinary = false;
-                mReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                mReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, samFlagFieldInput, this.samRecordFactory);
             } else if (SamStreams.isCRAMFile(bufferedStream)) {
                 if (file == null || !file.isFile()) {
                     file = null;
@@ -681,7 +700,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
                     throw new RuntimeException("Cannot use index file with textual SAM file");
                 }
                 mIsBinary = false;
-                mReader = new SAMTextReader(bufferedStream, file, validationStringency, this.samRecordFactory);
+                mReader = new SAMTextReader(bufferedStream, file, validationStringency, samFlagFieldInput, this.samRecordFactory);
             } else {
                 bufferedStream.close();
                 throw new SAMFormatException("Unrecognized file format");

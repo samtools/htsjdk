@@ -539,12 +539,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         fillInBases(rec);
     }
 
+    public SamReader getSamReader() {
+        return getSamReader(SamFlagField.DEFAULT);
+    }
+
     /**
      * Creates samFileReader from the data in instance of this class
      *
      * @return SAMFileReader
      */
-    public SamReader getSamReader() {
+    public SamReader getSamReader(final SamFlagField samFlagField) {
 
         final File tempFile;
 
@@ -562,7 +566,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
         w.close();
 
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(tempFile);
+        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).setSamFlagFieldInput(samFlagField).open(tempFile);
         tempFile.deleteOnExit();
 
         return reader;

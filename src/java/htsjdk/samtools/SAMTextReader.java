@@ -45,6 +45,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     private File mFile = null;
 
     private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
+    
+    private SamFlagField samFlagFieldInput;
 
     /**
      * Add information about the origin (reader and position) to SAM records.
@@ -56,10 +58,11 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      *
      * @param stream Need not be buffered, as this class provides buffered reading.
      */
-    public SAMTextReader(final InputStream stream, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
+    public SAMTextReader(final InputStream stream, final ValidationStringency validationStringency, final SamFlagField samFlagFieldInput, final SAMRecordFactory factory) {
         mReader = new BufferedLineReader(stream);
         this.validationStringency = validationStringency;
         this.samRecordFactory = factory;
+        this.samFlagFieldInput = samFlagFieldInput;
         readHeader();
     }
 
@@ -69,8 +72,8 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      * @param stream Need not be buffered, as this class provides buffered reading.
      * @param file   For error reporting only.
      */
-    public SAMTextReader(final InputStream stream, final File file, final ValidationStringency validationStringency, final SAMRecordFactory factory) {
-        this(stream, validationStringency, factory);
+    public SAMTextReader(final InputStream stream, final File file, final ValidationStringency validationStringency, final SamFlagField samFlagFieldInput, final SAMRecordFactory factory) {
+        this(stream, validationStringency, samFlagFieldInput, factory);
         mFile = file;
     }
 
@@ -212,7 +215,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     private class RecordIterator implements CloseableIterator<SAMRecord> {
 
         private final SAMLineParser parser = new SAMLineParser(samRecordFactory, validationStringency,
-                mFileHeader, mParentReader, mFile);
+                mFileHeader, mParentReader, mFile, samFlagFieldInput);
 
         private RecordIterator() {
             if (mReader == null) {

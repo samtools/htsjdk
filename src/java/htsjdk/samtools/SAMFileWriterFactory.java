@@ -29,7 +29,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -48,7 +47,7 @@ public class SAMFileWriterFactory {
     private int asyncOutputBufferSize = AsyncSAMFileWriter.DEFAULT_QUEUE_SIZE;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private File tmpDir;
-
+    private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
 
     private Integer maxRecordsInRam;
 
@@ -147,6 +146,15 @@ public class SAMFileWriterFactory {
     }
 
     /**
+     * Set the flag output format only when writing text.
+     * Default value: [[htsjdk.samtools.SAMTextWriter.samFlagFieldOutput.DEFAULT]]
+     */
+    public SAMFileWriterFactory setSamFlagFieldOutput(final SamFlagField samFlagFieldOutput) {
+        this.samFlagFieldOutput = samFlagFieldOutput;
+        return this;
+    }
+
+    /**
      * Create a BAMFileWriter that is ready to receive SAMRecords.  Uses default compression level.
      *
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
@@ -208,11 +216,18 @@ public class SAMFileWriterFactory {
      * @param outputFile where to write the output.
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
+        /**
+         * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldOutput value has not been set.  This should
+         * be SamFlagField.DEFAULT when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+         */
+        if (samFlagFieldOutput == SamFlagField.NONE) {
+            samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
+        }
         try {
             final SAMTextWriter ret = this.createMd5File
                     ? new SAMTextWriter(new Md5CalculatingOutputStream(new FileOutputStream(outputFile, false),
-                    new File(outputFile.getAbsolutePath() + ".md5")))
-                    : new SAMTextWriter(outputFile);
+                    new File(outputFile.getAbsolutePath() + ".md5")), samFlagFieldOutput)
+                    : new SAMTextWriter(outputFile, samFlagFieldOutput);
             ret.setSortOrder(header.getSortOrder(), presorted);
             if (maxRecordsInRam != null) {
                 ret.setMaxRecordsInRam(maxRecordsInRam);
@@ -236,7 +251,14 @@ public class SAMFileWriterFactory {
      *                  caller must buffer if desired.  Note that PrintStream is buffered.
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, false, new SAMTextWriter(stream));
+        /**
+         * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldOutput value has not been set.  This should
+         * be samFlagFieldOutput.DEFAULT when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+         */
+        if (samFlagFieldOutput == SamFlagField.NONE) {
+            samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
+        }
+        return initWriter(header, presorted, false, new SAMTextWriter(stream, samFlagFieldOutput));
     }
 
     /**
