@@ -69,6 +69,7 @@ public class SAMLineParser {
     private final ValidationStringency validationStringency;
     private final SAMFileHeader mFileHeader;
     private final File mFile;
+    private SamFlagField samFlagField = null;
 
     private final TextTagCodec tagCodec = new TextTagCodec();
 
@@ -170,6 +171,22 @@ public class SAMLineParser {
         }
         return ret;
     }
+    
+    private int parseFlag(final String s, final String fieldName) {
+        final int ret;
+        
+        if (null == this.samFlagField) this.samFlagField = SamFlagField.getSamFlagField(s);
+        try {
+            ret = samFlagField.parse(s);
+        } catch (NumberFormatException e) {
+            throw reportFatalErrorParsingLine("Non-numeric value in "
+                    + fieldName + " column");
+        } catch (SAMFormatException e) {
+            throw reportFatalErrorParsingLine("Error in " + fieldName + " column: " + e.getMessage(), e);
+        }
+        
+        return ret;
+    }
 
     private void validateReferenceName(final String rname, final String fieldName) {
         if (rname.equals("=")) {
@@ -232,7 +249,7 @@ public class SAMLineParser {
         samRecord.setHeader(this.mFileHeader);
         samRecord.setReadName(mFields[QNAME_COL]);
 
-        final int flags = parseInt(mFields[FLAG_COL], "FLAG");
+        final int flags = parseFlag(mFields[FLAG_COL], "FLAG");
         samRecord.setFlags(flags);
 
         String rname = mFields[RNAME_COL];
@@ -430,6 +447,10 @@ public class SAMLineParser {
 
     private RuntimeException reportFatalErrorParsingLine(final String reason) {
         return new SAMFormatException(makeErrorString(reason));
+    }
+
+    private RuntimeException reportFatalErrorParsingLine(final String reason, final Throwable throwable) {
+        return new SAMFormatException(makeErrorString(reason), throwable);
     }
 
     private void reportErrorParsingLine(final String reason) {
