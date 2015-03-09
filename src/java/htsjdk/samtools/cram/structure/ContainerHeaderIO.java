@@ -1,72 +1,88 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.common.NullOutputStream;
-import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.cram.io.CRC32OutputStream;
+import htsjdk.samtools.cram.io.CramArray;
+import htsjdk.samtools.cram.io.CramInt;
+import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.io.LTF8;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ContainerHeaderIO {
+class ContainerHeaderIO {
 
-	public boolean readContainerHeader(Container c, InputStream is) throws IOException {
-		byte[] peek = new byte[4];
-		int ch = is.read();
-		if (ch == -1)
-			return false;
+    public boolean readContainerHeader(final Container container, final InputStream inputStream)
+            throws IOException {
+        return readContainerHeader(2, container, inputStream);
+    }
 
-		peek[0] = (byte) ch;
-		for (int i = 1; i < peek.length; i++) {
-			ch = is.read();
-			if (ch == -1)
-				throw new RuntimeException("Incomplete or broken stream.");
-			peek[i] = (byte) ch;
-		}
+    public boolean readContainerHeader(final int major, final Container container, final InputStream inputStream)
+            throws IOException {
+        final byte[] peek = new byte[4];
+        int character = inputStream.read();
+        if (character == -1)
+            return false;
 
-		c.containerByteSize = ByteBufferUtils.int32(peek);
-		c.sequenceId = ByteBufferUtils.readUnsignedITF8(is);
-		c.alignmentStart = ByteBufferUtils.readUnsignedITF8(is);
-		c.alignmentSpan = ByteBufferUtils.readUnsignedITF8(is);
-		c.nofRecords = ByteBufferUtils.readUnsignedITF8(is);
-		c.globalRecordCounter = ByteBufferUtils.readUnsignedLTF8(is);
-		c.bases = ByteBufferUtils.readUnsignedLTF8(is);
-		c.blockCount = ByteBufferUtils.readUnsignedITF8(is);
-		c.landmarks = ByteBufferUtils.array(is);
+        peek[0] = (byte) character;
+        for (int i = 1; i < peek.length; i++) {
+            character = inputStream.read();
+            if (character == -1)
+                throw new RuntimeException("Incomplete or broken stream.");
+            peek[i] = (byte) character;
+        }
 
-		return true;
-	}
+        container.containerByteSize = CramInt.int32(peek);
+        container.sequenceId = ITF8.readUnsignedITF8(inputStream);
+        container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
+        container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
+        container.nofRecords = ITF8.readUnsignedITF8(inputStream);
+        container.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
+        container.bases = LTF8.readUnsignedLTF8(inputStream);
+        container.blockCount = ITF8.readUnsignedITF8(inputStream);
+        container.landmarks = CramArray.array(inputStream);
+        if (major >= 3)
+            container.checksum = CramInt.int32(inputStream);
 
-	public int writeContainerHeader(Container c, OutputStream os) throws IOException {
-		int len = ByteBufferUtils.writeInt32(c.containerByteSize, os);
-		len += ByteBufferUtils.writeUnsignedITF8(c.sequenceId, os);
-		len += ByteBufferUtils.writeUnsignedITF8(c.alignmentStart, os);
-		len += ByteBufferUtils.writeUnsignedITF8(c.alignmentSpan, os);
-		len += ByteBufferUtils.writeUnsignedITF8(c.nofRecords, os);
-		len += ByteBufferUtils.writeUnsignedLTF8(c.globalRecordCounter, os);
-		len += ByteBufferUtils.writeUnsignedLTF8(c.bases, os);
-		len += ByteBufferUtils.writeUnsignedITF8(c.blockCount, os);
-		len += ByteBufferUtils.write(c.landmarks, os);
+        return true;
+    }
 
-		return len;
-	}
+    public int writeContainerHeader(final int major, final Container container, final OutputStream outputStream)
+            throws IOException {
+        final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
 
-	public int sizeOfContainerHeader(Container c) throws IOException {
-		NullOutputStream nos = new NullOutputStream();
-		return writeContainerHeader(c, nos);
-	}
+        int length = (CramInt.writeInt32(container.containerByteSize, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.sequenceId, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.alignmentStart, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.alignmentSpan, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.nofRecords, crc32OutputStream) + 7) / 8;
+        length += (LTF8.writeUnsignedLTF8(container.globalRecordCounter, crc32OutputStream) + 7) / 8;
+        length += (LTF8.writeUnsignedLTF8(container.bases, crc32OutputStream) + 7) / 8;
+        length += (ITF8.writeUnsignedITF8(container.blockCount, crc32OutputStream) + 7) / 8;
+        length += (CramArray.write(container.landmarks, crc32OutputStream) + 7) / 8;
+
+        if (major >= 3) {
+            outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
+            length += 4 * 8;
+        }
+
+        return length;
+    }
 }

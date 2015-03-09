@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -36,6 +38,38 @@ import java.util.List;
 import java.util.Map;
 
 public class ReadTagTest {
+
+    @Test
+    public void test () {
+        SAMFileHeader h = new SAMFileHeader();
+        SAMRecord r = new SAMRecord(h);
+        r.setAttribute("OQ", "A:SOME:RANDOM:NONSENSE".getBytes());
+        r.setAttribute("XA", 1333123);
+        r.setAttribute("XB", (byte) 31);
+        r.setAttribute("XB", 'Q');
+        r.setAttribute("XC", "A STRING");
+
+        int intValue = 1123123123;
+        byte[] data = ReadTag.writeSingleValue((byte) 'i', intValue, false);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        Object value = ReadTag.readSingleValue((byte) 'i', byteBuffer);
+        Assert.assertEquals (((Integer) value).intValue(), intValue);
+
+        String sValue = "value";
+        data = ReadTag.writeSingleValue((byte) 'Z', sValue, false);
+        byteBuffer = ByteBuffer.wrap(data);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        value = ReadTag.readSingleValue((byte) 'Z', byteBuffer);
+        Assert.assertEquals(sValue, value);
+
+        byte[] baValue = "value".getBytes();
+        data = ReadTag.writeSingleValue((byte) 'B', baValue, false);
+        byteBuffer = ByteBuffer.wrap(data);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        value = ReadTag.readSingleValue((byte) 'B', byteBuffer);
+        Assert.assertEquals((byte[]) value, baValue);
+    }
 
     @Test
     public void testParallelReadTag() throws Exception {
@@ -75,7 +109,7 @@ public class ReadTagTest {
         final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
         final ByteBuffer byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        final Object readValue = ReadTag.readSingleValue(tagType, byteBuffer, null);
+        final Object readValue = ReadTag.readSingleValue(tagType, byteBuffer);
         Assert.assertEquals(readValue, originalValue);
     }
 

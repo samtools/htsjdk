@@ -1,21 +1,33 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.io.ByteBufferUtils;
+import htsjdk.samtools.BinaryTagCodec;
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMTagUtil;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.io.CramArray;
+import htsjdk.samtools.cram.io.ITF8;
+import htsjdk.samtools.cram.io.InputStreamUtils;
+import htsjdk.samtools.cram.io.LTF8;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -24,105 +36,118 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 
-public class SliceIO {
+class SliceIO {
+    private static final Log log = Log.getInstance(SliceIO.class);
 
-	public void readSliceHeadBlock(Slice s, InputStream is) throws IOException {
-		s.headerBlock = new Block(is, true, true);
-		parseSliceHeaderBlock(s);
-	}
+    private static void readSliceHeadBlock(final int major, final Slice slice, final InputStream inputStream) throws IOException {
+        slice.headerBlock = Block.readFromInputStream(major, inputStream);
+        parseSliceHeaderBlock(major, slice);
+    }
 
-	public void parseSliceHeaderBlock(Slice s) throws IOException {
-		InputStream is = new ByteArrayInputStream(s.headerBlock.getRawContent());
-		// is = new DebuggingInputStream (is) ;
+    private static void parseSliceHeaderBlock(final int major, final Slice slice) throws IOException {
+        final InputStream inputStream = new ByteArrayInputStream(slice.headerBlock.getRawContent());
 
-		s.sequenceId = ByteBufferUtils.readUnsignedITF8(is);
-		s.alignmentStart = ByteBufferUtils.readUnsignedITF8(is);
-		s.alignmentSpan = ByteBufferUtils.readUnsignedITF8(is);
-		s.nofRecords = ByteBufferUtils.readUnsignedITF8(is);
-		s.globalRecordCounter = ByteBufferUtils.readUnsignedLTF8(is);
-		s.nofBlocks = ByteBufferUtils.readUnsignedITF8(is);
+        slice.sequenceId = ITF8.readUnsignedITF8(inputStream);
+        slice.alignmentStart = ITF8.readUnsignedITF8(inputStream);
+        slice.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
+        slice.nofRecords = ITF8.readUnsignedITF8(inputStream);
+        slice.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
+        slice.nofBlocks = ITF8.readUnsignedITF8(inputStream);
 
-		s.contentIDs = ByteBufferUtils.array(is);
-		s.embeddedRefBlockContentID = ByteBufferUtils.readUnsignedITF8(is);
-		s.refMD5 = new byte[16];
-		ByteBufferUtils.readFully(s.refMD5, is);
-	}
+        slice.contentIDs = CramArray.array(inputStream);
+        slice.embeddedRefBlockContentID = ITF8.readUnsignedITF8(inputStream);
+        slice.refMD5 = new byte[16];
+        InputStreamUtils.readFully(inputStream, slice.refMD5, 0, slice.refMD5.length);
 
-	public byte[] createSliceHeaderBlockContent(Slice s) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.alignmentStart, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.alignmentSpan, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.nofRecords, baos);
-		ByteBufferUtils.writeUnsignedLTF8(s.globalRecordCounter, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.nofBlocks, baos);
+        final byte[] bytes = InputStreamUtils.readFully(inputStream);
 
-		s.contentIDs = new int[s.external.size()];
-		int i = 0;
-		for (int id : s.external.keySet())
-			s.contentIDs[i++] = id;
-		ByteBufferUtils.write(s.contentIDs, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.embeddedRefBlockContentID, baos);
-		baos.write(s.refMD5 == null ? new byte[16]: s.refMD5);
-		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
-		ByteBufferUtils.writeUnsignedITF8(s.sequenceId, baos);
+        if (major >= CramVersions.CRAM_v3.major) {
+            slice.sliceTags = BinaryTagCodec.readTags(bytes, 0, bytes.length, ValidationStringency.DEFAULT_STRINGENCY);
 
-		return baos.toByteArray();
-	}
+            SAMBinaryTagAndValue tags = slice.sliceTags;
+            while (tags != null) {
+                log.debug(String.format("Found slice tag: %s", SAMTagUtil.getSingleton().makeStringTag(tags.tag)));
+                tags = tags.getNext();
+            }
+        }
+    }
 
-	public void createSliceHeaderBlock(Slice s) throws IOException {
-		byte[] rawContent = createSliceHeaderBlockContent(s);
-		s.headerBlock = new Block(BlockCompressionMethod.RAW,
-				BlockContentType.MAPPED_SLICE, 0, rawContent, null);
-	}
+    private static byte[] createSliceHeaderBlockContent(final int major, final Slice slice) throws IOException {
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ITF8.writeUnsignedITF8(slice.sequenceId, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.alignmentStart, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.alignmentSpan, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.nofRecords, byteArrayOutputStream);
+        LTF8.writeUnsignedLTF8(slice.globalRecordCounter, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.nofBlocks, byteArrayOutputStream);
 
-	public void readSliceBlocks(Slice s, boolean uncompressBlocks,
-			InputStream is) throws IOException {
-		s.external = new HashMap<Integer, Block>();
-		for (int i = 0; i < s.nofBlocks; i++) {
-			Block b1 = new Block(is, true, uncompressBlocks);
+        slice.contentIDs = new int[slice.external.size()];
+        int i = 0;
+        for (final int id : slice.external.keySet())
+            slice.contentIDs[i++] = id;
+        CramArray.write(slice.contentIDs, byteArrayOutputStream);
+        ITF8.writeUnsignedITF8(slice.embeddedRefBlockContentID, byteArrayOutputStream);
+        byteArrayOutputStream.write(slice.refMD5 == null ? new byte[16] : slice.refMD5);
 
-			switch (b1.contentType) {
-			case CORE:
-				s.coreBlock = b1;
-				break;
-			case EXTERNAL:
-				if (s.embeddedRefBlockContentID == b1.contentId)
-					s.embeddedRefBlock = b1;
-				s.external.put(b1.contentId, b1);
-				break;
+        if (major >= CramVersions.CRAM_v3.major) {
+            if (slice.sliceTags != null) {
+                final BinaryCodec binaryCoded = new BinaryCodec(byteArrayOutputStream);
+                final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCoded);
+                SAMBinaryTagAndValue samBinaryTagAndValue = slice.sliceTags;
+                do {
+                    log.debug("Writing slice tag: " + SAMTagUtil.getSingleton().makeStringTag(samBinaryTagAndValue.tag));
+                    binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
+                } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
+                // BinaryCodec doesn't seem to cache things.
+                // In any case, not calling baseCodec.close() because it's behaviour is
+                // irrelevant here.
+            }
+        }
 
-			default:
-				throw new RuntimeException(
-						"Not a slice block, content type id "
-								+ b1.contentType.name());
-			}
-		}
-	}
+        return byteArrayOutputStream.toByteArray();
+    }
 
-	public void write(Slice s, OutputStream os) throws IOException {
+    private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) throws IOException {
+        slice.external = new HashMap<Integer, Block>();
+        for (int i = 0; i < slice.nofBlocks; i++) {
+            final Block block = Block.readFromInputStream(major, inputStream);
 
-		s.nofBlocks = 1 + s.external.size() + (s.embeddedRefBlock == null ? 0
-				: 1);
+            switch (block.getContentType()) {
+                case CORE:
+                    slice.coreBlock = block;
+                    break;
+                case EXTERNAL:
+                    if (slice.embeddedRefBlockContentID == block.getContentId()) slice.embeddedRefBlock = block;
+                    slice.external.put(block.getContentId(), block);
+                    break;
 
-		{
-			s.contentIDs = new int[s.external.size()];
-			int i = 0;
-			for (int id : s.external.keySet())
-				s.contentIDs[i] = id;
-		}
+                default:
+                    throw new RuntimeException("Not a slice block, content type id " + block.getContentType().name());
+            }
+        }
+    }
 
-		createSliceHeaderBlock(s);
+    public static void write(final int major, final Slice slice, final OutputStream outputStream) throws IOException {
 
-		s.headerBlock.write(os);
-		s.coreBlock.write(os);
-		for (Block e : s.external.values())
-			e.write(os);
-	}
+        slice.nofBlocks = 1 + slice.external.size() + (slice.embeddedRefBlock == null ? 0 : 1);
 
-	public void read(Slice s, InputStream is) throws IOException {
-		readSliceHeadBlock(s, is);
-		readSliceBlocks(s, true, is);
-	}
+        {
+            slice.contentIDs = new int[slice.external.size()];
+            final int i = 0;
+            for (final int id : slice.external.keySet())
+                slice.contentIDs[i] = id;
+        }
+
+        slice.headerBlock = Block.buildNewSliceHeaderBlock(createSliceHeaderBlockContent(major, slice));
+        slice.headerBlock.write(major, outputStream);
+
+        slice.coreBlock.write(major, outputStream);
+        for (final Block block : slice.external.values())
+            block.write(major, outputStream);
+    }
+
+    public static void read(final int major, final Slice slice, final InputStream inputStream) throws IOException {
+        readSliceHeadBlock(major, slice, inputStream);
+        readSliceBlocks(major, slice, inputStream);
+    }
 }
