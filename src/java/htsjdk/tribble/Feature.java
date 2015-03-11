@@ -24,24 +24,18 @@
 package htsjdk.tribble;
 
 
+import htsjdk.samtools.util.Locatable;
+
 /**
- * Represents a locus on a reference sequence.   The coordinate conventions for start and end are implementation
- * dependent, no specific contact is specified here.
+ * Represents a locus on a reference sequence.   All Features are expected to return 1-based closed-ended intervals.
  */
-public interface Feature {
+public interface Feature extends Locatable {
 
     /**
      * Return the features reference sequence name, e.g chromosome or contig
+     * @deprecated use getContig() instead
      */
+    @Deprecated
     public String getChr();
 
-    /**
-     * Return the start position
-     */
-    public int getStart();
-
-    /**
-     * Return the end position
-     */
-    public int getEnd();
 }

@@ -61,7 +61,7 @@ public class SamRecordIntervalIteratorFactory {
                 stopAfterPosition = -1;
             } else {
                 final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
-                stopAfterSequence = samReader.getFileHeader().getSequenceIndex(lastInterval.getSequence());
+                stopAfterSequence = samReader.getFileHeader().getSequenceIndex(lastInterval.getContig());
                 stopAfterPosition = lastInterval.getEnd();
             }
             final IntervalFilter intervalFilter = new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
@@ -70,7 +70,7 @@ public class SamRecordIntervalIteratorFactory {
             final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
             for (int i = 0; i < queryIntervals.length; ++i) {
                 final Interval inputInterval = uniqueIntervals.get(i);
-                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getSequence()),
+                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
                         inputInterval.getStart(), inputInterval.getEnd());
             }
             return samReader.queryOverlapping(queryIntervals);

@@ -32,6 +32,7 @@ package htsjdk.tribble.gelitext;
  *
  * @author aaron
  */
+@Deprecated
 public enum DiploidGenotype {
     AA, AC, AG, AT, CC, CG, CT, GG, GT, TT;
 
@@ -53,6 +54,7 @@ public enum DiploidGenotype {
     }
 }
 
+@Deprecated
 class DiploidGenotypeException extends RuntimeException {
     DiploidGenotypeException(String s) {
         super(s);

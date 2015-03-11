@@ -21,6 +21,7 @@ import java.util.Iterator;
  *         <p/>
  *         test out the geli text source codec and feature
  */
+@Deprecated
 public class GeliTextTest {
     public static final File testFile = new File(TestUtils.DATA_DIR + "testGeliText.txt");
     public static Index index;

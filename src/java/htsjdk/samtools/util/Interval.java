@@ -32,10 +32,7 @@ import java.util.Collection;
  *
  * @author Tim Fennell
  */
-public class Interval implements Comparable<Interval>, Cloneable {
-    private final String sequence;
-    private final int start;
-    private final int end;
+public class Interval extends SimpleInterval implements Comparable<Interval>, Cloneable, Locatable {
     private final boolean negativeStrand;
     private final String name;
 
@@ -63,24 +60,18 @@ public class Interval implements Comparable<Interval>, Cloneable {
      *
      */
     public Interval(final String sequence, final int start, final int end, final boolean negative, final String name) {
-        this.sequence = sequence;
-        this.start = start;
-        this.end = end;
+        super(sequence, start, end);
         this.negativeStrand = negative;
         this.name = name;
-        if (this.end < this.start-1) {
-            throw new IllegalArgumentException("start must be less than or equal to end!");
-        }
     }
 
-    /** Gets the name of the sequence on which the interval resides. */
-    public String getSequence() { return sequence; }
+    /** Gets the name of the sequence on which the interval resides.
+     * This is a simple alias of getContig()
+     * @deprecated use getContig() instead
+     */
+    @Deprecated
+    public String getSequence() { return getContig(); }
 
-    /** Gets the 1-based start position of the interval on the sequence. */
-    public int getStart() { return start; }
-
-    /** Gets the 1-based closed-ended end position of the interval on the sequence. */
-    public int getEnd() { return end; }
 
     /** Returns true if the interval is on the negative strand, otherwise false. */
     public boolean isNegativeStrand() { return this.negativeStrand; }
@@ -93,8 +84,8 @@ public class Interval implements Comparable<Interval>, Cloneable {
 
     /** Returns true if this interval overlaps the other interval, otherwise false. */
     public boolean intersects(final Interval other) {
-        return  (this.getSequence().equals(other.getSequence()) &&
-                 CoordMath.overlaps(this.start, this.end, other.start, other.end));
+        return  (this.getContig().equals(other.getContig()) &&
+                 CoordMath.overlaps(this.getStart(), this.getEnd(), other.getStart(), other.getEnd()));
     }
 
     public int getIntersectionLength(final Interval other) {
@@ -108,9 +99,9 @@ public class Interval implements Comparable<Interval>, Cloneable {
     /** Returns a new Interval that represents the intersection between the two intervals. */
     public Interval intersect(final Interval that) {
         if (!intersects(that)) throw new IllegalArgumentException(that + " does not intersect " + this);
-        return new Interval(this.sequence,
-                            Math.max(this.start, that.start),
-                            Math.min(this.end, that.end),
+        return new Interval(this.getContig(),
+                            Math.max(this.getStart(), that.getStart()),
+                            Math.min(this.getEnd(), that.getEnd()),
                             this.negativeStrand,
                             this.name + " intersection " + that.name);
     }
@@ -118,16 +109,16 @@ public class Interval implements Comparable<Interval>, Cloneable {
 
     /** Returns true if this interval overlaps the other interval, otherwise false. */
     public boolean abuts(final Interval other) {
-        return this.getSequence().equals(other.getSequence()) &&
-               (this.start == other.end + 1 || other.start == this.end + 1);
+        return this.getContig().equals(other.getContig()) &&
+               (this.getStart() == other.getEnd() + 1 || other.getStart() == this.getEnd() + 1);
     }
 
     /** Gets the length of this interval. */
-    public int length() { return this.end - this.start + 1; }
+    public int length() { return this.getEnd() - this.getStart() + 1; }
 
     /** Returns a new interval that is padded by the amount of bases specified on either side. */
     public Interval pad(final int left, final int right) {
-        return new Interval(this.sequence, this.start-left, this.end+right, this.negativeStrand, this.name);
+        return new Interval(this.getContig(), this.getStart()-left, this.getEnd()+right, this.negativeStrand, this.name);
     }
 
     /** Counts the total number of bases a collection of intervals. */
@@ -148,13 +139,13 @@ public class Interval implements Comparable<Interval>, Cloneable {
     public int compareTo(final Interval that) {
         if (that == null) return -1; // nulls last
 
-        int result = this.sequence.compareTo(that.sequence);
+        int result = this.getContig().compareTo(that.getContig());
         if (result == 0) {
-            if (this.start == that.start) {
-                result = this.end - that.end;
+            if (this.getStart() == that.getStart()) {
+                result = this.getEnd() - that.getEnd();
             }
             else {
-                result = this.start - that.start;
+                result = this.getStart() - that.getStart();
             }
         }
 
@@ -173,14 +164,14 @@ public class Interval implements Comparable<Interval>, Cloneable {
 
     @Override
     public int hashCode() {
-        int result = sequence.hashCode();
-        result = 31 * result + start;
-        result = 31 * result + end;
+        int result = getContig().hashCode();
+        result = 31 * result + getStart();
+        result = 31 * result + getEnd();
         return result;
     }
 
     public String toString() {
-        return getSequence() + ":" + start + "-" + end + "\t" + (negativeStrand ? '-' : '+') + "\t" + ((null == name) ? '.' : name);
+        return getContig() + ":" + getStart() + "-" + getEnd() + "\t" + (negativeStrand ? '-' : '+') + "\t" + ((null == name) ? '.' : name);
     }
 
     @Override
@@ -188,4 +179,5 @@ public class Interval implements Comparable<Interval>, Cloneable {
         try { return (Interval) super.clone(); }
         catch (CloneNotSupportedException cnse) { throw new SAMException("That's unpossible", cnse); }
     }
+
 }

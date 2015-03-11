@@ -35,7 +35,9 @@ import htsjdk.tribble.readers.LineIterator;
  * Example format:
  * 585 chr1 433 433 rs56289060  0  +  - - -/C  genomic  insertion unknown 0  0  unknown  between  1
  * 585 chr1 491 492 rs55998931  0  +  C C C/T  genomic  single   unknown 0 0 unknown exact 1
+ * @deprecated This is deprecated and unsupported.
  */
+@Deprecated
 public class OldDbSNPCodec extends AsciiFeatureCodec<OldDbSNPFeature> {
 
     // the number of tokens we expect to parse from a dbSNP line

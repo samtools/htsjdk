@@ -197,7 +197,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                 readNextRecord();
             } catch (IOException e) {
                 throw new RuntimeException("Unable to read the next record, the last record was at " +
-                        ret.getChr() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
+                        ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;
 

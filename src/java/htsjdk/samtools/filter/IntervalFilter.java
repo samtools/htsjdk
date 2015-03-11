@@ -79,7 +79,7 @@ public class IntervalFilter implements SamRecordFilter {
     private void advanceInterval() {
         if (intervals.hasNext()) {
             currentInterval = intervals.next();
-            currentSequenceIndex = samHeader.getSequenceIndex(currentInterval.getSequence());
+            currentSequenceIndex = samHeader.getSequenceIndex(currentInterval.getContig());
         } else {
             currentInterval = null;
         }

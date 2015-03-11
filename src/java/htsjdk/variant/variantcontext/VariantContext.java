@@ -295,6 +295,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
         }
     }
 
+
     // ---------------------------------------------------------------------------------------------------------
     //
     // validation mode
@@ -1145,7 +1146,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
 
     public void validateReferenceBases(final Allele reportedReference, final Allele observedReference) {
         if ( reportedReference != null && !reportedReference.basesMatch(observedReference) ) {
-            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getChr(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
+            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getContig(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
         }
     }
 
@@ -1153,7 +1154,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
         if ( rsIDs != null && hasID() ) {
             for ( String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR) ) {
                 if ( id.startsWith("rs") && !rsIDs.contains(id) )
-                    throw new TribbleException.InternalCodecException(String.format("the rsID %s for the record at position %s:%d is not in dbSNP", id, getChr(), getStart()));
+                    throw new TribbleException.InternalCodecException(String.format("the rsID %s for the record at position %s:%d is not in dbSNP", id, getContig(), getStart()));
             }
         }
     }
@@ -1185,13 +1186,13 @@ public class VariantContext implements Feature { // to enable tribble integratio
             observedAlleles.remove(Allele.NO_CALL);
 
         if ( reportedAlleles.size() != observedAlleles.size() )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getChr(), getStart()));
+            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
 
         int originalSize = reportedAlleles.size();
         // take the intersection and see if things change
         observedAlleles.retainAll(reportedAlleles);
         if ( observedAlleles.size() != originalSize )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getChr(), getStart()));
+            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
     }
 
     public void validateChromosomeCounts() {
@@ -1203,7 +1204,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
             int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
             int observedAN = getCalledChrCount();
             if ( reportedAN != observedAN )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getChr(), getStart(), reportedAN, observedAN));
+                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAN, observedAN));
         }
 
         // AC
@@ -1223,19 +1224,19 @@ public class VariantContext implements Feature { // to enable tribble integratio
             if ( getAttribute(VCFConstants.ALLELE_COUNT_KEY) instanceof List ) {
                 final List reportedACs = (List)getAttribute(VCFConstants.ALLELE_COUNT_KEY);
                 if ( observedACs.size() != reportedACs.size() )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have the correct number of values for the record at position %s:%d, %d vs. %d", getChr(), getStart(), reportedACs.size(), observedACs.size()));
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have the correct number of values for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedACs.size(), observedACs.size()));
                 for (int i = 0; i < observedACs.size(); i++) {
                     // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
                     final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
                     if ( reportedAC != observedACs.get(i) )
-                        throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getChr(), getStart(), reportedAC, observedACs.get(i)));
+                        throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
                 }
             } else {
                 if ( observedACs.size() != 1 )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have enough values for the record at position %s:%d", getChr(), getStart()));
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag doesn't have enough values for the record at position %s:%d", getContig(), getStart()));
                 int reportedAC = Integer.valueOf(getAttribute(VCFConstants.ALLELE_COUNT_KEY).toString());
                 if ( reportedAC != observedACs.get(0) )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %d vs. %d", getChr(), getStart(), reportedAC, observedACs.get(0)));
+                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAC, observedACs.get(0)));
             }
         }
     }
@@ -1267,7 +1268,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
             final int end = getAttributeAsInt(VCFConstants.END_KEY, -1);
             assert end != -1;
             if ( end != getEnd() ) {
-                final String message = "Badly formed variant context at location " + getChr() + ":"
+                final String message = "Badly formed variant context at location " + getContig() + ":"
                         + getStart() + "; getEnd() was " + getEnd()
                         + " but this VariantContext contains an END key with value " + end;
                 if ( GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END ) {
@@ -1524,7 +1525,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
                 final int expSize = format.getCount(this);
                 if ( obsSize != expSize ) {
                     throw new TribbleException.InvalidHeader("Discordant field size detected for field " +
-                            field + " at " + getChr() + ":" + getStart() + ".  Field had " + obsSize + " values " +
+                            field + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values " +
                             "but the header says this should have " + expSize + " values based on header record " +
                             format);
                 }
@@ -1574,7 +1575,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
                         final boolean b = Boolean.valueOf(string) || string.equals("1");
                         if ( b == false )
                             throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
-                             + " as seen at " + getChr() + ":" + getStart());
+                                    + " as seen at " + getContig() + ":" + getStart());
                         return b;
                     case String:    return string;
                     case Integer:   return Integer.valueOf(string);
@@ -1605,14 +1606,33 @@ public class VariantContext implements Feature { // to enable tribble integratio
     // tribble integration routines -- not for public consumption
     //
     // ---------------------------------------------------------------------------------------------------------
+    @Deprecated
     public String getChr() {
+        return getContig();
+    }
+
+    @Override
+    public String getContig() {
         return contig;
     }
 
+    /**
+     * @return 1-based inclusive start position of the Variant
+     * INDEL events usually start on the first unaltered reference base before the INDEL
+     * @warning be aware that the start position of the VariantContext is defined in terms of the start position specified in the
+     * underlying vcf file, VariantContexts representing the same biological event may have different start positions depending on the
+     * specifics of the vcf file they are derived from
+     */
     public int getStart() {
         return (int)start;
     }
 
+    /**
+     * @return 1-based closed end position of the Variant
+     * If the END info field is specified that value is returned, otherwise the end is the start + reference allele length - 1.
+     * For VariantContexts with a single alternate allele, if that allele is an insertion, the end position will be on the reference base
+     * before the insertion event.  If the single alt allele is a deletion, the end will be on the final deleted reference base.
+     */
     public int getEnd() {
         return (int)stop;
     }

@@ -36,7 +36,10 @@ import htsjdk.tribble.annotation.Strand;
  * bin	chrom	chromStart	chromEnd	rsID	score	strand	refNCBI	refUCSC	observed	molType	class	valid	avHet	avHetSE	func	locType	weight
  * 585 chr1 433 433 rs56289060  0  +  - - -/C  genomic  insertion unknown 0  0  unknown  between  1
  * 585 chr1 491 492 rs55998931  0  +  C C C/T  genomic  single   unknown 0 0 unknown exact 1
+ *
+ * @deprecated This is deprecated and unsupported.
  */
+@Deprecated
 public class OldDbSNPFeature implements Feature {
 
     private String contig;                      // our contig location
@@ -82,14 +85,23 @@ public class OldDbSNPFeature implements Feature {
      * the required getting and setter methods
      */
 
+    @Deprecated
+    @Override
     public String getChr() {
         return contig;
     }
 
+    @Override
+    public String getContig() {
+        return contig;
+    }
+
+    @Override
     public int getStart() {
         return start;
     }
 
+    @Override
     public int getEnd() {
         return stop;
     }

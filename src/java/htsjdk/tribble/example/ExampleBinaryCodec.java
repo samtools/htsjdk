@@ -24,7 +24,7 @@
 package htsjdk.tribble.example;
 
 import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.BasicFeature;
+import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -63,7 +63,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
         String contig = dis.readUTF();
         int start = dis.readInt();
         int stop = dis.readInt();
-        return new BasicFeature(contig, start, stop);
+        return new SimpleFeature(contig, start, stop);
     }
 
     @Override
