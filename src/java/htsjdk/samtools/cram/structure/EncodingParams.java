@@ -15,7 +15,6 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.io.BitwiseUtils;
 
 import java.util.Arrays;
 
