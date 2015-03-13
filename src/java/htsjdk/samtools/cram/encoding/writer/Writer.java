@@ -260,8 +260,9 @@ public class Writer {
                 qcArray.writeData(r.qualityScores);
             }
         } else {
-            for (byte b : r.readBases)
-                bc.writeData(b);
+            if (!r.isUnknownBases())
+                for (byte b : r.readBases)
+                    bc.writeData(b);
             if (r.isForcePreserveQualityScores()) {
                 qcArray.writeData(r.qualityScores);
             }

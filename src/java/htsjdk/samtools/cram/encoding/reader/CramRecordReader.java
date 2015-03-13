@@ -15,6 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.read_features.Bases;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
@@ -176,14 +177,21 @@ public class CramRecordReader extends AbstractReader {
                     r.qualityScores = qs;
                 }
             } else {
-                byte[] bases = new byte[r.readLength];
-                for (int i = 0; i < bases.length; i++)
-                    bases[i] = bc.readData();
-                r.readBases = bases;
+                if (r.isUnknownBases()) {
+                    r.readBases = SAMRecord.NULL_SEQUENCE;
+                    r.qualityScores=SAMRecord.NULL_QUALS;
+                }
+                else {
+                    byte[] bases = new byte[r.readLength];
+                    for (int i = 0; i < bases.length; i++)
+                        bases[i] = bc.readData();
+                    r.readBases = bases;
 
-                if (r.isForcePreserveQualityScores()) {
-                    byte[] qs = qcArray.readDataArray(r.readLength);
-                    r.qualityScores = qs;
+
+                    if (r.isForcePreserveQualityScores()) {
+                        byte[] qs = qcArray.readDataArray(r.readLength);
+                        r.qualityScores = qs;
+                    }
                 }
             }
 

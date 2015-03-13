@@ -44,6 +44,7 @@ public class CramCompressionRecord {
     public static final int FORCE_PRESERVE_QS_FLAG = 0x1;
     public static final int DETACHED_FLAG = 0x2;
     public static final int HAS_MATE_DOWNSTREAM_FLAG = 0x4;
+    public static final int UNKNOWN_BASES = 0x8;
 
     // sequential index of the record in a stream:
     public int index = 0;
@@ -305,6 +306,14 @@ public class CramCompressionRecord {
     public void setForcePreserveQualityScores(boolean forcePreserveQualityScores) {
         compressionFlags = forcePreserveQualityScores ? compressionFlags | FORCE_PRESERVE_QS_FLAG : compressionFlags &
                 ~FORCE_PRESERVE_QS_FLAG;
+    }
+    public boolean isUnknownBases() {
+        return (compressionFlags & UNKNOWN_BASES) != 0;
+    }
+
+    public void setUnknownBases(boolean unknownBases) {
+        compressionFlags = unknownBases ? compressionFlags | UNKNOWN_BASES : compressionFlags &
+                ~UNKNOWN_BASES;
     }
 
     public boolean isSupplementary() {

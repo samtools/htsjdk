@@ -167,7 +167,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
         List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(samRecords.size());
 
-        sam2CramRecordFactory = new Sam2CramRecordFactory(refSeqIndex, refs, samFileHeader);
+        sam2CramRecordFactory = new Sam2CramRecordFactory(refSeqIndex, refs, samFileHeader, cramVersion);
         sam2CramRecordFactory.preserveReadNames = preserveReadNames;
         sam2CramRecordFactory.captureAllTags = captureAllTags;
         sam2CramRecordFactory.captureTags.addAll(captureTags);

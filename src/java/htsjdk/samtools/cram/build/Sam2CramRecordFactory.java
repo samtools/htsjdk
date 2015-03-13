@@ -22,6 +22,8 @@ import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.HardClip;
@@ -55,6 +57,7 @@ public class Sam2CramRecordFactory {
     public final static byte ignorePositionsWithQualityScore = -1;
 
     private byte[] refBases;
+    private Version version;
     private byte[] refSNPs;
 
     private static Log log = Log.getInstance(Sam2CramRecordFactory.class);
@@ -83,8 +86,9 @@ public class Sam2CramRecordFactory {
     private long baseCount = 0;
     private long featureCount = 0;
 
-    public Sam2CramRecordFactory(int samSequenceIndex, byte[] refBases, SAMFileHeader samFileHeader) {
+    public Sam2CramRecordFactory(int samSequenceIndex, byte[] refBases, SAMFileHeader samFileHeader, Version version) {
         this.refBases = refBases;
+        this.version = version;
 
         List<SAMReadGroupRecord> readGroups = samFileHeader.getReadGroups();
         for (int i = 0; i < readGroups.size(); i++) {
@@ -141,6 +145,8 @@ public class Sam2CramRecordFactory {
         cramRecord.readBases = record.getReadBases();
         cramRecord.qualityScores = record.getBaseQualities();
         landedTotalScores += cramRecord.readLength;
+        if (version.compatibleWith(CramVersions.CRAM_v3))
+            cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
 
         readTagList.clear();
         if (captureAllTags) {
