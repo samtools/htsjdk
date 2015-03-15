@@ -96,7 +96,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
      */
     public CRAMFileReader(final File cramFile, final File indexFile,
                           final ReferenceSource referenceSource) {
-        if (file == null)
+        if (cramFile == null)
             throw new IllegalArgumentException("File is required.");
 
         this.file = cramFile;

@@ -68,7 +68,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private Set<String> captureTags = new TreeSet<String>();
     private Set<String> ignoreTags = new TreeSet<String>();
 
-    public CRAMFileWriter(OutputStream os, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
+    public  CRAMFileWriter(OutputStream os, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
         this.os = os;
         this.source = source;
         this.samFileHeader = samFileHeader;
