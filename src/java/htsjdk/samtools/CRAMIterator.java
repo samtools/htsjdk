@@ -20,6 +20,7 @@ import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
+import htsjdk.samtools.cram.encoding.read_features.Padding;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -39,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -60,6 +62,8 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private ContainerParser parser;
     private ReferenceSource referenceSource;
+
+    private Iterator<SAMRecord> iterator = Collections.emptyIterator();
 
     private ValidationStringency validationStringency = ValidationStringency.SILENT;
 
@@ -174,28 +178,41 @@ public class CRAMIterator implements SAMRecordIterator {
             records.add(s);
         }
         cramRecords.clear();
+        iterator = records.iterator();
+    }
+
+    public void jumpWithinContainerToPos(int pos) {
+        if (!hasNext()) return;
+        int i=0;
+        for (SAMRecord record:records) {
+            if (record.getAlignmentStart() >= pos) {
+                iterator = records.listIterator(i);
+                return;
+            }
+            i++;
+        }
     }
 
     @Override
     public boolean hasNext() {
         if (container != null && container.isEOF()) return false;
-        if (container == null || recordCounter >= records.size()) {
+        if (!iterator.hasNext()) {
             try {
                 nextContainer();
-                if (records.isEmpty())
-                    return false;
             } catch (Exception e) {
                 throw new RuntimeEOFException(e);
             }
         }
 
-        nextRecord = records.get(recordCounter++);
-        return true;
+        if (records.isEmpty())
+            return false;
+        else
+            return true;
     }
 
     @Override
     public SAMRecord next() {
-        return nextRecord;
+        return iterator.next();
     }
 
     @Override

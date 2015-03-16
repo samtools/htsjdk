@@ -263,12 +263,14 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
                 c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
                 if (c.alignmentStart + c.alignmentSpan > start) {
                     s.seek(containerOffset);
+                    si.jumpWithinContainerToPos(start);
                     return si;
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
+        it.jumpWithinContainerToPos(start);
         return it;
     }
 

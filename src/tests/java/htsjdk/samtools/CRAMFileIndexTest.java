@@ -26,7 +26,7 @@ public class CRAMFileIndexTest {
     private byte[] baiBytes;
     private ReferenceSource source;
 
-    @Test
+//    @Test
     public void test() throws IOException {
 //        File cramFile = File.createTempFile("cram", "tmp");
 //        cramFile.deleteOnExit();
@@ -47,6 +47,40 @@ public class CRAMFileIndexTest {
         Assert.assertTrue(iterator.hasNext());
         SAMRecord record = iterator.next();
         System.out.println(record.getSAMString());
+    }
+
+    @Test
+    public void scan() {
+        SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
+        SAMRecordIterator samRecordIterator = samReader.iterator();
+        int counter = 0 ;
+        while (samRecordIterator.hasNext()) {
+            SAMRecord samRecord = samRecordIterator.next();
+            String s1 = samRecord.getSAMString();
+
+            if (counter==23) {
+
+                CRAMFileReader reader = new CRAMFileReader(cramFile, indexFile, source);
+                CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(samRecord.getReferenceName(), samRecord.getAlignmentStart());
+                Assert.assertTrue(iterator.hasNext(), counter + ": " + s1);
+                SAMRecord cramRecord = iterator.next();
+
+                String s2 = cramRecord.getSAMString();
+
+                Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), s1 + "\n" + s2);
+                Assert.assertEquals(samRecord.getAlignmentStart(), cramRecord.getAlignmentStart(), s1 + "\n" + s2);
+
+//            samRecord.setAttribute(SAMTagUtil.getSingleton().NM, null);
+//            SAMRecord cramRecord = iterator.next() ;
+//            cramRecord.setAttribute(SAMTagUtil.getSingleton().NM, null);
+//            cramRecord.setInferredInsertSize(samRecord.getInferredInsertSize());
+//
+
+//            Assert.assertEquals(s1, s2, s1+"\n"+s2);
+                reader.close();
+            }
+            counter++ ;
+        }
     }
 
     @BeforeTest
@@ -87,16 +121,17 @@ public class CRAMFileIndexTest {
         do {
             try {
                 long offset = is.getCount();
-                Container c = ContainerIO.readContainer(cramHeader.getVersion(), is);
-                if (c == null)
+                container = ContainerIO.readContainer(cramHeader.getVersion(), is);
+                if (container == null || container.isEOF())
                     break;
-                c.offset = offset;
+                container.offset = offset;
 
                 int i = 0;
-                for (Slice slice : c.slices) {
+                for (Slice slice : container.slices) {
                     slice.containerOffset = offset;
                     slice.index = i++;
                     indexer.processAlignment(slice);
+                    System.out.println(slice.toString());
                 }
 
             } catch (IOException e) {
