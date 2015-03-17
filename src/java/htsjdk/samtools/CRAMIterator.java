@@ -56,14 +56,14 @@ public class CRAMIterator implements SAMRecordIterator {
     private CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-    private Container container;
+    public Container container;
     private long containerOffset = 0;
     private SamReader mReader;
 
     private ContainerParser parser;
     private ReferenceSource referenceSource;
 
-    private Iterator<SAMRecord> iterator = Collections.emptyIterator();
+    private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
 
     private ValidationStringency validationStringency = ValidationStringency.SILENT;
 
@@ -185,9 +185,17 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!hasNext()) return;
         int i=0;
         for (SAMRecord record:records) {
-            if (record.getAlignmentStart() >= pos) {
-                iterator = records.listIterator(i);
-                return;
+
+            if (pos <=0) {
+                if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
+                    iterator = records.listIterator(i);
+                    return;
+                }
+            } else {
+                if (record.getAlignmentStart() >= pos) {
+                    iterator = records.listIterator(i);
+                    return;
+                }
             }
             i++;
         }

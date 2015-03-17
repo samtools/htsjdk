@@ -117,6 +117,15 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
         getIterator();
     }
 
+    public CRAMFileReader(final InputStream is, final SeekableStream indexInputStream,
+                          final ReferenceSource referenceSource) throws IOException {
+        this.is=is;
+        this.referenceSource = referenceSource ;
+
+        it = new CRAMIterator(is, referenceSource) ;
+        mIndex = new CachingBAMFileIndex(indexInputStream, it.getSAMFileHeader().getSequenceDictionary());
+    }
+
     public SAMRecordIterator iterator() {
         return getIterator();
     }
@@ -244,33 +253,58 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
         if (filePointers == null || filePointers.length == 0)
             return emptyIterator;
 
-        final SeekableStream s = getSeekableStreamOrFailWithRTE();
-        final CRAMIterator si;
-        try {
-            s.seek(0);
-            si = new CRAMIterator(s, referenceSource);
-            si.setValidationStringency(validationStringency);
-            it = si;
-        } catch (final IOException e) {
-            throw new RuntimeEOFException(e);
-        }
-
         Container c;
+        final SeekableStream s = getSeekableStreamOrFailWithRTE();
         for (int i = 0; i < filePointers.length; i += 2) {
             final long containerOffset = filePointers[i] >>> 16;
+
             try {
-                s.seek(containerOffset);
-                c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
-                if (c.alignmentStart + c.alignmentSpan > start) {
+                if (s.position() != containerOffset || it.container == null) {
                     s.seek(containerOffset);
-                    si.jumpWithinContainerToPos(start);
-                    return si;
+                    c = ContainerIO.readContainerHeader(it.getCramHeader().getVersion().major, s);
+                    if (c.alignmentStart + c.alignmentSpan > start) {
+                        s.seek(containerOffset);
+                        it.jumpWithinContainerToPos(start);
+                        return it;
+                    }
+                } else {
+                    c = it.container ;
+                    if (c.alignmentStart + c.alignmentSpan > start) {
+                        it.jumpWithinContainerToPos(start);
+                        return it;
+                    }
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        it.jumpWithinContainerToPos(start);
+
+//        final CRAMIterator si;
+//        try {
+//            s.seek(0);
+//            si = new CRAMIterator(s, referenceSource);
+//            si.setValidationStringency(validationStringency);
+//            it = si;
+//        } catch (final IOException e) {
+//            throw new RuntimeEOFException(e);
+//        }
+//
+//
+//        for (int i = 0; i < filePointers.length; i += 2) {
+//            final long containerOffset = filePointers[i] >>> 16;
+//            try {
+//                s.seek(containerOffset);
+//                c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
+//                if (c.alignmentStart + c.alignmentSpan > start) {
+//                    s.seek(containerOffset);
+//                    si.jumpWithinContainerToPos(start);
+//                    return si;
+//                }
+//            } catch (final IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        it.jumpWithinContainerToPos(start);
         return it;
     }
 
@@ -284,8 +318,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
             s.seek(0);
             si = new CRAMIterator(s, referenceSource);
             si.setValidationStringency(validationStringency);
-            s.seek(startOfLastLinearBin);
+            s.seek(startOfLastLinearBin >>> 16);
             it = si;
+            it.jumpWithinContainerToPos(-1);
         } catch (final IOException e) {
             throw new RuntimeEOFException(e);
         }
