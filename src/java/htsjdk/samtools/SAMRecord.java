@@ -26,7 +26,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
-import htsjdk.samtools.util.SimpleInterval;
 import htsjdk.samtools.util.StringUtil;
 
 import java.lang.reflect.Array;
@@ -1179,18 +1178,6 @@ public class SAMRecord implements Cloneable, Locatable
      */
     protected SAMBinaryTagAndValue getBinaryAttributes() {
         return mAttributes;
-    }
-
-    /**
-     * Interval covering the aligned, unclipped, bases in this read as reported by getAlignmentStart() and getAlignmentEnd()
-     * @return the aligned interval or null if getReadUnmappedFlag()
-     */
-    public SimpleInterval getLocation() {
-        if (getReadUnmappedFlag()) {
-            return null;
-        } else {
-            return new SimpleInterval(getReferenceName(), getAlignmentStart(), getAlignmentEnd());
-        }
     }
 
     /**

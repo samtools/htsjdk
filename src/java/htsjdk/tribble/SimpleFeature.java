@@ -24,33 +24,35 @@ package htsjdk.tribble;
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import htsjdk.samtools.util.SimpleInterval;
-
 /**
  * A simple concrete Feature.
  */
 public class SimpleFeature implements Feature {
 
-    private final SimpleInterval simpleInterval;
+    private final String contig;
+    private final int start;
+    private final int end;
 
     public SimpleFeature(final String contig, final int start, final int end) {
-        simpleInterval = new SimpleInterval(contig, start, end);
+        this.contig = contig;
+        this.start = start;
+        this.end = end;
     }
 
     @Deprecated
     public String getChr() {
-        return getContig();
+        return contig;
     }
 
     public String getContig() {
-        return simpleInterval.getContig();
+        return contig;
     }
 
     public int getStart() {
-        return simpleInterval.getStart();
+        return start;
     }
 
     public int getEnd() {
-        return simpleInterval.getEnd();
+        return end;
     }
 }
