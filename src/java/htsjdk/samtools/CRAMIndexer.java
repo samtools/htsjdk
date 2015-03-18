@@ -38,11 +38,18 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
+import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.Log;
+import org.testng.Assert;
 
-import java.io.File;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -360,5 +367,47 @@ public class CRAMIndexer {
             largestIndexSeen = -1;
             indexStats.newReference();
         }
+    }
+
+    /**
+     * Generates a BAM index file from an input CRAM stream
+     *
+     * @param ss CRAM stream to index
+     * @param output File for output index file
+     * @param log optional {@link: Log} to output progress
+     */
+    public static void createIndex(SeekableStream ss, File output, Log log) throws IOException {
+
+        CramHeader cramHeader = CramIO.readCramHeader(ss) ;
+        CRAMIndexer indexer = new CRAMIndexer(output, cramHeader.getSamFileHeader()) ;
+
+        int totalRecords = 0;
+        Container container = null;
+        do {
+            if (++totalRecords % 10 == 0)
+                if (null != log) log.info(totalRecords + " slices processed ...");
+
+            try {
+                long offset = ss.position() ;
+                container = ContainerIO.readContainer(cramHeader.getVersion(), ss);
+                if (container == null || container.isEOF())
+                    break;
+
+                container.offset = offset;
+
+                int i = 0;
+                for (Slice slice : container.slices) {
+                    slice.containerOffset = offset;
+                    slice.index = i++;
+                    indexer.processAlignment(slice);
+                }
+
+            } catch (IOException e) {
+                Assert.fail("Failed to read cram container", e);
+            }
+
+        } while (container != null && !container.isEOF());
+
+        indexer.finish();
     }
 }
