@@ -32,7 +32,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -250,7 +250,7 @@ public class SAMTextHeaderCodec {
      */
     private class ParsedHeaderLine {
         private HeaderRecordType mHeaderRecordType;
-        private final Map<String, String> mKeyValuePairs = new HashMap<String, String>();
+        private final Map<String, String> mKeyValuePairs = new LinkedHashMap<String, String>();
         private boolean lineValid = false;
 
         ParsedHeaderLine(final String line) {

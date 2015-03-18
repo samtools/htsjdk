@@ -24,7 +24,7 @@
 package htsjdk.samtools;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,7 +35,7 @@ import java.util.Set;
 public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 
-    private final Map<String,String> mAttributes = new HashMap<String, String>();
+    private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);
