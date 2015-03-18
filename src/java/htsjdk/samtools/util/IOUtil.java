@@ -752,7 +752,7 @@ public class IOUtil {
             }
             return canonicalPath;
         } catch (final IOException ioe) {
-            throw new RuntimeException("Error getting full canonical path for " +
+            throw new RuntimeIOException("Error getting full canonical path for " +
                     file + ": " + ioe.getMessage(), ioe);
         }
    }

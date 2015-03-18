@@ -29,6 +29,7 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -275,7 +276,7 @@ public class VariantContextWriterFactory {
         try {
             return IOUtil.maybeBufferOutputStream(new FileOutputStream(location));
         } catch (final FileNotFoundException e) {
-            throw new RuntimeException(location + ": Unable to create VCF writer", e);
+            throw new RuntimeIOException(location + ": Unable to create VCF writer", e);
         }
     }
 }

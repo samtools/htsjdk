@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.bcf2.BCF2Type;
@@ -185,7 +186,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             BCF2Type.INT32.write(headerBytes.length, outputStream);
             outputStream.write(headerBytes);
         } catch (IOException e) {
-            throw new RuntimeException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
+            throw new RuntimeIOException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
         }
     }
 
@@ -205,7 +206,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             writeBlock(infoBlock, genotypesBlock);
         }
         catch ( IOException e ) {
-            throw new RuntimeException("Error writing record to BCF2 file: " + vc.toString(), e);
+            throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
         }
     }
 
@@ -215,7 +216,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             outputStream.flush();
         }
         catch ( IOException e ) {
-            throw new RuntimeException("Failed to flush BCF2 file");
+            throw new RuntimeIOException("Failed to flush BCF2 file");
         }
         super.close();
     }

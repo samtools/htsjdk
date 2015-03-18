@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
@@ -137,7 +138,7 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
 
 
         } catch (final IOException e) {
-            throw new RuntimeException("Unable to close index for " + getStreamName(), e);
+            throw new RuntimeIOException("Unable to close index for " + getStreamName(), e);
         }
     }
 

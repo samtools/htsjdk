@@ -3,6 +3,7 @@ package htsjdk.tribble.readers;
 import htsjdk.samtools.util.AbstractIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.Tuple;
 
 import java.io.Closeable;
@@ -84,7 +85,7 @@ public class AsciiLineReaderIterator implements LocationAware, LineIterator, Clo
             try {
                 line = asciiLineReader.readLine();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
             return line == null ? null : new Tuple<String, Long>(line, position);
         }

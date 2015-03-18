@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
 
@@ -51,7 +52,7 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
 			final String line;
 			return ((line = inputReader.readLine()) != null) ? this.vcfDecoder.decode(line) : null;
 		} catch (final IOException ioe) {
-			throw new RuntimeException("Could not decode/read a VCF record for a sorting collection: " + ioe.getMessage(), ioe);
+			throw new RuntimeIOException("Could not decode/read a VCF record for a sorting collection: " + ioe.getMessage(), ioe);
 		}
 	}
 
