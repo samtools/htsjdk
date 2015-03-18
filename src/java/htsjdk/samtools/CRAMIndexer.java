@@ -43,22 +43,23 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
 /**
  * Class for both constructing BAM index content and writing it out.
  * There are two usage patterns:
- * 1) Building a bam index from an existing bam file
- * 2) Building a bam index while building the bam file
- * In both cases, processAlignment is called for each alignment record and
+ * 1) Building a bam index from an existing cram file
+ * 2) Building a bam index while building the cram file
+ * In both cases, processAlignment is called for each cram slice and
  * finish() is called at the end.
  */
 public class CRAMIndexer {
@@ -75,6 +76,8 @@ public class CRAMIndexer {
     private final BAMIndexBuilder indexBuilder;
 
     /**
+     * Create a CRAM indexer that writes BAI to a file.
+     *
      * @param output     binary BAM Index (.bai) file
      * @param fileHeader header for the corresponding bam file
      */
@@ -86,7 +89,7 @@ public class CRAMIndexer {
     }
 
     /**
-     * Prepare to index a BAM.
+     * Create a CRAM indexer that writes BAI to a stream.
      *
      * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
@@ -99,11 +102,11 @@ public class CRAMIndexer {
     }
 
     /**
-     * Record any index information for a given BAM record.
+     * Record any index information for a given CRAM slice.
      * If this alignment starts a new reference, write out the old reference.
      * Requires a non-null value for rec.getFileSource().
      *
-     * @param rec The BAM record
+     * @param slice The CRAM slice
      */
     public void processAlignment(Slice slice) {
         try {
@@ -114,12 +117,12 @@ public class CRAMIndexer {
             }
             indexBuilder.processAlignment(slice);
         } catch (Exception e) {
-            throw new SAMException("Exception creating BAM index for record " + slice, e);
+            throw new SAMException("Exception creating BAM index for slice " + slice, e);
         }
     }
 
     /**
-     * After all the alignment records have been processed, finish is called.
+     * After all the slices have been processed, finish is called.
      * Writes any final information and closes the output file.
      */
     public void finish() {
@@ -129,7 +132,9 @@ public class CRAMIndexer {
         outputWriter.close();
     }
 
-    /** write out any references between the currentReference and the nextReference */
+    /**
+     * write out any references between the currentReference and the nextReference
+     */
     private void advanceToReference(int nextReference) {
         while (currentReference < nextReference) {
             BAMIndexContent content = indexBuilder.processReference(currentReference);
@@ -370,16 +375,16 @@ public class CRAMIndexer {
     }
 
     /**
-     * Generates a BAM index file from an input CRAM stream
+     * Generates a BAI index file from an input CRAM stream
      *
-     * @param ss CRAM stream to index
+     * @param stream CRAM stream to index
      * @param output File for output index file
-     * @param log optional {@link: Log} to output progress
+     * @param log    optional {@link: Log} to output progress
      */
-    public static void createIndex(SeekableStream ss, File output, Log log) throws IOException {
+    public static void createIndex(SeekableStream stream, File output, Log log) throws IOException {
 
-        CramHeader cramHeader = CramIO.readCramHeader(ss) ;
-        CRAMIndexer indexer = new CRAMIndexer(output, cramHeader.getSamFileHeader()) ;
+        CramHeader cramHeader = CramIO.readCramHeader(stream);
+        CRAMIndexer indexer = new CRAMIndexer(output, cramHeader.getSamFileHeader());
 
         int totalRecords = 0;
         Container container = null;
@@ -388,8 +393,8 @@ public class CRAMIndexer {
                 if (null != log) log.info(totalRecords + " slices processed ...");
 
             try {
-                long offset = ss.position() ;
-                container = ContainerIO.readContainer(cramHeader.getVersion(), ss);
+                long offset = stream.position();
+                container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
                 if (container == null || container.isEOF())
                     break;
 
