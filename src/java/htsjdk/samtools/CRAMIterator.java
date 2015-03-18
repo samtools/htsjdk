@@ -20,7 +20,6 @@ import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.build.CramNormalizer;
-import htsjdk.samtools.cram.encoding.read_features.Padding;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
@@ -49,7 +48,6 @@ public class CRAMIterator implements SAMRecordIterator {
     private CountingInputStream is;
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
-    private int recordCounter = 0;
     private SAMRecord nextRecord = null;
     private boolean restoreNMTag = true;
     private boolean restoreMDTag = false;
@@ -65,7 +63,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
 
-    private ValidationStringency validationStringency = ValidationStringency.SILENT;
+    private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
     public ValidationStringency getValidationStringency() {
         return validationStringency;
@@ -96,14 +94,12 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private void nextContainer() throws IOException, IllegalArgumentException,
             IllegalAccessException {
-        recordCounter = 0;
 
         containerOffset = is.getCount();
         container = ContainerIO.readContainer(cramHeader.getVersion(), is);
         if (container.isEOF()) {
             records.clear();
             nextRecord = null;
-            recordCounter = -1;
             return;
         }
 
@@ -138,7 +134,7 @@ public class CRAMIterator implements SAMRecordIterator {
             Slice s = container.slices[i];
             if (s.sequenceId < 0)
                 continue;
-            if (!s.validateRefMD5(refs)) {
+            if (validationStringency != ValidationStringency.SILENT && !s.validateRefMD5(refs)) {
                 log.error(String
                         .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s", s.sequenceId,
                                 s.alignmentStart, s.alignmentSpan, String.format("%032x", new BigInteger(1, s.refMD5))));
@@ -183,10 +179,10 @@ public class CRAMIterator implements SAMRecordIterator {
 
     public void jumpWithinContainerToPos(int pos) {
         if (!hasNext()) return;
-        int i=0;
-        for (SAMRecord record:records) {
+        int i = 0;
+        for (SAMRecord record : records) {
 
-            if (pos <=0) {
+            if (pos <= 0) {
                 if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
                     iterator = records.listIterator(i);
                     return;

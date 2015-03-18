@@ -1,13 +1,8 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.build.CramIO;
-import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
-import htsjdk.samtools.cram.structure.Container;
-import htsjdk.samtools.cram.structure.ContainerIO;
-import htsjdk.samtools.cram.structure.CramHeader;
-import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
@@ -16,8 +11,11 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.io.*;
-import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Created by Vadim on 14/03/2015.
@@ -30,35 +28,26 @@ public class CRAMFileIndexTest {
     private byte[] baiBytes;
     private ReferenceSource source;
 
-    //    @Test
-    public void test() throws IOException {
-//        File cramFile = File.createTempFile("cram", "tmp");
-//        cramFile.deleteOnExit();
-//        FileOutputStream fos = new FileOutputStream(cramFile);
-//        fos.write(cramBytes);
-//        fos.close();
-
-
-//        File indexFile = File.createTempFile("crai", "tmp");
-//        indexFile.deleteOnExit();
-//        FileOutputStream fos = new FileOutputStream(indexFile);
-//        fos.write(baiBytes);
-//        fos.close();
-
-
+    @Test
+    public void test_chrmM_1500() throws IOException {
         CRAMFileReader reader = new CRAMFileReader(cramFile, indexFile, source);
+        reader.setValidationStringency(ValidationStringency.SILENT);
         CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1500);
         Assert.assertTrue(iterator.hasNext());
         SAMRecord record = iterator.next();
-        System.out.println(record.getSAMString());
+
+        Assert.assertEquals(record.getReferenceName(), "chrM");
+        Assert.assertTrue(record.getAlignmentStart() >= 1500);
     }
 
     @Test
-    public void scan() throws IOException {
+    public void scanAllMappedReads() throws IOException {
         SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
         SAMRecordIterator samRecordIterator = samReader.iterator();
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source, ValidationStringency.SILENT);
+        reader.setValidationStringency(ValidationStringency.SILENT);
+
         int counter = 0;
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source);
         long ms = System.currentTimeMillis();
         while (samRecordIterator.hasNext()) {
             SAMRecord samRecord = samRecordIterator.next();
@@ -81,18 +70,36 @@ public class CRAMFileIndexTest {
             }
         }
         samRecordIterator.close();
+        reader.close();
 
-        // test unmapped:
-         SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped();
-         CloseableIterator<SAMRecord> unmappedCramIterator = reader.queryUnmapped();
+        Assert.assertEquals(counter, 9721);
+    }
+
+    @Test
+    public void scanAllUnmappedReads() throws IOException {
+        SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source, ValidationStringency.SILENT);
+        reader.setValidationStringency(ValidationStringency.SILENT);
+        long ms = System.currentTimeMillis();
+        int counter = 0;
+
+        SAMRecordIterator unmappedSamIterator = samReader.queryUnmapped();
+        CloseableIterator<SAMRecord> unmappedCramIterator = reader.queryUnmapped();
         while (unmappedSamIterator.hasNext()) {
             Assert.assertTrue(unmappedCramIterator.hasNext());
-            SAMRecord r1 = unmappedSamIterator.next() ;
-            SAMRecord r2 = unmappedCramIterator.next() ;
+            SAMRecord r1 = unmappedSamIterator.next();
+            SAMRecord r2 = unmappedCramIterator.next();
             Assert.assertEquals(r1.getReadName(), r2.getReadName());
-            Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString()) ;
+            Assert.assertEquals(r1.getBaseQualityString(), r2.getBaseQualityString());
+
+            counter++;
+            if ((System.currentTimeMillis() - ms) > 10000) {
+                System.out.println(counter);
+                ms = System.currentTimeMillis();
+            }
         }
         Assert.assertFalse(unmappedCramIterator.hasNext());
+        Assert.assertEquals(counter, 279);
 
         reader.close();
     }
@@ -100,7 +107,7 @@ public class CRAMFileIndexTest {
     private static class ByteArraySeekableStream extends SeekableStream {
         private byte[] bytes;
         private String source;
-        private long position=0;
+        private long position = 0;
 
         public ByteArraySeekableStream(byte[] bytes, String source) {
             this.bytes = bytes;
@@ -170,73 +177,16 @@ public class CRAMFileIndexTest {
     public void prepare() throws IOException {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
         source = new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
-        FileInputStream fis = new FileInputStream(cramFile);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        IOUtil.copyStream(fis, baos);
-        cramBytes = baos.toByteArray();
+        cramBytes = readFile(cramFile);
 
-        ByteArraySeekableStream bass = new ByteArraySeekableStream(cramBytes, null) ;
-        for (int i=0; i<cramBytes.length; i++) {
-            int read = bass.read() ;
-            if ((0xFF & cramBytes[i]) != read) throw new RuntimeException(String.format("%d: %d x %d\n", i, cramBytes[i], read)) ;
-        }
-        if (bass.read() != -1) throw new RuntimeException("Incomplete");
-
-        bass = new ByteArraySeekableStream(cramBytes, null) ;
-        ByteArrayInputStream bais = new ByteArrayInputStream(cramBytes) ;
-        int len = 38;
-        byte[] buf1 = new byte[len] ;
-        byte[] buf2 = new byte[len] ;
-        for (int i=0; i<cramBytes.length; i++) {
-            int read1 = bais.read(buf1, 0, buf1.length) ;
-            int read2 = bass.read(buf2, 0, buf2.length) ;
-
-            if (read1 != read2) throw new RuntimeException(String.format("%d: %d x %d\n", i, read1, read2)) ;
-            if (!Arrays.equals(buf1, buf2)) throw new RuntimeException(String.format("%d: %s x %s\n", i, Arrays.toString(buf1), Arrays.toString(buf2))) ;
-        }
-
-        baiBytes = bai(cramFile);
-        FileOutputStream fos = new FileOutputStream(indexFile);
-        fos.write(baiBytes);
-        fos.close();
+        CRAMIndexer.createIndex(new SeekableFileStream(cramFile), indexFile, null);
+        baiBytes = readFile(indexFile);
     }
 
-    private static byte[] bai(File cramFile) throws FileNotFoundException {
-        CountingInputStream is = new CountingInputStream(new FileInputStream(cramFile));
-        CramHeader cramHeader = null;
-        try {
-            cramHeader = CramIO.readCramHeader(is);
-        } catch (IOException e) {
-            Assert.fail("Failed to create bai index", e);
-        }
-
-        ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream();
-        CRAMIndexer indexer = new CRAMIndexer(indexBAOS, cramHeader.getSamFileHeader());
-
-        Container container = null;
-        do {
-            try {
-                long offset = is.getCount();
-                container = ContainerIO.readContainer(cramHeader.getVersion(), is);
-                if (container == null || container.isEOF())
-                    break;
-                container.offset = offset;
-
-                int i = 0;
-                for (Slice slice : container.slices) {
-                    slice.containerOffset = offset;
-                    slice.index = i++;
-                    indexer.processAlignment(slice);
-                }
-
-            } catch (IOException e) {
-                Assert.fail("Failed to read cram container", e);
-            }
-
-        } while (container != null && !container.isEOF());
-
-        indexer.finish();
-
-        return indexBAOS.toByteArray();
+    private static byte[] readFile(File file) throws FileNotFoundException {
+        FileInputStream fis = new FileInputStream(file);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        IOUtil.copyStream(fis, baos);
+        return baos.toByteArray();
     }
 }

@@ -118,11 +118,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
     }
 
     public CRAMFileReader(final InputStream is, final SeekableStream indexInputStream,
-                          final ReferenceSource referenceSource) throws IOException {
-        this.is=is;
-        this.referenceSource = referenceSource ;
+                          final ReferenceSource referenceSource, ValidationStringency validationStringency) throws IOException {
+        this.is = is;
+        this.referenceSource = referenceSource;
+        this.validationStringency = validationStringency;
 
-        it = new CRAMIterator(is, referenceSource) ;
+        it = new CRAMIterator(is, referenceSource);
+        it.setValidationStringency(validationStringency);
         mIndex = new CachingBAMFileIndex(indexInputStream, it.getSAMFileHeader().getSequenceDictionary());
     }
 
@@ -268,7 +270,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
                         return it;
                     }
                 } else {
-                    c = it.container ;
+                    c = it.container;
                     if (c.alignmentStart + c.alignmentSpan > start) {
                         it.jumpWithinContainerToPos(start);
                         return it;
@@ -319,8 +321,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
             si = new CRAMIterator(s, referenceSource);
             si.setValidationStringency(validationStringency);
             s.seek(startOfLastLinearBin >>> 16);
-            Container c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s) ;
-            s.seek(s.position()+c.containerByteSize);
+            Container c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
+            s.seek(s.position() + c.containerByteSize);
             it = si;
             it.jumpWithinContainerToPos(-1);
         } catch (final IOException e) {
@@ -353,6 +355,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
     @Override
     void setValidationStringency(final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
+        if (it != null) it.setValidationStringency(validationStringency);
     }
 
     @Override
