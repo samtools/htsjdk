@@ -18,12 +18,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
+ * A collection of tests for CRAM index write/read that use BAMFileIndexTest/index_test.bam file as the source of the test data.
+ * The test will create a BAI index of the cram file before hand.
+ * The scan* tests check that for every records in the BAM file the query returns the same records from the CRAM file.
  * Created by Vadim on 14/03/2015.
  */
 public class CRAMFileIndexTest {
     private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
-    File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
+    private final File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
+    private final File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
     private byte[] cramBytes;
     private byte[] baiBytes;
     private ReferenceSource source;
@@ -44,7 +47,7 @@ public class CRAMFileIndexTest {
     public void scanAllMappedReads() throws IOException {
         SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
         SAMRecordIterator samRecordIterator = samReader.iterator();
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source, ValidationStringency.SILENT);
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
         reader.setValidationStringency(ValidationStringency.SILENT);
 
         int counter = 0;
@@ -78,7 +81,7 @@ public class CRAMFileIndexTest {
     @Test
     public void scanAllUnmappedReads() throws IOException {
         SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source, ValidationStringency.SILENT);
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
         reader.setValidationStringency(ValidationStringency.SILENT);
         long ms = System.currentTimeMillis();
         int counter = 0;
@@ -106,12 +109,10 @@ public class CRAMFileIndexTest {
 
     private static class ByteArraySeekableStream extends SeekableStream {
         private byte[] bytes;
-        private String source;
         private long position = 0;
 
-        public ByteArraySeekableStream(byte[] bytes, String source) {
+        public ByteArraySeekableStream(byte[] bytes) {
             this.bytes = bytes;
-            this.source = source;
         }
 
         @Override
@@ -169,7 +170,7 @@ public class CRAMFileIndexTest {
 
         @Override
         public String getSource() {
-            return source;
+            return null;
         }
     }
 
