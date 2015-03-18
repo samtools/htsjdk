@@ -32,9 +32,12 @@ import java.util.Collection;
  *
  * @author Tim Fennell
  */
-public class Interval extends SimpleInterval implements Comparable<Interval>, Cloneable, Locatable {
+public class Interval implements Comparable<Interval>, Cloneable, Locatable {
     private final boolean negativeStrand;
     private final String name;
+    private final String contig;
+    private final int start;
+    private final int end;
 
     /**
      * Constructs an interval with the supplied sequence and start and end. If the end
@@ -60,7 +63,9 @@ public class Interval extends SimpleInterval implements Comparable<Interval>, Cl
      *
      */
     public Interval(final String sequence, final int start, final int end, final boolean negative, final String name) {
-        super(sequence, start, end);
+        this.contig = sequence;
+        this.start = start;
+        this.end = end;
         this.negativeStrand = negative;
         this.name = name;
     }
@@ -180,4 +185,18 @@ public class Interval extends SimpleInterval implements Comparable<Interval>, Cl
         catch (CloneNotSupportedException cnse) { throw new SAMException("That's unpossible", cnse); }
     }
 
+    @Override
+    public String getContig() {
+        return contig;
+    }
+
+    @Override
+    public int getStart() {
+        return start;
+    }
+
+    @Override
+    public int getEnd() {
+        return end;
+    }
 }
