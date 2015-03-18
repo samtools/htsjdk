@@ -59,27 +59,27 @@ public class CRAMFileIndexTest {
         SAMRecordIterator samRecordIterator = samReader.iterator();
         int counter = 0;
         CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes, null), new ByteArraySeekableStream(baiBytes, null), source);
-//        long ms = System.currentTimeMillis();
-//        while (samRecordIterator.hasNext()) {
-//            SAMRecord samRecord = samRecordIterator.next();
-//            if (samRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) break;
-//            String s1 = samRecord.getSAMString();
-//
-//            CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(samRecord.getReferenceName(), samRecord.getAlignmentStart());
-//            Assert.assertTrue(iterator.hasNext(), counter + ": " + s1);
-//            SAMRecord cramRecord = iterator.next();
-//
-//            String s2 = cramRecord.getSAMString();
-//
-//            Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), s1 + "\n" + s2);
-//            Assert.assertEquals(samRecord.getAlignmentStart(), cramRecord.getAlignmentStart(), s1 + "\n" + s2);
-//
-//            counter++;
-//            if ((System.currentTimeMillis() - ms) > 10000) {
-//                System.out.println(counter);
-//                ms = System.currentTimeMillis();
-//            }
-//        }
+        long ms = System.currentTimeMillis();
+        while (samRecordIterator.hasNext()) {
+            SAMRecord samRecord = samRecordIterator.next();
+            if (samRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) break;
+            String s1 = samRecord.getSAMString();
+
+            CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(samRecord.getReferenceName(), samRecord.getAlignmentStart());
+            Assert.assertTrue(iterator.hasNext(), counter + ": " + s1);
+            SAMRecord cramRecord = iterator.next();
+
+            String s2 = cramRecord.getSAMString();
+
+            Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), s1 + "\n" + s2);
+            Assert.assertEquals(samRecord.getAlignmentStart(), cramRecord.getAlignmentStart(), s1 + "\n" + s2);
+
+            counter++;
+            if ((System.currentTimeMillis() - ms) > 10000) {
+                System.out.println(counter);
+                ms = System.currentTimeMillis();
+            }
+        }
         samRecordIterator.close();
 
         // test unmapped:

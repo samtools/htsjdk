@@ -319,6 +319,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
             si = new CRAMIterator(s, referenceSource);
             si.setValidationStringency(validationStringency);
             s.seek(startOfLastLinearBin >>> 16);
+            Container c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s) ;
+            s.seek(s.position()+c.containerByteSize);
             it = si;
             it.jumpWithinContainerToPos(-1);
         } catch (final IOException e) {
