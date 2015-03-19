@@ -233,6 +233,65 @@ public class IntervalList implements Iterable<Interval> {
         return getUniqueIntervals(this, concatenateNames);
     }
 
+    /**
+     * Given a list of Intervals and a band multiple, this method will return a list of Intervals such that all of the intervals
+     * do not straddle integer multiples of that band.
+     *
+     * ex: if there is an interval (7200-9300) and the bandMultiple is 1000, the interval will be split into:
+     * (7200-7999, 8000-8999, 9000-9300)
+     * @param intervals A list of Interval
+     * @param bandMultiple integer value (> 0) to break up intervals in the list at integer multiples of
+     * @return list of intervals that are broken up
+     */
+    public static List<Interval> breakIntervalsAtBandMultiples(final List<Interval> intervals, final int bandMultiple) {
+        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+        for (final Interval interval : intervals) {
+            if (interval.getEnd() >= interval.getStart()) {       // Normal, non-empty intervals
+                final int startIndex = interval.getStart() / bandMultiple;
+                final int endIndex = interval.getEnd() / bandMultiple;
+                if (startIndex == endIndex) {
+                    brokenUpIntervals.add(interval);
+                } else {
+                    brokenUpIntervals.addAll(breakIntervalAtBandMultiples(interval, bandMultiple));
+                }
+            }
+            else {                                  // Special case - empty intervals ex: (100-99)
+                brokenUpIntervals.add(interval);
+            }
+        }
+        return brokenUpIntervals;
+    }
+
+    /**
+     * Given an Interval and a band multiple, this method will return a list of Intervals such that all of the intervals
+     * do not straddle integer multiples of that band.
+     *
+     * ex: if the interval is (7200-9300) and the bandMultiple is 1000, the interval will be split into:
+     * (7200-7999, 8000-8999, 9000-9300)
+     * @param interval an Interval
+     * @param bandMultiple integer value (> 0) to break up intervals in the list at integer multiples of
+     * @return list of intervals that are broken up
+     */
+    private static List<Interval> breakIntervalAtBandMultiples(final Interval interval, final int bandMultiple) {
+        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+
+        int startPos = interval.getStart();
+        int startIndex = startPos / bandMultiple;
+        final int endIndex = interval.getEnd() / bandMultiple;
+        while (startIndex <= endIndex) {
+            int endPos = (startIndex + 1) * bandMultiple -1;
+            if (endPos > interval.getEnd()) {
+                endPos = interval.getEnd();
+            }
+            // add start/end to list of broken up intervals to return (and uniquely name it).
+            brokenUpIntervals.add(new Interval(interval.getContig(), startPos, endPos, interval.isNegativeStrand(), interval.getName() + "." + startIndex));
+            startIndex++;
+            startPos = startIndex * bandMultiple;
+        }
+        return brokenUpIntervals;
+    }
+
+
     /** Merges a sorted collection of intervals and optionally concatenates unique names or takes the first name. */
     static Interval merge(final SortedSet<Interval> intervals, final boolean concatenateNames) {
         final String chrom = intervals.first().getContig();
@@ -365,7 +424,7 @@ public class IntervalList implements Iterable<Interval> {
                 final String[] fields = line.split("\t");
                 if (fields.length != 5) {
                     throw new SAMException("Invalid interval record contains " +
-                                              fields.length + " fields: " + line);
+                            fields.length + " fields: " + line);
                 }
 
                 // Then parse them out

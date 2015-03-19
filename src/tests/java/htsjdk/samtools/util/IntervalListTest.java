@@ -32,6 +32,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -454,7 +455,7 @@ public class IntervalListTest {
 
     @Test
     public void testMerges() {
-        SortedSet<Interval> intervals = new TreeSet<Interval>() {{
+        final SortedSet<Interval> intervals = new TreeSet<Interval>() {{
             add(new Interval("1", 500, 600, false, "foo"));
             add(new Interval("1", 550, 650, false, "bar"));
             add(new Interval("1", 625, 699, false, "splat"));
@@ -469,4 +470,41 @@ public class IntervalListTest {
         Assert.assertEquals(out.getStart(), 500);
         Assert.assertEquals(out.getEnd(), 699);
     }
+
+    @Test
+    public void testBreakAtBands() {
+        final List<Interval> intervals = new ArrayList<Interval>() {{
+            add(new Interval("A", 1, 99, false, "foo"));
+            add(new Interval("A", 98, 99, true, "psyduck"));
+            add(new Interval("1", 500, 600, false, "foo")); // -> 2
+            add(new Interval("1", 550, 650, false, "bar")); // -> 2
+            add(new Interval("1", 625, 699, false, "splat"));
+            add(new Interval("2", 99, 201, false, "geodude")); // -> 3
+            add(new Interval("3", 100, 99, false, "charizard"));  // Empty Interval
+            add(new Interval("3", 101, 100, false, "golduck"));   // Empty Interval
+        }};
+
+        final List<Interval> brokenIntervals = IntervalList.breakIntervalsAtBandMultiples(intervals, 100);
+
+        Assert.assertEquals(brokenIntervals.size(), 12);
+        Assert.assertEquals(brokenIntervals.get(0), new Interval("A", 1, 99, false, "foo"));
+
+        Assert.assertEquals(brokenIntervals.get(1), new Interval("A", 98, 99, true, "psyduck"));
+
+        Assert.assertEquals(brokenIntervals.get(2), new Interval("1", 500, 599, false, "foo.0"));
+        Assert.assertEquals(brokenIntervals.get(3), new Interval("1", 600, 600, false, "foo.1"));
+
+        Assert.assertEquals(brokenIntervals.get(4), new Interval("1", 550, 599, false, "bar.0"));
+        Assert.assertEquals(brokenIntervals.get(5), new Interval("1", 600, 650, false, "bar.1"));
+
+        Assert.assertEquals(brokenIntervals.get(6), new Interval("1", 625, 699, false, "splat"));
+
+        Assert.assertEquals(brokenIntervals.get(7), new Interval("2", 99, 99, false, "geodude.0"));
+        Assert.assertEquals(brokenIntervals.get(8), new Interval("2", 100, 199, false, "geodude.1"));
+        Assert.assertEquals(brokenIntervals.get(9), new Interval("2", 200, 201, false, "geodude.2"));
+
+        Assert.assertEquals(brokenIntervals.get(10), new Interval("3", 100, 99, false, "charizard"));
+        Assert.assertEquals(brokenIntervals.get(11), new Interval("3", 101, 100, false, "golduck"));
+    }
+
 }
