@@ -491,17 +491,17 @@ public class IntervalListTest {
 
         Assert.assertEquals(brokenIntervals.get(1), new Interval("A", 98, 99, true, "psyduck"));
 
-        Assert.assertEquals(brokenIntervals.get(2), new Interval("1", 500, 599, false, "foo.0"));
-        Assert.assertEquals(brokenIntervals.get(3), new Interval("1", 600, 600, false, "foo.1"));
+        Assert.assertEquals(brokenIntervals.get(2), new Interval("1", 500, 599, false, "foo.1"));
+        Assert.assertEquals(brokenIntervals.get(3), new Interval("1", 600, 600, false, "foo.2"));
 
-        Assert.assertEquals(brokenIntervals.get(4), new Interval("1", 550, 599, false, "bar.0"));
-        Assert.assertEquals(brokenIntervals.get(5), new Interval("1", 600, 650, false, "bar.1"));
+        Assert.assertEquals(brokenIntervals.get(4), new Interval("1", 550, 599, false, "bar.1"));
+        Assert.assertEquals(brokenIntervals.get(5), new Interval("1", 600, 650, false, "bar.2"));
 
         Assert.assertEquals(brokenIntervals.get(6), new Interval("1", 625, 699, false, "splat"));
 
-        Assert.assertEquals(brokenIntervals.get(7), new Interval("2", 99, 99, false, "geodude.0"));
-        Assert.assertEquals(brokenIntervals.get(8), new Interval("2", 100, 199, false, "geodude.1"));
-        Assert.assertEquals(brokenIntervals.get(9), new Interval("2", 200, 201, false, "geodude.2"));
+        Assert.assertEquals(brokenIntervals.get(7), new Interval("2", 99, 99, false, "geodude.1"));
+        Assert.assertEquals(brokenIntervals.get(8), new Interval("2", 100, 199, false, "geodude.2"));
+        Assert.assertEquals(brokenIntervals.get(9), new Interval("2", 200, 201, false, "geodude.3"));
 
         Assert.assertEquals(brokenIntervals.get(10), new Interval("3", 100, 99, false, "charizard"));
         Assert.assertEquals(brokenIntervals.get(11), new Interval("3", 101, 100, false, "golduck"));

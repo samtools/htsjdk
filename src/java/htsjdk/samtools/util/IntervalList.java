@@ -276,7 +276,8 @@ public class IntervalList implements Iterable<Interval> {
         final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
 
         int startPos = interval.getStart();
-        int startIndex = startPos / bandMultiple;
+        final int startOfIntervalIndex = startPos / bandMultiple;
+        int startIndex = startOfIntervalIndex;
         final int endIndex = interval.getEnd() / bandMultiple;
         while (startIndex <= endIndex) {
             int endPos = (startIndex + 1) * bandMultiple -1;
@@ -284,7 +285,7 @@ public class IntervalList implements Iterable<Interval> {
                 endPos = interval.getEnd();
             }
             // add start/end to list of broken up intervals to return (and uniquely name it).
-            brokenUpIntervals.add(new Interval(interval.getContig(), startPos, endPos, interval.isNegativeStrand(), interval.getName() + "." + startIndex));
+            brokenUpIntervals.add(new Interval(interval.getContig(), startPos, endPos, interval.isNegativeStrand(), interval.getName() + "." + (startIndex - startOfIntervalIndex + 1)));
             startIndex++;
             startPos = startIndex * bandMultiple;
         }
