@@ -33,6 +33,11 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 /**
  * @author alecw@broadinstitute.org
  */
@@ -130,5 +135,24 @@ public class SequenceUtilTest {
                 {"32M2D10M3D1M", 0, 5},
                 {"2H2S32M12I2M3D1M2I3M2D1M", 14, 5}
         };
+    }
+
+    @DataProvider(name = "testKmerGenerationTestCases")
+    public Object[][] testKmerGenerationTestCases() {
+        return new Object[][] {
+                {0, new String[]{""}},
+                {1, new String[]{"A","C","G","T"}},
+                {2, new String[]{"AA","AC","AG","AT","CA","CC","CG","CT","GA","GC","GG","GT","TA","TC","TG","TT"}}
+        };
+    }
+
+    @Test(dataProvider = "testKmerGenerationTestCases")
+    public void testKmerGeneration(final int length, final String[] expectedKmers) {
+        final Set<String> actualSet = new HashSet<String>();
+        for (final byte[] kmer : SequenceUtil.generateAllKmers(length)) {
+            actualSet.add(StringUtil.bytesToString(kmer));
+        }
+        final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
+        Assert.assertTrue(actualSet.equals(expectedSet));
     }
 }

@@ -37,6 +37,8 @@ import java.io.File;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +46,8 @@ import java.util.regex.Pattern;
 public class SequenceUtil {
     /** Byte typed variables for all normal bases. */
     public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N';
+    public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
+    public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
 
     /**
      * Calculate the reverse complement of the specified sequence
@@ -78,10 +82,13 @@ public class SequenceUtil {
 
     /** Returns true if the byte is in [acgtACGT]. */
     public static boolean isValidBase(final byte b) {
-        return b == a || b == A ||
-                b == c || b == C ||
-                b == g || b == G ||
-                b == t || b == T;
+        for (final byte validBase : VALID_BASES_UPPER) {
+            if (b == validBase) return true;
+        }
+        for (final byte validBase : VALID_BASES_LOWER) {
+            if (b == validBase) return true;
+        }
+        return false;
     }
 
     /** Calculates the fraction of bases that are G/C in the sequence. */
@@ -599,7 +606,7 @@ public class SequenceUtil {
     }
 
     /**
-     * Checks for bisulfite conversion, C->T on the positive strand and G-> on the negative strand.
+     * Checks for bisulfite conversion, C->T on the positive strand and G->A on the negative strand.
      */
     public static boolean isBisulfiteConverted(final byte read, final byte reference, final boolean negativeStrand) {
         if (negativeStrand) {
@@ -821,7 +828,7 @@ public class SequenceUtil {
      *
      * @param record
      * @param ref
-     * @param flag
+     * @param calcMD
      * @return
      */
     public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
@@ -902,5 +909,38 @@ public class SequenceUtil {
         for (int i = 0; i < bases.length; i++)
             bases[i] = upperCase(bases[i]);
         return bases;
+    }
+
+    /** Generates all possible unambiguous kmers (upper-case) of length and returns them as byte[]s. */
+    public static List<byte[]> generateAllKmers(final int length) {
+        final List<byte[]> sofar = new LinkedList<byte[]>();
+
+        if (sofar.size() == 0) {
+            sofar.add(new byte[length]);
+        }
+
+        while (true) {
+            final byte[] bs = sofar.remove(0);
+            int indexOfNextBase = -1;
+            for (int i = 0; i < bs.length; ++i) {
+                if (bs[i] == 0) {
+                    indexOfNextBase = i;
+                    break;
+                }
+            }
+
+            if (indexOfNextBase == -1) {
+                sofar.add(bs);
+                break;
+            } else {
+                for (final byte b : VALID_BASES_UPPER) {
+                    final byte[] next = Arrays.copyOf(bs, bs.length);
+                    next[indexOfNextBase] = b;
+                    sofar.add(next);
+                }
+            }
+        }
+
+        return sofar;
     }
 }

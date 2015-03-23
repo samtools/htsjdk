@@ -82,6 +82,9 @@ public class FormatUtil {
     /** Formats a double to a floating point string. */
     public String format(double value) {return this.floatFormat.format(value); }
 
+    /** Formats a char as a string. */
+    public String format(char value) { return Character.toString(value); }
+
     /** Formats an enum to the String representation of an enum. */
     public String format(Enum value) { return value.name(); }
 
@@ -106,6 +109,7 @@ public class FormatUtil {
         if (value instanceof Iso8601Date) return format((Iso8601Date)value);
         if (value instanceof Date)        return format( ((Date) value) );
         if (value instanceof Boolean)     return format( ((Boolean) value).booleanValue() );
+        if (value instanceof Character)   return format( ((Character)value).charValue() );
         return value.toString();
     }
 
@@ -150,12 +154,22 @@ public class FormatUtil {
     /** Parse a String into an Iso8601 Date */
     public Iso8601Date parseIso8601Date(String value) { return new Iso8601Date(value); }
 
-    /** Parses a String into a boolean. */
+    /** Parses a String into a boolean, as per the above convention that true = Y and false = N. */
     public boolean parseBoolean(String value) {
         if (value == null || value.length() == 0) return false;
         char ch = Character.toUpperCase(value.charAt(0));
-
         return (ch == 'Y');
+    }
+
+    /** Parses a String into a char. We expect the String to have a length of exactly one, otherwise throw an exception. */
+    public char parseChar(String value) {
+        if (value == null) {
+            throw new SAMException("Cannot parse null string into char");
+        } else if (value.length() != 1) {
+            throw new SAMException("Cannot parse string into char because length != 1 : " + value);
+        } else {
+            return value.charAt(0);
+        }
     }
 
     /**
@@ -167,16 +181,17 @@ public class FormatUtil {
      * @return an object of the returnType
      */
     public Object parseObject(String value, Class<?> returnType) {
-        if (returnType == Short.class   || returnType == Short.TYPE)   return parseShort(value);
-        if (returnType == Integer.class || returnType == Integer.TYPE) return parseInt(value);
-        if (returnType == Long.class    || returnType == Long.TYPE)    return parseLong(value);
-        if (returnType == Float.class   || returnType == Float.TYPE)   return parseFloat(value);
-        if (returnType == Double.class  || returnType == Double.TYPE)  return parseDouble(value);
-        if (returnType == Boolean.class || returnType == Boolean.TYPE) return parseBoolean(value);
-        if (returnType == Iso8601Date.class)                           return parseIso8601Date(value);
-        if (returnType == Date.class)                                  return parseDate(value);
-        if (returnType == Byte.class    || returnType == Byte.TYPE)    return parseInt(value);
-        if (returnType == File.class)                                  return new File(value);
+        if (returnType == Short.class     || returnType == Short.TYPE)     return parseShort(value);
+        if (returnType == Integer.class   || returnType == Integer.TYPE)   return parseInt(value);
+        if (returnType == Long.class      || returnType == Long.TYPE)      return parseLong(value);
+        if (returnType == Float.class     || returnType == Float.TYPE)     return parseFloat(value);
+        if (returnType == Double.class    || returnType == Double.TYPE)    return parseDouble(value);
+        if (returnType == Boolean.class   || returnType == Boolean.TYPE)   return parseBoolean(value);
+        if (returnType == Byte.class      || returnType == Byte.TYPE)      return parseInt(value);
+        if (returnType == Character.class || returnType == Character.TYPE) return parseChar(value);
+        if (returnType == Iso8601Date.class)                               return parseIso8601Date(value);
+        if (returnType == Date.class)                                      return parseDate(value);
+        if (returnType == File.class)                                      return new File(value);
         if (Enum.class.isAssignableFrom(returnType)) return parseEnum(value, (Class<? extends Enum>)returnType);
         if (returnType == String.class) return value;
 

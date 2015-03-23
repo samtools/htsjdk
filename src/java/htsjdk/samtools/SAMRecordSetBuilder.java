@@ -243,8 +243,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Adds a skeletal fragment (non-PE) record to the set using the provided
      * contig start and strand information.
      */
-    public void addFrag(final String name, final int contig, final int start, final boolean negativeStrand) {
-        addFrag(name, contig, start, negativeStrand, false, null, null, -1);
+    public SAMRecord addFrag(final String name, final int contig, final int start, final boolean negativeStrand) {
+        return addFrag(name, contig, start, negativeStrand, false, null, null, -1);
     }
 
     /**

@@ -46,21 +46,23 @@ public class MetricsFileTest {
     public static enum TestEnum {One, Two, Three}
 
     public static class TestMetric extends MetricBase implements Cloneable {
-        public String   STRING_PROP;
-        public Date     DATE_PROP;
-        public Short    SHORT_PROP;
-        public Integer  INTEGER_PROP;
-        public Long     LONG_PROP;
-        public Float    FLOAT_PROP;
-        public Double   DOUBLE_PROP;
-        public TestEnum ENUM_PROP;
-        public Boolean  BOOLEAN_PROP;
-        public short    SHORT_PRIMITIVE;
-        public int      INT_PRIMITIVE;
-        public long     LONG_PRIMITIVE;
-        public float    FLOAT_PRIMITIVE;
-        public double   DOUBLE_PRIMITIVE;
-        public boolean  BOOLEAN_PRIMITIVE;
+        public String    STRING_PROP;
+        public Date      DATE_PROP;
+        public Short     SHORT_PROP;
+        public Integer   INTEGER_PROP;
+        public Long      LONG_PROP;
+        public Float     FLOAT_PROP;
+        public Double    DOUBLE_PROP;
+        public TestEnum  ENUM_PROP;
+        public Boolean   BOOLEAN_PROP;
+        public Character CHARACTER_PROP;
+        public short     SHORT_PRIMITIVE;
+        public int       INT_PRIMITIVE;
+        public long      LONG_PRIMITIVE;
+        public float     FLOAT_PRIMITIVE;
+        public double    DOUBLE_PRIMITIVE;
+        public boolean   BOOLEAN_PRIMITIVE;
+        public char      CHAR_PRIMITIVE;
 
         public TestMetric clone()  {
             try { return (TestMetric) super.clone(); }
@@ -81,12 +83,14 @@ public class MetricsFileTest {
         metric.DOUBLE_PROP       = 0.713487;
         metric.ENUM_PROP         = TestEnum.Two;
         metric.BOOLEAN_PROP      = false;
+        metric.CHARACTER_PROP    = 'A';
         metric.SHORT_PRIMITIVE   = 123;
         metric.INT_PRIMITIVE     = 919834781;
         metric.LONG_PRIMITIVE    = Long.MAX_VALUE - Integer.MAX_VALUE;
         metric.FLOAT_PRIMITIVE   = 0.55694f;
         metric.DOUBLE_PRIMITIVE  = 0.229233;
         metric.BOOLEAN_PRIMITIVE = true;
+        metric.CHAR_PRIMITIVE    = 'B';
         file.addMetric(metric);
 
         MetricsFile<TestMetric,Integer> file2 = writeThenReadBack(file);
