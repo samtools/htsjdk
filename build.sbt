@@ -65,26 +65,6 @@ packageOptions := Seq(ManifestAttributes(
   ("Implementation-Vendor", "Broad Institute")
 ))
 
-pomExtra := <url>http://samtools.github.io/htsjdk/</url>
-  <licenses>
-    <license>
-      <name>MIT License</name>
-      <url>http://opensource.org/licenses/MIT</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <url>git@github.com:samtools/htsjdk.git</url>
-    <connection>scm:git:git@github.com:samtools/htsjdk.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>picard</id>
-      <name>Picard Team</name>
-      <url>http://broadinstitute.github.io/picard/</url>
-    </developer>
-  </developers>
-
 assemblyJarName := s"${name.value}-${version.value}.jar"
 
 assemblyMergeStrategy in assembly := {
@@ -114,3 +94,23 @@ assemblyMergeStrategy in assembly := {
     MergeStrategy.discard
   case _ => MergeStrategy.deduplicate
 }
+
+pomExtra := <url>http://samtools.github.io/htsjdk/</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:samtools/htsjdk.git</url>
+    <connection>scm:git:git@github.com:samtools/htsjdk.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>picard</id>
+      <name>Picard Team</name>
+      <url>http://broadinstitute.github.io/picard/</url>
+    </developer>
+  </developers>
