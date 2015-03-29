@@ -116,7 +116,7 @@ public class BlockCompressedOutputStream
      * @param compressionLevel 1 <= compressionLevel <= 9
      */
     public BlockCompressedOutputStream(final String filename, final int compressionLevel) {
-        this(new File(filename), compressionLevel);
+        this(IOUtil.getFile(filename), compressionLevel);
     }
 
     /**

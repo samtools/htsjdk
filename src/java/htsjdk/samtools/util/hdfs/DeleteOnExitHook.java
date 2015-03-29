@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.File;
 
 /**
+ * I modify it for the Method {@link FileHadoop#deleteOnExit()}
+ * 
  * This class holds a set of filenames to be deleted on VM exit through a shutdown hook.
  * A set is used both to prevent double-insertion of the same file as well as offer
  * quick removal.

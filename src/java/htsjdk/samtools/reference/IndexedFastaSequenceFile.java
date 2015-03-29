@@ -102,10 +102,11 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     }
 
     private static File getFastaIndexFileName(File fastaFile) {
-        return new File(fastaFile.getAbsolutePath() + ".fai");
+        return IOUtil.getFile(fastaFile.getAbsolutePath() + ".fai");
     }
 
-    private static File findRequiredFastaIndexFile(File fastaFile) throws FileNotFoundException {
+    /** change to protected so the method canbe used by {@linkplain IndexedFastaSequenceFileHadoop} */ 
+    protected static File findRequiredFastaIndexFile(File fastaFile) throws FileNotFoundException {
         File ret = findFastaIndex(fastaFile);
         if (ret == null) throw new FileNotFoundException(getFastaIndexFileName(fastaFile) + " not found.");
         return ret;

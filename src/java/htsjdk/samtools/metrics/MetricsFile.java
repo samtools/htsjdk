@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 
 import java.io.BufferedReader;
@@ -37,6 +38,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Field;
@@ -137,9 +140,10 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
      * @param f a File into which to write the metrics
      */
     public void write(final File f) {
-        FileWriter w = null;
+    	//use OutputStreamWriter instead of FileWriter
+        OutputStreamWriter w = null;
         try {
-            w = new FileWriter(f);
+            w = new OutputStreamWriter(IOUtil.getOutputStream(f));
             write(w);
         }
         catch (IOException ioe) {
@@ -545,7 +549,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
     public static List<? extends MetricBase> readBeans(final File file) {
         try {
             final MetricsFile<MetricBase, Comparable<?>> metricsFile = new MetricsFile<MetricBase, Comparable<?>>();
-            metricsFile.read(new FileReader(file));
+            metricsFile.read(new InputStreamReader(IOUtil.getInputStream(file)));
             return metricsFile.getMetrics();
         } catch (FileNotFoundException e) {
             throw new SAMException(e.getMessage(), e);
@@ -558,7 +562,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
     public static List<Header> readHeaders(final File file) {
         try {
             final MetricsFile<MetricBase, Comparable<?>> metricsFile = new MetricsFile<MetricBase, Comparable<?>>();
-            metricsFile.read(new FileReader(file));
+            metricsFile.read(new InputStreamReader(IOUtil.getInputStream(file)));
             return metricsFile.getHeaders();
         } catch (FileNotFoundException e) {
             throw new SAMException(e.getMessage(), e);
@@ -572,8 +576,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
         try {
             final MetricsFile<MetricBase, Comparable<?>> mf1 = new MetricsFile<MetricBase, Comparable<?>>();
             final MetricsFile<MetricBase, Comparable<?>> mf2 = new MetricsFile<MetricBase, Comparable<?>>();
-            mf1.read(new FileReader(file1));
-            mf2.read(new FileReader(file2));
+            mf1.read(new InputStreamReader(IOUtil.getInputStream(file1)));
+            mf2.read(new InputStreamReader(IOUtil.getInputStream(file2)));
             return mf1.areMetricsEqual(mf2);
         } catch (FileNotFoundException e) {
             throw new SAMException(e.getMessage(), e);

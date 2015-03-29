@@ -1,12 +1,8 @@
 package htsjdk.samtools.util.hdfs;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Properties;
-
-import org.apache.commons.httpclient.util.DateUtil;
 
 public class PathDetail {
 	static Properties properties;
@@ -15,7 +11,7 @@ public class PathDetail {
 		initial();
 	}
 	private static void initial() {
-		String configPath = "config.properties";
+		String configPath = "hdfs.config.properties";
 		InputStream in = PathDetail.class.getClassLoader().getResourceAsStream(configPath);
 		properties = new Properties();
 		try {

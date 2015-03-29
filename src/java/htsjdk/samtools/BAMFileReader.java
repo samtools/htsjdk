@@ -30,6 +30,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.StringLineReader;
+import htsjdk.samtools.util.hdfs.FileHadoop;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -248,6 +249,10 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
+        	//memory chach cannot be used on FileHadoop because of FileHadoop doesn't have nio
+        	if (mIndexFile instanceof FileHadoop) {
+        		mEnableIndexMemoryMapping = false;
+        }
             if (mIndexFile != null)
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
                                              : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);

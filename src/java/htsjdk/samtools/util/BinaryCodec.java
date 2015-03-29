@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -101,10 +100,10 @@ public class BinaryCodec implements Closeable {
         try {
             this.isWriting = writing;
             if (this.isWriting) {
-                this.outputStream = new FileOutputStream(file);
+                this.outputStream = IOUtil.getOutputStream(file);
                 this.outputFileName = file.getName();
             } else {
-                this.inputStream = new FileInputStream(file);
+                this.inputStream = IOUtil.getInputStream(file);
                 this.inputFileName = file.getName();
             }
         } catch (FileNotFoundException e) {
@@ -119,7 +118,7 @@ public class BinaryCodec implements Closeable {
      * @param writing  writing whether the file is being written to
      */
     public BinaryCodec(final String fileName, final boolean writing) {
-        this(new File(fileName), writing);
+        this(IOUtil.getFile(fileName), writing);
     }
 
     /**

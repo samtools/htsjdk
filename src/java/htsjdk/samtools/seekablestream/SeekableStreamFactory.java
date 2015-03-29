@@ -27,6 +27,7 @@ import htsjdk.samtools.util.hdfs.FileHadoop;
 import htsjdk.samtools.util.hdfs.FileOperate;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 
@@ -85,7 +86,18 @@ public class SeekableStreamFactory{
               	return new SeekableFileStream(new File(path));
   			}
           }
-
+        
+        //Add a method to get SeekableStream from File, and inside the methd, it can 
+        // judge the File/ FileHadoop and return the corresponding SeekableStream
+        //by Zong Jie 20150329
+        public SeekableStream getStreamFor(final File file) throws FileNotFoundException {
+        	if (file instanceof FileHadoop) {
+				return new SeekableHDFSstream((FileHadoop) file);
+			} else {
+				return new SeekableFileStream(file);
+			}
+        }
+        
         public SeekableStream getBufferedStream(SeekableStream stream){
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
         }

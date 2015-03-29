@@ -1,5 +1,7 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -11,8 +13,6 @@ import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -68,9 +68,10 @@ public class BamFileIoUtils {
      * @param skipTerminator If true, the terminator block of the input file will not be written to the output stream
      */
     public static void blockCopyBamFile(final File inputFile, final OutputStream outputStream, final boolean skipHeader, final boolean skipTerminator) {
-        FileInputStream in = null;
+    //use SeekableStream instead of FileInputStream, just because FileHadoop doesn't have FileInputStream
+    	SeekableStream in = null;
         try {
-            in = new FileInputStream(inputFile);
+            in = SeekableStreamFactory.getInstance().getStreamFor(inputFile);
 
             // a) It's good to check that the end of the file is valid and b) we need to know if there's a terminator block and not copy it if skipTerminator is true
             final BlockCompressedInputStream.FileTermination term = BlockCompressedInputStream.checkTermination(inputFile);
@@ -98,9 +99,10 @@ public class BamFileIoUtils {
                     pos -= in.skip(pos);
                 }
             }
-
+        
             // Copy remainder of input stream into output stream
-            final long currentPos = in.getChannel().position();
+        // I test the method in BamFileIoUtilsTest, and think it should be ok. Zong Jie 20150329
+            final long currentPos = in.position();
             final long length = inputFile.length();
             final long skipLast = ((term == BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK) && skipTerminator) ?
                     BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length : 0;
@@ -122,11 +124,13 @@ public class BamFileIoUtils {
      */
     public static void gatherWithBlockCopying(final List<File> bams, final File output, final boolean createIndex, final boolean createMd5) {
         try {
-            OutputStream out = new FileOutputStream(output);
-            if (createMd5) out = new Md5CalculatingOutputStream(out, new File(output.getAbsolutePath() + ".md5"));
+        	//use IOUtil instead of the FileOutputStream.
+            OutputStream out = IOUtil.getOutputStream(output);
+            if (createMd5) out = new Md5CalculatingOutputStream(out, IOUtil.getFile(output.getAbsolutePath() + ".md5"));
             File indexFile = null;
             if (createIndex) {
-                indexFile = new File(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix);
+            	//Use IOUtil instead of File constructor.
+                indexFile = IOUtil.getFile(output.getParentFile(), IOUtil.basename(output) + BAMIndex.BAMIndexSuffix);
                 out = new StreamInflatingIndexingOutputStream(out, indexFile);
             }
 
@@ -156,12 +160,12 @@ public class BamFileIoUtils {
     }
 
     private static OutputStream buildOutputStream(final File outputFile, final boolean createMd5, final boolean createIndex) throws IOException {
-        OutputStream outputStream = new FileOutputStream(outputFile);
+        OutputStream outputStream = IOUtil.getOutputStream(outputFile);
         if (createMd5) {
-            outputStream = new Md5CalculatingOutputStream(outputStream, new File(outputFile.getAbsolutePath() + ".md5"));
+            outputStream = new Md5CalculatingOutputStream(outputStream, IOUtil.getFile(outputFile.getAbsolutePath() + ".md5"));
         }
         if (createIndex) {
-            outputStream = new StreamInflatingIndexingOutputStream(outputStream, new File(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAMIndexSuffix));
+            outputStream = new StreamInflatingIndexingOutputStream(outputStream, IOUtil.getFile(outputFile.getParentFile(), IOUtil.basename(outputFile) + BAMIndex.BAMIndexSuffix));
         }
         return outputStream;
     }

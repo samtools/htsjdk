@@ -1,5 +1,7 @@
 package htsjdk.samtools.seekablestream;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 
@@ -22,7 +24,11 @@ public interface ISeekableStreamFactory {
      * @return
      */
     public SeekableStream getBufferedStream(SeekableStream stream);
-
+    
+    //Add a method to get SeekableStream from File, and inside the methd, it can 
+    // judge the File/ FileHadoop and return the corresponding SeekableStream
+    //by Zong Jie 20150329
+    public SeekableStream getStreamFor(final File file) throws FileNotFoundException;
     /**
      * Return a buffered {@code SeekableStream} which wraps the input {@code stream}
      * @param stream

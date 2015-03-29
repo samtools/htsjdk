@@ -30,8 +30,6 @@ import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -167,8 +165,8 @@ public class SAMFileWriterFactory {
             if (this.createMd5File && !createMd5File) {
                 System.err.println("Cannot create MD5 file for BAM because output file is not a regular file: " + outputFile.getAbsolutePath());
             }
-            OutputStream os = IOUtil.maybeBufferOutputStream(new FileOutputStream(outputFile, false), bufferSize);
-            if (createMd5File) os = new Md5CalculatingOutputStream(os, new File(outputFile.getAbsolutePath() + ".md5"));
+            OutputStream os = IOUtil.maybeBufferOutputStream(IOUtil.getOutputStream(outputFile), bufferSize);
+            if (createMd5File) os = new Md5CalculatingOutputStream(os, IOUtil.getFile(outputFile.getAbsolutePath() + ".md5"));
             final BAMFileWriter ret = new BAMFileWriter(os, outputFile, compressionLevel);
             final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputFile);
             if (this.createIndex && !createIndex) {
@@ -205,8 +203,8 @@ public class SAMFileWriterFactory {
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
         try {
             final SAMTextWriter ret = this.createMd5File
-                    ? new SAMTextWriter(new Md5CalculatingOutputStream(new FileOutputStream(outputFile, false),
-                    new File(outputFile.getAbsolutePath() + ".md5")))
+                    ? new SAMTextWriter(new Md5CalculatingOutputStream(IOUtil.getOutputStream(outputFile),
+                    		IOUtil.getFile(outputFile.getAbsolutePath() + ".md5")))
                     : new SAMTextWriter(outputFile);
             ret.setSortOrder(header.getSortOrder(), presorted);
             if (maxRecordsInRam != null) {
@@ -291,8 +289,8 @@ public class SAMFileWriterFactory {
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
         if (outputFile.getName().endsWith(SamReader.Type.CRAM_TYPE.fileExtension()))
             try {
-                return makeCRAMWriter(header, new FileOutputStream(outputFile), referenceFasta);
-            } catch (final FileNotFoundException e) {
+                return makeCRAMWriter(header, IOUtil.getOutputStream(outputFile), referenceFasta);
+            } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
         return makeSAMOrBAMWriter(header, presorted, outputFile);

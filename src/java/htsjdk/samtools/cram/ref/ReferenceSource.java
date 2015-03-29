@@ -23,6 +23,7 @@ import htsjdk.samtools.reference.FastaSequenceIndex;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -55,7 +56,7 @@ public class ReferenceSource {
 			rsFile = ReferenceSequenceFileFactory
 					.getReferenceSequenceFile(file);
 
-			File indexFile = new File(file.getAbsoluteFile() + ".fai");
+			File indexFile = IOUtil.getFile(file.getAbsoluteFile() + ".fai");
 			if (indexFile.exists())
 				fastaSequenceIndex = new FastaSequenceIndex(indexFile);
 		}

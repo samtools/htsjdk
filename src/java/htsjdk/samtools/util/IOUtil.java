@@ -499,7 +499,29 @@ public class IOUtil {
             throw new SAMException("Error opening file: " + file.getName(), ioe);
         }
     }
-
+    
+    /**
+     * get the outputStream and doesn't add any other Stream such as GzipStream<br>
+     * overwriting the file if it already exists
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
+    public static OutputStream getOutputStream(final File file) throws FileNotFoundException {
+    	return FileOperate.getOutputStream(file);
+    }
+    
+    /**
+     * get the inputStream and doesn't add any other Stream such as GzipStream
+     *
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
+    public static InputStream getInputStream(final File file) throws FileNotFoundException {
+    	return FileOperate.getInputStream(file);
+    }
+    
     /**
      * Opens a file for writing, overwriting the file if it already exists
      *
@@ -645,7 +667,19 @@ public class IOUtil {
             }
         });
     }
-
+    
+    public static File getFile(final String filePath) {
+        return FileOperate.getFile(filePath);
+    }
+    
+    public static File getFile(final String filePathParent, final String name) {
+        return FileOperate.getFile(filePathParent, name);
+    }
+    
+    public static File getFile(final File filePathParent, final String name) {
+        return FileOperate.getFile(filePathParent, name);
+    }
+    
     /**
      * Delete the given file or directory.  If a directory, all enclosing files and subdirs are also deleted.
      */

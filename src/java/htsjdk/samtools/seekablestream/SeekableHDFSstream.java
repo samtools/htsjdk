@@ -8,7 +8,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.log4j.Logger;
 
 /**
- * wrape the hdfs InputStream as SeekableStream
+ * wrape the hdfs InputStream as SeekableStream, which canbe generated from FileHadoop
  * @author zong0jie
  *
  */
