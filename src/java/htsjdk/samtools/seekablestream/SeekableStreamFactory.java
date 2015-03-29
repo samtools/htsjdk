@@ -23,6 +23,9 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.hdfs.FileHadoop;
+import htsjdk.samtools.util.hdfs.FileOperate;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -71,15 +74,17 @@ public class SeekableStreamFactory{
         public SeekableStream getStreamFor(final String path) throws IOException {
             // todo -- add support for SeekableBlockInputStream
 
-            if (path.startsWith("http:") || path.startsWith("https:")) {
-                final URL url = new URL(path);
-                return new SeekableHTTPStream(url);
-            } else if (path.startsWith("ftp:")) {
-                return new SeekableFTPStream(new URL(path));
-            } else {
-                return new SeekableFileStream(new File(path));
-            }
-        }
+        	  if (path.startsWith("http:") || path.startsWith("https:")) {
+                  final URL url = new URL(path);
+                  return new SeekableHTTPStream(url);
+              } else if (path.startsWith("ftp:")) {
+                  return new SeekableFTPStream(new URL(path));
+              } else if (FileHadoop.isHdfs(path)) {
+              	return new SeekableHDFSstream(new FileHadoop(path));
+              } else {
+              	return new SeekableFileStream(new File(path));
+  			}
+          }
 
         public SeekableStream getBufferedStream(SeekableStream stream){
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
