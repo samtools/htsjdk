@@ -27,7 +27,6 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.hdfs.FileOperate;
 import htsjdk.samtools.util.hdfs.RandomFileInt;
 import htsjdk.samtools.util.hdfs.RandomFileInt.RandomFileFactory;
 
@@ -220,10 +219,7 @@ public class IndexedFastaSequenceFileHadoop extends AbstractFastaSequenceFile {
 	}
 
 	/**
-	 * 修正输入的start和end的坐标为随机文本的实际坐标
-	 * 
-	 * @return null表示失败
-	 * @throws IOException
+	 * modify the coordinates of real start and end to the RandomFileInt's  coordinates
 	 */
 	private long[] getStartEndReal(FastaSequenceIndexEntry indexEntry, long start, long end) {
 
@@ -245,24 +241,21 @@ public class IndexedFastaSequenceFileHadoop extends AbstractFastaSequenceFile {
 	}
 
 	/**
+	 * 
 	 * @param chrStart
-	 *            该染色体起点在文本中的位置
 	 * @param site
-	 *            想转换的某个染色体坐标
 	 * @param rowLen
-	 *            每行有多少碱基
+	 * @param rowEnterLen
 	 * @return
 	 * @throws IOException
 	 */
 	private long getRealSite(long chrStart, long site, int rowLen, int rowEnterLen) throws IOException {
-		// 设定到0位
 		randomChrFileInt.seek(0);
-		// 实际序列在文件中的起点
+		// the start point at the RandomFileInt
 		long siteReal = chrStart + rowEnterLen * getRowNum(site, rowLen) + getBias(site, rowLen);
 		return siteReal;
 	}
-
-	/** 指定染色体的某个位点，返回该位点的偏移，也就是在某一行的第几个碱基 */
+	
 	private int getBias(long site, int rowLen) {
 		return (int) (site % rowLen);
 	}
