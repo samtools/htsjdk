@@ -1,9 +1,7 @@
 [![Build Status](https://travis-ci.org/samtools/htsjdk.svg?branch=master)](https://travis-ci.org/samtools/htsjdk)
 
-I modify this package and now it can support hadoop hdfs. You should modify the configure file in src/java/hdfs.config.properties
+I modify this package and now it can support hadoop hdfs. You should modify the configure file in 
 
-Functions of read and write sam/bam/bai, metrics, IndexedFastaSequenceFile on Hdfs have been tested.  
-#==============================================#
 A Java API for high-throughput sequencing data (HTS) formats.  
 
 HTSJDK is an implementation of a unified Java library for accessing
