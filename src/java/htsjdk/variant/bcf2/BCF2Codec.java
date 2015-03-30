@@ -25,6 +25,7 @@
 
 package htsjdk.variant.bcf2;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
@@ -51,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -210,9 +212,9 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
     @Override
     public boolean canDecode( final String path ) {
-        FileInputStream fis = null;
+        InputStream fis = null;
         try {
-            fis = new FileInputStream(path);
+            fis = IOUtil.getInputStream(IOUtil.getFile(path));
             final BCFVersion version = BCFVersion.readBCFVersion(fis);
             return version != null && version.getMajorVersion() == ALLOWED_MAJOR_VERSION;
         } catch ( FileNotFoundException e ) {

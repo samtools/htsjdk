@@ -17,6 +17,7 @@
  */
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.TribbleException;
 
@@ -26,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 
 /**
  * A simple class that provides {@link #readLine()} functionality around a PositionalBufferedStream
@@ -129,7 +131,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
     }
 
     public static void main(final String[] args) throws Exception {
-        final File testFile = new File(args[0]);
+        final File testFile = IOUtil.getFile(args[0]);
         final int iterations = Integer.valueOf(args[1]);
         final boolean includeBufferedReader = Boolean.valueOf(args[2]);
         long t0, lineCount, dt;
@@ -138,7 +140,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
         System.out.printf("Testing %s%n", args[0]);
         for (int i = 0; i < iterations; i++) {
             if ( includeBufferedReader ) {
-                final BufferedReader reader2 = new BufferedReader(new FileReader(testFile));
+                final BufferedReader reader2 = new BufferedReader(new InputStreamReader(IOUtil.getInputStream(testFile)));
                 t0 = System.currentTimeMillis();
                 lineCount = 0;
                 while (reader2.readLine() != null) {
@@ -151,7 +153,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
             }
 
             if ( includeBufferedReader ) {
-                final LongLineBufferedReader longLineBufferedReader = new LongLineBufferedReader(new BufferedReader(new FileReader(testFile)));
+                final LongLineBufferedReader longLineBufferedReader = new LongLineBufferedReader(new BufferedReader(new InputStreamReader(IOUtil.getInputStream(testFile))));
                 t0 = System.currentTimeMillis();
                 lineCount = 0;
                 while (longLineBufferedReader.readLine() != null) {
@@ -163,7 +165,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
                 longLineBufferedReader.close();
             }
             
-            final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
+            final PositionalBufferedStream pbs = new PositionalBufferedStream(IOUtil.getInputStream(testFile));
             final LineReader reader = new AsciiLineReader(pbs);
             t0 = System.currentTimeMillis();
             lineCount = 0;

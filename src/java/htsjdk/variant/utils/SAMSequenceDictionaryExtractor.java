@@ -65,7 +65,7 @@ public class SAMSequenceDictionaryExtractor {
             SAMSequenceDictionary extractDictionary(final File dictionary) {
                 BufferedLineReader bufferedLineReader = null;
                 try {
-                    bufferedLineReader = new BufferedLineReader(new FileInputStream(dictionary));
+                    bufferedLineReader = new BufferedLineReader(IOUtil.getInputStream(dictionary));
                     final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
                     final SAMFileHeader header = codec.decode(bufferedLineReader, dictionary.toString());
                     return header.getSequenceDictionary();

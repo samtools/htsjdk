@@ -156,7 +156,7 @@ public class VariantContextWriterBuilder {
      * @return this VariantContextWriterBuilder
      */
     public VariantContextWriterBuilder setOutputFile(final String outFile) {
-        this.outFile = new File(outFile);
+        this.outFile = IOUtil.getFile(outFile);
         this.outStream = null;
         determineOutputTypeFromFilename();
         return this;
@@ -356,13 +356,13 @@ public class VariantContextWriterBuilder {
         OutputStream outStreamFromFile = this.outStream;
         if (FILE_TYPES.contains(this.outType)) {
             try {
-                outStreamFromFile = IOUtil.maybeBufferOutputStream(new FileOutputStream(outFile), bufferSize);
+                outStreamFromFile = IOUtil.maybeBufferOutputStream(IOUtil.getOutputStream(outFile), bufferSize);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeIOException("File not found: " + outFile, e);
             }
 
             if (createMD5)
-                outStreamFromFile = new Md5CalculatingOutputStream(outStreamFromFile, new File(outFile.getAbsolutePath() + ".md5"));
+                outStreamFromFile = new Md5CalculatingOutputStream(outStreamFromFile, IOUtil.getFile(outFile.getAbsolutePath() + ".md5"));
         }
 
         switch (typeToBuild) {

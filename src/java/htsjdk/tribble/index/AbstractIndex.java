@@ -18,13 +18,13 @@
 
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -157,7 +157,7 @@ public abstract class AbstractIndex implements MutableIndex {
      * @param featureFile the feature file to create an index from
      */
     public AbstractIndex(final String featureFile) {
-        this(new File(featureFile));
+        this(IOUtil.getFile(featureFile));
     }
 
     public AbstractIndex(final File featureFile) {
@@ -270,7 +270,7 @@ public abstract class AbstractIndex implements MutableIndex {
     private void readHeader(final LittleEndianInputStream dis) throws IOException {
 
         version = dis.readInt();
-        indexedFile = new File(dis.readString());
+        indexedFile = IOUtil.getFile(dis.readString());
         indexedFileSize = dis.readLong();
         indexedFileTS = dis.readLong();
         indexedFileMD5 = dis.readString();
@@ -345,7 +345,7 @@ public abstract class AbstractIndex implements MutableIndex {
     public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
         if (!featureFile.isFile()) return;
         final LittleEndianOutputStream idxStream =
-                new LittleEndianOutputStream(new FileOutputStream(Tribble.indexFile(featureFile)));
+                new LittleEndianOutputStream(IOUtil.getOutputStream(Tribble.indexFile(featureFile)));
         write(idxStream);
         idxStream.close();
 

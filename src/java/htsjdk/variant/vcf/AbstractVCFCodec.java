@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -40,6 +41,7 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -624,9 +626,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     public final static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
         try {
-            return isVCFStream(new FileInputStream(potentialInput), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new GZIPInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new BlockCompressedInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE);
+        	File potentialInputFile = IOUtil.getFile(potentialInput);
+            return isVCFStream(IOUtil.getInputStream(potentialInputFile), MAGIC_HEADER_LINE) ||
+                    isVCFStream(new GZIPInputStream(IOUtil.getInputStream(potentialInputFile)), MAGIC_HEADER_LINE) ||
+                    isVCFStream(new BlockCompressedInputStream(IOUtil.getInputStream(potentialInputFile)), MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;
         } catch ( IOException e ) {
