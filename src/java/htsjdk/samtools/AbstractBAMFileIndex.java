@@ -25,6 +25,8 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.hdfs.RandomFileInt;
+import htsjdk.samtools.util.hdfs.RandomFileInt.RandomFileFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -533,7 +535,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         private static final int PAGE_MASK = ~PAGE_OFFSET_MASK;
         private static final int INVALID_PAGE = 1;
         private final File mFile;
-        private RandomAccessFile mRandomAccessFile;
+        private RandomFileInt mRandomAccessFile;
         private final int mFileLength;
         private int mFilePointer = 0;
         private int mCurrentPage = INVALID_PAGE;
@@ -542,7 +544,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         RandomAccessFileBuffer(final File file) {
             mFile = file;
             try {
-                mRandomAccessFile = new RandomAccessFile(file, "r");
+                mRandomAccessFile = RandomFileFactory.createInstance(file);
                 final long fileLength = mRandomAccessFile.length();
                 if (fileLength > Integer.MAX_VALUE) {
                     throw new RuntimeException("BAM index file " + mFile + " is too large: " + fileLength);

@@ -17,7 +17,7 @@ public interface RandomFileInt {
 	
 	public void close() throws IOException;
 	public void readFully(byte[] signatureBytes) throws IOException;
-	
+	public void readFully(byte[] mBuffer, int i, int readLength) throws IOException;
 	public long length() throws IOException;
 	public int read() throws IOException; 
 	public int skipBytes(int n) throws IOException;
@@ -72,6 +72,7 @@ class RandomFileHdfs implements RandomFileInt {
 	}
 	
 	public RandomFileHdfs(FileHadoop file) throws IOException {
+		fileHadoop = file;
 		fsDataInputStream = file.getInputStream();
 	}
 	

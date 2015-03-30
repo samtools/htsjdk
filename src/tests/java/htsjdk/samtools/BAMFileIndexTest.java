@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StopWatch;
 import htsjdk.samtools.util.StringUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -41,15 +42,32 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-import static org.testng.Assert.*;
+import org.testng.Assert;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Test BAM file indexing.
  */
 public class BAMFileIndexTest {
     private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private File BAM_FILE_HADOOP = IOUtil.getFile("/hdfs:/testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
-
+    
+    @BeforeTest
+   public void beforeTest() {
+    	IOUtil.copyFile(BAM_FILE, BAM_FILE_HADOOP);
+    	File baiFile = IOUtil.getFile(BAM_FILE.getPath() + ".bai");
+    	File baiFileHdp = IOUtil.getFile(BAM_FILE_HADOOP.getPath() + ".bai");
+    	IOUtil.copyFile(baiFile, baiFileHdp);
+   }
+    @AfterTest
+    public void afterTest() {
+    	IOUtil.deleteFiles(BAM_FILE_HADOOP);
+    	IOUtil.deleteFiles(IOUtil.getFile(BAM_FILE_HADOOP.getPath() + ".bai"));
+   }
     @Test
     public void testGetSearchBins()
             throws Exception {
@@ -75,12 +93,16 @@ public class BAMFileIndexTest {
             throws Exception {
         assertEquals(runQueryTest(BAM_FILE, "chrM", 10400, 10600, true), 1);
         assertEquals(runQueryTest(BAM_FILE, "chrM", 10400, 10600, false), 2);
+        
+        assertEquals(runQueryTest(BAM_FILE_HADOOP, "chrM", 10400, 10600, true), 1);
+        assertEquals(runQueryTest(BAM_FILE_HADOOP, "chrM", 10400, 10600, false), 2);
     }
 
     @Test(groups = {"slow"})
     public void testRandomQueries()
             throws Exception {
-        runRandomTest(BAM_FILE, 1000, new Random());
+//        runRandomTest(BAM_FILE, 1000, new Random());
+        runRandomTest(BAM_FILE_HADOOP, 1000, new Random());
     }
 
     @Test
