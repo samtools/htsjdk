@@ -194,6 +194,9 @@ public class IndexedFastaSequenceFileHadoop extends AbstractFastaSequenceFile {
 
 		int num = 0;
 		int lineNum = getBias(start, basesPerLine);
+		//when the lineNum is 0, it means at the end of the line.
+		if (lineNum == 0) lineNum = basesPerLine;
+		
 		int byteNum = 1;
 		boolean isBase = true;
 		for (int i = 0; i < readInfo.length; i++) {
