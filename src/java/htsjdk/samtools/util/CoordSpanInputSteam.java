@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * An input stream that wraps a {@link htsjdk.samtools.seekablestream.SeekableStream} to produce only bytes specified within coordinates.
  * Created by vadim on 25/03/2015.
  */
 public class CoordSpanInputSteam extends InputStream {
@@ -18,13 +19,23 @@ public class CoordSpanInputSteam extends InputStream {
     private Chunk current;
     private boolean eof = false;
 
-    public CoordSpanInputSteam(SeekableStream delegate, long[] coords) {
+    /**
+     * Wrap {@link htsjdk.samtools.seekablestream.SeekableStream} to read only bytes within boundaries specified in the coords array.
+     * The coords array consists of [inclusive; exclusive) pairs of long coordinates.
+     * This constructor will throw exception if a start coordinate is beyond stream length.
+     * End coordinates are capped at the stream length.
+     */
+    public CoordSpanInputSteam(SeekableStream delegate, long[] coords) throws IOException {
         this.delegate = delegate;
 
         List<Chunk> chunks = new ArrayList<Chunk>();
         for (int i = 0; i < coords.length; i += 2) {
-            chunks.add(new Chunk(coords[i], coords[i + 1]));
+            if (coords[i] > delegate.length()) throw new RuntimeException("Chunk start is passed EOF: " + coords[i]);
+            Chunk chunk = new Chunk(coords[i], coords[i + 1] > delegate.length() ? delegate.length() : coords[i + 1]);
+            chunks.add(chunk);
         }
+        it = chunks.iterator();
+        nextChunk();
     }
 
     private void nextChunk() throws IOException {
@@ -49,6 +60,7 @@ public class CoordSpanInputSteam extends InputStream {
 
         nextChunk();
 
+        if (eof) return -1;
         return delegate.read();
     }
 
