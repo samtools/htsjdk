@@ -1,6 +1,5 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.IOUtil;
@@ -9,6 +8,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -204,7 +204,8 @@ class UrlInputResource extends InputResource {
     final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
         @Override
         public SeekableStream make() {
-            return new SeekableHTTPStream(urlResource);
+            try { return SeekableStreamFactory.getInstance().getStreamFor(urlResource); }
+            catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
         }
     });
 
