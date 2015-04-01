@@ -66,19 +66,19 @@ class ContainerHeaderIO {
             throws IOException {
         final CRC32_OutputStream cos = new CRC32_OutputStream(os);
 
-        int len = CramInt.writeInt32(c.containerByteSize, cos);
-        len += ITF8.writeUnsignedITF8(c.sequenceId, cos);
-        len += ITF8.writeUnsignedITF8(c.alignmentStart, cos);
-        len += ITF8.writeUnsignedITF8(c.alignmentSpan, cos);
-        len += ITF8.writeUnsignedITF8(c.nofRecords, cos);
-        len += LTF8.writeUnsignedLTF8(c.globalRecordCounter, cos);
-        len += LTF8.writeUnsignedLTF8(c.bases, cos);
-        len += ITF8.writeUnsignedITF8(c.blockCount, cos);
-        len += CramArray.write(c.landmarks, cos);
+        int len = (CramInt.writeInt32(c.containerByteSize, cos)+7)/8;
+        len += (ITF8.writeUnsignedITF8(c.sequenceId, cos)+7)/8;
+        len += (ITF8.writeUnsignedITF8(c.alignmentStart, cos)+7)/8;
+        len += (ITF8.writeUnsignedITF8(c.alignmentSpan, cos)+7)/8;
+        len += (ITF8.writeUnsignedITF8(c.nofRecords, cos)+7)/8;
+        len += (LTF8.writeUnsignedLTF8(c.globalRecordCounter, cos)+7)/8;
+        len += (LTF8.writeUnsignedLTF8(c.bases, cos)+7)/8;
+        len += (ITF8.writeUnsignedITF8(c.blockCount, cos)+7)/8;
+        len += (CramArray.write(c.landmarks, cos)+7)/8;
 
         if (major >= 3) {
             os.write(cos.getCrc32_LittleEndian());
-            len += 4;
+            len += 4*8;
         }
 
         return len;

@@ -58,7 +58,7 @@ public class CramInt {
         os.write((byte) (value >> 8));
         os.write((byte) (value >> 16));
         os.write((byte) (value >> 24));
-        return 4;
+        return 4*8;
     }
 
     /**
