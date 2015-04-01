@@ -3,7 +3,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -79,6 +78,23 @@ public class CRAMFileIndexTest {
     }
 
     @Test
+    public void testIteratorFromFileSpan() throws IOException {
+        SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
+        SAMRecordIterator samRecordIterator = samReader.iterator();
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
+        reader.setValidationStringency(ValidationStringency.SILENT);
+
+        final SAMFileSpan allContainers = reader.getFilePointerSpanningReads();
+        final CloseableIterator<SAMRecord> iterator = reader.getIterator(allContainers);
+        Assert.assertTrue(iterator.hasNext());
+        int counter = 0 ;
+        while (iterator.hasNext()) {
+            counter++;
+        }
+        Assert.assertEquals(counter, 10000);
+    }
+
+    @Test
     public void scanAllUnmappedReads() throws IOException {
         SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
         CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
@@ -105,73 +121,6 @@ public class CRAMFileIndexTest {
         Assert.assertEquals(counter, 279);
 
         reader.close();
-    }
-
-    private static class ByteArraySeekableStream extends SeekableStream {
-        private byte[] bytes;
-        private long position = 0;
-
-        public ByteArraySeekableStream(byte[] bytes) {
-            this.bytes = bytes;
-        }
-
-        @Override
-        public long length() {
-            return bytes.length;
-        }
-
-        @Override
-        public long position() throws IOException {
-            return position;
-        }
-
-        @Override
-        public void seek(long position) throws IOException {
-            this.position = position;
-        }
-
-        @Override
-        public int read() throws IOException {
-            if (position < bytes.length)
-                return 0xFF & bytes[((int) position++)];
-            else return -1;
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) throws IOException {
-            if (b == null) {
-                throw new NullPointerException();
-            } else if (off < 0 || len < 0 || len > b.length - off) {
-                throw new IndexOutOfBoundsException();
-            }
-            if (position >= bytes.length) {
-                return -1;
-            }
-            if (position + len > bytes.length) {
-                len = (int) (bytes.length - position);
-            }
-            if (len <= 0) {
-                return 0;
-            }
-            System.arraycopy(bytes, (int) position, b, off, len);
-            position += len;
-            return len;
-        }
-
-        @Override
-        public void close() throws IOException {
-            bytes = null;
-        }
-
-        @Override
-        public boolean eof() throws IOException {
-            return position >= bytes.length;
-        }
-
-        @Override
-        public String getSource() {
-            return null;
-        }
     }
 
     @BeforeTest

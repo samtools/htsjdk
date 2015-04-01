@@ -112,10 +112,14 @@ public class ContainerIO {
             Slice s = c.slices[i];
             s.offset = c.landmarks[i];
             s.size = c.landmarks[i + 1] - s.offset;
+            s.containerOffset = c.offset;
+            s.index = i ;
         }
         Slice lastSlice = c.slices[c.slices.length - 1];
         lastSlice.offset = c.landmarks[c.landmarks.length - 1];
         lastSlice.size = c.containerByteSize - lastSlice.offset;
+        lastSlice.containerOffset = c.offset;
+        lastSlice.index = c.slices.length - 1;
     }
 
     /**

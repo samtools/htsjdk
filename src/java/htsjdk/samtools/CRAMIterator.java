@@ -57,6 +57,7 @@ public class CRAMIterator implements SAMRecordIterator {
     public Container container;
     private long containerOffset = 0;
     private SamReader mReader;
+    long firstContainerOffset = 0 ;
 
     private ContainerParser parser;
     private ReferenceSource referenceSource;
@@ -82,6 +83,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.is = new CountingInputStream(is);
         this.referenceSource = referenceSource;
         cramHeader = CramIO.readCramHeader(this.is);
+        firstContainerOffset = this.is.getCount();
         records = new ArrayList<SAMRecord>(10000);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
@@ -177,10 +179,11 @@ public class CRAMIterator implements SAMRecordIterator {
         iterator = records.iterator();
     }
 
-    public void jumpWithinContainerToPos(int pos) {
+    public void jumpWithinContainerToPos(int refIndex, int pos) {
         if (!hasNext()) return;
         int i = 0;
         for (SAMRecord record : records) {
+            if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) continue;
 
             if (pos <= 0) {
                 if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
@@ -195,6 +198,7 @@ public class CRAMIterator implements SAMRecordIterator {
             }
             i++;
         }
+        iterator = Collections.<SAMRecord>emptyList().iterator();
     }
 
     @Override

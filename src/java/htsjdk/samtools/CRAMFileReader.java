@@ -24,6 +24,8 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.CoordSpanInputSteam;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 
 import java.io.File;
@@ -31,6 +33,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
@@ -38,7 +43,7 @@ import java.io.InputStream;
  *
  * @author vadim
  */
-public class CRAMFileReader extends SamReader.ReaderImplementation {
+public class CRAMFileReader extends SamReader.ReaderImplementation implements SamReader.Indexing {
     private File file;
     private final ReferenceSource referenceSource;
     private InputStream is;
@@ -81,7 +86,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
         this.file = file;
         this.is = is;
         this.referenceSource = referenceSource;
-
         getIterator();
     }
 
@@ -174,6 +178,21 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
     }
 
     @Override
+    public boolean hasBrowseableIndex() {
+        return false;
+    }
+
+    @Override
+    public BrowseableBAMIndex getBrowseableIndex() {
+        return null;
+    }
+
+    @Override
+    public SAMRecordIterator iterator(SAMFileSpan chunks) {
+        return null;
+    }
+
+    @Override
     public SAMFileHeader getFileHeader() {
         return it.getSAMFileHeader();
     }
@@ -200,12 +219,29 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
 
     @Override
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan fileSpan) {
-        throw new RuntimeException("Not implemented.");
+        // get the file coordinates for the span:
+        long[] coords = ((BAMFileSpan) fileSpan).toCoordinateArray();
+        if (coords[0] != 0) {
+            // prepend file header coords to the coord array:
+            final long[] coordsFromStart = new long[coords.length + 2];
+            coordsFromStart[0] = 0;
+            coordsFromStart[1] = it.firstContainerOffset;
+            System.arraycopy(coords, 0, coordsFromStart, 2, coords.length);
+            coords = coordsFromStart ;
+        }
+        try {
+            // create an input stream that reads the source cram stream only within the coord pairs:
+            SeekableStream ss = getSeekableStreamOrFailWithRTE();
+            InputStream is = new CoordSpanInputSteam(ss, coords) ;
+            return new CRAMIterator(is, referenceSource) ;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        throw new RuntimeException("Not implemented.");
+        return new BAMFileSpan(new Chunk(it.firstContainerOffset,Long.MAX_VALUE));
     }
 
     private static final SAMRecordIterator emptyIterator = new SAMRecordIterator() {
@@ -240,8 +276,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
                                                             final int start) {
         long[] filePointers = null;
 
-        // Hit the index to determine the chunk boundaries for the required
-        // data.
+        // Hit the index to determine the chunk boundaries for the required data.
         final SAMFileHeader fileHeader = getFileHeader();
         final int referenceIndex = fileHeader.getSequenceIndex(sequence);
         if (referenceIndex != -1) {
@@ -266,47 +301,20 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
                     c = ContainerIO.readContainerHeader(it.getCramHeader().getVersion().major, s);
                     if (c.alignmentStart + c.alignmentSpan > start) {
                         s.seek(containerOffset);
-                        it.jumpWithinContainerToPos(start);
-                        return it;
+                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
+                        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, -1));
                     }
                 } else {
                     c = it.container;
                     if (c.alignmentStart + c.alignmentSpan > start) {
-                        it.jumpWithinContainerToPos(start);
-                        return it;
+                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence),start);
+                        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, -1));
                     }
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
-//        final CRAMIterator si;
-//        try {
-//            s.seek(0);
-//            si = new CRAMIterator(s, referenceSource);
-//            si.setValidationStringency(validationStringency);
-//            it = si;
-//        } catch (final IOException e) {
-//            throw new RuntimeEOFException(e);
-//        }
-//
-//
-//        for (int i = 0; i < filePointers.length; i += 2) {
-//            final long containerOffset = filePointers[i] >>> 16;
-//            try {
-//                s.seek(containerOffset);
-//                c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
-//                if (c.alignmentStart + c.alignmentSpan > start) {
-//                    s.seek(containerOffset);
-//                    si.jumpWithinContainerToPos(start);
-//                    return si;
-//                }
-//            } catch (final IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        it.jumpWithinContainerToPos(start);
         return it;
     }
 
@@ -324,7 +332,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
             Container c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
             s.seek(s.position() + c.containerByteSize);
             it = si;
-            it.jumpWithinContainerToPos(-1);
+            it.jumpWithinContainerToPos(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
         } catch (final IOException e) {
             throw new RuntimeEOFException(e);
         }
@@ -388,5 +396,117 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
     void enableFileSource(final SamReader reader, final boolean enabled) {
         if (it != null)
             it.setFileSource(enabled ? reader : null);
+    }
+
+    private static class IntervalIterator implements SAMRecordIterator {
+        private SAMRecordIterator delegate ;
+        private QueryInterval interval ;
+        private SAMRecord next ;
+        private boolean noMore = false ;
+
+        public IntervalIterator(SAMRecordIterator delegate, QueryInterval interval) {
+            this.delegate = delegate;
+            this.interval = interval;
+        }
+
+        @Override
+        public SAMRecordIterator assertSorted(SortOrder sortOrder) {
+            return null;
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (next != null) return true ;
+            if (noMore) return false ;
+
+            while (delegate.hasNext()) {
+                next = delegate.next() ;
+
+                if (isWithinTheInterval(next)) break ;
+                if (isPassedTheInterval(next)) {
+                    next = null ;
+                    noMore = true ;
+                    return false ;
+                }
+                next = null ;
+            }
+
+            return next != null;
+        }
+
+        protected boolean isWithinTheInterval(SAMRecord record) {
+            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex ;
+            if (interval.start == -1) return refMatch ;
+
+            boolean startMatch = record.getAlignmentStart() >=interval.start ;
+            if (interval.end == -1) return startMatch ;
+
+            return record.getAlignmentStart() <=interval.end;
+        }
+
+        protected boolean isPassedTheInterval(SAMRecord record) {
+            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex ;
+            if (!refMatch) return true ;
+
+            if (interval.end == -1) return false ;
+
+            return record.getAlignmentStart() >interval.end;
+        }
+
+        @Override
+        public SAMRecord next() {
+            SAMRecord result = next;
+            next = delegate.next();
+            return result ;
+        }
+
+        @Override
+        public void remove() {
+            throw new RuntimeException("Not available.") ;
+        }
+    }
+
+    public static void main(String[] args) {
+        File cramFile = new File(args[0]);
+        File refFile = new File(args[1]);
+        String query = args[2];
+
+//        File cramFile = new File ("H:\\dev\\Data\\CRAM_TEST_DATA\\HG00551.unmapped.ILLUMINA.bwa.PUR.low_coverage.20120522.cram") ;
+//        File refFile = new File ("H:\\dev\\Data\\CRAM_TEST_DATA\\hs37d5.fa") ;
+//        String query = "Y:1";
+
+        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
+        CRAMFileReader reader = new CRAMFileReader(cramFile, new File (cramFile.getAbsolutePath()+".bai"), new ReferenceSource(refFile)) ;
+        final SAMSequenceDictionary sequenceDictionary = reader.getFileHeader().getSequenceDictionary();
+        QueryInterval interval = queryFromString(query, sequenceDictionary);
+
+        final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(sequenceDictionary.getSequence(interval.referenceIndex).getSequenceName(), interval.start);
+        while (iterator.hasNext()) {
+            SAMRecord record = iterator.next() ;
+            System.out.print(record.getSAMString());
+        }
+    }
+
+    private static Pattern queryPattern = Pattern.compile("^([^:\\s]+)(?::(\\d+)(?:-(\\d+))?)?$");
+
+    private static QueryInterval queryFromString(String s, SAMSequenceDictionary dic) {
+
+        Matcher m = queryPattern.matcher(s);
+        if (m.matches()) {
+            String refName = m.group(1);
+            int refIndex = dic.getSequenceIndex(refName);
+            int start = -1;
+            int end = -1;
+
+            if (m.groupCount() > 2) start = Integer.parseInt(m.group(2));
+            if (m.groupCount() > 3) end = Integer.parseInt(m.group(2));
+            return new QueryInterval(refIndex, start, end);
+        }
+        return null;
     }
 }
