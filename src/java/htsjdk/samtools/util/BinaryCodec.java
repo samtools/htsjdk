@@ -35,6 +35,8 @@ import java.io.SyncFailedException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.hadoop.fs.FSDataOutputStream;
+
 /**
  * Encapsulates file representation of various primitive data types.  Forces little-endian disk representation.
  * Note that this class is currently not very efficient.  There are plans to increase the size of the ByteBuffer,
@@ -601,7 +603,13 @@ public class BinaryCodec implements Closeable {
                         // because on some OSs it will fail for some types of output.  E.g. writing to /dev/null
                         // on some Unixes.
                     }
-                }
+                } else if (this.outputStream instanceof FSDataOutputStream) {
+					try {
+						((FSDataOutputStream)outputStream).hsync();
+					} catch (Exception e) {
+						// TODO: handle exception
+					}
+				}
                 this.outputStream.close();
             }
             else this.inputStream.close();
