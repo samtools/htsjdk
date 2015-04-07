@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
+import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
@@ -89,6 +90,7 @@ public class CRAMFileIndexTest {
         Assert.assertTrue(iterator.hasNext());
         int counter = 0 ;
         while (iterator.hasNext()) {
+            iterator.next() ;
             counter++;
         }
         Assert.assertEquals(counter, 10000);
