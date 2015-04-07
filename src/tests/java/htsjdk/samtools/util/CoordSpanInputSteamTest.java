@@ -1,6 +1,6 @@
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.ByteArraySeekableStream;
+import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
