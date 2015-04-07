@@ -33,11 +33,9 @@ import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringLineReader;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,14 +68,14 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private Set<String> captureTags = new TreeSet<String>();
     private Set<String> ignoreTags = new TreeSet<String>();
 
-    private CRAMIndexer indexer ;
-    private long offset ;
+    private CRAMIndexer indexer;
+    private long offset;
 
-    public  CRAMFileWriter(OutputStream os, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
-        this (os, null, source, samFileHeader, fileName);
+    public CRAMFileWriter(OutputStream os, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
+        this(os, null, source, samFileHeader, fileName);
     }
 
-    public  CRAMFileWriter(OutputStream os, OutputStream indexOS, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
+    public CRAMFileWriter(OutputStream os, OutputStream indexOS, ReferenceSource source, SAMFileHeader samFileHeader, String fileName) {
         this.os = os;
         this.source = source;
         this.samFileHeader = samFileHeader;
@@ -276,10 +274,10 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         Container container = containerFactory.buildContainer(cramRecords);
         for (Slice slice : container.slices)
             slice.setRefMD5(refs);
-        container.offset=offset;
+        container.offset = offset;
         offset += ContainerIO.writeContainer(cramVersion, container, os);
         if (indexer != null) {
-            for (Slice slice:container.slices) {
+            for (Slice slice : container.slices) {
                 indexer.processAlignment(slice);
             }
         }
@@ -336,7 +334,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             if (!samRecords.isEmpty()) flushContainer();
             CramIO.issueEOF(cramVersion, os);
             os.flush();
-            indexer.finish();
+            if (indexer != null)
+                indexer.finish();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
