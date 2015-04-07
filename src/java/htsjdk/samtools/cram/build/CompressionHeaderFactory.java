@@ -280,7 +280,7 @@ public class CompressionHeaderFactory {
                 h.externalIds.add(externalID);
                 h.externalCompressors.put(externalID,
                         ExternalCompressor.createRANS(RANS.ORDER.ONE));
-                h.tMap.put(externalID,
+                h.tMap.put(id,
                         ByteArrayStopEncoding.toParam((byte) 1, externalID));
             }
         }
