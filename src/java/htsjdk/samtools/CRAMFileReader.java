@@ -33,7 +33,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -227,13 +226,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             coordsFromStart[0] = 0;
             coordsFromStart[1] = it.firstContainerOffset;
             System.arraycopy(coords, 0, coordsFromStart, 2, coords.length);
-            coords = coordsFromStart ;
+            coords = coordsFromStart;
         }
         try {
             // create an input stream that reads the source cram stream only within the coord pairs:
             SeekableStream ss = getSeekableStreamOrFailWithRTE();
-            InputStream is = new CoordSpanInputSteam(ss, coords) ;
-            return new CRAMIterator(is, referenceSource) ;
+            InputStream is = new CoordSpanInputSteam(ss, coords);
+            return new CRAMIterator(is, referenceSource);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -241,7 +240,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        return new BAMFileSpan(new Chunk(it.firstContainerOffset,Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(it.firstContainerOffset, Long.MAX_VALUE));
     }
 
     private static final SAMRecordIterator emptyIterator = new SAMRecordIterator() {
@@ -307,7 +306,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 } else {
                     c = it.container;
                     if (c.alignmentStart + c.alignmentSpan > start) {
-                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence),start);
+                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
                         return new IntervalIterator(it, new QueryInterval(referenceIndex, start, -1));
                     }
                 }
@@ -399,10 +398,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     private static class IntervalIterator implements SAMRecordIterator {
-        private SAMRecordIterator delegate ;
-        private QueryInterval interval ;
-        private SAMRecord next ;
-        private boolean noMore = false ;
+        private SAMRecordIterator delegate;
+        private QueryInterval interval;
+        private SAMRecord next;
+        private boolean noMore = false;
 
         public IntervalIterator(SAMRecordIterator delegate, QueryInterval interval) {
             this.delegate = delegate;
@@ -421,53 +420,55 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         @Override
         public boolean hasNext() {
-            if (next != null) return true ;
-            if (noMore) return false ;
+            if (next != null) return true;
+            if (noMore) return false;
 
             while (delegate.hasNext()) {
-                next = delegate.next() ;
+                next = delegate.next();
 
-                if (isWithinTheInterval(next)) break ;
+                if (isWithinTheInterval(next)) break;
                 if (isPassedTheInterval(next)) {
-                    next = null ;
-                    noMore = true ;
-                    return false ;
+                    next = null;
+                    noMore = true;
+                    return false;
                 }
-                next = null ;
+                next = null;
             }
 
             return next != null;
         }
 
         protected boolean isWithinTheInterval(SAMRecord record) {
-            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex ;
-            if (interval.start == -1) return refMatch ;
+            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
+            if (interval.start == -1) return refMatch;
 
-            boolean startMatch = record.getAlignmentStart() >=interval.start ;
-            if (interval.end == -1) return startMatch ;
+            boolean startMatch = record.getAlignmentStart() >= interval.start;
+            if (interval.end == -1) return startMatch;
 
-            return record.getAlignmentStart() <=interval.end;
+            return record.getAlignmentStart() <= interval.end;
         }
 
         protected boolean isPassedTheInterval(SAMRecord record) {
-            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex ;
-            if (!refMatch) return true ;
+            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
+            if (!refMatch) return true;
 
-            if (interval.end == -1) return false ;
+            if (interval.end == -1) return false;
 
-            return record.getAlignmentStart() >interval.end;
+            return record.getAlignmentStart() > interval.end;
         }
 
         @Override
         public SAMRecord next() {
             SAMRecord result = next;
-            next = delegate.next();
-            return result ;
+            if (delegate.hasNext())
+                next = delegate.next();
+            else next = null;
+            return result;
         }
 
         @Override
         public void remove() {
-            throw new RuntimeException("Not available.") ;
+            throw new RuntimeException("Not available.");
         }
     }
 
@@ -481,13 +482,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 //        String query = "Y:1";
 
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-        CRAMFileReader reader = new CRAMFileReader(cramFile, new File (cramFile.getAbsolutePath()+".bai"), new ReferenceSource(refFile)) ;
+        CRAMFileReader reader = new CRAMFileReader(cramFile, new File(cramFile.getAbsolutePath() + ".bai"), new ReferenceSource(refFile));
         final SAMSequenceDictionary sequenceDictionary = reader.getFileHeader().getSequenceDictionary();
         QueryInterval interval = queryFromString(query, sequenceDictionary);
 
         final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(sequenceDictionary.getSequence(interval.referenceIndex).getSequenceName(), interval.start);
         while (iterator.hasNext()) {
-            SAMRecord record = iterator.next() ;
+            SAMRecord record = iterator.next();
             System.out.print(record.getSAMString());
         }
     }
