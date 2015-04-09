@@ -138,7 +138,7 @@ public class CramRecordReader extends AbstractReader {
                             rf.add(hv);
                             break;
                         case Padding.operator:
-                            Padding pv = new Padding(pos, dlc.readData());
+                            Padding pv = new Padding(pos, paddingCodec.readData());
                             rf.add(pv);
                             break;
                         case Deletion.operator:
@@ -162,7 +162,7 @@ public class CramRecordReader extends AbstractReader {
                             rf.add(bases);
                             break;
                         case Scores.operator:
-                            Scores scores = new Scores(pos, basesCodec.readData());
+                            Scores scores = new Scores(pos, scoresCodec.readData());
                             rf.add(scores);
                             break;
                         default:
