@@ -174,8 +174,7 @@ public class VCFHeader {
      * existing header line is replaced.
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        mMetaData.add(headerLine);
-        loadMetaDataMaps();
+        addMetadataHeaderLine(headerLine);
     }
 
     /**
@@ -185,27 +184,27 @@ public class VCFHeader {
         return Collections.unmodifiableList(contigMetaData);
     }
 
-	/**
-	 * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
-	 * not present in the header. Throws SAMException if one or more contig lines do not have length
-	 * information.
-	 */
-	public SAMSequenceDictionary getSequenceDictionary() {
-		final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
-		if (contigHeaderLines.isEmpty()) return null;
+    /**
+     * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
+     * not present in the header. Throws SAMException if one or more contig lines do not have length
+     * information.
+     */
+    public SAMSequenceDictionary getSequenceDictionary() {
+        final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
+        if (contigHeaderLines.isEmpty()) return null;
 
-		final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
-		for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
-			sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
-		}
+        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
+        for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
+            sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
+        }
 
-		return new SAMSequenceDictionary(sequenceRecords);
-	}
+        return new SAMSequenceDictionary(sequenceRecords);
+    }
 
-	/**
-	 * Completely replaces the contig records in this header with those in the given SAMSequenceDictionary.
-	 */
-	public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
+    /**
+     * Completely replaces the contig records in this header with those in the given SAMSequenceDictionary.
+     */
+    public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
         this.contigMetaData.clear();
 
         // Also need to remove contig record lines from mMetaData
@@ -223,9 +222,9 @@ public class VCFHeader {
         this.mMetaData.addAll(contigMetaData);
     }
 
-	public VariantContextComparator getVCFRecordComparator() {
-		return new VariantContextComparator(this.getContigLines());
-	}
+    public VariantContextComparator getVCFRecordComparator() {
+        return new VariantContextComparator(this.getContigLines());
+    }
 
     /**
      * @return all of the VCF FILTER lines in their original file order, or an empty list if none were present
@@ -273,41 +272,69 @@ public class VCFHeader {
      */
     private void loadMetaDataMaps() {
         for (final VCFHeaderLine line : mMetaData) {
-            if ( line instanceof VCFInfoHeaderLine )  {
-                final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
-                addMetaDataMapBinding(mInfoMetaData, infoLine);
-            } else if ( line instanceof VCFFormatHeaderLine ) {
-                final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine)line;
-                addMetaDataMapBinding(mFormatMetaData, formatLine);
-            } else if ( line instanceof VCFFilterHeaderLine ) {
-                final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine)line;
-                mFilterMetaData.put(filterLine.getID(), filterLine);
-            } else if ( line instanceof VCFContigHeaderLine ) {
-                contigMetaData.add((VCFContigHeaderLine)line);
-            } else {
-                mOtherMetaData.put(line.getKey(), line);
-            }
-        }
-
-        if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
-                                   + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
-                                   + " automatically adding a corresponding PL field to your VCF header");
-            }
-            addMetaDataLine(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY, VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
+            addMetadataHeaderLine(line);
         }
     }
 
     /**
-     * Add line to map, issuing warnings about duplicates
-     *
-     * @param map
-     * @param line
-     * @param <T>
+     * add a single header line to the appropriate map/list depending on its type.  If a header line
+     * is added that has the same key as an existing line, it will not be added.  A warning will be
+     * shown if this occurs when GeneralUtils.DEBUG_MODE_ENABLED is true, otherwise this will occur
+     * silently.
      */
-    private <T extends VCFCompoundHeaderLine> void addMetaDataMapBinding(final Map<String, T> map, final T line) {
-        final String key = line.getID();
+    private void addMetadataHeaderLine(final VCFHeaderLine line) {
+        if ( line instanceof VCFInfoHeaderLine )  {
+            final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
+            addMetaDataMapBinding(mInfoMetaData, infoLine.getID(), infoLine);
+        } else if ( line instanceof VCFFormatHeaderLine ) {
+            final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine)line;
+            addMetaDataMapBinding(mFormatMetaData, formatLine.getID(), formatLine);
+
+            if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
+                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                    System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
+                            + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
+                            + " automatically adding a corresponding PL field to your VCF header");
+                }
+                addMetadataHeaderLine(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY, VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
+            }
+        } else if ( line instanceof VCFFilterHeaderLine ) {
+            final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine)line;
+            addMetaDataMapBinding(mFilterMetaData, filterLine.getID(), filterLine);
+        } else if ( line instanceof VCFContigHeaderLine ) {
+            addContigMetaDataLine((VCFContigHeaderLine) line);
+        } else {
+            addMetaDataMapBinding(mOtherMetaData, line.getKey(), line);
+        }
+    }
+
+    // add a VCFContigHeaderLine to contigMetaData and avoid adding duplicate contigs
+    private void addContigMetaDataLine(final VCFContigHeaderLine line) {
+        for (VCFContigHeaderLine vcfContigHeaderLine : contigMetaData) {
+            // if we are trying to add a contig for the same ID
+            if (vcfContigHeaderLine.getID().equals(line.getID())) {
+                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                    System.err.println("Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only" );
+                }
+                // do not add this contig if it exists
+                return;
+            }
+        }
+
+        contigMetaData.add(line);
+    }
+
+    /**
+     * Add line to map at a given key.  If the key already exists, it will not be replaced.  If it does already exist and
+     * GeneralUtils.DEBUG_MODE_ENABLED is true, it will issue warnings about duplicates, otherwise it will silently leave
+     * the existing key/line pair as is.
+     *
+     * @param map a map from each key to the associated VCFHeaderLine
+     * @param key the key to insert this line at
+     * @param line the line to insert at this key
+     * @param <T> a type of vcf header line that extends VCFHeaderLine
+     */
+    private <T extends VCFHeaderLine> void addMetaDataMapBinding(final Map<String, T> map, final String key, final T line) {
         if ( map.containsKey(key) ) {
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Found duplicate VCF header lines for " + key + "; keeping the first only" );
@@ -317,6 +344,7 @@ public class VCFHeader {
             map.put(key, line);
         }
     }
+
 
     /**
      * get the header fields in order they're presented in the input file (which is now required to be
@@ -454,6 +482,13 @@ public class VCFHeader {
      */
     public VCFHeaderLine getOtherHeaderLine(final String key) {
         return mOtherMetaData.get(key);
+    }
+
+    /**
+     * Returns the other HeaderLines in their original ordering
+     */
+    public Collection<VCFHeaderLine> getOtherHeaderLines() {
+        return mOtherMetaData.values();
     }
 
     /**
