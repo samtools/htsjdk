@@ -23,9 +23,15 @@
  */
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -77,4 +83,33 @@ public class IndexFactoryTest {
         };
     }
 
+    @Test
+    public void testCreateTabixIndexOnBlockCompressed() {
+        // index a VCF
+        final File inputFileVcf = new File("testdata/htsjdk/tribble/tabix/testTabixIndex.vcf");
+        final VCFFileReader readerVcf = new VCFFileReader(inputFileVcf, false);
+        final SAMSequenceDictionary vcfDict = readerVcf.getFileHeader().getSequenceDictionary();
+        final TabixIndex tabixIndexVcf =
+                IndexFactory.createTabixIndex(inputFileVcf, new VCFCodec(), TabixFormat.VCF,
+                vcfDict);
+
+        // index the same bgzipped VCF
+        final File inputFileVcfGz = new File("testdata/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
+        final VCFFileReader readerVcfGz = new VCFFileReader(inputFileVcfGz, false);
+        final TabixIndex tabixIndexVcfGz =
+                IndexFactory.createTabixIndex(inputFileVcfGz, new VCFCodec(), TabixFormat.VCF,
+                        readerVcfGz.getFileHeader().getSequenceDictionary());
+
+        // assert that each sequence in the header that represents some VCF row ended up in the index
+        // for both the VCF and bgzipped VCF
+        for (SAMSequenceRecord samSequenceRecord : vcfDict.getSequences()) {
+            Assert.assertTrue(
+                    tabixIndexVcf.containsChromosome(samSequenceRecord.getSequenceName()),
+                    "Tabix indexed VCF does not contain sequence: " + samSequenceRecord.getSequenceName());
+
+            Assert.assertTrue(
+                    tabixIndexVcfGz.containsChromosome(samSequenceRecord.getSequenceName()),
+                    "Tabix indexed (bgzipped) VCF does not contain sequence: " + samSequenceRecord.getSequenceName());
+        }
+    }
 }

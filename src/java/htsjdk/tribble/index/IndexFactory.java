@@ -25,13 +25,13 @@ package htsjdk.tribble.index;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.LocationAware;
-import htsjdk.tribble.CloseableTribbleIterator;
-import htsjdk.tribble.Feature;
-import htsjdk.tribble.FeatureCodec;
-import htsjdk.tribble.FeatureCodecHeader;
-import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.*;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
@@ -420,8 +420,32 @@ public class IndexFactory {
 
         private PositionalBufferedStream initStream(final File inputFile, final long skip) {
             try {
-                final FileInputStream is = new FileInputStream(inputFile);
+                final FileInputStream fileStream = new FileInputStream(inputFile);
+                final InputStream is;
+
+                // if this looks like a block compressed file and it in fact is, we will use it
+                // otherwise we will use the file as is
+                if (AbstractFeatureReader.hasBlockCompressedExtension(inputFile)) {
+                    // make a buffered stream to test that this is in fact a valid block compressed file
+                    final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+                    final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream, bufferSize);
+
+                    if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
+                        throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.", inputFile.getAbsolutePath());
+                    }
+
+                    final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
+                    // if we got here, the file is valid, make a SeekableStream for the BlockCompressedInputStream to read from
+                    final SeekableStream seekableStream =
+                            ssf.getBufferedStream(ssf.getStreamFor(inputFile.getAbsolutePath()));
+                    is = new BlockCompressedInputStream(seekableStream);
+                }
+                else {
+                    is = fileStream;
+                }
+
                 final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
+
                 if ( skip > 0 ) pbs.skip(skip);
                 return pbs;
             } catch (final FileNotFoundException e) {
