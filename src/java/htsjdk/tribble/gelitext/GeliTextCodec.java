@@ -73,6 +73,11 @@ public class GeliTextCodec extends AsciiFeatureCodec<GeliTextFeature> {
     }
 
     @Override
+    public boolean canDecode(String path){
+	return path.toLowerCase().endsWith(".geli.calls") || path.toLowerCase().endsWith(".geli");
+    }
+
+    @Override
     public Object readActualHeader(LineIterator reader) {
         return null;
     }
