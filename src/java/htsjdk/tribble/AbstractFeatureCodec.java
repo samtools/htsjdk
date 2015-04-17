@@ -26,7 +26,10 @@ package htsjdk.tribble;
 import java.io.IOException;
 
 /**
- * Simple basic class providing much of the basic functionality of codecs
+ * Simple basic class providing much of the basic functionality of codecs.
+ * Every concrete subclass must implement {@link FeatureCodec#canDecode(String)} to indicate whether it can decode the file.
+ * Note that that method is the only way that the right codec for a file is identified and that <bold>only one</bold> codec
+ * is allowed to identify itself as being able to decode any given file.
  */
 public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE> implements FeatureCodec<FEATURE_TYPE, SOURCE> {
     private final Class<FEATURE_TYPE> myClass;
@@ -43,11 +46,6 @@ public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE>
     @Override
     public Class<FEATURE_TYPE> getFeatureType() {
         return myClass;
-    }
-
-    @Override
-    public boolean canDecode(final String path) {
-        return false;
     }
 
 }
