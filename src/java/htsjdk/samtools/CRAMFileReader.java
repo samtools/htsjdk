@@ -24,8 +24,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.CoordSpanInputSteam;
-import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 
 import java.io.File;
@@ -33,8 +32,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
@@ -131,10 +130,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         mIndex = new CachingBAMFileIndex(indexInputStream, it.getSAMFileHeader().getSequenceDictionary());
     }
 
-    public SAMRecordIterator iterator() {
-        return getIterator();
-    }
-
     @Override
     void enableIndexCaching(final boolean enabled) {
         // relevant to BAI only
@@ -187,8 +182,17 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     @Override
-    public SAMRecordIterator iterator(SAMFileSpan chunks) {
-        return null;
+    public SAMRecordIterator iterator(SAMFileSpan fileSpan) {
+        // get the file coordinates for the span:
+        long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
+        if (coordinateArray == null || coordinateArray.length == 0) return emptyIterator;
+        try {
+            // create an input stream that reads the source cram stream only within the coordinate pairs:
+            SeekableStream ss = getSeekableStreamOrFailWithRTE();
+            return new CRAMIterator(ss, referenceSource, coordinateArray);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -218,29 +222,12 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan fileSpan) {
-        // get the file coordinates for the span:
-        long[] coords = ((BAMFileSpan) fileSpan).toCoordinateArray();
-        if (coords[0] != 0) {
-            // prepend file header coords to the coord array:
-            final long[] coordsFromStart = new long[coords.length + 2];
-            coordsFromStart[0] = 0;
-            coordsFromStart[1] = it.firstContainerOffset;
-            System.arraycopy(coords, 0, coordsFromStart, 2, coords.length);
-            coords = coordsFromStart;
-        }
-        try {
-            // create an input stream that reads the source cram stream only within the coord pairs:
-            SeekableStream ss = getSeekableStreamOrFailWithRTE();
-            InputStream is = new CoordSpanInputSteam(ss, coords);
-            return new CRAMIterator(is, referenceSource);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return iterator(fileSpan);
     }
 
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        return new BAMFileSpan(new Chunk(it.firstContainerOffset, Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(it.firstContainerOffset << 16, Long.MAX_VALUE));
     }
 
     private static final SAMRecordIterator emptyIterator = new SAMRecordIterator() {
@@ -317,6 +304,26 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         return it;
     }
 
+    CloseableIterator<SAMRecord> query(final int referenceIndex,
+                                       final int start, final int end, boolean overlap) throws IOException {
+        long[] filePointers = null;
+
+        // Hit the index to determine the chunk boundaries for the required data.
+        if (referenceIndex != -1) {
+            final BAMIndex fileIndex = getIndex();
+            final BAMFileSpan fileSpan = fileIndex.getSpanOverlapping(
+                    referenceIndex, start, -1);
+            filePointers = fileSpan != null ? fileSpan.toCoordinateArray()
+                    : null;
+        }
+
+        if (filePointers == null || filePointers.length == 0)
+            return emptyIterator;
+
+        CRAMIterator it = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers);
+        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, end), overlap);
+    }
+
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
         final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
@@ -373,17 +380,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals,
                                               final boolean contained) {
-        if (is == null) {
-            throw new IllegalStateException("File reader is closed");
-        }
-        if (it != null) {
-            throw new IllegalStateException("Iteration in progress");
-        }
-        if (mIndex == null && mIndexFile == null) {
-            throw new UnsupportedOperationException(
-                    "Cannot query stream-based BAM file");
-        }
-        throw new SAMException("Multiple interval queries not implemented.");
+        return new MultiIntervalIterator(Arrays.asList(intervals).iterator(), !contained);
     }
 
     @Override
@@ -397,15 +394,68 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             it.setFileSource(enabled ? reader : null);
     }
 
-    private static class IntervalIterator implements SAMRecordIterator {
-        private SAMRecordIterator delegate;
-        private QueryInterval interval;
+    private class MultiIntervalIterator implements SAMRecordIterator {
+        private final Iterator<QueryInterval> queries;
+        private CloseableIterator<SAMRecord> iterator;
+        private final boolean overlap;
+
+        public MultiIntervalIterator(Iterator<QueryInterval> queries, boolean overlap) {
+            this.queries = queries;
+            this.overlap = overlap;
+        }
+
+        @Override
+        public SAMRecordIterator assertSorted(SortOrder sortOrder) {
+            return null;
+        }
+
+        @Override
+        public void close() {
+
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (iterator == null || !iterator.hasNext()) {
+                if (!queries.hasNext()) return false;
+                do {
+                    QueryInterval query = queries.next();
+                    try {
+                        iterator = query(query.referenceIndex, query.start, query.end, overlap);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } while (!iterator.hasNext() && queries.hasNext());
+            }
+            return iterator.hasNext();
+        }
+
+        @Override
+        public SAMRecord next() {
+            return iterator.next();
+        }
+
+        @Override
+        public void remove() {
+            iterator.remove();
+        }
+    }
+
+    public static class IntervalIterator implements SAMRecordIterator {
+        private final CloseableIterator<SAMRecord> delegate;
+        private final QueryInterval interval;
         private SAMRecord next;
         private boolean noMore = false;
+        private final boolean overlap;
 
-        public IntervalIterator(SAMRecordIterator delegate, QueryInterval interval) {
+        public IntervalIterator(CloseableIterator<SAMRecord> delegate, QueryInterval interval) {
+            this(delegate, interval, true);
+        }
+
+        public IntervalIterator(CloseableIterator<SAMRecord> delegate, QueryInterval interval, boolean overlap) {
             this.delegate = delegate;
             this.interval = interval;
+            this.overlap = overlap;
         }
 
         @Override
@@ -438,31 +488,34 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             return next != null;
         }
 
-        protected boolean isWithinTheInterval(SAMRecord record) {
+        boolean isWithinTheInterval(SAMRecord record) {
             boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
             if (interval.start == -1) return refMatch;
 
-            boolean startMatch = record.getAlignmentStart() >= interval.start;
-            if (interval.end == -1) return startMatch;
+            int start = record.getAlignmentStart();
+            int end = record.getAlignmentEnd();
+            if (overlap) {
+                return CoordMath.overlaps(start, end, interval.start, interval.end < 0 ? Integer.MAX_VALUE : interval.end);
+            } else {
+                // contained:
+                return CoordMath.encloses(interval.start, interval.end < 0 ? Integer.MAX_VALUE : interval.end, start, end);
+            }
 
-            return record.getAlignmentStart() <= interval.end;
         }
 
-        protected boolean isPassedTheInterval(SAMRecord record) {
+        boolean isPassedTheInterval(SAMRecord record) {
+            if (record.getReadUnmappedFlag()) return false;
             boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
             if (!refMatch) return true;
 
-            if (interval.end == -1) return false;
+            return interval.end != -1 && record.getAlignmentStart() > interval.end;
 
-            return record.getAlignmentStart() > interval.end;
         }
 
         @Override
         public SAMRecord next() {
             SAMRecord result = next;
-            if (delegate.hasNext())
-                next = delegate.next();
-            else next = null;
+            next = null;
             return result;
         }
 
@@ -470,44 +523,5 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         public void remove() {
             throw new RuntimeException("Not available.");
         }
-    }
-
-    public static void main(String[] args) {
-        File cramFile = new File(args[0]);
-        File refFile = new File(args[1]);
-        String query = args[2];
-
-//        File cramFile = new File ("H:\\dev\\Data\\CRAM_TEST_DATA\\HG00551.unmapped.ILLUMINA.bwa.PUR.low_coverage.20120522.cram") ;
-//        File refFile = new File ("H:\\dev\\Data\\CRAM_TEST_DATA\\hs37d5.fa") ;
-//        String query = "Y:1";
-
-        Log.setGlobalLogLevel(Log.LogLevel.ERROR);
-        CRAMFileReader reader = new CRAMFileReader(cramFile, new File(cramFile.getAbsolutePath() + ".bai"), new ReferenceSource(refFile));
-        final SAMSequenceDictionary sequenceDictionary = reader.getFileHeader().getSequenceDictionary();
-        QueryInterval interval = queryFromString(query, sequenceDictionary);
-
-        final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(sequenceDictionary.getSequence(interval.referenceIndex).getSequenceName(), interval.start);
-        while (iterator.hasNext()) {
-            SAMRecord record = iterator.next();
-            System.out.print(record.getSAMString());
-        }
-    }
-
-    private static Pattern queryPattern = Pattern.compile("^([^:\\s]+)(?::(\\d+)(?:-(\\d+))?)?$");
-
-    private static QueryInterval queryFromString(String s, SAMSequenceDictionary dic) {
-
-        Matcher m = queryPattern.matcher(s);
-        if (m.matches()) {
-            String refName = m.group(1);
-            int refIndex = dic.getSequenceIndex(refName);
-            int start = -1;
-            int end = -1;
-
-            if (m.groupCount() > 2) start = Integer.parseInt(m.group(2));
-            if (m.groupCount() > 3) end = Integer.parseInt(m.group(2));
-            return new QueryInterval(refIndex, start, end);
-        }
-        return null;
     }
 }

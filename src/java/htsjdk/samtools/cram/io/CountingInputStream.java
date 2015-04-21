@@ -18,14 +18,12 @@ package htsjdk.samtools.cram.io;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * An input stream that counts the bytes read from it.
+ */
 public class CountingInputStream extends InputStream {
-    private InputStream delegate;
+    private final InputStream delegate;
     private long count = 0;
-    private boolean debug = false;
-
-    public void setDebug(boolean debug) {
-        this.debug = debug;
-    }
 
     public CountingInputStream(InputStream inputStream) {
         delegate = inputStream;
@@ -35,8 +33,6 @@ public class CountingInputStream extends InputStream {
     public int read() throws IOException {
         count++;
         int read = delegate.read();
-        if (debug)
-            System.out.printf("pos=%d\tread=%d\n", count, read);
         return read;
     }
 
@@ -63,11 +59,12 @@ public class CountingInputStream extends InputStream {
     }
 
     public void close() throws IOException {
-        delegate.close();
+        if (delegate != null)
+            delegate.close();
     }
 
-    public void mark(int readlimit) {
-        delegate.mark(readlimit);
+    public void mark(int readLimit) {
+        delegate.mark(readLimit);
     }
 
     public void reset() throws IOException {

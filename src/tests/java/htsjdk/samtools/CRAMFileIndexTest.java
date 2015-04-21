@@ -15,6 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 /**
@@ -80,20 +81,36 @@ public class CRAMFileIndexTest {
 
     @Test
     public void testIteratorFromFileSpan() throws IOException {
-        SamReader samReader = SamReaderFactory.makeDefault().open(BAM_FILE);
-        SAMRecordIterator samRecordIterator = samReader.iterator();
         CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
         reader.setValidationStringency(ValidationStringency.SILENT);
 
         final SAMFileSpan allContainers = reader.getFilePointerSpanningReads();
         final CloseableIterator<SAMRecord> iterator = reader.getIterator(allContainers);
         Assert.assertTrue(iterator.hasNext());
-        int counter = 0 ;
+        int counter = 0;
         while (iterator.hasNext()) {
-            iterator.next() ;
+            iterator.next();
             counter++;
         }
         Assert.assertEquals(counter, 10000);
+    }
+
+    @Test
+    public void testQueryInterval() throws IOException {
+        CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
+        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
+        final CloseableIterator<SAMRecord> iterator = reader.query(query, false);
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord r1 = iterator.next();
+        Assert.assertEquals(r1.getReadName(), "3968040");
+
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord r2 = iterator.next();
+        Assert.assertEquals(r2.getReadName(), "140419");
+
+        Assert.assertFalse(iterator.hasNext());
+        iterator.close();
+        reader.close();
     }
 
     @Test
@@ -129,7 +146,12 @@ public class CRAMFileIndexTest {
     public void prepare() throws IOException {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
         source = new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
-        cramBytes = readFile(cramFile);
+        cramBytes = cramFromBAM(BAM_FILE, source);
+        FileOutputStream fos = new FileOutputStream(cramFile);
+        fos.write(cramBytes);
+        fos.close();
+//                readFile(cramFile);
+
 
         CRAMIndexer.createIndex(new SeekableFileStream(cramFile), indexFile, null);
         baiBytes = readFile(indexFile);
@@ -139,6 +161,19 @@ public class CRAMFileIndexTest {
         FileInputStream fis = new FileInputStream(file);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(fis, baos);
+        return baos.toByteArray();
+    }
+
+    private byte[] cramFromBAM(File bamFile, ReferenceSource source) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
+        final SAMRecordIterator iterator = reader.iterator();
+        CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), bamFile.getName());
+        while (iterator.hasNext()) {
+            SAMRecord record = iterator.next();
+            writer.addAlignment(record);
+        }
+        writer.close();
         return baos.toByteArray();
     }
 }

@@ -33,6 +33,7 @@ public class CoordSpanInputSteam extends InputStream {
             if (coords[i] > delegate.length()) throw new RuntimeException("Chunk start is passed EOF: " + coords[i]);
             Chunk chunk = new Chunk(coords[i], coords[i + 1] > delegate.length() ? delegate.length() : coords[i + 1]);
             chunks.add(chunk);
+            System.err.printf("Adding chunk: %d - %d\n", chunk.getChunkStart(), chunk.getChunkEnd());
         }
         it = chunks.iterator();
         nextChunk();

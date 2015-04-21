@@ -27,6 +27,9 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,21 +38,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-
 public class CramFileWriterTest {
 
-	@BeforeClass
-	public void initClass() {
-		Log.setGlobalLogLevel(LogLevel.ERROR);
-	}
-    
-	@Test(description = "Test for lossy CRAM compression invariants.")
-	public void lossyCramInvariantsTest() throws Exception {
-		doTest(createRecords(1000));
-	}
+    @BeforeClass
+    public void initClass() {
+        Log.setGlobalLogLevel(LogLevel.ERROR);
+    }
+
+    @Test(description = "Test for lossy CRAM compression invariants.")
+    public void lossyCramInvariantsTest() throws Exception {
+        doTest(createRecords(1000));
+    }
 
     @Test(description = "Tests a unmapped record with sequence and quality fields")
     public void unmappedWithSequenceAndQualityField() throws Exception {
@@ -60,7 +59,7 @@ public class CramFileWriterTest {
     public void unmappedWithNoSequenceAndQualityField() throws Exception {
         unmappedSequenceAndQualityFieldHelper(false);
     }
-    
+
     private void unmappedSequenceAndQualityFieldHelper(boolean unmappedHasBasesAndQualities) throws Exception {
         List<SAMRecord> list = new ArrayList<SAMRecord>(2);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
@@ -75,34 +74,30 @@ public class CramFileWriterTest {
 
         list.addAll(builder.getRecords());
 
-        for (final SAMRecord rec : list) {
-            System.err.println("REC: " + rec.getSAMString());
-        }
-
         Collections.sort(list, new SAMRecordCoordinateComparator());
 
         doTest(list);
     }
 
-	private List<SAMRecord> createRecords(int count) throws Exception {
-		List<SAMRecord> list = new ArrayList<SAMRecord>(count);
-		final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-		if (builder.getHeader().getReadGroups().isEmpty()) {
+    private List<SAMRecord> createRecords(int count) throws Exception {
+        List<SAMRecord> list = new ArrayList<SAMRecord>(count);
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new Exception("Read group expected in the header");
         }
 
-		int posInRef = 1;
-		for (int i = 0; i < count / 2; i++)
-			builder.addPair(Integer.toString(i), 0, posInRef += 1,
-					posInRef += 3);
-		list.addAll(builder.getRecords());
+        int posInRef = 1;
+        for (int i = 0; i < count / 2; i++)
+            builder.addPair(Integer.toString(i), 0, posInRef += 1,
+                    posInRef += 3);
+        list.addAll(builder.getRecords());
 
-		Collections.sort(list, new SAMRecordCoordinateComparator());
+        Collections.sort(list, new SAMRecordCoordinateComparator());
 
-		return list;
-	};
+        return list;
+    }
 
-    private void doTest(final List<SAMRecord> samRecords) throws Exception {
+    private void doTest(final List<SAMRecord> samRecords) {
         final SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         header.addSequence(new SAMSequenceRecord("chr1", 123));
@@ -126,7 +121,7 @@ public class CramFileWriterTest {
         CRAMFileReader cReader = new CRAMFileReader(null,
                 new ByteArrayInputStream(os.toByteArray()),
                 new ReferenceSource(rsf));
-        SAMRecordIterator iterator2 = cReader.iterator();
+        SAMRecordIterator iterator2 = cReader.getIterator();
         int index = 0;
         while (iterator2.hasNext()) {
             SAMRecord r1 = iterator2.next();

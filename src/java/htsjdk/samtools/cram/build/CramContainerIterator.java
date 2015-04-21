@@ -10,35 +10,28 @@ import java.io.InputStream;
 import java.util.Iterator;
 
 /**
- * Created by vadim on 06/02/2015.
+ * An iterator of CRAM containers read from an {@link java.io.InputStream}.
  */
 public class CramContainerIterator implements Iterator<Container> {
-
     private CramHeader cramHeader;
     private InputStream inputStream;
     private Container nextContainer;
     private boolean eof = false;
-    private long offset = 0 ;
+    private long offset = 0;
 
     public CramContainerIterator(final InputStream inputStream) throws IOException {
         cramHeader = CramIO.readCramHeader(inputStream);
         this.inputStream = inputStream;
     }
 
-    public CramContainerIterator(final CramHeader cramHeader, final InputStream inputStream, long offset) throws IOException {
-        this.cramHeader = cramHeader ;
-        this.inputStream = inputStream;
-        this.offset = offset ;
-    }
-
-    protected void readNextContainer() {
+    void readNextContainer() {
         try {
-            CountingInputStream cis = new CountingInputStream(inputStream) ;
+            CountingInputStream cis = new CountingInputStream(inputStream);
             nextContainer = ContainerIO.readContainer(cramHeader.getVersion(), cis);
-            long containerSizeInBytes = cis.getCount() ;
+            long containerSizeInBytes = cis.getCount();
 
-            nextContainer.offset = offset ;
-            offset += containerSizeInBytes ;
+            nextContainer.offset = offset;
+            offset += containerSizeInBytes;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -58,7 +51,9 @@ public class CramContainerIterator implements Iterator<Container> {
 
     @Override
     public Container next() {
-        return nextContainer;
+        Container result = nextContainer;
+        nextContainer = null;
+        return result;
     }
 
     @Override
