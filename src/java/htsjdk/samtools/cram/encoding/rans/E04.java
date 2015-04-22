@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 
 class E04 {
 
-    static final int compress(ByteBuffer in, RansEncSymbol[] syms,
+    static int compress(ByteBuffer in, RansEncSymbol[] syms,
                               ByteBuffer cp) {
         int cdata_size;
         int in_size = in.remaining();

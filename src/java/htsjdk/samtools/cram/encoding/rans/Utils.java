@@ -2,9 +2,6 @@ package htsjdk.samtools.cram.encoding.rans;
 
 import java.nio.ByteBuffer;
 
-/**
- * Created by vadim on 03/02/2015.
- */
 class Utils {
     private static void reverse(byte[] array, int offset, int size) {
         if (array == null) {

@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.encoding.rans;
 
 import java.nio.ByteBuffer;
 
+@SuppressWarnings("SameParameterValue")
 class Decoding {
 
     static class FC {
@@ -9,7 +10,7 @@ class Decoding {
     }
 
     static class ari_decoder {
-        FC[] fc = new FC[256];
+        final FC[] fc = new FC[256];
         byte[] R;
     }
 
@@ -30,7 +31,7 @@ class Decoding {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
     // No renormalization or output happens.
-    static int RansDecAdvanceStep(int r, int start, int freq, int scale_bits) {
+    private static int RansDecAdvanceStep(int r, int start, int freq, int scale_bits) {
         int mask = ((1 << scale_bits) - 1);
 
         // s, x = D(x)
@@ -58,8 +59,8 @@ class Decoding {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits",
     // and the resulting bytes get written to ptr (which is updated).
-    static int RansDecAdvance(int r, ByteBuffer pptr, int start, int freq,
-                              int scale_bits) {
+    private static int RansDecAdvance(int r, ByteBuffer pptr, int start, int freq,
+                                      int scale_bits) {
         int mask = (1 << scale_bits) - 1;
 
         // s, x = D(x)
@@ -78,7 +79,7 @@ class Decoding {
     }
 
     // Renormalize.
-    static final int RansDecRenorm(int r, ByteBuffer pptr) {
+    static int RansDecRenorm(int r, ByteBuffer pptr) {
         // renormalize
         if (r < Constants.RANS_BYTE_L) {
             do

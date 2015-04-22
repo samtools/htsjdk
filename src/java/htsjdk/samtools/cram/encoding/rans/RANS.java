@@ -18,10 +18,10 @@ public class RANS {
         }
     }
 
-    public static final int ORDER_BYTE_LENGTH = 1;
-    public static final int COMPRESSED_BYTE_LENGTH = 4;
-    public static final int RAW_BYTE_LENGTH = 4;
-    public static final int PREFIX_BYTE_LENGTH = ORDER_BYTE_LENGTH
+    private static final int ORDER_BYTE_LENGTH = 1;
+    private static final int COMPRESSED_BYTE_LENGTH = 4;
+    private static final int RAW_BYTE_LENGTH = 4;
+    private static final int PREFIX_BYTE_LENGTH = ORDER_BYTE_LENGTH
             + COMPRESSED_BYTE_LENGTH + RAW_BYTE_LENGTH;
     private static final ByteBuffer EMPTY_BUFFER = ByteBuffer.allocate(0);
 
@@ -74,7 +74,7 @@ public class RANS {
         }
     }
 
-    private static final ByteBuffer allocateIfNeeded(int in_size,
+    private static ByteBuffer allocateIfNeeded(int in_size,
                                                      ByteBuffer out_buf) {
         int compressedSize = (int) (1.05 * in_size + 257 * 257 * 3 + 4);
         if (out_buf == null)
@@ -85,7 +85,7 @@ public class RANS {
         return out_buf;
     }
 
-    private static final ByteBuffer encode_order0_way4(ByteBuffer in,
+    private static ByteBuffer encode_order0_way4(ByteBuffer in,
                                                        ByteBuffer out_buf) {
         int in_size = in.remaining();
         out_buf = allocateIfNeeded(in_size, out_buf);
@@ -106,7 +106,7 @@ public class RANS {
         return out_buf;
     }
 
-    private static final ByteBuffer encode_order1_way4(ByteBuffer in,
+    private static ByteBuffer encode_order1_way4(ByteBuffer in,
                                                        ByteBuffer out_buf) {
         int in_size = in.remaining();
         out_buf = allocateIfNeeded(in_size, out_buf);
@@ -127,7 +127,7 @@ public class RANS {
         return out_buf;
     }
 
-    private static final void finilizeCompressed(int order, ByteBuffer out_buf,
+    private static void finilizeCompressed(int order, ByteBuffer out_buf,
                                                  int in_size, int frequencyTable_size, int compressedBlob_size) {
         out_buf.limit(PREFIX_BYTE_LENGTH + frequencyTable_size
                 + compressedBlob_size);
@@ -141,7 +141,7 @@ public class RANS {
         out_buf.rewind();
     }
 
-    private static final ByteBuffer uncompress_order0_way4(ByteBuffer in,
+    private static ByteBuffer uncompress_order0_way4(ByteBuffer in,
                                                            ByteBuffer out) {
         in.order(ByteOrder.LITTLE_ENDIAN);
         Decoding.ari_decoder D = new Decoding.ari_decoder();
@@ -156,7 +156,7 @@ public class RANS {
         return out;
     }
 
-    private static final ByteBuffer uncompress_order1_way4(ByteBuffer in,
+    private static ByteBuffer uncompress_order1_way4(ByteBuffer in,
                                                            ByteBuffer out_buf) {
         Decoding.ari_decoder[] D = new Decoding.ari_decoder[256];
         Decoding.RansDecSymbol[][] syms = new Decoding.RansDecSymbol[256][256];

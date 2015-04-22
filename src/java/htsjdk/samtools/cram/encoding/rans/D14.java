@@ -8,12 +8,11 @@ class D14 {
                            Decoding.RansDecSymbol[][] syms) {
         int out_sz = out_buf.remaining();
         int rans0, rans1, rans2, rans7;
-        ByteBuffer ptr = in;
-        ptr.order(ByteOrder.LITTLE_ENDIAN);
-        rans0 = ptr.getInt();
-        rans1 = ptr.getInt();
-        rans2 = ptr.getInt();
-        rans7 = ptr.getInt();
+        in.order(ByteOrder.LITTLE_ENDIAN);
+        rans0 = in.getInt();
+        rans1 = in.getInt();
+        rans2 = in.getInt();
+        rans7 = in.getInt();
 
         int isz4 = out_sz >> 2;
         int i0 = 0;
@@ -48,10 +47,10 @@ class D14 {
             rans7 = Decoding.RansDecAdvanceSymbolStep(rans7, syms[l7][c7],
                     Constants.TF_SHIFT);
 
-            rans0 = Decoding.RansDecRenorm(rans0, ptr);
-            rans1 = Decoding.RansDecRenorm(rans1, ptr);
-            rans2 = Decoding.RansDecRenorm(rans2, ptr);
-            rans7 = Decoding.RansDecRenorm(rans7, ptr);
+            rans0 = Decoding.RansDecRenorm(rans0, in);
+            rans1 = Decoding.RansDecRenorm(rans1, in);
+            rans2 = Decoding.RansDecRenorm(rans2, in);
+            rans7 = Decoding.RansDecRenorm(rans7, in);
 
             l0 = c0;
             l1 = c1;
@@ -64,7 +63,7 @@ class D14 {
             int c7 = 0xFF & D[l7].R[Decoding.RansDecGet(rans7,
                     Constants.TF_SHIFT)];
             out_buf.put(i7, (byte) c7);
-            rans7 = Decoding.RansDecAdvanceSymbol(rans7, ptr, syms[l7][c7],
+            rans7 = Decoding.RansDecAdvanceSymbol(rans7, in, syms[l7][c7],
                     Constants.TF_SHIFT);
             // rans7 = Decoding.RansDecRenorm(rans7, ptr);
             l7 = c7;

@@ -5,6 +5,7 @@ import htsjdk.samtools.cram.encoding.rans.Encoding.RansEncSymbol;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+@SuppressWarnings("UnusedAssignment")
 class E14 {
 
     static int compress(ByteBuffer in, RansEncSymbol[][] syms,
@@ -37,9 +38,7 @@ class E14 {
         int l2 = 0;
         if (i2 + 1 >= 0)
             l2 = 0xFF & in.get(i2 + 1);
-        int l3 = 0;
-        if (i3 + 1 >= 0)
-            l3 = 0xFF & in.get(i3 + 1);
+        int l3 ;
 
         // Deal with the remainder
         l3 = 0xFF & in.get(in_size - 1);

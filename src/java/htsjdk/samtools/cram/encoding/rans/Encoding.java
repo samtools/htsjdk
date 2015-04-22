@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.encoding.rans;
 
 import java.nio.ByteBuffer;
 
+@SuppressWarnings("SameParameterValue")
 class Encoding {
 
     static class RansEncSymbol {

@@ -5,6 +5,7 @@ import htsjdk.samtools.cram.encoding.rans.Encoding.RansEncSymbol;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+@SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
 class Freqs {
 
     static void readStats_o0(ByteBuffer cp, Decoding.ari_decoder D, Decoding.RansDecSymbol[] syms) {
