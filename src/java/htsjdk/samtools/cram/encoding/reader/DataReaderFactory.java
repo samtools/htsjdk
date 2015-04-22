@@ -35,9 +35,10 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.TreeMap;
 
+@SuppressWarnings("unchecked")
 public class DataReaderFactory {
 
-    private boolean collectStats = false;
+    private final static boolean collectStats = false;
 
     public AbstractReader buildReader(AbstractReader reader,
                                       BitInputStream bis, Map<Integer, InputStream> inputMap,
@@ -84,6 +85,7 @@ public class DataReaderFactory {
                                            EncodingParams params, BitInputStream bis,
                                            Map<Integer, InputStream> inputMap) {
         if (params.id == EncodingID.NULL)
+            //noinspection ConstantConditions
             return collectStats ? new DataReaderWithStats(
                     buildNullReader(valueType)) : buildNullReader(valueType);
 
@@ -94,6 +96,7 @@ public class DataReaderFactory {
                     + valueType.name() + ", id=" + params.id);
         encoding.fromByteArray(params.params);
 
+        //noinspection ConstantConditions
         return collectStats ? new DataReaderWithStats(new DefaultDataReader<T>(
                 encoding.buildCodec(inputMap, null), bis))
                 : new DefaultDataReader<T>(encoding.buildCodec(inputMap, null),
@@ -103,13 +106,12 @@ public class DataReaderFactory {
     private static <T> DataReader<T> buildNullReader(DataSeriesType valueType) {
         switch (valueType) {
             case BYTE:
-                return (DataReader<T>) new SingleValueReader<Byte>(new Byte(
-                        (byte) 0));
+                return (DataReader<T>) new SingleValueReader<Byte>((byte) 0);
             case INT:
                 return (DataReader<T>) new SingleValueReader<Integer>(
-                        new Integer(0));
+                        0);
             case LONG:
-                return (DataReader<T>) new SingleValueReader<Long>(new Long(0));
+                return (DataReader<T>) new SingleValueReader<Long>((long) 0);
             case BYTE_ARRAY:
                 return (DataReader<T>) new SingleValueReader<byte[]>(new byte[]{});
 
@@ -119,8 +121,8 @@ public class DataReaderFactory {
     }
 
     private static class DefaultDataReader<T> implements DataReader<T> {
-        private BitCodec<T> codec;
-        private BitInputStream bis;
+        private final BitCodec<T> codec;
+        private final BitInputStream bis;
 
         public DefaultDataReader(BitCodec<T> codec, BitInputStream bis) {
             this.codec = codec;
@@ -137,28 +139,13 @@ public class DataReaderFactory {
             return codec.read(bis, len);
         }
 
-        @Override
-        public void skip() throws IOException {
-            codec.read(bis);
-        }
-
-        @Override
-        public void readByteArrayInto(byte[] dest, int offset, int len)
-                throws IOException {
-            codec.readInto(bis, dest, offset, len);
-        }
     }
 
     private static class SingleValueReader<T> implements DataReader<T> {
-        private T value;
-        private Byte byteValue;
+        private final T value;
 
         public SingleValueReader(T value) {
             this.value = value;
-            if (value instanceof Byte)
-                byteValue = (Byte) value;
-            else
-                byteValue = null;
         }
 
         @Override
@@ -170,26 +157,11 @@ public class DataReaderFactory {
         public T readDataArray(int len) {
             return value;
         }
-
-        @Override
-        public void skip() throws IOException {
-        }
-
-        @Override
-        public void readByteArrayInto(byte[] dest, int offset, int len)
-                throws IOException {
-            if (byteValue != null)
-                for (int i = 0; i < len; i++)
-                    dest[i + offset] = byteValue;
-            else
-                throw new RuntimeException("Not a byte reader.");
-        }
-
     }
 
     public static class DataReaderWithStats<T> implements DataReader<T> {
         public long nanos = 0;
-        DataReader<T> delegate;
+        final DataReader<T> delegate;
 
         public DataReaderWithStats(DataReader<T> delegate) {
             this.delegate = delegate;
@@ -210,26 +182,12 @@ public class DataReaderFactory {
             nanos += System.nanoTime() - time;
             return value;
         }
-
-        @Override
-        public void skip() throws IOException {
-            long time = System.nanoTime();
-            delegate.skip();
-            nanos += System.nanoTime() - time;
-        }
-
-        @Override
-        public void readByteArrayInto(byte[] dest, int offset, int len)
-                throws IOException {
-            long time = System.nanoTime();
-            delegate.readByteArrayInto(dest, offset, len);
-            nanos += System.nanoTime() - time;
-        }
     }
 
     public Map<String, DataReaderWithStats> getStats(CramRecordReader reader)
             throws IllegalArgumentException, IllegalAccessException {
         Map<String, DataReaderWithStats> map = new TreeMap<String, DataReaderFactory.DataReaderWithStats>();
+        //noinspection ConstantConditions,PointlessBooleanExpression
         if (!collectStats)
             return map;
 
@@ -237,7 +195,6 @@ public class DataReaderFactory {
             if (f.isAnnotationPresent(DataSeries.class)) {
                 DataSeries ds = f.getAnnotation(DataSeries.class);
                 EncodingKey key = ds.key();
-                DataSeriesType type = ds.type();
                 map.put(key.name(), (DataReaderWithStats) f.get(reader));
             }
 
@@ -257,4 +214,5 @@ public class DataReaderFactory {
 
         return map;
     }
+
 }

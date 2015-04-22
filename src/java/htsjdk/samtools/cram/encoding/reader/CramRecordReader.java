@@ -32,24 +32,23 @@ import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
-import java.io.EOFException;
-import java.io.IOException;
 import java.util.LinkedList;
 
 public class CramRecordReader extends AbstractReader {
     private CramCompressionRecord prevRecord;
 
-    public void read(CramCompressionRecord r) throws IOException {
+    @SuppressWarnings("ConstantConditions")
+    public void read(CramCompressionRecord r) {
         try {
-            // int mark = testC.readData();
+            // int mark = testCodec.readData();
             // if (Writer.TEST_MARK != mark) {
             // System.err.println("Record counter=" + recordCount);
             // System.err.println(r.toString());
             // throw new RuntimeException("Test mark not found.");
             // }
 
-            r.flags = bitFlagsC.readData();
-            r.compressionFlags = compBitFlagsC.readData();
+            r.flags = bitFlagsCodec.readData();
+            r.compressionFlags = compressionBitFlagsCodec.readData();
             if (refId == -2)
                 r.sequenceId = refIdCodec.readData();
             else {
@@ -59,28 +58,28 @@ public class CramRecordReader extends AbstractReader {
                     r.sequenceId = refId;
             }
 
-            r.readLength = readLengthC.readData();
+            r.readLength = readLengthCodec.readData();
             if (AP_delta)
-                r.alignmentDelta = alStartC.readData();
+                r.alignmentDelta = alignmentStartCodec.readData();
             else
-                r.alignmentStart = alStartC.readData();
-            r.readGroupID = readGroupC.readData();
+                r.alignmentStart = alignmentStartCodec.readData();
+            r.readGroupID = readGroupCodec.readData();
 
             if (captureReadNames)
-                r.readName = new String(readNameC.readData(), charset);
+                r.readName = new String(readNameCodec.readData(), charset);
 
             // mate record:
             if (r.isDetached()) {
-                r.mateFlags = mbfc.readData();
+                r.mateFlags = mateBitFlagCodec.readData();
                 if (!captureReadNames)
-                    r.readName = new String(readNameC.readData(), charset);
+                    r.readName = new String(readNameCodec.readData(), charset);
 
-                r.mateSequenceID = mrc.readData();
-                r.mateAlignmentStart = malsc.readData();
-                r.templateSize = tsc.readData();
+                r.mateSequenceID = mateReferenceIdCodec.readData();
+                r.mateAlignmentStart = mateAlignmentStartCodec.readData();
+                r.templateSize = insertSizeCodec.readData();
                 detachedCount++;
             } else if (r.isHasMateDownStream())
-                r.recordsToNextFragment = distanceC.readData();
+                r.recordsToNextFragment = distanceToNextFragmentCodec.readData();
 
             Integer tagIdList = tagIdListCodec.readData();
             byte[][] ids = tagIdDictionary[tagIdList];
@@ -90,43 +89,37 @@ public class CramRecordReader extends AbstractReader {
                 for (int i = 0; i < ids.length; i++) {
                     int id = ReadTag.name3BytesToInt(ids[i]);
                     DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-                    byte[] data = null;
-                    try {
-                        data = dataReader.readData();
-                    } catch (EOFException e) {
-                        throw e;
-                    }
-                    ReadTag tag = new ReadTag(id, data);
+                    ReadTag tag = new ReadTag(id, dataReader.readData());
                     r.tags[i] = tag;
                 }
             }
 
             if (!r.isSegmentUnmapped()) {
                 // reading read features:
-                int size = nfc.readData();
+                int size = numberOfReadFeaturesCodec.readData();
                 int prevPos = 0;
                 java.util.List<ReadFeature> rf = new LinkedList<ReadFeature>();
                 r.readFeatures = rf;
                 for (int i = 0; i < size; i++) {
-                    Byte operator = fc.readData();
+                    Byte operator = readFeatureCodeCodec.readData();
 
-                    int pos = prevPos + fp.readData();
+                    int pos = prevPos + readFeaturePositionCodec.readData();
                     prevPos = pos;
 
                     switch (operator) {
                         case ReadBase.operator:
-                            ReadBase rb = new ReadBase(pos, bc.readData(), qc.readData());
+                            ReadBase rb = new ReadBase(pos, baseCodec.readData(), qualityScoreCodec.readData());
                             rf.add(rb);
                             break;
                         case Substitution.operator:
                             Substitution sv = new Substitution();
                             sv.setPosition(pos);
-                            byte code = bsc.readData();
+                            byte code = baseSubstitutionCodec.readData();
                             sv.setCode(code);
                             rf.add(sv);
                             break;
                         case Insertion.operator:
-                            Insertion iv = new Insertion(pos, inc.readData());
+                            Insertion iv = new Insertion(pos, insertionCodec.readData());
                             rf.add(iv);
                             break;
                         case SoftClip.operator:
@@ -142,7 +135,7 @@ public class CramRecordReader extends AbstractReader {
                             rf.add(pv);
                             break;
                         case Deletion.operator:
-                            Deletion dv = new Deletion(pos, dlc.readData());
+                            Deletion dv = new Deletion(pos, deletionLengthCodec.readData());
                             rf.add(dv);
                             break;
                         case RefSkip.operator:
@@ -150,11 +143,11 @@ public class CramRecordReader extends AbstractReader {
                             rf.add(rsv);
                             break;
                         case InsertBase.operator:
-                            InsertBase ib = new InsertBase(pos, bc.readData());
+                            InsertBase ib = new InsertBase(pos, baseCodec.readData());
                             rf.add(ib);
                             break;
                         case BaseQualityScore.operator:
-                            BaseQualityScore bqs = new BaseQualityScore(pos, qc.readData());
+                            BaseQualityScore bqs = new BaseQualityScore(pos, qualityScoreCodec.readData());
                             rf.add(bqs);
                             break;
                         case Bases.operator:
@@ -171,10 +164,9 @@ public class CramRecordReader extends AbstractReader {
                 }
 
                 // mapping quality:
-                r.mappingQuality = mqc.readData();
+                r.mappingQuality = mappingScoreCodec.readData();
                 if (r.isForcePreserveQualityScores()) {
-                    byte[] qs = qcArray.readDataArray(r.readLength);
-                    r.qualityScores = qs;
+                    r.qualityScores = qualityScoresCodec.readDataArray(r.readLength);
                 }
             } else {
                 if (r.isUnknownBases()) {
@@ -184,13 +176,12 @@ public class CramRecordReader extends AbstractReader {
                 else {
                     byte[] bases = new byte[r.readLength];
                     for (int i = 0; i < bases.length; i++)
-                        bases[i] = bc.readData();
+                        bases[i] = baseCodec.readData();
                     r.readBases = bases;
 
 
                     if (r.isForcePreserveQualityScores()) {
-                        byte[] qs = qcArray.readDataArray(r.readLength);
-                        r.qualityScores = qs;
+                        r.qualityScores = qualityScoresCodec.readDataArray(r.readLength);
                     }
                 }
             }

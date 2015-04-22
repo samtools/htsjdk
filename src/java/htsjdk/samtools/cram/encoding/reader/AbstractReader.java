@@ -24,64 +24,59 @@ import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
 import java.nio.charset.Charset;
 
+@SuppressWarnings({"WeakerAccess", "UnusedDeclaration"})
 public abstract class AbstractReader {
-    Charset charset = Charset.forName("UTF8");
+    final Charset charset = Charset.forName("UTF8");
     public boolean captureReadNames = false;
     public byte[][][] tagIdDictionary;
 
     @DataSeries(key = EncodingKey.BF_BitFlags, type = DataSeriesType.INT)
-    public DataReader<Integer> bitFlagsC;
+    public DataReader<Integer> bitFlagsCodec;
 
     @DataSeries(key = EncodingKey.CF_CompressionBitFlags, type = DataSeriesType.BYTE)
-    public DataReader<Byte> compBitFlagsC;
+    public DataReader<Byte> compressionBitFlagsCodec;
 
     @DataSeries(key = EncodingKey.RL_ReadLength, type = DataSeriesType.INT)
-    public DataReader<Integer> readLengthC;
+    public DataReader<Integer> readLengthCodec;
 
     @DataSeries(key = EncodingKey.AP_AlignmentPositionOffset, type = DataSeriesType.INT)
-    public DataReader<Integer> alStartC;
+    public DataReader<Integer> alignmentStartCodec;
 
     @DataSeries(key = EncodingKey.RG_ReadGroup, type = DataSeriesType.INT)
-    public DataReader<Integer> readGroupC;
+    public DataReader<Integer> readGroupCodec;
 
     @DataSeries(key = EncodingKey.RN_ReadName, type = DataSeriesType.BYTE_ARRAY)
-    public DataReader<byte[]> readNameC;
+    public DataReader<byte[]> readNameCodec;
 
     @DataSeries(key = EncodingKey.NF_RecordsToNextFragment, type = DataSeriesType.INT)
-    public DataReader<Integer> distanceC;
-
-    @DataSeries(key = EncodingKey.TC_TagCount, type = DataSeriesType.BYTE)
-    public DataReader<Byte> tagCountC;
-
-    @DataSeries(key = EncodingKey.TN_TagNameAndType, type = DataSeriesType.INT)
-    public DataReader<Integer> tagNameAndTypeC;
+    public DataReader<Integer> distanceToNextFragmentCodec;
 
     @DataSeriesMap(name = "TAG")
     public IntHashMap<DataReader<byte[]>> tagValueCodecs;
 
     @DataSeries(key = EncodingKey.FN_NumberOfReadFeatures, type = DataSeriesType.INT)
-    public DataReader<Integer> nfc;
+    public DataReader<Integer> numberOfReadFeaturesCodec;
 
     @DataSeries(key = EncodingKey.FP_FeaturePosition, type = DataSeriesType.INT)
-    public DataReader<Integer> fp;
+    public DataReader<Integer> readFeaturePositionCodec;
 
     @DataSeries(key = EncodingKey.FC_FeatureCode, type = DataSeriesType.BYTE)
-    public DataReader<Byte> fc;
+    public DataReader<Byte> readFeatureCodeCodec;
 
     @DataSeries(key = EncodingKey.BA_Base, type = DataSeriesType.BYTE)
-    public DataReader<Byte> bc;
+    public DataReader<Byte> baseCodec;
 
     @DataSeries(key = EncodingKey.QS_QualityScore, type = DataSeriesType.BYTE)
-    public DataReader<Byte> qc;
+    public DataReader<Byte> qualityScoreCodec;
 
     @DataSeries(key = EncodingKey.QS_QualityScore, type = DataSeriesType.BYTE_ARRAY)
-    public DataReader<byte[]> qcArray;
+    public DataReader<byte[]> qualityScoresCodec;
 
     @DataSeries(key = EncodingKey.BS_BaseSubstitutionCode, type = DataSeriesType.BYTE)
-    public DataReader<Byte> bsc;
+    public DataReader<Byte> baseSubstitutionCodec;
 
     @DataSeries(key = EncodingKey.IN_Insertion, type = DataSeriesType.BYTE_ARRAY)
-    public DataReader<byte[]> inc;
+    public DataReader<byte[]> insertionCodec;
 
     @DataSeries(key = EncodingKey.SC_SoftClip, type = DataSeriesType.BYTE_ARRAY)
     public DataReader<byte[]> softClipCodec;
@@ -93,28 +88,22 @@ public abstract class AbstractReader {
     public DataReader<Integer> paddingCodec;
 
     @DataSeries(key = EncodingKey.DL_DeletionLength, type = DataSeriesType.INT)
-    public DataReader<Integer> dlc;
+    public DataReader<Integer> deletionLengthCodec;
 
     @DataSeries(key = EncodingKey.MQ_MappingQualityScore, type = DataSeriesType.INT)
-    public DataReader<Integer> mqc;
+    public DataReader<Integer> mappingScoreCodec;
 
     @DataSeries(key = EncodingKey.MF_MateBitFlags, type = DataSeriesType.BYTE)
-    public DataReader<Byte> mbfc;
+    public DataReader<Byte> mateBitFlagCodec;
 
     @DataSeries(key = EncodingKey.NS_NextFragmentReferenceSequenceID, type = DataSeriesType.INT)
-    public DataReader<Integer> mrc;
+    public DataReader<Integer> mateReferenceIdCodec;
 
     @DataSeries(key = EncodingKey.NP_NextFragmentAlignmentStart, type = DataSeriesType.INT)
-    public DataReader<Integer> malsc;
+    public DataReader<Integer> mateAlignmentStartCodec;
 
     @DataSeries(key = EncodingKey.TS_InsetSize, type = DataSeriesType.INT)
-    public DataReader<Integer> tsc;
-
-    static int detachedCount = 0;
-    int recordCounter = 0;
-
-    @DataSeries(key = EncodingKey.TM_TestMark, type = DataSeriesType.INT)
-    public DataReader<Integer> testC;
+    public DataReader<Integer> insertSizeCodec;
 
     @DataSeries(key = EncodingKey.TL_TagIdList, type = DataSeriesType.INT)
     public DataReader<Integer> tagIdListCodec;
@@ -134,4 +123,7 @@ public abstract class AbstractReader {
     public int refId;
     SubstitutionMatrix substitutionMatrix;
     public boolean AP_delta = true;
+
+    static int detachedCount = 0;
+    int recordCounter = 0;
 }
