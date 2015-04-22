@@ -22,14 +22,14 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 public class CanonicalHuffmanByteCodec2 extends AbstractBitCodec<Byte> {
-    private final HelperByte helper;
+    private final HuffmanByteHelper helper;
 
     /*
      * values[]: the alphabet (provided as Integers) bitLengths[]: the number of
-     * bits of symbil's huffman code
+     * bits of symbol's huffman code
      */
     public CanonicalHuffmanByteCodec2(byte[] values, int[] bitLengths) {
-        helper = new HelperByte(values, bitLengths);
+        helper = new HuffmanByteHelper(values, bitLengths);
     }
 
     @Override
@@ -46,8 +46,9 @@ public class CanonicalHuffmanByteCodec2 extends AbstractBitCodec<Byte> {
     public long numberOfBits(Byte object) {
         HuffmanBitCode bitCode;
         try {
+            //noinspection SuspiciousMethodCalls
             bitCode = helper.codes.get(object);
-            return bitCode.bitLentgh;
+            return bitCode.bitLength;
         } catch (NullPointerException e) {
             throw new RuntimeException("Value " + object + " not found.", e);
         }

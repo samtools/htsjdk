@@ -23,14 +23,14 @@ import java.io.IOException;
 
 
 public class CanonicalHuffmanIntegerCodec2 extends AbstractBitCodec<Integer> {
-    private final Helper helper;
+    private final HuffmanIntHelper helper;
 
     /*
      * values[]: the alphabet (provided as Integers) bitLengths[]: the number of
-     * bits of symbil's huffman code
+     * bits of symbol's huffman code
      */
     public CanonicalHuffmanIntegerCodec2(int[] values, int[] bitLengths) {
-        helper = new Helper(values, bitLengths);
+        helper = new HuffmanIntHelper(values, bitLengths);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class CanonicalHuffmanIntegerCodec2 extends AbstractBitCodec<Integer> {
         HuffmanBitCode bitCode;
         try {
             bitCode = helper.codes.get(object);
-            return bitCode.bitLentgh;
+            return bitCode.bitLength;
         } catch (NullPointerException e) {
             throw new RuntimeException("Value " + object + " not found.", e);
         }

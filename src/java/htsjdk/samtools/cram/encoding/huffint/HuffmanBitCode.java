@@ -17,11 +17,11 @@ package htsjdk.samtools.cram.encoding.huffint;
 
 class HuffmanBitCode {
     int bitCode;
-    int bitLentgh;
+    int bitLength;
     int value;
 
     @Override
     public String toString() {
-        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLentgh) + " " + bitCode;
+        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
     }
 }
