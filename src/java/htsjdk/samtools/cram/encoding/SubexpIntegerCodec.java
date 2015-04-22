@@ -46,14 +46,14 @@ public class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
         while (bis.readBit() == unaryBit)
             u++;
 
-        int b = 0;
-        int n = 0;
+        int b ;
+        int n ;
         if (u == 0) {
             b = k;
-            n = bis.readBits((int) b);
+            n = bis.readBits(b);
         } else {
             b = u + k - 1;
-            n = (1 << b) | bis.readBits((int) b);
+            n = (1 << b) | bis.readBits(b);
         }
 
         return n - offset;
@@ -65,8 +65,8 @@ public class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
             throw new IllegalArgumentException("Value is less then offset: " + value);
 
         long newValue = value + offset;
-        int b = 0;
-        int u = 0;
+        int b ;
+        int u ;
         if (newValue < (1L << k)) {
             b = k;
             u = 0;
@@ -85,8 +85,8 @@ public class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
     @Override
     public final long numberOfBits(Integer value) {
         long newValue = value + offset;
-        long b = 0;
-        long u = 0;
+        long b ;
+        long u ;
         if (newValue < (1L << k)) {
             b = k;
             u = 0;

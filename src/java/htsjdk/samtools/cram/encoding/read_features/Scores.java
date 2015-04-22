@@ -73,10 +73,6 @@ public class Scores implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
-        sb.append("position=").append(position);
-        sb.append("; scores=").append(new String(scores));
-        sb.append("] ");
-        return sb.toString();
+        return getClass().getSimpleName() + "[" + "position=" + position + "; scores=" + new String(scores) + "] ";
     }
 }

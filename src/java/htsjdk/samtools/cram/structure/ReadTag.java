@@ -517,7 +517,7 @@ public class ReadTag implements Comparable<ReadTag> {
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         value = readSingleValue((byte) 'B', byteBuffer, null);
         if (!Arrays.equals(baValue, (byte[]) value))
-            throw new RuntimeException("Failed for " + baValue);
+            throw new RuntimeException("Failed for " + Arrays.toString(baValue));
     }
 
 }

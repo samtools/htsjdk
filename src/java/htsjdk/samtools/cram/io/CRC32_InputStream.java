@@ -18,7 +18,7 @@ public class CRC32_InputStream extends InputStream {
     }
 
     public int getCRC32() {
-        return (int) (0xFFFFFFFF & crc32.getValue());
+        return (int) (crc32.getValue());
     }
 
     @Override

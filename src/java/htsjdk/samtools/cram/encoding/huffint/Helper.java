@@ -59,7 +59,7 @@ class Helper {
                 codes.size());
         list.addAll(codes.values());
         Collections.sort(list, bitCodeComparator);
-        sortedCodes = (HuffmanBitCode[]) list.toArray(new HuffmanBitCode[list
+        sortedCodes = list.toArray(new HuffmanBitCode[list
                 .size()]);
 
         sortedValues = Arrays.copyOf(values, values.length);

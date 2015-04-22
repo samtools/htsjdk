@@ -16,8 +16,8 @@ class D14 {
         rans7 = ptr.getInt();
 
         int isz4 = out_sz >> 2;
-        int i0 = 0 * isz4;
-        int i1 = 1 * isz4;
+        int i0 = 0;
+        int i1 = isz4;
         int i2 = 2 * isz4;
         int i7 = 3 * isz4;
         int l0 = 0;

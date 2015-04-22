@@ -25,7 +25,7 @@ import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import java.nio.charset.Charset;
 
 public abstract class AbstractReader {
-    public Charset charset = Charset.forName("UTF8");
+    Charset charset = Charset.forName("UTF8");
     public boolean captureReadNames = false;
     public byte[][][] tagIdDictionary;
 
@@ -110,8 +110,8 @@ public abstract class AbstractReader {
     @DataSeries(key = EncodingKey.TS_InsetSize, type = DataSeriesType.INT)
     public DataReader<Integer> tsc;
 
-    public static int detachedCount = 0;
-    public int recordCounter = 0;
+    static int detachedCount = 0;
+    int recordCounter = 0;
 
     @DataSeries(key = EncodingKey.TM_TestMark, type = DataSeriesType.INT)
     public DataReader<Integer> testC;
@@ -132,6 +132,6 @@ public abstract class AbstractReader {
     public DataReader<byte[]> scoresCodec;
 
     public int refId;
-    public SubstitutionMatrix substitutionMatrix;
+    SubstitutionMatrix substitutionMatrix;
     public boolean AP_delta = true;
 }

@@ -27,24 +27,24 @@ import java.util.Map;
 
 public abstract class AbstractFastqReader extends AbstractReader {
     private ReadFeatureBuffer rfBuf = new ReadFeatureBuffer();
-    public boolean reverseNegativeReads = true;
+    private boolean reverseNegativeReads = true;
     public boolean appendSegmentIndexToReadNames = true;
 
-    public byte[] referenceSequence;
-    public int flags;
-    public int compressionFlags;
-    public int mateFlags;
-    public int readLength;
-    public int prevAlStart;
-    public byte[] readName;
+    private byte[] referenceSequence;
+    private int flags;
+    private int compressionFlags;
+    private int mateFlags;
+    private int readLength;
+    private int prevAlStart;
+    private byte[] readName;
 
-    public static final int maxReadBufferLength = 1024 * 1024;
-    public byte[] bases = new byte[maxReadBufferLength];
-    public byte[] scores = new byte[maxReadBufferLength];
+    private static final int maxReadBufferLength = 1024 * 1024;
+    private byte[] bases = new byte[maxReadBufferLength];
+    private byte[] scores = new byte[maxReadBufferLength];
     private Map<Integer, Integer> nameCache = new HashMap<Integer, Integer>();
-    public long counterOffset = 0;
+    private long counterOffset = 0;
 
-    public int defaultQS = '?';
+    private int defaultQS = '?';
 
     /**
      * For now this is to identify the right buffer to use.

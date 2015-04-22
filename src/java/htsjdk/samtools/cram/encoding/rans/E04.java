@@ -28,7 +28,7 @@ class E04 {
                         syms[0xFF & in.get(in_size - (i - 1))]);
             case 1:
                 rans0 = Encoding.RansEncPutSymbol(rans0, ptr,
-                        syms[0xFF & in.get(in_size - (i - 0))]);
+                        syms[0xFF & in.get(in_size - (i))]);
             case 0:
                 break;
         }

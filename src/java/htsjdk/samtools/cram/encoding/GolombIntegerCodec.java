@@ -46,7 +46,7 @@ public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
             quotient++;
 
         int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
-        int reminder = bis.readBits((int) (ceiling - 1));
+        int reminder = bis.readBits(ceiling - 1);
         if (reminder >= Math.pow(2, ceiling) - m) {
             reminder <<= 1;
             reminder |= bis.readBits(1);
@@ -60,7 +60,7 @@ public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     public final long write(final BitOutputStream bos, final Integer value)
             throws IOException {
         int newValue = value + offset;
-        int quotient = (int) (newValue / m);
+        int quotient = newValue / m;
         int reminder = newValue % m;
         int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
 
@@ -69,11 +69,11 @@ public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
         bos.write(!quotientBit);
 
         if (reminder < Math.pow(2, ceiling) - m) {
-            bos.write(reminder, (int) ceiling - 1);
+            bos.write(reminder, ceiling - 1);
             len += ceiling - 1;
         } else {
             bos.write((int) (reminder + Math.pow(2, ceiling) - m),
-                    (int) ceiling);
+                    ceiling);
             len += ceiling;
         }
         return len;
@@ -82,7 +82,7 @@ public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     @Override
     public final long numberOfBits(Integer value) {
         int newValue = value + offset;
-        int quotient = (int) (newValue / m);
+        int quotient = newValue / m;
         int reminder = newValue % m;
         int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
         int l = quotient + 1;

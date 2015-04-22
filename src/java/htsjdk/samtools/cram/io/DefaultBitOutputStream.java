@@ -50,7 +50,7 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         bytes[0] = (byte) (value >>> 24);
         bytes[1] = (byte) (value >>> 16);
         bytes[2] = (byte) (value >>> 8);
-        bytes[3] = (byte) (value >>> 0);
+        bytes[3] = (byte) (value);
         return bytes;
     }
 

@@ -49,7 +49,7 @@ public class ExternalIntegerEncoding implements Encoding<Integer> {
                                         Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         InputStream is = inputMap == null ? null : inputMap.get(contentId);
         ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
-        return (BitCodec) new ExternalIntegerCodec(os, is);
+        return new ExternalIntegerCodec(os, is);
     }
 
     @Override

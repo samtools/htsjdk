@@ -64,7 +64,7 @@ public class GolombLongCodec extends AbstractBitCodec<Long> {
     public final long write(final BitOutputStream bos, final Long value)
             throws IOException {
         long newValue = value + offset;
-        long quotient = (long) (newValue / m);
+        long quotient = newValue / m;
         long reminder = newValue % m;
         long ceiling = (long) (Math.log(m) / Math.log(2) + 1);
 
@@ -86,7 +86,7 @@ public class GolombLongCodec extends AbstractBitCodec<Long> {
     @Override
     public final long numberOfBits(Long value) {
         long newValue = value + offset;
-        long quotient = (long) (newValue / m);
+        long quotient = newValue / m;
         long reminder = newValue % m;
         long ceiling = (long) (Math.log(m) / Math.log(2) + 1);
         long l = quotient + 1;

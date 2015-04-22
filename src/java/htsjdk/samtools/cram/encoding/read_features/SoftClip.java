@@ -71,10 +71,6 @@ public class SoftClip implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
-        sb.append("position=").append(position);
-        sb.append("; bases=").append(new String(sequence));
-        sb.append("] ");
-        return sb.toString();
+        return getClass().getSimpleName() + "[" + "position=" + position + "; bases=" + new String(sequence) + "] ";
     }
 }

@@ -23,7 +23,7 @@ class E14 {
         ByteBuffer ptr = out_buf.slice();
 
         int isz4 = in_size >> 2;
-        int i0 = 1 * isz4 - 2;
+        int i0 = isz4 - 2;
         int i1 = 2 * isz4 - 2;
         int i2 = 3 * isz4 - 2;
         int i3 = 4 * isz4 - 2;

@@ -166,7 +166,7 @@ public class Sam2CramRecordFactory {
                 }
             }
         }
-        cramRecord.tags = (ReadTag[]) readTagList.toArray(new ReadTag[readTagList.size()]);
+        cramRecord.tags = readTagList.toArray(new ReadTag[readTagList.size()]);
 
         cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
 
@@ -197,7 +197,7 @@ public class Sam2CramRecordFactory {
         List<ReadFeature> features = new LinkedList<ReadFeature>();
         int zeroBasedPositionInRead = 0;
         int alignmentStartOffset = 0;
-        int cigarElementLength = 0;
+        int cigarElementLength ;
 
         List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
 
@@ -279,13 +279,12 @@ public class Sam2CramRecordFactory {
         int oneBasedPositionInRead;
         boolean noQS = (qualityScore.length == 0);
 
-        int i = 0;
-        boolean qualityAdded = false;
-        boolean qualityMasked = false;
+        int i ;
+        boolean qualityAdded ;
         byte refBase;
         for (i = 0; i < nofReadBases; i++) {
             oneBasedPositionInRead = i + fromPosInRead + 1;
-            int refCoord = (int) (cramRecord.alignmentStart + i + alignmentStartOffset) - 1;
+            int refCoord = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
             qualityAdded = false;
             if (refCoord >= refBases.length) refBase = 'N';
             else refBase = refBases[refCoord];
@@ -305,7 +304,7 @@ public class Sam2CramRecordFactory {
 
             if (noQS) continue;
 
-            if (!qualityAdded && refSNPs != null) {
+            if (refSNPs != null) {
                 byte snpOrNot = refSNPs[refCoord];
                 if (snpOrNot != 0) {
                     byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);

@@ -49,7 +49,7 @@ public class ExternalByteEncoding implements Encoding<Byte> {
                                      Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         InputStream is = inputMap == null ? null : inputMap.get(contentId);
         ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
-        return (BitCodec) new ExternalByteCodec(os, is);
+        return new ExternalByteCodec(os, is);
     }
 
     @Override

@@ -28,23 +28,23 @@ import java.util.List;
 
 public class CramCompressionRecord {
     public static final int MULTIFRAGMENT_FLAG = 0x1;
-    public static final int PROPER_PAIR_FLAG = 0x2;
+    private static final int PROPER_PAIR_FLAG = 0x2;
     public static final int SEGMENT_UNMAPPED_FLAG = 0x4;
     public static final int NEGATIVE_STRAND_FLAG = 0x10;
     public static final int FIRST_SEGMENT_FLAG = 0x40;
-    public static final int LAST_SEGMENT_FLAG = 0x80;
-    public static final int SECONDARY_ALIGNMENT_FLAG = 0x100;
-    public static final int VENDOR_FILTERED_FLAG = 0x200;
-    public static final int DUPLICATE_FLAG = 0x400;
-    public static final int SUPPLEMENTARY_FLAG = 0x800;
+    private static final int LAST_SEGMENT_FLAG = 0x80;
+    private static final int SECONDARY_ALIGNMENT_FLAG = 0x100;
+    private static final int VENDOR_FILTERED_FLAG = 0x200;
+    private static final int DUPLICATE_FLAG = 0x400;
+    private static final int SUPPLEMENTARY_FLAG = 0x800;
 
-    public static final int MATE_NEG_STRAND_FLAG = 0x1;
-    public static final int MATE_UNMAPPED_FLAG = 0x2;
+    private static final int MATE_NEG_STRAND_FLAG = 0x1;
+    private static final int MATE_UNMAPPED_FLAG = 0x2;
 
     public static final int FORCE_PRESERVE_QS_FLAG = 0x1;
     public static final int DETACHED_FLAG = 0x2;
     public static final int HAS_MATE_DOWNSTREAM_FLAG = 0x4;
-    public static final int UNKNOWN_BASES = 0x8;
+    private static final int UNKNOWN_BASES = 0x8;
 
     // sequential index of the record in a stream:
     public int index = 0;
@@ -161,7 +161,7 @@ public class CramCompressionRecord {
         return alignmentSpan;
     }
 
-    public void calculateAlignmentBoundaries() {
+    void calculateAlignmentBoundaries() {
         if (readFeatures == null || readFeatures.isEmpty()) {
             alignmentSpan = readLength;
             alignmentEnd = alignmentStart + alignmentSpan - 1;

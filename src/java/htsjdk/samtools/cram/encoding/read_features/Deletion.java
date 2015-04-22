@@ -71,10 +71,6 @@ public class Deletion implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer().append((char) operator)
-                .append('@');
-        sb.append(position);
-        sb.append('+').append(length);
-        return sb.toString();
+        return String.valueOf((char) operator) + '@' + position + '+' + length;
     }
 }

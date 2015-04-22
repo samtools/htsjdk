@@ -61,7 +61,7 @@ class HelperByte {
                 codes.size());
         list.addAll(codes.values());
         Collections.sort(list, bitCodeComparator);
-        sortedCodes = (HuffmanBitCode[]) list.toArray(new HuffmanBitCode[list
+        sortedCodes = list.toArray(new HuffmanBitCode[list
                 .size()]);
 
         // System.out.println("Sorted codes:");

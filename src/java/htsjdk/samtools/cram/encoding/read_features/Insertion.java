@@ -67,10 +67,6 @@ public class Insertion implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
-        sb.append("position=").append(position);
-        sb.append("; sequence=").append(new String(sequence));
-        sb.append("] ");
-        return sb.toString();
+        return getClass().getSimpleName() + "[" + "position=" + position + "; sequence=" + new String(sequence) + "] ";
     }
 }

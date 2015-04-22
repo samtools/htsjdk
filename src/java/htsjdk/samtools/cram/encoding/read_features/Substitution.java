@@ -78,7 +78,7 @@ public class Substitution implements Serializable, ReadFeature {
             if (baseChange != null) {
                 if (!baseChange.equals(v.baseChange))
                     return false;
-            } else if (!v.baseChange.equals(baseChange))
+            } else if (v.baseChange != null)
                 return false;
         }
 

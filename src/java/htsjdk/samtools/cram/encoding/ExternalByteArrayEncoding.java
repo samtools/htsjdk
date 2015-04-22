@@ -50,7 +50,7 @@ public class ExternalByteArrayEncoding implements Encoding<byte[]> {
         InputStream is = inputMap == null ? null : inputMap.get(contentId);
         ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap
                 .get(contentId);
-        return (BitCodec) new ExternalByteArrayCodec(os, is);
+        return new ExternalByteArrayCodec(os, is);
     }
 
     @Override

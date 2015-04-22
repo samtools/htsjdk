@@ -19,7 +19,7 @@ class D04 {
             byte c2 = D.R[Decoding.RansDecGet(rans2, Constants.TF_SHIFT)];
             byte c3 = D.R[Decoding.RansDecGet(rans3, Constants.TF_SHIFT)];
 
-            out.put(i + 0, c0);
+            out.put(i, c0);
             out.put(i + 1, c1);
             out.put(i + 2, c2);
             out.put(i + 3, c3);

@@ -49,7 +49,7 @@ public class ExternalLongEncoding implements Encoding<Long> {
                                      Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         InputStream is = inputMap == null ? null : inputMap.get(contentId);
         ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
-        return (BitCodec) new ExternalLongCodec(os, is);
+        return new ExternalLongCodec(os, is);
     }
 
     @Override

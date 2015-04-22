@@ -157,7 +157,7 @@ class Freqs {
             T[last_i]++;
             last_i = c;
         }
-        F[0][0xFF & in.get(1 * (in_size >> 2))]++;
+        F[0][0xFF & in.get((in_size >> 2))]++;
         F[0][0xFF & in.get(2 * (in_size >> 2))]++;
         F[0][0xFF & in.get(3 * (in_size >> 2))]++;
         T[0] += 3;

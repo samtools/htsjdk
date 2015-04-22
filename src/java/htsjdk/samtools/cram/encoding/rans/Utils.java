@@ -23,7 +23,7 @@ class Utils {
     }
 
     static void reverse(ByteBuffer ptr) {
-        byte tmp = 0;
+        byte tmp ;
         if (ptr.hasArray()) {
             reverse(ptr.array(), ptr.arrayOffset(), ptr.limit());
         } else {

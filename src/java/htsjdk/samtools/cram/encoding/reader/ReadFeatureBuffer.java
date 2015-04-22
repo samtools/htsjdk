@@ -109,7 +109,7 @@ class ReadFeatureBuffer {
                 bases[posInRead - 1] = ref[alignmentStart + posInSeq++];
             }
 
-            int len = 0;
+            int len ;
             switch (op) {
                 case Substitution.operator:
                     byte refBase = ref[alignmentStart + posInSeq];
@@ -175,8 +175,8 @@ class ReadFeatureBuffer {
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
         int lastOpLen = 0;
         int lastOpPos = 1;
-        CigarOperator co = null;
-        int rfLen = 0;
+        CigarOperator co ;
+        int rfLen ;
         for (int r = 0; r < readFeatureSize; r++) {
             byte op = readFeatureBuffer.get();
             int rfPos = readFeatureBuffer.getInt();
@@ -286,7 +286,7 @@ class ReadFeatureBuffer {
                                      byte[] scores) {
         readFeatureBuffer.rewind();
 
-        int posInRead = 1;
+        int posInRead ;
 
         for (int r = 0; r < readFeatureSize; r++) {
             byte op = readFeatureBuffer.get();
@@ -330,7 +330,7 @@ class ReadFeatureBuffer {
                     scores[posInRead - 1] = readFeatureBuffer.get();
                     break;
                 default:
-                    throw new RuntimeException("Unkown operator: " + op);
+                    throw new RuntimeException("Unknown operator: " + op);
             }
         }
     }
