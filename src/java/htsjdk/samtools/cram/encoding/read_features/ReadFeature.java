@@ -15,9 +15,10 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding.read_features;
 
+/**
+ * An interface to capture data in read coordinates.
+ */
 public interface ReadFeature {
-    public static final byte STOP_OPERATOR = '$';
-
     /**
      * @return zero-based position in the read
      */
@@ -25,5 +26,9 @@ public interface ReadFeature {
 
     public void setPosition(int position);
 
+    /**
+     * Read features are distinguished by operator, similar to cigar operator.
+     * @return type of the read feature
+     */
     public byte getOperator();
 }

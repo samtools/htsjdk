@@ -63,12 +63,8 @@ public class Bases implements Serializable, ReadFeature {
 
         Bases v = (Bases) obj;
 
-        if (position != v.position)
-            return false;
-        if (Arrays.equals(bases, v.bases))
-            return false;
+        return position == v.position && !Arrays.equals(bases, v.bases);
 
-        return true;
     }
 
     @Override

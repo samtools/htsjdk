@@ -17,6 +17,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 
 import java.io.Serializable;
 
+/**
+ * A read feature representing a deletion of one or more bases similar to {@link htsjdk.samtools.CigarOperator#D}.
+ */
 public class Deletion implements Serializable, ReadFeature {
 
     private int position;
@@ -61,12 +64,8 @@ public class Deletion implements Serializable, ReadFeature {
 
         Deletion v = (Deletion) obj;
 
-        if (position != v.position)
-            return false;
-        if (length != v.length)
-            return false;
+        return position == v.position && length == v.length;
 
-        return true;
     }
 
     @Override

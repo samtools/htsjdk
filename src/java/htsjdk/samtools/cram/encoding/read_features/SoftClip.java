@@ -18,6 +18,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * A read feature representing a soft clip similar to {@link htsjdk.samtools.CigarOperator#S}.
+ */
 public class SoftClip implements Serializable, ReadFeature {
 
     private int position;
@@ -61,12 +64,8 @@ public class SoftClip implements Serializable, ReadFeature {
 
         SoftClip v = (SoftClip) obj;
 
-        if (position != v.position)
-            return false;
-        if (Arrays.equals(sequence, v.sequence))
-            return false;
+        return position == v.position && !Arrays.equals(sequence, v.sequence);
 
-        return true;
     }
 
     @Override

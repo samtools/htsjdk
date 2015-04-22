@@ -17,6 +17,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 
 import java.io.Serializable;
 
+/**
+ * A read feature representing a single base with associated quality score.
+ */
 public class ReadBase implements Serializable, ReadFeature {
 
     private int position;
@@ -60,19 +63,13 @@ public class ReadBase implements Serializable, ReadFeature {
 
         ReadBase v = (ReadBase) obj;
 
-        if (position != v.position)
-            return false;
-        if (base != v.base)
-            return false;
-        if (qualityScore != v.qualityScore)
-            return false;
+        return position == v.position && base == v.base && qualityScore == v.qualityScore;
 
-        return true;
     }
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer(getClass().getSimpleName() + "[");
+        StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "[");
         sb.append("position=").append(position);
         sb.append("; base=").appendCodePoint(base);
         sb.append("; score=").appendCodePoint(qualityScore);

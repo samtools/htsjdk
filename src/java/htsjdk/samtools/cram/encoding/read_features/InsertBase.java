@@ -17,6 +17,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 
 import java.io.Serializable;
 
+/**
+ * A read feature representing a single insert base.
+ */
 public class InsertBase implements Serializable, ReadFeature {
 
     private int position;
@@ -52,18 +55,13 @@ public class InsertBase implements Serializable, ReadFeature {
 
         InsertBase v = (InsertBase) obj;
 
-        if (position != v.position)
-            return false;
+        return position == v.position && base == v.base;
 
-        if (base != v.base)
-            return false;
-
-        return true;
     }
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer().append((char) operator).append('@');
+        StringBuilder sb = new StringBuilder().append((char) operator).append('@');
         sb.append(position);
         sb.append('\\').appendCodePoint(base);
         return sb.toString();

@@ -18,6 +18,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * A read feature representing a contiguous stretch of quality scores in a read.
+ */
 public class Scores implements Serializable, ReadFeature {
 
     private int position;
@@ -63,12 +66,8 @@ public class Scores implements Serializable, ReadFeature {
 
         Scores v = (Scores) obj;
 
-        if (position != v.position)
-            return false;
-        if (Arrays.equals(scores, v.scores))
-            return false;
+        return position == v.position && !Arrays.equals(scores, v.scores);
 
-        return true;
     }
 
     @Override

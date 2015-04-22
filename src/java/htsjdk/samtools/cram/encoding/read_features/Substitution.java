@@ -17,12 +17,27 @@ package htsjdk.samtools.cram.encoding.read_features;
 
 import java.io.Serializable;
 
+/**
+ * A substitution event captured in read coordinates. It is characterized by position in read, read base and reference base.
+ * The class is also responsible for converting combinations of read base and reference base into a byte value (code).
+ */
 public class Substitution implements Serializable, ReadFeature {
 
+    /**
+     * zero-based position in read
+     */
     private int position;
+    /**
+     * The read base (ACGTN)
+     */
     private byte base = -1;
-    private byte refernceBase = -1;
-    private BaseChange baseChange;
+    /**
+     * The reference sequence base matching the position of this substitution.
+     */
+    private byte referenceBase = -1;
+    /**
+     * A byte value denoting combination of the read base and the reference base.
+     */
     private byte code = -1;
 
     public byte getCode() {
@@ -56,12 +71,12 @@ public class Substitution implements Serializable, ReadFeature {
         this.base = base;
     }
 
-    public byte getRefernceBase() {
-        return refernceBase;
+    public byte getReferenceBase() {
+        return referenceBase;
     }
 
-    public void setRefernceBase(byte refernceBase) {
-        this.refernceBase = refernceBase;
+    public void setReferenceBase(byte referenceBase) {
+        this.referenceBase = referenceBase;
     }
 
     @Override
@@ -74,20 +89,12 @@ public class Substitution implements Serializable, ReadFeature {
         if (position != v.position)
             return false;
 
-        if (baseChange != null || v.baseChange != null) {
-            if (baseChange != null) {
-                if (!baseChange.equals(v.baseChange))
-                    return false;
-            } else if (v.baseChange != null)
-                return false;
-        }
-
         if ((code != v.code) & (code == -1 || v.code == -1)) {
             return false;
         }
 
         if (code > -1 && v.code > -1) {
-            if (refernceBase != v.refernceBase) return false;
+            if (referenceBase != v.referenceBase) return false;
             if (base != v.base) return false;
         }
         return true;
@@ -95,22 +102,6 @@ public class Substitution implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer().append((char) operator).append('@');
-        sb.append(position);
-        if (baseChange != null)
-            sb.append('/').append(baseChange.getChange());
-        else {
-            sb.append('\\').append((char) base);
-            sb.append((char) refernceBase);
-        }
-        return sb.toString();
-    }
-
-    public BaseChange getBaseChange() {
-        return baseChange;
-    }
-
-    public void setBaseChange(BaseChange baseChange) {
-        this.baseChange = baseChange;
+        return String.valueOf((char) operator) + '@' + position + '\\' + (char) base + (char) referenceBase;
     }
 }

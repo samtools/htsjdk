@@ -18,6 +18,9 @@ package htsjdk.samtools.cram.encoding.read_features;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * A read feature representing a multi-base insertion.
+ */
 public class Insertion implements Serializable, ReadFeature {
 
     private int position;
@@ -60,9 +63,7 @@ public class Insertion implements Serializable, ReadFeature {
 
         Insertion v = (Insertion) obj;
 
-        if (position != v.position)
-            return false;
-        return Arrays.equals(sequence, v.sequence);
+        return position == v.position && Arrays.equals(sequence, v.sequence);
     }
 
     @Override
