@@ -26,7 +26,6 @@ public class CramInt {
      *
      * @param data input stream to read from
      * @return an integer value read
-     * @throws IOException as per java IO contract
      */
     public static int int32(final byte[] data) {
         if (data.length != 4)
@@ -39,7 +38,6 @@ public class CramInt {
      *
      * @param buf {@link ByteBuffer} to read from
      * @return an integer value read from the buffer
-     * @throws IOException as per java IO contract
      */
     public static int int32(final ByteBuffer buf) {
         return buf.get() | buf.get() << 8 | buf.get() << 16 | buf.get() << 24;

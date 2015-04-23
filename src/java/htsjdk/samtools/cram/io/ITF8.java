@@ -14,7 +14,7 @@ public class ITF8 {
     /**
      * Reads an unsigned (32 bit) integer from an {@link InputStream}. The sign bit should be interpreted as a value bit.
      * @param is the stream to read from
-     * @return
+     * @return the value read
      * @throws IOException as per java IO contract
      */
     public static int readUnsignedITF8(final InputStream is) throws IOException {
@@ -85,7 +85,7 @@ public class ITF8 {
     /**
      * Reads an unsigned (32 bit) integer from an array of bytes. The sign bit should be interpreted as a value bit.
      * @param data the bytes to read from
-     * @return
+     * @return the value read
      */
     public static int readUnsignedITF8(final byte[] data) {
         final ByteBuffer buf = ByteBuffer.wrap(data);
@@ -143,7 +143,6 @@ public class ITF8 {
      * Writes an unsigned (32 bit) integer to an {@link OutputStream} encoded as ITF8. The sign bit is interpreted as a value bit.
      * @param value the value to be written out
      * @param buf the {@link ByteBuffer} to write to
-     * @return number of bits written
      */
     public static void writeUnsignedITF8(final int value, final ByteBuffer buf) {
         if ((value >>> 7) == 0) {

@@ -9,8 +9,8 @@ import java.util.zip.CRC32;
  * class is used to internally.
  */
 public class CRC32_InputStream extends InputStream {
-    private InputStream delegate;
-    private CRC32 crc32 = new CRC32();
+    private final InputStream delegate;
+    private final CRC32 crc32 = new CRC32();
 
     public CRC32_InputStream(InputStream delegate) {
         super();
@@ -30,7 +30,7 @@ public class CRC32_InputStream extends InputStream {
     }
 
     @Override
-    public int read(byte[] b) throws IOException {
+    public int read(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
         int result = delegate.read(b);
         if (result != -1)
             crc32.update(b, 0, result);
@@ -38,7 +38,7 @@ public class CRC32_InputStream extends InputStream {
     }
 
     @Override
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
         int result = delegate.read(b, off, len);
         crc32.update(b, off, result);
         return result;
@@ -60,8 +60,8 @@ public class CRC32_InputStream extends InputStream {
     }
 
     @Override
-    public void mark(int readlimit) {
-        delegate.mark(readlimit);
+    public void mark(int readLimit) {
+        delegate.mark(readLimit);
     }
 
     @Override

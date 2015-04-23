@@ -45,15 +45,6 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         out.write(value);
     }
 
-    private final static byte[] toBytes(int value) {
-        final byte[] bytes = new byte[4];
-        bytes[0] = (byte) (value >>> 24);
-        bytes[1] = (byte) (value >>> 16);
-        bytes[2] = (byte) (value >>> 8);
-        bytes[3] = (byte) (value);
-        return bytes;
-    }
-
     @Override
     public String toString() {
         return "DefaultBitOutputStream: "
@@ -172,29 +163,13 @@ public class DefaultBitOutputStream extends OutputStream implements BitOutputStr
         out.flush();
     }
 
-    public OutputStream getDelegate() {
-        return out;
-    }
-
-    public int alignToByte() throws IOException {
-        int bitsFlushed = bufferedNumberOfBits;
-
-        if (bufferedNumberOfBits > 0)
-            out.write(bufferByte);
-
-        bufferedNumberOfBits = 0;
-        bufferByte = 0;
-
-        return bitsFlushed;
-    }
-
     @Override
-    public void write(byte[] b) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
         out.write(b);
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
         out.write(b, off, len);
     }
 

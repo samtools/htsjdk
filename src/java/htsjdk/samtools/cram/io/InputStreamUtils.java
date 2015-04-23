@@ -60,10 +60,9 @@ public class InputStreamUtils {
      * of the array is less or equal to len.
      *
      * @param is  the input stream to read from
-     * @param b   the number of bytes to read
+     * @param b   the byte array to read into
      * @param off offset in the byte array
      * @param len the number of bytes to read
-     * @return a new byte array containing data from the input stream
      * @throws IOException  as per java IO contract
      * @throws EOFException if there is less than len bytes in the stream
      */

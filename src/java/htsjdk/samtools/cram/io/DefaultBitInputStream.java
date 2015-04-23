@@ -29,19 +29,14 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
 
     private int nofBufferedBits = 0;
     private int byteBuffer = 0;
-    private boolean endOfStream = false;
     private boolean throwEOF = false;
     private static final long[] masks = new long[]{0, (1L << 1) - 1, (1L << 2) - 1, (1L << 3) - 1, (1L << 4) - 1,
             (1L << 5) - 1, (1L << 6) - 1, (1L << 7) - 1, (1L << 8) - 1};
-    private boolean byteAligned = false;
 
     public DefaultBitInputStream(InputStream in) {
-        this(in, true);
-    }
 
-    public DefaultBitInputStream(InputStream in, boolean throwEOF) {
         super(in);
-        this.throwEOF = throwEOF;
+        this.throwEOF = true;
     }
 
     public final boolean readBit() throws IOException {
@@ -51,7 +46,6 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
         nofBufferedBits = 7;
         byteBuffer = in.read();
         if (byteBuffer == -1) {
-            endOfStream = true;
             if (throwEOF)
                 throw new EOFException("End of stream.");
         }
@@ -68,7 +62,6 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
             x |= rightBits(nofBufferedBits, byteBuffer) << n;
             byteBuffer = in.read();
             if (byteBuffer == -1) {
-                endOfStream = true;
                 throw new EOFException("End of stream.");
             }
 
@@ -78,35 +71,8 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
         return x | rightBits(n, byteBuffer >>> nofBufferedBits);
     }
 
-    private static final int rightBits(int n, int x) {
+    private static int rightBits(int n, int x) {
         return x & ((1 << n) - 1);
-    }
-
-    private static final long rightLongBits(int n, long x) {
-        return x & ((1 << n) - 1);
-    }
-
-    private final void readNextByte() throws IOException {
-        byteBuffer = in.read();
-        if (byteBuffer == -1) {
-            endOfStream = true;
-            throw new EOFException("End of stream.");
-        }
-        nofBufferedBits = 8;
-    }
-
-    public final long readLongBits1(int len) throws IOException {
-        if (len > 64)
-            throw new RuntimeException("More then 64 bits are requested in one read from bit stream.");
-
-        long result = 0;
-        final long last = len - 1;
-        for (long bi = 0; bi <= last; bi++) {
-            final boolean frag = readBit();
-            if (frag)
-                result |= 1L << (last - bi);
-        }
-        return result;
     }
 
     public final long readLongBits(int n) throws IOException {
@@ -121,7 +87,6 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
         if (nofBufferedBits == 0) {
             byteBuffer = in.read();
             if (byteBuffer == -1) {
-                endOfStream = true;
                 throw new EOFException("End of stream.");
             }
             nofBufferedBits = 8;
@@ -132,7 +97,6 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
             x |= byteBuffer << n;
             byteBuffer = in.read();
             if (byteBuffer == -1) {
-                endOfStream = true;
                 throw new EOFException("End of stream.");
             }
             nofBufferedBits = 8;
@@ -145,13 +109,5 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
     public void reset() {
         nofBufferedBits = 0;
         byteBuffer = 0;
-    }
-
-    public boolean endOfStream() throws IOException {
-        return endOfStream;
-    }
-
-    public int getNofBufferedBits() {
-        return nofBufferedBits;
     }
 }

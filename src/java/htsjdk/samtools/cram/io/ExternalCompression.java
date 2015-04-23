@@ -106,7 +106,6 @@ public class ExternalCompression {
      *
      * @param data compressed data blob
      * @return uncompressed data
-     * @throws IOException as per java IO contract
      */
     public static byte[] unrans(final byte[] data) {
         final ByteBuffer buf = RANS.uncompress(ByteBuffer.wrap(data), null);

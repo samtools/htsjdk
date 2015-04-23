@@ -11,14 +11,14 @@ import java.util.zip.CRC32;
  */
 public class CRC32_OutputStream extends FilterOutputStream {
 
-    private CRC32 crc32 = new CRC32();
+    private final CRC32 crc32 = new CRC32();
 
     public CRC32_OutputStream(OutputStream out) {
         super(out);
     }
 
     @Override
-    public void write(byte[] b, int off, int len) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
         crc32.update(b, off, len);
         out.write(b, off, len);
     }
@@ -30,7 +30,7 @@ public class CRC32_OutputStream extends FilterOutputStream {
     }
 
     @Override
-    public void write(byte[] b) throws IOException {
+    public void write(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
         crc32.update(b);
         out.write(b);
     }

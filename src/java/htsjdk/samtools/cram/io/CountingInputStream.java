@@ -32,17 +32,16 @@ public class CountingInputStream extends InputStream {
     @Override
     public int read() throws IOException {
         count++;
-        int read = delegate.read();
-        return read;
+        return delegate.read();
     }
 
-    public int read(byte[] b) throws IOException {
+    public int read(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
         int read = delegate.read(b);
         count += read;
         return read;
     }
 
-    public int read(byte[] b, int off, int len) throws IOException {
+    public int read(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
         int read = delegate.read(b, off, len);
         count += read;
         return read;
