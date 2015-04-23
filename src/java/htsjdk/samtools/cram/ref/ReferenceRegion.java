@@ -17,19 +17,23 @@ package htsjdk.samtools.cram.ref;
 
 import java.util.Arrays;
 
-public class ReferenceRegion {
-    public int index;
-    public String name;
-    public long alignmentStart, alignmentEnd;
-    public int arrayStart, arraySpan;
-    public byte[] array;
+/**
+ * A class representing a region on a reference sequence.
+ */
+class ReferenceRegion {
+    private final int index;
+    private final String name;
+    private long alignmentStart;
+    private int arrayStart;
+    private final byte[] array;
 
     /**
-     * @param bases
-     * @param sequenceIndex
-     * @param sequenceName
-     * @param alignmentStart 1-based inclusive
-     * @param alignmentEnd   1-based inclusive
+     * Construct reference sequence region with the given bases.
+     * @param bases the bases for the sequence
+     * @param sequenceIndex index in the {@link htsjdk.samtools.SAMSequenceDictionary}
+     * @param sequenceName name of the reference sequence
+     * @param alignmentStart 1-based inclusive position of the region start on the reference sequence
+     * @param alignmentEnd   1-based inclusive position of the region end on the reference sequence
      */
     public ReferenceRegion(byte[] bases, int sequenceIndex,
                            String sequenceName, long alignmentStart, long alignmentEnd) {
@@ -48,13 +52,11 @@ public class ReferenceRegion {
                     alignmentStart, alignmentEnd));
 
         this.alignmentStart = alignmentStart;
-        this.alignmentEnd = alignmentEnd;
 
         this.arrayStart = (int) (alignmentStart - 1);
-        this.arraySpan = (int) (alignmentEnd - alignmentStart) + 1;
     }
 
-    public int arrayPosition(long alignmentPosition) {
+    int arrayPosition(long alignmentPosition) {
         int arrayPosition = (int) (arrayStart + (alignmentPosition - alignmentStart));
 
         if (arrayPosition < 0 || arrayPosition > array.length)
@@ -73,5 +75,17 @@ public class ReferenceRegion {
         int from = arrayPosition(alignmentStart);
         int to = arrayPosition(alignmentStart + alignmentSpan);
         return Arrays.copyOfRange(array, from, to);
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public long getAlignmentStart() {
+        return alignmentStart;
     }
 }

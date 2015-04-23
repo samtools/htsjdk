@@ -18,9 +18,9 @@ package htsjdk.samtools.cram.ref;
 import java.util.Arrays;
 
 public class ReferenceTracks {
-    private int sequenceId;
-    private String sequenceName;
-    private byte[] reference;
+    private final int sequenceId;
+    private final String sequenceName;
+    private final byte[] reference;
 
     private int position;
 
@@ -35,8 +35,8 @@ public class ReferenceTracks {
         this(sequenceId, sequenceName, reference, 1000000);
     }
 
-    public ReferenceTracks(int sequenceId, String sequenceName,
-                           byte[] reference, int windowSize) {
+    private ReferenceTracks(int sequenceId, String sequenceName,
+                            byte[] reference, int windowSize) {
         this.sequenceId = sequenceId;
         this.sequenceName = sequenceName;
         this.reference = reference;
@@ -83,7 +83,7 @@ public class ReferenceTracks {
      * @param newPos 1-based reference coordinate, must be greater than current
      *               position and smaller than reference length.
      */
-    public void moveForwardTo(int newPos) {
+    void moveForwardTo(int newPos) {
         if (newPos - 1 >= reference.length)
             throw new RuntimeException("New position is beyond the reference: "
                     + newPos);
@@ -119,7 +119,7 @@ public class ReferenceTracks {
         this.position = newPos;
     }
 
-    public void reset() {
+    void reset() {
         System.arraycopy(reference, position - 1, bases, 0,
                 Math.min(bases.length, reference.length - position + 1));
         Arrays.fill(coverage, (short) 0);
@@ -128,7 +128,7 @@ public class ReferenceTracks {
 
     public void ensureRange(int start, int length) {
         if (start < position)
-            throw new RuntimeException("Cannot move the window backwords: "
+            throw new RuntimeException("Cannot move the window backwards: "
                     + start);
 
         if (start > position || start + length > position + bases.length)

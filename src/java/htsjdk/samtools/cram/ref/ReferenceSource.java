@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -39,11 +38,11 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 public class ReferenceSource {
-    private static Log log = Log.getInstance(ReferenceSource.class);
+    private static final Log log = Log.getInstance(ReferenceSource.class);
     private ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
-    private Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
+    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
 
     public ReferenceSource() {
     }
@@ -125,7 +124,7 @@ public class ReferenceSource {
         return null;
     }
 
-    protected byte[] findBasesByName(String name, boolean tryVariants) {
+    byte[] findBasesByName(String name, boolean tryVariants) {
         if (rsFile == null || !rsFile.isIndexed())
             return null;
 
@@ -153,7 +152,7 @@ public class ReferenceSource {
         return null;
     }
 
-    protected byte[] findBasesByMD5(String md5) throws MalformedURLException,
+    byte[] findBasesByMD5(String md5) throws
             IOException {
         String url = String.format(Defaults.EBI_REFERENCE_SEVICE_URL_MASK, md5);
 
@@ -188,7 +187,7 @@ public class ReferenceSource {
     private static final Pattern chrPattern = Pattern.compile("chr.*",
             Pattern.CASE_INSENSITIVE);
 
-    protected List<String> getVariants(String name) {
+    List<String> getVariants(String name) {
         List<String> variants = new ArrayList<String>();
 
         if (name.equals("M"))

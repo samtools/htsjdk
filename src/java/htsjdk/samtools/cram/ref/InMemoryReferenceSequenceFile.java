@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
+class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     private Map<Integer, byte[]> sequences = new HashMap<Integer, byte[]>();
     private SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
     private int currentIndex = 0;
@@ -63,19 +63,19 @@ public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     }
 
     /**
-     * @param name
-     * @param start inclusive
-     * @param stop  inclusive
-     * @return
+     * Returns a new object representing the requested region on the reference sequence.
+     * @param name name of the reference sequence
+     * @param start inclusive starting position on the reference sequence
+     * @param stop  inclusive end position on the reference sequence
+     * @return a new region object
      */
     public ReferenceRegion getRegion(String name, long start, long stop) {
         int index = getSequenceDictionary().getSequenceIndex(name);
         if (!sequences.containsKey(index))
             throw new RuntimeException("Sequence not found: " + name);
 
-        ReferenceRegion region = new ReferenceRegion(sequences.get(index),
+        return new ReferenceRegion(sequences.get(index),
                 index, name, start, stop);
-        return region;
     }
 
     @Override
