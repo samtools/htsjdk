@@ -58,7 +58,7 @@ public class Container {
     @Override
     public String toString() {
         return String
-                .format("seqid=%d, astart=%d, aspan=%d, records=%d, slices=%d, blocks=%d.",
+                .format("seqID=%d, start=%d, span=%d, records=%d, slices=%d, blocks=%d.",
                         sequenceId, alignmentStart, alignmentSpan, nofRecords,
                         slices == null ? -1 : slices.length, blockCount);
     }

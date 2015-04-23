@@ -16,5 +16,5 @@
 package htsjdk.samtools.cram.structure;
 
 public enum BlockContentType {
-    FILE_HEADER, COMPRESSION_HEADER, MAPPED_SLICE, RESERVED, EXTERNAL, CORE;
+    FILE_HEADER, COMPRESSION_HEADER, MAPPED_SLICE, RESERVED, EXTERNAL, CORE
 }

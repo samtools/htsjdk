@@ -69,7 +69,7 @@ public class EncodingFactory {
                         return (Encoding<T>) new BetaIntegerEncoding();
                     case GAMMA:
                         return (Encoding<T>) new GammaIntegerEncoding();
-                    case SUBEXP:
+                    case SUBEXPONENTIAL:
                         return (Encoding<T>) new SubexponentialIntegerEncoding();
 
                     default:

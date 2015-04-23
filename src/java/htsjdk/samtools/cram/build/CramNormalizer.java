@@ -87,14 +87,14 @@ public class CramNormalizer {
                     downMate.previous = r;
 
                     r.mateAlignmentStart = downMate.alignmentStart;
-                    r.setMateUmapped(downMate.isSegmentUnmapped());
+                    r.setMateUnmapped(downMate.isSegmentUnmapped());
                     r.setMateNegativeStrand(downMate.isNegativeStrand());
                     r.mateSequenceID = downMate.sequenceId;
                     if (r.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
                         r.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
 
                     downMate.mateAlignmentStart = r.alignmentStart;
-                    downMate.setMateUmapped(r.isSegmentUnmapped());
+                    downMate.setMateUnmapped(r.isSegmentUnmapped());
                     downMate.setMateNegativeStrand(r.isNegativeStrand());
                     downMate.mateSequenceID = r.sequenceId;
                     if (downMate.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)

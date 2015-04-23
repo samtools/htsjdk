@@ -34,7 +34,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 
-public class SliceIO {
+class SliceIO {
     private static final Log log = Log.getInstance(SliceIO.class);
 
     private static void readSliceHeadBlock(int major, Slice s, InputStream is) throws IOException {

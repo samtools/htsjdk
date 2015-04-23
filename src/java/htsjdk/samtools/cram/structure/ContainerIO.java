@@ -23,10 +23,10 @@ public class ContainerIO {
     /**
      * Reads a CRAM container from the input stream. Returns an EOF container when there is no more data or the EOF marker found.
      *
-     * @param version
-     * @param is
-     * @return
-     * @throws IOException
+     * @param version CRAM version to expect
+     * @param is the stream to read from
+     * @return a new container object read from the stream
+     * @throws IOException as per java IO contract
      */
     public static Container readContainer(Version version, InputStream is) throws IOException {
         Container c = readContainer(version.major, is);
@@ -62,14 +62,15 @@ public class ContainerIO {
      */
     public static Container readContainerHeader(int major, InputStream is) throws IOException {
         Container c = new Container();
-        ContainerHeaderIO chio = new ContainerHeaderIO();
-        if (!chio.readContainerHeader(major, c, is)) {
-            chio.readContainerHeader(c, new ByteArrayInputStream((major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER)));
+        ContainerHeaderIO containerHeaderIO = new ContainerHeaderIO();
+        if (!containerHeaderIO.readContainerHeader(major, c, is)) {
+            containerHeaderIO.readContainerHeader(c, new ByteArrayInputStream((major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER)));
             return c;
         }
         return c;
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static Container readContainer(int major, InputStream is, int fromSlice, int howManySlices) throws IOException {
 
         long time1 = System.nanoTime();
@@ -84,7 +85,8 @@ public class ContainerIO {
 
         howManySlices = Math.min(c.landmarks.length, howManySlices);
 
-        if (fromSlice > 0) is.skip(c.landmarks[fromSlice]);
+        if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
+            is.skip(c.landmarks[fromSlice]);
 
         List<Slice> slices = new ArrayList<Slice>();
         for (int s = fromSlice; s < howManySlices - fromSlice; s++) {

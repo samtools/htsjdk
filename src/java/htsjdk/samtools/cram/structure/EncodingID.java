@@ -50,7 +50,7 @@ public enum EncodingID {
     /**
      * Subexponential codes, see the CRAM specs for details.
      */
-    SUBEXP,
+    SUBEXPONENTIAL,
     /**
      * A variant of GOLOMB encoding: http://en.wikipedia.org/wiki/Golomb_coding
      */

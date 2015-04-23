@@ -104,10 +104,9 @@ public class Block {
      *
      * @param rawContent the content of the block
      * @return a new mapped slice {@link Block} object
-     * @throws IOException as per java IO contract
      */
     public static Block buildNewSliceHeaderBlock(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.MAPPED_SLICE, 0, rawContent);
+        return new Block(BlockContentType.MAPPED_SLICE, rawContent);
     }
 
     /**
@@ -115,10 +114,9 @@ public class Block {
      *
      * @param rawContent the content of the block
      * @return a new core {@link Block} object
-     * @throws IOException as per java IO contract
      */
     public static Block buildNewCore(final byte[] rawContent) {
-        return new Block(BlockCompressionMethod.RAW, BlockContentType.CORE, 0, rawContent);
+        return new Block(BlockContentType.CORE, rawContent);
     }
 
     /**
@@ -126,18 +124,17 @@ public class Block {
      *
      * @param rawContent the content of the block
      * @return a new core {@link Block} object
-     * @throws IOException as per java IO contract
      */
     public static Block buildNewFileHeaderBlock(final byte[] rawContent) {
-        final Block block = new Block(BlockCompressionMethod.RAW, BlockContentType.FILE_HEADER, 0, rawContent);
+        final Block block = new Block(BlockContentType.FILE_HEADER, rawContent);
         block.compress();
         return block;
     }
 
-    private Block(final BlockCompressionMethod method, final BlockContentType contentType, final int contentId, final byte[] rawContent) {
-        this.setMethod(method);
+    private Block(final BlockContentType contentType, final byte[] rawContent) {
+        this.setMethod(BlockCompressionMethod.RAW);
         this.setContentType(contentType);
-        this.setContentId(contentId);
+        this.setContentId(0);
         if (rawContent != null) setRawContent(rawContent);
     }
 
@@ -263,7 +260,7 @@ public class Block {
     }
 
     /**
-     * Write the block out to the the specified {@link: OutputStream}. The method is parametrized with CRAM major version number.
+     * Write the block out to the the specified {@link OutputStream}. The method is parametrized with CRAM major version number.
      *
      * @param major CRAM version major number
      * @param os    output stream to write to
@@ -294,7 +291,7 @@ public class Block {
         os.write(getCompressedContent());
     }
 
-    public BlockCompressionMethod getMethod() {
+    BlockCompressionMethod getMethod() {
         return method;
     }
 

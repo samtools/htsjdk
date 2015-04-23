@@ -75,7 +75,7 @@ public class Cram2SamRecordFactory {
                     .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ? cramRecord.mateAlignmentStart : SAMRecord
                             .NO_ALIGNMENT_START);
             samRecord.setMateNegativeStrandFlag(cramRecord.isMateNegativeStrand());
-            samRecord.setMateUnmappedFlag(cramRecord.isMateUmapped());
+            samRecord.setMateUnmappedFlag(cramRecord.isMateUnmapped());
         } else {
             samRecord
                     .setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);

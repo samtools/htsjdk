@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class SubexponentialIntegerEncoding implements Encoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.SUBEXP;
+    private static final EncodingID ENCODING_ID = EncodingID.SUBEXPONENTIAL;
     private int offset;
     private int k;
 

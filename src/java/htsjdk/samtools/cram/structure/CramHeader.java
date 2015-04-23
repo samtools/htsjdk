@@ -39,7 +39,7 @@ public final class CramHeader {
     /**
      * Create a new {@link CramHeader} empty object.
      */
-    public CramHeader() {
+    private CramHeader() {
     }
 
     /**
@@ -71,6 +71,7 @@ public final class CramHeader {
      * Copy the CRAM header into a new {@link CramHeader} object.
      * @return a complete copy of the header
      */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override
     public CramHeader clone() {
         CramHeader clone = new CramHeader();
@@ -96,8 +97,7 @@ public final class CramHeader {
 
         if (getVersion().major != h.getVersion().major) return false;
         if (getVersion().minor != h.getVersion().minor) return false;
-        if (!Arrays.equals(id, h.id)) return false;
-        return getSamFileHeader().equals(h.getSamFileHeader());
+        return Arrays.equals(id, h.id) && getSamFileHeader().equals(h.getSamFileHeader());
     }
 
     /**

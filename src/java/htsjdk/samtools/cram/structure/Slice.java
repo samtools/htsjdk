@@ -27,9 +27,12 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * CRAM slice is a logical union of blocks into for example alignment slices.
+ */
 public class Slice {
-    public static final int UNMAPPED_OR_NOREF = -1;
-    public static final int MUTLIREF = -2;
+    public static final int UNMAPPED_OR_NO_REFERENCE = -1;
+    public static final int MULTI_REFERENCE = -2;
     private static final Log log = Log.getInstance(Slice.class);
 
     // as defined in the specs:
@@ -64,13 +67,13 @@ public class Slice {
         if (alignmentStart > 0 && sequenceId >= 0 && ref == null) throw new NullPointerException("Mapped slice reference is null.");
 
         if (alignmentStart > ref.length) {
-            log.error(String.format("Slice mapped outside of reference: seqid=%d, alstart=%d, counter=%d.", sequenceId, alignmentStart,
+            log.error(String.format("Slice mapped outside of reference: seqID=%d, start=%d, counter=%d.", sequenceId, alignmentStart,
                     globalRecordCounter));
             throw new RuntimeException("Slice mapped outside of the reference.");
         }
 
         if (alignmentStart - 1 + alignmentSpan > ref.length) {
-            log.warn(String.format("Slice partially mapped outside of reference: seqid=%d, alstart=%d, alspan=%d, counter=%d.",
+            log.warn(String.format("Slice partially mapped outside of reference: seqID=%d, start=%d, span=%d, counter=%d.",
                     sequenceId, alignmentStart, alignmentSpan, globalRecordCounter));
         }
     }
@@ -103,7 +106,7 @@ public class Slice {
     }
 
     private static String getBrief(int start_1based, int span, byte[] bases, int shoulderLength) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         int from_inc = start_1based - 1;
 
         int to_exc = start_1based + span - 1;
@@ -122,7 +125,7 @@ public class Slice {
 
     @Override
     public String toString() {
-        return String.format("slice: seqid %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, nofRecords);
+        return String.format("slice: seqID %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, nofRecords);
     }
 
     public void setRefMD5(byte[] ref) {
@@ -157,8 +160,9 @@ public class Slice {
      */
 
     /**
-     * @param tag
-     * @return
+     * Get tag value attached to the slice.
+     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @return a value of the tag
      */
     public Object getAttribute(final short tag) {
         if (this.sliceTags == null) return null;
@@ -169,6 +173,11 @@ public class Slice {
         }
     }
 
+    /**
+     * Set a value for the tag.
+     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @param value tag value
+     */
     public void setAttribute(final String tag, final Object value) {
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty value passed for tag " + tag);
@@ -186,11 +195,11 @@ public class Slice {
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
     }
 
-    protected void setAttribute(final short tag, final Object value) {
+    void setAttribute(final short tag, final Object value) {
         setAttribute(tag, value, false);
     }
 
-    protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
+    void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
         if (value != null && !(value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof String ||
                 value instanceof Character || value instanceof Float || value instanceof byte[] || value instanceof short[] || value
                 instanceof int[] || value instanceof float[])) {

@@ -18,12 +18,10 @@ package htsjdk.samtools.cram.structure;
 
 import java.util.Arrays;
 
-import java.util.Arrays;
-
 public class EncodingParams {
 
-    public EncodingID id;
-    public byte[] params;
+    public final EncodingID id;
+    public final byte[] params;
 
     public EncodingParams(EncodingID id, byte[] params) {
         super();

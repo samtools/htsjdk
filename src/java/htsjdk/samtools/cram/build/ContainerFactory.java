@@ -24,7 +24,6 @@ import htsjdk.samtools.cram.encoding.writer.Writer;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.Block;
-import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 import htsjdk.samtools.cram.structure.BlockContentType;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.Container;
@@ -149,25 +148,25 @@ public class ContainerFactory {
 			 * 3) Detect alignment boundaries for the slice if not multiref.
 			 */
             // @formatter:on
-            slice.sequenceId = Slice.UNMAPPED_OR_NOREF;
+            slice.sequenceId = Slice.UNMAPPED_OR_NO_REFERENCE;
             ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
             for (CramCompressionRecord r : records) {
                 slice.bases += r.readLength;
                 hasher.add(r);
 
-                if (slice.sequenceId != Slice.MUTLIREF
+                if (slice.sequenceId != Slice.MULTI_REFERENCE
                         && r.alignmentStart != SAMRecord.NO_ALIGNMENT_START
                         && r.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
                     switch (slice.sequenceId) {
-                        case Slice.UNMAPPED_OR_NOREF:
+                        case Slice.UNMAPPED_OR_NO_REFERENCE:
                             slice.sequenceId = r.sequenceId;
                             break;
-                        case Slice.MUTLIREF:
+                        case Slice.MULTI_REFERENCE:
                             break;
 
                         default:
                             if (slice.sequenceId != r.sequenceId)
-                                slice.sequenceId = Slice.UNMAPPED_OR_NOREF;
+                                slice.sequenceId = Slice.UNMAPPED_OR_NO_REFERENCE;
                             break;
                     }
 
@@ -179,7 +178,7 @@ public class ContainerFactory {
             slice.sliceTags = hasher.getAsTags();
         }
 
-        if (slice.sequenceId == Slice.MUTLIREF
+        if (slice.sequenceId == Slice.MULTI_REFERENCE
                 || minAlStart == Integer.MAX_VALUE) {
             slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
             slice.alignmentSpan = 0;

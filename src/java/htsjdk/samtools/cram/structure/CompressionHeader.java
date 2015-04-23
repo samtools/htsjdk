@@ -41,11 +41,11 @@ public class CompressionHeader {
     private static final String TD_tagIdsDictionary = "TD";
     private static final String SM_substitutionMatrix = "SM";
 
-    private static Log log = Log.getInstance(CompressionHeader.class);
+    private static final Log log = Log.getInstance(CompressionHeader.class);
 
     public boolean readNamesIncluded;
     public boolean AP_seriesDelta = true;
-    public boolean referenceRequired = true;
+    private boolean referenceRequired = true;
 
     public Map<EncodingKey, EncodingParams> eMap;
     public Map<Integer, EncodingParams> tMap;
@@ -60,7 +60,7 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
-    public CompressionHeader(InputStream is) throws IOException {
+    private CompressionHeader(InputStream is) throws IOException {
         read(is);
     }
 
@@ -94,17 +94,15 @@ public class CompressionHeader {
 
     private byte[] dictionaryToByteArray() {
         int size = 0;
-        for (int i = 0; i < dictionary.length; i++) {
-            for (int j = 0; j < dictionary[i].length; j++)
-                size += dictionary[i][j].length;
+        for (byte[][] aDictionary1 : dictionary) {
+            for (byte[] anADictionary1 : aDictionary1) size += anADictionary1.length;
             size++;
         }
 
         byte[] bytes = new byte[size];
         ByteBuffer buf = ByteBuffer.wrap(bytes);
-        for (int i = 0; i < dictionary.length; i++) {
-            for (int j = 0; j < dictionary[i].length; j++)
-                buf.put(dictionary[i][j]);
+        for (byte[][] aDictionary : dictionary) {
+            for (byte[] anADictionary : aDictionary) buf.put(anADictionary);
             buf.put((byte) 0);
         }
 
@@ -116,15 +114,14 @@ public class CompressionHeader {
     }
 
     public void read(byte[] data) {
-        ByteArrayInputStream bais = new ByteArrayInputStream(data);
         try {
-            read(bais);
+            read(new ByteArrayInputStream(data));
         } catch (IOException e) {
             throw new RuntimeException("This should have never happened.");
         }
     }
 
-    public void read(InputStream is) throws IOException {
+    void read(InputStream is) throws IOException {
         { // preservation map:
             int byteSize = ITF8.readUnsignedITF8(is);
             byte[] bytes = new byte[byteSize];
@@ -135,11 +132,11 @@ public class CompressionHeader {
             for (int i = 0; i < mapSize; i++) {
                 String key = new String(new byte[]{buf.get(), buf.get()});
                 if (RN_readNamesIncluded.equals(key))
-                    readNamesIncluded = buf.get() == 1 ? true : false;
+                    readNamesIncluded = buf.get() == 1;
                 else if (AP_alignmentPositionIsDelta.equals(key))
-                    AP_seriesDelta = buf.get() == 1 ? true : false;
+                    AP_seriesDelta = buf.get() == 1;
                 else if (RR_referenceRequired.equals(key))
-                    referenceRequired = buf.get() == 1 ? true : false;
+                    referenceRequired = buf.get() == 1;
                 else if (TD_tagIdsDictionary.equals(key)) {
                     int size = ITF8.readUnsignedITF8(buf);
                     byte[] dictionaryBytes = new byte[size];
@@ -213,7 +210,7 @@ public class CompressionHeader {
         return baos.toByteArray();
     }
 
-    public void write(OutputStream os) throws IOException {
+    void write(OutputStream os) throws IOException {
 
         { // preservation map:
             ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);

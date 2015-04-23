@@ -37,9 +37,9 @@ public class SubstitutionMatrix {
     private final byte[][] codes = new byte[255][255];
     private final byte[][] bases = new byte[255][255];
 
-    public SubstitutionMatrix(long[][] freqs) {
+    public SubstitutionMatrix(long[][] frequencies) {
         for (byte BASE : BASES) {
-            bytes[ORDER[BASE]] = rank(BASE, freqs[BASE]);
+            bytes[ORDER[BASE]] = rank(BASE, frequencies[BASE]);
         }
         for (byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
@@ -113,14 +113,11 @@ public class SubstitutionMatrix {
     }
 
     private static class SubCode {
-        final byte ref;
         final byte base;
         long freq;
         byte rank;
 
-        public SubCode(byte ref, byte base, long freq) {
-            super();
-            this.ref = ref;
+        public SubCode(byte base, long freq) {
             this.base = base;
             this.freq = freq;
         }
@@ -137,7 +134,7 @@ public class SubstitutionMatrix {
         }
     };
 
-    private byte rank(byte refBase, long[] freqs) {
+    private byte rank(byte refBase, long[] frequencies) {
         // in alphabetical order:
         SubCode[] subCodes = new SubCode[4];
         {
@@ -145,7 +142,7 @@ public class SubstitutionMatrix {
             for (byte base : BASES) {
                 if (refBase == base)
                     continue;
-                subCodes[i++] = new SubCode(refBase, base, freqs[base]);
+                subCodes[i++] = new SubCode(base, frequencies[base]);
             }
         }
 
