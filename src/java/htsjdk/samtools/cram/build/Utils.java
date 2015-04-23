@@ -22,10 +22,10 @@ class Utils {
      * upper-cased and vocab controlled. This method does exactly this: upper
      * case acgt and replace everything else with N.
      *
-     * @param base
-     * @return
+     * @param base a base to normalize
+     * @return a normalized base
      */
-    public static final byte normalizeBase(byte base) {
+    public static byte normalizeBase(byte base) {
         switch (base) {
             case 'a':
             case 'A':

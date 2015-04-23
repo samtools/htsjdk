@@ -41,7 +41,7 @@ import java.util.List;
 
 public class Cram2SamRecordFactory {
 
-    private SAMFileHeader header;
+    private final SAMFileHeader header;
 
     public Cram2SamRecordFactory(SAMFileHeader header) {
         this.header = header;
@@ -99,7 +99,7 @@ public class Cram2SamRecordFactory {
         return samRecord;
     }
 
-    private static final void copyFlags(CramCompressionRecord cr, SAMRecord sr) {
+    private static void copyFlags(CramCompressionRecord cr, SAMRecord sr) {
         sr.setReadPairedFlag(cr.isMultiFragment());
         sr.setProperPairFlag(cr.isProperPair());
         sr.setReadUnmappedFlag(cr.isSegmentUnmapped());
@@ -112,7 +112,7 @@ public class Cram2SamRecordFactory {
         sr.setSupplementaryAlignmentFlag(cr.isSupplementary());
     }
 
-    private static final Cigar getCigar2(Collection<ReadFeature> features,
+    private static Cigar getCigar2(Collection<ReadFeature> features,
                                          int readLength) {
         if (features == null || features.isEmpty()) {
             CigarElement ce = new CigarElement(readLength, CigarOperator.M);
@@ -120,13 +120,12 @@ public class Cram2SamRecordFactory {
         }
 
         List<CigarElement> list = new ArrayList<CigarElement>();
-        int totalOpLen = 1;
         CigarElement ce;
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
         int lastOpLen = 0;
         int lastOpPos = 1;
-        CigarOperator co = null;
-        int rfLen = 0;
+        CigarOperator co ;
+        int rfLen ;
         for (ReadFeature f : features) {
 
             int gap = f.getPosition() - (lastOpPos + lastOpLen);
@@ -134,7 +133,6 @@ public class Cram2SamRecordFactory {
                 if (lastOperator != CigarOperator.MATCH_OR_MISMATCH) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
                     lastOpPos += lastOpLen;
-                    totalOpLen += lastOpLen;
                     lastOpLen = gap;
                 } else {
                     lastOpLen += gap;
@@ -185,7 +183,6 @@ public class Cram2SamRecordFactory {
                 // add last feature
                 if (lastOpLen > 0) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
-                    totalOpLen += lastOpLen;
                 }
                 lastOperator = co;
                 lastOpLen = rfLen;

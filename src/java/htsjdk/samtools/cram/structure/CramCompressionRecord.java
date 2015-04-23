@@ -98,6 +98,7 @@ public class CramCompressionRecord {
         return (byte) (0xFF & compressionFlags);
     }
 
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof CramCompressionRecord)) return false;

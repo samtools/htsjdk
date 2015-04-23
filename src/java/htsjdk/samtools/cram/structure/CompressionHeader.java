@@ -49,7 +49,7 @@ public class CompressionHeader {
 
     public Map<EncodingKey, EncodingParams> eMap;
     public Map<Integer, EncodingParams> tMap;
-    public Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
+    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
 
     public SubstitutionMatrix substitutionMatrix;
 

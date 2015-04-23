@@ -60,7 +60,7 @@ import java.util.TreeMap;
 
 public class CompressionHeaderFactory {
     private static final Charset charset = Charset.forName("US-ASCII");
-    private static Log log = Log.getInstance(CompressionHeaderFactory.class);
+    private static final Log log = Log.getInstance(CompressionHeaderFactory.class);
     private static final int oqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
     private static final int bqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
 
@@ -249,7 +249,7 @@ public class CompressionHeaderFactory {
         }
 
         { // tag values
-            int unsortedTagValueExternalID = exCounter++;
+            int unsortedTagValueExternalID = exCounter;
             h.externalIds.add(unsortedTagValueExternalID);
             h.externalCompressors.put(unsortedTagValueExternalID,
                     ExternalCompressor.createRANS(RANS.ORDER.ONE));
@@ -316,9 +316,7 @@ public class CompressionHeaderFactory {
         { // feature code
             HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
                         calculator.add(rf.getOperator());
             calculator.calculate();
@@ -332,59 +330,30 @@ public class CompressionHeaderFactory {
         }
 
         { // quality scores:
-            // HuffmanParamsCalculator calculator = new
-            // HuffmanParamsCalculator();
-            // for (CramRecord r : records) {
-            // if (r.getQualityScores() == null) {
-            // if (r.getReadFeatures() != null) {
-            // for (ReadFeature f:r.getReadFeatures()) {
-            // switch (f.getOperator()) {
-            // case BaseQualityScore.operator:
-            // calculator.add(((BaseQualityScore)f).getQualityScore()) ;
-            // break;
-            // default:
-            // break;
-            // }
-            // }
-            // }
-            // } else {
-            // for (byte s:r.getQualityScores()) calculator.add(s) ;
-            // }
-            // }
-            // calculator.calculate();
-            //
-            // h.eMap.put(EncodingKey.QS_QualityScore,
-            // HuffmanByteEncoding.toParam(
-            // calculator.valuesAsBytes(), calculator.bitLens));
-
             h.eMap.put(EncodingKey.QS_QualityScore, ExternalByteEncoding.toParam(qualityScoreID));
         }
 
         { // base substitution code
             if (substitutionMatrix == null) {
-                long[][] freqs = new long[200][200];
+                long[][] frequencies = new long[200][200];
                 for (CramCompressionRecord r : records) {
-                    if (r.readFeatures == null)
-                        continue;
-                    else
+                    if (r.readFeatures != null)
                         for (ReadFeature rf : r.readFeatures)
                             if (rf.getOperator() == Substitution.operator) {
                                 Substitution s = ((Substitution) rf);
                                 byte refBase = s.getReferenceBase();
                                 byte base = s.getBase();
-                                freqs[refBase][base]++;
+                                frequencies[refBase][base]++;
                             }
                 }
 
-                h.substitutionMatrix = new SubstitutionMatrix(freqs);
+                h.substitutionMatrix = new SubstitutionMatrix(frequencies);
             } else
                 h.substitutionMatrix = substitutionMatrix;
 
             HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures) {
                         if (rf.getOperator() == Substitution.operator) {
                             Substitution s = ((Substitution) rf);
@@ -413,9 +382,7 @@ public class CompressionHeaderFactory {
         { // deletion length
             HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
                         if (rf.getOperator() == Deletion.operator)
                             calculator.add(((Deletion) rf).getLength());
@@ -428,9 +395,7 @@ public class CompressionHeaderFactory {
         { // hard clip length
             IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.HC_HardClip.name(), 1);
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
                         if (rf.getOperator() == HardClip.operator)
                             calculator.addValue(((HardClip) rf).getLength());
@@ -442,9 +407,7 @@ public class CompressionHeaderFactory {
         { // padding length
             IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.PD_padding.name(), 1);
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
                         if (rf.getOperator() == Padding.operator)
                             calculator.addValue(((Padding) rf).getLength());
@@ -457,9 +420,7 @@ public class CompressionHeaderFactory {
         { // ref skip length
             HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             for (CramCompressionRecord r : records)
-                if (r.readFeatures == null)
-                    continue;
-                else
+                if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
                         if (rf.getOperator() == RefSkip.operator)
                             calculator.add(((RefSkip) rf).getLength());
@@ -514,26 +475,10 @@ public class CompressionHeaderFactory {
             h.eMap.put(EncodingKey.TS_InsetSize, ExternalIntegerEncoding.toParam(mateInfoID));
         }
 
-        { // test mark
-            // h.eMap.put(EncodingKey.TM_TestMark,
-            // BetaIntegerEncoding.toParam(0, 32));
-        }
-
         return h;
     }
 
-    // private static final int getValue(EncodingKey key, ReadFeature f) {
-    // switch (key) {
-    // case BS_BaseSubstitutionCode:
-    //
-    // break;
-    //
-    // default:
-    // break;
-    // }
-    // }
-
-    private static final int getValue(EncodingKey key, CramCompressionRecord r) {
+    private static int getValue(EncodingKey key, CramCompressionRecord r) {
         switch (key) {
             case AP_AlignmentPositionOffset:
                 return r.alignmentDelta;
@@ -567,7 +512,7 @@ public class CompressionHeaderFactory {
         }
     }
 
-    private static final void getOptimalIntegerEncoding(CompressionHeader h, EncodingKey key, int minValue,
+    private static void getOptimalIntegerEncoding(CompressionHeader h, EncodingKey key, int minValue,
                                                         List<CramCompressionRecord> records) {
         IntegerEncodingCalculator calc = new IntegerEncodingCalculator(key.name(), minValue);
         for (CramCompressionRecord r : records) {
@@ -580,8 +525,8 @@ public class CompressionHeaderFactory {
     }
 
     private static class BitCode implements Comparable<BitCode> {
-        int value;
-        int len;
+        final int value;
+        final int len;
 
         public BitCode(int value, int len) {
             this.value = value;
@@ -589,7 +534,7 @@ public class CompressionHeaderFactory {
         }
 
         @Override
-        public int compareTo(BitCode o) {
+        public int compareTo(@SuppressWarnings("NullableProblems") BitCode o) {
             int result = value - o.value;
             if (result != 0)
                 return result;
@@ -598,7 +543,7 @@ public class CompressionHeaderFactory {
     }
 
     public static class HuffmanParamsCalculator {
-        private HashMap<Integer, MutableInt> countMap = new HashMap<Integer, MutableInt>();
+        private final HashMap<Integer, MutableInt> countMap = new HashMap<Integer, MutableInt>();
         private int[] values = new int[]{};
         private int[] bitLens = new int[]{};
 
@@ -629,43 +574,43 @@ public class CompressionHeaderFactory {
         }
 
         public Integer[] valuesAsAutoIntegers() {
-            Integer[] ivalues = new Integer[values.length];
-            for (int i = 0; i < ivalues.length; i++)
-                ivalues[i] = values[i];
+            Integer[] intValues = new Integer[values.length];
+            for (int i = 0; i < intValues.length; i++)
+                intValues[i] = values[i];
 
-            return ivalues;
+            return intValues;
         }
 
         public byte[] valuesAsBytes() {
-            byte[] bvalues = new byte[values.length];
-            for (int i = 0; i < bvalues.length; i++)
-                bvalues[i] = (byte) (0xFF & values[i]);
+            byte[] byteValues = new byte[values.length];
+            for (int i = 0; i < byteValues.length; i++)
+                byteValues[i] = (byte) (0xFF & values[i]);
 
-            return bvalues;
+            return byteValues;
         }
 
         public Byte[] valuesAsAutoBytes() {
-            Byte[] bvalues = new Byte[values.length];
-            for (int i = 0; i < bvalues.length; i++)
-                bvalues[i] = (byte) (0xFF & values[i]);
+            Byte[] byteValues = new Byte[values.length];
+            for (int i = 0; i < byteValues.length; i++)
+                byteValues[i] = (byte) (0xFF & values[i]);
 
-            return bvalues;
+            return byteValues;
         }
 
         public void calculate() {
-            HuffmanTree<Integer> tree = null;
+            HuffmanTree<Integer> tree ;
             {
                 int size = countMap.size();
-                int[] freqs = new int[size];
+                int[] frequencies = new int[size];
                 int[] values = new int[size];
 
                 int i = 0;
                 for (Integer v : countMap.keySet()) {
                     values[i] = v;
-                    freqs[i] = countMap.get(v).value;
+                    frequencies[i] = countMap.get(v).value;
                     i++;
                 }
-                tree = HuffmanCode.buildTree(freqs, autobox(values));
+                tree = HuffmanCode.buildTree(frequencies, autobox(values));
             }
 
             List<Integer> valueList = new ArrayList<Integer>();
@@ -698,8 +643,8 @@ public class CompressionHeaderFactory {
     }
 
     public static class EncodingLengthCalculator {
-        private BitCodec<Integer> codec;
-        private Encoding<Integer> encoding;
+        private final BitCodec<Integer> codec;
+        private final Encoding<Integer> encoding;
         private long len;
 
         public EncodingLengthCalculator(Encoding<Integer> encoding) {
@@ -721,27 +666,27 @@ public class CompressionHeaderFactory {
     }
 
     public static class IntegerEncodingCalculator {
-        public List<EncodingLengthCalculator> calcs = new ArrayList<EncodingLengthCalculator>();
+        public final List<EncodingLengthCalculator> calculators = new ArrayList<EncodingLengthCalculator>();
         private int max = 0;
         private int count = 0;
-        private String name;
+        private final String name;
         private HashMap<Integer, MutableInt> dictionary = new HashMap<Integer, MutableInt>();
-        private int dictionaryThreshold = 100;
+        private final int dictionaryThreshold = 100;
 
         public IntegerEncodingCalculator(String name, int dictionaryThreshold, int minValue) {
             this.name = name;
             // for (int i = 2; i < 10; i++)
-            // calcs.add(new EncodingLengthCalculator(
+            // calculators.add(new EncodingLengthCalculator(
             // new GolombIntegerEncoding(i)));
             //
             // for (int i = 2; i < 20; i++)
-            // calcs.add(new EncodingLengthCalculator(
+            // calculators.add(new EncodingLengthCalculator(
             // new GolombRiceIntegerEncoding(i)));
 
-            calcs.add(new EncodingLengthCalculator(new GammaIntegerEncoding(1 - minValue)));
+            calculators.add(new EncodingLengthCalculator(new GammaIntegerEncoding(1 - minValue)));
 
             for (int i = 2; i < 5; i++)
-                calcs.add(new EncodingLengthCalculator(new SubexponentialIntegerEncoding(0 - minValue, i)));
+                calculators.add(new EncodingLengthCalculator(new SubexponentialIntegerEncoding(0 - minValue, i)));
 
             if (dictionaryThreshold < 1)
                 dictionary = null;
@@ -764,7 +709,7 @@ public class CompressionHeaderFactory {
             if (value > max)
                 max = value;
 
-            for (EncodingLengthCalculator c : calcs)
+            for (EncodingLengthCalculator c : calculators)
                 c.add(value);
 
             if (dictionary != null) {
@@ -792,9 +737,9 @@ public class CompressionHeaderFactory {
                 return he;
             }
 
-            EncodingLengthCalculator bestC = calcs.get(0);
+            EncodingLengthCalculator bestC = calculators.get(0);
 
-            for (EncodingLengthCalculator c : calcs) {
+            for (EncodingLengthCalculator c : calculators) {
                 if (c.len() < bestC.len())
                     bestC = c;
             }
@@ -835,7 +780,7 @@ public class CompressionHeaderFactory {
 
             byte[] params = bestEncoding.toByteArray();
             params = Arrays.copyOf(params, Math.min(params.length, 20));
-            log.debug("Best encoding for " + name + ": " + bestEncoding.id().name() + Arrays.toString(params));
+            log.debug("Best encoding for " + name + ": " + bestEncoding.id().name() + Arrays.toString(params) + ", bits="+bits);
 
             return bestEncoding;
         }

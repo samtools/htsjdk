@@ -19,6 +19,7 @@ public enum BaseCategoryType {
     MATCH('R'), MISMATCH('N'), FLANKING_DELETION('D'), PILEUP('P'), LOWER_COVERAGE(
             'X'), INSERTION('I');
 
+    @SuppressWarnings("FieldCanBeLocal")
     private final char code;
 
     BaseCategoryType(char code) {

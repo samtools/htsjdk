@@ -4,8 +4,8 @@ import java.nio.ByteOrder;
 import java.util.zip.CRC32;
 
 class Crc32Hasher extends AbstractSerialDigest<Integer> {
-    private CRC32 crc32 = new CRC32();
-    private ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
+    private final CRC32 crc32 = new CRC32();
+    private final ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
 
     Crc32Hasher(Combine<Integer> combine) {
         super(combine, null);

@@ -35,7 +35,7 @@ public class Version implements Comparable<Version> {
      * @return 0 if both versions are the same, a negative if the other version is higher and a positive otherwise.
      */
     @Override
-    public int compareTo(final Version o) {
+    public int compareTo(@SuppressWarnings("NullableProblems") final Version o) {
         if (o == null) return -1 ;
         if (major - o.major != 0) return major - o.major;
         if (minor - o.minor != 0) return minor - o.minor;

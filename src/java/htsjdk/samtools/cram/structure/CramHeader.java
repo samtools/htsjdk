@@ -96,6 +96,7 @@ public final class CramHeader {
         CramHeader h = (CramHeader) obj;
 
         if (getVersion().major != h.getVersion().major) return false;
+        //noinspection SimplifiableIfStatement
         if (getVersion().minor != h.getVersion().minor) return false;
         return Arrays.equals(id, h.id) && getSamFileHeader().equals(h.getSamFileHeader());
     }

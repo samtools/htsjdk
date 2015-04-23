@@ -38,14 +38,11 @@ import java.util.List;
 import java.util.Map;
 
 public class ContainerFactory {
-    SAMFileHeader samFileHeader;
-    int recordsPerSlice = 10000;
-    boolean preserveReadNames = true;
-    long globalRecordCounter = 0;
-    boolean AP_delta = true;
+    private int recordsPerSlice = 10000;
+    private boolean preserveReadNames = true;
+    private long globalRecordCounter = 0;
 
     public ContainerFactory(SAMFileHeader samFileHeader, int recordsPerSlice) {
-        this.samFileHeader = samFileHeader;
         this.recordsPerSlice = recordsPerSlice;
     }
 
@@ -55,15 +52,15 @@ public class ContainerFactory {
         return buildContainer(records, null);
     }
 
-    public Container buildContainer(List<CramCompressionRecord> records,
-                                    SubstitutionMatrix substitutionMatrix)
+    Container buildContainer(List<CramCompressionRecord> records,
+                             SubstitutionMatrix substitutionMatrix)
             throws IllegalArgumentException, IllegalAccessException,
             IOException {
         // get stats, create compression header and slices
         long time1 = System.nanoTime();
         CompressionHeader h = new CompressionHeaderFactory().build(records,
                 substitutionMatrix);
-        h.AP_seriesDelta = AP_delta;
+        h.AP_seriesDelta = true;
         long time2 = System.nanoTime();
 
         h.readNamesIncluded = preserveReadNames;
@@ -83,7 +80,7 @@ public class ContainerFactory {
         for (int i = 0; i < records.size(); i += recordsPerSlice) {
             List<CramCompressionRecord> sliceRecords = records.subList(i,
                     Math.min(records.size(), i + recordsPerSlice));
-            Slice slice = buildSlice(sliceRecords, h, samFileHeader);
+            Slice slice = buildSlice(sliceRecords, h);
             slice.globalRecordCounter = lastGlobalRecordCounter;
             lastGlobalRecordCounter += slice.nofRecords;
             c.bases += slice.bases;
@@ -123,7 +120,7 @@ public class ContainerFactory {
     }
 
     private static Slice buildSlice(List<CramCompressionRecord> records,
-                                    CompressionHeader h, SAMFileHeader fileHeader)
+                                    CompressionHeader h)
             throws IllegalArgumentException, IllegalAccessException,
             IOException {
         Map<Integer, ExposedByteArrayOutputStream> map = new HashMap<Integer, ExposedByteArrayOutputStream>();
@@ -144,8 +141,8 @@ public class ContainerFactory {
             // @formatter:off
             /*
              * 1) Count slice bases.
-			 * 2) Decide if the slice is single ref, unmapped or multiref. 
-			 * 3) Detect alignment boundaries for the slice if not multiref.
+			 * 2) Decide if the slice is single ref, unmapped or multi reference.
+			 * 3) Detect alignment boundaries for the slice if not multi reference.
 			 */
             // @formatter:on
             slice.sequenceId = Slice.UNMAPPED_OR_NO_REFERENCE;

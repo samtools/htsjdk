@@ -1,10 +1,10 @@
 package htsjdk.samtools.cram.digest;
 
 abstract class AbstractSerialDigest<T> {
-    protected Combine<T> combine;
-    protected T value;
+    private final Combine<T> combine;
+    T value;
 
-    protected AbstractSerialDigest(Combine<T> combine, T value) {
+    AbstractSerialDigest(Combine<T> combine, T value) {
         this.combine = combine;
         this.value = value;
     }

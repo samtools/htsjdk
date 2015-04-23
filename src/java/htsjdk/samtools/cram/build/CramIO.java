@@ -54,18 +54,18 @@ public class CramIO {
      * The 'zero-B' EOF marker as per CRAM specs v2.1. This is basically a serialized empty CRAM container with sequence id set to some
      * number to spell out 'EOF' in hex.
      */
-    public static byte[] ZERO_B_EOF_MARKER = bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 " +
+    public static final byte[] ZERO_B_EOF_MARKER = bytesFromHex("0b 00 00 00 ff ff ff ff ff e0 45 4f 46 00 00 00 00 01 00 00 01 00 06 06 01 00 " +
             "" + "01 00 01 00");
     /**
      * The zero-F EOF marker as per CRAM specs v3.0. This is basically a serialized empty CRAM container with sequence id set to some number
      * to spell out 'EOF' in hex.
      */
-    public static byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 " +
+    public static final byte[] ZERO_F_EOF_MARKER = bytesFromHex("0f 00 00 00 ff ff ff ff 0f e0 45 4f 46 00 00 00 00 01 00 05 bd d9 4f 00 01 00 " +
             "" + "06 06 01 00 01 00 01 00 ee 63 01 4b");
 
 
-    private static int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
-    private static Log log = Log.getInstance(CramIO.class);
+    private static final int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
+    private static final Log log = Log.getInstance(CramIO.class);
 
     private static byte[] bytesFromHex(String s) {
         String clean = s.replaceAll("[^0-9a-fA-F]", "");
@@ -117,7 +117,8 @@ public class CramIO {
      * @return true if the stream ends with a correct EOF marker, false otherwise
      * @throws IOException as per java IO contract
      */
-    public static boolean checkEOF(Version version, SeekableStream seekableStream) throws IOException {
+    @SuppressWarnings("SimplifiableIfStatement")
+    private static boolean checkEOF(Version version, SeekableStream seekableStream) throws IOException {
 
         if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
         if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);

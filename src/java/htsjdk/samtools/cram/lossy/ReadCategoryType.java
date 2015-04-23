@@ -18,6 +18,7 @@ package htsjdk.samtools.cram.lossy;
 public enum ReadCategoryType {
     UNPLACED('P'), HIGHER_MAPPING_SCORE('M'), LOWER_MAPPING_SCORE('m'), ALL('*');
 
+    @SuppressWarnings("FieldCanBeLocal")
     private final char code;
 
     ReadCategoryType(char code) {

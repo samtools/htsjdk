@@ -3,10 +3,10 @@ package htsjdk.samtools.cram.digest;
 import java.security.MessageDigest;
 
 class MessageDigestHasher extends AbstractSerialDigest<byte[]> {
-    private MessageDigest md;
+    private final MessageDigest md;
 
-    protected MessageDigestHasher(MessageDigest md, Combine<byte[]> combine,
-                                  byte[] value) {
+    MessageDigestHasher(MessageDigest md, Combine<byte[]> combine,
+                        byte[] value) {
         super(combine, value);
         this.md = md;
     }

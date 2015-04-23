@@ -36,15 +36,13 @@ import java.util.Arrays;
 import java.util.List;
 
 public class CramNormalizer {
-    private SAMFileHeader header;
+    private final SAMFileHeader header;
     private int readCounter = 0;
-    private String readNamePrefix = "";
-    private byte defaultQualityScore = '?' - '!';
 
     private static Log log = Log.getInstance(CramNormalizer.class);
     private ReferenceSource referenceSource;
 
-    public CramNormalizer(SAMFileHeader header) {
+    private CramNormalizer(SAMFileHeader header) {
         this.header = header;
     }
 
@@ -53,9 +51,9 @@ public class CramNormalizer {
         this.referenceSource = referenceSource;
     }
 
-    public void normalize(ArrayList<CramCompressionRecord> records, boolean resetPairing,
+    public void normalize(ArrayList<CramCompressionRecord> records,
                           byte[] ref, int refOffset_zeroBased,
-                          SubstitutionMatrix substitutionMatrix, boolean AP_delta) {
+                          SubstitutionMatrix substitutionMatrix) {
 
         int startCounter = readCounter;
 
@@ -101,13 +99,13 @@ public class CramNormalizer {
                         downMate.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
 
                     if (r.isFirstSegment()) {
-                        final int tlen = computeInsertSize(r, downMate);
-                        r.templateSize = tlen;
-                        downMate.templateSize = -tlen;
+                        final int templateLength = computeInsertSize(r, downMate);
+                        r.templateSize = templateLength;
+                        downMate.templateSize = -templateLength;
                     } else {
-                        final int tlen = computeInsertSize(downMate, r);
-                        downMate.templateSize = tlen;
-                        r.templateSize = -tlen;
+                        final int templateLength = computeInsertSize(downMate, r);
+                        downMate.templateSize = templateLength;
+                        r.templateSize = -templateLength;
                     }
                 }
             }
@@ -116,6 +114,7 @@ public class CramNormalizer {
         // assign some read names if needed:
         for (CramCompressionRecord r : records) {
             if (r.readName == null) {
+                String readNamePrefix = "";
                 String name = readNamePrefix + r.index;
                 r.readName = name;
                 if (r.next != null)
@@ -134,23 +133,23 @@ public class CramNormalizer {
             if (ref == null && referenceSource != null)
                 refBases = referenceSource.getReferenceBases(header.getSequence(r.sequenceId), true);
 
-            byte[] bases = restoreReadBases(r, refBases, refOffset_zeroBased,
+            r.readBases = restoreReadBases(r, refBases, refOffset_zeroBased,
                     substitutionMatrix);
-            r.readBases = bases;
         }
 
         // restore quality scores:
+        byte defaultQualityScore = '?' - '!';
         restoreQualityScores(defaultQualityScore, records);
     }
 
-    public static void restoreQualityScores(byte defaultQualityScore,
-                                            List<CramCompressionRecord> records) {
+    private static void restoreQualityScores(byte defaultQualityScore,
+                                             List<CramCompressionRecord> records) {
         for (CramCompressionRecord record : records)
             restoreQualityScores(defaultQualityScore, record);
     }
 
-    public static byte[] restoreQualityScores(byte defaultQualityScore,
-                                              CramCompressionRecord record) {
+    private static byte[] restoreQualityScores(byte defaultQualityScore,
+                                               CramCompressionRecord record) {
         if (!record.isForcePreserveQualityScores()) {
             byte[] scores = new byte[record.readLength];
             Arrays.fill(scores, defaultQualityScore);
@@ -186,7 +185,7 @@ public class CramNormalizer {
         return record.qualityScores;
     }
 
-    private static final byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
+    private static byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
                                                  int refOffset_zeroBased, SubstitutionMatrix substitutionMatrix) {
         int readLength = record.readLength;
         byte[] bases = new byte[readLength];
@@ -276,8 +275,8 @@ public class CramNormalizer {
      * computeInsertSize} but operates on CRAM native records instead of
      * SAMRecord objects.
      *
-     * @param firstEnd
-     * @param secondEnd
+     * @param firstEnd first mate of the pair
+     * @param secondEnd second mate of the pair
      * @return template length
      */
     private static int computeInsertSize(CramCompressionRecord firstEnd,

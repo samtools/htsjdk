@@ -6,13 +6,13 @@ import htsjdk.samtools.util.Log;
  * The class provides version-dependant rules and policies for CRAM data.
  */
 public class CramVersionPolicies {
-    private static Log log = Log.getInstance(CramVersionPolicies.class);
+    private static final Log log = Log.getInstance(CramVersionPolicies.class);
 
     /**
      * The method holds the behaviour for when the EOF marker is not found. Depending on the CRAM version this will be ignored, a warning
      * issued or an exception produced.
      *
-     * @param version
+     * @param version CRAM version to assume
      */
     public static void eofNotFound(Version version) {
         if (version.compatibleWith(CramVersions.CRAM_v3)) {

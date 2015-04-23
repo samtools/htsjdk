@@ -19,28 +19,23 @@ public class ContentDigests {
     public static final EnumSet<KNOWN_DIGESTS> CRC32 = EnumSet.of(
             KNOWN_DIGESTS.BD, KNOWN_DIGESTS.SD);
 
-    private static Log log = Log.getInstance(ContentDigests.class);
+    private static final Log log = Log.getInstance(ContentDigests.class);
     private List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
 
     public static ContentDigests create(EnumSet<KNOWN_DIGESTS> requestedDigests) {
         List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
-        try {
             for (KNOWN_DIGESTS digest : requestedDigests)
                 digesters.add(digest.createDigester());
             return new ContentDigests(digesters);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    public static ContentDigests create(SAMBinaryTagAndValue binrayTags) {
-        try {
+    public static ContentDigests create(SAMBinaryTagAndValue binaryTags) {
             List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
-            SAMBinaryTagAndValue binaryTag = binrayTags;
+            SAMBinaryTagAndValue binaryTag = binaryTags;
             while (binaryTag != null) {
                 String tagID = SAMTagUtil.getSingleton().makeStringTag(
                         binaryTag.tag);
-                KNOWN_DIGESTS hash = null;
+                KNOWN_DIGESTS hash ;
                 try {
                     hash = KNOWN_DIGESTS.valueOf(tagID);
                     digesters.add(hash.createDigester());
@@ -50,17 +45,13 @@ public class ContentDigests {
                 binaryTag = binaryTag.getNext();
             }
             return new ContentDigests(digesters);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    private ContentDigests(List<Digester> hashers)
-            throws NoSuchAlgorithmException {
+    private ContentDigests(List<Digester> hashers) {
         this.digesters = hashers;
     }
 
-    public void add(SAMRecord record) {
+    void add(SAMRecord record) {
         for (Digester digester : digesters)
             digester.add(record);
     }
@@ -118,7 +109,7 @@ public class ContentDigests {
     }
 
     private static String toHex(byte[] bytes) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (byte t : bytes) {
             sb.append(String.format("%02x", (0xFF & t)).toUpperCase()).append(
                     ' ');
@@ -131,10 +122,10 @@ public class ContentDigests {
     }
 
     private static class Digester {
-        AbstractSerialDigest<?> digest;
-        SERIES series;
-        String tagID;
-        short tagCode;
+        final AbstractSerialDigest<?> digest;
+        final SERIES series;
+        final String tagID;
+        final short tagCode;
 
         Digester(AbstractSerialDigest<?> digest, SERIES series, String tagID) {
             this.digest = digest;
