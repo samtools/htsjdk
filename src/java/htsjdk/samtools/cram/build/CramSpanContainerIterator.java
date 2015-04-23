@@ -55,9 +55,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
     @Override
     public Container next() {
         try {
-            Container container = currentBoundary.next();
-            if (container.isEOF()) System.out.println("EOF container");
-            return container;
+            return currentBoundary.next();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

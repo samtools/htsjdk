@@ -64,4 +64,13 @@ public class CramContainerIterator implements Iterator<Container> {
     public CramHeader getCramHeader() {
         return cramHeader;
     }
+
+    public void close() {
+        nextContainer = null;
+        cramHeader = null;
+        try {
+            inputStream.close();
+        } catch (Exception e) {
+        }
+    }
 }

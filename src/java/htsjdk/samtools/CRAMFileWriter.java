@@ -43,8 +43,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class CRAMFileWriter extends SAMFileWriterImpl {
-    private static final int REF_SEQ_INDEX_NOT_INITED = -2;
-    private static final int DEFAULT_RECORDS_PER_SLICE = 10000;
+    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -2;
+    static int DEFAULT_RECORDS_PER_SLICE = 10000;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
     private static final Version cramVersion = CramVersions.CRAM_v2_1;
 
@@ -57,7 +57,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private Sam2CramRecordFactory sam2CramRecordFactory;
     private OutputStream os;
     private ReferenceSource source;
-    private int refSeqIndex = REF_SEQ_INDEX_NOT_INITED;
+    private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
 
     private static Log log = Log.getInstance(CRAMFileWriter.class);
 
@@ -99,7 +99,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     protected boolean shouldFlushContainer(SAMRecord nextRecord) {
         if (samRecords.size() >= containerSize) return true;
 
-        if (refSeqIndex != REF_SEQ_INDEX_NOT_INITED && refSeqIndex != nextRecord.getReferenceIndex()) return true;
+        if (refSeqIndex != REF_SEQ_INDEX_NOT_INITIALIZED && refSeqIndex != nextRecord.getReferenceIndex()) return true;
 
         return false;
     }
@@ -303,7 +303,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(int samRecordReferenceIndex) {
-        if (refSeqIndex == REF_SEQ_INDEX_NOT_INITED) {
+        if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
         } else {
             int newRefSeqIndex = samRecordReferenceIndex;

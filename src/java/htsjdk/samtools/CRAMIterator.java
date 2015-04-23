@@ -171,8 +171,8 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        normalizer.normalize(cramRecords, true, refs, 0,
-                container.h.substitutionMatrix, container.h.AP_seriesDelta);
+        normalizer.normalize(cramRecords, refs, 0,
+                container.h.substitutionMatrix);
 
         Cram2SamRecordFactory c2sFactory = new Cram2SamRecordFactory(
                 cramHeader.getSamFileHeader());
