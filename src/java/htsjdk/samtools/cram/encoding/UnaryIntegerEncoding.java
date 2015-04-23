@@ -24,6 +24,10 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+/**
+ * A unary encoding, perhaps the simplest of them all: http://en.wikipedia.org/wiki/Unary_coding
+ * Marked deprecated starting from CRAM version 3.
+ */
 @Deprecated
 public class UnaryIntegerEncoding implements Encoding<Integer> {
     public static final EncodingID ENCODING_ID = null;

@@ -17,8 +17,21 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.structure.EncodingID;
 
+/**
+ * A helper class to instantiate an appropriate {@link htsjdk.samtools.cram.encoding.Encoding}
+ * for a given {@link htsjdk.samtools.cram.encoding.DataSeriesType} and
+ * {@link htsjdk.samtools.cram.encoding.Encoding}.
+ * Also useful to hide encoding implementations.
+ */
 public class EncodingFactory {
 
+    /**
+     * Create an encoding for the data series type and encoding id.
+     * @param valueType data type of the values to be produced/consumed by the encoding
+     * @param id encoding id used for data serialization
+     * @param <T> encoding object type, like Integer or String.
+     * @return a new encoding with the requested parameters
+     */
     public <T> Encoding<T> createEncoding(DataSeriesType valueType,
                                           EncodingID id) {
         switch (valueType) {
@@ -95,36 +108,6 @@ public class EncodingFactory {
                 break;
         }
 
-        return null;
-    }
-
-    public Encoding<byte[]> createByteArrayEncoding(EncodingID id) {
-        switch (id) {
-            case BYTE_ARRAY_LEN:
-                return new ByteArrayLenEncoding();
-            case BYTE_ARRAY_STOP:
-                return new ByteArrayLenEncoding();
-            case EXTERNAL:
-                return new ExternalByteArrayEncoding();
-
-            default:
-                break;
-        }
-        return null;
-    }
-
-    public Encoding<Byte> createByteEncoding(EncodingID id) {
-        switch (id) {
-            case EXTERNAL:
-                return new ExternalByteEncoding();
-
-            default:
-                break;
-        }
-        return null;
-    }
-
-    public Encoding<Integer> createIntEncoding(EncodingID id) {
         return null;
     }
 }

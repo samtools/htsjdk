@@ -15,7 +15,25 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
+/**
+ * Data series types known to CRAM.
+ */
 public enum DataSeriesType {
 
-    BYTE, INT, LONG, BYTE_ARRAY;
+    /**
+     * A single signed byte (256 distinct values)
+     */
+    BYTE,
+    /**
+     * A signed integer ~4 billions of them.
+     */
+    INT,
+    /**
+     * A signed long value, 64 bits, too many to count.
+     */
+    LONG,
+    /**
+     * An array of bytes.
+     */
+    BYTE_ARRAY
 }

@@ -21,7 +21,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
+class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
     private int k = 2;
     private boolean unaryBit = true;

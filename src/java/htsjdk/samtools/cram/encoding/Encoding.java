@@ -21,6 +21,13 @@ import htsjdk.samtools.cram.structure.EncodingID;
 import java.io.InputStream;
 import java.util.Map;
 
+/**
+ * An interface to describe how a data series is encoded.
+ * It also has methods to serialize/deserialize to/from byte array and a method to construct
+ * a {@link htsjdk.samtools.cram.encoding.BitCodec} instance.
+ *
+ * @param <T> data series type
+ */
 public interface Encoding<T> {
 
     public EncodingID id();
