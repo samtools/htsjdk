@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GolombLongEncoding implements Encoding<Long> {
-    public static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
+    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
     private int m;
     private int offset;
 
@@ -65,7 +65,7 @@ public class GolombLongEncoding implements Encoding<Long> {
     @Override
     public BitCodec<Long> buildCodec(Map<Integer, InputStream> inputMap,
                                      Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new GolombLongCodec(offset, m, true);
+        return new GolombLongCodec(offset, m);
     }
 
 }

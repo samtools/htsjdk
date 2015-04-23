@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.encoding.read_features.InsertBase;
 import htsjdk.samtools.cram.encoding.read_features.Insertion;
 import htsjdk.samtools.cram.encoding.read_features.ReadBase;
 import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
+import htsjdk.samtools.cram.encoding.read_features.Scores;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -155,30 +156,17 @@ public class CramNormalizer {
             Arrays.fill(scores, defaultQualityScore);
             if (record.readFeatures != null)
                 for (ReadFeature f : record.readFeatures) {
+                    int pos = f.getPosition();
                     switch (f.getOperator()) {
                         case BaseQualityScore.operator:
-                            int pos = f.getPosition();
-                            byte q = ((BaseQualityScore) f).getQualityScore();
-
-                            try {
-                                scores[pos - 1] = q;
-                            } catch (ArrayIndexOutOfBoundsException e) {
-                                System.err.println("PROBLEM CAUSED BY:");
-                                System.err.println(record.toString());
-                                throw e;
-                            }
+                            scores[pos - 1] = ((BaseQualityScore) f).getQualityScore();
                             break;
                         case ReadBase.operator:
-                            pos = f.getPosition();
-                            q = ((ReadBase) f).getQualityScore();
-
-                            try {
-                                scores[pos - 1] = q;
-                            } catch (ArrayIndexOutOfBoundsException e) {
-                                System.err.println("PROBLEM CAUSED BY:");
-                                System.err.println(record.toString());
-                                throw e;
-                            }
+                            scores[pos - 1] = ((ReadBase) f).getQualityScore();
+                            break;
+                        case Scores.operator:
+                            byte[] array = ((Scores) f).getScores();
+                            System.arraycopy(array, 0, scores, pos - 1, array.length);
                             break;
 
                         default:
@@ -196,26 +184,6 @@ public class CramNormalizer {
         }
 
         return record.qualityScores;
-    }
-
-    private static final long calcRefLength(CramCompressionRecord record) {
-        if (record.readFeatures == null || record.readFeatures.isEmpty())
-            return record.readLength;
-        long len = record.readLength;
-        for (ReadFeature rf : record.readFeatures) {
-            switch (rf.getOperator()) {
-                case Deletion.operator:
-                    len += ((Deletion) rf).getLength();
-                    break;
-                case Insertion.operator:
-                    len -= ((Insertion) rf).getSequence().length;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return len;
     }
 
     private static final byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
@@ -255,7 +223,7 @@ public class CramNormalizer {
                     byte refBase = Utils.normalizeBase(ref[alignmentStart + posInSeq - refOffset_zeroBased]);
                     byte base = substitutionMatrix.base(refBase, sv.getCode());
                     sv.setBase(base);
-                    sv.setRefernceBase(refBase);
+                    sv.setReferenceBase(refBase);
                     bases[posInRead++ - 1] = base;
                     posInSeq++;
                     break;

@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GammaIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = EncodingID.GAMMA;
+    private static final EncodingID ENCODING_ID = EncodingID.GAMMA;
     private int offset;
 
     public GammaIntegerEncoding() {

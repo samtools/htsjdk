@@ -21,8 +21,8 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class NullCodec<T> extends AbstractBitCodec<T> {
-    private T defaultValue = null;
+class NullCodec<T> extends AbstractBitCodec<T> {
+    private final T defaultValue = null;
 
     public NullCodec() {
     }

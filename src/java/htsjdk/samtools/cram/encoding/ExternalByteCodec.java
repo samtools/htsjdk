@@ -24,9 +24,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 
-public class ExternalByteCodec extends AbstractBitCodec<Byte> {
-    private OutputStream os;
-    private InputStream is;
+class ExternalByteCodec extends AbstractBitCodec<Byte> {
+    private final OutputStream os;
+    private final InputStream is;
 
     public ExternalByteCodec(OutputStream os, InputStream is) {
         this.os = os;

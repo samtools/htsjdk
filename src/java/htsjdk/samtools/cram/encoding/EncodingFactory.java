@@ -15,6 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanByteEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 /**
@@ -23,6 +25,7 @@ import htsjdk.samtools.cram.structure.EncodingID;
  * {@link htsjdk.samtools.cram.encoding.Encoding}.
  * Also useful to hide encoding implementations.
  */
+@SuppressWarnings("unchecked")
 public class EncodingFactory {
 
     /**
@@ -67,7 +70,7 @@ public class EncodingFactory {
                     case GAMMA:
                         return (Encoding<T>) new GammaIntegerEncoding();
                     case SUBEXP:
-                        return (Encoding<T>) new SubexpIntegerEncoding();
+                        return (Encoding<T>) new SubexponentialIntegerEncoding();
 
                     default:
                         break;

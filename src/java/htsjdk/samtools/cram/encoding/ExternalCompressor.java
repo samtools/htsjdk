@@ -7,9 +7,9 @@ import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 import java.io.IOException;
 
 public abstract class ExternalCompressor {
-    BlockCompressionMethod method;
+    private final BlockCompressionMethod method;
 
-    protected ExternalCompressor(BlockCompressionMethod method) {
+    private ExternalCompressor(BlockCompressionMethod method) {
         this.method = method;
     }
 
@@ -29,7 +29,7 @@ public abstract class ExternalCompressor {
         };
     }
 
-    public static ExternalCompressor createGZIP(final int level) {
+    public static ExternalCompressor createGZIP() {
         return new ExternalCompressor(BlockCompressionMethod.GZIP) {
 
             @Override

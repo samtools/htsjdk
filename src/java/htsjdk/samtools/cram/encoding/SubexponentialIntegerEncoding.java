@@ -24,19 +24,15 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class SubexpIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = EncodingID.SUBEXP;
+public class SubexponentialIntegerEncoding implements Encoding<Integer> {
+    private static final EncodingID ENCODING_ID = EncodingID.SUBEXP;
     private int offset;
     private int k;
 
-    public SubexpIntegerEncoding() {
+    public SubexponentialIntegerEncoding() {
     }
 
-    public SubexpIntegerEncoding(int k) {
-        this(0, k);
-    }
-
-    public SubexpIntegerEncoding(int offset, int k) {
+    public SubexponentialIntegerEncoding(int offset, int k) {
         this.offset = offset;
         this.k = k;
     }
@@ -47,7 +43,7 @@ public class SubexpIntegerEncoding implements Encoding<Integer> {
     }
 
     public static EncodingParams toParam(int offset, int k) {
-        SubexpIntegerEncoding e = new SubexpIntegerEncoding();
+        SubexponentialIntegerEncoding e = new SubexponentialIntegerEncoding();
         e.offset = offset;
         e.k = k;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
@@ -74,7 +70,7 @@ public class SubexpIntegerEncoding implements Encoding<Integer> {
     @Override
     public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
                                         Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new SubexpIntegerCodec(offset, k);
+        return new SubexponentialIntegerCodec(offset, k);
     }
 
 }

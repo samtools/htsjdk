@@ -21,25 +21,17 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
-    private int m;
-    private int log2m;
-    private long mask;
+class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
+    private final int m;
+    private final int log2m;
+    private final long mask;
     private boolean quotientBit = false;
     private int offset = 0;
 
-    public GolombRiceIntegerCodec(int log2m) {
-        this(0, log2m);
-    }
-
     public GolombRiceIntegerCodec(int offset, int log2m) {
-        this(offset, log2m, false);
-    }
-
-    public GolombRiceIntegerCodec(int offset, int log2m, boolean quotientBit) {
         this.log2m = log2m;
         m = 1 << log2m;
-        this.quotientBit = quotientBit;
+        this.quotientBit = true;
         this.offset = offset;
         mask = ~(~0 << log2m);
     }
@@ -77,38 +69,12 @@ public class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
             bos.write(b != 0L);
             reminderMask >>>= 1;
         }
-        long bits = quotient + 1 + log2m;
-        return bits;
+        return quotient + 1 + log2m;
     }
 
     @Override
     public final long numberOfBits(Integer value) {
         return (value + offset) / m + 1 + log2m;
-    }
-
-    public int getLog2m() {
-        return log2m;
-    }
-
-    public void setLog2m(int log2m) {
-        this.log2m = log2m;
-        m = 1 << log2m;
-    }
-
-    public boolean isQuotientBit() {
-        return quotientBit;
-    }
-
-    public void setQuotientBit(boolean quotientBit) {
-        this.quotientBit = quotientBit;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
     }
 
     @Override

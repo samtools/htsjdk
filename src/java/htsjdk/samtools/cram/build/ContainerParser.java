@@ -30,7 +30,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 
 import java.io.ByteArrayInputStream;
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -74,7 +73,7 @@ public class ContainerParser {
     }
 
     public ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                            Slice s, CompressionHeader h) throws IllegalArgumentException,
+                                                       Slice s, CompressionHeader h) throws IllegalArgumentException,
             IllegalAccessException, IOException {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (s.sequenceId) {
@@ -113,14 +112,9 @@ public class ContainerParser {
             r.sliceIndex = s.index;
             r.index = i;
 
-            try {
-                time = System.nanoTime();
-                reader.read(r);
-                readNanos += System.nanoTime() - time;
-            } catch (EOFException e) {
-                e.printStackTrace();
-                throw e;
-            }
+            time = System.nanoTime();
+            reader.read(r);
+            readNanos += System.nanoTime() - time;
 
             if (r.sequenceId == s.sequenceId) {
                 r.sequenceName = seqName;

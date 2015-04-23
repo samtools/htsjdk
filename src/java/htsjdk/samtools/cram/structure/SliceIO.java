@@ -97,7 +97,7 @@ public class SliceIO {
                     tc.writeTag(tv.tag, tv.value, tv.isUnsignedArray());
                 } while ((tv = tv.getNext()) != null);
                 // BinaryCodec doesn't seem to cache things.
-                // In any case, not calling bc.close() because it's behaviour is
+                // In any case, not calling baseCodec.close() because it's behaviour is
                 // irrelevant here.
             }
         }

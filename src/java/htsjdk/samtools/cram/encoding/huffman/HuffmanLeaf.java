@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.huffman;
+package htsjdk.samtools.cram.encoding.huffman;
 
-public class HuffmanNode<T> extends HuffmanTree<T> {
-    public final HuffmanTree<T> left, right;
+class HuffmanLeaf<T> extends HuffmanTree<T> {
+    // user object, attached to the leaf:
+    public final T value;
 
-    public HuffmanNode(HuffmanTree<T> l, HuffmanTree<T> r) {
-        super(l.frequency + r.frequency);
-        left = l;
-        right = r;
+    public HuffmanLeaf(int freq, T val) {
+        super(freq);
+        value = val;
     }
 }

@@ -26,12 +26,12 @@ import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
 import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
 import htsjdk.samtools.cram.encoding.GammaIntegerEncoding;
-import htsjdk.samtools.cram.encoding.HuffmanByteEncoding;
-import htsjdk.samtools.cram.encoding.HuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanByteEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.NullEncoding;
-import htsjdk.samtools.cram.encoding.SubexpIntegerEncoding;
-import htsjdk.samtools.cram.huffman.HuffmanCode;
-import htsjdk.samtools.cram.huffman.HuffmanTree;
+import htsjdk.samtools.cram.encoding.SubexponentialIntegerEncoding;
+import htsjdk.samtools.cram.encoding.huffman.HuffmanCode;
+import htsjdk.samtools.cram.encoding.huffman.HuffmanTree;
 import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.cram.encoding.read_features.Deletion;
 import htsjdk.samtools.cram.encoding.read_features.HardClip;
@@ -81,7 +81,7 @@ public class CompressionHeaderFactory {
 
         int readNameID = exCounter++;
         h.externalIds.add(readNameID);
-        h.externalCompressors.put(readNameID, ExternalCompressor.createGZIP(5));
+        h.externalCompressors.put(readNameID, ExternalCompressor.createGZIP());
 
         int mateInfoID = exCounter++;
         h.externalIds.add(mateInfoID);
@@ -370,7 +370,7 @@ public class CompressionHeaderFactory {
                         for (ReadFeature rf : r.readFeatures)
                             if (rf.getOperator() == Substitution.operator) {
                                 Substitution s = ((Substitution) rf);
-                                byte refBase = s.getRefernceBase();
+                                byte refBase = s.getReferenceBase();
                                 byte base = s.getBase();
                                 freqs[refBase][base]++;
                             }
@@ -389,7 +389,7 @@ public class CompressionHeaderFactory {
                         if (rf.getOperator() == Substitution.operator) {
                             Substitution s = ((Substitution) rf);
                             if (s.getCode() == -1) {
-                                byte refBase = s.getRefernceBase();
+                                byte refBase = s.getReferenceBase();
                                 byte base = s.getBase();
                                 s.setCode(h.substitutionMatrix.code(refBase, base));
                             }
@@ -741,7 +741,7 @@ public class CompressionHeaderFactory {
             calcs.add(new EncodingLengthCalculator(new GammaIntegerEncoding(1 - minValue)));
 
             for (int i = 2; i < 5; i++)
-                calcs.add(new EncodingLengthCalculator(new SubexpIntegerEncoding(0 - minValue, i)));
+                calcs.add(new EncodingLengthCalculator(new SubexponentialIntegerEncoding(0 - minValue, i)));
 
             if (dictionaryThreshold < 1)
                 dictionary = null;

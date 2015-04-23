@@ -29,9 +29,9 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class ByteArrayLenEncoding implements Encoding<byte[]> {
-    public final static EncodingID ID = EncodingID.BYTE_ARRAY_LEN;
-    Encoding<Integer> lenEncoding;
-    Encoding<byte[]> byteEncoding;
+    private final static EncodingID ID = EncodingID.BYTE_ARRAY_LEN;
+    private Encoding<Integer> lenEncoding;
+    private Encoding<byte[]> byteEncoding;
 
     public ByteArrayLenEncoding() {
     }
@@ -56,21 +56,6 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
             throw new RuntimeException("It never happened. ");
         }
         return new EncodingParams(ID, baos.toByteArray());
-//		ByteBuffer buf = ByteBuffer.allocate(1024);
-//		buf.put((byte) lenParams.id.ordinal());
-//		ByteBufferUtils.writeUnsignedITF8(lenParams.params.length, buf);
-//		buf.put(lenParams.params);
-//
-//		buf.put((byte) byteParams.id.ordinal());
-//		ByteBufferUtils.writeUnsignedITF8(byteParams.params.length, buf);
-//		buf.put(byteParams.params);
-//
-//		buf.flip();
-//		byte[] data = new byte[buf.limit()];
-//		buf.get(data);
-//
-//		EncodingParams params = new EncodingParams(ID, data);
-//		return params;
     }
 
     public byte[] toByteArray() {
@@ -89,23 +74,6 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
             throw new RuntimeException("It never happened. ");
         }
         return baos.toByteArray();
-
-//		ByteBuffer buf = ByteBuffer.allocate(1024);
-//		buf.put((byte) lenEncoding.id().ordinal());
-//		byte[] lenBytes = lenEncoding.toByteArray();
-//		ByteBufferUtils.writeUnsignedITF8(lenBytes.length, buf);
-//		buf.put(lenBytes);
-//
-//		buf.put((byte) byteEncoding.id().ordinal());
-//		byte[] byteBytes = lenEncoding.toByteArray();
-//		ByteBufferUtils.writeUnsignedITF8(byteBytes.length, buf);
-//		buf.put(byteBytes);
-//
-//		buf.flip();
-//		byte[] array = new byte[buf.limit()];
-//		buf.get(array);
-//
-//		return array;
     }
 
     public void fromByteArray(byte[] data) {
@@ -137,8 +105,8 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
     }
 
     private static class ByteArrayLenCodec extends AbstractBitCodec<byte[]> {
-        private BitCodec<Integer> lenCodec;
-        private BitCodec<byte[]> byteCodec;
+        private final BitCodec<Integer> lenCodec;
+        private final BitCodec<byte[]> byteCodec;
 
         public ByteArrayLenCodec(BitCodec<Integer> lenCodec,
                                  BitCodec<byte[]> byteCodec) {

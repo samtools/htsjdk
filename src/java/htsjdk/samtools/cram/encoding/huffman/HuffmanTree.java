@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.encoding.huffint;
+package htsjdk.samtools.cram.encoding.huffman;
 
-class HuffmanBitCode {
-    int bitCode;
-    int bitLength;
-    int value;
+public abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
+    public final int frequency;
 
-    @Override
-    public String toString() {
-        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
+    HuffmanTree(int freq) {
+        frequency = freq;
+    }
+
+    public int compareTo(@SuppressWarnings("NullableProblems") HuffmanTree<T> tree) {
+        return frequency - tree.frequency;
     }
 }

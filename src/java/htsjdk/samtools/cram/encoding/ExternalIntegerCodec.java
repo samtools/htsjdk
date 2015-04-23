@@ -24,13 +24,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 
-public class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
-    private OutputStream os;
-    private InputStream is;
-    private OutputStream nullOS = new OutputStream() {
+class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
+    private final OutputStream os;
+    private final InputStream is;
+    private final OutputStream nullOS = new OutputStream() {
 
         @Override
-        public void write(byte[] b) throws IOException {
+        public void write(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
         }
 
         @Override
@@ -38,7 +38,7 @@ public class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
         }
 
         @Override
-        public void write(byte[] b, int off, int len) throws IOException {
+        public void write(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
         }
     };
 

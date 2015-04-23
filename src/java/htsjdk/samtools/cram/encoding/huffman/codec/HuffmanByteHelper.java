@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.encoding.huffint;
+package htsjdk.samtools.cram.encoding.huffman.codec;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
@@ -27,7 +27,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-class HuffmanIntHelper {
+class HuffmanByteHelper {
     TreeMap<Integer, HuffmanBitCode> codes;
 
     private final int[] values;
@@ -35,14 +35,16 @@ class HuffmanIntHelper {
     private TreeMap<Integer, SortedSet<Integer>> codeBook;
 
     private final HuffmanBitCode[] sortedCodes;
-    private final HuffmanBitCode[] sortedByValue;
-    private final int[] sortedValues;
     private final int[] sortedValuesByBitCode;
     private final int[] sortedBitLensByBitCode;
     private final int[] bitCodeToValue;
+    private final HuffmanBitCode[] valueToCode;
 
-    public HuffmanIntHelper(int[] values, int[] bitLengths) {
-        this.values = values;
+    HuffmanByteHelper(byte[] values, int[] bitLengths) {
+        this.values = new int[values.length];
+        for (int i = 0; i < values.length; i++)
+            this.values[i] = 0xFF & values[i];
+
         this.bitLengths = bitLengths;
 
         buildCodeBook();
@@ -55,21 +57,13 @@ class HuffmanIntHelper {
         sortedCodes = list.toArray(new HuffmanBitCode[list
                 .size()]);
 
-        sortedValues = Arrays.copyOf(values, values.length);
+        byte[] sortedValues = Arrays.copyOf(values, values.length);
         Arrays.sort(sortedValues);
-        {
-            int i = 0;
-            sortedByValue = new HuffmanBitCode[sortedValues.length];
-            for (int value : sortedValues)
-                sortedByValue[i++] = codes.get(value);
-        }
 
-        int[] sortedBitCodes = new int[sortedCodes.length];
         sortedValuesByBitCode = new int[sortedCodes.length];
         sortedBitLensByBitCode = new int[sortedCodes.length];
         int maxBitCode = 0;
-        for (int i = 0; i < sortedBitCodes.length; i++) {
-            sortedBitCodes[i] = sortedCodes[i].bitCode;
+        for (int i = 0; i < sortedCodes.length; i++) {
             sortedValuesByBitCode[i] = sortedCodes[i].value;
             sortedBitLensByBitCode[i] = sortedCodes[i].bitLength;
             if (maxBitCode < sortedCodes[i].bitCode)
@@ -78,8 +72,14 @@ class HuffmanIntHelper {
 
         bitCodeToValue = new int[maxBitCode + 1];
         Arrays.fill(bitCodeToValue, -1);
-        for (int i = 0; i < sortedBitCodes.length; i++) {
+        for (int i = 0; i < sortedCodes.length; i++) {
             bitCodeToValue[sortedCodes[i].bitCode] = i;
+        }
+
+        valueToCode = new HuffmanBitCode[255];
+        Arrays.fill(valueToCode, null);
+        for (HuffmanBitCode code : sortedCodes) {
+            valueToCode[code.value] = code;
         }
     }
 
@@ -124,17 +124,18 @@ class HuffmanIntHelper {
         }
     }
 
-    public final long write(final BitOutputStream bos, final int value) throws IOException {
-        int index = Arrays.binarySearch(sortedValues, value);
-        HuffmanBitCode code = sortedByValue[index];
+    final long write(final BitOutputStream bos, final byte value)
+            throws IOException {
+        HuffmanBitCode code = valueToCode[value];
         if (code.value != value)
             throw new RuntimeException(String.format(
                     "Searching for %d but found %s.", value, code.toString()));
         bos.write(code.bitCode, code.bitLength);
+        // System.out.println("Writing: " + code.toString());
         return code.bitLength;
     }
 
-    public final int read(final BitInputStream bis) throws IOException {
+    final byte read(final BitInputStream bis) throws IOException {
         int prevLen = 0;
         int bits = 0;
         for (int i = 0; i < sortedCodes.length; i++) {
@@ -142,15 +143,14 @@ class HuffmanIntHelper {
             bits <<= len - prevLen;
             bits |= bis.readBits(len - prevLen);
             prevLen = len;
-            { // Variant 2:
-                int index = bitCodeToValue[bits];
-                if (index > -1 && sortedBitLensByBitCode[index] == len)
-                    return sortedValuesByBitCode[index];
 
-                for (int j = i; sortedCodes[j + 1].bitLength == len
-                        && j < sortedCodes.length; j++)
-                    i++;
-            }
+            int index = bitCodeToValue[bits];
+            if (index > -1 && sortedBitLensByBitCode[index] == len)
+                return (byte) (0xFF & sortedValuesByBitCode[index]);
+
+            for (int j = i; sortedCodes[j + 1].bitLength == len
+                    && j < sortedCodes.length; j++)
+                i++;
         }
 
         throw new RuntimeException("Not found.");

@@ -33,10 +33,10 @@ class D04 {
             rans3 = Decoding.RansDecAdvanceSymbolStep(rans3, syms[0xFF & c3],
                     Constants.TF_SHIFT);
 
-            rans0 = Decoding.RansDecRenorm(rans0, in);
-            rans1 = Decoding.RansDecRenorm(rans1, in);
-            rans2 = Decoding.RansDecRenorm(rans2, in);
-            rans3 = Decoding.RansDecRenorm(rans3, in);
+            rans0 = Decoding.RansDecRenormalize(rans0, in);
+            rans1 = Decoding.RansDecRenormalize(rans1, in);
+            rans2 = Decoding.RansDecRenormalize(rans2, in);
+            rans3 = Decoding.RansDecRenormalize(rans3, in);
         }
 
         out.position(out_end);

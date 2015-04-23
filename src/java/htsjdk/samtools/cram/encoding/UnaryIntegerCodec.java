@@ -21,21 +21,13 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class UnaryIntegerCodec extends AbstractBitCodec<Integer> {
+class UnaryIntegerCodec extends AbstractBitCodec<Integer> {
     private boolean stopBit = false;
     private int offset = 0;
 
-    public UnaryIntegerCodec() {
-        this(0, false);
-    }
-
-    public UnaryIntegerCodec(int offset) {
-        this(offset, false);
-    }
-
-    public UnaryIntegerCodec(int offset, boolean stopBit) {
-        this.stopBit = stopBit;
-        this.offset = offset;
+    UnaryIntegerCodec() {
+        this.stopBit = false;
+        this.offset = 0;
     }
 
     @Override

@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
-    private OutputStream os;
-    private InputStream is;
+class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
+    private final OutputStream os;
+    private final InputStream is;
 
     public ExternalByteArrayCodec(OutputStream os, InputStream is) {
         this.os = os;
@@ -45,11 +45,13 @@ public class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
 
     @Override
     public void skip(BitInputStream bis) throws IOException {
+        //noinspection ResultOfMethodCallIgnored
         is.skip(1);
     }
 
     @Override
     public void skip(BitInputStream bis, int len) throws IOException {
+        //noinspection ResultOfMethodCallIgnored
         is.skip(len);
     }
 

@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.huffman;
+package htsjdk.samtools.cram.encoding.huffman;
 
-public abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
-    public final int frequency;
+class HuffmanNode<T> extends HuffmanTree<T> {
+    public final HuffmanTree<T> left, right;
 
-    public HuffmanTree(int freq) {
-        frequency = freq;
-    }
-
-    public int compareTo(HuffmanTree<T> tree) {
-        return frequency - tree.frequency;
+    public HuffmanNode(HuffmanTree<T> l, HuffmanTree<T> r) {
+        super(l.frequency + r.frequency);
+        left = l;
+        right = r;
     }
 }

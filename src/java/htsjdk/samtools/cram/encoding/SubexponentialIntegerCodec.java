@@ -21,23 +21,15 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
+class SubexponentialIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
     private int k = 2;
     private boolean unaryBit = true;
 
-    public SubexpIntegerCodec(int offset, int k) {
-        this(offset, k, true);
-    }
-
-    public SubexpIntegerCodec(int offset, int k, boolean unaryBit) {
+    SubexponentialIntegerCodec(int offset, int k) {
         this.offset = offset;
         this.k = k;
-        this.unaryBit = unaryBit;
-    }
-
-    public SubexpIntegerCodec(int k) {
-        this.k = k;
+        this.unaryBit = true;
     }
 
     @Override
@@ -95,30 +87,6 @@ class SubexpIntegerCodec extends AbstractBitCodec<Integer> {
             u = b - k + 1;
         }
         return u + 1 + b;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public int getK() {
-        return k;
-    }
-
-    public void setK(int k) {
-        this.k = k;
-    }
-
-    public boolean isUnaryBit() {
-        return unaryBit;
-    }
-
-    public void setUnaryBit(boolean unaryBit) {
-        this.unaryBit = unaryBit;
     }
 
     @Override

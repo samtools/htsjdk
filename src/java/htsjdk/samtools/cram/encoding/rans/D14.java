@@ -47,10 +47,10 @@ class D14 {
             rans7 = Decoding.RansDecAdvanceSymbolStep(rans7, syms[l7][c7],
                     Constants.TF_SHIFT);
 
-            rans0 = Decoding.RansDecRenorm(rans0, in);
-            rans1 = Decoding.RansDecRenorm(rans1, in);
-            rans2 = Decoding.RansDecRenorm(rans2, in);
-            rans7 = Decoding.RansDecRenorm(rans7, in);
+            rans0 = Decoding.RansDecRenormalize(rans0, in);
+            rans1 = Decoding.RansDecRenormalize(rans1, in);
+            rans2 = Decoding.RansDecRenormalize(rans2, in);
+            rans7 = Decoding.RansDecRenormalize(rans7, in);
 
             l0 = c0;
             l1 = c1;
@@ -65,7 +65,6 @@ class D14 {
             out_buf.put(i7, (byte) c7);
             rans7 = Decoding.RansDecAdvanceSymbol(rans7, in, syms[l7][c7],
                     Constants.TF_SHIFT);
-            // rans7 = Decoding.RansDecRenorm(rans7, ptr);
             l7 = c7;
         }
     }

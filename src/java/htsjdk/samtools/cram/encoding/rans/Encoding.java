@@ -45,22 +45,15 @@ class Encoding {
     static int RansEncPutSymbol(int r, ByteBuffer ptr, RansEncSymbol sym) {
         assert (sym.x_max != 0); // can't encode symbol with freq=0
 
-        // renormalize
+        // re-normalize
         int x = r;
         int x_max = sym.x_max;
-        // System.out.printf("x=%d, x_max=%d\n", x, x_max);
         if (x >= x_max) {
             if (x >= x_max) {
                 ptr.put((byte) (x & 0xFF));
-                // System.out.printf("ptr put at %d: %d %d %d\n",
-                // ptr.position() - 1, (x & 0xFF), ((byte) (x & 0xFF)),
-                // ptr.arrayOffset());
                 x >>= 8;
                 if (x >= x_max) {
                     ptr.put((byte) (x & 0xFF));
-                    // System.out.printf("ptr put at %d: %d %d %d\n",
-                    // ptr.position() - 1, (x & 0xFF),
-                    // ((byte) (x & 0xFF)), ptr.arrayOffset());
                     x >>= 8;
                 }
             }
@@ -75,9 +68,6 @@ class Encoding {
         // The extra >>32 has already been added to RansEncSymbolInit
         long q = ((x * (0xFFFFFFFFL & sym.rcp_freq)) >> sym.rcp_shift);
         r = (int) (x + sym.bias + q * sym.cmpl_freq);
-        // System.out.printf("x=%d, sym->rcp_freq=%d, sym->rcp_shift=%d\n", x,
-        // sym.rcp_freq, sym.rcp_shift);
-        // System.out.printf("q=%d, *r=%d\n", q, r);
         return r;
     }
 }

@@ -18,7 +18,7 @@ package htsjdk.samtools.cram.encoding.reader;
 import java.io.IOException;
 
 /**
- * A basic interface for reading data. The details of what is data and from where to read are implmentation specific. Pure consumer.
+ * A basic interface for reading data. The details of what is data and from where to read are implementation specific. Pure consumer.
  *
  * @param <T> data type of the series to be read
  */

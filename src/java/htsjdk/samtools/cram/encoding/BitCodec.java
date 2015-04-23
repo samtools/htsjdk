@@ -40,9 +40,8 @@ public interface BitCodec<T> {
      * Read a array of specified length from the bit stream.
      *
      * @param bis the bit input stream to rad from
+     * param valueLen the number of elements to read
      * @return an object from the stream
-     * @throws IOException as per java IO contract
-     * @valueLen the number of elements to read
      * @throws IOException as per java IO contract
      */
     public T read(BitInputStream bis, int valueLen) throws IOException;
@@ -55,9 +54,6 @@ public interface BitCodec<T> {
      * @param array the array to read into
      * @param offset offset in the array
      * @param valueLen number of elements to read
-     * @return an object from the stream
-     * @throws IOException as per java IO contract
-     * @valueLen the number of elements(bytes) to read
      * @throws IOException as per java IO contract
      */
     public void readInto(BitInputStream bis, byte[] array, int offset,

@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.util.Map;
 
 public class NullEncoding<T> implements Encoding<T> {
-    public static final EncodingID ENCODING_ID = EncodingID.NULL;
+    private static final EncodingID ENCODING_ID = EncodingID.NULL;
 
     public NullEncoding() {
     }

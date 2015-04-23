@@ -21,21 +21,17 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
+class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     private int m;
     private boolean quotientBit = true;
     private int offset = 0;
 
-    public GolombIntegerCodec(int m) {
-        this(m, true, 0);
-    }
-
-    public GolombIntegerCodec(int m, boolean quotientBit, Integer offset) {
+    public GolombIntegerCodec(int m, Integer offset) {
         if (m < 2)
             throw new IllegalArgumentException(
                     "M parameter must be at least 2.");
         this.m = m;
-        this.quotientBit = quotientBit;
+        this.quotientBit = true;
         this.offset = offset;
     }
 
@@ -93,30 +89,6 @@ public class GolombIntegerCodec extends AbstractBitCodec<Integer> {
             l += ceiling;
 
         return l;
-    }
-
-    public long getM() {
-        return m;
-    }
-
-    public boolean isQuotientBit() {
-        return quotientBit;
-    }
-
-    public Integer getOffset() {
-        return offset;
-    }
-
-    public void setM(int m) {
-        this.m = m;
-    }
-
-    public void setQuotientBit(boolean quotientBit) {
-        this.quotientBit = quotientBit;
-    }
-
-    public void setOffset(Integer offset) {
-        this.offset = offset;
     }
 
     @Override

@@ -25,15 +25,11 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GolombRiceIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = EncodingID.GOLOMB_RICE;
+    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB_RICE;
     private int offset;
     private int m;
 
     public GolombRiceIntegerEncoding() {
-    }
-
-    public GolombRiceIntegerEncoding(int m) {
-        this.m = m;
     }
 
     @Override
@@ -69,7 +65,7 @@ public class GolombRiceIntegerEncoding implements Encoding<Integer> {
     @Override
     public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
                                         Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new GolombRiceIntegerCodec(offset, m, true);
+        return new GolombRiceIntegerCodec(offset, m);
     }
 
 }

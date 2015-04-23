@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.encoding.huffint;
+package htsjdk.samtools.cram.encoding.huffman.codec;
 
 import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;

@@ -21,9 +21,9 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-public class BetaIntegerCodec extends AbstractBitCodec<Integer> {
+class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
-    private int readNofBits;
+    private final int readNofBits;
 
     public BetaIntegerCodec(int offset, int readNofBits) {
         this.offset = offset;
@@ -37,9 +37,6 @@ public class BetaIntegerCodec extends AbstractBitCodec<Integer> {
 
     @Override
     public final long write(BitOutputStream bos, Integer value) throws IOException {
-//		if (value + offset < 0)
-//			throw new IllegalArgumentException("Value is less then offset: " + value);
-
         int nofBits = (int) numberOfBits(value);
         long newValue = value + offset;
         bos.write(newValue, nofBits);
@@ -53,22 +50,6 @@ public class BetaIntegerCodec extends AbstractBitCodec<Integer> {
                     + ", max nof bits=" + readNofBits);
 
         return readNofBits;
-    }
-
-    public long getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public int getReadNofBits() {
-        return readNofBits;
-    }
-
-    public void setReadNofBits(int readNofBits) {
-        this.readNofBits = readNofBits;
     }
 
     @Override

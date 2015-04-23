@@ -6,10 +6,10 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
-class Freqs {
+class Frequencies {
 
     static void readStats_o0(ByteBuffer cp, Decoding.ari_decoder D, Decoding.RansDecSymbol[] syms) {
-        // Precompute reverse lookup of frequency.
+        // Pre-compute reverse lookup of frequency.
         int rle = 0;
         int x = 0;
         int j = cp.get() & 0xFF;
@@ -105,7 +105,7 @@ class Freqs {
         } while (i != 0);
     }
 
-    static int[] calcFreqs_o0(ByteBuffer in) {
+    static int[] calcFrequencies_o0(ByteBuffer in) {
         int in_size = in.remaining();
 
         // Compute statistics
@@ -145,7 +145,7 @@ class Freqs {
         return F;
     }
 
-    static int[][] calcFreqs_o1(ByteBuffer in) {
+    static int[][] calcFrequencies_o1(ByteBuffer in) {
         int in_size = in.remaining();
 
         int[][] F = new int[256][256];
@@ -211,7 +211,7 @@ class Freqs {
         return syms;
     }
 
-    static int writeFreqs_o0(ByteBuffer cp, int[] F) {
+    static int writeFrequencies_o0(ByteBuffer cp, int[] F) {
         int start = cp.position();
 
         int rle = 0;
@@ -265,7 +265,7 @@ class Freqs {
         return syms;
     }
 
-    static int writeFreqs_o1(ByteBuffer cp, int F[][]) {
+    static int writeFrequencies_o1(ByteBuffer cp, int F[][]) {
         int start = cp.position();
         int[] T = new int[256];
 

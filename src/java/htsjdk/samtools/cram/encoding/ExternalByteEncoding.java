@@ -24,8 +24,8 @@ import java.io.InputStream;
 import java.util.Map;
 
 public class ExternalByteEncoding implements Encoding<Byte> {
-    public static final EncodingID encodingId = EncodingID.EXTERNAL;
-    public int contentId = -1;
+    private static final EncodingID encodingId = EncodingID.EXTERNAL;
+    private int contentId = -1;
 
     public ExternalByteEncoding() {
     }

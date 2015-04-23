@@ -13,7 +13,7 @@ public class RANS {
             try {
                 return ORDER.values()[value];
             } catch (ArrayIndexOutOfBoundsException e) {
-                throw new RuntimeException("Uknown rANS order: " + value);
+                throw new RuntimeException("Unknown rANS order: " + value);
             }
         }
     }
@@ -80,7 +80,7 @@ public class RANS {
         if (out_buf == null)
             return ByteBuffer.allocate(compressedSize);
         if (out_buf.remaining() < compressedSize)
-            throw new RuntimeException("Insuffient buffer size.");
+            throw new RuntimeException("Insufficient buffer size.");
         out_buf.order(ByteOrder.LITTLE_ENDIAN);
         return out_buf;
     }
@@ -92,16 +92,16 @@ public class RANS {
         int freqTableStart = PREFIX_BYTE_LENGTH;
         out_buf.position(freqTableStart);
 
-        int[] F = Freqs.calcFreqs_o0(in);
-        RansEncSymbol[] syms = Freqs.buildSyms_o0(F);
+        int[] F = Frequencies.calcFrequencies_o0(in);
+        RansEncSymbol[] syms = Frequencies.buildSyms_o0(F);
 
         ByteBuffer cp = out_buf.slice();
-        int frequencyTable_size = Freqs.writeFreqs_o0(cp, F);
+        int frequencyTable_size = Frequencies.writeFrequencies_o0(cp, F);
 
         in.rewind();
         int compressedBlob_size = E04.compress(in, syms, cp);
 
-        finilizeCompressed(0, out_buf, in_size, frequencyTable_size,
+        finalizeCompressed(0, out_buf, in_size, frequencyTable_size,
                 compressedBlob_size);
         return out_buf;
     }
@@ -113,22 +113,22 @@ public class RANS {
         int freqTableStart = PREFIX_BYTE_LENGTH;
         out_buf.position(freqTableStart);
 
-        int[][] F = Freqs.calcFreqs_o1(in);
-        RansEncSymbol[][] syms = Freqs.buildSyms_o1(F);
+        int[][] F = Frequencies.calcFrequencies_o1(in);
+        RansEncSymbol[][] syms = Frequencies.buildSyms_o1(F);
 
         ByteBuffer cp = out_buf.slice();
-        int frequencyTable_size = Freqs.writeFreqs_o1(cp, F);
+        int frequencyTable_size = Frequencies.writeFrequencies_o1(cp, F);
 
         in.rewind();
         int compressedBlob_size = E14.compress(in, syms, cp);
 
-        finilizeCompressed(1, out_buf, in_size, frequencyTable_size,
+        finalizeCompressed(1, out_buf, in_size, frequencyTable_size,
                 compressedBlob_size);
         return out_buf;
     }
 
-    private static void finilizeCompressed(int order, ByteBuffer out_buf,
-                                                 int in_size, int frequencyTable_size, int compressedBlob_size) {
+    private static void finalizeCompressed(int order, ByteBuffer out_buf,
+                                           int in_size, int frequencyTable_size, int compressedBlob_size) {
         out_buf.limit(PREFIX_BYTE_LENGTH + frequencyTable_size
                 + compressedBlob_size);
         out_buf.put(0, (byte) order);
@@ -149,7 +149,7 @@ public class RANS {
         for (int i = 0; i < syms.length; i++)
             syms[i] = new Decoding.RansDecSymbol();
 
-        Freqs.readStats_o0(in, D, syms);
+        Frequencies.readStats_o0(in, D, syms);
 
         D04.uncompress(in, D, syms, out);
 
@@ -163,7 +163,7 @@ public class RANS {
         for (int i = 0; i < syms.length; i++)
             for (int j = 0; j < syms[i].length; j++)
                 syms[i][j] = new Decoding.RansDecSymbol();
-        Freqs.readStats_o1(in, D, syms);
+        Frequencies.readStats_o1(in, D, syms);
 
         D14.uncompress(in, out_buf, D, syms);
 

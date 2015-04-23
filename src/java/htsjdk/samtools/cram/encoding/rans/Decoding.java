@@ -66,7 +66,7 @@ class Decoding {
         // s, x = D(x)
         r = freq * (r >> scale_bits) + (r & mask) - start;
 
-        // renormalize
+        // re-normalize
         if (r < Constants.RANS_BYTE_L) {
             do {
                 final int b = 0xFF & pptr.get();
@@ -78,9 +78,9 @@ class Decoding {
         return r;
     }
 
-    // Renormalize.
-    static int RansDecRenorm(int r, ByteBuffer pptr) {
-        // renormalize
+    // Re-normalize.
+    static int RansDecRenormalize(int r, ByteBuffer pptr) {
+        // re-normalize
         if (r < Constants.RANS_BYTE_L) {
             do
                 r = (r << 8) | (0xFF & pptr.get());

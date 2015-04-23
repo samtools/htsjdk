@@ -15,6 +15,48 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.structure;
 
+/**
+ * Encoding ID as defined in the CRAM specs. These are basically ways to serialize a data series.
+ */
 public enum EncodingID {
-    NULL, EXTERNAL, GOLOMB, HUFFMAN, BYTE_ARRAY_LEN, BYTE_ARRAY_STOP, BETA, SUBEXP, GOLOMB_RICE, GAMMA;
+    /**
+     * "Do nothing" encoding. Should throw an exception when trying reading or writing with this encoding.
+     */
+    NULL,
+    /**
+     * Shove the data into a byte array for compressing later with a generic compressor like GZIP.
+     */
+    EXTERNAL,
+    /**
+     * 'naf said: http://en.wikipedia.org/wiki/Golomb_coding
+     */
+    GOLOMB,
+    /**
+     * http://en.wikipedia.org/wiki/Huffman_coding
+     */
+    HUFFMAN,
+    /**
+     * A byte array serialized as [len][elements]
+     */
+    BYTE_ARRAY_LEN,
+    /**
+     * A byte array serialized as [elements][stop]
+     */
+    BYTE_ARRAY_STOP,
+    /**
+     * http://en.wikipedia.org/wiki/Beta_Code
+     */
+    BETA,
+    /**
+     * Subexponential codes, see the CRAM specs for details.
+     */
+    SUBEXP,
+    /**
+     * A variant of GOLOMB encoding: http://en.wikipedia.org/wiki/Golomb_coding
+     */
+    GOLOMB_RICE,
+    /**
+     * http://en.wikipedia.org/wiki/Elias_gamma_coding
+     */
+    GAMMA
 }

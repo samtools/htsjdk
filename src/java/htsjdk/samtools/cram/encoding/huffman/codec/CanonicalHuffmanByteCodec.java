@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.encoding.huffint;
+package htsjdk.samtools.cram.encoding.huffman.codec;
 
 import htsjdk.samtools.cram.encoding.AbstractBitCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
@@ -21,14 +21,14 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-public class CanonicalHuffmanByteCodec2 extends AbstractBitCodec<Byte> {
+class CanonicalHuffmanByteCodec extends AbstractBitCodec<Byte> {
     private final HuffmanByteHelper helper;
 
     /*
      * values[]: the alphabet (provided as Integers) bitLengths[]: the number of
      * bits of symbol's huffman code
      */
-    public CanonicalHuffmanByteCodec2(byte[] values, int[] bitLengths) {
+    public CanonicalHuffmanByteCodec(byte[] values, int[] bitLengths) {
         helper = new HuffmanByteHelper(values, bitLengths);
     }
 

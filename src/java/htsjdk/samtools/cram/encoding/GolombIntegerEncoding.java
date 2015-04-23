@@ -25,16 +25,11 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GolombIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
+    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
     private int m;
     private int offset;
 
     public GolombIntegerEncoding() {
-    }
-
-    public GolombIntegerEncoding(int m) {
-        this.m = m;
-        this.offset = 0;
     }
 
     @Override
@@ -77,7 +72,7 @@ public class GolombIntegerEncoding implements Encoding<Integer> {
     @Override
     public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
                                         Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new GolombIntegerCodec(m, true, offset);
+        return new GolombIntegerCodec(m, offset);
     }
 
 }

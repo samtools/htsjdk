@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.huffman;
+package htsjdk.samtools.cram.encoding.huffman.codec;
 
-public class HuffmanLeaf<T> extends HuffmanTree<T> {
-    // user object, attached to the leaf:
-    public final T value;
+class HuffmanBitCode {
+    int bitCode;
+    int bitLength;
+    int value;
 
-    public HuffmanLeaf(int freq, T val) {
-        super(freq);
-        value = val;
+    @Override
+    public String toString() {
+        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
     }
 }

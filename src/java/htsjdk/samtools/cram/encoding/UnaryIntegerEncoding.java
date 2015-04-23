@@ -30,11 +30,11 @@ import java.util.Map;
  */
 @Deprecated
 public class UnaryIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = null;
+    private static final EncodingID ENCODING_ID = null;
     private int offset;
     private boolean stopBit;
 
-    public UnaryIntegerEncoding() {
+    private UnaryIntegerEncoding() {
     }
 
     @Override

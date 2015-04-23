@@ -20,26 +20,18 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-public class GammaIntegerCodec extends AbstractBitCodec<Integer> {
+class GammaIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
-    private boolean lenCodingBit = false;
-
-    private GammaIntegerCodec(int offset, boolean lenCodingBit) {
-        this.offset = offset;
-        this.lenCodingBit = lenCodingBit;
-    }
 
     public GammaIntegerCodec(int offset) {
-        this(offset, false);
-    }
-
-    public GammaIntegerCodec() {
-        this(0, false);
+        this.offset = offset;
     }
 
     @Override
     public final Integer read(BitInputStream bis) throws IOException {
         int len = 1;
+        boolean lenCodingBit = false;
+        //noinspection ConstantConditions
         while (bis.readBit() == lenCodingBit)
             len++;
         int readBits = bis.readBits(len - 1);
@@ -68,22 +60,6 @@ public class GammaIntegerCodec extends AbstractBitCodec<Integer> {
             throw new RuntimeException("Invalid valid: " + newValue);
         int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
         return betaCodeLength * 2 - 1;
-    }
-
-    public int getOffset() {
-        return offset;
-    }
-
-    public boolean isLenCodingBit() {
-        return lenCodingBit;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public void setLenCodingBit(boolean lenCodingBit) {
-        this.lenCodingBit = lenCodingBit;
     }
 
     @Override

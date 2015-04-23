@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class BetaIntegerEncoding implements Encoding<Integer> {
-    public static final EncodingID ENCODING_ID = EncodingID.BETA;
+    private static final EncodingID ENCODING_ID = EncodingID.BETA;
     private int offset;
     private int bitLimit;
 

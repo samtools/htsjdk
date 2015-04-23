@@ -294,8 +294,7 @@ public class Sam2CramRecordFactory {
                 Substitution sv = new Substitution();
                 sv.setPosition(oneBasedPositionInRead);
                 sv.setBase(bases[i + fromPosInRead]);
-                sv.setRefernceBase(refBase);
-                sv.setBaseChange(null);
+                sv.setReferenceBase(refBase);
 
                 features.add(sv);
 

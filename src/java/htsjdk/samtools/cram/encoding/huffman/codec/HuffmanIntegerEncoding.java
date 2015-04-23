@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  ******************************************************************************/
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.huffman.codec;
 
-import htsjdk.samtools.cram.encoding.huffint.CanonicalHuffmanByteCodec2;
+import htsjdk.samtools.cram.encoding.BitCodec;
+import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
@@ -23,15 +24,16 @@ import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
-public class HuffmanByteEncoding implements Encoding<Byte> {
-    public static final EncodingID ENCODING_ID = EncodingID.HUFFMAN;
+public class HuffmanIntegerEncoding implements Encoding<Integer> {
+    private static final EncodingID ENCODING_ID = EncodingID.HUFFMAN;
     private int[] bitLengths;
-    private byte[] values;
-    private ByteBuffer buf = ByteBuffer.allocate(1024);
+    private int[] values;
+    private final ByteBuffer buf = ByteBuffer.allocate(1024 * 10);
 
-    public HuffmanByteEncoding() {
+    public HuffmanIntegerEncoding() {
     }
 
     @Override
@@ -42,12 +44,9 @@ public class HuffmanByteEncoding implements Encoding<Byte> {
     @Override
     public byte[] toByteArray() {
         buf.clear();
-        if (buf.capacity() < values.length * 8)
-            buf = ByteBuffer.allocate(values.length * 8);
-
         ITF8.writeUnsignedITF8(values.length, buf);
-        for (byte value : values)
-            buf.put(value);
+        for (int value : values)
+            ITF8.writeUnsignedITF8(value, buf);
 
         ITF8.writeUnsignedITF8(bitLengths.length, buf);
         for (int value : bitLengths)
@@ -63,8 +62,10 @@ public class HuffmanByteEncoding implements Encoding<Byte> {
     public void fromByteArray(byte[] data) {
         ByteBuffer buf = ByteBuffer.wrap(data);
         int size = ITF8.readUnsignedITF8(buf);
-        values = new byte[size];
-        buf.get(values);
+        values = new int[size];
+
+        for (int i = 0; i < size; i++)
+            values[i] = ITF8.readUnsignedITF8(buf);
 
         size = ITF8.readUnsignedITF8(buf);
         bitLengths = new int[size];
@@ -73,16 +74,25 @@ public class HuffmanByteEncoding implements Encoding<Byte> {
     }
 
     @Override
-    public BitCodec<Byte> buildCodec(Map<Integer, InputStream> inputMap,
-                                     Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new CanonicalHuffmanByteCodec2(values, bitLengths);
+    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
+                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        return new CanonicalHuffmanIntegerCodec(values, bitLengths);
     }
 
-    public static EncodingParams toParam(byte[] bfValues, int[] bfBitLens) {
-        HuffmanByteEncoding e = new HuffmanByteEncoding();
+    public static EncodingParams toParam(int[] bfValues, int[] bfBitLens) {
+        HuffmanIntegerEncoding e = new HuffmanIntegerEncoding();
         e.values = bfValues;
         e.bitLengths = bfBitLens;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof HuffmanIntegerEncoding) {
+            HuffmanIntegerEncoding foe = (HuffmanIntegerEncoding) obj;
+            return Arrays.equals(bitLengths, foe.bitLengths) && Arrays.equals(values, foe.values);
+
+        }
+        return false;
+    }
 }

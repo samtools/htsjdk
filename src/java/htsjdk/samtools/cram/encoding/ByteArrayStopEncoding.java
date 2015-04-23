@@ -31,7 +31,7 @@ import java.nio.ByteOrder;
 import java.util.Map;
 
 public class ByteArrayStopEncoding implements Encoding<byte[]> {
-    public final static EncodingID ID = EncodingID.BYTE_ARRAY_STOP;
+    private final static EncodingID ID = EncodingID.BYTE_ARRAY_STOP;
     private byte stopByte = 0;
     private int externalId;
 
@@ -43,7 +43,7 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         return ID;
     }
 
-    public ByteArrayStopEncoding(byte stopByte, int externalId) {
+    private ByteArrayStopEncoding(byte stopByte, int externalId) {
         this.stopByte = stopByte;
         this.externalId = externalId;
     }
@@ -51,8 +51,7 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
     public static EncodingParams toParam(byte stopByte, int externalId) {
         ByteArrayStopEncoding e = new ByteArrayStopEncoding(stopByte,
                 externalId);
-        EncodingParams params = new EncodingParams(ID, e.toByteArray());
-        return params;
+        return new EncodingParams(ID, e.toByteArray());
     }
 
     public byte[] toByteArray() {
@@ -86,10 +85,10 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
 
     public static class ByteArrayStopCodec extends AbstractBitCodec<byte[]> {
 
-        private int stop;
-        private InputStream is;
-        private OutputStream os;
-        private ByteArrayOutputStream readingBAOS = new ByteArrayOutputStream();
+        private final int stop;
+        private final InputStream is;
+        private final OutputStream os;
+        private final ByteArrayOutputStream readingBAOS = new ByteArrayOutputStream();
         private int b;
 
         public ByteArrayStopCodec(byte stopByte, InputStream is, OutputStream os) {
