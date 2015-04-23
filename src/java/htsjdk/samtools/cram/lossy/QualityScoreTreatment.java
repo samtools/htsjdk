@@ -17,7 +17,7 @@ package htsjdk.samtools.cram.lossy;
 
 public class QualityScoreTreatment {
     public final QualityScoreTreatmentType type;
-    private final int param;
+    public final int param;
 
     private QualityScoreTreatment(QualityScoreTreatmentType type, int param) {
         this.type = type;

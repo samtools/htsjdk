@@ -142,8 +142,8 @@ public class CramNormalizer {
         restoreQualityScores(defaultQualityScore, records);
     }
 
-    private static void restoreQualityScores(byte defaultQualityScore,
-                                             List<CramCompressionRecord> records) {
+    public static void restoreQualityScores(byte defaultQualityScore,
+                                            List<CramCompressionRecord> records) {
         for (CramCompressionRecord record : records)
             restoreQualityScores(defaultQualityScore, record);
     }
