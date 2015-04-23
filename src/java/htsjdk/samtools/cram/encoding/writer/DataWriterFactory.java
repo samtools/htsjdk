@@ -39,7 +39,7 @@ public class DataWriterFactory {
                               CompressionHeader h, int refId) throws IllegalArgumentException,
             IllegalAccessException {
         Writer writer = new Writer();
-        writer.captureReadNames = h.readNamesIncluded;
+        writer.setCaptureReadNames(h.readNamesIncluded);
         writer.refId = refId;
         writer.substitutionMatrix = h.substitutionMatrix;
         writer.AP_delta = h.AP_seriesDelta;
@@ -61,10 +61,10 @@ public class DataWriterFactory {
                     Map<Integer, DataWriter<byte[]>> map = new HashMap<Integer, DataWriter<byte[]>>();
                     for (Integer key : h.tMap.keySet()) {
                         EncodingParams params = h.tMap.get(key);
-                        DataWriter<byte[]> tagWtiter = createWriter(
+                        DataWriter<byte[]> tagWriter = createWriter(
                                 DataSeriesType.BYTE_ARRAY, params, bos,
                                 outputMap);
-                        map.put(key, tagWtiter);
+                        map.put(key, tagWriter);
                     }
                     f.set(writer, map);
                 }
@@ -90,8 +90,8 @@ public class DataWriterFactory {
     }
 
     private static class DefaultDataWriter<T> implements DataWriter<T> {
-        private BitCodec<T> codec;
-        private BitOutputStream bos;
+        private final BitCodec<T> codec;
+        private final BitOutputStream bos;
 
         public DefaultDataWriter(BitCodec<T> codec, BitOutputStream bos) {
             this.codec = codec;

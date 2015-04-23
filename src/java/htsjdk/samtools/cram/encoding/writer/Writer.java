@@ -37,11 +37,11 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Map;
 
+@SuppressWarnings({"UnusedDeclaration", "WeakerAccess"})
 public class Writer {
 
-    public static final int TEST_MARK = 0xA0B0C0D0;
-    public Charset charset = Charset.forName("UTF8");
-    public boolean captureReadNames = false;
+    private Charset charset = Charset.forName("UTF8");
+    private boolean captureReadNames = false;
 
     @DataSeries(key = EncodingKey.BF_BitFlags, type = DataSeriesType.INT)
     public DataWriter<Integer> bitFlagsC;
@@ -64,38 +64,32 @@ public class Writer {
     @DataSeries(key = EncodingKey.NF_RecordsToNextFragment, type = DataSeriesType.INT)
     public DataWriter<Integer> distanceC;
 
-    @DataSeries(key = EncodingKey.TC_TagCount, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> tagCountC;
-
-    @DataSeries(key = EncodingKey.TN_TagNameAndType, type = DataSeriesType.INT)
-    public DataWriter<Integer> tagNameAndTypeC;
-
     @DataSeriesMap(name = "TAG")
     public Map<Integer, DataWriter<byte[]>> tagValueCodecs;
 
     @DataSeries(key = EncodingKey.FN_NumberOfReadFeatures, type = DataSeriesType.INT)
-    public DataWriter<Integer> nfc;
+    public DataWriter<Integer> numberOfReadFeaturesCodec;
 
     @DataSeries(key = EncodingKey.FP_FeaturePosition, type = DataSeriesType.INT)
-    public DataWriter<Integer> fp;
+    public DataWriter<Integer> featurePositionCodec;
 
     @DataSeries(key = EncodingKey.FC_FeatureCode, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> fc;
+    public DataWriter<Byte> featuresCodeCodec;
 
     @DataSeries(key = EncodingKey.BA_Base, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> bc;
+    public DataWriter<Byte> baseCodec;
 
     @DataSeries(key = EncodingKey.QS_QualityScore, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> qc;
+    public DataWriter<Byte> qualityScoreCodec;
 
     @DataSeries(key = EncodingKey.QS_QualityScore, type = DataSeriesType.BYTE_ARRAY)
-    public DataWriter<byte[]> qcArray;
+    public DataWriter<byte[]> qualityScoreArrayCodec;
 
     @DataSeries(key = EncodingKey.BS_BaseSubstitutionCode, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> bsc;
+    public DataWriter<Byte> baseSubstitutionCodeCodec;
 
     @DataSeries(key = EncodingKey.IN_Insertion, type = DataSeriesType.BYTE_ARRAY)
-    public DataWriter<byte[]> inc;
+    public DataWriter<byte[]> insertionCodec;
 
     @DataSeries(key = EncodingKey.SC_SoftClip, type = DataSeriesType.BYTE_ARRAY)
     public DataWriter<byte[]> softClipCodec;
@@ -107,25 +101,22 @@ public class Writer {
     public DataWriter<Integer> paddingCodec;
 
     @DataSeries(key = EncodingKey.DL_DeletionLength, type = DataSeriesType.INT)
-    public DataWriter<Integer> dlc;
+    public DataWriter<Integer> deletionLengthCodec;
 
     @DataSeries(key = EncodingKey.MQ_MappingQualityScore, type = DataSeriesType.INT)
-    public DataWriter<Integer> mqc;
+    public DataWriter<Integer> mappingQualityScoreCodec;
 
     @DataSeries(key = EncodingKey.MF_MateBitFlags, type = DataSeriesType.BYTE)
-    public DataWriter<Byte> mbfc;
+    public DataWriter<Byte> mateBitFlagsCodec;
 
     @DataSeries(key = EncodingKey.NS_NextFragmentReferenceSequenceID, type = DataSeriesType.INT)
-    public DataWriter<Integer> mrc;
+    public DataWriter<Integer> nextFragmentReferenceSequenceIDCodec;
 
     @DataSeries(key = EncodingKey.NP_NextFragmentAlignmentStart, type = DataSeriesType.INT)
-    public DataWriter<Integer> malsc;
+    public DataWriter<Integer> nextFragmentAlignmentStart;
 
     @DataSeries(key = EncodingKey.TS_InsetSize, type = DataSeriesType.INT)
-    public DataWriter<Integer> tsc;
-
-    @DataSeries(key = EncodingKey.TM_TestMark, type = DataSeriesType.INT)
-    public DataWriter<Integer> testC;
+    public DataWriter<Integer> templateSize;
 
     @DataSeries(key = EncodingKey.TL_TagIdList, type = DataSeriesType.INT)
     public DataWriter<Integer> tagIdListCodec;
@@ -143,8 +134,6 @@ public class Writer {
     public static int detachedCount = 0;
 
     public void write(CramCompressionRecord r) throws IOException {
-        // testC.writeData(TEST_MARK) ;
-
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
         if (refId == -2)
@@ -159,19 +148,19 @@ public class Writer {
 
         readGroupC.writeData(r.readGroupID);
 
-        if (captureReadNames) {
+        if (isCaptureReadNames()) {
             readNameC.writeData(r.readName.getBytes(charset));
         }
 
         // mate record:
         if (r.isDetached()) {
-            mbfc.writeData(r.getMateFlags());
-            if (!captureReadNames)
+            mateBitFlagsCodec.writeData(r.getMateFlags());
+            if (!isCaptureReadNames())
                 readNameC.writeData(r.readName.getBytes(charset));
 
-            mrc.writeData(r.mateSequenceID);
-            malsc.writeData(r.mateAlignmentStart);
-            tsc.writeData(r.templateSize);
+            nextFragmentReferenceSequenceIDCodec.writeData(r.mateSequenceID);
+            nextFragmentAlignmentStart.writeData(r.mateAlignmentStart);
+            templateSize.writeData(r.templateSize);
 
             detachedCount++;
         } else if (r.isHasMateDownStream())
@@ -188,10 +177,10 @@ public class Writer {
 
         if (!r.isSegmentUnmapped()) {
             // writing read features:
-            nfc.writeData(r.readFeatures.size());
+            numberOfReadFeaturesCodec.writeData(r.readFeatures.size());
             int prevPos = 0;
             for (ReadFeature f : r.readFeatures) {
-                fc.writeData(f.getOperator());
+                featuresCodeCodec.writeData(f.getOperator());
                 switch (f.getOperator()) {
                     case Substitution.operator:
                         break;
@@ -200,26 +189,26 @@ public class Writer {
                         break;
                 }
 
-                fp.writeData(f.getPosition() - prevPos);
+                featurePositionCodec.writeData(f.getPosition() - prevPos);
                 prevPos = f.getPosition();
 
                 switch (f.getOperator()) {
                     case ReadBase.operator:
                         ReadBase rb = (ReadBase) f;
-                        bc.writeData(rb.getBase());
-                        qc.writeData(rb.getQualityScore());
+                        baseCodec.writeData(rb.getBase());
+                        qualityScoreCodec.writeData(rb.getQualityScore());
                         break;
                     case Substitution.operator:
                         Substitution sv = (Substitution) f;
                         if (sv.getCode() < 0)
-                            bsc.writeData(substitutionMatrix.code(sv.getRefernceBase(), sv.getBase()));
+                            baseSubstitutionCodeCodec.writeData(substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
                         else
-                            bsc.writeData(sv.getCode());
-                        // bsc.writeData((byte) sv.getBaseChange().getChange());
+                            baseSubstitutionCodeCodec.writeData(sv.getCode());
+                        // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());
                         break;
                     case Insertion.operator:
                         Insertion iv = (Insertion) f;
-                        inc.writeData(iv.getSequence());
+                        insertionCodec.writeData(iv.getSequence());
                         break;
                     case SoftClip.operator:
                         SoftClip fv = (SoftClip) f;
@@ -235,7 +224,7 @@ public class Writer {
                         break;
                     case Deletion.operator:
                         Deletion dv = (Deletion) f;
-                        dlc.writeData(dv.getLength());
+                        deletionLengthCodec.writeData(dv.getLength());
                         break;
                     case RefSkip.operator:
                         RefSkip rsv = (RefSkip) f;
@@ -243,11 +232,11 @@ public class Writer {
                         break;
                     case InsertBase.operator:
                         InsertBase ib = (InsertBase) f;
-                        bc.writeData(ib.getBase());
+                        baseCodec.writeData(ib.getBase());
                         break;
                     case BaseQualityScore.operator:
                         BaseQualityScore bqs = (BaseQualityScore) f;
-                        qc.writeData(bqs.getQualityScore());
+                        qualityScoreCodec.writeData(bqs.getQualityScore());
                         break;
                     default:
                         throw new RuntimeException("Unknown read feature operator: " + (char) f.getOperator());
@@ -255,17 +244,25 @@ public class Writer {
             }
 
             // mapping quality:
-            mqc.writeData(r.mappingQuality);
+            mappingQualityScoreCodec.writeData(r.mappingQuality);
             if (r.isForcePreserveQualityScores()) {
-                qcArray.writeData(r.qualityScores);
+                qualityScoreArrayCodec.writeData(r.qualityScores);
             }
         } else {
             if (!r.isUnknownBases())
                 for (byte b : r.readBases)
-                    bc.writeData(b);
+                    baseCodec.writeData(b);
             if (r.isForcePreserveQualityScores()) {
-                qcArray.writeData(r.qualityScores);
+                qualityScoreArrayCodec.writeData(r.qualityScores);
             }
         }
+    }
+
+    public boolean isCaptureReadNames() {
+        return captureReadNames;
+    }
+
+    public void setCaptureReadNames(boolean captureReadNames) {
+        this.captureReadNames = captureReadNames;
     }
 }

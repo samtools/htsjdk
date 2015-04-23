@@ -17,10 +17,26 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import java.io.IOException;
 
+/**
+ * A basic interface for reading data. The details of what is data and from where to read are implmentation specific. Pure consumer.
+ *
+ * @param <T> data type of the series to be read
+ */
 public interface DataReader<T> {
 
+    /**
+     * Read a single object
+     * @return an object or a primitive value read
+     * @throws IOException as per java IO contract
+     */
     public T readData() throws IOException;
 
+    /**
+     * Read an array of specified length. Normally this is a byte array. The intent here is optimization: reading an array may be faster than reading elements one by one.
+     * @param len the length of the array to be read
+     * @return the array of objects
+     * @throws IOException as per java IO contract
+     */
     public T readDataArray(int len) throws IOException;
 
 }
