@@ -20,13 +20,13 @@ import java.util.List;
 
 public class PreservationPolicy {
     public ReadCategory readCategory;
-    public List<BaseCategory> baseCategories = new ArrayList<BaseCategory>();
+    public final List<BaseCategory> baseCategories = new ArrayList<BaseCategory>();
 
     public QualityScoreTreatment treatment;
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         if (readCategory != null)
             sb.append(readCategory.toString());
 

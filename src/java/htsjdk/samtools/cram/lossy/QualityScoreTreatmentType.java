@@ -16,5 +16,5 @@
 package htsjdk.samtools.cram.lossy;
 
 public enum QualityScoreTreatmentType {
-    PRESERVE, BIN, DROP;
+    PRESERVE, BIN, DROP
 }

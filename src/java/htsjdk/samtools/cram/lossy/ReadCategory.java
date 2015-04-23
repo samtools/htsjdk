@@ -28,26 +28,18 @@ public class ReadCategory {
         return new ReadCategory(ReadCategoryType.UNPLACED, -1);
     }
 
-    ;
-
     public static ReadCategory higher_than_mapping_score(int score) {
         return new ReadCategory(ReadCategoryType.HIGHER_MAPPING_SCORE,
                 score);
     }
 
-    ;
-
     public static ReadCategory lower_than_mapping_score(int score) {
         return new ReadCategory(ReadCategoryType.LOWER_MAPPING_SCORE, score);
     }
 
-    ;
-
     public static ReadCategory all() {
         return new ReadCategory(ReadCategoryType.ALL, -1);
     }
-
-    ;
 
     @Override
     public String toString() {

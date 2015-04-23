@@ -31,11 +31,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class QualityScorePreservation {
-    private String specification;
-    private List<PreservationPolicy> policyList;
+    private final List<PreservationPolicy> policyList;
 
     public QualityScorePreservation(String specification) {
-        this.specification = specification;
         policyList = parsePolicies(specification);
     }
 
@@ -43,7 +41,7 @@ public class QualityScorePreservation {
         return policyList;
     }
 
-    private static final int readParam(LinkedList<Character> list) {
+    private static int readParam(LinkedList<Character> list) {
         int value = 0;
 
         while (!list.isEmpty() && Character.isDigit(list.getFirst()))
@@ -52,7 +50,7 @@ public class QualityScorePreservation {
         return value;
     }
 
-    private static final QualityScoreTreatment readTreament(
+    private static QualityScoreTreatment readTreatment(
             LinkedList<Character> list) {
         int param = readParam(list);
         QualityScoreTreatment t;
@@ -72,7 +70,7 @@ public class QualityScorePreservation {
         return t;
     }
 
-    public static final List<PreservationPolicy> parsePolicies(String spec) {
+    private static List<PreservationPolicy> parsePolicies(String spec) {
         List<PreservationPolicy> policyList = new ArrayList<PreservationPolicy>();
         for (String s : spec.split("-")) {
             if (s.length() == 0)
@@ -98,7 +96,7 @@ public class QualityScorePreservation {
         return policyList;
     }
 
-    private static final PreservationPolicy parseSinglePolicy(String spec) {
+    private static PreservationPolicy parseSinglePolicy(String spec) {
         PreservationPolicy p = new PreservationPolicy();
         LinkedList<Character> list = new LinkedList<Character>();
         for (char b : spec.toCharArray())
@@ -109,11 +107,11 @@ public class QualityScorePreservation {
             switch (code) {
                 case 'R':
                     p.baseCategories.add(BaseCategory.match());
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case 'N':
                     p.baseCategories.add(BaseCategory.mismatch());
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case 'X':
                     int coverage = readParam(list);
@@ -122,7 +120,7 @@ public class QualityScorePreservation {
                     break;
                 case 'D':
                     p.baseCategories.add(BaseCategory.flanking_deletion());
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case 'M':
                     int score = readParam(list);
@@ -134,27 +132,27 @@ public class QualityScorePreservation {
                     break;
                 case 'U':
                     p.readCategory = ReadCategory.unplaced();
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case 'P':
                     int mismatches = readParam(list);
                     p.baseCategories.add(BaseCategory.pileup(mismatches));
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case 'I':
                     p.baseCategories.add(BaseCategory.insertion());
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case '_':
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
                 case '*':
                     p.readCategory = ReadCategory.all();
-                    p.treatment = readTreament(list);
+                    p.treatment = readTreatment(list);
                     break;
 
                 default:
-                    throw new RuntimeException("Uknown read or base category: "
+                    throw new RuntimeException("Unknown read or base category: "
                             + code);
             }
 
@@ -165,12 +163,12 @@ public class QualityScorePreservation {
         return p;
     }
 
-    public static final void applyBinning(byte[] scores) {
+    private static void applyBinning(byte[] scores) {
         for (int i = 0; i < scores.length; i++)
             scores[i] = Binning.Illumina_binning_matrix[scores[i]];
     }
 
-    public static final byte applyTreatment(byte score, QualityScoreTreatment t) {
+    private static byte applyTreatment(byte score, QualityScoreTreatment t) {
         switch (t.type) {
             case BIN:
                 return Binning.Illumina_binning_matrix[score];
@@ -239,14 +237,14 @@ public class QualityScorePreservation {
 
     }
 
-    private static final void addQS(SAMRecord s, CramCompressionRecord r,
+    private static void addQS(SAMRecord s, CramCompressionRecord r,
                                     byte[] scores, ReferenceTracks t, PreservationPolicy p) {
         int alSpan = s.getAlignmentEnd() - s.getAlignmentStart();
         byte[] qs = s.getBaseQualities();
 
         // check if read is falling into the read category:
         if (p.readCategory != null) {
-            boolean properRead = false;
+            @SuppressWarnings("UnusedAssignment") boolean properRead = false;
             switch (p.readCategory.type) {
                 case ALL:
                     properRead = true;
@@ -270,7 +268,7 @@ public class QualityScorePreservation {
                 return;
         }
 
-        // apply treamtent if there is no per-base policy:
+        // apply treatment if there is no per-base policy:
         if (p.baseCategories == null || p.baseCategories.isEmpty()) {
             switch (p.treatment.type) {
                 case BIN:
@@ -337,11 +335,8 @@ public class QualityScorePreservation {
                             for (int i = 0; i < ce.getLength(); i++) {
                                 boolean match = s.getReadBases()[pos + i] == t
                                         .baseAt(refPos + i);
-                                if ((c.type == BaseCategoryType.MATCH && match)
-                                        || (c.type == BaseCategoryType.MISMATCH && !match)) {
-                                    mask[pos + i] = true;
-                                } else
-                                    mask[pos + i] = false;
+                                mask[pos + i] = (c.type == BaseCategoryType.MATCH && match)
+                                        || (c.type == BaseCategoryType.MISMATCH && !match);
                             }
                             pos += ce.getLength();
                         }

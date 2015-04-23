@@ -18,7 +18,7 @@ package htsjdk.samtools.cram.lossy;
 public enum ReadCategoryType {
     UNPLACED('P'), HIGHER_MAPPING_SCORE('M'), LOWER_MAPPING_SCORE('m'), ALL('*');
 
-    public char code;
+    private final char code;
 
     ReadCategoryType(char code) {
         this.code = code;

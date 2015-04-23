@@ -15,7 +15,7 @@
  ******************************************************************************/
 package htsjdk.samtools.cram.lossy;
 
-public class Binning {
+class Binning {
 
     // @formatter:off
     // NCBI binning scheme:
@@ -27,7 +27,7 @@ public class Binning {
     // 15 19 17
     // 20 24 22
     // 25 29 28
-    // 30 nolimit 35
+    // 30 noLimit 35
     // @formatter:on
     public static byte[] NCBI_binning_matrix = new byte[]{
             // @formatter:off
@@ -60,7 +60,7 @@ public class Binning {
     // 35-39 37
     // ≥40 40
     // @formatter:on
-    public static byte[] Illumina_binning_matrix = new byte[]{
+    public static final byte[] Illumina_binning_matrix = new byte[]{
             // @formatter:off
             0, 1, 6, 6, 6, 6, 6, 6, 6, 6, 15, 15, 15, 15, 15, 15, 15, 15, 15,
             15, 22, 22, 22, 22, 22, 27, 27, 27, 27, 27, 33, 33, 33, 33, 33, 37,
