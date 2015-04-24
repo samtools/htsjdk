@@ -64,7 +64,7 @@ public class CompressionHeaderFactory {
     private static final int oqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
     private static final int bqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
 
-    public CompressionHeader build(List<CramCompressionRecord> records, SubstitutionMatrix substitutionMatrix) {
+    public CompressionHeader build(List<CramCompressionRecord> records, SubstitutionMatrix substitutionMatrix, boolean sorted) {
         CompressionHeader h = new CompressionHeader();
         h.externalIds = new ArrayList<Integer>();
         int exCounter = 0;
@@ -112,7 +112,19 @@ public class CompressionHeaderFactory {
         }
 
         { // alignment offset:
-            getOptimalIntegerEncoding(h, EncodingKey.AP_AlignmentPositionOffset, 0, records);
+            if (sorted) { // alignment offset:
+                h.AP_seriesDelta = true;
+                getOptimalIntegerEncoding(h, EncodingKey.AP_AlignmentPositionOffset, 0, records);
+            } else {
+                int aStartID = exCounter++;
+                h.AP_seriesDelta = false;
+                h.eMap.put(EncodingKey.AP_AlignmentPositionOffset,
+                        ExternalIntegerEncoding.toParam(aStartID));
+                h.externalIds.add(aStartID);
+                h.externalCompressors.put(aStartID,
+                        ExternalCompressor.createRANS(RANS.ORDER.ONE));
+                log.debug("Assigned external id to alignment starts: " + aStartID);
+            }
         }
 
         { // read group
@@ -672,9 +684,11 @@ public class CompressionHeaderFactory {
         private final String name;
         private HashMap<Integer, MutableInt> dictionary = new HashMap<Integer, MutableInt>();
         private final int dictionaryThreshold = 100;
+        private int minValue;
 
         public IntegerEncodingCalculator(String name, int dictionaryThreshold, int minValue) {
             this.name = name;
+            this.minValue = minValue ;
             // for (int i = 2; i < 10; i++)
             // calculators.add(new EncodingLengthCalculator(
             // new GolombIntegerEncoding(i)));
@@ -749,9 +763,9 @@ public class CompressionHeaderFactory {
 
             { // check if beta is better:
 
-                int betaLength = (int) Math.round(Math.log(max) / Math.log(2) + 0.5);
+                int betaLength = (int) Math.round(Math.log(max - minValue)/ Math.log(2) + 0.5);
                 if (bits > betaLength * count) {
-                    bestEncoding = new BetaIntegerEncoding(betaLength);
+                    bestEncoding = new BetaIntegerEncoding(-minValue, betaLength);
                     bits = betaLength * count;
                 }
             }

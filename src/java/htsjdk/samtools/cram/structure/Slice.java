@@ -106,6 +106,9 @@ public class Slice {
     }
 
     private static String getBrief(int start_1based, int span, byte[] bases, int shoulderLength) {
+        if (span >= bases.length)
+            return new String(bases);
+
         StringBuilder sb = new StringBuilder();
         int from_inc = start_1based - 1;
 
@@ -140,18 +143,29 @@ public class Slice {
 
             int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
 
-            if (alignmentStart + span > ref.length + 1) throw new RuntimeException("Invalid alignment boundaries.");
+            if (alignmentStart + span > ref.length + 1)
+                throw new RuntimeException("Invalid alignment boundaries.");
 
             refMD5 = SequenceUtil.calculateMD5(ref, alignmentStart - 1, span);
 
-            StringBuilder sb = new StringBuilder();
-            int shoulder = 10;
-            sb.append(new String(Arrays.copyOfRange(ref, alignmentStart - 1, alignmentStart + shoulder)));
-            sb.append("...");
-            sb.append(new String(Arrays.copyOfRange(ref, alignmentStart - 1 + span - shoulder, alignmentStart + span)));
+            if (log.isEnabled(Log.LogLevel.DEBUG)) {
+                StringBuffer sb = new StringBuffer();
+                int shoulder = 10;
+                if (ref.length <= shoulder * 2)
+                    sb.append(new String(ref));
+                else {
+                    sb.append(new String(Arrays.copyOfRange(ref,
+                            alignmentStart - 1, alignmentStart + shoulder)));
+                    sb.append("...");
+                    sb.append(new String(Arrays.copyOfRange(ref, alignmentStart
+                            - 1 + span - shoulder, alignmentStart + span)));
+                }
 
-            log.debug(String.format("Slice md5: %s for %d:%d-%d, %s", String.format("%032x", new BigInteger(1, refMD5)), sequenceId,
-                    alignmentStart, alignmentStart + span - 1, sb.toString()));
+                log.debug(String.format("Slice md5: %s for %d:%d-%d, %s",
+                        String.format("%032x", new BigInteger(1, refMD5)),
+                        sequenceId, alignmentStart, alignmentStart + span - 1,
+                        sb.toString()));
+            }
         }
     }
 

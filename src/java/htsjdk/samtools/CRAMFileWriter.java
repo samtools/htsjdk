@@ -194,7 +194,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             cramRecords.add(cramRecord);
 
             if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
-            else cramRecord.setForcePreserveQualityScores(true);
+            else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) cramRecord.setForcePreserveQualityScores(true);
         }
 
         // samRecords.clear();

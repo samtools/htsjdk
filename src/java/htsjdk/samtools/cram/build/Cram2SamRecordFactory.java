@@ -120,12 +120,13 @@ public class Cram2SamRecordFactory {
         }
 
         List<CigarElement> list = new ArrayList<CigarElement>();
+        int totalOpLen = 1;
         CigarElement ce;
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
         int lastOpLen = 0;
         int lastOpPos = 1;
-        CigarOperator co ;
-        int rfLen ;
+        CigarOperator co = null;
+        int rfLen = 0;
         for (ReadFeature f : features) {
 
             int gap = f.getPosition() - (lastOpPos + lastOpLen);
@@ -133,6 +134,7 @@ public class Cram2SamRecordFactory {
                 if (lastOperator != CigarOperator.MATCH_OR_MISMATCH) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
                     lastOpPos += lastOpLen;
+                    totalOpLen += lastOpLen;
                     lastOpLen = gap;
                 } else {
                     lastOpLen += gap;
@@ -183,6 +185,7 @@ public class Cram2SamRecordFactory {
                 // add last feature
                 if (lastOpLen > 0) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
+                    totalOpLen += lastOpLen;
                 }
                 lastOperator = co;
                 lastOpLen = rfLen;
@@ -202,9 +205,12 @@ public class Cram2SamRecordFactory {
                             + 1, CigarOperator.M);
                     list.add(ce);
                 }
-            } else if (readLength > lastOpPos - 1) {
-                ce = new CigarElement(readLength - lastOpPos + 1,
-                        CigarOperator.M);
+            } else if (readLength == 0 || readLength > lastOpPos - 1) {
+                if (readLength == 0)
+                    ce = new CigarElement(lastOpLen, CigarOperator.M);
+                else
+                    ce = new CigarElement(readLength - lastOpPos + 1,
+                            CigarOperator.M);
                 list.add(ce);
             }
         }

@@ -38,11 +38,13 @@ import java.util.List;
 import java.util.Map;
 
 public class ContainerFactory {
+    private SAMFileHeader samFileHeader;
     private int recordsPerSlice = 10000;
     private boolean preserveReadNames = true;
     private long globalRecordCounter = 0;
 
     public ContainerFactory(SAMFileHeader samFileHeader, int recordsPerSlice) {
+        this.samFileHeader = samFileHeader;
         this.recordsPerSlice = recordsPerSlice;
     }
 
@@ -59,7 +61,7 @@ public class ContainerFactory {
         // get stats, create compression header and slices
         long time1 = System.nanoTime();
         CompressionHeader h = new CompressionHeaderFactory().build(records,
-                substitutionMatrix);
+                substitutionMatrix, samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
         h.AP_seriesDelta = true;
         long time2 = System.nanoTime();
 

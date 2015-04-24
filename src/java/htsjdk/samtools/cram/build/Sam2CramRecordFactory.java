@@ -197,7 +197,16 @@ public class Sam2CramRecordFactory {
 
         List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
 
+        int cigarLen = 0;
+        for (CigarElement e : cigarElements)
+            if (e.getOperator().consumesReadBases())
+                cigarLen += e.getLength();
+
         byte[] bases = samRecord.getReadBases();
+        if (bases.length == 0) {
+            bases = new byte[cigarLen];
+            Arrays.fill(bases, (byte) 'N');
+        }
         byte[] qualityScore = samRecord.getBaseQualities();
 
         for (CigarElement cigarElement : cigarElements) {

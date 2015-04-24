@@ -32,7 +32,8 @@ public class BetaIntegerEncoding implements Encoding<Integer> {
     public BetaIntegerEncoding() {
     }
 
-    public BetaIntegerEncoding(int bitLimit) {
+    public BetaIntegerEncoding(int offset, int bitLimit) {
+        this.offset = offset ;
         this.bitLimit = bitLimit;
     }
 

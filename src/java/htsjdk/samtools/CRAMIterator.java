@@ -183,6 +183,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                         .getSequence(r.sequenceId);
                 refs = referenceSource.getReferenceBases(sequence, true);
+                if (s.getReadBases() != SAMRecord.NULL_SEQUENCE)
                 SequenceUtil.calculateMdAndNmTags(s, refs, restoreMDTag, restoreNMTag);
             }
 

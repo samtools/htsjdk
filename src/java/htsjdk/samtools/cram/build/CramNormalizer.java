@@ -23,7 +23,6 @@ import htsjdk.samtools.cram.encoding.read_features.InsertBase;
 import htsjdk.samtools.cram.encoding.read_features.Insertion;
 import htsjdk.samtools.cram.encoding.read_features.ReadBase;
 import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
-import htsjdk.samtools.cram.encoding.read_features.Scores;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -130,9 +129,18 @@ public class CramNormalizer {
                 continue;
 
             byte[] refBases = ref;
-            if (ref == null && referenceSource != null)
-                refBases = referenceSource.getReferenceBases(header.getSequence(r.sequenceId), true);
+            {
+                // ref could be supplied (aka forced) already or needs looking up:
+                // ref.length=0 is a special case of seqId=-2 (multiref)
+                if ((ref == null || ref.length == 0) && referenceSource != null)
+                    refBases = referenceSource.getReferenceBases(
+                            header.getSequence(r.sequenceId), true);
+            }
 
+            if (r.isUnknownBases()) {
+                r.readBases = SAMRecord.NULL_SEQUENCE;
+            }
+            else
             r.readBases = restoreReadBases(r, refBases, refOffset_zeroBased,
                     substitutionMatrix);
         }
@@ -151,42 +159,50 @@ public class CramNormalizer {
     private static byte[] restoreQualityScores(byte defaultQualityScore,
                                                CramCompressionRecord record) {
         if (!record.isForcePreserveQualityScores()) {
+            boolean star = true;
             byte[] scores = new byte[record.readLength];
             Arrays.fill(scores, defaultQualityScore);
             if (record.readFeatures != null)
                 for (ReadFeature f : record.readFeatures) {
-                    int pos = f.getPosition();
                     switch (f.getOperator()) {
                         case BaseQualityScore.operator:
+                            int pos = f.getPosition();
                             scores[pos - 1] = ((BaseQualityScore) f).getQualityScore();
+                            star = false;
                             break;
                         case ReadBase.operator:
+                            pos = f.getPosition();
                             scores[pos - 1] = ((ReadBase) f).getQualityScore();
-                            break;
-                        case Scores.operator:
-                            byte[] array = ((Scores) f).getScores();
-                            System.arraycopy(array, 0, scores, pos - 1, array.length);
+                            star = false;
                             break;
 
                         default:
                             break;
                     }
-
                 }
 
-            record.qualityScores = scores;
+            if (star)
+                record.qualityScores = SAMRecord.NULL_QUALS;
+            else
+                record.qualityScores = scores;
         } else {
             byte[] scores = record.qualityScores;
+            int missingScores = 0;
             for (int i = 0; i < scores.length; i++)
-                if (scores[i] == -1)
+                if (scores[i] == -1) {
                     scores[i] = defaultQualityScore;
+                    missingScores++;
+                }
+            if (missingScores == scores.length)
+                record.qualityScores = SAMRecord.NULL_QUALS;
         }
 
         return record.qualityScores;
     }
 
     private static byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
-                                                 int refOffset_zeroBased, SubstitutionMatrix substitutionMatrix) {
+                                           int refOffset_zeroBased, SubstitutionMatrix substitutionMatrix) {
+        if (record.isUnknownBases() || record.readLength == 0) return SAMRecord.NULL_SEQUENCE;
         int readLength = record.readLength;
         byte[] bases = new byte[readLength];
 
@@ -219,7 +235,9 @@ public class CramNormalizer {
             switch (v.getOperator()) {
                 case Substitution.operator:
                     Substitution sv = (Substitution) v;
-                    byte refBase = Utils.normalizeBase(ref[alignmentStart + posInSeq - refOffset_zeroBased]);
+                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
+                            - refOffset_zeroBased, (byte) 'N');
+                    refBase = Utils.normalizeBase(refBase);
                     byte base = substitutionMatrix.base(refBase, sv.getCode());
                     sv.setBase(base);
                     sv.setReferenceBase(refBase);
@@ -246,9 +264,11 @@ public class CramNormalizer {
                     break;
             }
         }
-        for (; posInRead <= readLength; posInRead++)
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq++
+        for (; posInRead <= readLength
+                && alignmentStart + posInSeq - refOffset_zeroBased < ref.length; posInRead++, posInSeq++) {
+            bases[posInRead - 1] = ref[alignmentStart + posInSeq
                     - refOffset_zeroBased];
+        }
 
         // ReadBase overwrites bases:
         for (ReadFeature v : variations) {
@@ -269,13 +289,21 @@ public class CramNormalizer {
         return bases;
     }
 
+    private static final byte getByteOrDefault(byte[] array, int pos,
+                                               byte outOfBoundsValue) {
+        if (pos >= array.length)
+            return outOfBoundsValue;
+        else
+            return array[pos];
+    }
+
     /**
      * The method is similar in semantics to
      * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
      * computeInsertSize} but operates on CRAM native records instead of
      * SAMRecord objects.
      *
-     * @param firstEnd first mate of the pair
+     * @param firstEnd  first mate of the pair
      * @param secondEnd second mate of the pair
      * @return template length
      */

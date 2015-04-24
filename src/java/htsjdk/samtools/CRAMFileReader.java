@@ -127,6 +127,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         it = new CRAMIterator(is, referenceSource);
         it.setValidationStringency(validationStringency);
+        if (indexInputStream != null)
         mIndex = new CachingBAMFileIndex(indexInputStream, it.getSAMFileHeader().getSequenceDictionary());
     }
 
