@@ -134,7 +134,15 @@ public final class CommonInfo {
      * @return the -1 * log10-based error estimate
      */
     public double getLog10PError() { return log10PError; }
-    public double getPhredScaledQual() { return getLog10PError() * -10; }
+
+    /**
+     * Floating-point arithmetic allows signed zeros, +0.0 and -0.0. Adding the constant 0.0 to the
+     * result ensures that the returned value is never -0.0 since (-0.0) + 0.0 = 0.0.
+     * See issue https://github.com/broadinstitute/gsa-unstable/issues/841 for details.
+     *
+     * @return double Phred scaled quality score
+     */
+    public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
 
     public void setLog10PError(double log10PError) {
         if ( log10PError > 0 && log10PError != NO_LOG10_PERROR)
