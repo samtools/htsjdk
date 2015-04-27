@@ -9,6 +9,10 @@ manipulating HTS data.
 
 Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
 
+#### Licensing Information
+
+Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
+
 #### Java Minimum Version Support Policy
 
 We will support all Java SE versions supported by Oracle until at least six months after Oracle's Public Updates period has ended ([see this link](http://www.oracle.com/technetwork/java/eol-135779.html)).
