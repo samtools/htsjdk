@@ -136,11 +136,13 @@ public final class CommonInfo {
     public double getLog10PError() { return log10PError; }
 
     /**
-     * Floating-point arithmetic allows signed zeros, +0.0 and -0.0. Adding the constant 0.0 to the
-     * result ensures that the returned value is never -0.0 since (-0.0) + 0.0 = 0.0.
-     * See issue https://github.com/broadinstitute/gsa-unstable/issues/841 for details.
+     * Floating-point arithmetic allows signed zeros such as +0.0 and -0.0.
+     * Adding the constant 0.0 to the result ensures that the returned value is never -0.0
+     * since (-0.0) + 0.0 = 0.0.
      *
-     * @return double Phred scaled quality score
+     * When this is set to '0.0', the resulting VCF would be 0 instead of -0.
+     *
+     * @return double - Phred scaled quality score
      */
     public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
 
