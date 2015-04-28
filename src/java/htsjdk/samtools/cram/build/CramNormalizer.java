@@ -23,6 +23,7 @@ import htsjdk.samtools.cram.encoding.read_features.InsertBase;
 import htsjdk.samtools.cram.encoding.read_features.Insertion;
 import htsjdk.samtools.cram.encoding.read_features.ReadBase;
 import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
+import htsjdk.samtools.cram.encoding.read_features.RefSkip;
 import htsjdk.samtools.cram.encoding.read_features.SoftClip;
 import htsjdk.samtools.cram.encoding.read_features.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -261,6 +262,9 @@ public class CramNormalizer {
                 case InsertBase.operator:
                     InsertBase ib = (InsertBase) v;
                     bases[posInRead++ - 1] = ib.getBase();
+                    break;
+                case RefSkip.operator:
+                    posInSeq += ((RefSkip)v).getLength();
                     break;
             }
         }
