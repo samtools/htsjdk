@@ -483,6 +483,12 @@ public class VariantContextBuilder {
      * VariantContexts from the same builder.
      */
     public VariantContext make() {
+        return make(false);
+    }
+
+    public VariantContext make(final boolean leaveModifyableAsIs) {
+        if(!leaveModifyableAsIs) attributesCanBeModified = false;
+
         return new VariantContext(source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,
                 fullyDecoded, toValidate);
