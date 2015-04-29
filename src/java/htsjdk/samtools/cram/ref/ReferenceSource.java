@@ -126,7 +126,7 @@ public class ReferenceSource {
 
     byte[] findBasesByName(String name, boolean tryVariants) {
         if (rsFile == null || !rsFile.isIndexed())
-            return null;
+                return null;
 
         ReferenceSequence sequence = null;
         try {

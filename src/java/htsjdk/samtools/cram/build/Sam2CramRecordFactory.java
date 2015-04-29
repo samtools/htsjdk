@@ -131,7 +131,6 @@ public class Sam2CramRecordFactory {
         else {
             if (record.getFirstOfPairFlag()) cramRecord.setLastSegment(false);
             else if (record.getSecondOfPairFlag()) cramRecord.setLastSegment(true);
-            else cramRecord.setLastSegment(true);
         }
 
         if (!record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {

@@ -18,6 +18,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.build.CramNormalizer;
 import htsjdk.samtools.cram.build.Sam2CramRecordFactory;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
@@ -202,53 +203,88 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
             log.warn("Abnormally high number of mismatches, possibly wrong reference.");
 
-        // mating:
-        Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
-        Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
-        for (CramCompressionRecord r : cramRecords) {
-            if (!r.isMultiFragment()) {
-                r.setDetached(true);
+        {
+            if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
+                // mating:
+                Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
+                Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
+                for (CramCompressionRecord r : cramRecords) {
+                    if (!r.isMultiFragment()) {
+                        r.setDetached(true);
 
-                r.setHasMateDownStream(false);
-                r.recordsToNextFragment = -1;
-                r.next = null;
-                r.previous = null;
-            } else {
-                String name = r.readName;
-                Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
-                CramCompressionRecord mate = mateMap.get(name);
-                if (mate == null) {
-                    mateMap.put(name, r);
-                } else {
-                    mate.recordsToNextFragment = r.index - mate.index - 1;
-                    mate.next = r;
-                    r.previous = mate;
-                    r.previous.setHasMateDownStream(true);
+                        r.setHasMateDownStream(false);
+                        r.recordsToNextFragment = -1;
+                        r.next = null;
+                        r.previous = null;
+                    } else {
+                        String name = r.readName;
+                        Map<String, CramCompressionRecord> mateMap = r.isSecondaryAlignment() ? secondaryMateMap : primaryMateMap;
+                        CramCompressionRecord mate = mateMap.get(name);
+                        if (mate == null) {
+                            mateMap.put(name, r);
+                        } else {
+                            CramCompressionRecord prev = mate;
+                            while (prev.next != null) prev = prev.next;
+                            prev.recordsToNextFragment = r.index - prev.index - 1;
+                            prev.next = r;
+                            r.previous = prev;
+                            r.previous.setHasMateDownStream(true);
+                            r.setHasMateDownStream(false);
+                            r.setDetached(false);
+                            r.previous.setDetached(false);
+                            prev.setLastSegment(false);
+                        }
+                    }
+                }
+
+                // mark unpredictable reads as detached:
+                for (CramCompressionRecord r : cramRecords) {
+                    if (r.next == null || r.previous != null) continue;
+                    CramCompressionRecord last = r;
+                    while (last.next != null) last = last.next;
+
+                    if (r.isFirstSegment() && last.isLastSegment()) {
+
+                        final int templateLength = CramNormalizer.computeInsertSize(r, last);
+
+                        if (r.templateSize == templateLength) {
+                            last = r.next;
+                            while (last.next != null) {
+                                if (last.templateSize != -templateLength)
+                                    break;
+
+                                last = last.next;
+                            }
+                            if (last.templateSize != -templateLength) detach(r);
+                        }
+                    } else detach(r);
+                }
+
+                for (CramCompressionRecord r : primaryMateMap.values()) {
+                    if (r.next != null) continue;
+                    r.setDetached(true);
+
                     r.setHasMateDownStream(false);
-                    r.setDetached(false);
-                    r.previous.setDetached(false);
+                    r.recordsToNextFragment = -1;
+                    r.next = null;
+                    r.previous = null;
+                }
 
-                    mateMap.remove(name);
+                for (CramCompressionRecord r : secondaryMateMap.values()) {
+                    if (r.next != null) continue;
+                    r.setDetached(true);
+
+                    r.setHasMateDownStream(false);
+                    r.recordsToNextFragment = -1;
+                    r.next = null;
+                    r.previous = null;
                 }
             }
-        }
-
-        for (CramCompressionRecord r : primaryMateMap.values()) {
-            r.setDetached(true);
-
-            r.setHasMateDownStream(false);
-            r.recordsToNextFragment = -1;
-            r.next = null;
-            r.previous = null;
-        }
-
-        for (CramCompressionRecord r : secondaryMateMap.values()) {
-            r.setDetached(true);
-
-            r.setHasMateDownStream(false);
-            r.recordsToNextFragment = -1;
-            r.next = null;
-            r.previous = null;
+            else {
+                for (CramCompressionRecord r : cramRecords) {
+                    r.setDetached(true);
+                }
+            }
         }
 
 
@@ -282,6 +318,21 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             }
         }
         samRecords.clear();
+    }
+
+    /**
+     * Traverse the graph and mark all segments as detached.
+     *
+     * @param r the starting point of the graph
+     */
+    private static void detach(CramCompressionRecord r) {
+        do {
+            r.setDetached(true);
+
+            r.setHasMateDownStream(false);
+            r.recordsToNextFragment = -1;
+        }
+        while ((r = r.next) != null);
     }
 
     @Override
