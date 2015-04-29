@@ -31,7 +31,10 @@ import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -129,6 +132,64 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
+    }
+
+    @Test
+    public void testVCFHeaderAddMetaDataLineDoesNotDuplicateContigs() {
+        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+
+        VCFFileReader reader = new VCFFileReader(input, false);
+        VCFHeader header = reader.getFileHeader();
+
+        final int numContigLinesBefore = header.getContigLines().size();
+
+        VCFInfoHeaderLine newInfoField = new VCFInfoHeaderLine("test", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test info field");
+        header.addMetaDataLine(newInfoField);
+
+        // getting the sequence dictionary was failing due to duplicating contigs in issue #214,
+        // we expect this to not throw an exception
+        header.getSequenceDictionary();
+
+        final int numContigLinesAfter = header.getContigLines().size();
+        // assert that we have the same number of contig lines before and after
+        Assert.assertEquals(numContigLinesBefore, numContigLinesAfter);
+    }
+
+    @Test
+    public void testVCFHeaderAddDuplicateContigLine() {
+        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+
+        VCFFileReader reader = new VCFFileReader(input, false);
+        VCFHeader header = reader.getFileHeader();
+
+
+        final int numContigLinesBefore = header.getContigLines().size();
+        // try to readd the first contig line
+        header.addMetaDataLine(header.getContigLines().get(0));
+        final int numContigLinesAfter = header.getContigLines().size();
+
+        // assert that we have the same number of contig lines before and after
+        Assert.assertEquals(numContigLinesBefore, numContigLinesAfter);
+    }
+
+    @Test
+    public void testVCFHeaderAddDuplicateHeaderLine() {
+        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+
+        VCFFileReader reader = new VCFFileReader(input, false);
+        VCFHeader header = reader.getFileHeader();
+
+        VCFHeaderLine newHeaderLine = new VCFHeaderLine("key", "value");
+        // add this new header line
+        header.addMetaDataLine(newHeaderLine);
+
+        final int numHeaderLinesBefore = header.getOtherHeaderLines().size();
+        // readd the same header line
+        header.addMetaDataLine(newHeaderLine);
+        final int numHeaderLinesAfter = header.getOtherHeaderLines().size();
+
+        // assert that we have the same number of other header lines before and after
+        Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
     }
 
     /**
