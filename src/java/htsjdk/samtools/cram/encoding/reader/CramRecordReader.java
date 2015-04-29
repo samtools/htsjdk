@@ -51,12 +51,8 @@ public class CramRecordReader extends AbstractReader {
             r.compressionFlags = compressionBitFlagsCodec.readData();
             if (refId == -2)
                 r.sequenceId = refIdCodec.readData();
-            else {
-                if (r.isSegmentUnmapped())
-                    r.sequenceId = -1;
-                else
-                    r.sequenceId = refId;
-            }
+            else
+                r.sequenceId = refId;
 
             r.readLength = readLengthCodec.readData();
             if (AP_delta)
@@ -171,9 +167,8 @@ public class CramRecordReader extends AbstractReader {
             } else {
                 if (r.isUnknownBases()) {
                     r.readBases = SAMRecord.NULL_SEQUENCE;
-                    r.qualityScores=SAMRecord.NULL_QUALS;
-                }
-                else {
+                    r.qualityScores = SAMRecord.NULL_QUALS;
+                } else {
                     byte[] bases = new byte[r.readLength];
                     for (int i = 0; i < bases.length; i++)
                         bases[i] = baseCodec.readData();
