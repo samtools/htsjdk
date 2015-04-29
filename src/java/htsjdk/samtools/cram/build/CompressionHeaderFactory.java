@@ -405,7 +405,7 @@ public class CompressionHeaderFactory {
         }
 
         { // hard clip length
-            IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.HC_HardClip.name(), 1);
+            IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.HC_HardClip.name(), 0);
             for (CramCompressionRecord r : records)
                 if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
@@ -417,7 +417,7 @@ public class CompressionHeaderFactory {
         }
 
         { // padding length
-            IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.PD_padding.name(), 1);
+            IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.PD_padding.name(), 0);
             for (CramCompressionRecord r : records)
                 if (r.readFeatures != null)
                     for (ReadFeature rf : r.readFeatures)
