@@ -69,6 +69,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     private SAMReadGroupRecord readGroup = null;
     private boolean useNmFlag = false;
 
+    private boolean unmappedHasBasesAndQualities = true;
+    
     public static final int DEFAULT_CHROMOSOME_LENGTH = 200000000;
 
     public static final ScoringStrategy DEFAULT_DUPLICATE_SCORING_STRATEGY = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;
@@ -130,6 +132,10 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             readGroups.add(readGroupRecord);
             this.header.setReadGroups(readGroups);
         }
+    }
+    
+    public void setUnmappedHasBasesAndQualities(final boolean value) {
+        this.unmappedHasBasesAndQualities = value;
     }
 
     public int size() {
@@ -244,7 +250,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             rec.setAttribute(SAMTag.RG.name(), readGroup.getReadGroupId());
         }
 
-        fillInBasesAndQualities(rec, qualityString, defaultQuality);
+        if (!recordUnmapped || this.unmappedHasBasesAndQualities) {
+            fillInBasesAndQualities(rec, qualityString, defaultQuality);
+        }
 
         return rec;
     }
@@ -464,7 +472,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         if (programRecord != null) {
             end1.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
         }
-        fillInBasesAndQualities(end1);
+        if (this.unmappedHasBasesAndQualities) {
+            fillInBasesAndQualities(end1);
+        }
 
         end2.setReadName(name);
         end2.setReadPairedFlag(true);
@@ -478,7 +488,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         if (programRecord != null) {
             end2.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
         }
-        fillInBasesAndQualities(end2);
+        if (this.unmappedHasBasesAndQualities) {
+            fillInBasesAndQualities(end2);
+        }
 
         this.records.add(end1);
         this.records.add(end2);
