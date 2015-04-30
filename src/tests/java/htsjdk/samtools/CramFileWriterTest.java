@@ -124,20 +124,20 @@ public class CramFileWriterTest {
         SAMRecordIterator iterator2 = cReader.getIterator();
         int index = 0;
         while (iterator2.hasNext()) {
-            SAMRecord r1 = iterator2.next();
-            SAMRecord r2 = samRecords.get(index++);
+            SAMRecord actualRecord= iterator2.next();
+            SAMRecord expectedRecord = samRecords.get(index++);
 
-            Assert.assertEquals(r1.getReadName(), r2.getReadName());
-            Assert.assertEquals(r1.getFlags(), r2.getFlags());
-            Assert.assertEquals(r1.getAlignmentStart(), r2.getAlignmentStart());
-            Assert.assertEquals(r1.getAlignmentEnd(), r2.getAlignmentEnd());
-            Assert.assertEquals(r1.getReferenceName(), r2.getReferenceName());
-            Assert.assertEquals(r1.getMateAlignmentStart(),
-                    r2.getMateAlignmentStart());
-            Assert.assertEquals(r1.getMateReferenceName(),
-                    r2.getMateReferenceName());
-            Assert.assertEquals(r1.getReadBases(), r2.getReadBases());
-            Assert.assertEquals(r1.getBaseQualities(), r2.getBaseQualities());
+            Assert.assertEquals(actualRecord.getReadName(), expectedRecord.getReadName());
+            Assert.assertEquals(actualRecord.getFlags(), expectedRecord.getFlags());
+            Assert.assertEquals(actualRecord.getAlignmentStart(), expectedRecord.getAlignmentStart());
+            Assert.assertEquals(actualRecord.getAlignmentEnd(), expectedRecord.getAlignmentEnd());
+            Assert.assertEquals(actualRecord.getReferenceName(), expectedRecord.getReferenceName());
+            Assert.assertEquals(actualRecord.getMateAlignmentStart(),
+                    expectedRecord.getMateAlignmentStart());
+            Assert.assertEquals(actualRecord.getMateReferenceName(),
+                    expectedRecord.getMateReferenceName());
+            Assert.assertEquals(actualRecord.getReadBases(), expectedRecord.getReadBases());
+            Assert.assertEquals(actualRecord.getBaseQualities(), expectedRecord.getBaseQualities());
         }
         cReader.close();
     }

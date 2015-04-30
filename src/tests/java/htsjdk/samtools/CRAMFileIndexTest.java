@@ -11,6 +11,7 @@ import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -30,8 +31,8 @@ import java.io.IOException;
  */
 public class CRAMFileIndexTest {
     private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
-    private final File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
+    private File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
+    private File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
     private byte[] cramBytes;
     private byte[] baiBytes;
     private ReferenceSource source;
@@ -183,6 +184,10 @@ public class CRAMFileIndexTest {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
         source = new ReferenceSource(new FakeReferenceSequenceFile(SamReaderFactory.makeDefault().getFileHeader(BAM_FILE).getSequenceDictionary().getSequences()));
         cramBytes = cramFromBAM(BAM_FILE, source);
+        cramFile = File.createTempFile(BAM_FILE.getName(), ".cram") ;
+        cramFile.deleteOnExit();
+        indexFile = new File (cramFile.getAbsolutePath() + ".bai");
+        indexFile.deleteOnExit();
         FileOutputStream fos = new FileOutputStream(cramFile);
         fos.write(cramBytes);
         fos.close();

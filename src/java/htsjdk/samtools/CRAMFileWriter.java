@@ -195,8 +195,6 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) cramRecord.setForcePreserveQualityScores(true);
         }
 
-        // samRecords.clear();
-
         if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
             log.warn("Abnormally high number of mismatches, possibly wrong reference.");
 
@@ -229,7 +227,6 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
                             r.setHasMateDownStream(false);
                             r.setDetached(false);
                             r.previous.setDetached(false);
-                            prev.setLastSegment(false);
                         }
                     }
                 }
