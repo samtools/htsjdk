@@ -26,6 +26,8 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -87,6 +89,82 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
         // eval our known expression
         Assert.assertTrue(!map.get(exp));
+    }
+    
+    // Testing the new 'FT' and 'isPassFT' expressions in the JEXL map
+    @Test
+    public void testJEXLGenotypeFilters() {
+    	
+    	JexlVCMatchExp passFlag = new VariantContextUtils.JexlVCMatchExp(
+    			"passFlag", VariantContextUtils.engine.get().createExpression("isPassFT==1"));
+    	JexlVCMatchExp passFT = new VariantContextUtils.JexlVCMatchExp(
+    			"FTPASS", VariantContextUtils.engine.get().createExpression("FT==\"PASS\""));
+    	JexlVCMatchExp failFT = new VariantContextUtils.JexlVCMatchExp(
+    			"FTBadCall", VariantContextUtils.engine.get().createExpression("FT==\"BadCall\""));
+    	
+    	List<JexlVCMatchExp> jexlTests = Arrays.asList(passFlag, passFT, failFT);
+    	Map<VariantContextUtils.JexlVCMatchExp, Boolean> map;
+    	
+    	List<Allele> alleles = Arrays.asList(Aref, T);
+    	VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10, 10, alleles);
+        VariantContext vcPass = vcb.filters("PASS").make();
+        VariantContext vcFail = vcb.filters("BadVariant").make();
+        GenotypeBuilder gb = new GenotypeBuilder("SAMPLE", alleles);
+
+        Genotype genoNull = gb.make();
+        Genotype genoPass = gb.filters("PASS").make();
+        Genotype genoFail = gb.filters("BadCall").make();
+        
+        // Create the JEXL Maps using the combinations above of vc* and geno*
+        map = new JEXLMap(jexlTests,vcPass, genoPass);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertTrue(map.get(passFlag));
+        Assert.assertTrue(map.get(passFT));
+        Assert.assertFalse(map.get(failFT));
+        
+        map = new JEXLMap(jexlTests,vcPass, genoFail);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertFalse(map.get(passFlag));
+        Assert.assertFalse(map.get(passFT));
+        Assert.assertTrue(map.get(failFT));
+        
+        // Null genotype filter is equivalent to explicit "FT==PASS"
+        map = new JEXLMap(jexlTests,vcPass, genoNull);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertTrue(map.get(passFlag));
+        Assert.assertTrue(map.get(passFT));
+        Assert.assertFalse(map.get(failFT));
+        
+        // Variant-level filters should have no effect here
+        map = new JEXLMap(jexlTests,vcFail, genoPass);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertTrue(map.get(passFlag));
+        Assert.assertTrue(map.get(passFT));
+        Assert.assertFalse(map.get(failFT));
+        
+        map = new JEXLMap(jexlTests,vcFail, genoFail);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertFalse(map.get(passFlag));
+        Assert.assertFalse(map.get(passFT));
+        Assert.assertTrue(map.get(failFT));
+        
+        map = new JEXLMap(jexlTests,vcFail, genoNull);
+        // make sure the context has a value
+        Assert.assertTrue(!map.isEmpty());
+        Assert.assertEquals(map.size(), 3);
+        Assert.assertTrue(map.get(passFlag));
+        Assert.assertTrue(map.get(passFT));
+        Assert.assertFalse(map.get(failFT));
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
