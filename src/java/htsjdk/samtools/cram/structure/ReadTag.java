@@ -273,7 +273,7 @@ public class ReadTag implements Comparable<ReadTag> {
         buf.clear();
         switch (tagType) {
             case 'Z':
-                final String s = (String) value;
+                String s = (String) value;
                 buf.put(s.getBytes(charset));
                 buf.put((byte) 0);
                 break;

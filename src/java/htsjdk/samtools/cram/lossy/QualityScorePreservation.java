@@ -123,7 +123,7 @@ public class QualityScorePreservation {
                     p.treatment = readTreatment(list);
                     break;
                 case 'M':
-                    final int score = readParam(list);
+                    int score = readParam(list);
                     p.readCategory = ReadCategory.higher_than_mapping_score(score);
                     break;
                 case 'm':

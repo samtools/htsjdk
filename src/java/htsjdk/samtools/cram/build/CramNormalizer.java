@@ -179,7 +179,7 @@ public class CramNormalizer {
                 for (final ReadFeature f : record.readFeatures) {
                     switch (f.getOperator()) {
                         case BaseQualityScore.operator:
-                            final int pos = f.getPosition();
+                            int pos = f.getPosition();
                             scores[pos - 1] = ((BaseQualityScore) f).getQualityScore();
                             star = false;
                             break;
