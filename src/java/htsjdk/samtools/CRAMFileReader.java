@@ -41,11 +41,12 @@ import java.util.Iterator;
  *
  * @author vadim
  */
+@SuppressWarnings("UnusedDeclaration")
 public class CRAMFileReader extends SamReader.ReaderImplementation implements SamReader.Indexing {
-    private File file;
+    private File cramFile;
     private final ReferenceSource referenceSource;
-    private InputStream is;
-    private CRAMIterator it;
+    private InputStream inputStream;
+    private CRAMIterator iterator;
     private BAMIndex mIndex;
     private File mIndexFile;
     private boolean mEnableIndexCaching;
@@ -59,30 +60,30 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * {@link htsjdk.samtools.Defaults#REFERENCE_FASTA default} reference fasta
      * file will be used.
      *
-     * @param file CRAM file to open
-     * @param is   CRAM stream to read
+     * @param cramFile CRAM file to open
+     * @param inputStream   CRAM stream to read
      */
-    public CRAMFileReader(final File file, final InputStream is) {
-        this(file, is, new ReferenceSource(Defaults.REFERENCE_FASTA));
+    public CRAMFileReader(final File cramFile, final InputStream inputStream) {
+        this(cramFile, inputStream, new ReferenceSource(Defaults.REFERENCE_FASTA));
     }
 
     /**
      * Open CRAM data for reading using either the file or the input stream
      * supplied in the arguments.
      *
-     * @param file            CRAM file to read
-     * @param is              index file to be used for random access
+     * @param cramFile            CRAM file to read
+     * @param inputStream              index file to be used for random access
      * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
      *                        reference sequences
      */
-    public CRAMFileReader(final File file, final InputStream is,
+    public CRAMFileReader(final File cramFile, final InputStream inputStream,
                           final ReferenceSource referenceSource) {
-        if (file == null && is == null)
+        if (cramFile == null && inputStream == null)
             throw new IllegalArgumentException(
                     "Either file or input stream is required.");
 
-        this.file = file;
-        this.is = is;
+        this.cramFile = cramFile;
+        this.inputStream = inputStream;
         this.referenceSource = referenceSource;
         getIterator();
     }
@@ -101,34 +102,34 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (cramFile == null)
             throw new IllegalArgumentException("File is required.");
 
-        this.file = cramFile;
+        this.cramFile = cramFile;
         this.mIndexFile = indexFile;
         this.referenceSource = referenceSource;
 
         getIterator();
     }
 
-    public CRAMFileReader(final File file, final ReferenceSource referenceSource) {
-        if (file == null && is == null)
+    public CRAMFileReader(final File cramFile, final ReferenceSource referenceSource) {
+        if (cramFile == null && inputStream == null)
             throw new IllegalArgumentException(
                     "Either file or input stream is required.");
 
-        this.file = file;
+        this.cramFile = cramFile;
         this.referenceSource = referenceSource;
 
         getIterator();
     }
 
-    public CRAMFileReader(final InputStream is, final SeekableStream indexInputStream,
-                          final ReferenceSource referenceSource, ValidationStringency validationStringency) throws IOException {
-        this.is = is;
+    public CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
+                          final ReferenceSource referenceSource, final ValidationStringency validationStringency) throws IOException {
+        this.inputStream = inputStream;
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
 
-        it = new CRAMIterator(is, referenceSource);
-        it.setValidationStringency(validationStringency);
+        iterator = new CRAMIterator(inputStream, referenceSource);
+        iterator.setValidationStringency(validationStringency);
         if (indexInputStream != null)
-        mIndex = new CachingBAMFileIndex(indexInputStream, it.getSAMFileHeader().getSequenceDictionary());
+        mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
     }
 
     @Override
@@ -183,39 +184,39 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     @Override
-    public SAMRecordIterator iterator(SAMFileSpan fileSpan) {
+    public SAMRecordIterator iterator(final SAMFileSpan fileSpan) {
         // get the file coordinates for the span:
-        long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
+        final long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
         if (coordinateArray == null || coordinateArray.length == 0) return emptyIterator;
         try {
             // create an input stream that reads the source cram stream only within the coordinate pairs:
-            SeekableStream ss = getSeekableStreamOrFailWithRTE();
-            return new CRAMIterator(ss, referenceSource, coordinateArray);
-        } catch (IOException e) {
+            final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
+            return new CRAMIterator(seekableStream, referenceSource, coordinateArray);
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
     public SAMFileHeader getFileHeader() {
-        return it.getSAMFileHeader();
+        return iterator.getSAMFileHeader();
     }
 
     @Override
     public SAMRecordIterator getIterator() {
-        if (it != null && file == null)
-            return it;
+        if (iterator != null && cramFile == null)
+            return iterator;
         try {
-            final CRAMIterator si;
-            if (file != null) {
-                si = new CRAMIterator(new FileInputStream(file),
+            final CRAMIterator newIterator;
+            if (cramFile != null) {
+                newIterator = new CRAMIterator(new FileInputStream(cramFile),
                         referenceSource);
             } else
-                si = new CRAMIterator(is, referenceSource);
+                newIterator = new CRAMIterator(inputStream, referenceSource);
 
-            si.setValidationStringency(validationStringency);
-            it = si;
-            return it;
+            newIterator.setValidationStringency(validationStringency);
+            iterator = newIterator;
+            return iterator;
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }
@@ -228,7 +229,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     public SAMFileSpan getFilePointerSpanningReads() {
-        return new BAMFileSpan(new Chunk(it.firstContainerOffset << 16, Long.MAX_VALUE));
+        return new BAMFileSpan(new Chunk(iterator.firstContainerOffset << 16, Long.MAX_VALUE));
     }
 
     private static final SAMRecordIterator emptyIterator = new SAMRecordIterator() {
@@ -277,36 +278,36 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (filePointers == null || filePointers.length == 0)
             return emptyIterator;
 
-        Container c;
-        final SeekableStream s = getSeekableStreamOrFailWithRTE();
+        Container container;
+        final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
         for (int i = 0; i < filePointers.length; i += 2) {
             final long containerOffset = filePointers[i] >>> 16;
 
             try {
-                if (s.position() != containerOffset || it.container == null) {
-                    s.seek(containerOffset);
-                    c = ContainerIO.readContainerHeader(it.getCramHeader().getVersion().major, s);
-                    if (c.alignmentStart + c.alignmentSpan > start) {
-                        s.seek(containerOffset);
-                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
-                        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, -1));
+                if (seekableStream.position() != containerOffset || iterator.container == null) {
+                    seekableStream.seek(containerOffset);
+                    container = ContainerIO.readContainerHeader(iterator.getCramHeader().getVersion().major, seekableStream);
+                    if (container.alignmentStart + container.alignmentSpan > start) {
+                        seekableStream.seek(containerOffset);
+                        iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
+                        return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
                     }
                 } else {
-                    c = it.container;
-                    if (c.alignmentStart + c.alignmentSpan > start) {
-                        it.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
-                        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, -1));
+                    container = iterator.container;
+                    if (container.alignmentStart + container.alignmentSpan > start) {
+                        iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
+                        return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
                     }
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        return it;
+        return iterator;
     }
 
     CloseableIterator<SAMRecord> query(final int referenceIndex,
-                                       final int start, final int end, boolean overlap) throws IOException {
+                                       final int start, final int end, final boolean overlap) throws IOException {
         long[] filePointers = null;
 
         // Hit the index to determine the chunk boundaries for the required data.
@@ -321,56 +322,56 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (filePointers == null || filePointers.length == 0)
             return emptyIterator;
 
-        CRAMIterator it = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers);
-        return new IntervalIterator(it, new QueryInterval(referenceIndex, start, end), overlap);
+        final CRAMIterator newIterator = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers);
+        return new IntervalIterator(newIterator, new QueryInterval(referenceIndex, start, end), overlap);
     }
 
     @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
         final long startOfLastLinearBin = getIndex().getStartOfLastLinearBin();
 
-        final SeekableStream s = getSeekableStreamOrFailWithRTE();
-        final CRAMIterator si;
+        final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
+        final CRAMIterator newIterator;
         try {
-            s.seek(0);
-            si = new CRAMIterator(s, referenceSource);
-            si.setValidationStringency(validationStringency);
-            s.seek(startOfLastLinearBin >>> 16);
-            Container c = ContainerIO.readContainerHeader(si.getCramHeader().getVersion().major, s);
-            s.seek(s.position() + c.containerByteSize);
-            it = si;
-            it.jumpWithinContainerToPos(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
+            seekableStream.seek(0);
+            newIterator = new CRAMIterator(seekableStream, referenceSource);
+            newIterator.setValidationStringency(validationStringency);
+            seekableStream.seek(startOfLastLinearBin >>> 16);
+            final Container container = ContainerIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
+            seekableStream.seek(seekableStream.position() + container.containerByteSize);
+            iterator = newIterator;
+            iterator.jumpWithinContainerToPos(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
         } catch (final IOException e) {
             throw new RuntimeEOFException(e);
         }
 
-        return it;
+        return iterator;
     }
 
     private SeekableStream getSeekableStreamOrFailWithRTE() {
-        SeekableStream s = null;
-        if (file != null) {
+        SeekableStream seekableStream = null;
+        if (cramFile != null) {
             try {
-                s = new SeekableFileStream(file);
+                seekableStream = new SeekableFileStream(cramFile);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-        } else if (is instanceof SeekableStream)
-            s = (SeekableStream) is;
-        return s;
+        } else if (inputStream instanceof SeekableStream)
+            seekableStream = (SeekableStream) inputStream;
+        return seekableStream;
     }
 
     @Override
     public void close() {
-        CloserUtil.close(it);
-        CloserUtil.close(is);
+        CloserUtil.close(iterator);
+        CloserUtil.close(inputStream);
         CloserUtil.close(mIndex);
     }
 
     @Override
     void setValidationStringency(final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
-        if (it != null) it.setValidationStringency(validationStringency);
+        if (iterator != null) iterator.setValidationStringency(validationStringency);
     }
 
     @Override
@@ -391,8 +392,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
     @Override
     void enableFileSource(final SamReader reader, final boolean enabled) {
-        if (it != null)
-            it.setFileSource(enabled ? reader : null);
+        if (iterator != null)
+            iterator.setFileSource(enabled ? reader : null);
     }
 
     private class MultiIntervalIterator implements SAMRecordIterator {
@@ -400,13 +401,13 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         private CloseableIterator<SAMRecord> iterator;
         private final boolean overlap;
 
-        public MultiIntervalIterator(Iterator<QueryInterval> queries, boolean overlap) {
+        public MultiIntervalIterator(final Iterator<QueryInterval> queries, final boolean overlap) {
             this.queries = queries;
             this.overlap = overlap;
         }
 
         @Override
-        public SAMRecordIterator assertSorted(SortOrder sortOrder) {
+        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
             return null;
         }
 
@@ -420,10 +421,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             if (iterator == null || !iterator.hasNext()) {
                 if (!queries.hasNext()) return false;
                 do {
-                    QueryInterval query = queries.next();
+                    final QueryInterval query = queries.next();
                     try {
                         iterator = query(query.referenceIndex, query.start, query.end, overlap);
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         throw new RuntimeException(e);
                     }
                 } while (!iterator.hasNext() && queries.hasNext());
@@ -449,18 +450,18 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         private boolean noMore = false;
         private final boolean overlap;
 
-        public IntervalIterator(CloseableIterator<SAMRecord> delegate, QueryInterval interval) {
+        public IntervalIterator(final CloseableIterator<SAMRecord> delegate, final QueryInterval interval) {
             this(delegate, interval, true);
         }
 
-        public IntervalIterator(CloseableIterator<SAMRecord> delegate, QueryInterval interval, boolean overlap) {
+        public IntervalIterator(final CloseableIterator<SAMRecord> delegate, final QueryInterval interval, final boolean overlap) {
             this.delegate = delegate;
             this.interval = interval;
             this.overlap = overlap;
         }
 
         @Override
-        public SAMRecordIterator assertSorted(SortOrder sortOrder) {
+        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
             return null;
         }
 
@@ -478,7 +479,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 next = delegate.next();
 
                 if (isWithinTheInterval(next)) break;
-                if (isPassedTheInterval(next)) {
+                if (isBeyondTheInterval(next)) {
                     next = null;
                     noMore = true;
                     return false;
@@ -489,12 +490,12 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             return next != null;
         }
 
-        boolean isWithinTheInterval(SAMRecord record) {
-            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
+        boolean isWithinTheInterval(final SAMRecord record) {
+            final boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
             if (interval.start == -1) return refMatch;
 
-            int start = record.getAlignmentStart();
-            int end = record.getAlignmentEnd();
+            final int start = record.getAlignmentStart();
+            final int end = record.getAlignmentEnd();
             if (overlap) {
                 return CoordMath.overlaps(start, end, interval.start, interval.end < 0 ? Integer.MAX_VALUE : interval.end);
             } else {
@@ -504,18 +505,16 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         }
 
-        boolean isPassedTheInterval(SAMRecord record) {
+        boolean isBeyondTheInterval(final SAMRecord record) {
             if (record.getReadUnmappedFlag()) return false;
-            boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
-            if (!refMatch) return true;
-
-            return interval.end != -1 && record.getAlignmentStart() > interval.end;
+            final boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
+            return !refMatch || interval.end != -1 && record.getAlignmentStart() > interval.end;
 
         }
 
         @Override
         public SAMRecord next() {
-            SAMRecord result = next;
+            final SAMRecord result = next;
             next = null;
             return result;
         }

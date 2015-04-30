@@ -30,7 +30,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Log.LogLevel;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,26 +43,26 @@ public class ContainerParser {
     private final SAMFileHeader samFileHeader;
     private final Map<String, Long> nanosecondsMap = new TreeMap<String, Long>();
 
-    public ContainerParser(SAMFileHeader samFileHeader) {
+    public ContainerParser(final SAMFileHeader samFileHeader) {
         this.samFileHeader = samFileHeader;
     }
 
-    public List<CramCompressionRecord> getRecords(Container container,
+    public List<CramCompressionRecord> getRecords(final Container container,
                                                   ArrayList<CramCompressionRecord> records) throws IllegalArgumentException,
-            IllegalAccessException, IOException {
-        long time1 = System.nanoTime();
+            IllegalAccessException {
+        final long time1 = System.nanoTime();
         if (records == null)
             records = new ArrayList<CramCompressionRecord>(container.nofRecords);
 
-        for (Slice s : container.slices)
+        for (final Slice s : container.slices)
             records.addAll(getRecords(s, container.h));
 
-        long time2 = System.nanoTime();
+        final long time2 = System.nanoTime();
 
         container.parseTime = time2 - time1;
 
         if (log.isEnabled(LogLevel.DEBUG)) {
-            for (String key : nanosecondsMap.keySet()) {
+            for (final String key : nanosecondsMap.keySet()) {
                 log.debug(String.format("%s: %dms.", key, nanosecondsMap.get(key) / 1000000));
             }
         }
@@ -72,7 +71,7 @@ public class ContainerParser {
     }
 
     ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                Slice s, CompressionHeader h) throws IllegalArgumentException,
+                                                final Slice s, final CompressionHeader h) throws IllegalArgumentException,
             IllegalAccessException {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (s.sequenceId) {
@@ -81,22 +80,22 @@ public class ContainerParser {
                 break;
 
             default:
-                SAMSequenceRecord sequence = samFileHeader
+                final SAMSequenceRecord sequence = samFileHeader
                         .getSequence(s.sequenceId);
                 seqName = sequence.getSequenceName();
                 break;
         }
 
-        DataReaderFactory f = new DataReaderFactory();
-        Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
-        for (Integer exId : s.external.keySet()) {
+        final DataReaderFactory f = new DataReaderFactory();
+        final Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
+        for (final Integer exId : s.external.keySet()) {
             log.debug("Adding external data: " + exId);
             inputMap.put(exId, new ByteArrayInputStream(s.external.get(exId)
                     .getRawContent()));
         }
 
         long time ;
-        CramRecordReader reader = new CramRecordReader();
+        final CramRecordReader reader = new CramRecordReader();
         f.buildReader(reader, new DefaultBitInputStream(
                         new ByteArrayInputStream(s.coreBlock.getRawContent())),
                 inputMap, h, s.sequenceId);
@@ -107,7 +106,7 @@ public class ContainerParser {
         long readNanos = 0;
         int prevStart = s.alignmentStart;
         for (int i = 0; i < s.nofRecords; i++) {
-            CramCompressionRecord r = new CramCompressionRecord();
+            final CramCompressionRecord r = new CramCompressionRecord();
             r.sliceIndex = s.index;
             r.index = i;
 
@@ -136,9 +135,9 @@ public class ContainerParser {
         }
         log.debug("Slice records read time: " + readNanos / 1000000);
 
-        Map<String, DataReaderWithStats> statMap = f.getStats(reader);
-        for (String key : statMap.keySet()) {
-            long value ;
+        final Map<String, DataReaderWithStats> statMap = f.getStats(reader);
+        for (final String key : statMap.keySet()) {
+            final long value ;
             if (!nanosecondsMap.containsKey(key)) {
                 nanosecondsMap.put(key, 0L);
                 value = 0;
@@ -149,7 +148,7 @@ public class ContainerParser {
         return records;
     }
 
-    List<CramCompressionRecord> getRecords(Slice s, CompressionHeader h)
+    List<CramCompressionRecord> getRecords(final Slice s, final CompressionHeader h)
             throws IllegalArgumentException, IllegalAccessException {
         return getRecords(null, s, h);
     }

@@ -4,9 +4,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 class D14 {
-    static void uncompress(ByteBuffer in, ByteBuffer out_buf, Decoding.ari_decoder[] D,
-                           Decoding.RansDecSymbol[][] syms) {
-        int out_sz = out_buf.remaining();
+    static void uncompress(final ByteBuffer in, final ByteBuffer out_buf, final Decoding.ari_decoder[] D,
+                           final Decoding.RansDecSymbol[][] syms) {
+        final int out_sz = out_buf.remaining();
         int rans0, rans1, rans2, rans7;
         in.order(ByteOrder.LITTLE_ENDIAN);
         rans0 = in.getInt();
@@ -14,7 +14,7 @@ class D14 {
         rans2 = in.getInt();
         rans7 = in.getInt();
 
-        int isz4 = out_sz >> 2;
+        final int isz4 = out_sz >> 2;
         int i0 = 0;
         int i1 = isz4;
         int i2 = 2 * isz4;
@@ -24,13 +24,13 @@ class D14 {
         int l2 = 0;
         int l7 = 0;
         for (; i0 < isz4; i0++, i1++, i2++, i7++) {
-            int c0 = 0xFF & D[l0].R[Decoding.RansDecGet(rans0,
+            final int c0 = 0xFF & D[l0].R[Decoding.RansDecGet(rans0,
                     Constants.TF_SHIFT)];
-            int c1 = 0xFF & D[l1].R[Decoding.RansDecGet(rans1,
+            final int c1 = 0xFF & D[l1].R[Decoding.RansDecGet(rans1,
                     Constants.TF_SHIFT)];
-            int c2 = 0xFF & D[l2].R[Decoding.RansDecGet(rans2,
+            final int c2 = 0xFF & D[l2].R[Decoding.RansDecGet(rans2,
                     Constants.TF_SHIFT)];
-            int c7 = 0xFF & D[l7].R[Decoding.RansDecGet(rans7,
+            final int c7 = 0xFF & D[l7].R[Decoding.RansDecGet(rans7,
                     Constants.TF_SHIFT)];
 
             out_buf.put(i0, (byte) c0);
@@ -60,7 +60,7 @@ class D14 {
 
         // Remainder
         for (; i7 < out_sz; i7++) {
-            int c7 = 0xFF & D[l7].R[Decoding.RansDecGet(rans7,
+            final int c7 = 0xFF & D[l7].R[Decoding.RansDecGet(rans7,
                     Constants.TF_SHIFT)];
             out_buf.put(i7, (byte) c7);
             rans7 = Decoding.RansDecAdvanceSymbol(rans7, in, syms[l7][c7],

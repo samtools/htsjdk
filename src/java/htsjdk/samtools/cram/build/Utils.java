@@ -25,7 +25,7 @@ class Utils {
      * @param base a base to normalize
      * @return a normalized base
      */
-    public static byte normalizeBase(byte base) {
+    public static byte normalizeBase(final byte base) {
         switch (base) {
             case 'a':
             case 'A':

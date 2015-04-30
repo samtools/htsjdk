@@ -6,23 +6,23 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 enum SERIES {
     BASES {
         @Override
-        byte[] getBytes(SAMRecord record) {
+        byte[] getBytes(final SAMRecord record) {
             return record.getReadBases();
         }
 
         @Override
-        byte[] getBytes(CramCompressionRecord record) {
+        byte[] getBytes(final CramCompressionRecord record) {
             return record.readBases;
         }
     },
     SCORES {
         @Override
-        byte[] getBytes(SAMRecord record) {
+        byte[] getBytes(final SAMRecord record) {
             return record.getBaseQualities();
         }
 
         @Override
-        byte[] getBytes(CramCompressionRecord record) {
+        byte[] getBytes(final CramCompressionRecord record) {
             return record.qualityScores;
         }
     };

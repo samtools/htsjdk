@@ -7,12 +7,12 @@ class Crc32Hasher extends AbstractSerialDigest<Integer> {
     private final CRC32 crc32 = new CRC32();
     private final ByteOrder byteOrder = ByteOrder.LITTLE_ENDIAN;
 
-    Crc32Hasher(Combine<Integer> combine) {
+    Crc32Hasher(final Combine<Integer> combine) {
         super(combine, null);
     }
 
     @Override
-    protected void resetAndUpdate(byte[] data) {
+    protected void resetAndUpdate(final byte[] data) {
         crc32.reset();
         crc32.update(data);
     }
@@ -24,7 +24,7 @@ class Crc32Hasher extends AbstractSerialDigest<Integer> {
 
     @Override
     protected byte[] asByteArray() {
-        byte[] array = new byte[4];
+        final byte[] array = new byte[4];
         if (byteOrder == ByteOrder.LITTLE_ENDIAN) {
             array[3] = (byte) ((value >>> 24) & 0xFF);
             array[2] = (byte) ((value >>> 16) & 0xFF);

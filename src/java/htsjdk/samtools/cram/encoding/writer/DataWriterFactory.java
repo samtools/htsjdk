@@ -34,34 +34,34 @@ import java.util.Map;
 
 public class DataWriterFactory {
 
-    public Writer buildWriter(BitOutputStream bos,
-                              Map<Integer, ExposedByteArrayOutputStream> outputMap,
-                              CompressionHeader h, int refId) throws IllegalArgumentException,
+    public Writer buildWriter(final BitOutputStream bos,
+                              final Map<Integer, ExposedByteArrayOutputStream> outputMap,
+                              final CompressionHeader h, final int refId) throws IllegalArgumentException,
             IllegalAccessException {
-        Writer writer = new Writer();
+        final Writer writer = new Writer();
         writer.setCaptureReadNames(h.readNamesIncluded);
         writer.refId = refId;
         writer.substitutionMatrix = h.substitutionMatrix;
         writer.AP_delta = h.AP_seriesDelta;
 
-        for (Field f : writer.getClass().getFields()) {
+        for (final Field f : writer.getClass().getFields()) {
             if (f.isAnnotationPresent(DataSeries.class)) {
-                DataSeries ds = f.getAnnotation(DataSeries.class);
-                EncodingKey key = ds.key();
-                DataSeriesType type = ds.type();
+                final DataSeries ds = f.getAnnotation(DataSeries.class);
+                final EncodingKey key = ds.key();
+                final DataSeriesType type = ds.type();
 
                 f.set(writer,
                         createWriter(type, h.eMap.get(key), bos, outputMap));
             }
 
             if (f.isAnnotationPresent(DataSeriesMap.class)) {
-                DataSeriesMap dsm = f.getAnnotation(DataSeriesMap.class);
-                String name = dsm.name();
+                final DataSeriesMap dsm = f.getAnnotation(DataSeriesMap.class);
+                final String name = dsm.name();
                 if ("TAG".equals(name)) {
-                    Map<Integer, DataWriter<byte[]>> map = new HashMap<Integer, DataWriter<byte[]>>();
-                    for (Integer key : h.tMap.keySet()) {
-                        EncodingParams params = h.tMap.get(key);
-                        DataWriter<byte[]> tagWriter = createWriter(
+                    final Map<Integer, DataWriter<byte[]>> map = new HashMap<Integer, DataWriter<byte[]>>();
+                    for (final Integer key : h.tMap.keySet()) {
+                        final EncodingParams params = h.tMap.get(key);
+                        final DataWriter<byte[]> tagWriter = createWriter(
                                 DataSeriesType.BYTE_ARRAY, params, bos,
                                 outputMap);
                         map.put(key, tagWriter);
@@ -74,11 +74,11 @@ public class DataWriterFactory {
         return writer;
     }
 
-    private <T> DataWriter<T> createWriter(DataSeriesType valueType,
-                                           EncodingParams params, BitOutputStream bos,
-                                           Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        EncodingFactory f = new EncodingFactory();
-        Encoding<T> encoding = f.createEncoding(valueType, params.id);
+    private <T> DataWriter<T> createWriter(final DataSeriesType valueType,
+                                           final EncodingParams params, final BitOutputStream bos,
+                                           final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        final EncodingFactory f = new EncodingFactory();
+        final Encoding<T> encoding = f.createEncoding(valueType, params.id);
         if (encoding == null)
             throw new RuntimeException("Encoding not found: value type="
                     + valueType.name() + ", encoding id=" + params.id.name());
@@ -93,13 +93,13 @@ public class DataWriterFactory {
         private final BitCodec<T> codec;
         private final BitOutputStream bos;
 
-        public DefaultDataWriter(BitCodec<T> codec, BitOutputStream bos) {
+        public DefaultDataWriter(final BitCodec<T> codec, final BitOutputStream bos) {
             this.codec = codec;
             this.bos = bos;
         }
 
         @Override
-        public long writeData(T value) throws IOException {
+        public long writeData(final T value) throws IOException {
             return codec.write(bos, value);
         }
 

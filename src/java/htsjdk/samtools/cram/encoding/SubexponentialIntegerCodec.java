@@ -26,20 +26,20 @@ class SubexponentialIntegerCodec extends AbstractBitCodec<Integer> {
     private int k = 2;
     private boolean unaryBit = true;
 
-    SubexponentialIntegerCodec(int offset, int k) {
+    SubexponentialIntegerCodec(final int offset, final int k) {
         this.offset = offset;
         this.k = k;
         this.unaryBit = true;
     }
 
     @Override
-    public final Integer read(BitInputStream bis) throws IOException {
+    public final Integer read(final BitInputStream bis) throws IOException {
         int u = 0;
         while (bis.readBit() == unaryBit)
             u++;
 
-        int b ;
-        int n ;
+        final int b ;
+        final int n ;
         if (u == 0) {
             b = k;
             n = bis.readBits(b);
@@ -52,13 +52,13 @@ class SubexponentialIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public final long write(BitOutputStream bos, Integer value) throws IOException {
+    public final long write(final BitOutputStream bos, final Integer value) throws IOException {
         if (value + offset < 0)
             throw new IllegalArgumentException("Value is less then offset: " + value);
 
-        long newValue = value + offset;
-        int b ;
-        int u ;
+        final long newValue = value + offset;
+        final int b ;
+        final int u ;
         if (newValue < (1L << k)) {
             b = k;
             u = 0;
@@ -75,10 +75,10 @@ class SubexponentialIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public final long numberOfBits(Integer value) {
-        long newValue = value + offset;
-        long b ;
-        long u ;
+    public final long numberOfBits(final Integer value) {
+        final long newValue = value + offset;
+        final long b ;
+        final long u ;
         if (newValue < (1L << k)) {
             b = k;
             u = 0;
@@ -90,7 +90,7 @@ class SubexponentialIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 

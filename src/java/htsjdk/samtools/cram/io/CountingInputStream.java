@@ -25,7 +25,7 @@ public class CountingInputStream extends InputStream {
     private final InputStream delegate;
     private long count = 0;
 
-    public CountingInputStream(InputStream inputStream) {
+    public CountingInputStream(final InputStream inputStream) {
         delegate = inputStream;
     }
 
@@ -35,20 +35,20 @@ public class CountingInputStream extends InputStream {
         return delegate.read();
     }
 
-    public int read(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
-        int read = delegate.read(b);
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
+        final int read = delegate.read(b);
         count += read;
         return read;
     }
 
-    public int read(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
-        int read = delegate.read(b, off, len);
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int len) throws IOException {
+        final int read = delegate.read(b, off, len);
         count += read;
         return read;
     }
 
-    public long skip(long n) throws IOException {
-        long skipped = delegate.skip(n);
+    public long skip(final long n) throws IOException {
+        final long skipped = delegate.skip(n);
         count += skipped;
         return skipped;
     }
@@ -62,7 +62,7 @@ public class CountingInputStream extends InputStream {
             delegate.close();
     }
 
-    public void mark(int readLimit) {
+    public void mark(final int readLimit) {
         delegate.mark(readLimit);
     }
 

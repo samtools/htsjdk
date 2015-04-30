@@ -22,24 +22,24 @@ public class ContentDigests {
     private static final Log log = Log.getInstance(ContentDigests.class);
     private List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
 
-    public static ContentDigests create(EnumSet<KNOWN_DIGESTS> requestedDigests) {
-        List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
-            for (KNOWN_DIGESTS digest : requestedDigests)
+    public static ContentDigests create(final EnumSet<KNOWN_DIGESTS> requestedDigests) {
+        final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
+            for (final KNOWN_DIGESTS digest : requestedDigests)
                 digesters.add(digest.createDigester());
             return new ContentDigests(digesters);
     }
 
-    public static ContentDigests create(SAMBinaryTagAndValue binaryTags) {
-            List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
+    public static ContentDigests create(final SAMBinaryTagAndValue binaryTags) {
+            final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
             SAMBinaryTagAndValue binaryTag = binaryTags;
             while (binaryTag != null) {
-                String tagID = SAMTagUtil.getSingleton().makeStringTag(
+                final String tagID = SAMTagUtil.getSingleton().makeStringTag(
                         binaryTag.tag);
-                KNOWN_DIGESTS hash ;
+                final KNOWN_DIGESTS hash ;
                 try {
                     hash = KNOWN_DIGESTS.valueOf(tagID);
                     digesters.add(hash.createDigester());
-                } catch (IllegalArgumentException e) {
+                } catch (final IllegalArgumentException e) {
                     // The tag is not one of the known content digest tags.
                 }
                 binaryTag = binaryTag.getNext();
@@ -47,33 +47,33 @@ public class ContentDigests {
             return new ContentDigests(digesters);
     }
 
-    private ContentDigests(List<Digester> hashers) {
+    private ContentDigests(final List<Digester> hashers) {
         this.digesters = hashers;
     }
 
-    void add(SAMRecord record) {
-        for (Digester digester : digesters)
+    void add(final SAMRecord record) {
+        for (final Digester digester : digesters)
             digester.add(record);
     }
 
-    public void add(CramCompressionRecord record) {
-        for (Digester digester : digesters)
+    public void add(final CramCompressionRecord record) {
+        for (final Digester digester : digesters)
             digester.addCramRecord(record);
     }
 
-    public void addSAMRecords(Iterable<SAMRecord> records) {
-        for (SAMRecord record : records)
+    public void addSAMRecords(final Iterable<SAMRecord> records) {
+        for (final SAMRecord record : records)
             add(record);
     }
 
-    public void addCramRecords(Iterable<CramCompressionRecord> records) {
-        for (CramCompressionRecord record : records)
+    public void addCramRecords(final Iterable<CramCompressionRecord> records) {
+        for (final CramCompressionRecord record : records)
             add(record);
     }
 
     public SAMBinaryTagAndValue getAsTags() {
         SAMBinaryTagAndValue tag = null;
-        for (Digester digester : digesters) {
+        for (final Digester digester : digesters) {
             if (tag == null)
                 tag = digester.toTag();
             else
@@ -83,9 +83,9 @@ public class ContentDigests {
         return tag;
     }
 
-    public boolean test(SAMBinaryTagAndValue tags) {
-        for (Digester digester : digesters) {
-            SAMBinaryTagAndValue foundTag = tags.find(digester.tagCode);
+    public boolean test(final SAMBinaryTagAndValue tags) {
+        for (final Digester digester : digesters) {
+            final SAMBinaryTagAndValue foundTag = tags.find(digester.tagCode);
             if (foundTag == null)
                 continue;
 
@@ -93,11 +93,11 @@ public class ContentDigests {
                 throw new RuntimeException("Expecting a byte array but got: "
                         + foundTag.value.getClass().getName());
 
-            byte[] expected = (byte[]) foundTag.value;
-            byte[] actual = digester.digest.asByteArray();
+            final byte[] expected = (byte[]) foundTag.value;
+            final byte[] actual = digester.digest.asByteArray();
             if (!Arrays.equals(expected, actual)) {
-                String expectedString = toHexString(expected);
-                String actualString = toHexString(actual);
+                final String expectedString = toHexString(expected);
+                final String actualString = toHexString(actual);
                 log.error(String
                         .format("Content hash mismatch for tag %s, actual: %s; expected: %s",
                                 digester.tagID, actualString, expectedString));
@@ -108,16 +108,16 @@ public class ContentDigests {
         return true;
     }
 
-    private static String toHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte t : bytes) {
+    private static String toHex(final byte[] bytes) {
+        final StringBuilder sb = new StringBuilder();
+        for (final byte t : bytes) {
             sb.append(String.format("%02x", (0xFF & t)).toUpperCase()).append(
                     ' ');
         }
         return sb.toString();
     }
 
-    private static String toHexString(byte[] bytes) {
+    private static String toHexString(final byte[] bytes) {
         return toHex(bytes).replace(" ", "");
     }
 
@@ -127,18 +127,18 @@ public class ContentDigests {
         final String tagID;
         final short tagCode;
 
-        Digester(AbstractSerialDigest<?> digest, SERIES series, String tagID) {
+        Digester(final AbstractSerialDigest<?> digest, final SERIES series, final String tagID) {
             this.digest = digest;
             this.series = series;
             this.tagID = tagID;
             this.tagCode = SAMTagUtil.getSingleton().makeBinaryTag(tagID);
         }
 
-        void add(SAMRecord record) {
+        void add(final SAMRecord record) {
             digest.add(series.getBytes(record));
         }
 
-        void addCramRecord(CramCompressionRecord record) {
+        void addCramRecord(final CramCompressionRecord record) {
             digest.add(series.getBytes(record));
         }
 
@@ -169,7 +169,7 @@ public class ContentDigests {
                     return new Digester(new MessageDigestHasher(
                             MessageDigest.getInstance("SHA-512"),
                             new ByteSumCombine(), null), SERIES.BASES, name());
-                } catch (NoSuchAlgorithmException e) {
+                } catch (final NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -181,7 +181,7 @@ public class ContentDigests {
                     return new Digester(new MessageDigestHasher(
                             MessageDigest.getInstance("SHA-512"),
                             new ByteSumCombine(), null), SERIES.SCORES, name());
-                } catch (NoSuchAlgorithmException e) {
+                } catch (final NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -193,7 +193,7 @@ public class ContentDigests {
                     return new Digester(new MessageDigestHasher(
                             MessageDigest.getInstance("SHA-1"),
                             new ByteSumCombine(), null), SERIES.BASES, name());
-                } catch (NoSuchAlgorithmException e) {
+                } catch (final NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -205,7 +205,7 @@ public class ContentDigests {
                     return new Digester(new MessageDigestHasher(
                             MessageDigest.getInstance("SHA-1"),
                             new ByteSumCombine(), null), SERIES.SCORES, name());
-                } catch (NoSuchAlgorithmException e) {
+                } catch (final NoSuchAlgorithmException e) {
                     throw new RuntimeException(e);
                 }
             }

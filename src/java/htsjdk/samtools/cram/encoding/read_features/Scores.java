@@ -30,14 +30,14 @@ public class Scores implements Serializable, ReadFeature {
         return scores;
     }
 
-    public void setScores(byte[] scores) {
+    public void setScores(final byte[] scores) {
         this.scores = scores;
     }
 
     public Scores() {
     }
 
-    public Scores(int position, byte[] sequence) {
+    public Scores(final int position, final byte[] sequence) {
         this.position = position;
         this.scores = sequence;
     }
@@ -55,16 +55,16 @@ public class Scores implements Serializable, ReadFeature {
     }
 
     @Override
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Scores))
             return false;
 
-        Scores v = (Scores) obj;
+        final Scores v = (Scores) obj;
 
         return position == v.position && !Arrays.equals(scores, v.scores);
 

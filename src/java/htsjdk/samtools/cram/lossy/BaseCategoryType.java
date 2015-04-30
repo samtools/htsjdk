@@ -22,7 +22,7 @@ public enum BaseCategoryType {
     @SuppressWarnings("FieldCanBeLocal")
     private final char code;
 
-    BaseCategoryType(char code) {
+    BaseCategoryType(final char code) {
         this.code = code;
     }
 }

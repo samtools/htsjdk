@@ -17,10 +17,10 @@ public class ENA_RefService {
     private static final int HTTP_INTERNAL_SEVER_PROBLEM = 500;
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
 
-    byte[] getSequence(String md5) throws GaveUpException {
-        int restBetweenTries_ms = 0;
-        int maxTries = 1;
-        int timeout_ms = 0;
+    byte[] getSequence(final String md5) throws GaveUpException {
+        final int restBetweenTries_ms = 0;
+        final int maxTries = 1;
+        final int timeout_ms = 0;
         return getSequence(md5, timeout_ms, maxTries, restBetweenTries_ms);
     }
 
@@ -36,30 +36,30 @@ public class ENA_RefService {
      * @throws GaveUpException if the sequence could not be downloaded within the time/try
      *                         limit.
      */
-    byte[] getSequence(String md5, long timeout_ms, int maxTries, long restBetweenTries_ms) throws
+    byte[] getSequence(final String md5, final long timeout_ms, int maxTries, final long restBetweenTries_ms) throws
             GaveUpException {
         if (md5 == null)
             throw new NullPointerException("Expecting sequence md5 but got null.");
         if (!md5.matches("[a-z0-9]{32}"))
             throw new RuntimeException("Does not look like an md5 checksum: " + md5);
 
-        String HTTP_WWW_EBI_AC_UK_ENA_CRAM_MD5_S = "http://www.ebi.ac.uk/ena/cram/md5/%s";
-        String urlString = String.format(HTTP_WWW_EBI_AC_UK_ENA_CRAM_MD5_S, md5);
-        URL url;
+        final String HTTP_WWW_EBI_AC_UK_ENA_CRAM_MD5_S = "http://www.ebi.ac.uk/ena/cram/md5/%s";
+        final String urlString = String.format(HTTP_WWW_EBI_AC_UK_ENA_CRAM_MD5_S, md5);
+        final URL url;
         try {
             url = new URL(urlString);
-        } catch (MalformedURLException e) {
+        } catch (final MalformedURLException e) {
             throw new RuntimeException("Invalid sequence url: " + urlString, e);
         }
 
         InputStream is = null;
-        long startTime = System.currentTimeMillis();
+        final long startTime = System.currentTimeMillis();
         do {
             try {
-                HttpURLConnection http = (HttpURLConnection) url.openConnection();
-                int read_timeout_ms = 0;
+                final HttpURLConnection http = (HttpURLConnection) url.openConnection();
+                final int read_timeout_ms = 0;
                 http.setReadTimeout(read_timeout_ms);
-                int code = http.getResponseCode();
+                final int code = http.getResponseCode();
                 switch (code) {
                     case HTTP_OK:
                         is = http.getInputStream();
@@ -67,7 +67,7 @@ public class ENA_RefService {
                             throw new RuntimeException("Failed to download sequence for md5: " + md5);
 
                         log.info("Downloading reference sequence: " + urlString);
-                        byte[] bases = InputStreamUtils.readFully(is);
+                        final byte[] bases = InputStreamUtils.readFully(is);
                         log.info("Downloaded " + bases.length + " bases.");
                         return bases;
                     case HTTP_NOT_FOUND:
@@ -82,17 +82,17 @@ public class ENA_RefService {
                 if (startTime - System.currentTimeMillis() < timeout_ms && maxTries > 1 && restBetweenTries_ms > 0)
                     try {
                         Thread.sleep(restBetweenTries_ms);
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                         throw new RuntimeException(e);
                     }
 
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 log.error("Connection attempt failed: " + e.getMessage());
             } finally {
                 if (is != null) {
                     try {
                         is.close();
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         log.error(e.getMessage());
                     }
                 }
@@ -107,7 +107,7 @@ public class ENA_RefService {
         private static final long serialVersionUID = -8997576068346912410L;
         private String md5;
 
-        public GaveUpException(String md5) {
+        public GaveUpException(final String md5) {
             this.setMd5(md5);
         }
 
@@ -115,7 +115,7 @@ public class ENA_RefService {
             return md5;
         }
 
-        public void setMd5(String md5) {
+        public void setMd5(final String md5) {
             this.md5 = md5;
         }
     }

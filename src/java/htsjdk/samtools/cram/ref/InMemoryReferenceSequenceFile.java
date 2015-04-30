@@ -30,16 +30,16 @@ class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     private SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
     private int currentIndex = 0;
 
-    public void addSequence(String name, byte[] bases) {
-        SAMSequenceRecord r = new SAMSequenceRecord(name, bases.length);
+    public void addSequence(final String name, final byte[] bases) {
+        final SAMSequenceRecord r = new SAMSequenceRecord(name, bases.length);
         dictionary.addSequence(r);
-        int index = getSequenceDictionary().getSequenceIndex(name);
+        final int index = getSequenceDictionary().getSequenceIndex(name);
         sequences.put(index, bases);
     }
 
     @Override
-    public ReferenceSequence getSequence(String name) {
-        int index = getSequenceDictionary().getSequenceIndex(name);
+    public ReferenceSequence getSequence(final String name) {
+        final int index = getSequenceDictionary().getSequenceIndex(name);
         return new ReferenceSequence(name, index, sequences.get(index));
     }
 
@@ -49,9 +49,9 @@ class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
     }
 
     @Override
-    public ReferenceSequence getSubsequenceAt(String name, long start, long stop) {
-        int index = getSequenceDictionary().getSequenceIndex(name);
-        byte[] bases = Arrays.copyOfRange(sequences.get(index), (int) start,
+    public ReferenceSequence getSubsequenceAt(final String name, final long start, final long stop) {
+        final int index = getSequenceDictionary().getSequenceIndex(name);
+        final byte[] bases = Arrays.copyOfRange(sequences.get(index), (int) start,
                 (int) stop + 1);
         return new ReferenceSequence(name, index, bases);
     }
@@ -69,8 +69,8 @@ class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
      * @param stop  inclusive end position on the reference sequence
      * @return a new region object
      */
-    public ReferenceRegion getRegion(String name, long start, long stop) {
-        int index = getSequenceDictionary().getSequenceIndex(name);
+    public ReferenceRegion getRegion(final String name, final long start, final long stop) {
+        final int index = getSequenceDictionary().getSequenceIndex(name);
         if (!sequences.containsKey(index))
             throw new RuntimeException("Sequence not found: " + name);
 
@@ -88,7 +88,7 @@ class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
         if (currentIndex >= dictionary.size())
             return null;
 
-        SAMSequenceRecord sequence = dictionary.getSequence(currentIndex++);
+        final SAMSequenceRecord sequence = dictionary.getSequence(currentIndex++);
         return getSequence(sequence.getSequenceName());
     }
 

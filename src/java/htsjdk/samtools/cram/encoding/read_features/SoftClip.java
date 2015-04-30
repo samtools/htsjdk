@@ -30,14 +30,14 @@ public class SoftClip implements Serializable, ReadFeature {
         return sequence;
     }
 
-    public void setSequence(byte[] sequence) {
+    public void setSequence(final byte[] sequence) {
         this.sequence = sequence;
     }
 
     public SoftClip() {
     }
 
-    public SoftClip(int position, byte[] sequence) {
+    public SoftClip(final int position, final byte[] sequence) {
         this.position = position;
         this.sequence = sequence;
     }
@@ -53,16 +53,16 @@ public class SoftClip implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof SoftClip))
             return false;
 
-        SoftClip v = (SoftClip) obj;
+        final SoftClip v = (SoftClip) obj;
 
         return position == v.position && !Arrays.equals(sequence, v.sequence);
 

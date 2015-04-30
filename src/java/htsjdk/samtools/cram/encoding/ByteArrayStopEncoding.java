@@ -43,42 +43,42 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         return ID;
     }
 
-    private ByteArrayStopEncoding(byte stopByte, int externalId) {
+    private ByteArrayStopEncoding(final byte stopByte, final int externalId) {
         this.stopByte = stopByte;
         this.externalId = externalId;
     }
 
-    public static EncodingParams toParam(byte stopByte, int externalId) {
-        ByteArrayStopEncoding e = new ByteArrayStopEncoding(stopByte,
+    public static EncodingParams toParam(final byte stopByte, final int externalId) {
+        final ByteArrayStopEncoding e = new ByteArrayStopEncoding(stopByte,
                 externalId);
         return new EncodingParams(ID, e.toByteArray());
     }
 
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(1024);
+        final ByteBuffer buf = ByteBuffer.allocate(1024);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put(stopByte);
         ITF8.writeUnsignedITF8(externalId, buf);
 
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
 
         return array;
     }
 
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         stopByte = buf.get();
         externalId = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
-    public BitCodec<byte[]> buildCodec(Map<Integer, InputStream> inputMap,
-                                       Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        InputStream is = inputMap == null ? null : inputMap.get(externalId);
-        ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap
+    public BitCodec<byte[]> buildCodec(final Map<Integer, InputStream> inputMap,
+                                       final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        final InputStream is = inputMap == null ? null : inputMap.get(externalId);
+        final ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap
                 .get(externalId);
         return new ByteArrayStopCodec(stopByte, is, os);
     }
@@ -91,14 +91,14 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         private final ByteArrayOutputStream readingBAOS = new ByteArrayOutputStream();
         private int b;
 
-        public ByteArrayStopCodec(byte stopByte, InputStream is, OutputStream os) {
+        public ByteArrayStopCodec(final byte stopByte, final InputStream is, final OutputStream os) {
             this.stop = 0xFF & stopByte;
             this.is = is;
             this.os = os;
         }
 
         @Override
-        public byte[] read(BitInputStream bis) throws IOException {
+        public byte[] read(final BitInputStream bis) throws IOException {
             readingBAOS.reset();
             while ((b = is.read()) != -1 && b != stop)
                 readingBAOS.write(b);
@@ -107,12 +107,12 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         }
 
         @Override
-        public byte[] read(BitInputStream bis, int len) throws IOException {
+        public byte[] read(final BitInputStream bis, final int len) throws IOException {
             throw new RuntimeException("Not implemented.");
         }
 
         @Override
-        public long write(BitOutputStream bos, byte[] object)
+        public long write(final BitOutputStream bos, final byte[] object)
                 throws IOException {
             os.write(object);
             os.write(stop);
@@ -120,7 +120,7 @@ public class ByteArrayStopEncoding implements Encoding<byte[]> {
         }
 
         @Override
-        public long numberOfBits(byte[] object) {
+        public long numberOfBits(final byte[] object) {
             return object.length + 1;
         }
 

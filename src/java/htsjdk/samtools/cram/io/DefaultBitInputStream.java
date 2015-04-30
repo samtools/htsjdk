@@ -33,7 +33,7 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
     private static final long[] masks = new long[]{0, (1L << 1) - 1, (1L << 2) - 1, (1L << 3) - 1, (1L << 4) - 1,
             (1L << 5) - 1, (1L << 6) - 1, (1L << 7) - 1, (1L << 8) - 1};
 
-    public DefaultBitInputStream(InputStream in) {
+    public DefaultBitInputStream(final InputStream in) {
 
         super(in);
         this.throwEOF = true;
@@ -71,7 +71,7 @@ public class DefaultBitInputStream extends DataInputStream implements BitInputSt
         return x | rightBits(n, byteBuffer >>> nofBufferedBits);
     }
 
-    private static int rightBits(int n, int x) {
+    private static int rightBits(final int n, final int x) {
         return x & ((1 << n) - 1);
     }
 

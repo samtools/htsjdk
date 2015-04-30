@@ -19,7 +19,7 @@ public class QualityScoreTreatment {
     public final QualityScoreTreatmentType type;
     public final int param;
 
-    private QualityScoreTreatment(QualityScoreTreatmentType type, int param) {
+    private QualityScoreTreatment(final QualityScoreTreatmentType type, final int param) {
         this.type = type;
         this.param = param;
     }
@@ -33,7 +33,7 @@ public class QualityScoreTreatment {
         return new QualityScoreTreatment(QualityScoreTreatmentType.DROP, 40);
     }
 
-    public static QualityScoreTreatment bin(int bins) {
+    public static QualityScoreTreatment bin(final int bins) {
         return new QualityScoreTreatment(QualityScoreTreatmentType.BIN,
                 bins);
     }

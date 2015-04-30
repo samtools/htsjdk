@@ -35,8 +35,8 @@ class ReferenceRegion {
      * @param alignmentStart 1-based inclusive position of the region start on the reference sequence
      * @param alignmentEnd   1-based inclusive position of the region end on the reference sequence
      */
-    public ReferenceRegion(byte[] bases, int sequenceIndex,
-                           String sequenceName, long alignmentStart, long alignmentEnd) {
+    public ReferenceRegion(final byte[] bases, final int sequenceIndex,
+                           final String sequenceName, final long alignmentStart, long alignmentEnd) {
         this.array = bases;
         this.index = sequenceIndex;
         this.name = sequenceName;
@@ -56,8 +56,8 @@ class ReferenceRegion {
         this.arrayStart = (int) (alignmentStart - 1);
     }
 
-    int arrayPosition(long alignmentPosition) {
-        int arrayPosition = (int) (arrayStart + (alignmentPosition - alignmentStart));
+    int arrayPosition(final long alignmentPosition) {
+        final int arrayPosition = (int) (arrayStart + (alignmentPosition - alignmentStart));
 
         if (arrayPosition < 0 || arrayPosition > array.length)
             throw new IllegalArgumentException(
@@ -67,13 +67,13 @@ class ReferenceRegion {
         return arrayPosition;
     }
 
-    public byte base(long alignmentPosition) {
+    public byte base(final long alignmentPosition) {
         return array[arrayPosition(alignmentPosition)];
     }
 
-    public byte[] copy(long alignmentStart, int alignmentSpan) {
-        int from = arrayPosition(alignmentStart);
-        int to = arrayPosition(alignmentStart + alignmentSpan);
+    public byte[] copy(final long alignmentStart, final int alignmentSpan) {
+        final int from = arrayPosition(alignmentStart);
+        final int to = arrayPosition(alignmentStart + alignmentSpan);
         return Arrays.copyOfRange(array, from, to);
     }
 

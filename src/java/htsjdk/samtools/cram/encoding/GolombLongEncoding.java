@@ -37,8 +37,8 @@ public class GolombLongEncoding implements Encoding<Long> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(int offset, int m) {
-        GolombLongEncoding e = new GolombLongEncoding();
+    public static EncodingParams toParam(final int offset, final int m) {
+        final GolombLongEncoding e = new GolombLongEncoding();
         e.offset = offset;
         e.m = m;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
@@ -46,25 +46,25 @@ public class GolombLongEncoding implements Encoding<Long> {
 
     @Override
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(10);
+        final ByteBuffer buf = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buf);
         ITF8.writeUnsignedITF8(m, buf);
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         offset = ITF8.readUnsignedITF8(buf);
         m = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
-    public BitCodec<Long> buildCodec(Map<Integer, InputStream> inputMap,
-                                     Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Long> buildCodec(final Map<Integer, InputStream> inputMap,
+                                     final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new GolombLongCodec(offset, m);
     }
 

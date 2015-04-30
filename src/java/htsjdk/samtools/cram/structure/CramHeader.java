@@ -50,7 +50,7 @@ public final class CramHeader {
      * @param id            an identifier of the content associated with this header
      * @param samFileHeader the SAM file header
      */
-    public CramHeader(Version version, String id, SAMFileHeader samFileHeader) {
+    public CramHeader(final Version version, final String id, final SAMFileHeader samFileHeader) {
         this.version = version;
 
         if (id != null) System.arraycopy(id.getBytes(), 0, this.id, 0, Math.min(id.length(), this.id.length));
@@ -63,7 +63,7 @@ public final class CramHeader {
      *
      * @param stringID a new id; only first 20 bytes from byte representation of java {@link String} will be used.
      */
-    public void setID(String stringID) {
+    public void setID(final String stringID) {
         System.arraycopy(stringID.getBytes(), 0, this.id, 0, Math.min(this.id.length, stringID.length()));
     }
 
@@ -74,7 +74,7 @@ public final class CramHeader {
     @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override
     public CramHeader clone() {
-        CramHeader clone = new CramHeader();
+        final CramHeader clone = new CramHeader();
         clone.version = version;
         System.arraycopy(id, 0, clone.id, 0, id.length);
         clone.samFileHeader = getSamFileHeader().clone();
@@ -89,11 +89,11 @@ public final class CramHeader {
      * @return true if versions, ids and SAM file header are exactly the same, false otherwise
      */
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj == null) return false;
         if (!(obj instanceof CramHeader)) return false;
 
-        CramHeader h = (CramHeader) obj;
+        final CramHeader h = (CramHeader) obj;
 
         if (getVersion().major != h.getVersion().major) return false;
         //noinspection SimplifiableIfStatement
@@ -117,5 +117,5 @@ public final class CramHeader {
         return version;
     }
 
-    public void setVersion(Version version) { this.version = version; }
+    public void setVersion(final Version version) { this.version = version; }
 }

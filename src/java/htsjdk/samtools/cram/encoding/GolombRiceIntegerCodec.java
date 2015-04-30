@@ -28,7 +28,7 @@ class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
     private boolean quotientBit = false;
     private int offset = 0;
 
-    public GolombRiceIntegerCodec(int offset, int log2m) {
+    public GolombRiceIntegerCodec(final int offset, final int log2m) {
         this.log2m = log2m;
         m = 1 << log2m;
         this.quotientBit = true;
@@ -42,16 +42,16 @@ class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
         while (bis.readBit() == quotientBit)
             unary++;
 
-        int remainder = bis.readBits(log2m);
+        final int remainder = bis.readBits(log2m);
 
-        int result = unary * m + remainder;
+        final int result = unary * m + remainder;
         return result - offset;
     }
 
     @Override
     public final long write(final BitOutputStream bos, final Integer value) throws IOException {
-        long newValue = value + offset;
-        long quotient = newValue >>> log2m;
+        final long newValue = value + offset;
+        final long quotient = newValue >>> log2m;
         if (quotient > 0x7fffffffL)
             for (long i = 0; i < quotient; i++)
                 bos.write(quotientBit);
@@ -62,7 +62,7 @@ class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
                 bos.write(quotientBit);
         }
         bos.write(!quotientBit);
-        long remainder = newValue & mask;
+        final long remainder = newValue & mask;
         long reminderMask = 1 << (log2m - 1);
         for (int i = log2m - 1; i >= 0; i--) {
             final long b = remainder & reminderMask;
@@ -73,12 +73,12 @@ class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public final long numberOfBits(Integer value) {
+    public final long numberOfBits(final Integer value) {
         return (value + offset) / m + 1 + log2m;
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 

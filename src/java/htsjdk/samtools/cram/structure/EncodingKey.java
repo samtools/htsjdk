@@ -24,15 +24,15 @@ public enum EncodingKey {
     NS_NextFragmentReferenceSequenceID, CF_CompressionBitFlags, TV_TestMark, TM_TestMark,
     TL_TagIdList, RI_RefId, RS_RefSkip, SC_SoftClip, HC_HardClip, PD_padding, BB_bases, QQ_scores;
 
-    public static EncodingKey byFirstTwoChars(String chars) {
-        for (EncodingKey k : values()) {
+    public static EncodingKey byFirstTwoChars(final String chars) {
+        for (final EncodingKey k : values()) {
             if (k.name().startsWith(chars))
                 return k;
         }
         return null;
     }
 
-    public static byte[] toTwoBytes(EncodingKey key) {
+    public static byte[] toTwoBytes(final EncodingKey key) {
         return new byte[]{(byte) key.name().charAt(0), (byte) key.name().charAt(1)};
     }
 }

@@ -29,18 +29,18 @@ public abstract class AbstractBitCodec<T> implements BitCodec<T> {
     public abstract T read(BitInputStream bis, int valueLen) throws IOException;
 
     @Override
-    public void readInto(BitInputStream bis, byte[] array, int offset,
-                         int valueLen) throws IOException {
+    public void readInto(final BitInputStream bis, final byte[] array, final int offset,
+                         final int valueLen) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 
     @Override
-    public void skip(BitInputStream bis) throws IOException {
+    public void skip(final BitInputStream bis) throws IOException {
         read(bis);
     }
 
     @Override
-    public void skip(BitInputStream bis, int len) throws IOException {
+    public void skip(final BitInputStream bis, final int len) throws IOException {
         read(bis, len);
     }
 

@@ -30,13 +30,13 @@ public class ReferenceTracks {
     private final short[] mismatches;
 
 
-    public ReferenceTracks(int sequenceId, String sequenceName,
-                           byte[] reference) {
+    public ReferenceTracks(final int sequenceId, final String sequenceName,
+                           final byte[] reference) {
         this(sequenceId, sequenceName, reference, 1000000);
     }
 
-    private ReferenceTracks(int sequenceId, String sequenceName,
-                            byte[] reference, int windowSize) {
+    private ReferenceTracks(final int sequenceId, final String sequenceName,
+                            final byte[] reference, final int windowSize) {
         this.sequenceId = sequenceId;
         this.sequenceName = sequenceName;
         this.reference = reference;
@@ -69,7 +69,7 @@ public class ReferenceTracks {
         return reference.length;
     }
 
-    public void ensure(int start, int end) {
+    public void ensure(final int start, final int end) {
         if (end - start > bases.length)
             throw new RuntimeException("Window is too small for start " + start
                     + " end " + end);
@@ -126,7 +126,7 @@ public class ReferenceTracks {
         Arrays.fill(mismatches, (short) 0);
     }
 
-    public void ensureRange(int start, int length) {
+    public void ensureRange(final int start, final int length) {
         if (start < position)
             throw new RuntimeException("Cannot move the window backwards: "
                     + start);
@@ -135,14 +135,14 @@ public class ReferenceTracks {
             moveForwardTo(start);
     }
 
-    public final byte baseAt(int pos) {
+    public final byte baseAt(final int pos) {
         if (pos - this.position < coverage.length)
             return bases[pos - this.position];
         else
             return 'N';
     }
 
-    public final short coverageAt(int pos) {
+    public final short coverageAt(final int pos) {
         if (pos - this.position >= coverage.length)
             return 0;
         else {
@@ -150,19 +150,19 @@ public class ReferenceTracks {
         }
     }
 
-    public final short mismatchesAt(int pos) {
+    public final short mismatchesAt(final int pos) {
         if (pos - this.position >= coverage.length)
             return 0;
         else
             return mismatches[pos - this.position];
     }
 
-    public final void addCoverage(int pos, int amount) {
+    public final void addCoverage(final int pos, final int amount) {
         if (pos - this.position < coverage.length)
             coverage[pos - this.position] += amount;
     }
 
-    public final void addMismatches(int pos, int amount) {
+    public final void addMismatches(final int pos, final int amount) {
         if (pos - this.position < coverage.length)
             mismatches[pos - this.position] += amount;
     }

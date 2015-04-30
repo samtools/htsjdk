@@ -28,35 +28,35 @@ class ExternalByteCodec extends AbstractBitCodec<Byte> {
     private final OutputStream os;
     private final InputStream is;
 
-    public ExternalByteCodec(OutputStream os, InputStream is) {
+    public ExternalByteCodec(final OutputStream os, final InputStream is) {
         this.os = os;
         this.is = is;
     }
 
     @Override
-    public Byte read(BitInputStream bis) throws IOException {
+    public Byte read(final BitInputStream bis) throws IOException {
         return (byte) is.read();
     }
 
     @Override
-    public long write(BitOutputStream bos, Byte object) throws IOException {
+    public long write(final BitOutputStream bos, final Byte object) throws IOException {
         os.write(object);
         return 8;
     }
 
     @Override
-    public long numberOfBits(Byte object) {
+    public long numberOfBits(final Byte object) {
         return 8;
     }
 
     @Override
-    public Byte read(BitInputStream bis, int len) throws IOException {
+    public Byte read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 
     @Override
-    public void readInto(BitInputStream bis, byte[] array, int offset,
-                         int valueLen) throws IOException {
+    public void readInto(final BitInputStream bis, final byte[] array, final int offset,
+                         final int valueLen) throws IOException {
         InputStreamUtils.readFully(is, array, offset, valueLen);
     }
 }

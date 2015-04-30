@@ -26,13 +26,13 @@ public class CramContainerIterator implements Iterator<Container> {
 
     void readNextContainer() {
         try {
-            CountingInputStream cis = new CountingInputStream(inputStream);
+            final CountingInputStream cis = new CountingInputStream(inputStream);
             nextContainer = ContainerIO.readContainer(cramHeader.getVersion(), cis);
-            long containerSizeInBytes = cis.getCount();
+            final long containerSizeInBytes = cis.getCount();
 
             nextContainer.offset = offset;
             offset += containerSizeInBytes;
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
@@ -51,7 +51,7 @@ public class CramContainerIterator implements Iterator<Container> {
 
     @Override
     public Container next() {
-        Container result = nextContainer;
+        final Container result = nextContainer;
         nextContainer = null;
         return result;
     }
@@ -68,9 +68,10 @@ public class CramContainerIterator implements Iterator<Container> {
     public void close() {
         nextContainer = null;
         cramHeader = null;
+        //noinspection EmptyCatchBlock
         try {
             inputStream.close();
-        } catch (Exception e) {
+        } catch (final Exception e) {
         }
     }
 }

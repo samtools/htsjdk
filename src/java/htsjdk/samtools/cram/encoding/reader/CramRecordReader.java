@@ -38,7 +38,7 @@ public class CramRecordReader extends AbstractReader {
     private CramCompressionRecord prevRecord;
 
     @SuppressWarnings("ConstantConditions")
-    public void read(CramCompressionRecord r) {
+    public void read(final CramCompressionRecord r) {
         try {
             // int mark = testCodec.readData();
             // if (Writer.TEST_MARK != mark) {
@@ -77,81 +77,81 @@ public class CramRecordReader extends AbstractReader {
             } else if (r.isHasMateDownStream())
                 r.recordsToNextFragment = distanceToNextFragmentCodec.readData();
 
-            Integer tagIdList = tagIdListCodec.readData();
-            byte[][] ids = tagIdDictionary[tagIdList];
+            final Integer tagIdList = tagIdListCodec.readData();
+            final byte[][] ids = tagIdDictionary[tagIdList];
             if (ids.length > 0) {
-                int tagCount = ids.length;
+                final int tagCount = ids.length;
                 r.tags = new ReadTag[tagCount];
                 for (int i = 0; i < ids.length; i++) {
-                    int id = ReadTag.name3BytesToInt(ids[i]);
-                    DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-                    ReadTag tag = new ReadTag(id, dataReader.readData());
+                    final int id = ReadTag.name3BytesToInt(ids[i]);
+                    final DataReader<byte[]> dataReader = tagValueCodecs.get(id);
+                    final ReadTag tag = new ReadTag(id, dataReader.readData());
                     r.tags[i] = tag;
                 }
             }
 
             if (!r.isSegmentUnmapped()) {
                 // reading read features:
-                int size = numberOfReadFeaturesCodec.readData();
+                final int size = numberOfReadFeaturesCodec.readData();
                 int prevPos = 0;
-                java.util.List<ReadFeature> rf = new LinkedList<ReadFeature>();
+                final java.util.List<ReadFeature> rf = new LinkedList<ReadFeature>();
                 r.readFeatures = rf;
                 for (int i = 0; i < size; i++) {
-                    Byte operator = readFeatureCodeCodec.readData();
+                    final Byte operator = readFeatureCodeCodec.readData();
 
-                    int pos = prevPos + readFeaturePositionCodec.readData();
+                    final int pos = prevPos + readFeaturePositionCodec.readData();
                     prevPos = pos;
 
                     switch (operator) {
                         case ReadBase.operator:
-                            ReadBase rb = new ReadBase(pos, baseCodec.readData(), qualityScoreCodec.readData());
+                            final ReadBase rb = new ReadBase(pos, baseCodec.readData(), qualityScoreCodec.readData());
                             rf.add(rb);
                             break;
                         case Substitution.operator:
-                            Substitution sv = new Substitution();
+                            final Substitution sv = new Substitution();
                             sv.setPosition(pos);
-                            byte code = baseSubstitutionCodec.readData();
+                            final byte code = baseSubstitutionCodec.readData();
                             sv.setCode(code);
                             rf.add(sv);
                             break;
                         case Insertion.operator:
-                            Insertion iv = new Insertion(pos, insertionCodec.readData());
+                            final Insertion iv = new Insertion(pos, insertionCodec.readData());
                             rf.add(iv);
                             break;
                         case SoftClip.operator:
-                            SoftClip fv = new SoftClip(pos, softClipCodec.readData());
+                            final SoftClip fv = new SoftClip(pos, softClipCodec.readData());
                             rf.add(fv);
                             break;
                         case HardClip.operator:
-                            HardClip hv = new HardClip(pos, hardClipCodec.readData());
+                            final HardClip hv = new HardClip(pos, hardClipCodec.readData());
                             rf.add(hv);
                             break;
                         case Padding.operator:
-                            Padding pv = new Padding(pos, paddingCodec.readData());
+                            final Padding pv = new Padding(pos, paddingCodec.readData());
                             rf.add(pv);
                             break;
                         case Deletion.operator:
-                            Deletion dv = new Deletion(pos, deletionLengthCodec.readData());
+                            final Deletion dv = new Deletion(pos, deletionLengthCodec.readData());
                             rf.add(dv);
                             break;
                         case RefSkip.operator:
-                            RefSkip rsv = new RefSkip(pos, refSkipCodec.readData());
+                            final RefSkip rsv = new RefSkip(pos, refSkipCodec.readData());
                             rf.add(rsv);
                             break;
                         case InsertBase.operator:
-                            InsertBase ib = new InsertBase(pos, baseCodec.readData());
+                            final InsertBase ib = new InsertBase(pos, baseCodec.readData());
                             rf.add(ib);
                             break;
                         case BaseQualityScore.operator:
-                            BaseQualityScore bqs = new BaseQualityScore(pos, qualityScoreCodec.readData());
+                            final BaseQualityScore bqs = new BaseQualityScore(pos, qualityScoreCodec.readData());
                             rf.add(bqs);
                             break;
                         case Bases.operator:
-                            Bases bases = new Bases(pos, basesCodec.readData());
+                            final Bases bases = new Bases(pos, basesCodec.readData());
                             rf.add(bases);
                             break;
                         case Scores.operator:
-                            Scores scores = new Scores(pos, scoresCodec.readData());
+                            final Scores scores = new Scores(pos, scoresCodec.readData());
                             rf.add(scores);
                             break;
                         default:
@@ -169,7 +169,7 @@ public class CramRecordReader extends AbstractReader {
                     r.readBases = SAMRecord.NULL_SEQUENCE;
                     r.qualityScores = SAMRecord.NULL_QUALS;
                 } else {
-                    byte[] bases = new byte[r.readLength];
+                    final byte[] bases = new byte[r.readLength];
                     for (int i = 0; i < bases.length; i++)
                         bases[i] = baseCodec.readData();
                     r.readBases = bases;
@@ -184,7 +184,7 @@ public class CramRecordReader extends AbstractReader {
             recordCounter++;
 
             prevRecord = r;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             if (prevRecord != null)
                 System.err.printf("Failed at record %d. Here is the previously read record: %s\n", recordCounter,
                         prevRecord.toString());

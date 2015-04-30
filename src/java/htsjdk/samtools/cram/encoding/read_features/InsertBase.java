@@ -29,7 +29,7 @@ public class InsertBase implements Serializable, ReadFeature {
     public InsertBase() {
     }
 
-    public InsertBase(int position, byte base) {
+    public InsertBase(final int position, final byte base) {
         this.position = position;
         this.base = base;
     }
@@ -44,16 +44,16 @@ public class InsertBase implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof InsertBase))
             return false;
 
-        InsertBase v = (InsertBase) obj;
+        final InsertBase v = (InsertBase) obj;
 
         return position == v.position && base == v.base;
 
@@ -61,7 +61,7 @@ public class InsertBase implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append((char) operator).append('@');
+        final StringBuilder sb = new StringBuilder().append((char) operator).append('@');
         sb.append(position);
         sb.append('\\').appendCodePoint(base);
         return sb.toString();
@@ -71,7 +71,7 @@ public class InsertBase implements Serializable, ReadFeature {
         return base;
     }
 
-    public void setBase(byte base) {
+    public void setBase(final byte base) {
         this.base = base;
     }
 }

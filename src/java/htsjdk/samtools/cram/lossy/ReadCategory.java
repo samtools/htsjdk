@@ -19,7 +19,7 @@ public class ReadCategory {
     public final ReadCategoryType type;
     public final int param;
 
-    private ReadCategory(ReadCategoryType type, int param) {
+    private ReadCategory(final ReadCategoryType type, final int param) {
         this.type = type;
         this.param = param;
     }
@@ -28,12 +28,12 @@ public class ReadCategory {
         return new ReadCategory(ReadCategoryType.UNPLACED, -1);
     }
 
-    public static ReadCategory higher_than_mapping_score(int score) {
+    public static ReadCategory higher_than_mapping_score(final int score) {
         return new ReadCategory(ReadCategoryType.HIGHER_MAPPING_SCORE,
                 score);
     }
 
-    public static ReadCategory lower_than_mapping_score(int score) {
+    public static ReadCategory lower_than_mapping_score(final int score) {
         return new ReadCategory(ReadCategoryType.LOWER_MAPPING_SCORE, score);
     }
 

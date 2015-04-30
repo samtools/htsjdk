@@ -8,7 +8,7 @@ import java.util.Arrays;
 @SuppressWarnings({"ConstantConditions", "StatementWithEmptyBody"})
 class Frequencies {
 
-    static void readStats_o0(ByteBuffer cp, Decoding.ari_decoder D, Decoding.RansDecSymbol[] syms) {
+    static void readStats_o0(final ByteBuffer cp, final Decoding.ari_decoder D, final Decoding.RansDecSymbol[] syms) {
         // Pre-compute reverse lookup of frequency.
         int rle = 0;
         int x = 0;
@@ -45,8 +45,8 @@ class Frequencies {
         assert (x < Constants.TOTFREQ);
     }
 
-    static void readStats_o1(ByteBuffer cp, Decoding.ari_decoder[] D,
-                             Decoding.RansDecSymbol[][] syms) {
+    static void readStats_o1(final ByteBuffer cp, final Decoding.ari_decoder[] D,
+                             final Decoding.RansDecSymbol[][] syms) {
         int rle_i = 0;
         int i = 0xFF & cp.get();
         do {
@@ -105,17 +105,17 @@ class Frequencies {
         } while (i != 0);
     }
 
-    static int[] calcFrequencies_o0(ByteBuffer in) {
-        int in_size = in.remaining();
+    static int[] calcFrequencies_o0(final ByteBuffer in) {
+        final int in_size = in.remaining();
 
         // Compute statistics
-        int[] F = new int[256];
+        final int[] F = new int[256];
         int T = 0;
         for (int i = 0; i < in_size; i++) {
             F[0xFF & in.get()]++;
             T++;
         }
-        long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
+        final long tr = ((long) Constants.TOTFREQ << 31) / T + (1 << 30) / T;
 
         // Normalise so T[i] == TOTFREQ
         int m = 0, M = 0;
@@ -145,11 +145,11 @@ class Frequencies {
         return F;
     }
 
-    static int[][] calcFrequencies_o1(ByteBuffer in) {
-        int in_size = in.remaining();
+    static int[][] calcFrequencies_o1(final ByteBuffer in) {
+        final int in_size = in.remaining();
 
-        int[][] F = new int[256][256];
-        int[] T = new int[256];
+        final int[][] F = new int[256][256];
+        final int[] T = new int[256];
         int c;
 
         int last_i = 0;
@@ -167,7 +167,7 @@ class Frequencies {
             if (T[i] == 0)
                 continue;
 
-            double p = ((double) Constants.TOTFREQ) / T[i];
+            final double p = ((double) Constants.TOTFREQ) / T[i];
             int t2 = 0, m = 0, M = 0;
             for (int j = 0; j < 256; j++) {
                 if (F[i][j] == 0)
@@ -193,9 +193,9 @@ class Frequencies {
         return F;
     }
 
-    static RansEncSymbol[] buildSyms_o0(int[] F) {
-        int C[] = new int[256];
-        RansEncSymbol[] syms = new RansEncSymbol[256];
+    static RansEncSymbol[] buildSyms_o0(final int[] F) {
+        final int[] C = new int[256];
+        final RansEncSymbol[] syms = new RansEncSymbol[256];
         for (int i = 0; i < syms.length; i++)
             syms[i] = new RansEncSymbol();
 
@@ -211,8 +211,8 @@ class Frequencies {
         return syms;
     }
 
-    static int writeFrequencies_o0(ByteBuffer cp, int[] F) {
-        int start = cp.position();
+    static int writeFrequencies_o0(final ByteBuffer cp, final int[] F) {
+        final int start = cp.position();
 
         int rle = 0;
         for (int j = 0; j < 256; j++) {
@@ -244,14 +244,14 @@ class Frequencies {
         return cp.position() - start;
     }
 
-    static RansEncSymbol[][] buildSyms_o1(int F[][]) {
-        RansEncSymbol[][] syms = new RansEncSymbol[256][256];
+    static RansEncSymbol[][] buildSyms_o1(final int[][] F) {
+        final RansEncSymbol[][] syms = new RansEncSymbol[256][256];
         for (int i = 0; i < syms.length; i++)
             for (int j = 0; j < syms[i].length; j++)
                 syms[i][j] = new RansEncSymbol();
 
         for (int i = 0; i < 256; i++) {
-            int[] F_i_ = F[i];
+            final int[] F_i_ = F[i];
             int x = 0;
             for (int j = 0; j < 256; j++) {
                 if (F_i_[j] != 0) {
@@ -265,9 +265,9 @@ class Frequencies {
         return syms;
     }
 
-    static int writeFrequencies_o1(ByteBuffer cp, int F[][]) {
-        int start = cp.position();
-        int[] T = new int[256];
+    static int writeFrequencies_o1(final ByteBuffer cp, final int[][] F) {
+        final int start = cp.position();
+        final int[] T = new int[256];
 
         for (int i = 0; i < 256; i++)
             for (int j = 0; j < 256; j++)
@@ -294,7 +294,7 @@ class Frequencies {
                 }
             }
 
-            int[] F_i_ = F[i];
+            final int[] F_i_ = F[i];
             int rle_j = 0;
             for (int j = 0; j < 256; j++) {
                 if (F_i_[j] != 0) {

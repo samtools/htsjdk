@@ -6,12 +6,12 @@ import java.nio.ByteBuffer;
 
 class E04 {
 
-    static int compress(ByteBuffer in, RansEncSymbol[] syms,
-                              ByteBuffer cp) {
-        int cdata_size;
-        int in_size = in.remaining();
+    static int compress(final ByteBuffer in, final RansEncSymbol[] syms,
+                              final ByteBuffer cp) {
+        final int cdata_size;
+        final int in_size = in.remaining();
         int rans0, rans1, rans2, rans3;
-        ByteBuffer ptr = cp.slice();
+        final ByteBuffer ptr = cp.slice();
 
         rans0 = Constants.RANS_BYTE_L;
         rans1 = Constants.RANS_BYTE_L;
@@ -33,10 +33,10 @@ class E04 {
                 break;
         }
         for (i = (in_size & ~3); i > 0; i -= 4) {
-            int c3 = 0xFF & in.get(i - 1);
-            int c2 = 0xFF & in.get(i - 2);
-            int c1 = 0xFF & in.get(i - 3);
-            int c0 = 0xFF & in.get(i - 4);
+            final int c3 = 0xFF & in.get(i - 1);
+            final int c2 = 0xFF & in.get(i - 2);
+            final int c1 = 0xFF & in.get(i - 3);
+            final int c0 = 0xFF & in.get(i - 4);
 
             rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3]);
             rans2 = Encoding.RansEncPutSymbol(rans2, ptr, syms[c2]);

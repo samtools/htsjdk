@@ -32,7 +32,7 @@ public class SubexponentialIntegerEncoding implements Encoding<Integer> {
     public SubexponentialIntegerEncoding() {
     }
 
-    public SubexponentialIntegerEncoding(int offset, int k) {
+    public SubexponentialIntegerEncoding(final int offset, final int k) {
         this.offset = offset;
         this.k = k;
     }
@@ -42,8 +42,8 @@ public class SubexponentialIntegerEncoding implements Encoding<Integer> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(int offset, int k) {
-        SubexponentialIntegerEncoding e = new SubexponentialIntegerEncoding();
+    public static EncodingParams toParam(final int offset, final int k) {
+        final SubexponentialIntegerEncoding e = new SubexponentialIntegerEncoding();
         e.offset = offset;
         e.k = k;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
@@ -51,25 +51,25 @@ public class SubexponentialIntegerEncoding implements Encoding<Integer> {
 
     @Override
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(10);
+        final ByteBuffer buf = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buf);
         ITF8.writeUnsignedITF8(k, buf);
         buf.flip();
-        byte[] bytes = new byte[buf.limit()];
+        final byte[] bytes = new byte[buf.limit()];
         buf.get(bytes);
         return bytes;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         offset = ITF8.readUnsignedITF8(buf);
         k = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new SubexponentialIntegerCodec(offset, k);
     }
 

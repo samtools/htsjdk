@@ -35,8 +35,8 @@ public class EncodingFactory {
      * @param <T> encoding object type, like Integer or String.
      * @return a new encoding with the requested parameters
      */
-    public <T> Encoding<T> createEncoding(DataSeriesType valueType,
-                                          EncodingID id) {
+    public <T> Encoding<T> createEncoding(final DataSeriesType valueType,
+                                          final EncodingID id) {
         switch (valueType) {
             case BYTE:
                 switch (id) {

@@ -21,7 +21,7 @@ public enum ReadCategoryType {
     @SuppressWarnings("FieldCanBeLocal")
     private final char code;
 
-    ReadCategoryType(char code) {
+    ReadCategoryType(final char code) {
         this.code = code;
     }
 }

@@ -3,21 +3,21 @@ package htsjdk.samtools.cram.encoding.rans;
 import java.nio.ByteBuffer;
 
 class D04 {
-    static void uncompress(ByteBuffer in, Decoding.ari_decoder D,
-                           Decoding.RansDecSymbol[] syms, ByteBuffer out) {
+    static void uncompress(final ByteBuffer in, final Decoding.ari_decoder D,
+                           final Decoding.RansDecSymbol[] syms, final ByteBuffer out) {
         int rans0, rans1, rans2, rans3;
         rans0 = in.getInt();
         rans1 = in.getInt();
         rans2 = in.getInt();
         rans3 = in.getInt();
 
-        int out_sz = out.remaining();
-        int out_end = (out_sz & ~3);
+        final int out_sz = out.remaining();
+        final int out_end = (out_sz & ~3);
         for (int i = 0; i < out_end; i += 4) {
-            byte c0 = D.R[Decoding.RansDecGet(rans0, Constants.TF_SHIFT)];
-            byte c1 = D.R[Decoding.RansDecGet(rans1, Constants.TF_SHIFT)];
-            byte c2 = D.R[Decoding.RansDecGet(rans2, Constants.TF_SHIFT)];
-            byte c3 = D.R[Decoding.RansDecGet(rans3, Constants.TF_SHIFT)];
+            final byte c0 = D.R[Decoding.RansDecGet(rans0, Constants.TF_SHIFT)];
+            final byte c1 = D.R[Decoding.RansDecGet(rans1, Constants.TF_SHIFT)];
+            final byte c2 = D.R[Decoding.RansDecGet(rans2, Constants.TF_SHIFT)];
+            final byte c3 = D.R[Decoding.RansDecGet(rans3, Constants.TF_SHIFT)];
 
             out.put(i, c0);
             out.put(i + 1, c1);

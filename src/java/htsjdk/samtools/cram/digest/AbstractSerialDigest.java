@@ -4,7 +4,7 @@ abstract class AbstractSerialDigest<T> {
     private final Combine<T> combine;
     T value;
 
-    AbstractSerialDigest(Combine<T> combine, T value) {
+    AbstractSerialDigest(final Combine<T> combine, final T value) {
         this.combine = combine;
         this.value = value;
     }
@@ -15,9 +15,9 @@ abstract class AbstractSerialDigest<T> {
 
     protected abstract byte[] asByteArray();
 
-    void add(byte[] data) {
+    void add(final byte[] data) {
         resetAndUpdate(data);
-        T updateValue = getValue();
+        final T updateValue = getValue();
         if (value == null)
             value = updateValue;
         else

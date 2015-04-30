@@ -30,8 +30,8 @@ public class ExternalIntegerEncoding implements Encoding<Integer> {
     public ExternalIntegerEncoding() {
     }
 
-    public static EncodingParams toParam(int contentId) {
-        ExternalIntegerEncoding e = new ExternalIntegerEncoding();
+    public static EncodingParams toParam(final int contentId) {
+        final ExternalIntegerEncoding e = new ExternalIntegerEncoding();
         e.contentId = contentId;
         return new EncodingParams(encodingId, e.toByteArray());
     }
@@ -40,15 +40,15 @@ public class ExternalIntegerEncoding implements Encoding<Integer> {
         return ITF8.writeUnsignedITF8(contentId);
     }
 
-    public void fromByteArray(byte[] data) {
+    public void fromByteArray(final byte[] data) {
         contentId = ITF8.readUnsignedITF8(data);
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        InputStream is = inputMap == null ? null : inputMap.get(contentId);
-        ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        final InputStream is = inputMap == null ? null : inputMap.get(contentId);
+        final ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
         return new ExternalIntegerCodec(os, is);
     }
 

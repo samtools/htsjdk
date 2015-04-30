@@ -28,22 +28,22 @@ class NullCodec<T> extends AbstractBitCodec<T> {
     }
 
     @Override
-    public T read(BitInputStream bis) throws IOException {
+    public T read(final BitInputStream bis) throws IOException {
         return defaultValue;
     }
 
     @Override
-    public T read(BitInputStream bis, int len) throws IOException {
+    public T read(final BitInputStream bis, final int len) throws IOException {
         return defaultValue;
     }
 
     @Override
-    public long write(BitOutputStream bos, T object) throws IOException {
+    public long write(final BitOutputStream bos, final T object) throws IOException {
         return 0;
     }
 
     @Override
-    public long numberOfBits(T object) {
+    public long numberOfBits(final T object) {
         return 0;
     }
 

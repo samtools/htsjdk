@@ -29,33 +29,33 @@ class CanonicalHuffmanIntegerCodec extends AbstractBitCodec<Integer> {
      * values[]: the alphabet (provided as Integers) bitLengths[]: the number of
      * bits of symbol's huffman code
      */
-    public CanonicalHuffmanIntegerCodec(int[] values, int[] bitLengths) {
+    public CanonicalHuffmanIntegerCodec(final int[] values, final int[] bitLengths) {
         helper = new HuffmanIntHelper(values, bitLengths);
     }
 
     @Override
-    public Integer read(BitInputStream bis) throws IOException {
+    public Integer read(final BitInputStream bis) throws IOException {
         return helper.read(bis);
     }
 
     @Override
-    public long write(BitOutputStream bos, Integer object) throws IOException {
+    public long write(final BitOutputStream bos, final Integer object) throws IOException {
         return helper.write(bos, object);
     }
 
     @Override
-    public long numberOfBits(Integer object) {
-        HuffmanBitCode bitCode;
+    public long numberOfBits(final Integer object) {
+        final HuffmanBitCode bitCode;
         try {
             bitCode = helper.codes.get(object);
             return bitCode.bitLength;
-        } catch (NullPointerException e) {
+        } catch (final NullPointerException e) {
             throw new RuntimeException("Value " + object + " not found.", e);
         }
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented");
     }
 }

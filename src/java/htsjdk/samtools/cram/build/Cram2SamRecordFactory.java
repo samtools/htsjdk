@@ -43,12 +43,12 @@ public class Cram2SamRecordFactory {
 
     private final SAMFileHeader header;
 
-    public Cram2SamRecordFactory(SAMFileHeader header) {
+    public Cram2SamRecordFactory(final SAMFileHeader header) {
         this.header = header;
     }
 
-    public SAMRecord create(CramCompressionRecord cramRecord) {
-        SAMRecord samRecord = new SAMRecord(header);
+    public SAMRecord create(final CramCompressionRecord cramRecord) {
+        final SAMRecord samRecord = new SAMRecord(header);
 
         samRecord.setReadName(cramRecord.readName);
         copyFlags(cramRecord, samRecord);
@@ -87,11 +87,11 @@ public class Cram2SamRecordFactory {
         samRecord.setBaseQualities(cramRecord.qualityScores);
 
         if (cramRecord.tags != null)
-            for (ReadTag tag : cramRecord.tags)
+            for (final ReadTag tag : cramRecord.tags)
                 samRecord.setAttribute(tag.getKey(), tag.getValue());
 
         if (cramRecord.readGroupID > -1) {
-            SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(
+            final SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(
                     cramRecord.readGroupID);
             samRecord.setAttribute("RG", readGroupRecord.getId());
         }
@@ -99,7 +99,7 @@ public class Cram2SamRecordFactory {
         return samRecord;
     }
 
-    private static void copyFlags(CramCompressionRecord cr, SAMRecord sr) {
+    private static void copyFlags(final CramCompressionRecord cr, final SAMRecord sr) {
         sr.setReadPairedFlag(cr.isMultiFragment());
         sr.setProperPairFlag(cr.isProperPair());
         sr.setReadUnmappedFlag(cr.isSegmentUnmapped());
@@ -112,24 +112,24 @@ public class Cram2SamRecordFactory {
         sr.setSupplementaryAlignmentFlag(cr.isSupplementary());
     }
 
-    private static Cigar getCigar2(Collection<ReadFeature> features,
-                                         int readLength) {
+    private static Cigar getCigar2(final Collection<ReadFeature> features,
+                                         final int readLength) {
         if (features == null || features.isEmpty()) {
-            CigarElement ce = new CigarElement(readLength, CigarOperator.M);
+            final CigarElement ce = new CigarElement(readLength, CigarOperator.M);
             return new Cigar(Arrays.asList(ce));
         }
 
-        List<CigarElement> list = new ArrayList<CigarElement>();
+        final List<CigarElement> list = new ArrayList<CigarElement>();
         int totalOpLen = 1;
         CigarElement ce;
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
         int lastOpLen = 0;
         int lastOpPos = 1;
-        CigarOperator co = null;
-        int rfLen = 0;
-        for (ReadFeature f : features) {
+        CigarOperator co ;
+        int rfLen ;
+        for (final ReadFeature f : features) {
 
-            int gap = f.getPosition() - (lastOpPos + lastOpLen);
+            final int gap = f.getPosition() - (lastOpPos + lastOpLen);
             if (gap > 0) {
                 if (lastOperator != CigarOperator.MATCH_OR_MISMATCH) {
                     list.add(new CigarElement(lastOpLen, lastOperator));

@@ -42,22 +42,22 @@ public class CramNormalizer {
     private static Log log = Log.getInstance(CramNormalizer.class);
     private ReferenceSource referenceSource;
 
-    private CramNormalizer(SAMFileHeader header) {
+    private CramNormalizer(final SAMFileHeader header) {
         this.header = header;
     }
 
-    public CramNormalizer(SAMFileHeader header, ReferenceSource referenceSource) {
+    public CramNormalizer(final SAMFileHeader header, final ReferenceSource referenceSource) {
         this.header = header;
         this.referenceSource = referenceSource;
     }
 
-    public void normalize(ArrayList<CramCompressionRecord> records,
-                          byte[] ref, int refOffset_zeroBased,
-                          SubstitutionMatrix substitutionMatrix) {
+    public void normalize(final ArrayList<CramCompressionRecord> records,
+                          final byte[] ref, final int refOffset_zeroBased,
+                          final SubstitutionMatrix substitutionMatrix) {
 
-        int startCounter = readCounter;
+        final int startCounter = readCounter;
 
-        for (CramCompressionRecord r : records) {
+        for (final CramCompressionRecord r : records) {
             r.index = ++readCounter;
 
             if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
@@ -70,7 +70,7 @@ public class CramNormalizer {
         }
 
         {// restore pairing first:
-            for (CramCompressionRecord r : records) {
+            for (final CramCompressionRecord r : records) {
                 if (!r.isMultiFragment() || r.isDetached()) {
                     r.recordsToNextFragment = -1;
 
@@ -79,13 +79,13 @@ public class CramNormalizer {
                     continue;
                 }
                 if (r.isHasMateDownStream()) {
-                    CramCompressionRecord downMate = records.get(r.index
+                    final CramCompressionRecord downMate = records.get(r.index
                             + r.recordsToNextFragment - startCounter);
                     r.next = downMate;
                     downMate.previous = r;
                 }
             }
-            for (CramCompressionRecord r : records) {
+            for (final CramCompressionRecord r : records) {
                 if (r.previous != null) continue;
                 if (r.next == null) continue;
                 restoreMateInfo(r);
@@ -93,10 +93,10 @@ public class CramNormalizer {
         }
 
         // assign some read names if needed:
-        for (CramCompressionRecord r : records) {
+        for (final CramCompressionRecord r : records) {
             if (r.readName == null) {
-                String readNamePrefix = "";
-                String name = readNamePrefix + r.index;
+                final String readNamePrefix = "";
+                final String name = readNamePrefix + r.index;
                 r.readName = name;
                 if (r.next != null)
                     r.next.readName = name;
@@ -106,7 +106,7 @@ public class CramNormalizer {
         }
 
         // resolve bases:
-        for (CramCompressionRecord r : records) {
+        for (final CramCompressionRecord r : records) {
             if (r.isSegmentUnmapped())
                 continue;
 
@@ -127,11 +127,11 @@ public class CramNormalizer {
         }
 
         // restore quality scores:
-        byte defaultQualityScore = '?' - '!';
+        final byte defaultQualityScore = '?' - '!';
         restoreQualityScores(defaultQualityScore, records);
     }
 
-    private static void restoreMateInfo (CramCompressionRecord r) {
+    private static void restoreMateInfo (final CramCompressionRecord r) {
         if (r.next == null) {
 
             return;
@@ -144,7 +144,7 @@ public class CramNormalizer {
         }
 
         // cur points to the last segment now:
-        CramCompressionRecord last = cur;
+        final CramCompressionRecord last = cur;
         setNextMate(last, r);
 //        r.setFirstSegment(true);
 //        last.setLastSegment(true);
@@ -154,7 +154,7 @@ public class CramNormalizer {
         last.templateSize = -templateLength;
     }
 
-    private static void setNextMate (CramCompressionRecord r, CramCompressionRecord next) {
+    private static void setNextMate (final CramCompressionRecord r, final CramCompressionRecord next) {
         r.mateAlignmentStart = next.alignmentStart;
         r.setMateUnmapped(next.isSegmentUnmapped());
         r.setMateNegativeStrand(next.isNegativeStrand());
@@ -163,23 +163,23 @@ public class CramNormalizer {
             r.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
     }
 
-    public static void restoreQualityScores(byte defaultQualityScore,
-                                            List<CramCompressionRecord> records) {
-        for (CramCompressionRecord record : records)
+    public static void restoreQualityScores(final byte defaultQualityScore,
+                                            final List<CramCompressionRecord> records) {
+        for (final CramCompressionRecord record : records)
             restoreQualityScores(defaultQualityScore, record);
     }
 
-    private static byte[] restoreQualityScores(byte defaultQualityScore,
-                                               CramCompressionRecord record) {
+    private static byte[] restoreQualityScores(final byte defaultQualityScore,
+                                               final CramCompressionRecord record) {
         if (!record.isForcePreserveQualityScores()) {
             boolean star = true;
-            byte[] scores = new byte[record.readLength];
+            final byte[] scores = new byte[record.readLength];
             Arrays.fill(scores, defaultQualityScore);
             if (record.readFeatures != null)
-                for (ReadFeature f : record.readFeatures) {
+                for (final ReadFeature f : record.readFeatures) {
                     switch (f.getOperator()) {
                         case BaseQualityScore.operator:
-                            int pos = f.getPosition();
+                            final int pos = f.getPosition();
                             scores[pos - 1] = ((BaseQualityScore) f).getQualityScore();
                             star = false;
                             break;
@@ -199,7 +199,7 @@ public class CramNormalizer {
             else
                 record.qualityScores = scores;
         } else {
-            byte[] scores = record.qualityScores;
+            final byte[] scores = record.qualityScores;
             int missingScores = 0;
             for (int i = 0; i < scores.length; i++)
                 if (scores[i] == -1) {
@@ -213,14 +213,14 @@ public class CramNormalizer {
         return record.qualityScores;
     }
 
-    private static byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
-                                           int refOffset_zeroBased, SubstitutionMatrix substitutionMatrix) {
+    private static byte[] restoreReadBases(final CramCompressionRecord record, final byte[] ref,
+                                           final int refOffset_zeroBased, final SubstitutionMatrix substitutionMatrix) {
         if (record.isUnknownBases() || record.readLength == 0) return SAMRecord.NULL_SEQUENCE;
-        int readLength = record.readLength;
-        byte[] bases = new byte[readLength];
+        final int readLength = record.readLength;
+        final byte[] bases = new byte[readLength];
 
         int posInRead = 1;
-        int alignmentStart = record.alignmentStart - 1;
+        final int alignmentStart = record.alignmentStart - 1;
 
         int posInSeq = 0;
         if (record.readFeatures == null || record.readFeatures.isEmpty()) {
@@ -239,41 +239,41 @@ public class CramNormalizer {
                         bases, 0, bases.length);
             return bases;
         }
-        List<ReadFeature> variations = record.readFeatures;
-        for (ReadFeature v : variations) {
+        final List<ReadFeature> variations = record.readFeatures;
+        for (final ReadFeature v : variations) {
             for (; posInRead < v.getPosition(); posInRead++) {
-                int rp = alignmentStart + posInSeq++ - refOffset_zeroBased;
+                final int rp = alignmentStart + posInSeq++ - refOffset_zeroBased;
                 bases[posInRead - 1] = getByteOrDefault(ref, rp, (byte) 'N');
             }
 
             switch (v.getOperator()) {
                 case Substitution.operator:
-                    Substitution sv = (Substitution) v;
+                    final Substitution sv = (Substitution) v;
                     byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
                             - refOffset_zeroBased, (byte) 'N');
                     refBase = Utils.normalizeBase(refBase);
-                    byte base = substitutionMatrix.base(refBase, sv.getCode());
+                    final byte base = substitutionMatrix.base(refBase, sv.getCode());
                     sv.setBase(base);
                     sv.setReferenceBase(refBase);
                     bases[posInRead++ - 1] = base;
                     posInSeq++;
                     break;
                 case Insertion.operator:
-                    Insertion iv = (Insertion) v;
+                    final Insertion iv = (Insertion) v;
                     for (int i = 0; i < iv.getSequence().length; i++)
                         bases[posInRead++ - 1] = iv.getSequence()[i];
                     break;
                 case SoftClip.operator:
-                    SoftClip sc = (SoftClip) v;
+                    final SoftClip sc = (SoftClip) v;
                     for (int i = 0; i < sc.getSequence().length; i++)
                         bases[posInRead++ - 1] = sc.getSequence()[i];
                     break;
                 case Deletion.operator:
-                    Deletion dv = (Deletion) v;
+                    final Deletion dv = (Deletion) v;
                     posInSeq += dv.getLength();
                     break;
                 case InsertBase.operator:
-                    InsertBase ib = (InsertBase) v;
+                    final InsertBase ib = (InsertBase) v;
                     bases[posInRead++ - 1] = ib.getBase();
                     break;
                 case RefSkip.operator:
@@ -288,10 +288,10 @@ public class CramNormalizer {
         }
 
         // ReadBase overwrites bases:
-        for (ReadFeature v : variations) {
+        for (final ReadFeature v : variations) {
             switch (v.getOperator()) {
                 case ReadBase.operator:
-                    ReadBase rb = (ReadBase) v;
+                    final ReadBase rb = (ReadBase) v;
                     bases[v.getPosition() - 1] = rb.getBase();
                     break;
                 default:
@@ -306,8 +306,8 @@ public class CramNormalizer {
         return bases;
     }
 
-    private static final byte getByteOrDefault(byte[] array, int pos,
-                                               byte outOfBoundsValue) {
+    private static byte getByteOrDefault(final byte[] array, final int pos,
+                                               final byte outOfBoundsValue) {
         if (pos >= array.length)
             return outOfBoundsValue;
         else
@@ -324,8 +324,8 @@ public class CramNormalizer {
      * @param secondEnd second mate of the pair
      * @return template length
      */
-    public static int computeInsertSize(CramCompressionRecord firstEnd,
-                                        CramCompressionRecord secondEnd) {
+    public static int computeInsertSize(final CramCompressionRecord firstEnd,
+                                        final CramCompressionRecord secondEnd) {
         if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
             return 0;
         }

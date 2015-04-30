@@ -26,12 +26,12 @@ public class PreservationPolicy {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         if (readCategory != null)
             sb.append(readCategory.toString());
 
         if (baseCategories != null)
-            for (BaseCategory c : baseCategories)
+            for (final BaseCategory c : baseCategories)
                 sb.append(c.toString());
 
         sb.append(treatment.toString());

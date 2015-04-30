@@ -48,7 +48,7 @@ public class ReadTag implements Comparable<ReadTag> {
     private short code;
     private byte index;
 
-    public ReadTag(int id, byte[] dataAsByteArray) {
+    public ReadTag(final int id, final byte[] dataAsByteArray) {
         this.type = (char) (0xFF & id);
         key = new String(new char[]{(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
         value = restoreValueFromByteArray(type, dataAsByteArray);
@@ -59,7 +59,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
     }
 
-    private ReadTag(String key, char type, Object value) {
+    private ReadTag(final String key, final char type, final Object value) {
         if (key == null)
             throw new NullPointerException("Tag key cannot be null.");
         if (value == null)
@@ -83,7 +83,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
     }
 
-    public static int name3BytesToInt(byte[] name) {
+    public static int name3BytesToInt(final byte[] name) {
         int value = 0xFF & name[0];
         value <<= 8;
         value |= 0xFF & name[1];
@@ -93,7 +93,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    public static int nameType3BytesToInt(String name, char type) {
+    public static int nameType3BytesToInt(final String name, final char type) {
         int value = 0xFF & name.charAt(0);
         value <<= 8;
         value |= 0xFF & name.charAt(1);
@@ -103,18 +103,18 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    public static String intToNameType3Bytes(int value) {
-        byte b3 = (byte) (0xFF & value);
-        byte b2 = (byte) (0xFF & (value >> 8));
-        byte b1 = (byte) (0xFF & (value >> 16));
+    public static String intToNameType3Bytes(final int value) {
+        final byte b3 = (byte) (0xFF & value);
+        final byte b2 = (byte) (0xFF & (value >> 8));
+        final byte b1 = (byte) (0xFF & (value >> 16));
 
         return new String(new byte[]{b1, b2, b3});
     }
 
-    public static String intToNameType4Bytes(int value) {
-        byte b3 = (byte) (0xFF & value);
-        byte b2 = (byte) (0xFF & (value >> 8));
-        byte b1 = (byte) (0xFF & (value >> 16));
+    public static String intToNameType4Bytes(final int value) {
+        final byte b3 = (byte) (0xFF & value);
+        final byte b2 = (byte) (0xFF & (value >> 8));
+        final byte b1 = (byte) (0xFF & (value >> 16));
 
         return new String(new byte[]{b1, b2, ':', b3});
     }
@@ -123,14 +123,14 @@ public class ReadTag implements Comparable<ReadTag> {
         return new SAMTagAndValue(key, value);
     }
 
-    public static ReadTag deriveTypeFromKeyAndType(String keyAndType, Object value) {
+    public static ReadTag deriveTypeFromKeyAndType(final String keyAndType, final Object value) {
         if (keyAndType.length() != 4)
             throw new RuntimeException("Tag key and type must be 4 char long: " + keyAndType);
 
         return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3), value);
     }
 
-    public static ReadTag deriveTypeFromValue(String key, Object value) {
+    public static ReadTag deriveTypeFromValue(final String key, final Object value) {
         if (key.length() != 2)
             throw new RuntimeException("Tag key must be 2 char long: " + key);
 
@@ -142,16 +142,16 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     @Override
-    public int compareTo(@SuppressWarnings("NullableProblems") ReadTag o) {
+    public int compareTo(@SuppressWarnings("NullableProblems") final ReadTag o) {
         return key.compareTo(o.key);
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof ReadTag))
             return false;
 
-        ReadTag foe = (ReadTag) obj;
+        final ReadTag foe = (ReadTag) obj;
         return key.equals(foe.key) && (value == null && foe.value == null || value != null && value.equals(foe.value));
 
     }
@@ -177,8 +177,8 @@ public class ReadTag implements Comparable<ReadTag> {
         return writeSingleValue((byte) type, value, false);
     }
 
-    private static Object restoreValueFromByteArray(char type, byte[] array) {
-        ByteBuffer buf = ByteBuffer.wrap(array);
+    private static Object restoreValueFromByteArray(final char type, final byte[] array) {
+        final ByteBuffer buf = ByteBuffer.wrap(array);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         return readSingleValue((byte) type, buf);
     }
@@ -245,7 +245,7 @@ public class ReadTag implements Comparable<ReadTag> {
                 "Integer attribute value too negative to be encoded in BAM");
     }
 
-    public void setIndex(byte i) {
+    public void setIndex(final byte i) {
         this.index = i;
     }
 
@@ -266,14 +266,14 @@ public class ReadTag implements Comparable<ReadTag> {
 
     private static final Charset charset = Charset.forName("US-ASCII");
 
-    public static byte[] writeSingleValue(byte tagType, Object value,
-                                          boolean isUnsignedArray) {
+    public static byte[] writeSingleValue(final byte tagType, final Object value,
+                                          final boolean isUnsignedArray) {
 
         final ByteBuffer buf = bufLocal.get();
         buf.clear();
         switch (tagType) {
             case 'Z':
-                String s = (String) value;
+                final String s = (String) value;
                 buf.put(s.getBytes(charset));
                 buf.put((byte) 0);
                 break;
@@ -321,14 +321,14 @@ public class ReadTag implements Comparable<ReadTag> {
         }
 
         buf.flip();
-        byte[] bytes = new byte[buf.limit()];
+        final byte[] bytes = new byte[buf.limit()];
         buf.get(bytes);
 
         return bytes;
     }
 
     private static void writeArray(final Object value,
-                                   final boolean isUnsignedArray, ByteBuffer buf) {
+                                   final boolean isUnsignedArray, final ByteBuffer buf) {
         if (value instanceof byte[]) {
             buf.put((byte) (isUnsignedArray ? 'C' : 'c'));
             final byte[] array = (byte[]) value;

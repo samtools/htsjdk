@@ -32,7 +32,7 @@ public class GammaIntegerEncoding implements Encoding<Integer> {
         this(0);
     }
 
-    public GammaIntegerEncoding(int offset) {
+    public GammaIntegerEncoding(final int offset) {
         this.offset = offset;
     }
 
@@ -41,30 +41,30 @@ public class GammaIntegerEncoding implements Encoding<Integer> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(int offset) {
-        GammaIntegerEncoding e = new GammaIntegerEncoding();
+    public static EncodingParams toParam(final int offset) {
+        final GammaIntegerEncoding e = new GammaIntegerEncoding();
         e.offset = offset;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
     }
 
     @Override
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(10);
+        final ByteBuffer buf = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buf);
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
+    public void fromByteArray(final byte[] data) {
         offset = ITF8.readUnsignedITF8(data);
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new GammaIntegerCodec(offset);
     }
 

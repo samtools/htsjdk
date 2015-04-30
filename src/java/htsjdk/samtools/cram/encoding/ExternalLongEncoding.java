@@ -30,8 +30,8 @@ public class ExternalLongEncoding implements Encoding<Long> {
     public ExternalLongEncoding() {
     }
 
-    public static EncodingParams toParam(int contentId) {
-        ExternalLongEncoding e = new ExternalLongEncoding();
+    public static EncodingParams toParam(final int contentId) {
+        final ExternalLongEncoding e = new ExternalLongEncoding();
         e.contentId = contentId;
         return new EncodingParams(encodingId, e.toByteArray());
     }
@@ -40,15 +40,15 @@ public class ExternalLongEncoding implements Encoding<Long> {
         return ITF8.writeUnsignedITF8(contentId);
     }
 
-    public void fromByteArray(byte[] data) {
+    public void fromByteArray(final byte[] data) {
         contentId = ITF8.readUnsignedITF8(data);
     }
 
     @Override
-    public BitCodec<Long> buildCodec(Map<Integer, InputStream> inputMap,
-                                     Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        InputStream is = inputMap == null ? null : inputMap.get(contentId);
-        ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
+    public BitCodec<Long> buildCodec(final Map<Integer, InputStream> inputMap,
+                                     final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        final InputStream is = inputMap == null ? null : inputMap.get(contentId);
+        final ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap.get(contentId);
         return new ExternalLongCodec(os, is);
     }
 

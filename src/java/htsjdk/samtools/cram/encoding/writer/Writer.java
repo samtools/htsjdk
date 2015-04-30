@@ -133,7 +133,7 @@ public class Writer {
 
     public static int detachedCount = 0;
 
-    public void write(CramCompressionRecord r) throws IOException {
+    public void write(final CramCompressionRecord r) throws IOException {
         bitFlagsC.writeData(r.flags);
         compBitFlagsC.writeData(r.getCompressionFlags());
         if (refId == -2)
@@ -170,7 +170,7 @@ public class Writer {
         tagIdListCodec.writeData(r.tagIdsIndex.value);
         if (r.tags != null) {
             for (int i = 0; i < r.tags.length; i++) {
-                DataWriter<byte[]> writer = tagValueCodecs.get(r.tags[i].keyType3BytesAsInt);
+                final DataWriter<byte[]> writer = tagValueCodecs.get(r.tags[i].keyType3BytesAsInt);
                 writer.writeData(r.tags[i].getValueAsByteArray());
             }
         }
@@ -179,7 +179,7 @@ public class Writer {
             // writing read features:
             numberOfReadFeaturesCodec.writeData(r.readFeatures.size());
             int prevPos = 0;
-            for (ReadFeature f : r.readFeatures) {
+            for (final ReadFeature f : r.readFeatures) {
                 featuresCodeCodec.writeData(f.getOperator());
                 switch (f.getOperator()) {
                     case Substitution.operator:
@@ -194,12 +194,12 @@ public class Writer {
 
                 switch (f.getOperator()) {
                     case ReadBase.operator:
-                        ReadBase rb = (ReadBase) f;
+                        final ReadBase rb = (ReadBase) f;
                         baseCodec.writeData(rb.getBase());
                         qualityScoreCodec.writeData(rb.getQualityScore());
                         break;
                     case Substitution.operator:
-                        Substitution sv = (Substitution) f;
+                        final Substitution sv = (Substitution) f;
                         if (sv.getCode() < 0)
                             baseSubstitutionCodeCodec.writeData(substitutionMatrix.code(sv.getReferenceBase(), sv.getBase()));
                         else
@@ -207,35 +207,35 @@ public class Writer {
                         // baseSubstitutionCodec.writeData((byte) sv.getBaseChange().getChange());
                         break;
                     case Insertion.operator:
-                        Insertion iv = (Insertion) f;
+                        final Insertion iv = (Insertion) f;
                         insertionCodec.writeData(iv.getSequence());
                         break;
                     case SoftClip.operator:
-                        SoftClip fv = (SoftClip) f;
+                        final SoftClip fv = (SoftClip) f;
                         softClipCodec.writeData(fv.getSequence());
                         break;
                     case HardClip.operator:
-                        HardClip hv = (HardClip) f;
+                        final HardClip hv = (HardClip) f;
                         hardClipCodec.writeData(hv.getLength());
                         break;
                     case Padding.operator:
-                        Padding pv = (Padding) f;
+                        final Padding pv = (Padding) f;
                         paddingCodec.writeData(pv.getLength());
                         break;
                     case Deletion.operator:
-                        Deletion dv = (Deletion) f;
+                        final Deletion dv = (Deletion) f;
                         deletionLengthCodec.writeData(dv.getLength());
                         break;
                     case RefSkip.operator:
-                        RefSkip rsv = (RefSkip) f;
+                        final RefSkip rsv = (RefSkip) f;
                         refSkipCodec.writeData(rsv.getLength());
                         break;
                     case InsertBase.operator:
-                        InsertBase ib = (InsertBase) f;
+                        final InsertBase ib = (InsertBase) f;
                         baseCodec.writeData(ib.getBase());
                         break;
                     case BaseQualityScore.operator:
-                        BaseQualityScore bqs = (BaseQualityScore) f;
+                        final BaseQualityScore bqs = (BaseQualityScore) f;
                         qualityScoreCodec.writeData(bqs.getQualityScore());
                         break;
                     default:
@@ -250,7 +250,7 @@ public class Writer {
             }
         } else {
             if (!r.isUnknownBases())
-                for (byte b : r.readBases)
+                for (final byte b : r.readBases)
                     baseCodec.writeData(b);
             if (r.isForcePreserveQualityScores()) {
                 qualityScoreArrayCodec.writeData(r.qualityScores);
@@ -262,7 +262,7 @@ public class Writer {
         return captureReadNames;
     }
 
-    public void setCaptureReadNames(boolean captureReadNames) {
+    public void setCaptureReadNames(final boolean captureReadNames) {
         this.captureReadNames = captureReadNames;
     }
 }

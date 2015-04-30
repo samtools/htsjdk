@@ -45,22 +45,22 @@ public class HuffmanIntegerEncoding implements Encoding<Integer> {
     public byte[] toByteArray() {
         buf.clear();
         ITF8.writeUnsignedITF8(values.length, buf);
-        for (int value : values)
+        for (final int value : values)
             ITF8.writeUnsignedITF8(value, buf);
 
         ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (int value : bitLengths)
+        for (final int value : bitLengths)
             ITF8.writeUnsignedITF8(value, buf);
 
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         int size = ITF8.readUnsignedITF8(buf);
         values = new int[size];
 
@@ -74,22 +74,22 @@ public class HuffmanIntegerEncoding implements Encoding<Integer> {
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new CanonicalHuffmanIntegerCodec(values, bitLengths);
     }
 
-    public static EncodingParams toParam(int[] bfValues, int[] bfBitLens) {
-        HuffmanIntegerEncoding e = new HuffmanIntegerEncoding();
+    public static EncodingParams toParam(final int[] bfValues, final int[] bfBitLens) {
+        final HuffmanIntegerEncoding e = new HuffmanIntegerEncoding();
         e.values = bfValues;
         e.bitLengths = bfBitLens;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof HuffmanIntegerEncoding) {
-            HuffmanIntegerEncoding foe = (HuffmanIntegerEncoding) obj;
+            final HuffmanIntegerEncoding foe = (HuffmanIntegerEncoding) obj;
             return Arrays.equals(bitLengths, foe.bitLengths) && Arrays.equals(values, foe.values);
 
         }

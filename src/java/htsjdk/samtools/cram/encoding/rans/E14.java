@@ -8,10 +8,10 @@ import java.nio.ByteOrder;
 @SuppressWarnings("UnusedAssignment")
 class E14 {
 
-    static int compress(ByteBuffer in, RansEncSymbol[][] syms,
-                        ByteBuffer out_buf) {
-        int in_size = in.remaining();
-        int compressedBlob_size;
+    static int compress(final ByteBuffer in, final RansEncSymbol[][] syms,
+                        final ByteBuffer out_buf) {
+        final int in_size = in.remaining();
+        final int compressedBlob_size;
         int rans0, rans1, rans2, rans3;
         rans0 = Constants.RANS_BYTE_L;
         rans1 = Constants.RANS_BYTE_L;
@@ -21,9 +21,9 @@ class E14 {
 		/*
          * Slicing is needed for buffer reversing later.
 		 */
-        ByteBuffer ptr = out_buf.slice();
+        final ByteBuffer ptr = out_buf.slice();
 
-        int isz4 = in_size >> 2;
+        final int isz4 = in_size >> 2;
         int i0 = isz4 - 2;
         int i1 = 2 * isz4 - 2;
         int i2 = 3 * isz4 - 2;
@@ -43,16 +43,16 @@ class E14 {
         // Deal with the remainder
         l3 = 0xFF & in.get(in_size - 1);
         for (i3 = in_size - 2; i3 > 4 * isz4 - 2 && i3 >= 0; i3--) {
-            int c3 = 0xFF & in.get(i3 > -1 ? i3 : 0);
+            final int c3 = 0xFF & in.get(i3 > -1 ? i3 : 0);
             rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3][l3]);
             l3 = c3;
         }
 
         for (; i0 >= 0; i0--, i1--, i2--, i3--) {
-            int c0 = 0xFF & in.get(i0);
-            int c1 = 0xFF & in.get(i1);
-            int c2 = 0xFF & in.get(i2);
-            int c3 = 0xFF & in.get(i3);
+            final int c0 = 0xFF & in.get(i0);
+            final int c1 = 0xFF & in.get(i1);
+            final int c2 = 0xFF & in.get(i2);
+            final int c3 = 0xFF & in.get(i3);
 
             rans3 = Encoding.RansEncPutSymbol(rans3, ptr, syms[c3][l3]);
             rans2 = Encoding.RansEncPutSymbol(rans2, ptr, syms[c2][l2]);

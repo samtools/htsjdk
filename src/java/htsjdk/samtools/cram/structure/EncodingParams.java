@@ -23,7 +23,7 @@ public class EncodingParams {
     public final EncodingID id;
     public final byte[] params;
 
-    public EncodingParams(EncodingID id, byte[] params) {
+    public EncodingParams(final EncodingID id, final byte[] params) {
         super();
         this.id = id;
         this.params = params;

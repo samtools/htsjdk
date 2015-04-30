@@ -14,7 +14,7 @@ public class CramVersionPolicies {
      *
      * @param version CRAM version to assume
      */
-    public static void eofNotFound(Version version) {
+    public static void eofNotFound(final Version version) {
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
             log.error("Incomplete data: EOF marker not found.");
             throw new RuntimeException("EOF not found.");

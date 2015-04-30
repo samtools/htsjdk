@@ -67,10 +67,10 @@ public class CramIO {
     private static final int DEFINITION_LENGTH = 4 + 1 + 1 + 20;
     private static final Log log = Log.getInstance(CramIO.class);
 
-    private static byte[] bytesFromHex(String s) {
-        String clean = s.replaceAll("[^0-9a-fA-F]", "");
+    private static byte[] bytesFromHex(final String s) {
+        final String clean = s.replaceAll("[^0-9a-fA-F]", "");
         if (clean.length() % 2 != 0) throw new RuntimeException("Not a hex string: " + s);
-        byte data[] = new byte[clean.length() / 2];
+        final byte[] data = new byte[clean.length() / 2];
         for (int i = 0; i < clean.length(); i += 2) {
             data[i / 2] = (Integer.decode("0x" + clean.charAt(i) + clean.charAt(i + 1))).byteValue();
         }
@@ -85,7 +85,7 @@ public class CramIO {
      * @return the number of bytes written out
      * @throws IOException as per java IO contract
      */
-    public static long issueEOF(Version version, OutputStream outputStream) throws IOException {
+    public static long issueEOF(final Version version, final OutputStream outputStream) throws IOException {
         if (version.compatibleWith(CramVersions.CRAM_v3)) {
             outputStream.write(ZERO_F_EOF_MARKER);
             return ZERO_F_EOF_MARKER.length;
@@ -98,8 +98,8 @@ public class CramIO {
         return 0;
     }
 
-    private static boolean streamEndsWith(SeekableStream seekableStream, byte[] marker) throws IOException {
-        byte[] tail = new byte[ZERO_B_EOF_MARKER.length];
+    private static boolean streamEndsWith(final SeekableStream seekableStream, final byte[] marker) throws IOException {
+        final byte[] tail = new byte[ZERO_B_EOF_MARKER.length];
 
         seekableStream.seek(seekableStream.length() - marker.length);
         InputStreamUtils.readFully(seekableStream, tail, 0, tail.length);
@@ -118,7 +118,7 @@ public class CramIO {
      * @throws IOException as per java IO contract
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    private static boolean checkEOF(Version version, SeekableStream seekableStream) throws IOException {
+    private static boolean checkEOF(final Version version, final SeekableStream seekableStream) throws IOException {
 
         if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
         if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
@@ -133,9 +133,9 @@ public class CramIO {
      * @return true if the file is a valid CRAM file and is properly terminated with respect to the version.
      * @throws IOException as per java IO contract
      */
-    public static boolean checkHeaderAndEOF(File file) throws IOException {
-        SeekableStream ss = new SeekableFileStream(file);
-        CramHeader cramHeader = readCramHeader(ss);
+    public static boolean checkHeaderAndEOF(final File file) throws IOException {
+        final SeekableStream ss = new SeekableFileStream(file);
+        final CramHeader cramHeader = readCramHeader(ss);
         return checkEOF(cramHeader.getVersion(), ss);
     }
 
@@ -147,7 +147,7 @@ public class CramIO {
      * @return the number of bytes written out
      * @throws IOException as per java IO contract
      */
-    public static long writeCramHeader(CramHeader cramHeader, OutputStream os) throws IOException {
+    public static long writeCramHeader(final CramHeader cramHeader, final OutputStream os) throws IOException {
 //        if (cramHeader.getVersion().major < 3) throw new RuntimeException("Deprecated CRAM version: " + cramHeader.getVersion().major);
         os.write("CRAM".getBytes("US-ASCII"));
         os.write(cramHeader.getVersion().major);
@@ -156,21 +156,21 @@ public class CramIO {
         for (int i = cramHeader.getId().length; i < 20; i++)
             os.write(0);
 
-        long len = CramIO.writeContainerForSamFileHeader(cramHeader.getVersion().major, cramHeader.getSamFileHeader(), os);
+        final long len = CramIO.writeContainerForSamFileHeader(cramHeader.getVersion().major, cramHeader.getSamFileHeader(), os);
 
         return CramIO.DEFINITION_LENGTH + len;
     }
 
-    private static CramHeader readFormatDefinition(InputStream is) throws IOException {
-        for (byte b : CramHeader.magic) {
+    private static CramHeader readFormatDefinition(final InputStream is) throws IOException {
+        for (final byte b : CramHeader.magic) {
             if (b != is.read()) throw new RuntimeException("Unknown file format.");
         }
 
-        Version version = new Version(is.read(), is.read(), 0);
+        final Version version = new Version(is.read(), is.read(), 0);
 
-        CramHeader header= new CramHeader(version, null, null) ;
+        final CramHeader header= new CramHeader(version, null, null) ;
 
-        DataInputStream dis = new DataInputStream(is);
+        final DataInputStream dis = new DataInputStream(is);
         dis.readFully(header.getId());
 
         return header;
@@ -183,50 +183,50 @@ public class CramIO {
      * @return complete {@link CramHeader} object
      * @throws IOException as per java IO contract
      */
-    public static CramHeader readCramHeader(InputStream is) throws IOException {
-        CramHeader header = readFormatDefinition(is);
+    public static CramHeader readCramHeader(final InputStream is) throws IOException {
+        final CramHeader header = readFormatDefinition(is);
 
-        SAMFileHeader samFileHeader = readSAMFileHeader(header.getVersion(), is, new String (header.getId()));
+        final SAMFileHeader samFileHeader = readSAMFileHeader(header.getVersion(), is, new String (header.getId()));
 
         return new CramHeader(header.getVersion(), new String (header.getId()), samFileHeader);
     }
 
-    private static byte[] toByteArray(SAMFileHeader samFileHeader) {
-        ExposedByteArrayOutputStream headerBodyOS = new ExposedByteArrayOutputStream();
-        OutputStreamWriter w = new OutputStreamWriter(headerBodyOS);
+    private static byte[] toByteArray(final SAMFileHeader samFileHeader) {
+        final ExposedByteArrayOutputStream headerBodyOS = new ExposedByteArrayOutputStream();
+        final OutputStreamWriter w = new OutputStreamWriter(headerBodyOS);
         new SAMTextHeaderCodec().encode(w, samFileHeader);
         try {
             w.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
-        ByteBuffer buf = ByteBuffer.allocate(4);
+        final ByteBuffer buf = ByteBuffer.allocate(4);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.putInt(headerBodyOS.size());
         buf.flip();
-        byte[] bytes = new byte[buf.limit()];
+        final byte[] bytes = new byte[buf.limit()];
         buf.get(bytes);
 
-        ByteArrayOutputStream headerOS = new ByteArrayOutputStream();
+        final ByteArrayOutputStream headerOS = new ByteArrayOutputStream();
         try {
             headerOS.write(bytes);
             headerOS.write(headerBodyOS.getBuffer(), 0, headerBodyOS.size());
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 
         return headerOS.toByteArray();
     }
 
-    private static long writeContainerForSamFileHeader(int major, SAMFileHeader samFileHeader, OutputStream os) throws IOException {
-        byte[] data = toByteArray(samFileHeader);
-        int len = Math.max(1024, data.length + data.length / 2);
-        byte[] blockContent = new byte[len];
+    private static long writeContainerForSamFileHeader(final int major, final SAMFileHeader samFileHeader, final OutputStream os) throws IOException {
+        final byte[] data = toByteArray(samFileHeader);
+        final int len = Math.max(1024, data.length + data.length / 2);
+        final byte[] blockContent = new byte[len];
         System.arraycopy(data, 0, blockContent, 0, Math.min(data.length, len));
-        Block block = Block.buildNewFileHeaderBlock(blockContent);
+        final Block block = Block.buildNewFileHeaderBlock(blockContent);
 
-        Container c = new Container();
+        final Container c = new Container();
         c.blockCount = 1;
         c.blocks = new Block[]{block};
         c.landmarks = new int[0];
@@ -238,22 +238,22 @@ public class CramIO {
         c.nofRecords = 0;
         c.sequenceId = 0;
 
-        ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
         block.write(major, baos);
         c.containerByteSize = baos.size();
 
-        int containerHeaderByteSize = ContainerIO.writeContainerHeader(major, c, os);
+        final int containerHeaderByteSize = ContainerIO.writeContainerHeader(major, c, os);
         os.write(baos.getBuffer(), 0, baos.size());
 
         return containerHeaderByteSize + baos.size();
     }
 
-    private static SAMFileHeader readSAMFileHeader(Version version, InputStream is, String id) throws IOException {
-        Container container = ContainerIO.readContainerHeader(version.major, is);
-        Block b;
+    private static SAMFileHeader readSAMFileHeader(final Version version, InputStream is, final String id) throws IOException {
+        final Container container = ContainerIO.readContainerHeader(version.major, is);
+        final Block b;
         {
             if (version.compatibleWith(CramVersions.CRAM_v3)) {
-                byte[] bytes = new byte[container.containerByteSize];
+                final byte[] bytes = new byte[container.containerByteSize];
                 InputStreamUtils.readFully(is, bytes, 0, bytes.length);
                 b = Block.readFromInputStream(version.major, new ByteArrayInputStream(bytes));
                 // ignore the rest of the container
@@ -268,19 +268,19 @@ public class CramIO {
 
         is = new ByteArrayInputStream(b.getRawContent());
 
-        ByteBuffer buf = ByteBuffer.allocate(4);
+        final ByteBuffer buf = ByteBuffer.allocate(4);
         buf.order(ByteOrder.LITTLE_ENDIAN);
         for (int i = 0; i < 4; i++)
             buf.put((byte) is.read());
         buf.flip();
-        int size = buf.asIntBuffer().get();
+        final int size = buf.asIntBuffer().get();
 
-        DataInputStream dis = new DataInputStream(is);
-        byte[] bytes = new byte[size];
+        final DataInputStream dis = new DataInputStream(is);
+        final byte[] bytes = new byte[size];
         dis.readFully(bytes);
 
-        BufferedLineReader r = new BufferedLineReader(new ByteArrayInputStream(bytes));
-        SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+        final BufferedLineReader r = new BufferedLineReader(new ByteArrayInputStream(bytes));
+        final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
         return codec.decode(r, id);
     }
 
@@ -294,23 +294,23 @@ public class CramIO {
      * @return true if successfully replaced the header, false otherwise
      * @throws IOException as per java IO contract
      */
-    public static boolean replaceCramHeader(File file, CramHeader newHeader) throws IOException {
+    public static boolean replaceCramHeader(final File file, final CramHeader newHeader) throws IOException {
 
-        CountingInputStream cis = new CountingInputStream(new FileInputStream(file));
+        final CountingInputStream cis = new CountingInputStream(new FileInputStream(file));
 
-        CramHeader header = readFormatDefinition(cis);
-        Container c = ContainerIO.readContainerHeader(header.getVersion().major, cis);
-        long pos = cis.getCount();
+        final CramHeader header = readFormatDefinition(cis);
+        final Container c = ContainerIO.readContainerHeader(header.getVersion().major, cis);
+        final long pos = cis.getCount();
         cis.close();
 
-        Block block = Block.buildNewFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
-        ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+        final Block block = Block.buildNewFileHeaderBlock(toByteArray(newHeader.getSamFileHeader()));
+        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
         block.write(newHeader.getVersion().major, baos);
         if (baos.size() > c.containerByteSize) {
             log.error("Failed to replace CRAM header because the new header does not fit.");
             return false;
         }
-        RandomAccessFile raf = new RandomAccessFile(file, "rw");
+        final RandomAccessFile raf = new RandomAccessFile(file, "rw");
         raf.seek(pos);
         raf.write(baos.getBuffer(), 0, baos.size());
         raf.close();

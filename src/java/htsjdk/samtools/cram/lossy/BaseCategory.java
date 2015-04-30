@@ -19,7 +19,7 @@ public class BaseCategory {
     public final BaseCategoryType type;
     public final int param;
 
-    private BaseCategory(BaseCategoryType type, int param) {
+    private BaseCategory(final BaseCategoryType type, final int param) {
         this.type = type;
         this.param = param;
     }
@@ -36,11 +36,11 @@ public class BaseCategory {
         return new BaseCategory(BaseCategoryType.FLANKING_DELETION, -1);
     }
 
-    public static BaseCategory pileup(int threshold) {
+    public static BaseCategory pileup(final int threshold) {
         return new BaseCategory(BaseCategoryType.PILEUP, threshold);
     }
 
-    public static BaseCategory lower_than_coverage(int coverage) {
+    public static BaseCategory lower_than_coverage(final int coverage) {
         return new BaseCategory(BaseCategoryType.LOWER_COVERAGE, coverage);
     }
 

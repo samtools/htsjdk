@@ -47,22 +47,22 @@ public class HuffmanByteEncoding implements Encoding<Byte> {
             buf = ByteBuffer.allocate(values.length * 8);
 
         ITF8.writeUnsignedITF8(values.length, buf);
-        for (byte value : values)
+        for (final byte value : values)
             buf.put(value);
 
         ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (int value : bitLengths)
+        for (final int value : bitLengths)
             ITF8.writeUnsignedITF8(value, buf);
 
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         int size = ITF8.readUnsignedITF8(buf);
         values = new byte[size];
         buf.get(values);
@@ -74,13 +74,13 @@ public class HuffmanByteEncoding implements Encoding<Byte> {
     }
 
     @Override
-    public BitCodec<Byte> buildCodec(Map<Integer, InputStream> inputMap,
-                                     Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Byte> buildCodec(final Map<Integer, InputStream> inputMap,
+                                     final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new CanonicalHuffmanByteCodec(values, bitLengths);
     }
 
-    public static EncodingParams toParam(byte[] bfValues, int[] bfBitLens) {
-        HuffmanByteEncoding e = new HuffmanByteEncoding();
+    public static EncodingParams toParam(final byte[] bfValues, final int[] bfBitLens) {
+        final HuffmanByteEncoding e = new HuffmanByteEncoding();
         e.values = bfValues;
         e.bitLengths = bfBitLens;
         return new EncodingParams(ENCODING_ID, e.toByteArray());

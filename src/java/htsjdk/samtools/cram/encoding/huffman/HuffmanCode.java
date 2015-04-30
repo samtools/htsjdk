@@ -24,16 +24,16 @@ import java.util.TreeMap;
 
 public class HuffmanCode {
 
-    public static <T> HuffmanTree<T> buildTree(int[] charFrequencies, T[] values) {
-        LinkedList<HuffmanTree<T>> list = new LinkedList<HuffmanTree<T>>();
+    public static <T> HuffmanTree<T> buildTree(final int[] charFrequencies, final T[] values) {
+        final LinkedList<HuffmanTree<T>> list = new LinkedList<HuffmanTree<T>>();
         for (int i = 0; i < charFrequencies.length; i++)
             if (charFrequencies[i] > 0)
                 list.add(new HuffmanLeaf<T>(charFrequencies[i], values[i]));
 
-        Comparator<HuffmanTree<T>> c = new Comparator<HuffmanTree<T>>() {
+        final Comparator<HuffmanTree<T>> c = new Comparator<HuffmanTree<T>>() {
 
             @Override
-            public int compare(HuffmanTree<T> o1, HuffmanTree<T> o2) {
+            public int compare(final HuffmanTree<T> o1, final HuffmanTree<T> o2) {
                 return o1.frequency - o2.frequency;
             }
         };
@@ -41,20 +41,20 @@ public class HuffmanCode {
         while (list.size() > 1) {
             Collections.sort(list, c);
             // dumpList(list) ;
-            HuffmanTree<T> left = list.remove();
-            HuffmanTree<T> right = list.remove();
+            final HuffmanTree<T> left = list.remove();
+            final HuffmanTree<T> right = list.remove();
             list.add(new HuffmanNode<T>(left, right));
         }
         return list.isEmpty() ? null : list.remove();
     }
 
-    public static <T> void getValuesAndBitLengths(List<T> values,
-                                                  List<Integer> lens, HuffmanTree<T> tree) {
-        TreeMap<T, HuffmanBitCode<T>> codes = new TreeMap<T, HuffmanBitCode<T>>();
+    public static <T> void getValuesAndBitLengths(final List<T> values,
+                                                  final List<Integer> lens, final HuffmanTree<T> tree) {
+        final TreeMap<T, HuffmanBitCode<T>> codes = new TreeMap<T, HuffmanBitCode<T>>();
         getBitCode(tree, new HuffmanBitCode<T>(), codes);
 
-        for (T value : codes.keySet()) {
-            HuffmanBitCode<T> code = codes.get(value);
+        for (final T value : codes.keySet()) {
+            final HuffmanBitCode<T> code = codes.get(value);
             values.add(value);
             lens.add(code.bitLength);
         }
@@ -65,17 +65,17 @@ public class HuffmanCode {
         int bitLength;
     }
 
-    private static <T> void getBitCode(HuffmanTree<T> tree,
-                                       HuffmanBitCode<T> code, Map<T, HuffmanBitCode<T>> codes) {
+    private static <T> void getBitCode(final HuffmanTree<T> tree,
+                                       final HuffmanBitCode<T> code, final Map<T, HuffmanBitCode<T>> codes) {
         if (tree instanceof HuffmanLeaf) {
-            HuffmanLeaf<T> leaf = (HuffmanLeaf<T>) tree;
-            HuffmanBitCode<T> readyCode = new HuffmanBitCode<T>();
+            final HuffmanLeaf<T> leaf = (HuffmanLeaf<T>) tree;
+            final HuffmanBitCode<T> readyCode = new HuffmanBitCode<T>();
             readyCode.bitCode = code.bitCode;
             readyCode.bitLength = code.bitLength;
             codes.put(leaf.value, readyCode);
 
         } else if (tree instanceof HuffmanNode) {
-            HuffmanNode<T> node = (HuffmanNode<T>) tree;
+            final HuffmanNode<T> node = (HuffmanNode<T>) tree;
 
             // traverse left
             code.bitCode = code.bitCode << 1;

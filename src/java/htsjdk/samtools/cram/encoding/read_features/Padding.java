@@ -29,7 +29,7 @@ public class Padding implements Serializable, ReadFeature {
     public Padding() {
     }
 
-    public Padding(int position, int length) {
+    public Padding(final int position, final int length) {
         this.position = position;
         this.length = length;
     }
@@ -44,7 +44,7 @@ public class Padding implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -52,16 +52,16 @@ public class Padding implements Serializable, ReadFeature {
         return length;
     }
 
-    public void setLength(int length) {
+    public void setLength(final int length) {
         this.length = length;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Padding))
             return false;
 
-        Padding v = (Padding) obj;
+        final Padding v = (Padding) obj;
 
         return position == v.position && length == v.length;
 

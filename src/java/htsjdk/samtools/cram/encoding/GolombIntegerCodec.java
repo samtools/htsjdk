@@ -26,7 +26,7 @@ class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     private boolean quotientBit = true;
     private int offset = 0;
 
-    public GolombIntegerCodec(int m, Integer offset) {
+    public GolombIntegerCodec(final int m, final Integer offset) {
         if (m < 2)
             throw new IllegalArgumentException(
                     "M parameter must be at least 2.");
@@ -41,7 +41,7 @@ class GolombIntegerCodec extends AbstractBitCodec<Integer> {
         while (bis.readBit() == quotientBit)
             quotient++;
 
-        int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
+        final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
         int reminder = bis.readBits(ceiling - 1);
         if (reminder >= Math.pow(2, ceiling) - m) {
             reminder <<= 1;
@@ -55,10 +55,10 @@ class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     @Override
     public final long write(final BitOutputStream bos, final Integer value)
             throws IOException {
-        int newValue = value + offset;
-        int quotient = newValue / m;
-        int reminder = newValue % m;
-        int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
+        final int newValue = value + offset;
+        final int quotient = newValue / m;
+        final int reminder = newValue % m;
+        final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
 
         int len = quotient + 1;
         bos.write(quotientBit, quotient);
@@ -76,11 +76,11 @@ class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public final long numberOfBits(Integer value) {
-        int newValue = value + offset;
-        int quotient = newValue / m;
-        int reminder = newValue % m;
-        int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
+    public final long numberOfBits(final Integer value) {
+        final int newValue = value + offset;
+        final int quotient = newValue / m;
+        final int reminder = newValue % m;
+        final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
         int l = quotient + 1;
 
         if (reminder < Math.pow(2, ceiling) - m)
@@ -92,7 +92,7 @@ class GolombIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Multi-value read method not defined.");
     }
 

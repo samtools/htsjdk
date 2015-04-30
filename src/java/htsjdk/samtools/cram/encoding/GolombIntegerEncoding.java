@@ -37,15 +37,15 @@ public class GolombIntegerEncoding implements Encoding<Integer> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(int m) {
-        GolombIntegerEncoding e = new GolombIntegerEncoding();
+    public static EncodingParams toParam(final int m) {
+        final GolombIntegerEncoding e = new GolombIntegerEncoding();
         e.m = m;
         e.offset = 0;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
     }
 
-    public static EncodingParams toParam(int m, int offset) {
-        GolombIntegerEncoding e = new GolombIntegerEncoding();
+    public static EncodingParams toParam(final int m, final int offset) {
+        final GolombIntegerEncoding e = new GolombIntegerEncoding();
         e.m = m;
         e.offset = offset;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
@@ -53,25 +53,25 @@ public class GolombIntegerEncoding implements Encoding<Integer> {
 
     @Override
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(10);
+        final ByteBuffer buf = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buf);
         ITF8.writeUnsignedITF8(m, buf);
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         offset = ITF8.readUnsignedITF8(buf);
         m = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new GolombIntegerCodec(m, offset);
     }
 

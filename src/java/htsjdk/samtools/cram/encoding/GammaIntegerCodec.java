@@ -23,29 +23,29 @@ import java.io.IOException;
 class GammaIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
 
-    public GammaIntegerCodec(int offset) {
+    public GammaIntegerCodec(final int offset) {
         this.offset = offset;
     }
 
     @Override
-    public final Integer read(BitInputStream bis) throws IOException {
+    public final Integer read(final BitInputStream bis) throws IOException {
         int len = 1;
-        boolean lenCodingBit = false;
-        //noinspection ConstantConditions
+        final boolean lenCodingBit = false;
+        //noinspection ConstantConditions,PointlessBooleanExpression
         while (bis.readBit() == lenCodingBit)
             len++;
-        int readBits = bis.readBits(len - 1);
-        int value = readBits | 1 << (len - 1);
+        final int readBits = bis.readBits(len - 1);
+        final int value = readBits | 1 << (len - 1);
         return value - offset;
     }
 
     @Override
-    public final long write(BitOutputStream bos, Integer value) throws IOException {
+    public final long write(final BitOutputStream bos, final Integer value) throws IOException {
         if (value + offset < 1)
             throw new IllegalArgumentException("Gamma codec handles only positive values: " + value);
 
-        long newValue = value + offset;
-        int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
+        final long newValue = value + offset;
+        final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
         if (betaCodeLength > 1)
             bos.write(0L, betaCodeLength - 1);
 
@@ -54,16 +54,16 @@ class GammaIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public final long numberOfBits(Integer value) {
-        long newValue = value + offset;
+    public final long numberOfBits(final Integer value) {
+        final long newValue = value + offset;
         if (newValue < 1)
             throw new RuntimeException("Invalid valid: " + newValue);
-        int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
+        final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
         return betaCodeLength * 2 - 1;
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 

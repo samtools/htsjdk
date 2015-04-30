@@ -32,7 +32,7 @@ public class BetaIntegerEncoding implements Encoding<Integer> {
     public BetaIntegerEncoding() {
     }
 
-    public BetaIntegerEncoding(int offset, int bitLimit) {
+    public BetaIntegerEncoding(final int offset, final int bitLimit) {
         this.offset = offset ;
         this.bitLimit = bitLimit;
     }
@@ -42,8 +42,8 @@ public class BetaIntegerEncoding implements Encoding<Integer> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(int offset, int bitLimit) {
-        BetaIntegerEncoding e = new BetaIntegerEncoding();
+    public static EncodingParams toParam(final int offset, final int bitLimit) {
+        final BetaIntegerEncoding e = new BetaIntegerEncoding();
         e.offset = offset;
         e.bitLimit = bitLimit;
         return new EncodingParams(ENCODING_ID, e.toByteArray());
@@ -51,25 +51,25 @@ public class BetaIntegerEncoding implements Encoding<Integer> {
 
     @Override
     public byte[] toByteArray() {
-        ByteBuffer buf = ByteBuffer.allocate(10);
+        final ByteBuffer buf = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buf);
         ITF8.writeUnsignedITF8(bitLimit, buf);
         buf.flip();
-        byte[] array = new byte[buf.limit()];
+        final byte[] array = new byte[buf.limit()];
         buf.get(array);
         return array;
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
-        ByteBuffer buf = ByteBuffer.wrap(data);
+    public void fromByteArray(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
         offset = ITF8.readUnsignedITF8(buf);
         bitLimit = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
-    public BitCodec<Integer> buildCodec(Map<Integer, InputStream> inputMap,
-                                        Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new BetaIntegerCodec(offset, bitLimit);
     }
 

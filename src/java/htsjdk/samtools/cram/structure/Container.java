@@ -64,11 +64,11 @@ public class Container {
     }
 
     public boolean isEOF() {
-        boolean v3 = containerByteSize == 15 && sequenceId == -1
+        final boolean v3 = containerByteSize == 15 && sequenceId == -1
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (slices == null || slices.length == 0);
 
-        boolean v2 = containerByteSize == 11 && sequenceId == -1
+        final boolean v2 = containerByteSize == 11 && sequenceId == -1
                 && alignmentStart == 4542278 && blockCount == 1
                 && nofRecords == 0 && (slices == null || slices.length == 0);
 

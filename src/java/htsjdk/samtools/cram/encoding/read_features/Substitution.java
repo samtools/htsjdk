@@ -44,7 +44,7 @@ public class Substitution implements Serializable, ReadFeature {
         return code;
     }
 
-    public void setCode(byte code) {
+    public void setCode(final byte code) {
         this.code = code;
     }
 
@@ -59,7 +59,7 @@ public class Substitution implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -67,7 +67,7 @@ public class Substitution implements Serializable, ReadFeature {
         return base;
     }
 
-    public void setBase(byte base) {
+    public void setBase(final byte base) {
         this.base = base;
     }
 
@@ -75,16 +75,16 @@ public class Substitution implements Serializable, ReadFeature {
         return referenceBase;
     }
 
-    public void setReferenceBase(byte referenceBase) {
+    public void setReferenceBase(final byte referenceBase) {
         this.referenceBase = referenceBase;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Substitution))
             return false;
 
-        Substitution v = (Substitution) obj;
+        final Substitution v = (Substitution) obj;
 
         if (position != v.position)
             return false;

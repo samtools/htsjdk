@@ -30,45 +30,45 @@ class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
     private final OutputStream nullOS = new OutputStream() {
 
         @Override
-        public void write(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
+        public void write(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
         }
 
         @Override
-        public void write(int b) throws IOException {
+        public void write(final int b) throws IOException {
         }
 
         @Override
-        public void write(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
+        public void write(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int len) throws IOException {
         }
     };
 
-    public ExternalIntegerCodec(OutputStream os, InputStream is) {
+    public ExternalIntegerCodec(final OutputStream os, final InputStream is) {
         this.os = os;
         this.is = is;
     }
 
     @Override
-    public Integer read(BitInputStream bis) throws IOException {
+    public Integer read(final BitInputStream bis) throws IOException {
         return ITF8.readUnsignedITF8(is);
     }
 
     @Override
-    public long write(BitOutputStream bos, Integer value) throws IOException {
+    public long write(final BitOutputStream bos, final Integer value) throws IOException {
         return ITF8.writeUnsignedITF8(value, os);
     }
 
     @Override
-    public long numberOfBits(Integer value) {
+    public long numberOfBits(final Integer value) {
         try {
             return ITF8.writeUnsignedITF8(value, nullOS);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             // this should never happened but still:
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 }

@@ -20,7 +20,7 @@ class Decoding {
     }
 
     // Initialize a decoder symbol to start "start" and frequency "freq"
-    static void RansDecSymbolInit(RansDecSymbol s, int start, int freq) {
+    static void RansDecSymbolInit(final RansDecSymbol s, final int start, final int freq) {
         assert (start <= (1 << 16));
         assert (freq <= (1 << 16) - start);
         s.start = start;
@@ -31,26 +31,26 @@ class Decoding {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits".
     // No renormalization or output happens.
-    private static int RansDecAdvanceStep(int r, int start, int freq, int scale_bits) {
-        int mask = ((1 << scale_bits) - 1);
+    private static int RansDecAdvanceStep(final int r, final int start, final int freq, final int scale_bits) {
+        final int mask = ((1 << scale_bits) - 1);
 
         // s, x = D(x)
         return freq * (r >> scale_bits) + (r & mask) - start;
     }
 
     // Equivalent to RansDecAdvanceStep that takes a symbol.
-    static int RansDecAdvanceSymbolStep(int r, RansDecSymbol sym, int scale_bits) {
+    static int RansDecAdvanceSymbolStep(final int r, final RansDecSymbol sym, final int scale_bits) {
         return RansDecAdvanceStep(r, sym.start, sym.freq, scale_bits);
     }
 
     // Returns the current cumulative frequency (map it to a symbol yourself!)
-    static int RansDecGet(int r, int scale_bits) {
+    static int RansDecGet(final int r, final int scale_bits) {
         return r & ((1 << scale_bits) - 1);
     }
 
     // Equivalent to RansDecAdvance that takes a symbol.
-    static int RansDecAdvanceSymbol(int r, ByteBuffer pptr, RansDecSymbol sym,
-                                    int scale_bits) {
+    static int RansDecAdvanceSymbol(final int r, final ByteBuffer pptr, final RansDecSymbol sym,
+                                    final int scale_bits) {
         return Decoding
                 .RansDecAdvance(r, pptr, sym.start, sym.freq, scale_bits);
     }
@@ -59,9 +59,9 @@ class Decoding {
     // "start" and frequency "freq". All frequencies are assumed to sum to
     // "1 << scale_bits",
     // and the resulting bytes get written to ptr (which is updated).
-    private static int RansDecAdvance(int r, ByteBuffer pptr, int start, int freq,
-                                      int scale_bits) {
-        int mask = (1 << scale_bits) - 1;
+    private static int RansDecAdvance(int r, final ByteBuffer pptr, final int start, final int freq,
+                                      final int scale_bits) {
+        final int mask = (1 << scale_bits) - 1;
 
         // s, x = D(x)
         r = freq * (r >> scale_bits) + (r & mask) - start;
@@ -79,7 +79,7 @@ class Decoding {
     }
 
     // Re-normalize.
-    static int RansDecRenormalize(int r, ByteBuffer pptr) {
+    static int RansDecRenormalize(int r, final ByteBuffer pptr) {
         // re-normalize
         if (r < Constants.RANS_BYTE_L) {
             do

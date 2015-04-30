@@ -18,11 +18,11 @@ package htsjdk.samtools.cram.encoding.huffman;
 public abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
     public final int frequency;
 
-    HuffmanTree(int freq) {
+    HuffmanTree(final int freq) {
         frequency = freq;
     }
 
-    public int compareTo(@SuppressWarnings("NullableProblems") HuffmanTree<T> tree) {
+    public int compareTo(@SuppressWarnings("NullableProblems") final HuffmanTree<T> tree) {
         return frequency - tree.frequency;
     }
 }

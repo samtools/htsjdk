@@ -9,7 +9,7 @@ import java.io.IOException;
 public abstract class ExternalCompressor {
     private final BlockCompressionMethod method;
 
-    private ExternalCompressor(BlockCompressionMethod method) {
+    private ExternalCompressor(final BlockCompressionMethod method) {
         this.method = method;
     }
 
@@ -23,7 +23,7 @@ public abstract class ExternalCompressor {
         return new ExternalCompressor(BlockCompressionMethod.RAW) {
 
             @Override
-            public byte[] compress(byte[] data) {
+            public byte[] compress(final byte[] data) {
                 return data;
             }
         };
@@ -33,10 +33,10 @@ public abstract class ExternalCompressor {
         return new ExternalCompressor(BlockCompressionMethod.GZIP) {
 
             @Override
-            public byte[] compress(byte[] data) {
+            public byte[] compress(final byte[] data) {
                 try {
                     return ExternalCompression.gzip(data);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -47,10 +47,10 @@ public abstract class ExternalCompressor {
         return new ExternalCompressor(BlockCompressionMethod.LZMA) {
 
             @Override
-            public byte[] compress(byte[] data) {
+            public byte[] compress(final byte[] data) {
                 try {
                     return ExternalCompression.xz(data);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -61,10 +61,10 @@ public abstract class ExternalCompressor {
         return new ExternalCompressor(BlockCompressionMethod.BZIP2) {
 
             @Override
-            public byte[] compress(byte[] data) {
+            public byte[] compress(final byte[] data) {
                 try {
                     return ExternalCompression.bzip2(data);
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -76,7 +76,7 @@ public abstract class ExternalCompressor {
         return new ExternalCompressor(BlockCompressionMethod.RANS) {
 
             @Override
-            public byte[] compress(byte[] data) {
+            public byte[] compress(final byte[] data) {
                 return ExternalCompression.rans(data, order);
             }
         };

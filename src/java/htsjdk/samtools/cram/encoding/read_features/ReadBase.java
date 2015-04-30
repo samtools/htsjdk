@@ -28,7 +28,7 @@ public class ReadBase implements Serializable, ReadFeature {
 
     public static final byte operator = 'B';
 
-    public ReadBase(int position, byte base, byte qualityScore) {
+    public ReadBase(final int position, final byte base, final byte qualityScore) {
         this.position = position;
         this.base = base;
         this.qualityScore = qualityScore;
@@ -44,7 +44,7 @@ public class ReadBase implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -52,16 +52,16 @@ public class ReadBase implements Serializable, ReadFeature {
         return qualityScore;
     }
 
-    public void setQualityScore(byte qualityScore) {
+    public void setQualityScore(final byte qualityScore) {
         this.qualityScore = qualityScore;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof ReadBase))
             return false;
 
-        ReadBase v = (ReadBase) obj;
+        final ReadBase v = (ReadBase) obj;
 
         return position == v.position && base == v.base && qualityScore == v.qualityScore;
 
@@ -69,7 +69,7 @@ public class ReadBase implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "[");
+        final StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "[");
         sb.append("position=").append(position);
         sb.append("; base=").appendCodePoint(base);
         sb.append("; score=").appendCodePoint(qualityScore);
@@ -81,7 +81,7 @@ public class ReadBase implements Serializable, ReadFeature {
         return base;
     }
 
-    public void setBase(byte base) {
+    public void setBase(final byte base) {
         this.base = base;
     }
 

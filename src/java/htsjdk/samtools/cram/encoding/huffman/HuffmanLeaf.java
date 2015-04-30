@@ -19,7 +19,7 @@ class HuffmanLeaf<T> extends HuffmanTree<T> {
     // user object, attached to the leaf:
     public final T value;
 
-    public HuffmanLeaf(int freq, T val) {
+    public HuffmanLeaf(final int freq, final T val) {
         super(freq);
         value = val;
     }

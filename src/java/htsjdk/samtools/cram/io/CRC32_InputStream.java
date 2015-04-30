@@ -12,7 +12,7 @@ public class CRC32_InputStream extends InputStream {
     private final InputStream delegate;
     private final CRC32 crc32 = new CRC32();
 
-    public CRC32_InputStream(InputStream delegate) {
+    public CRC32_InputStream(final InputStream delegate) {
         super();
         this.delegate = delegate;
     }
@@ -23,29 +23,29 @@ public class CRC32_InputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        int value = delegate.read();
+        final int value = delegate.read();
         if (value != -1)
             crc32.update(value);
         return value;
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") byte[] b) throws IOException {
-        int result = delegate.read(b);
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
+        final int result = delegate.read(b);
         if (result != -1)
             crc32.update(b, 0, result);
         return result;
     }
 
     @Override
-    public int read(@SuppressWarnings("NullableProblems") byte[] b, int off, int len) throws IOException {
-        int result = delegate.read(b, off, len);
+    public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int len) throws IOException {
+        final int result = delegate.read(b, off, len);
         crc32.update(b, off, result);
         return result;
     }
 
     @Override
-    public long skip(long n) throws IOException {
+    public long skip(final long n) throws IOException {
         return delegate.skip(n);
     }
 
@@ -60,7 +60,7 @@ public class CRC32_InputStream extends InputStream {
     }
 
     @Override
-    public void mark(int readLimit) {
+    public void mark(final int readLimit) {
         delegate.mark(readLimit);
     }
 

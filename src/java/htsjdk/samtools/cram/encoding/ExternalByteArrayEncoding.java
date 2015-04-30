@@ -30,8 +30,8 @@ public class ExternalByteArrayEncoding implements Encoding<byte[]> {
     public ExternalByteArrayEncoding() {
     }
 
-    public static EncodingParams toParam(int contentId) {
-        ExternalByteArrayEncoding e = new ExternalByteArrayEncoding();
+    public static EncodingParams toParam(final int contentId) {
+        final ExternalByteArrayEncoding e = new ExternalByteArrayEncoding();
         e.contentId = contentId;
         return new EncodingParams(encodingId, e.toByteArray());
     }
@@ -40,15 +40,15 @@ public class ExternalByteArrayEncoding implements Encoding<byte[]> {
         return ITF8.writeUnsignedITF8(contentId);
     }
 
-    public void fromByteArray(byte[] data) {
+    public void fromByteArray(final byte[] data) {
         contentId = ITF8.readUnsignedITF8(data);
     }
 
     @Override
-    public BitCodec<byte[]> buildCodec(Map<Integer, InputStream> inputMap,
-                                       Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        InputStream is = inputMap == null ? null : inputMap.get(contentId);
-        ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap
+    public BitCodec<byte[]> buildCodec(final Map<Integer, InputStream> inputMap,
+                                       final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        final InputStream is = inputMap == null ? null : inputMap.get(contentId);
+        final ExposedByteArrayOutputStream os = outputMap == null ? null : outputMap
                 .get(contentId);
         return new ExternalByteArrayCodec(os, is);
     }

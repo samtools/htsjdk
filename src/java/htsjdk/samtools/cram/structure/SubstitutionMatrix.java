@@ -37,15 +37,15 @@ public class SubstitutionMatrix {
     private final byte[][] codes = new byte[255][255];
     private final byte[][] bases = new byte[255][255];
 
-    public SubstitutionMatrix(long[][] frequencies) {
-        for (byte BASE : BASES) {
+    public SubstitutionMatrix(final long[][] frequencies) {
+        for (final byte BASE : BASES) {
             bytes[ORDER[BASE]] = rank(BASE, frequencies[BASE]);
         }
-        for (byte[] base : bases) Arrays.fill(base, (byte) 'N');
+        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
         for (int i = 0; i < BASES.length; i++) {
-            byte r = BASES[i];
-            for (byte b : BASES) {
+            final byte r = BASES[i];
+            for (final byte b : BASES) {
                 if (r == b)
                     continue;
                 bases[r][codes[r][b]] = b;
@@ -56,8 +56,8 @@ public class SubstitutionMatrix {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (byte r : "ACGTN".getBytes()) {
+        final StringBuilder sb = new StringBuilder();
+        for (final byte r : "ACGTN".getBytes()) {
             sb.append((char) r);
             sb.append(":");
             for (int i = 0; i < 4; i++) {
@@ -68,10 +68,10 @@ public class SubstitutionMatrix {
         return sb.toString();
     }
 
-    public SubstitutionMatrix(byte[] matrix) {
+    public SubstitutionMatrix(final byte[] matrix) {
         this.bytes = matrix;
 
-        for (byte[] base : bases) Arrays.fill(base, (byte) 'N');
+        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
         bases['A'][(bytes[0] >> 6) & 3] = 'C';
         bases['A'][(bytes[0] >> 4) & 3] = 'G';
@@ -102,7 +102,7 @@ public class SubstitutionMatrix {
         bases['N'][(bytes[4] >> 2) & 3] = 'G';
         bases['N'][(bytes[4]) & 3] = 'T';
 
-        for (byte refBase : BASES) {
+        for (final byte refBase : BASES) {
             for (byte code = 0; code < 4; code++)
                 codes[refBase][bases[refBase][code]] = code;
         }
@@ -117,7 +117,7 @@ public class SubstitutionMatrix {
         long freq;
         byte rank;
 
-        public SubCode(byte base, long freq) {
+        public SubCode(final byte base, final long freq) {
             this.base = base;
             this.freq = freq;
         }
@@ -127,19 +127,19 @@ public class SubstitutionMatrix {
     private static final Comparator<SubCode> comparator = new Comparator<SubstitutionMatrix.SubCode>() {
 
         @Override
-        public int compare(SubCode o1, SubCode o2) {
+        public int compare(final SubCode o1, final SubCode o2) {
             if (o1.freq != o2.freq)
                 return (int) (o2.freq - o1.freq);
             return ORDER[o1.base] - ORDER[o2.base];
         }
     };
 
-    private byte rank(byte refBase, long[] frequencies) {
+    private byte rank(final byte refBase, final long[] frequencies) {
         // in alphabetical order:
-        SubCode[] subCodes = new SubCode[4];
+        final SubCode[] subCodes = new SubCode[4];
         {
             int i = 0;
-            for (byte base : BASES) {
+            for (final byte base : BASES) {
                 if (refBase == base)
                     continue;
                 subCodes[i++] = new SubCode(base, frequencies[base]);
@@ -151,27 +151,27 @@ public class SubstitutionMatrix {
         for (byte i = 0; i < subCodes.length; i++)
             subCodes[i].rank = i;
 
-        for (SubCode subCode1 : subCodes) subCode1.freq = 0;
+        for (final SubCode subCode1 : subCodes) subCode1.freq = 0;
 
         Arrays.sort(subCodes, comparator);
 
         byte rank = 0;
-        for (SubCode subCode : subCodes) {
+        for (final SubCode subCode : subCodes) {
             rank <<= 2;
             rank |= subCode.rank;
         }
 
-        for (SubCode s : subCodes)
+        for (final SubCode s : subCodes)
             codes[refBase][s.base] = s.rank;
 
         return rank;
     }
 
-    public byte code(byte refBase, byte readBase) {
+    public byte code(final byte refBase, final byte readBase) {
         return codes[refBase][readBase];
     }
 
-    public byte base(byte refBase, byte code) {
+    public byte base(final byte refBase, final byte code) {
         return bases[refBase][code];
     }
 }

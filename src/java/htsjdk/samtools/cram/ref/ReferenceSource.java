@@ -47,12 +47,12 @@ public class ReferenceSource {
     public ReferenceSource() {
     }
 
-    public ReferenceSource(File file) {
+    public ReferenceSource(final File file) {
         if (file != null)
             rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(file);
     }
 
-    public ReferenceSource(ReferenceSequenceFile rsFile) {
+    public ReferenceSource(final ReferenceSequenceFile rsFile) {
         this.rsFile = rsFile;
     }
 
@@ -60,26 +60,26 @@ public class ReferenceSource {
         cacheW.clear();
     }
 
-    private byte[] findInCache(String name) {
-        WeakReference<byte[]> r = cacheW.get(name);
+    private byte[] findInCache(final String name) {
+        final WeakReference<byte[]> r = cacheW.get(name);
         if (r != null) {
-            byte[] bytes = r.get();
+            final byte[] bytes = r.get();
             if (bytes != null)
                 return bytes;
         }
         return null;
     }
 
-    public synchronized byte[] getReferenceBases(SAMSequenceRecord record,
-                                                 boolean tryNameVariants) {
+    public synchronized byte[] getReferenceBases(final SAMSequenceRecord record,
+                                                 final boolean tryNameVariants) {
         { // check cache by sequence name:
-            String name = record.getSequenceName();
-            byte[] bases = findInCache(name);
+            final String name = record.getSequenceName();
+            final byte[] bases = findInCache(name);
             if (bases != null)
                 return bases;
         }
 
-        String md5 = record.getAttribute(SAMSequenceRecord.MD5_TAG);
+        final String md5 = record.getAttribute(SAMSequenceRecord.MD5_TAG);
         { // check cache by md5:
             if (md5 != null) {
                 byte[] bases = findInCache(md5);
@@ -110,7 +110,7 @@ public class ReferenceSource {
             if (md5 != null)
                 try {
                     bases = findBasesByMD5(md5.toLowerCase());
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     throw new RuntimeException(e);
                 }
             if (bases != null) {
@@ -124,14 +124,14 @@ public class ReferenceSource {
         return null;
     }
 
-    byte[] findBasesByName(String name, boolean tryVariants) {
+    byte[] findBasesByName(final String name, final boolean tryVariants) {
         if (rsFile == null || !rsFile.isIndexed())
                 return null;
 
         ReferenceSequence sequence = null;
         try {
             sequence = rsFile.getSequence(name);
-        } catch (SAMException e) {
+        } catch (final SAMException e) {
             // the only way to test if rsFile contains the sequence is to try and catch exception.
         }
 
@@ -139,10 +139,10 @@ public class ReferenceSource {
             return sequence.getBases();
 
         if (tryVariants) {
-            for (String variant : getVariants(name)) {
+            for (final String variant : getVariants(name)) {
                 try {
                     sequence = rsFile.getSequence(variant);
-                } catch (SAMException e) {
+                } catch (final SAMException e) {
                     log.warn("Sequence not found: " + variant);
                 }
                 if (sequence != null)
@@ -152,31 +152,31 @@ public class ReferenceSource {
         return null;
     }
 
-    byte[] findBasesByMD5(String md5) throws
+    byte[] findBasesByMD5(final String md5) throws
             IOException {
-        String url = String.format(Defaults.EBI_REFERENCE_SEVICE_URL_MASK, md5);
+        final String url = String.format(Defaults.EBI_REFERENCE_SEVICE_URL_MASK, md5);
 
         for (int i = 0; i < downloadTriesBeforeFailing; i++) {
-            InputStream is = new URL(url).openStream();
+            final InputStream is = new URL(url).openStream();
             if (is == null)
                 return null;
 
             log.debug("Downloading reference sequence: " + url);
-            byte[] data = InputStreamUtils.readFully(is);
+            final byte[] data = InputStreamUtils.readFully(is);
             log.debug("Downloaded " + data.length + " bytes for md5 " + md5);
             is.close();
 
             try {
-                String downloadedMD5 = SequenceUtil.calculateMD5String(data);
+                final String downloadedMD5 = SequenceUtil.calculateMD5String(data);
                 if (md5.equals(downloadedMD5)) {
                     return data;
                 } else {
-                    String message = String
+                    final String message = String
                             .format("Downloaded sequence is corrupt: requested md5=%s, received md5=%s",
                                     md5, downloadedMD5);
                     log.error(message);
                 }
-            } catch (NoSuchAlgorithmException e) {
+            } catch (final NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -187,8 +187,8 @@ public class ReferenceSource {
     private static final Pattern chrPattern = Pattern.compile("chr.*",
             Pattern.CASE_INSENSITIVE);
 
-    List<String> getVariants(String name) {
-        List<String> variants = new ArrayList<String>();
+    List<String> getVariants(final String name) {
+        final List<String> variants = new ArrayList<String>();
 
         if (name.equals("M"))
             variants.add("MT");
@@ -196,7 +196,7 @@ public class ReferenceSource {
         if (name.equals("MT"))
             variants.add("M");
 
-        boolean chrPatternMatch = chrPattern.matcher(name).matches();
+        final boolean chrPatternMatch = chrPattern.matcher(name).matches();
         if (chrPatternMatch)
             variants.add(name.substring(3));
         else
@@ -213,7 +213,7 @@ public class ReferenceSource {
         return downloadTriesBeforeFailing;
     }
 
-    public void setDownloadTriesBeforeFailing(int downloadTriesBeforeFailing) {
+    public void setDownloadTriesBeforeFailing(final int downloadTriesBeforeFailing) {
         this.downloadTriesBeforeFailing = downloadTriesBeforeFailing;
     }
 }

@@ -40,7 +40,7 @@ class HuffmanByteHelper {
     private final int[] bitCodeToValue;
     private final HuffmanBitCode[] valueToCode;
 
-    HuffmanByteHelper(byte[] values, int[] bitLengths) {
+    HuffmanByteHelper(final byte[] values, final int[] bitLengths) {
         this.values = new int[values.length];
         for (int i = 0; i < values.length; i++)
             this.values[i] = 0xFF & values[i];
@@ -50,14 +50,14 @@ class HuffmanByteHelper {
         buildCodeBook();
         buildCodes();
 
-        ArrayList<HuffmanBitCode> list = new ArrayList<HuffmanBitCode>(
+        final ArrayList<HuffmanBitCode> list = new ArrayList<HuffmanBitCode>(
                 codes.size());
         list.addAll(codes.values());
         Collections.sort(list, bitCodeComparator);
         sortedCodes = list.toArray(new HuffmanBitCode[list
                 .size()]);
 
-        byte[] sortedValues = Arrays.copyOf(values, values.length);
+        final byte[] sortedValues = Arrays.copyOf(values, values.length);
         Arrays.sort(sortedValues);
 
         sortedValuesByBitCode = new int[sortedCodes.length];
@@ -78,7 +78,7 @@ class HuffmanByteHelper {
 
         valueToCode = new HuffmanBitCode[255];
         Arrays.fill(valueToCode, null);
-        for (HuffmanBitCode code : sortedCodes) {
+        for (final HuffmanBitCode code : sortedCodes) {
             valueToCode[code.value] = code;
         }
     }
@@ -89,7 +89,7 @@ class HuffmanByteHelper {
             if (codeBook.containsKey(bitLengths[i]))
                 codeBook.get(bitLengths[i]).add(values[i]);
             else {
-                TreeSet<Integer> entry = new TreeSet<Integer>();
+                final TreeSet<Integer> entry = new TreeSet<Integer>();
                 entry.add(values[i]);
                 codeBook.put(bitLengths[i], entry);
             }
@@ -99,17 +99,17 @@ class HuffmanByteHelper {
     private void buildCodes() {
         codes = new TreeMap<Integer, HuffmanBitCode>();
         int codeLength = 0, codeValue = -1;
-        for (Object key : codeBook.keySet()) { // Iterate over code lengths
+        for (final Object key : codeBook.keySet()) { // Iterate over code lengths
 
-            @SuppressWarnings("SuspiciousMethodCalls") SortedSet<Integer> get = codeBook.get(key);
-            int intKey = Integer.parseInt(key.toString());
-            for (Integer entry : get) { // Iterate over symbols
-                HuffmanBitCode code = new HuffmanBitCode();
+            @SuppressWarnings("SuspiciousMethodCalls") final SortedSet<Integer> get = codeBook.get(key);
+            final int intKey = Integer.parseInt(key.toString());
+            for (final Integer entry : get) { // Iterate over symbols
+                final HuffmanBitCode code = new HuffmanBitCode();
                 code.bitLength = intKey; // given: bit length
                 code.value = entry; // given: symbol
 
                 codeValue++; // increment bit value by 1
-                int delta = intKey - codeLength; // new length?
+                final int delta = intKey - codeLength; // new length?
                 codeValue = codeValue << delta; // pad with 0's
                 code.bitCode = codeValue; // calculated: huffman code
                 codeLength += delta; // adjust current code len
@@ -126,7 +126,7 @@ class HuffmanByteHelper {
 
     final long write(final BitOutputStream bos, final byte value)
             throws IOException {
-        HuffmanBitCode code = valueToCode[value];
+        final HuffmanBitCode code = valueToCode[value];
         if (code.value != value)
             throw new RuntimeException(String.format(
                     "Searching for %d but found %s.", value, code.toString()));
@@ -139,12 +139,12 @@ class HuffmanByteHelper {
         int prevLen = 0;
         int bits = 0;
         for (int i = 0; i < sortedCodes.length; i++) {
-            int len = sortedCodes[i].bitLength;
+            final int len = sortedCodes[i].bitLength;
             bits <<= len - prevLen;
             bits |= bis.readBits(len - prevLen);
             prevLen = len;
 
-            int index = bitCodeToValue[bits];
+            final int index = bitCodeToValue[bits];
             if (index > -1 && sortedBitLensByBitCode[index] == len)
                 return (byte) (0xFF & sortedValuesByBitCode[index]);
 
@@ -159,8 +159,8 @@ class HuffmanByteHelper {
     private static final Comparator<HuffmanBitCode> bitCodeComparator = new Comparator<HuffmanBitCode>() {
 
         @Override
-        public int compare(HuffmanBitCode o1, HuffmanBitCode o2) {
-            int result = o1.bitLength - o2.bitLength;
+        public int compare(final HuffmanBitCode o1, final HuffmanBitCode o2) {
+            final int result = o1.bitLength - o2.bitLength;
             if (result == 0)
                 return o1.bitCode - o2.bitCode;
             else

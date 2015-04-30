@@ -28,8 +28,8 @@ public class ContainerIO {
      * @return a new container object read from the stream
      * @throws IOException as per java IO contract
      */
-    public static Container readContainer(Version version, InputStream is) throws IOException {
-        Container c = readContainer(version.major, is);
+    public static Container readContainer(final Version version, final InputStream is) throws IOException {
+        final Container c = readContainer(version.major, is);
         if (c == null) {
             // this will cause System.exit(1):
             CramVersionPolicies.eofNotFound(version);
@@ -48,7 +48,7 @@ public class ContainerIO {
      * @return CRAM container or null if no more data
      * @throws IOException
      */
-    private static Container readContainer(int major, InputStream is) throws IOException {
+    private static Container readContainer(final int major, final InputStream is) throws IOException {
         return readContainer(major, is, 0, Integer.MAX_VALUE);
     }
 
@@ -60,9 +60,9 @@ public class ContainerIO {
      * @return a new {@link Container} object with container header values filled out but empty body (no slices and blocks).
      * @throws IOException as per java IO contract
      */
-    public static Container readContainerHeader(int major, InputStream is) throws IOException {
-        Container c = new Container();
-        ContainerHeaderIO containerHeaderIO = new ContainerHeaderIO();
+    public static Container readContainerHeader(final int major, final InputStream is) throws IOException {
+        final Container c = new Container();
+        final ContainerHeaderIO containerHeaderIO = new ContainerHeaderIO();
         if (!containerHeaderIO.readContainerHeader(major, c, is)) {
             containerHeaderIO.readContainerHeader(c, new ByteArrayInputStream((major >= 3 ? CramIO.ZERO_F_EOF_MARKER : CramIO.ZERO_B_EOF_MARKER)));
             return c;
@@ -71,13 +71,13 @@ public class ContainerIO {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private static Container readContainer(int major, InputStream is, int fromSlice, int howManySlices) throws IOException {
+    private static Container readContainer(final int major, final InputStream is, final int fromSlice, int howManySlices) throws IOException {
 
-        long time1 = System.nanoTime();
-        Container c = readContainerHeader(major, is);
+        final long time1 = System.nanoTime();
+        final Container c = readContainerHeader(major, is);
         if (c.isEOF()) return c;
 
-        Block chb = Block.readFromInputStream(major, is);
+        final Block chb = Block.readFromInputStream(major, is);
         if (chb.getContentType() != BlockContentType.COMPRESSION_HEADER)
             throw new RuntimeException("Content type does not match: " + chb.getContentType().name());
         c.h = new CompressionHeader();
@@ -88,9 +88,9 @@ public class ContainerIO {
         if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
             is.skip(c.landmarks[fromSlice]);
 
-        List<Slice> slices = new ArrayList<Slice>();
+        final List<Slice> slices = new ArrayList<Slice>();
         for (int s = fromSlice; s < howManySlices - fromSlice; s++) {
-            Slice slice = new Slice();
+            final Slice slice = new Slice();
             SliceIO.read(major, slice, is);
             slice.index = s;
             slices.add(slice);
@@ -100,7 +100,7 @@ public class ContainerIO {
 
         calculateSliceOffsetsAndSizes(c);
 
-        long time2 = System.nanoTime();
+        final long time2 = System.nanoTime();
 
         log.debug("READ CONTAINER: " + c.toString());
         c.readTime = time2 - time1;
@@ -108,16 +108,16 @@ public class ContainerIO {
         return c;
     }
 
-    private static void calculateSliceOffsetsAndSizes(Container c) {
+    private static void calculateSliceOffsetsAndSizes(final Container c) {
         if (c.slices.length == 0) return;
         for (int i = 0; i < c.slices.length - 1; i++) {
-            Slice s = c.slices[i];
+            final Slice s = c.slices[i];
             s.offset = c.landmarks[i];
             s.size = c.landmarks[i + 1] - s.offset;
             s.containerOffset = c.offset;
             s.index = i ;
         }
-        Slice lastSlice = c.slices[c.slices.length - 1];
+        final Slice lastSlice = c.slices[c.slices.length - 1];
         lastSlice.offset = c.landmarks[c.landmarks.length - 1];
         lastSlice.size = c.containerByteSize - lastSlice.offset;
         lastSlice.containerOffset = c.offset;
@@ -133,7 +133,7 @@ public class ContainerIO {
      * @return the number of bytes written
      * @throws IOException as per java IO contract
      */
-    public static int writeContainerHeader(int major, Container container, OutputStream os) throws IOException {
+    public static int writeContainerHeader(final int major, final Container container, final OutputStream os) throws IOException {
         return new ContainerHeaderIO().writeContainerHeader(major, container, os);
     }
 
@@ -147,44 +147,44 @@ public class ContainerIO {
      * @return the number of bytes written out
      * @throws IOException as per java IO contract
      */
-    public static int writeContainer(Version version, Container container, OutputStream os) throws IOException {
+    public static int writeContainer(final Version version, final Container container, final OutputStream os) throws IOException {
         {
             if (container.blocks != null && container.blocks.length > 0) {
 
-                Block firstBlock = container.blocks[0];
-                boolean isFileHeaderContainer = firstBlock.getContentType() == BlockContentType.FILE_HEADER;
+                final Block firstBlock = container.blocks[0];
+                final boolean isFileHeaderContainer = firstBlock.getContentType() == BlockContentType.FILE_HEADER;
                 if (isFileHeaderContainer) {
-                    ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                    final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     firstBlock.write(version.major, baos);
                     container.containerByteSize = baos.size();
 
-                    int containerHeaderByteSize = new ContainerHeaderIO().writeContainerHeader(version.major, container, os);
+                    final int containerHeaderByteSize = new ContainerHeaderIO().writeContainerHeader(version.major, container, os);
                     os.write(baos.getBuffer(), 0, baos.size());
                     return containerHeaderByteSize + baos.size();
                 }
             }
         }
 
-        long time1 = System.nanoTime();
-        ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+        final long time1 = System.nanoTime();
+        final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
 
-        Block block = new Block();
+        final Block block = new Block();
         block.setContentType(BlockContentType.COMPRESSION_HEADER);
         block.setContentId(0);
         block.setMethod(BlockCompressionMethod.RAW);
-        byte[] bytes;
+        final byte[] bytes;
         try {
             bytes = container.h.toByteArray();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("This should have never happened.");
         }
         block.setRawContent(bytes);
         block.write(version.major, baos);
         container.blockCount = 1;
 
-        List<Integer> landmarks = new ArrayList<Integer>();
+        final List<Integer> landmarks = new ArrayList<Integer>();
         for (int i = 0; i < container.slices.length; i++) {
-            Slice s = container.slices[i];
+            final Slice s = container.slices[i];
             landmarks.add(baos.size());
             SliceIO.write(version.major, s, baos);
             container.blockCount++;
@@ -203,7 +203,7 @@ public class ContainerIO {
         os.write(baos.getBuffer(), 0, baos.size());
         len += baos.size();
 
-        long time2 = System.nanoTime();
+        final long time2 = System.nanoTime();
 
         log.debug("CONTAINER WRITTEN: " + container.toString());
         container.writeTime = time2 - time1;
@@ -218,8 +218,8 @@ public class ContainerIO {
      * @param container the container to be weighted
      * @return the total number of bytes the container would occupy if written out
      */
-    public static long getByteSize(Version version, Container container) {
-        CountingOutputStream cos = new CountingOutputStream(new OutputStream() {
+    public static long getByteSize(final Version version, final Container container) {
+        final CountingOutputStream cos = new CountingOutputStream(new OutputStream() {
             @Override
             public void write(final int b) throws IOException {
             }
@@ -228,7 +228,7 @@ public class ContainerIO {
         try {
             writeContainer(version, container, cos);
             cos.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
 

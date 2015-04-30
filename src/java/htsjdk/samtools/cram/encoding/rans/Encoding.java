@@ -13,8 +13,8 @@ class Encoding {
         int rcp_shift; // Reciprocal shift
     }
 
-    static void RansEncSymbolInit(RansEncSymbol s, int start, int freq,
-                                  int scale_bits) {
+    static void RansEncSymbolInit(final RansEncSymbol s, final int start, final int freq,
+                                  final int scale_bits) {
         // RansAssert(scale_bits <= 16); RansAssert(start <= (1u <<
         // scale_bits)); RansAssert(freq <= (1u << scale_bits) - start);
 
@@ -42,12 +42,12 @@ class Encoding {
         s.rcp_shift += 32; // Avoid the extra >>32 in RansEncPutSymbol
     }
 
-    static int RansEncPutSymbol(int r, ByteBuffer ptr, RansEncSymbol sym) {
+    static int RansEncPutSymbol(int r, final ByteBuffer ptr, final RansEncSymbol sym) {
         assert (sym.x_max != 0); // can't encode symbol with freq=0
 
         // re-normalize
         int x = r;
-        int x_max = sym.x_max;
+        final int x_max = sym.x_max;
         if (x >= x_max) {
             if (x >= x_max) {
                 ptr.put((byte) (x & 0xFF));
@@ -66,7 +66,7 @@ class Encoding {
         // int q = (int) (((uint64_t)x * sym.rcp_freq) >> 32) >> sym.rcp_shift;
 
         // The extra >>32 has already been added to RansEncSymbolInit
-        long q = ((x * (0xFFFFFFFFL & sym.rcp_freq)) >> sym.rcp_shift);
+        final long q = ((x * (0xFFFFFFFFL & sym.rcp_freq)) >> sym.rcp_shift);
         r = (int) (x + sym.bias + q * sym.cmpl_freq);
         return r;
     }

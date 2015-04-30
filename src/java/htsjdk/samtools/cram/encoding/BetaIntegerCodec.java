@@ -25,26 +25,26 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     private int offset = 0;
     private final int readNofBits;
 
-    public BetaIntegerCodec(int offset, int readNofBits) {
+    public BetaIntegerCodec(final int offset, final int readNofBits) {
         this.offset = offset;
         this.readNofBits = readNofBits;
     }
 
     @Override
-    public final Integer read(BitInputStream bis) throws IOException {
+    public final Integer read(final BitInputStream bis) throws IOException {
         return bis.readBits(readNofBits) - offset;
     }
 
     @Override
-    public final long write(BitOutputStream bos, Integer value) throws IOException {
-        int nofBits = (int) numberOfBits(value);
-        long newValue = value + offset;
+    public final long write(final BitOutputStream bos, final Integer value) throws IOException {
+        final int nofBits = (int) numberOfBits(value);
+        final long newValue = value + offset;
         bos.write(newValue, nofBits);
         return nofBits;
     }
 
     @Override
-    public final long numberOfBits(Integer value) {
+    public final long numberOfBits(final Integer value) {
         if (value > (1L << readNofBits))
             throw new IllegalArgumentException("Value written is bigger then allowed: value=" + value
                     + ", max nof bits=" + readNofBits);
@@ -53,7 +53,7 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
-    public Integer read(BitInputStream bis, int len) throws IOException {
+    public Integer read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 

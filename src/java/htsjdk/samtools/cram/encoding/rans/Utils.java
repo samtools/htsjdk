@@ -3,7 +3,7 @@ package htsjdk.samtools.cram.encoding.rans;
 import java.nio.ByteBuffer;
 
 class Utils {
-    private static void reverse(byte[] array, int offset, int size) {
+    private static void reverse(final byte[] array, final int offset, final int size) {
         if (array == null) {
             return;
         }
@@ -19,7 +19,7 @@ class Utils {
         }
     }
 
-    static void reverse(ByteBuffer ptr) {
+    static void reverse(final ByteBuffer ptr) {
         byte tmp ;
         if (ptr.hasArray()) {
             reverse(ptr.array(), ptr.arrayOffset(), ptr.limit());

@@ -43,12 +43,12 @@ public class NullEncoding<T> implements Encoding<T> {
     }
 
     @Override
-    public void fromByteArray(byte[] data) {
+    public void fromByteArray(final byte[] data) {
     }
 
     @Override
-    public BitCodec<T> buildCodec(Map<Integer, InputStream> inputMap,
-                                  Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public BitCodec<T> buildCodec(final Map<Integer, InputStream> inputMap,
+                                  final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new NullCodec<T>();
     }
 

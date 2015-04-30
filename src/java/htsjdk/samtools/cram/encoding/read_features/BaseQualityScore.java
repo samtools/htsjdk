@@ -27,7 +27,7 @@ public class BaseQualityScore implements Serializable, ReadFeature {
 
     public static final byte operator = 'Q';
 
-    public BaseQualityScore(int position, byte qualityScore) {
+    public BaseQualityScore(final int position, final byte qualityScore) {
         this.position = position;
         this.qualityScore = qualityScore;
     }
@@ -42,7 +42,7 @@ public class BaseQualityScore implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -50,16 +50,16 @@ public class BaseQualityScore implements Serializable, ReadFeature {
         return qualityScore;
     }
 
-    public void setQualityScore(byte qualityScore) {
+    public void setQualityScore(final byte qualityScore) {
         this.qualityScore = qualityScore;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof BaseQualityScore))
             return false;
 
-        BaseQualityScore v = (BaseQualityScore) obj;
+        final BaseQualityScore v = (BaseQualityScore) obj;
 
         return position == v.position && qualityScore == v.qualityScore;
 
@@ -67,7 +67,7 @@ public class BaseQualityScore implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder().append((char) operator).append('@');
+        final StringBuilder sb = new StringBuilder().append((char) operator).append('@');
         sb.append(position);
         sb.append('#').appendCodePoint(qualityScore);
         return sb.toString();

@@ -27,13 +27,13 @@ class ExternalLongCodec extends AbstractBitCodec<Long> {
     private final OutputStream os;
     private final InputStream is;
 
-    public ExternalLongCodec(OutputStream os, InputStream is) {
+    public ExternalLongCodec(final OutputStream os, final InputStream is) {
         this.os = os;
         this.is = is;
     }
 
     @Override
-    public Long read(BitInputStream bis) throws IOException {
+    public Long read(final BitInputStream bis) throws IOException {
         long result = 0;
         for (int i = 0; i < 8; i++) {
             result <<= 8;
@@ -43,7 +43,7 @@ class ExternalLongCodec extends AbstractBitCodec<Long> {
     }
 
     @Override
-    public long write(BitOutputStream bos, Long value) throws IOException {
+    public long write(final BitOutputStream bos, Long value) throws IOException {
         for (int i = 0; i < 8; i++) {
             os.write((int) (value & 0xFF));
             value >>>= 8;
@@ -52,12 +52,12 @@ class ExternalLongCodec extends AbstractBitCodec<Long> {
     }
 
     @Override
-    public long numberOfBits(Long object) {
+    public long numberOfBits(final Long object) {
         return 8;
     }
 
     @Override
-    public Long read(BitInputStream bis, int len) throws IOException {
+    public Long read(final BitInputStream bis, final int len) throws IOException {
         throw new RuntimeException("Not implemented.");
     }
 }

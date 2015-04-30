@@ -60,16 +60,16 @@ public class CompressionHeader {
     public CompressionHeader() {
     }
 
-    private CompressionHeader(InputStream is) throws IOException {
+    private CompressionHeader(final InputStream is) throws IOException {
         read(is);
     }
 
-    private byte[][][] parseDictionary(byte[] bytes) {
-        List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
+    private byte[][][] parseDictionary(final byte[] bytes) {
+        final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
         {
             int i = 0;
             while (i < bytes.length) {
-                List<byte[]> list = new ArrayList<byte[]>();
+                final List<byte[]> list = new ArrayList<byte[]>();
                 while (bytes[i] != 0) {
                     list.add(Arrays.copyOfRange(bytes, i, i + 3));
                     i += 3;
@@ -80,12 +80,12 @@ public class CompressionHeader {
         }
 
         int maxWidth = 0;
-        for (List<byte[]> list : dictionary)
+        for (final List<byte[]> list : dictionary)
             maxWidth = Math.max(maxWidth, list.size());
 
-        byte[][][] array = new byte[dictionary.size()][][];
+        final byte[][][] array = new byte[dictionary.size()][][];
         for (int i = 0; i < dictionary.size(); i++) {
-            List<byte[]> list = dictionary.get(i);
+            final List<byte[]> list = dictionary.get(i);
             array[i] = list.toArray(new byte[list.size()][]);
         }
 
@@ -94,43 +94,43 @@ public class CompressionHeader {
 
     private byte[] dictionaryToByteArray() {
         int size = 0;
-        for (byte[][] aDictionary1 : dictionary) {
-            for (byte[] anADictionary1 : aDictionary1) size += anADictionary1.length;
+        for (final byte[][] aDictionary1 : dictionary) {
+            for (final byte[] anADictionary1 : aDictionary1) size += anADictionary1.length;
             size++;
         }
 
-        byte[] bytes = new byte[size];
-        ByteBuffer buf = ByteBuffer.wrap(bytes);
-        for (byte[][] aDictionary : dictionary) {
-            for (byte[] anADictionary : aDictionary) buf.put(anADictionary);
+        final byte[] bytes = new byte[size];
+        final ByteBuffer buf = ByteBuffer.wrap(bytes);
+        for (final byte[][] aDictionary : dictionary) {
+            for (final byte[] anADictionary : aDictionary) buf.put(anADictionary);
             buf.put((byte) 0);
         }
 
         return bytes;
     }
 
-    public byte[][] getTagIds(int id) {
+    public byte[][] getTagIds(final int id) {
         return dictionary[id];
     }
 
-    public void read(byte[] data) {
+    public void read(final byte[] data) {
         try {
             read(new ByteArrayInputStream(data));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("This should have never happened.");
         }
     }
 
-    void read(InputStream is) throws IOException {
+    void read(final InputStream is) throws IOException {
         { // preservation map:
-            int byteSize = ITF8.readUnsignedITF8(is);
-            byte[] bytes = new byte[byteSize];
+            final int byteSize = ITF8.readUnsignedITF8(is);
+            final byte[] bytes = new byte[byteSize];
             InputStreamUtils.readFully(is, bytes, 0, bytes.length);
-            ByteBuffer buf = ByteBuffer.wrap(bytes);
+            final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
-            int mapSize = ITF8.readUnsignedITF8(buf);
+            final int mapSize = ITF8.readUnsignedITF8(buf);
             for (int i = 0; i < mapSize; i++) {
-                String key = new String(new byte[]{buf.get(), buf.get()});
+                final String key = new String(new byte[]{buf.get(), buf.get()});
                 if (RN_readNamesIncluded.equals(key))
                     readNamesIncluded = buf.get() == 1;
                 else if (AP_alignmentPositionIsDelta.equals(key))
@@ -138,13 +138,13 @@ public class CompressionHeader {
                 else if (RR_referenceRequired.equals(key))
                     referenceRequired = buf.get() == 1;
                 else if (TD_tagIdsDictionary.equals(key)) {
-                    int size = ITF8.readUnsignedITF8(buf);
-                    byte[] dictionaryBytes = new byte[size];
+                    final int size = ITF8.readUnsignedITF8(buf);
+                    final byte[] dictionaryBytes = new byte[size];
                     buf.get(dictionaryBytes);
                     dictionary = parseDictionary(dictionaryBytes);
                 } else if (SM_substitutionMatrix.equals(key)) {
                     // parse subs matrix here:
-                    byte[] matrixBytes = new byte[5];
+                    final byte[] matrixBytes = new byte[5];
                     buf.get(matrixBytes);
                     substitutionMatrix = new SubstitutionMatrix(matrixBytes);
                 } else
@@ -154,27 +154,27 @@ public class CompressionHeader {
         }
 
         { // encoding map:
-            int byteSize = ITF8.readUnsignedITF8(is);
-            byte[] bytes = new byte[byteSize];
+            final int byteSize = ITF8.readUnsignedITF8(is);
+            final byte[] bytes = new byte[byteSize];
             InputStreamUtils.readFully(is, bytes, 0, bytes.length);
-            ByteBuffer buf = ByteBuffer.wrap(bytes);
+            final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
-            int mapSize = ITF8.readUnsignedITF8(buf);
+            final int mapSize = ITF8.readUnsignedITF8(buf);
             eMap = new TreeMap<EncodingKey, EncodingParams>();
-            for (EncodingKey key : EncodingKey.values())
+            for (final EncodingKey key : EncodingKey.values())
                 eMap.put(key, NullEncoding.toParam());
 
             for (int i = 0; i < mapSize; i++) {
-                String key = new String(new byte[]{buf.get(), buf.get()});
-                EncodingKey eKey = EncodingKey.byFirstTwoChars(key);
+                final String key = new String(new byte[]{buf.get(), buf.get()});
+                final EncodingKey eKey = EncodingKey.byFirstTwoChars(key);
                 if (eKey == null) {
                     log.debug("Unknown encoding key: " + key);
                     continue;
                 }
 
-                EncodingID id = EncodingID.values()[buf.get()];
-                int paramLen = ITF8.readUnsignedITF8(buf);
-                byte[] paramBytes = new byte[paramLen];
+                final EncodingID id = EncodingID.values()[buf.get()];
+                final int paramLen = ITF8.readUnsignedITF8(buf);
+                final byte[] paramBytes = new byte[paramLen];
                 buf.get(paramBytes);
 
                 eMap.put(eKey, new EncodingParams(id, paramBytes));
@@ -186,19 +186,19 @@ public class CompressionHeader {
         }
 
         { // tag encoding map:
-            int byteSize = ITF8.readUnsignedITF8(is);
-            byte[] bytes = new byte[byteSize];
+            final int byteSize = ITF8.readUnsignedITF8(is);
+            final byte[] bytes = new byte[byteSize];
             InputStreamUtils.readFully(is, bytes, 0, bytes.length);
-            ByteBuffer buf = ByteBuffer.wrap(bytes);
+            final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
-            int mapSize = ITF8.readUnsignedITF8(buf);
+            final int mapSize = ITF8.readUnsignedITF8(buf);
             tMap = new TreeMap<Integer, EncodingParams>();
             for (int i = 0; i < mapSize; i++) {
-                int key = ITF8.readUnsignedITF8(buf);
+                final int key = ITF8.readUnsignedITF8(buf);
 
-                EncodingID id = EncodingID.values()[buf.get()];
-                int paramLen = ITF8.readUnsignedITF8(buf);
-                byte[] paramBytes = new byte[paramLen];
+                final EncodingID id = EncodingID.values()[buf.get()];
+                final int paramLen = ITF8.readUnsignedITF8(buf);
+                final byte[] paramBytes = new byte[paramLen];
                 buf.get(paramBytes);
 
                 tMap.put(key, new EncodingParams(id, paramBytes));
@@ -207,15 +207,15 @@ public class CompressionHeader {
     }
 
     public byte[] toByteArray() throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         write(baos);
         return baos.toByteArray();
     }
 
-    void write(OutputStream os) throws IOException {
+    void write(final OutputStream os) throws IOException {
 
         { // preservation map:
-            ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
+            final ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(5, mapBuf);
 
             mapBuf.put(RN_readNamesIncluded.getBytes());
@@ -232,13 +232,13 @@ public class CompressionHeader {
 
             mapBuf.put(TD_tagIdsDictionary.getBytes());
             {
-                byte[] dBytes = dictionaryToByteArray();
+                final byte[] dBytes = dictionaryToByteArray();
                 ITF8.writeUnsignedITF8(dBytes.length, mapBuf);
                 mapBuf.put(dBytes);
             }
 
             mapBuf.flip();
-            byte[] mapBytes = new byte[mapBuf.limit()];
+            final byte[] mapBytes = new byte[mapBuf.limit()];
             mapBuf.get(mapBytes);
 
             ITF8.writeUnsignedITF8(mapBytes.length, os);
@@ -247,27 +247,27 @@ public class CompressionHeader {
 
         { // encoding map:
             int size = 0;
-            for (EncodingKey eKey : eMap.keySet()) {
+            for (final EncodingKey eKey : eMap.keySet()) {
                 if (eMap.get(eKey).id != EncodingID.NULL)
                     size++;
             }
 
-            ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
+            final ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(size, mapBuf);
-            for (EncodingKey eKey : eMap.keySet()) {
+            for (final EncodingKey eKey : eMap.keySet()) {
                 if (eMap.get(eKey).id == EncodingID.NULL)
                     continue;
 
                 mapBuf.put((byte) eKey.name().charAt(0));
                 mapBuf.put((byte) eKey.name().charAt(1));
 
-                EncodingParams params = eMap.get(eKey);
+                final EncodingParams params = eMap.get(eKey);
                 mapBuf.put((byte) (0xFF & params.id.ordinal()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuf);
                 mapBuf.put(params.params);
             }
             mapBuf.flip();
-            byte[] mapBytes = new byte[mapBuf.limit()];
+            final byte[] mapBytes = new byte[mapBuf.limit()];
             mapBuf.get(mapBytes);
 
             ITF8.writeUnsignedITF8(mapBytes.length, os);
@@ -275,18 +275,18 @@ public class CompressionHeader {
         }
 
         { // tag encoding map:
-            ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
+            final ByteBuffer mapBuf = ByteBuffer.allocate(1024 * 100);
             ITF8.writeUnsignedITF8(tMap.size(), mapBuf);
-            for (Integer eKey : tMap.keySet()) {
+            for (final Integer eKey : tMap.keySet()) {
                 ITF8.writeUnsignedITF8(eKey, mapBuf);
 
-                EncodingParams params = tMap.get(eKey);
+                final EncodingParams params = tMap.get(eKey);
                 mapBuf.put((byte) (0xFF & params.id.ordinal()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuf);
                 mapBuf.put(params.params);
             }
             mapBuf.flip();
-            byte[] mapBytes = new byte[mapBuf.limit()];
+            final byte[] mapBytes = new byte[mapBuf.limit()];
             mapBuf.get(mapBytes);
 
             ITF8.writeUnsignedITF8(mapBytes.length, os);

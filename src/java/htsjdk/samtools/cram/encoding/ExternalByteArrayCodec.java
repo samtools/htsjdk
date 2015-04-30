@@ -27,47 +27,47 @@ class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
     private final OutputStream os;
     private final InputStream is;
 
-    public ExternalByteArrayCodec(OutputStream os, InputStream is) {
+    public ExternalByteArrayCodec(final OutputStream os, final InputStream is) {
         this.os = os;
         this.is = is;
     }
 
     @Override
-    public byte[] read(BitInputStream bis, int len) throws IOException {
+    public byte[] read(final BitInputStream bis, final int len) throws IOException {
         return InputStreamUtils.readFully(is, len);
     }
 
     @Override
-    public void readInto(BitInputStream bis, byte[] array, int offset,
-                         int valueLen) throws IOException {
+    public void readInto(final BitInputStream bis, final byte[] array, final int offset,
+                         final int valueLen) throws IOException {
         InputStreamUtils.readFully(is, array, offset, valueLen);
     }
 
     @Override
-    public void skip(BitInputStream bis) throws IOException {
+    public void skip(final BitInputStream bis) throws IOException {
         //noinspection ResultOfMethodCallIgnored
         is.skip(1);
     }
 
     @Override
-    public void skip(BitInputStream bis, int len) throws IOException {
+    public void skip(final BitInputStream bis, final int len) throws IOException {
         //noinspection ResultOfMethodCallIgnored
         is.skip(len);
     }
 
     @Override
-    public long write(BitOutputStream bos, byte[] object) throws IOException {
+    public long write(final BitOutputStream bos, final byte[] object) throws IOException {
         os.write(object);
         return numberOfBits(object);
     }
 
     @Override
-    public long numberOfBits(byte[] object) {
+    public long numberOfBits(final byte[] object) {
         return object.length * 8;
     }
 
     @Override
-    public byte[] read(BitInputStream bis) throws IOException {
+    public byte[] read(final BitInputStream bis) throws IOException {
         throw new RuntimeException("Cannot read byte array of unknown length.");
     }
 

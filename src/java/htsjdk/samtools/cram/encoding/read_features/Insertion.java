@@ -30,7 +30,7 @@ public class Insertion implements Serializable, ReadFeature {
     public Insertion() {
     }
 
-    public Insertion(int position, byte[] sequence) {
+    public Insertion(final int position, final byte[] sequence) {
         this.position = position;
         this.sequence = sequence;
     }
@@ -44,7 +44,7 @@ public class Insertion implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -52,16 +52,16 @@ public class Insertion implements Serializable, ReadFeature {
         return sequence;
     }
 
-    public void setSequence(byte[] sequence) {
+    public void setSequence(final byte[] sequence) {
         this.sequence = sequence;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Insertion))
             return false;
 
-        Insertion v = (Insertion) obj;
+        final Insertion v = (Insertion) obj;
 
         return position == v.position && Arrays.equals(sequence, v.sequence);
     }

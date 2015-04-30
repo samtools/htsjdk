@@ -63,7 +63,7 @@ public class Slice {
 
     public SAMBinaryTagAndValue sliceTags;
 
-    private void alignmentBordersSanityCheck(byte[] ref) {
+    private void alignmentBordersSanityCheck(final byte[] ref) {
         if (alignmentStart > 0 && sequenceId >= 0 && ref == null) throw new NullPointerException("Mapped slice reference is null.");
 
         if (alignmentStart > ref.length) {
@@ -78,12 +78,12 @@ public class Slice {
         }
     }
 
-    public boolean validateRefMD5(byte[] ref) {
+    public boolean validateRefMD5(final byte[] ref) {
         alignmentBordersSanityCheck(ref);
 
         if (!validateRefMD5(ref, alignmentStart, alignmentSpan, refMD5)) {
             final int shoulderLength = 10;
-            String excerpt = getBrief(alignmentStart, alignmentSpan, ref, shoulderLength);
+            final String excerpt = getBrief(alignmentStart, alignmentSpan, ref, shoulderLength);
 
             if (validateRefMD5(ref, alignmentStart, alignmentSpan - 1, refMD5)) {
                 log.warn(String.format("Reference MD5 matches partially for slice %d:%d-%d, %s", sequenceId, alignmentStart,
@@ -99,18 +99,18 @@ public class Slice {
         return true;
     }
 
-    private static boolean validateRefMD5(byte[] ref, int alignmentStart, int alignmentSpan, byte[] expectedMD5) {
-        int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
-        String md5 = SequenceUtil.calculateMD5String(ref, alignmentStart - 1, span);
+    private static boolean validateRefMD5(final byte[] ref, final int alignmentStart, final int alignmentSpan, final byte[] expectedMD5) {
+        final int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
+        final String md5 = SequenceUtil.calculateMD5String(ref, alignmentStart - 1, span);
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
     }
 
-    private static String getBrief(int start_1based, int span, byte[] bases, int shoulderLength) {
+    private static String getBrief(final int start_1based, final int span, final byte[] bases, final int shoulderLength) {
         if (span >= bases.length)
             return new String(bases);
 
-        StringBuilder sb = new StringBuilder();
-        int from_inc = start_1based - 1;
+        final StringBuilder sb = new StringBuilder();
+        final int from_inc = start_1based - 1;
 
         int to_exc = start_1based + span - 1;
         to_exc = Math.min(to_exc, bases.length);
@@ -131,7 +131,7 @@ public class Slice {
         return String.format("slice: seqID %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, nofRecords);
     }
 
-    public void setRefMD5(byte[] ref) {
+    public void setRefMD5(final byte[] ref) {
         alignmentBordersSanityCheck(ref);
 
         if (sequenceId < 0 && alignmentStart < 1) {
@@ -141,7 +141,7 @@ public class Slice {
             log.debug("Empty slice ref md5 is set.");
         } else {
 
-            int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
+            final int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
 
             if (alignmentStart + span > ref.length + 1)
                 throw new RuntimeException("Invalid alignment boundaries.");
@@ -149,8 +149,8 @@ public class Slice {
             refMD5 = SequenceUtil.calculateMD5(ref, alignmentStart - 1, span);
 
             if (log.isEnabled(Log.LogLevel.DEBUG)) {
-                StringBuffer sb = new StringBuffer();
-                int shoulder = 10;
+                final StringBuilder sb = new StringBuilder();
+                final int shoulder = 10;
                 if (ref.length <= shoulder * 2)
                     sb.append(new String(ref));
                 else {

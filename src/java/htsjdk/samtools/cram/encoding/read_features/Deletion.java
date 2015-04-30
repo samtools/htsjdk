@@ -29,7 +29,7 @@ public class Deletion implements Serializable, ReadFeature {
     public Deletion() {
     }
 
-    public Deletion(int position, int length) {
+    public Deletion(final int position, final int length) {
         this.position = position;
         this.length = length;
     }
@@ -45,7 +45,7 @@ public class Deletion implements Serializable, ReadFeature {
     }
 
     @Override
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -53,16 +53,16 @@ public class Deletion implements Serializable, ReadFeature {
         return length;
     }
 
-    public void setLength(int length) {
+    public void setLength(final int length) {
         this.length = length;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Deletion))
             return false;
 
-        Deletion v = (Deletion) obj;
+        final Deletion v = (Deletion) obj;
 
         return position == v.position && length == v.length;
 

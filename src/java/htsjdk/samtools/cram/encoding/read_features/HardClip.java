@@ -29,7 +29,7 @@ public class HardClip implements Serializable, ReadFeature {
     public HardClip() {
     }
 
-    public HardClip(int position, int len) {
+    public HardClip(final int position, final int len) {
         this.position = position;
         this.length = len;
     }
@@ -43,7 +43,7 @@ public class HardClip implements Serializable, ReadFeature {
         return position;
     }
 
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
@@ -51,16 +51,16 @@ public class HardClip implements Serializable, ReadFeature {
         return length;
     }
 
-    public void setLength(int length) {
+    public void setLength(final int length) {
         this.length = length;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof HardClip))
             return false;
 
-        HardClip v = (HardClip) obj;
+        final HardClip v = (HardClip) obj;
 
         return position == v.position && length == v.length;
 

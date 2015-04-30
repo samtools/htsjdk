@@ -27,14 +27,14 @@ public class Bases implements Serializable, ReadFeature {
         return bases;
     }
 
-    public void setBases(byte[] bases) {
+    public void setBases(final byte[] bases) {
         this.bases = bases;
     }
 
     public Bases() {
     }
 
-    public Bases(int position, byte[] sequence) {
+    public Bases(final int position, final byte[] sequence) {
         this.position = position;
         this.bases = sequence;
     }
@@ -52,16 +52,16 @@ public class Bases implements Serializable, ReadFeature {
     }
 
     @Override
-    public void setPosition(int position) {
+    public void setPosition(final int position) {
         this.position = position;
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof Bases))
             return false;
 
-        Bases v = (Bases) obj;
+        final Bases v = (Bases) obj;
 
         return position == v.position && !Arrays.equals(bases, v.bases);
 
