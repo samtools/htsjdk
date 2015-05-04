@@ -35,6 +35,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -210,7 +211,9 @@ import java.util.Set;
  *
  * @author depristo
  */
-public class VariantContext implements Feature { // to enable tribble integration
+public class VariantContext implements Feature, Serializable {
+    public static final long serialVersionUID = 1L;
+
     private final static boolean WARN_ABOUT_BAD_END = true;
     private final static int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
     private boolean fullyDecoded = false;

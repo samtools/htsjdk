@@ -29,6 +29,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,7 +43,9 @@ import java.util.TreeSet;
  *
  * @author Mark DePristo
  */
-public abstract class Genotype implements Comparable<Genotype> {
+public abstract class Genotype implements Comparable<Genotype>, Serializable {
+    public static final long serialVersionUID = 1L;
+
     /**
      * A list of genotype field keys corresponding to values we
      * manage inline in the Genotype object.  They must not appear in the

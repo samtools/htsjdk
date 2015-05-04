@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -182,6 +183,10 @@ public class VariantContextBuilder {
      * Attributes can be null -> meaning there are no attributes.  After
      * calling this routine the builder assumes it can modify the attributes
      * object here, if subsequent calls are made to set attribute values
+     *
+     * Value for each attribute must be of a type that implements {@link Serializable} or else
+     * serialization will fail.
+     *
      * @param attributes
      */
     public VariantContextBuilder attributes(final Map<String, Object> attributes) {
@@ -199,9 +204,8 @@ public class VariantContextBuilder {
     /**
      * Puts the key -> value mapping into this builder's attributes
      *
-     * @param key
-     * @param value
-     * @return
+     * @param key key for the attribute
+     * @param value value for the attribute (must be of a type that implements {@link Serializable} or else serialization will fail)
      */
     public VariantContextBuilder attribute(final String key, final Object value) {
         makeAttributesModifiable();
