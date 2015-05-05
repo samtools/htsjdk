@@ -469,7 +469,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 "picard.metrics",
                 "picard.illumina",
                 "picard.analysis",
-                "picard.analysis.directed"
+                "picard.analysis.directed",
+                "picard.vcf"
         };
 
         try { return Class.forName(className); }
