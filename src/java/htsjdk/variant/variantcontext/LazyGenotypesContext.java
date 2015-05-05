@@ -25,6 +25,9 @@
 
 package htsjdk.variant.variantcontext;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,21 +40,53 @@ import java.util.Map;
  * decoding the genotypes unnecessarily.
  */
 public class LazyGenotypesContext extends GenotypesContext {
-    /** The LazyParser we'll use to decode unparsedGenotypeData if necessary */
-    final LazyParser parser;
 
-    Object unparsedGenotypeData;
+    /**
+     * The LazyParser we'll use to decode unparsedGenotypeData if necessary.
+     *
+     * Transient because it would be extremely expensive to serialize. Instead, we fully decode
+     * all LazyGenotypesContexts before serializing them.
+     */
+    private transient LazyParser parser;
+
+    /**
+     * Lazily-parsed raw genotype data.
+     *
+     * Transient because since we always fully decode the genotype data before serializing it,
+     * there is never any case where we need to serialize unparsed genotype data.
+     */
+    private transient Object unparsedGenotypeData;
 
     /**
      * nUnparsedGenotypes the number of genotypes contained in the unparsedGenotypes data
      * (known already in the parser).  Useful for isEmpty and size() optimizations
      */
-    final int nUnparsedGenotypes;
+    private int nUnparsedGenotypes;
 
     /**
      * True if we've already decoded the values in unparsedGenotypeData
      */
-    boolean loaded = false;
+    private boolean loaded = false;
+
+    /**
+     * Custom de-serialization routine to ensure that all LazyGenotypesContexts we de-serialize
+     * are fully decoded. Throws an IllegalStateException if that is not the case.
+     *
+     * Necessary because the LazyParser required to decode the lazy context is transient.
+     *
+     * Note that the custom writeObject() companion to this method is implemented
+     * in the superclass (GenotypesContext), since decoding lazy data writes to superclass
+     * fields.
+     *
+     * @param in stream from which to de-serialize the LazyGenotypesContext
+     */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        if ( ! loaded || unparsedGenotypeData != null ) {
+            throw new IllegalStateException("Deserialized LazyGenotypesContext is not fully decoded, but is required to have been fully decoded before serialization");
+        }
+    }
 
     private final static ArrayList<Genotype> EMPTY = new ArrayList<Genotype>(0);
 
@@ -126,6 +161,7 @@ public class LazyGenotypesContext extends GenotypesContext {
             sampleNameToOffset = parsed.sampleNameToOffset;
             loaded = true;
             unparsedGenotypeData = null; // don't hold the unparsed data any longer
+            nUnparsedGenotypes = 0;
 
             // warning -- this path allows us to create a VariantContext that doesn't run validateGenotypes()
             // That said, it's not such an important routine -- it's just checking that the genotypes

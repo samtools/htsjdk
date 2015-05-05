@@ -25,6 +25,10 @@
 
 package htsjdk.variant.variantcontext;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,7 +43,9 @@ import java.util.Set;
 /**
  * Represents an ordered collection of Genotype objects
  */
-public class GenotypesContext implements List<Genotype> {
+public class GenotypesContext implements List<Genotype>, Serializable {
+    public static final long serialVersionUID = 1L;
+
     /**
      * static constant value for an empty GenotypesContext.  Useful since so many VariantContexts have no genotypes
      */
@@ -49,14 +55,14 @@ public class GenotypesContext implements List<Genotype> {
     /**
      *sampleNamesInOrder a list of sample names, one for each genotype in genotypes, sorted in alphabetical order
      */
-    List<String> sampleNamesInOrder = null;
+    protected List<String> sampleNamesInOrder = null;
 
     /**
      * a map optimized for efficient lookup.  Each genotype in genotypes must have its
      * sample name in sampleNameToOffset, with a corresponding integer value that indicates the offset of that
      * genotype in the vector of genotypes
      */
-    Map<String, Integer> sampleNameToOffset = null;
+    protected Map<String, Integer> sampleNameToOffset = null;
 
     /**
      * An ArrayList of genotypes contained in this context
@@ -65,7 +71,7 @@ public class GenotypesContext implements List<Genotype> {
      * ACCESS THIS VARIABLE.  USE getGenotypes() INSTEAD.
      *
      */
-    ArrayList<Genotype> notToBeDirectlyAccessedGenotypes;
+    protected ArrayList<Genotype> notToBeDirectlyAccessedGenotypes;
 
     /**
      * Cached value of the maximum ploidy observed among all samples
@@ -73,7 +79,27 @@ public class GenotypesContext implements List<Genotype> {
     private int maxPloidy = -1;
 
     /** Are we allowing users to modify the list? */
-    boolean immutable = false;
+    private boolean immutable = false;
+
+    /**
+     * Custom serialization routine. Needed to ensure that we decode any lazily-decoded data
+     * before serialization.
+     *
+     * @param out stream to which to serialize this object
+     */
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        // If we're a LazyGenotypesContext, decode the genotype data before serialization.
+        //
+        // Ugly, but we can't do this in LazyGenotypesContext.writeObject(), since
+        // by the time that's called we'll already have serialized the superclass
+        // data in GenotypesContext, and we need to make sure that we decode any lazy
+        // data BEFORE serializing the fields in GenotypesContext.
+        if ( getClass() == LazyGenotypesContext.class ) {
+            ((LazyGenotypesContext)this).decode();
+        }
+
+        out.defaultWriteObject();
+    }
 
     // ---------------------------------------------------------------------------
     //

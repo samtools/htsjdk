@@ -28,6 +28,7 @@ import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.StringUtil;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,8 +82,9 @@ import java.util.List;
  * @author alecw@broadinstitute.org
  * @author mishali.naik@intel.com
  */
-public class SAMRecord implements Cloneable, Locatable
-{
+public class SAMRecord implements Cloneable, Locatable, Serializable {
+    public static final long serialVersionUID = 1L;
+
     /**
      * Alignment score for a good alignment, but where computing a Phred-score is not feasible. 
      */
@@ -175,7 +177,12 @@ public class SAMRecord implements Cloneable, Locatable
      */
     private ValidationStringency mValidationStringency = ValidationStringency.SILENT;
 
-    private SAMFileSource mFileSource;
+    /**
+     * File source of this record. May be null. Note that this field is not serializable (and therefore marked
+     * as transient) due to encapsulated stream objects within it -- so serializing a SAMRecord will cause its
+     * file source to be lost (if it had one).
+     */
+    private transient SAMFileSource mFileSource;
     private SAMFileHeader mHeader = null;
 
     public SAMRecord(final SAMFileHeader header) {

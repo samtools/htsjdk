@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -36,7 +37,9 @@ import java.util.List;
  *
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for complete CIGAR specification.
  */
-public class Cigar {
+public class Cigar implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     private final List<CigarElement> cigarElements = new ArrayList<CigarElement>();
 
     public Cigar() {

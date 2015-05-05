@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +34,9 @@ import java.util.Map;
 /**
  * Collection of SAMSequenceRecords.
  */
-public class SAMSequenceDictionary {
+public class SAMSequenceDictionary implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     private List<SAMSequenceRecord> mSequences = new ArrayList<SAMSequenceRecord>();
     private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<String, SAMSequenceRecord>();
 

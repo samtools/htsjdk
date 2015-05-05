@@ -23,18 +23,29 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * Holds a SAMRecord attribute and the tagname (in binary form) for that attribute.
  * SAMRecord stores tag name and value in this form, because much String creation is avoided this way.
  * See SAMTagUtil to convert the tag to String form.
  *
+ * Values associated with attribute tags must be of a type that implements {@link Serializable} or else
+ * serialization will fail.
+ *
  * @author alecw@broadinstitute.org
  */
-public class SAMBinaryTagAndValue {
+public class SAMBinaryTagAndValue implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     public final short tag;
     public final Object value;
     protected SAMBinaryTagAndValue next = null;
 
+    /**
+     * @param tag tagname (in binary form) for this attribute
+     * @param value value for this attribute (must be of a type that implements {@link Serializable} or else serialization will fail)
+     */
     public SAMBinaryTagAndValue(final short tag, final Object value) {
         this.tag = tag;
         this.value = value;

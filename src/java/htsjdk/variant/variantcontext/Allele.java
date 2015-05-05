@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -101,7 +102,9 @@ import java.util.Collection;
 
  * @author ebanks, depristo
  */
-public class Allele implements Comparable<Allele> {
+public class Allele implements Comparable<Allele>, Serializable {
+    public static final long serialVersionUID = 1L;
+
     private static final byte[] EMPTY_ALLELE_BASES = new byte[0];
 
     private boolean isRef = false;

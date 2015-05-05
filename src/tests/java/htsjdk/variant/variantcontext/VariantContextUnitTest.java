@@ -28,13 +28,22 @@ package htsjdk.variant.variantcontext;
 
 // the imports for unit testing.
 
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureCodec;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.vcf.VCFCodec;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -989,4 +998,28 @@ public class VariantContextUnitTest extends VariantBaseTest {
     	builder.attribute("Test", "value");
     }
 
+    @DataProvider(name = "serializationTestData")
+    public Object[][] getSerializationTestData() {
+        return new Object[][] {
+                { new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), new VCFCodec() },
+                { new File("testdata/htsjdk/variant/serialization_test.bcf"), new BCF2Codec() }
+        };
+    }
+
+    @Test(dataProvider = "serializationTestData")
+    public void testSerialization( final File testFile, final FeatureCodec<VariantContext, ?> codec ) throws Exception {
+        final AbstractFeatureReader<VariantContext, ?> featureReader = AbstractFeatureReader.getFeatureReader(testFile.getAbsolutePath(), codec, false);
+        final VariantContext initialVC = featureReader.iterator().next();
+
+        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
+        out.writeObject(initialVC);
+        out.close();
+
+        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
+        final VariantContext vcDeserialized = (VariantContext)in.readObject();
+        in.close();
+
+        assertVariantContextsAreEqual(vcDeserialized, initialVC);
+    }
 }

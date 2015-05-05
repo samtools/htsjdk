@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +42,9 @@ import java.util.Set;
  *
  * @author depristo
  */
-public final class CommonInfo {
+public final class CommonInfo implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     public static final double NO_LOG10_PERROR = 1.0;
 
     private static Set<String> NO_FILTERS = Collections.emptySet();
