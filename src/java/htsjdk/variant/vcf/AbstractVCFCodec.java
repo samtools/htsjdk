@@ -39,6 +39,7 @@ import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -752,13 +753,15 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
     }
 
-    private final String[] INT_DECODE_ARRAY = new String[10000];
     private final int[] decodeInts(final String string) {
-        final int nValues = ParsingUtils.split(string, INT_DECODE_ARRAY, ',');
+        // find number of CSV items to set array size
+        int numItems = StringUtils.countMatches(string, ",") + 1;
+        String[] intDecodeArray = new String[numItems];
+        final int nValues = ParsingUtils.split(string, intDecodeArray, ',');
         final int[] values = new int[nValues];
         try {
             for ( int i = 0; i < nValues; i++ )
-                values[i] = Integer.valueOf(INT_DECODE_ARRAY[i]);
+                values[i] = Integer.valueOf(intDecodeArray[i]);
         } catch (final NumberFormatException e) {
             return null;
         }
