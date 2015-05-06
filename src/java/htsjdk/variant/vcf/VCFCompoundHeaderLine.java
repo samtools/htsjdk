@@ -249,16 +249,34 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     }
 
     /**
-     * returns true if we're equal to another compounder header line
+     * returns true if we're equal to another compound header line
      * @param o a compound header line
      * @return true if equal
      */
-    public boolean equals(Object o) {
-        if (!(o instanceof VCFCompoundHeaderLine))
+    @Override
+    public boolean equals(final Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() || ! super.equals(o) ) {
             return false;
-        VCFCompoundHeaderLine other = (VCFCompoundHeaderLine) o;
-        return equalsExcludingDescription(other) &&
-                description.equals(other.description);
+        }
+
+        final VCFCompoundHeaderLine that = (VCFCompoundHeaderLine) o;
+        return equalsExcludingDescription(that) &&
+               description.equals(that.description);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + name.hashCode();
+        result = 31 * result + count;
+        result = 31 * result + (countType != null ? countType.hashCode() : 0);  // only nullable field according to validate()
+        result = 31 * result + description.hashCode();
+        result = 31 * result + type.hashCode();
+        result = 31 * result + lineType.hashCode();
+        return result;
     }
 
     public boolean equalsExcludingDescription(VCFCompoundHeaderLine other) {
