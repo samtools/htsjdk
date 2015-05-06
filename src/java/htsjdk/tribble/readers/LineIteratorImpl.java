@@ -2,6 +2,7 @@ package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.AbstractIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class LineIteratorImpl extends AbstractIterator<String> implements LineIt
         try {
             return lineReader.readLine();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 

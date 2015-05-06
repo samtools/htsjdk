@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -135,7 +136,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             writeAndResetBuffer();
 
         } catch ( IOException e ) {
-            throw new RuntimeException("Couldn't write file " + getStreamName(), e);
+            throw new RuntimeIOException("Couldn't write file " + getStreamName(), e);
         }
     }
 
@@ -187,7 +188,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             writer.flush();  // necessary so that writing to an output stream will work
         }
         catch (IOException e) {
-            throw new RuntimeException("IOException writing the VCF header to " + streamNameForError, e);
+            throw new RuntimeIOException("IOException writing the VCF header to " + streamNameForError, e);
         }
 
         return header;
@@ -203,7 +204,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             // TODO -- would it be useful to null out the line buffer so we don't have it around unnecessarily?
             writer.close();
         } catch (IOException e) {
-            throw new RuntimeException("Unable to close " + getStreamName(), e);
+            throw new RuntimeIOException("Unable to close " + getStreamName(), e);
         }
 
         super.close();
@@ -224,7 +225,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             writeAndResetBuffer();
 
         } catch (IOException e) {
-            throw new RuntimeException("Unable to write the VCF object to " + getStreamName(), e);
+            throw new RuntimeIOException("Unable to write the VCF object to " + getStreamName(), e);
         }
     }
 }

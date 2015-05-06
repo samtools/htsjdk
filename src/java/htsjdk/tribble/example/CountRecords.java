@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -112,7 +113,7 @@ public class CountRecords {
             return recordCount;
 
         } catch (IOException e) {
-            throw new RuntimeException("Something went wrong while reading feature file " + featureInput, e);
+            throw new RuntimeIOException("Something went wrong while reading feature file " + featureInput, e);
         }
     }
 
@@ -175,7 +176,7 @@ public class CountRecords {
 
             return index;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to create index from file " + featureFile,e);
+            throw new RuntimeIOException("Unable to create index from file " + featureFile,e);
         }
     }
 

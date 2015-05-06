@@ -293,7 +293,7 @@ public class SAMFileWriterFactory {
             try {
                 return makeCRAMWriter(header, new FileOutputStream(outputFile), referenceFasta);
             } catch (final FileNotFoundException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
         return makeSAMOrBAMWriter(header, presorted, outputFile);
     }

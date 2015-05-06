@@ -24,6 +24,7 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.LineReader;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.tribble.readers.PositionalBufferedStream;
@@ -196,7 +197,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             try {
                 readNextRecord();
             } catch (IOException e) {
-                throw new RuntimeException("Unable to read the next record, the last record was at " +
+                throw new RuntimeIOException("Unable to read the next record, the last record was at " +
                         ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;

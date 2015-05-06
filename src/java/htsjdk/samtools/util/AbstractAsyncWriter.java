@@ -47,7 +47,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * to be written out.
      */
     public void write(final T item) {
-        if (this.isClosed.get()) throw new RuntimeException("Attempt to add record to closed writer.");
+        if (this.isClosed.get()) throw new RuntimeIOException("Attempt to add record to closed writer.");
 
         checkAndRethrow();
         try { this.queue.put(item); }

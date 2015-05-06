@@ -83,7 +83,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         final byte[] buffer = new byte[4];
         readBytes(buffer);
         if (!Arrays.equals(buffer, BAMFileConstants.BAM_INDEX_MAGIC)) {
-            throw new RuntimeException("Invalid file header in BAM index " + file +
+            throw new RuntimeIOException("Invalid file header in BAM index " + file +
                                        ": " + new String(buffer));
         }
         
@@ -545,7 +545,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
                 mRandomAccessFile = new RandomAccessFile(file, "r");
                 final long fileLength = mRandomAccessFile.length();
                 if (fileLength > Integer.MAX_VALUE) {
-                    throw new RuntimeException("BAM index file " + mFile + " is too large: " + fileLength);
+                    throw new RuntimeIOException("BAM index file " + mFile + " is too large: " + fileLength);
                 }
                 mFileLength = (int) fileLength;
             } catch (final IOException exc) {
@@ -558,7 +558,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             int resultOffset = 0;
             int resultLength = bytes.length;
             if (mFilePointer + resultLength > mFileLength) {
-                throw new RuntimeException("Attempt to read past end of BAM index file (file is truncated?): " + mFile);
+                throw new RuntimeIOException("Attempt to read past end of BAM index file (file is truncated?): " + mFile);
             }
             while (resultLength > 0) {
                 loadPage(mFilePointer);
