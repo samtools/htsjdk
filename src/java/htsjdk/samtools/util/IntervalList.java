@@ -98,6 +98,26 @@ public class IntervalList implements Iterable<Interval> {
         this.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
     }
 
+    /** Returns a new IntervalList where each interval is padded by the specified amount of bases. */
+    public IntervalList padded(final int before, final int after) {
+        if (before < 0 || after < 0) throw new IllegalArgumentException("Padding values must be >= 0.");
+        final IntervalList padded = new IntervalList(this.getHeader().clone());
+        final SAMSequenceDictionary dict = padded.getHeader().getSequenceDictionary();
+        for (final Interval i : this) {
+            final SAMSequenceRecord seq = dict.getSequence(i.getContig());
+            final int start = Math.max(1, i.getStart() - before);
+            final int end   = Math.min((seq == null ? Integer.MAX_VALUE : seq.getSequenceLength()), i.getEnd()+after);
+            padded.add(new Interval(i.getContig(), start, end, i.isNegativeStrand(), i.getName()));
+        }
+
+        return padded;
+    }
+
+    /** Returns a new IntervalList where each interval is padded by 'padding' bases on each side. */
+    public IntervalList padded(final int padding) {
+        return padded(padding, padding);
+    }
+
     /** returns an independent sorted IntervalList*/
     public IntervalList sorted() {
         final IntervalList sorted = IntervalList.copyOf(this);
