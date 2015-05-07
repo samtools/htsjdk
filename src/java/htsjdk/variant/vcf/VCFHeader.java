@@ -32,6 +32,7 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextComparator;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,7 +58,8 @@ import java.util.TreeSet;
  *         <p/>
  *         A class representing the VCF header
  */
-public class VCFHeader {
+public class VCFHeader implements Serializable {
+    public static final long serialVersionUID = 1L;
 
     // the mandatory header fields
     public enum HEADER_FIELDS {

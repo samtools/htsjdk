@@ -98,18 +98,26 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
         return getKey() + "=" + VCFHeaderLine.toStringEncoding(map);
     }
 
-    public boolean equals(Object o) {
-        if ( !(o instanceof VCFSimpleHeaderLine) )
-            return false;
-        VCFSimpleHeaderLine other = (VCFSimpleHeaderLine)o;
-        if ( !name.equals(other.name) || genericFields.size() != other.genericFields.size() )
-            return false;
-        for ( Map.Entry<String, String> entry : genericFields.entrySet() ) {
-            if ( !entry.getValue().equals(other.genericFields.get(entry.getKey())) )
-                return false;
+    @Override
+    public boolean equals( final Object o ) {
+        if ( this == o ) {
+            return true;
         }
-        
-        return true;       
+        if ( o == null || getClass() != o.getClass() || ! super.equals(o) ) {
+            return false;
+        }
+
+        final VCFSimpleHeaderLine that = (VCFSimpleHeaderLine) o;
+        return name.equals(that.name) &&
+               genericFields.equals(that.genericFields);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + name.hashCode();
+        result = 31 * result + genericFields.hashCode();
+        return result;
     }
 
     public String getID() {
