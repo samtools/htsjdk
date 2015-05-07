@@ -160,6 +160,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
                 return new SAMRecordCoordinateComparator();
             case queryname:
                 return new SAMRecordQueryNameComparator();
+            case duplicate:
+                return new SAMRecordDuplicateComparator();
             case unsorted:
                 return null;
         }

@@ -41,6 +41,9 @@ public class SAMSortOrderChecker {
             case queryname:
                 comparator = new SAMRecordQueryNameComparator();
                 break;
+            case duplicate:
+                comparator = new SAMRecordDuplicateComparator();
+                break;
             case unsorted:
             default:
                 comparator = null;

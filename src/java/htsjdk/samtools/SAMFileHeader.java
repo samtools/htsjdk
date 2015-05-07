@@ -67,7 +67,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
         unsorted(null),
         queryname(SAMRecordQueryNameComparator.class),
-        coordinate(SAMRecordCoordinateComparator.class);
+        coordinate(SAMRecordCoordinateComparator.class),
+        duplicate(SAMRecordDuplicateComparator.class); // NB: this is not in the SAM spec!
 
         private final Class<? extends SAMRecordComparator> comparator;
 
