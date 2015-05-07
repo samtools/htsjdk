@@ -23,14 +23,21 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 
 public class SAMFileWriterFactoryTest {
+
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
 
     /** PIC-442Confirm that writing to a special file does not cause exception when writing additional files. */
     @Test(groups={"unix"})
@@ -75,7 +82,35 @@ public class SAMFileWriterFactoryTest {
         Assert.assertFalse(sam.isEmpty());
         Assert.assertTrue(sam.startsWith("@HD\t"),"SAM: bad prefix");
     }
-    
+
+    @Test(description="Read and then write SAM to verify header attribute ordering does not change depending on JVM version")
+    public void samRoundTrip()  throws Exception  {
+        final File input = new File(TEST_DATA_DIR, "roundtrip.sam");
+
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        final File outputFile = File.createTempFile("roundtrip-out", ".sam");
+        outputFile.delete();
+        outputFile.deleteOnExit();
+        FileOutputStream os = new FileOutputStream(outputFile);
+        final SAMFileWriterFactory factory = new SAMFileWriterFactory();
+        final SAMFileWriter writer = factory.makeSAMWriter(reader.getFileHeader(), false, os);
+        for (SAMRecord rec : reader) {
+            writer.addAlignment(rec);
+        }
+        writer.close();
+        os.close();
+
+        InputStream is = new FileInputStream(input);
+        String originalsam = IOUtil.readFully(is);
+        is.close();
+
+        is = new FileInputStream(outputFile);
+        String writtensam = IOUtil.readFully(is);
+        is.close();
+
+        Assert.assertEquals(writtensam, originalsam);
+    }
+
     private void createSmallBam(final File outputFile) {
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         factory.setCreateIndex(true);
