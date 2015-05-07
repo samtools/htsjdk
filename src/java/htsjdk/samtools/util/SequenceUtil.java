@@ -887,7 +887,7 @@ public class SequenceUtil {
                     c1 = seq[z];
                     c2 = ref[x + j];
 
-                    if ((c1 == c2 && c1 != 15 && c2 != 15) || c1 == 0) {
+                    if ((c1 == c2) || c1 == 0) {
                         // a match
                         ++u;
                     } else {
