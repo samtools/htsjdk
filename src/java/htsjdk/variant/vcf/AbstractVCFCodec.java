@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.Vector;
 import java.util.zip.GZIPInputStream;
 
 
@@ -752,13 +753,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
     }
 
-    private final String[] INT_DECODE_ARRAY = new String[10000];
+    private final Vector<String> INT_DECODE_VECTOR = new Vector<String>(10000);
     private final int[] decodeInts(final String string) {
-        final int nValues = ParsingUtils.split(string, INT_DECODE_ARRAY, ',');
+        final int nValues = ParsingUtils.split(string, INT_DECODE_VECTOR, ',');
         final int[] values = new int[nValues];
         try {
             for ( int i = 0; i < nValues; i++ )
-                values[i] = Integer.valueOf(INT_DECODE_ARRAY[i]);
+                values[i] = Integer.valueOf(INT_DECODE_VECTOR.elementAt(i));
         } catch (final NumberFormatException e) {
             return null;
         }

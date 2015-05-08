@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 import java.util.WeakHashMap;
 
 /**
@@ -181,6 +182,54 @@ public class ParsingUtils {
         return split(aString, tokens, delim, false);
     }
 
+    /**
+     * Split the string into tokens given by the delimiter.  Will use a 
+     * Vector<String> to allow for dynamically resizing of the tokens array.
+     * Note that with careful pre-allocation of the tokens Vector, this should
+     * be no less efficient than the split(String, String[] char) function.
+     * Also, with this function, we do not need a split(String, Vector<String>, char, bool)
+     * function, as there is no maximum number of tokens.
+     * 
+     * @param sSrting the string to split
+     * @param tokens  a Vector<String> to hold the parsed tokens
+     * @param delim   character that delimits tokens
+     * @return the number of tkens parsed
+     */
+    public static int split(String aString, Vector<String> tokens, char delim) {
+        
+    	int nTokens = 0;
+        int start = 0;
+        int end = aString.indexOf(delim);
+        
+        // Empty out our answer, but preserve the memory allocation
+        tokens.clear();
+        
+        while(end >= 0){
+        	// Only add non-empty tokens
+        	if(start != end){
+        		tokens.add(aString.substring(start, end));
+        		start = end+1;
+        	}
+        	start = end+1;
+        	
+    		// If this condition is true, we likely ended with a token, so
+        	// manually set end = -1 to break the loop
+    		if(start >= aString.length()){
+    			end = -1;
+    		} else {
+    			end = aString.indexOf(delim, start);
+    		}
+
+        }
+        
+        // Add the final element (if non-empty)
+        if(start < aString.length()){
+        	tokens.add(aString.substring(start));
+        }
+    
+        return tokens.size();
+    }
+    
     /**
      * Split the string into tokens separated by the given delimiter.  Profiling has
      * revealed that the standard string.split() method typically takes > 1/2
