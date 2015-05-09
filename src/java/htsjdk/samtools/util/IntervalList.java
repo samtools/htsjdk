@@ -83,11 +83,19 @@ public class IntervalList implements Iterable<Interval> {
     public Iterator<Interval> iterator() { return this.intervals.iterator(); }
 
     /** Adds an interval to the list of intervals. */
-    public void add(final Interval interval) { this.intervals.add(interval); }
+    public void add(final Interval interval) {
+        if (header.getSequence(interval.getContig()) == null) {
+            throw new IllegalArgumentException(String.format("Cannot add interval %s, contig not in header", interval.toString()));
+        }
+        this.intervals.add(interval);
+    }
 
     /** Adds a Collection of intervals to the list of intervals. */
     public void addall(final Collection<Interval> intervals) {
-        this.intervals.addAll(intervals);
+        //use this instead of addAll so that the contig checking happens.
+        for (Interval interval : intervals) {
+            add(interval);
+        }
     }
 
     /** Sorts the internal collection of intervals by coordinate. */
@@ -106,7 +114,7 @@ public class IntervalList implements Iterable<Interval> {
         for (final Interval i : this) {
             final SAMSequenceRecord seq = dict.getSequence(i.getContig());
             final int start = Math.max(1, i.getStart() - before);
-            final int end   = Math.min((seq == null ? Integer.MAX_VALUE : seq.getSequenceLength()), i.getEnd()+after);
+            final int end   = Math.min(seq.getSequenceLength(), i.getEnd() + after);
             padded.add(new Interval(i.getContig(), start, end, i.isNegativeStrand(), i.getName()));
         }
 
