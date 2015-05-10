@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -47,7 +48,6 @@ import java.util.TreeSet;
 public class IntervalListTest {
 
     final SAMFileHeader fileHeader;
-
     final IntervalList list1, list2, list3;
 
     public IntervalListTest() {
@@ -57,7 +57,6 @@ public class IntervalListTest {
         list1 = new IntervalList(fileHeader);
         list2 = new IntervalList(fileHeader);
         list3 = new IntervalList(fileHeader);
-
 
         list1.add(new Interval("1", 1, 100));     //de-facto: 1:1-200 1:202-300     2:100-150 2:200-300
         list1.add(new Interval("1", 101, 200));
@@ -75,7 +74,6 @@ public class IntervalListTest {
         list3.add(new Interval("2", 200, 600));
         list3.add(new Interval("3", 50, 470));
     }
-
 
     @DataProvider(name = "intersectData")
     public Object[][] intersectData() {
@@ -102,7 +100,6 @@ public class IntervalListTest {
         intersect23.add(new Interval("2", 250, 270));
         intersect23.add(new Interval("2", 290, 400));
 
-
         return new Object[][]{
                 new Object[]{Arrays.asList(list1, list2, list3), intersect123},
                 new Object[]{Arrays.asList(list1, list2), intersect12},
@@ -128,7 +125,6 @@ public class IntervalListTest {
         final IntervalList merge23 = new IntervalList(fileHeader);
         final IntervalList merge13 = new IntervalList(fileHeader);
 
-
         merge123.add(new Interval("1", 1, 100));     //de-facto: 1:1-200 1:202-300     2:100-150 2:200-300
         merge123.add(new Interval("1", 101, 200));
         merge123.add(new Interval("1", 202, 300));
@@ -144,7 +140,6 @@ public class IntervalListTest {
         merge123.add(new Interval("1", 25, 400));    //de-facto 1:25-400                2:200-600                            3:50-470
         merge123.add(new Interval("2", 200, 600));
         merge123.add(new Interval("3", 50, 470));
-
 
         merge12.add(new Interval("1", 1, 100));     //de-facto: 1:1-200 1:202-300     2:100-150 2:200-300
         merge12.add(new Interval("1", 101, 200));
@@ -168,7 +163,6 @@ public class IntervalListTest {
         merge23.add(new Interval("2", 200, 600));
         merge23.add(new Interval("3", 50, 470));
 
-
         merge13.add(new Interval("1", 1, 100));     //de-facto: 1:1-200 1:202-300     2:100-150 2:200-300
         merge13.add(new Interval("1", 101, 200));
         merge13.add(new Interval("1", 202, 300));
@@ -179,16 +173,13 @@ public class IntervalListTest {
         merge13.add(new Interval("2", 200, 600));
         merge13.add(new Interval("3", 50, 470));
 
-
         return new Object[][]{
                 new Object[]{Arrays.asList(list1, list2, list3), merge123},
                 new Object[]{Arrays.asList(list1, list2), merge12},
                 new Object[]{Arrays.asList(list2, list3), merge23},
                 new Object[]{Arrays.asList(list1, list3), merge13}
-
         };
     }
-
 
     @Test(dataProvider = "mergeData")
     public void testMergeIntervalLists(final List<IntervalList> lists, final IntervalList list) {
@@ -196,7 +187,6 @@ public class IntervalListTest {
                 CollectionUtil.makeCollection(IntervalList.concatenate(lists).iterator()),
                 CollectionUtil.makeCollection(list.iterator()));
     }
-
 
     @DataProvider(name = "unionData")
     public Object[][] unionData() {
@@ -215,7 +205,6 @@ public class IntervalListTest {
         union12.add(new Interval("2", 1, 150));
         union12.add(new Interval("2", 200, 400));
 
-
         union23.add(new Interval("1", 25, 500));
         union23.add(new Interval("2", 1, 150));
         union23.add(new Interval("2", 200, 600));
@@ -225,7 +214,6 @@ public class IntervalListTest {
         union13.add(new Interval("2", 100, 150));
         union13.add(new Interval("2", 200, 600));
         union13.add(new Interval("3", 50, 470));
-
 
         return new Object[][]{
                 new Object[]{Arrays.asList(list1, list2, list3), union123},
@@ -254,7 +242,6 @@ public class IntervalListTest {
         final IntervalList full = new IntervalList(fileHeader);
         final IntervalList fullChopped = new IntervalList(fileHeader);
         final IntervalList empty = new IntervalList(fileHeader);
-
 
         invert1.add(new Interval("1", 201, 201));
         invert1.add(new Interval("1", 301, fileHeader.getSequence("1").getSequenceLength()));
@@ -285,7 +272,6 @@ public class IntervalListTest {
             fullChopped.add(new Interval(samSequenceRecord.getSequenceName(), samSequenceRecord.getSequenceLength() / 2 + 1, samSequenceRecord.getSequenceLength()));
         }
 
-
         return new Object[][]{
                 new Object[]{list1, invert1},
                 new Object[]{list2, invert2},
@@ -295,7 +281,6 @@ public class IntervalListTest {
                 new Object[]{fullChopped, empty}
         };
     }
-
 
     @Test(dataProvider = "invertData")
     public void testInvertSquared(final IntervalList list, @SuppressWarnings("UnusedParameters") final IntervalList ignored) throws Exception {
@@ -318,7 +303,6 @@ public class IntervalListTest {
                 CollectionUtil.makeCollection(inverse.iterator()));
     }
 
-
     @DataProvider(name = "subtractSingletonData")
     public Object[][] subtractSingletonData() {
         final IntervalList subtract1_from_2 = new IntervalList(fileHeader);
@@ -326,12 +310,9 @@ public class IntervalListTest {
         final IntervalList subtract1_from_3 = new IntervalList(fileHeader);
         final IntervalList subtract3_from_1 = new IntervalList(fileHeader);
 
-
-
         subtract1_from_2.add(new Interval("1", 301, 500));
         subtract1_from_2.add(new Interval("2", 1, 99));
         subtract1_from_2.add(new Interval("2", 301, 400));
-
 
         subtract2_from_3.add(new Interval("1", 25, 49));
         subtract2_from_3.add(new Interval("1", 151, 300));
@@ -348,7 +329,6 @@ public class IntervalListTest {
         subtract3_from_1.add(new Interval("1", 1, 49));    //de-facto 1:25-400                2:200-600                            3:50-470
         subtract3_from_1.add(new Interval("2", 100, 150));
 
-
         return new Object[][]{
                 new Object[]{list2, list1, subtract1_from_2},
                 new Object[]{list3, list2, subtract2_from_3},
@@ -364,12 +344,10 @@ public class IntervalListTest {
         subtract12_from_3.add(new Interval("2", 401, 600));
         subtract12_from_3.add(new Interval("3", 50, 470));
 
-
         return new Object[][]{
                 new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list1, list2), subtract12_from_3},
         };
     }
-
 
     @Test(dataProvider = "subtractData")
     public void testSubtractIntervalLists(final List<IntervalList> fromLists, final List<IntervalList> whatLists, final IntervalList list) {
@@ -384,8 +362,6 @@ public class IntervalListTest {
                 CollectionUtil.makeCollection(IntervalList.subtract(fromLists, whatLists).iterator()),
                 CollectionUtil.makeCollection(list.iterator()));
     }
-
-
 
     @Test(dataProvider = "subtractSingletonData")
     public void testSubtractSingletonasListIntervalList(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
@@ -403,7 +379,6 @@ public class IntervalListTest {
                 new Object[]{"testdata/htsjdk/samtools/intervallist/IntervalListFromVCFTestManual.vcf", "testdata/htsjdk/samtools/intervallist/IntervalListFromVCFTestCompInverseManual.interval_list", true}
         };
     }
-
 
     @Test(dataProvider = "VCFCompData")
     public void testFromVCF(final String vcf, final String compInterval, final boolean invertVCF) {
@@ -433,7 +408,6 @@ public class IntervalListTest {
         }
         //assert that the names match
         Assert.assertEquals(intervalNames, compIntervalNames);
-
     }
 
     @DataProvider
@@ -507,4 +481,40 @@ public class IntervalListTest {
         Assert.assertEquals(brokenIntervals.get(11), new Interval("3", 101, 100, false, "golduck"));
     }
 
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void TestFailAdd() {
+        IntervalList test = new IntervalList(this.fileHeader);
+        test.add(new Interval("blarg", 1, 1));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void TestFailAddAll() {
+        IntervalList test = new IntervalList(this.fileHeader);
+        test.addall(CollectionUtil.makeList(new Interval("blarg", 1, 1), new Interval("bloorg", 1, 1)));
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void changeHeader() {
+        SAMFileHeader clonedHeader = fileHeader.clone();
+        clonedHeader.addSequence(new SAMSequenceRecord("4", 1000));
+        IntervalList usingClone1 = new IntervalList(clonedHeader);
+        usingClone1.add(new Interval("4", 1, 100));
+        IntervalList usingClone2 = new IntervalList(clonedHeader);
+        usingClone2.add(new Interval("4", 10, 20));
+
+
+        IntervalList expected = new IntervalList(clonedHeader);
+        expected.add(new Interval("4", 1, 9));
+        expected.add(new Interval("4", 21, 100));
+
+        //pull rug from underneath (one call will change all the headers, since there's actually only one)
+        usingClone1.getHeader().setSequenceDictionary(fileHeader.getSequenceDictionary());
+
+        //now interval lists are in "illegal state" since they contain contigs that are not in the header.
+        //this next step should fail
+        IntervalList.subtract(usingClone1, usingClone2);
+
+        Assert.assertTrue(false);
+
+    }
 }
