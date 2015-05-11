@@ -38,7 +38,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 import java.util.WeakHashMap;
 
 /**
@@ -195,21 +194,18 @@ public class ParsingUtils {
      * @param delim   character that delimits tokens
      * @return the number of tkens parsed
      */
-    public static int split(String aString, Vector<String> tokens, char delim) {
+    public static int split(String aString, List<String> tokens, char delim) {
         
-    	int nTokens = 0;
-        int start = 0;
+    	int start = 0;
         int end = aString.indexOf(delim);
         
         // Empty out our answer, but preserve the memory allocation
         tokens.clear();
         
         while(end >= 0){
-        	// Only add non-empty tokens
-        	if(start != end){
-        		tokens.add(aString.substring(start, end));
-        		start = end+1;
-        	}
+        	
+        	// add the string, even when empty (start == end)
+        	tokens.add(aString.substring(start, end));
         	start = end+1;
         	
     		// If this condition is true, we likely ended with a token, so
@@ -222,9 +218,12 @@ public class ParsingUtils {
 
         }
         
-        // Add the final element (if non-empty)
+        // Add the final element (if start == string.length(), then we ended
+        // with a delimiter)
         if(start < aString.length()){
         	tokens.add(aString.substring(start));
+        }else{
+        	tokens.add("");
         }
     
         return tokens.size();
