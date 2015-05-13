@@ -36,6 +36,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -137,6 +138,92 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         codec.setRemappedSampleName("FOOSAMPLE");
         final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
+    }
+
+    @DataProvider(name = "HiSeqVCFHeaderDataProvider")
+    public Object[][] getHiSeqVCFHeaderData() {
+        final File vcf = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
+        final VCFFileReader reader = new VCFFileReader(vcf, false);
+        final VCFHeader header = reader.getFileHeader();
+        reader.close();
+
+        return new Object[][] {
+                { header }
+        };
+    }
+
+    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
+    public void testVCFHeaderAddInfoLine( final VCFHeader header ) {
+        final VCFInfoHeaderLine infoLine = new VCFInfoHeaderLine("TestInfoLine", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test info line");
+        header.addMetaDataLine(infoLine);
+
+        Assert.assertTrue(header.getInfoHeaderLines().contains(infoLine), "TestInfoLine not found in info header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(infoLine), "TestInfoLine not found in set of all header lines");
+        Assert.assertNotNull(header.getInfoHeaderLine("TestInfoLine"), "Lookup for TestInfoLine by key failed");
+
+        Assert.assertFalse(header.getFormatHeaderLines().contains(infoLine), "TestInfoLine present in format header lines");
+        Assert.assertFalse(header.getFilterLines().contains(infoLine), "TestInfoLine present in filter header lines");
+        Assert.assertFalse(header.getContigLines().contains(infoLine), "TestInfoLine present in contig header lines");
+        Assert.assertFalse(header.getOtherHeaderLines().contains(infoLine), "TestInfoLine present in other header lines");
+    }
+
+    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
+    public void testVCFHeaderAddFormatLine( final VCFHeader header ) {
+        final VCFFormatHeaderLine formatLine = new VCFFormatHeaderLine("TestFormatLine", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test format line");
+        header.addMetaDataLine(formatLine);
+
+        Assert.assertTrue(header.getFormatHeaderLines().contains(formatLine), "TestFormatLine not found in format header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(formatLine), "TestFormatLine not found in set of all header lines");
+        Assert.assertNotNull(header.getFormatHeaderLine("TestFormatLine"), "Lookup for TestFormatLine by key failed");
+
+        Assert.assertFalse(header.getInfoHeaderLines().contains(formatLine), "TestFormatLine present in info header lines");
+        Assert.assertFalse(header.getFilterLines().contains(formatLine), "TestFormatLine present in filter header lines");
+        Assert.assertFalse(header.getContigLines().contains(formatLine), "TestFormatLine present in contig header lines");
+        Assert.assertFalse(header.getOtherHeaderLines().contains(formatLine), "TestFormatLine present in other header lines");
+    }
+
+    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
+    public void testVCFHeaderAddFilterLine( final VCFHeader header ) {
+        final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine");
+        header.addMetaDataLine(filterLine);
+
+        Assert.assertTrue(header.getFilterLines().contains(filterLine), "TestFilterLine not found in filter header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(filterLine), "TestFilterLine not found in set of all header lines");
+        Assert.assertNotNull(header.getFilterHeaderLine("TestFilterLine"), "Lookup for TestFilterLine by key failed");
+
+        Assert.assertFalse(header.getInfoHeaderLines().contains(filterLine), "TestFilterLine present in info header lines");
+        Assert.assertFalse(header.getFormatHeaderLines().contains(filterLine), "TestFilterLine present in format header lines");
+        Assert.assertFalse(header.getContigLines().contains(filterLine), "TestFilterLine present in contig header lines");
+        Assert.assertFalse(header.getOtherHeaderLines().contains(filterLine), "TestFilterLine present in other header lines");
+    }
+
+    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
+    public void testVCFHeaderAddContigLine( final VCFHeader header ) {
+        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine("<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, "chr1", 0);
+        header.addMetaDataLine(contigLine);
+
+        Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(contigLine), "Test contig line not found in set of all header lines");
+
+        Assert.assertFalse(header.getInfoHeaderLines().contains(contigLine), "Test contig line present in info header lines");
+        Assert.assertFalse(header.getFormatHeaderLines().contains(contigLine), "Test contig line present in format header lines");
+        Assert.assertFalse(header.getFilterLines().contains(contigLine), "Test contig line present in filter header lines");
+        Assert.assertFalse(header.getOtherHeaderLines().contains(contigLine), "Test contig line present in other header lines");
+    }
+
+    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
+    public void testVCFHeaderAddOtherLine( final VCFHeader header ) {
+        final VCFHeaderLine otherLine = new VCFHeaderLine("TestOtherLine", "val");
+        header.addMetaDataLine(otherLine);
+
+        Assert.assertTrue(header.getOtherHeaderLines().contains(otherLine), "TestOtherLine not found in other header lines");
+        Assert.assertTrue(header.getMetaDataInInputOrder().contains(otherLine), "TestOtherLine not found in set of all header lines");
+        Assert.assertNotNull(header.getOtherHeaderLine("TestOtherLine"), "Lookup for TestOtherLine by key failed");
+
+        Assert.assertFalse(header.getInfoHeaderLines().contains(otherLine), "TestOtherLine present in info header lines");
+        Assert.assertFalse(header.getFormatHeaderLines().contains(otherLine), "TestOtherLine present in format header lines");
+        Assert.assertFalse(header.getContigLines().contains(otherLine), "TestOtherLine present in contig header lines");
+        Assert.assertFalse(header.getFilterLines().contains(otherLine), "TestOtherLine present in filter header lines");
     }
 
     @Test

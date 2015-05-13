@@ -39,6 +39,7 @@ import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
@@ -247,6 +248,33 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 {".vcf"},
                 {".vcf.gz"}
         };
+    }
+
+
+    /**
+     * A test to ensure that if we add a line to a VCFHeader it will persist through
+     * a round-trip write/read cycle via VariantContextWriter/VCFFileReader
+     */
+    @Test
+    public void testModifyHeader() {
+        final File originalVCF = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
+        final VCFFileReader reader = new VCFFileReader(originalVCF, false);
+        final VCFHeader header = reader.getFileHeader();
+        reader.close();
+
+        header.addMetaDataLine(new VCFHeaderLine("FOOBAR", "foovalue"));
+
+        final File outputVCF = createTempFile("testModifyHeader", ".vcf");
+        final VariantContextWriter writer = new VariantContextWriterBuilder().setOutputFile(outputVCF).setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER)).build();
+        writer.writeHeader(header);
+        writer.close();
+
+        final VCFFileReader roundtripReader = new VCFFileReader(outputVCF, false);
+        final VCFHeader roundtripHeader = roundtripReader.getFileHeader();
+        roundtripReader.close();
+
+        Assert.assertNotNull(roundtripHeader.getOtherHeaderLine("FOOBAR"), "Could not find FOOBAR header line after a write/read cycle");
+        Assert.assertEquals(roundtripHeader.getOtherHeaderLine("FOOBAR").getValue(), "foovalue", "Wrong value for FOOBAR header line after a write/read cycle");
     }
 }
 
