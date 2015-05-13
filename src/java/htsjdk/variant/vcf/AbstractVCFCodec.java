@@ -68,13 +68,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     // a mapping of the allele
     protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
-
-    // for ParsingUtils.split
-    protected String[] GTValueArray = new String[100];
-    protected String[] genotypeKeyArray = new String[100];
-    protected String[] infoFieldArray = new String[1000];
-    protected String[] infoValueArray = new String[1000];
-
+    
     // for performance testing purposes
     public static boolean validate = true;
 
@@ -411,33 +405,30 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             if ( infoField.indexOf("\t") != -1 || infoField.indexOf(" ") != -1 )
                 generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
 
-            int infoFieldSplitSize = ParsingUtils.split(infoField, infoFieldArray, VCFConstants.INFO_FIELD_SEPARATOR_CHAR, false);
-            for (int i = 0; i < infoFieldSplitSize; i++) {
+            List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
+            for (int i = 0; i < infoFields.size(); i++) {
                 String key;
                 Object value;
 
-                int eqI = infoFieldArray[i].indexOf("=");
+                int eqI = infoFields.get(i).indexOf("=");
                 if ( eqI != -1 ) {
-                    key = infoFieldArray[i].substring(0, eqI);
-                    String valueString = infoFieldArray[i].substring(eqI+1);
+                    key = infoFields.get(i).substring(0, eqI);
+                    String valueString = infoFields.get(i).substring(eqI + 1);
 
                     // split on the INFO field separator
-                    int infoValueSplitSize = ParsingUtils.split(valueString, infoValueArray, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR, false);
-                    if ( infoValueSplitSize == 1 ) {
-                        value = infoValueArray[0];
+                    List<String> infoValueSplit = ParsingUtils.split(valueString, VCFConstants.INFO_FIELD_ARRAY_SEPARATOR_CHAR);
+                    if ( infoValueSplit.size() == 1 ) {
+                        value = infoValueSplit.get(0);
                         final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                         if ( headerLine != null && headerLine.getType() == VCFHeaderLineType.Flag && value.equals("0") ) {
                             // deal with the case where a flag field has =0, such as DB=0, by skipping the add
                             continue;
                         }
                     } else {
-                        ArrayList<String> valueList = new ArrayList<String>(infoValueSplitSize);
-                        for ( int j = 0; j < infoValueSplitSize; j++ )
-                            valueList.add(infoValueArray[j]);
-                        value = valueList;
+                        value = infoValueSplit;
                     }
                 } else {
-                    key = infoFieldArray[i];
+                    key = infoFields.get(i);
                     final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                     if ( headerLine != null && headerLine.getType() != VCFHeaderLineType.Flag ) {
                         if ( GeneralUtils.DEBUG_MODE_ENABLED && ! warnedAboutNoEqualsForNonFlag ) {
@@ -673,7 +664,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nParts);
 
         // get the format keys
-        int nGTKeys = ParsingUtils.split(genotypeParts[0], genotypeKeyArray, VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
+        List<String> genotypeKeys = ParsingUtils.split(genotypeParts[0], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
         // cycle through the sample names
         Iterator<String> sampleNameIterator = header.getGenotypeSamples().iterator();
@@ -683,22 +674,22 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         // cycle through the genotype strings
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
-            int GTValueSplitSize = ParsingUtils.split(genotypeParts[genotypeOffset], GTValueArray, VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
+            List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
             final String sampleName = sampleNameIterator.next();
             final GenotypeBuilder gb = new GenotypeBuilder(sampleName);
 
             // check to see if the value list is longer than the key list, which is a problem
-            if (nGTKeys < GTValueSplitSize)
+            if (genotypeKeys.size() < genotypeValues.size())
                 generateException("There are too many keys for the sample " + sampleName + ", keys = " + parts[8] + ", values = " + parts[genotypeOffset]);
 
             int genotypeAlleleLocation = -1;
-            if (nGTKeys >= 1) {
-                gb.maxAttributes(nGTKeys - 1);
+            if (!genotypeKeys.isEmpty()) {
+                gb.maxAttributes(genotypeKeys.size() - 1);
 
-                for (int i = 0; i < nGTKeys; i++) {
-                    final String gtKey = genotypeKeyArray[i];
-                    boolean missing = i >= GTValueSplitSize;
+                for (int i = 0; i < genotypeKeys.size(); i++) {
+                    final String gtKey = genotypeKeys.get(i);
+                    boolean missing = i >= genotypeValues.size();
 
                     // todo -- all of these on the fly parsing of the missing value should be static constants
                     if (gtKey.equals(VCFConstants.GENOTYPE_KEY)) {
@@ -706,26 +697,26 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     } else if ( missing ) {
                         // if its truly missing (there no provided value) skip adding it to the attributes
                     } else if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-                        final List<String> filters = parseFilters(getCachedString(GTValueArray[i]));
+                        final List<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
                         if ( filters != null ) gb.filters(filters);
-                    } else if ( GTValueArray[i].equals(VCFConstants.MISSING_VALUE_v4) ) {
+                    } else if ( genotypeValues.get(i).equals(VCFConstants.MISSING_VALUE_v4) ) {
                         // don't add missing values to the map
                     } else {
                         if (gtKey.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
-                            if ( GTValueArray[i].equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3) )
+                            if ( genotypeValues.get(i).equals(VCFConstants.MISSING_GENOTYPE_QUALITY_v3) )
                                 gb.noGQ();
                             else
-                                gb.GQ((int)Math.round(Double.valueOf(GTValueArray[i])));
+                                gb.GQ((int)Math.round(Double.valueOf(genotypeValues.get(i))));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
-                            gb.AD(decodeInts(GTValueArray[i]));
+                            gb.AD(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
-                            gb.PL(decodeInts(GTValueArray[i]));
+                            gb.PL(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
-                            gb.PL(GenotypeLikelihoods.fromGLField(GTValueArray[i]).getAsPLs());
+                            gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
-                            gb.DP(Integer.valueOf(GTValueArray[i]));
+                            gb.DP(Integer.valueOf(genotypeValues.get(i)));
                         } else {
-                            gb.attribute(gtKey, GTValueArray[i]);
+                            gb.attribute(gtKey, genotypeValues.get(i));
                         }
                     }
                 }
@@ -737,9 +728,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             if ( genotypeAlleleLocation > 0 )
                 generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present");
 
-            final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<Allele>(0) : parseGenotypeAlleles(GTValueArray[genotypeAlleleLocation], alleles, alleleMap));
+            final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<Allele>(0) : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
             gb.alleles(GTalleles);
-            gb.phased(genotypeAlleleLocation != -1 && GTValueArray[genotypeAlleleLocation].indexOf(VCFConstants.PHASED) != -1);
+            gb.phased(genotypeAlleleLocation != -1 && genotypeValues.get(genotypeAlleleLocation).indexOf(VCFConstants.PHASED) != -1);
 
             // add it to the list
             try {
@@ -752,13 +743,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
     }
 
-    private final String[] INT_DECODE_ARRAY = new String[10000];
-    private final int[] decodeInts(final String string) {
-        final int nValues = ParsingUtils.split(string, INT_DECODE_ARRAY, ',');
-        final int[] values = new int[nValues];
+    private static final int[] decodeInts(final String string) {
+        List<String> split = ParsingUtils.split(string, ',');
+        int [] values = new int[split.size()];
         try {
-            for ( int i = 0; i < nValues; i++ )
-                values[i] = Integer.valueOf(INT_DECODE_ARRAY[i]);
+            for (int i = 0; i < values.length; i++) {
+                values[i] = Integer.parseInt(split.get(i));
+            }
         } catch (final NumberFormatException e) {
             return null;
         }

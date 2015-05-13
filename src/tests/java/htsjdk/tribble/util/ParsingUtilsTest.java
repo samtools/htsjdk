@@ -6,6 +6,9 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -66,6 +69,52 @@ public class ParsingUtilsTest {
         Assert.assertEquals(tokens[1],"b");
         Assert.assertEquals(tokens[2],"");
         Assert.assertEquals(tokens[3],"d");
+    }
+
+    /**
+     * Tests that the string "joined", when split by "delim" using ParsingUtils.split(String, char),
+     * <ol>
+     * <li>Ends up with the expected number of items</li>
+     * <li>Ends up with the expected items</li>
+     * <li>Ends up with the same items as when the split is performed using String.split</li>
+     * <li>When re-joined (using ParsingUtils.join(String, Collection&gt;String&lt;) ) results in
+     *    the original string</li>
+     * </ol>
+     *
+     * @param joined
+     * @param delim
+     * @param expectedItems
+     */
+    private void testSplitJoinRoundtrip(String joined, char delim, List<String> expectedItems) {
+        List<String> split = ParsingUtils.split(joined, delim);
+        Assert.assertEquals(split.size(), expectedItems.size());
+        Assert.assertEquals(joined.split(Character.toString(delim), -1), split.toArray());
+        Assert.assertEquals(joined, ParsingUtils.join(Character.toString(delim), split));
+    }
+
+    @Test
+    public void testSplitJoinEmptyItem() {
+        testSplitJoinRoundtrip("a\tb\t\td", '\t', Arrays.asList("a", "b", "", "d"));
+    }
+
+    @Test
+    public void testSplitJoinEmptyAtEnd() {
+        testSplitJoinRoundtrip("a\tb\t\td\t", '\t', Arrays.asList("a", "b", "", "d", ""));
+    }
+
+    @Test
+    public void testSplitJoinEmpty() {
+        testSplitJoinRoundtrip("", '\t', Arrays.asList(""));
+    }
+
+    @Test
+    public void testSplitJoinSingleItem() {
+        testSplitJoinRoundtrip("a", '\t', Arrays.asList("a"));
+    }
+
+    @Test
+    public void testSplitJoinEmptyFirst() {
+        testSplitJoinRoundtrip("\ta\tb", '\t', Arrays.asList("", "a", "b"));
     }
 
     @Test

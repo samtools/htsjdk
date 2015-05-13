@@ -23,7 +23,7 @@
  */
 package htsjdk.tribble.util;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -164,6 +165,32 @@ public class ParsingUtils {
             ret.append(strings[i]);
         }
         return ret.toString();
+    }
+
+
+    /**
+     * Split the string into tokens separated by the given delimiter. This looks
+     * suspiciously like what String.split should do. It is here because
+     * String.split has particularly poor performance for this use case in some
+     * versions of the Java SE API because of use of java.util.regex APIs
+     * (see bug report at http://bugs.java.com/view_bug.do?bug_id=6840246 for
+     * information).
+     *
+     * @param input the string to split
+     * @param delim the character that delimits tokens
+     * @return a list of the tokens
+     */
+    public static List<String> split(String input, char delim) {
+        if (input.isEmpty()) return Arrays.asList("");
+        final ArrayList<String> output = new ArrayList<String>(1+input.length()/2);
+        int from = -1, to;
+        for (to = input.indexOf(delim);
+             to >= 0;
+             from = to, to = input.indexOf(delim, from+1)) {
+            output.add(input.substring(from+1, to));
+        }
+        output.add(input.substring(from+1));
+        return output;
     }
 
 
