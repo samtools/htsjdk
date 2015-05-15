@@ -27,8 +27,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -248,7 +246,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         try {
             if (this.diskRecords == null) {
                 this.diskRecords = newTempFile();
-                this.outputStream = tempStreamFactory.wrapTempOutputStream(new FileOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
+                this.outputStream = tempStreamFactory.wrapTempOutputStream(IOUtil.getOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
                 this.codec.setOutputStream(this.outputStream);
             }
             this.codec.encode(record);
@@ -300,7 +298,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         }
         try {
             if (this.inputStream == null) {
-                inputStream = new FileInputStream(file);
+                inputStream = IOUtil.getInputStream(file);
                 this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(inputStream, Defaults.BUFFER_SIZE));
             }
             final E record = this.codec.decode(); // NB: returns null if end-of-file is reached.

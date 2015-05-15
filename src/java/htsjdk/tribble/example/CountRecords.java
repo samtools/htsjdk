@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
@@ -36,7 +37,6 @@ import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -169,7 +169,7 @@ public class CountRecords {
             Index index = IndexFactory.createLinearIndex(featureFile, codec);
 
             // try to write it to disk
-            LittleEndianOutputStream stream = new LittleEndianOutputStream(new FileOutputStream(indexFile));
+            LittleEndianOutputStream stream = new LittleEndianOutputStream(IOUtil.getOutputStream(indexFile));
             index.write(stream);
             stream.close();
 

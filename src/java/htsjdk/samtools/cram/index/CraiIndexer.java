@@ -20,12 +20,12 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramHeader;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPOutputStream;
@@ -44,7 +44,7 @@ class CraiIndexer {
 		samFileHeader = cramHeader.getSamFileHeader();
 
 		index = new CramIndex(new GZIPOutputStream(new BufferedOutputStream(
-				new FileOutputStream(output))));
+				IOUtil.getOutputStream(output))));
 
 	}
 

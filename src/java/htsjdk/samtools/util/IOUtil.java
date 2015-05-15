@@ -507,6 +507,17 @@ public class IOUtil {
      * @return the output stream to write to
      * @throws FileNotFoundException 
      */
+    public static OutputStream getOutputStream(final File file, boolean append) throws FileNotFoundException {
+    	return FileOperate.getOutputStream(file, append);
+    }
+    
+    /**
+     * get the outputStream and doesn't add any other Stream such as GzipStream<br>
+     * overwriting the file if it already exists
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
     public static OutputStream getOutputStream(final File file) throws FileNotFoundException {
     	return FileOperate.getOutputStream(file);
     }
@@ -547,8 +558,7 @@ public class IOUtil {
                 return openGzipFileForWriting(file, append);
             }
             else {
-            	boolean cover = !append;
-                return FileOperate.getOutputStream(file, cover);
+                return FileOperate.getOutputStream(file, append);
             }
         }
         catch (IOException ioe) {
@@ -596,14 +606,13 @@ public class IOUtil {
      * @return the output stream to write to
      */
     public static OutputStream openGzipFileForWriting(final File file, final boolean append) {
-    	boolean cover = !append;
         try {
             if (Defaults.BUFFER_SIZE > 0) {
-            return new CustomGzipOutputStream(FileOperate.getOutputStream(file, cover),
+            return new CustomGzipOutputStream(FileOperate.getOutputStream(file, append),
                                               Defaults.BUFFER_SIZE,
                                               Defaults.COMPRESSION_LEVEL);
             } else {
-                return new CustomGzipOutputStream(FileOperate.getOutputStream(file, cover), Defaults.COMPRESSION_LEVEL);
+                return new CustomGzipOutputStream(FileOperate.getOutputStream(file, append), Defaults.COMPRESSION_LEVEL);
             }
         }
         catch (IOException ioe) {

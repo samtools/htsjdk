@@ -24,10 +24,10 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.AsciiWriter;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -61,7 +61,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     public SAMTextWriter(final File file) {
         try {
             this.file = file;
-            this.out = new AsciiWriter(new FileOutputStream(file));
+            this.out = new AsciiWriter(IOUtil.getOutputStream(file));
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         }

@@ -37,6 +37,7 @@ import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.UserPasswordInput;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.BufferedInputStream;
@@ -44,7 +45,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -497,7 +497,7 @@ public class CramIO {
 	public static boolean replaceCramHeader(File file, CramHeader newHeader) throws IOException {
 
 		int MAP_SIZE = (int) Math.min(1024 * 1024, file.length());
-		FileInputStream inputStream = new FileInputStream(file);
+		InputStream inputStream = IOUtil.getInputStream(file);
 		CountingInputStream cis = new CountingInputStream(inputStream);
 
 		CramHeader header = new CramHeader();

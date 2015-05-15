@@ -26,9 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -219,7 +217,7 @@ public class SortingCollection<T> implements Iterable<T> {
             final File f = newTempFile();
             OutputStream os = null;
             try {
-                os = tempStreamFactory.wrapTempOutputStream(new FileOutputStream(f), Defaults.BUFFER_SIZE);
+                os = tempStreamFactory.wrapTempOutputStream(IOUtil.getOutputStream(f), Defaults.BUFFER_SIZE);
                 this.codec.setOutputStream(os);
                 for (int i = 0; i < this.numRecordsInRam; ++i) {
                     this.codec.encode(ramRecords[i]);
@@ -446,14 +444,14 @@ public class SortingCollection<T> implements Iterable<T> {
      */
     class FileRecordIterator implements CloseableIterator<T> {
         private final File file;
-        private final FileInputStream is;
+        private final InputStream is;
         private final Codec<T> codec;
         private T currentRecord = null;
 
         FileRecordIterator(final File file) {
             this.file = file;
             try {
-                this.is = new FileInputStream(file);
+                this.is = IOUtil.getInputStream(file);
                 this.codec = SortingCollection.this.codec.clone();
                 this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(this.is, Defaults.BUFFER_SIZE));
                 advance();

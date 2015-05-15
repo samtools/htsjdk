@@ -1,19 +1,20 @@
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 /**
@@ -28,8 +29,8 @@ public class PositionalBufferedStreamTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        File fi =  new File(TestUtils.DATA_DIR + "test.bed");
-        FileIs = new FileInputStream(fi);
+        File fi =  IOUtil.getFile(TestUtils.DATA_DIR + "test.bed");
+        FileIs = IOUtil.getInputStream(fi);
         expectedBytes = fi.length();
     }
 

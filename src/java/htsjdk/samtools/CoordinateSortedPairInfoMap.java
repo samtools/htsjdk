@@ -29,7 +29,6 @@ import htsjdk.samtools.util.FileAppendStreamLRUCache;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -122,9 +121,9 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
             if (mapOnDisk.exists()) {
                 if (numRecords == null)
                     throw new IllegalStateException("null numRecords for " + mapOnDisk);
-                FileInputStream is = null;
+                InputStream is = null;
                 try {
-                    is = new FileInputStream(mapOnDisk);
+                    is = IOUtil.getInputStream(mapOnDisk);
                     elementCodec.setInputStream(is);
                     for (int i = 0; i < numRecords; ++i) {
                         final Map.Entry<KEY, REC> keyAndRecord = elementCodec.decode();

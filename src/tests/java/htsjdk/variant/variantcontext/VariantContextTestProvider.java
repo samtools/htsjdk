@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
@@ -48,11 +49,8 @@ import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
-import org.testng.Assert;
-
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import org.testng.Assert;
 
 /**
  * Routines for generating all sorts of VCs for testing
@@ -756,11 +756,11 @@ public class VariantContextTestProvider {
     }
 
     public static VariantContextContainer readAllVCs(final File input, final BCF2Codec codec) throws IOException {
-        PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(input));
+        PositionalBufferedStream headerPbs = new PositionalBufferedStream(IOUtil.getInputStream(input));
         FeatureCodecHeader header = codec.readHeader(headerPbs);
         headerPbs.close();
 
-        final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(input));
+        final PositionalBufferedStream pbs = new PositionalBufferedStream(IOUtil.getInputStream(input));
         pbs.skip(header.getHeaderEnd());
 
         final VCFHeader vcfHeader = (VCFHeader)header.getHeaderValue();
@@ -782,7 +782,7 @@ public class VariantContextTestProvider {
     }
 
     public static VariantContextContainer readAllVCs(final File input, final VCFCodec codec) throws FileNotFoundException {
-        final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(new BufferedInputStream(new FileInputStream(input))));
+        final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(new BufferedInputStream(IOUtil.getInputStream(input))));
         final VCFHeader vcfHeader = (VCFHeader) codec.readActualHeader(lineIterator);
         return new VariantContextTestProvider.VariantContextContainer(vcfHeader, new VariantContextTestProvider.VCIterable<LineIterator>(codec, vcfHeader) {
             @Override

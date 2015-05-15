@@ -23,13 +23,14 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
@@ -37,7 +38,6 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -101,7 +101,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
      */
     public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec) throws IOException {
         final FeatureReader<FEATURE_TYPE> reader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false); // IndexFactory.loadIndex(idxFile));
-        final OutputStream output = new FileOutputStream(dest);
+        final OutputStream output = IOUtil.getOutputStream(dest);
         ExampleBinaryCodec.convertToBinaryTest(reader, output);
     }
 

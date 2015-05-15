@@ -26,6 +26,7 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.SequenceUtil;
@@ -33,7 +34,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -238,7 +238,7 @@ public class CRAMIterator implements SAMRecordIterator {
         @Override
         public Iterator<SAMRecord> iterator() {
             try {
-                FileInputStream fis = new FileInputStream(cramFile);
+                InputStream fis = IOUtil.getInputStream(cramFile);
                 BufferedInputStream bis = new BufferedInputStream(fis);
                 CRAMIterator iterator = new CRAMIterator(bis, referenceSource);
                 iterator.setValidationStringency(validationStringency);

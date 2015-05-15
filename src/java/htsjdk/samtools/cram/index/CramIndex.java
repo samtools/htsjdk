@@ -19,10 +19,10 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -146,15 +146,15 @@ public class CramIndex {
 		return index ;
 	}
 	public static List<Entry> buildIndexForCramFile(File cramFile) throws IOException {
-		FileInputStream fis = new FileInputStream(cramFile) ;
+		InputStream fis = IOUtil.getInputStream(cramFile) ;
 		BufferedInputStream bis = new BufferedInputStream(fis) ;
 		return buildIndexForCramFile(bis) ;
 	}
 
 	public static List<Entry> readIndexFromCraiFile(File file)
 			throws IOException {
-		FileInputStream fis = new FileInputStream(file);
-		GZIPInputStream gis = new GZIPInputStream(fis);
+		InputStream is = IOUtil.getInputStream(file) ;
+		GZIPInputStream gis = new GZIPInputStream(is);
 		return readIndexFromCraiStream(gis);
 	}
 

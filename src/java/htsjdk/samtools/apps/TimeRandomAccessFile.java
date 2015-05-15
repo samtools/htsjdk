@@ -22,16 +22,17 @@
  */
 package htsjdk.samtools.apps;
 
-import java.io.File;
+import htsjdk.samtools.util.hdfs.RandomFileInt;
+import htsjdk.samtools.util.hdfs.RandomFileInt.RandomFileFactory;
+
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
 /**
  * @author alecw@broadinstitute.org
  */
 public class TimeRandomAccessFile {
     public static void main(String[] args) throws Exception {
-        RandomAccessFile raf = new RandomAccessFile(new File(args[0]), "r");
+        RandomFileInt raf = RandomFileFactory.createInstance(args[0]);
         byte[] buf = new byte[64 * 1024];
         long totalBytesRead = 0;
         int bytesRead;
@@ -40,7 +41,7 @@ public class TimeRandomAccessFile {
         }
         System.out.println("Total bytes: " + totalBytesRead);
     }
-    private static int readBytes(final RandomAccessFile file, final byte[] buffer, final int offset, final int length)
+    private static int readBytes(final RandomFileInt file, final byte[] buffer, final int offset, final int length)
         throws IOException {
         int bytesRead = 0;
         while (bytesRead < length) {

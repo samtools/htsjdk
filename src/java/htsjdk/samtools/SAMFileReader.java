@@ -37,7 +37,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -650,7 +649,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             BufferedInputStream bufferedStream;
             // Buffering is required because mark() and reset() are called on the input stream.
             final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-            if (file != null) bufferedStream = new BufferedInputStream(new FileInputStream(file), bufferSize);
+            if (file != null) bufferedStream = new BufferedInputStream(IOUtil.getInputStream(file), bufferSize);
             else bufferedStream = IOUtil.toBufferedStream(stream);
             if (isBAMFile(bufferedStream)) {
                 mIsBinary = true;

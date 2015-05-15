@@ -24,10 +24,10 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeEOFException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,7 +174,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation {
         try {
             final CRAMIterator si;
             if (file != null) {
-                si = new CRAMIterator(new FileInputStream(file),
+                si = new CRAMIterator(IOUtil.getInputStream(file),
                         referenceSource);
             } else
                 si = new CRAMIterator(is, referenceSource);

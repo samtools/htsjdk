@@ -27,9 +27,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -168,7 +166,7 @@ public class SortingLongCollection {
             DataOutputStream os = null;
             try {
                 final long numBytes = this.numValuesInRam * SIZEOF;
-                os = new DataOutputStream(IOUtil.maybeBufferOutputStream(new FileOutputStream(f)));
+                os = new DataOutputStream(IOUtil.maybeBufferOutputStream(IOUtil.getOutputStream(f)));
                 f.deleteOnExit();
                 for (int i = 0; i < this.numValuesInRam; ++i) {
                     os.writeLong(ramValues[i]);
@@ -254,7 +252,7 @@ public class SortingLongCollection {
         FileValueIterator(final File file) {
             this.file = file;
             try {
-                is = new DataInputStream(IOUtil.maybeBufferInputStream(new FileInputStream(file)));
+                is = new DataInputStream(IOUtil.maybeBufferInputStream(IOUtil.getInputStream(file)));
                 next();
             } catch (FileNotFoundException e) {
                 throw new RuntimeIOException(file.getAbsolutePath(), e);
