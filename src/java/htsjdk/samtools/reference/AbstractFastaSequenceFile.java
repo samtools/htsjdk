@@ -86,11 +86,11 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         if (!fileTypeSupported)
             throw new IllegalArgumentException("File is not a supported reference file type: " + file.getAbsolutePath());
 
-        final File dictionary = new File(dictionaryName);
+        final File dictionary = IOUtil.getFile(dictionaryName);
         if (dictionary.exists())
             return dictionary;
         // try without removing the file extension
-        final File dictionaryExt = new File(dictionaryNameExt);
+        final File dictionaryExt = IOUtil.getFile(dictionaryNameExt);
         if (dictionaryExt.exists())
             return dictionaryExt;
         else return null;
