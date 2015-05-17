@@ -168,9 +168,10 @@ public class GenotypeLikelihoods {
 
     /**
      * This is really dangerous and returns completely wrong results for genotypes from a multi-allelic context.
-     * Use getLog10GQ(Genotype,VariantContext) or getLog10GQ(Genotype,List<Allele>) in place of it.
+     * Use <code>getLog10GQ(Genotype,VariantContext)</code>
+     *  or <code>getLog10GQ(Genotype,List&lt;Allele&gt;)</code> in place of it.
      *
-     * If you **know** you're biallelic, use getGQLog10FromLikelihoods directly.
+     * If you <strong>know</strong> you're biallelic, use <code>getGQLog10FromLikelihoods</code> directly.
      * @param genotype - actually a genotype type (no call, hom ref, het, hom var)
      * @return an unsafe quantity that could be negative. In the bi-allelic case, the GQ resulting from best minus next best (if the type is the best).
      */
@@ -441,7 +442,7 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * get the PL indexes (AA, AB, BB) for the given allele pair; assumes allele1Index <= allele2Index.
+     * get the PL indexes (AA, AB, BB) for the given allele pair; assumes allele1Index &lt;= allele2Index.
      *
      * @param allele1Index    the index in VariantContext.getAllele() of the first allele
      * @param allele2Index    the index in VariantContext.getAllele() of the second allele

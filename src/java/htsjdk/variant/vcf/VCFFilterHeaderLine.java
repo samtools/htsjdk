@@ -29,6 +29,7 @@ import java.util.Arrays;
 
 /**
  * @author ebanks
+ * 
  * A class representing a key=value entry for FILTER fields in the VCF header
  */
 public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {

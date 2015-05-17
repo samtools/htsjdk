@@ -37,10 +37,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Manages header lines for standard VCF INFO and FORMAT fields
+ * Manages header lines for standard VCF INFO and FORMAT fields.
  *
  * Provides simple mechanisms for registering standard lines,
- * looking them up, and adding them to headers
+ * looking them up, and adding them to headers.
  *
  * @author Mark DePristo
  * @since 6/12

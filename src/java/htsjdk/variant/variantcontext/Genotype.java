@@ -80,7 +80,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * Returns how many times allele appears in this genotype object?
      *
      * @param allele
-     * @return a value >= 0 indicating how many times the allele occurred in this sample's genotype
+     * @return a value &gt;= 0 indicating how many times the allele occurred in this sample's genotype
      */
     public int countAllele(final Allele allele) {
         int c = 0;
@@ -94,7 +94,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     /**
      * Get the ith allele in this genotype
      *
-     * @param i the ith allele, must be < the ploidy, starting with 0
+     * @param i the ith allele, must be &lt; the ploidy, starting with 0
      * @return the allele at position i, which cannot be null
      */
     public abstract Allele getAllele(int i);
@@ -303,9 +303,9 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     /**
      * Are all likelihoods for this sample non-informative?
      *
-     * Returns true if all PLs are 0 => 0,0,0 => true
-     * 0,0,0,0,0,0 => true
-     * 0,10,100 => false
+     * Returns true if all PLs are 0 =&gt; 0,0,0 =&gt; true
+     * 0,0,0,0,0,0 =&gt; true
+     * 0,10,100 =&gt; false
      *
      * @return true if all samples PLs are equal and == 0
      */
@@ -404,7 +404,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     // ---------------------------------------------------------------------------------------------------------
 
     /**
-     * comparable genotypes -> compareTo on the sample names
+     * comparable genotypes -&gt; compareTo on the sample names
      * @param genotype
      * @return
      */
@@ -530,7 +530,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     /**
      * A totally generic getter, that allows you to specific keys that correspond
      * to even inline values (GQ, for example).  Can be very expensive.  Additionally,
-     * all int[] are converted inline into List<Integer> for convenience.
+     * all <code>int[]</code> are converted inline into <code>List&lt;Integer&gt;</code> for convenience.
      *
      * @param key
      * @return

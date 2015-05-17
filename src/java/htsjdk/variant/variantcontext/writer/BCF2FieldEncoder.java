@@ -249,7 +249,7 @@ public abstract class BCF2FieldEncoder {
      * The argument should be used, not the getType() method in the superclass as an outer loop might have
      * decided a more general type (int16) to use, even through this encoder could have been done with int8.
      *
-     * If minValues > 0, then encodeValue must write in at least minValues items from value.  If value is atomic,
+     * If minValues &gt; 0, then encodeValue must write in at least minValues items from value.  If value is atomic,
      * this means that minValues - 1 MISSING values should be added to the encoder.  If minValues is a collection
      * type (int[]) then minValues - values.length should be added.  This argument is intended to handle padding
      * of values in genotype fields.

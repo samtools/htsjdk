@@ -342,7 +342,7 @@ public final class GenotypeBuilder {
      * which may be empty (passes) or have some value indicating the reasons
      * why it's been filtered.
      *
-     * @param filters non-null list of filters.  empty list => PASS
+     * @param filters non-null list of filters.  empty list =&gt; PASS
      * @return this builder
      */
     public GenotypeBuilder filters(final List<String> filters) {
@@ -366,7 +366,7 @@ public final class GenotypeBuilder {
     /**
      * Most efficient version of setting filters -- just set the filters string to filters
      *
-     * @param filter if filters == null or filters.equals("PASS") => genotype is PASS
+     * @param filter if filters == null or filters.equals("PASS") =&gt; genotype is PASS
      * @return
      */
     public GenotypeBuilder filter(final String filter) {

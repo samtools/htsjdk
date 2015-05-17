@@ -32,6 +32,7 @@ import java.util.Map;
 
 /**
  * @author ebanks
+ * 
  * A class representing a key=value entry for simple VCF header types
  */
 public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {

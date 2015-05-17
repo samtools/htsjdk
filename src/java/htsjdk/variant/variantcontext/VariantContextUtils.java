@@ -277,7 +277,7 @@ public class VariantContextUtils {
     }
 
     /**
-     * Returns true if exp match VC.  See collection<> version for full docs.
+     * Returns true if exp match VC.  See {@link #match(VariantContext, Collection)} for full docs.
      * @param vc    variant context
      * @param exp   expression
      * @return true if there is a match
@@ -302,7 +302,7 @@ public class VariantContextUtils {
     }
 
     /**
-     * Returns true if exp match VC/g.  See collection<> version for full docs.
+     * Returns true if exp match VC/g.  See {@link #match(VariantContext, Collection)} for full docs.
      * @param vc   variant context
      * @param g    genotype
      * @param exp   expression

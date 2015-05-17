@@ -197,7 +197,7 @@ public enum BCF2Type {
      * Read a value from in stream of this BCF2 type as an int [32 bit] collection of bits
      *
      * For intX and char values this is just the int / byte value of the underlying data represented as a 32 bit int
-     * For a char the result must be converted to a char by (char)(byte)(0x0F & value)
+     * For a char the result must be converted to a char by (char)(byte)(0x0F &amp; value)
      * For doubles it's necessary to convert subsequently this value to a double via Double.bitsToDouble()
      *
      * @param in

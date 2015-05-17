@@ -335,7 +335,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * you will invalid the contract on this context if you add duplicate
      * samples and are running with CoFoJa enabled.
      *
-     * Second, adding genotype also updates the sample name -> index map,
+     * Second, adding genotype also updates the sample name -&gt; index map,
      * so add() followed by containsSample and related function is an efficient
      * series of operations.
      *
@@ -485,7 +485,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     /**
-     * Note that remove requires us to invalidate our sample -> index
+     * Note that remove requires us to invalidate our sample -&gt; index
      * cache.  The loop:
      *
      * GenotypesContext gc = ...
@@ -511,7 +511,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
     }
 
     /**
-     * See for important warning {@link this.remove(Integer)}
+     * See for important warning {@link #remove(int)}
      * @param o
      * @return
      */
@@ -559,7 +559,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * reasons we do not add the genotype if it's not present.  The
      * return value will be null indicating this happened.
      *
-     * Note this operation is preserves the map cache Sample -> Offset but
+     * Note this operation is preserves the map cache Sample -&gt; Offset but
      * invalidates the sorted list of samples.  Using replace within a loop
      * containing any of the SampleNameInOrder operation requires an O(n log n)
      * resorting after each replace operation.
