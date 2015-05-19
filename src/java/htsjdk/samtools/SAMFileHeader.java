@@ -46,9 +46,9 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
-    public static final String CURRENT_VERSION = "1.4";
+    public static final String CURRENT_VERSION = "1.5";
     public static final Set<String> ACCEPTABLE_VERSIONS =
-            new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4"));
+            new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4", "1.5"));
 
     /**
      * These tags are of known type, so don't need a type field in the text representation.
