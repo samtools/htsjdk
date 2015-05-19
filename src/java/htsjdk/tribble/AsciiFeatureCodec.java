@@ -79,7 +79,7 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
         return decode(lineIterator.next());
     }
 
-    /** @see {@link AsciiFeatureCodec#decode(htsjdk.tribble.readers.LineIterator)} */
+    /** @see AsciiFeatureCodec#decode(htsjdk.tribble.readers.LineIterator) */
     public abstract T decode(String s);
 
     @Override

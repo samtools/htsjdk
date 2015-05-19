@@ -33,10 +33,12 @@ import java.util.Map;
 
 /**
  * @author ebanks
- *         <p/>
+ *         <p>
  *         Class VCFHeaderLine
- *         <p/>
+ *         </p>
+ *         <p>
  *         A class representing a key=value entry in the VCF header
+ *         </p>
  */
 public class VCFHeaderLine implements Comparable, Serializable {
     public static final long serialVersionUID = 1L;
@@ -139,7 +141,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
 
     /**
      * create a string of a mapping pair for the target VCF version
-     * @param keyValues a mapping of the key->value pairs to output
+     * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {

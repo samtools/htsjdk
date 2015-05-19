@@ -61,7 +61,6 @@ public final class BCF2Decoder {
      * Reads the next record from input stream and prepare this decoder to decode values from it
      *
      * @param stream
-     * @return
      */
     public void readNextBlock(final int blockSizeInBytes, final InputStream stream) {
         if ( blockSizeInBytes < 0 ) throw new TribbleException("Invalid block size " + blockSizeInBytes);
@@ -72,7 +71,6 @@ public final class BCF2Decoder {
      * Skips the next record from input stream, invalidating current block data
      *
      * @param stream
-     * @return
      */
     public void skipNextBlock(final int blockSizeInBytes, final InputStream stream) {
         try {
@@ -234,14 +232,14 @@ public final class BCF2Decoder {
      * Requires a typeDescriptor so the function knows how many elements to read,
      * and how they are encoded.
      *
-     * If size == 0 => result is null
-     * If size > 0 => result depends on the actual values in the stream
+     * If size == 0 =&gt; result is null
+     * If size &gt; 0 =&gt; result depends on the actual values in the stream
      *      -- If the first element read is MISSING, result is null (all values are missing)
      *      -- Else result = int[N] where N is the first N non-missing values decoded
      *
      * @param maybeDest if not null we'll not allocate space for the vector, but instead use
      *                  the externally allocated array of ints to store values.  If the
-     *                  size of this vector is < the actual size of the elements, we'll be
+     *                  size of this vector is &lt; the actual size of the elements, we'll be
      *                  forced to use freshly allocated arrays.  Also note that padded
      *                  int elements are still forced to do a fresh allocation as well.
      * @return see description

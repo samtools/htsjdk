@@ -42,53 +42,65 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.EnumSet;
 
-/**
+/*
  * Created with IntelliJ IDEA.
  * User: thibault
  * Date: 3/7/14
  * Time: 2:07 PM
- *
- * Provides methods for creating VariantContextWriters using the Builder pattern.
- * Replaces VariantContextWriterFactory.
- *
- * The caller must choose an output file or an output stream for the VariantContextWriter to write to.
+ */
+/**
+ * @author thibault
+ * 
+ * <p>
+ * Provides methods for creating <code>VariantContextWriter</code>s using the Builder pattern.
+ * Replaces <code>VariantContextWriterFactory</code>.
+ * </p>
+ * <p>
+ * The caller must choose an output file or an output stream for the <code>VariantContextWriter</code> to write to.
  * When a file is chosen, the output stream is created implicitly based on Defaults and options passed to the builder.
- * When a stream is chosen, it is passed unchanged to the VariantContextWriter.
- *
+ * When a stream is chosen, it is passed unchanged to the <code>VariantContextWriter</code>.
+ * </p>
+ * <p>
  * Example: Create a series of files with buffering and indexing on the fly.
  * Determine the appropriate file type based on filename.
- *
- *  VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
- *      .setReferenceDictionary(refDict)
- *      .setOption(Options.INDEX_ON_THE_FLY)
- *      .setBuffer(8192);
- *
- *  VariantContextWriter sample1_writer = builder
- *      .setOutputFile("sample1.vcf")
- *      .build();
- *  VariantContextWriter sample2_writer = builder
- *      .setOutputFile("sample2.bcf")
- *      .build();
- *  VariantContextWriter sample3_writer = builder
- *      .setOutputFile("sample3.vcf.bgzf")
- *      .build();
- *
- * Example: Explicitly turn off buffering and explicitly set the file type
- *
- *  VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
- *      .setReferenceDictionary(refDict)
- *      .setOption(Options.INDEX_ON_THE_FLY)
- *      .unsetBuffering();
- *
- *  VariantContextWriter sample1_writer = builder
- *      .setOutputFile("sample1.custom_extension")
- *      .setOutputFileType(OutputType.VCF)
- *      .build();
- *  VariantContextWriter sample2_writer = builder
- *      .setOutputFile("sample2.custom_extension")
- *      .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF)
- *      .build();
+ * </p>
 
+   <pre>
+   VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+       .setReferenceDictionary(refDict)
+       .setOption(Options.INDEX_ON_THE_FLY)
+       .setBuffer(8192);
+ 
+   VariantContextWriter sample1_writer = builder
+       .setOutputFile("sample1.vcf")
+       .build();
+   VariantContextWriter sample2_writer = builder
+       .setOutputFile("sample2.bcf")
+       .build();
+   VariantContextWriter sample3_writer = builder
+       .setOutputFile("sample3.vcf.bgzf")
+       .build();
+   </pre>
+   
+   <p>
+ * Example: Explicitly turn off buffering and explicitly set the file type
+ * </p>
+ * 
+ * <pre>
+   VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+       .setReferenceDictionary(refDict)
+       .setOption(Options.INDEX_ON_THE_FLY)
+       .unsetBuffering();
+ 
+   VariantContextWriter sample1_writer = builder
+       .setOutputFile("sample1.custom_extension")
+       .setOutputFileType(OutputType.VCF)
+       .build();
+   VariantContextWriter sample2_writer = builder
+       .setOutputFile("sample2.custom_extension")
+       .setOutputFileType(OutputType.BLOCK_COMPRESSED_VCF)
+       .build();
+   </pre>
  */
 public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
@@ -116,7 +128,7 @@ public class VariantContextWriterBuilder {
     private EnumSet<Options> options = DEFAULT_OPTIONS.clone();
 
     /**
-     * Default constructor.  Adds USE_ASYNC_IO to the Options if it is present in Defaults.
+     * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
      */
     public VariantContextWriterBuilder() {
         if (Defaults.USE_ASYNC_IO)
@@ -124,10 +136,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the reference dictionary to be used by VariantContextWriters created by this builder
+     * Set the reference dictionary to be used by <code>VariantContextWriter</code>s created by this builder.
      *
      * @param refDict the reference dictionary
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setReferenceDictionary(final SAMSequenceDictionary refDict) {
         this.refDict = refDict;
@@ -135,11 +147,11 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output file for the next VariantContextWriter created by this builder
-     * Determines file type implicitly from the filename
+     * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
+     * Determines file type implicitly from the filename.
      *
-     * @param outFile the file the VariantContextWriter will write to
-     * @return this VariantContextWriterBuilder
+     * @param outFile the file the <code>VariantContextWriter</code> will write to
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFile(final File outFile) {
         this.outFile = outFile;
@@ -149,11 +161,11 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output file for the next VariantContextWriter created by this builder
-     * Determines file type implicitly from the filename
+     * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
+     * Determines file type implicitly from the filename.
      *
-     * @param outFile the file the VariantContextWriter will write to
-     * @return this VariantContextWriterBuilder
+     * @param outFile the file the <code>VariantContextWriter</code> will write to
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFile(final String outFile) {
         this.outFile = new File(outFile);
@@ -163,10 +175,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output file type for the next VariantContextWriter created by this builder
+     * Set the output file type for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @param outType the type of file the VariantContextWriter will write to
-     * @return this VariantContextWriterBuilder
+     * @param outType the type of file the <code>VariantContextWriter</code> will write to
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFileType(final OutputType outType) {
         if (!FILE_TYPES.contains(outType))
@@ -180,11 +192,11 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output VCF stream for the next VariantContextWriter created by this builder
-     * If buffered writing is desired, caller must provide some kind of buffered OutputStream.
+     * Set the output VCF stream for the next <code>VariantContextWriter</code> created by this builder.
+     * If buffered writing is desired, caller must provide some kind of buffered <code>OutputStream</code>.
      *
      * @param outStream the output stream to write to
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputVCFStream(final OutputStream outStream) {
         this.outStream = outStream;
@@ -194,11 +206,11 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output BCF stream for the next VariantContextWriter created by this builder
-     * If buffered writing is desired, caller must provide some kind of buffered OutputStream.
+     * Set the output BCF stream for the next <code>VariantContextWriter</code> created by this builder.
+     * If buffered writing is desired, caller must provide some kind of buffered <code>OutputStream</code>.
      *
      * @param outStream the output stream to write to
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputBCFStream(final OutputStream outStream) {
         this.outStream = outStream;
@@ -208,8 +220,8 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set the output stream (VCF, by default) for the next VariantContextWriter created by this builder
-     * If buffered writing is desired, caller must provide some kind of buffered OutputStream.
+     * Set the output stream (VCF, by default) for the next <code>VariantContextWriter</code> created by this builder.
+     * If buffered writing is desired, caller must provide some kind of buffered <code>OutputStream</code>.
      *
      * @param outStream the output stream to write to
      * @return this VariantContextWriterBuilder
@@ -219,10 +231,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set an IndexCreator for the next VariantContextWriter created by this builder
+     * Set an IndexCreator for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @param idxCreator the IndexCreator to use
-     * @return this VariantContextWriterBuilder
+     * @param idxCreator the <code>IndexCreator</code> to use
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setIndexCreator(final IndexCreator idxCreator) {
         this.idxCreator = idxCreator;
@@ -230,9 +242,9 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Do not pass an IndexCreator to the next VariantContextWriter created by this builder
+     * Do not pass an <code>IndexCreator</code> to the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder clearIndexCreator() {
         this.idxCreator = null;
@@ -240,12 +252,12 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Set a buffer size for the file output stream passed to the next VariantContextWriter created by this builder
-     * Set to 0 for no buffering
-     * Does not affect OutputStreams passed directly to VariantContextWriterBuilder
+     * Set a buffer size for the file output stream passed to the next <code>VariantContextWriter</code> created by this builder.
+     * Set to 0 for no buffering.
+     * Does not affect OutputStreams passed directly to <code>VariantContextWriterBuilder</code>.
      *
      * @param bufferSize the buffer size to use
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setBuffer(final int bufferSize) {
         this.bufferSize = bufferSize;
@@ -253,10 +265,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Do not use buffering in the next VariantContextWriter created by this builder
-     * Does not affect OutputStreams passed directly to VariantContextWriterBuilder
+     * Do not use buffering in the next <code>VariantContextWriter</code> created by this builder.
+     * Does not affect <code>OutputStream</code>s passed directly to <code>VariantContextWriterBuilder</code>.
      *
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder unsetBuffering() {
         this.bufferSize = 0;
@@ -264,10 +276,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Choose whether to also create an MD5 digest file for the next VariantContextWriter created by this builder
+     * Choose whether to also create an MD5 digest file for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @param createMD5 boolean, true to create an MD5 digest
-     * @return this VariantContextWriterBuilder
+     * @param createMD5 boolean, <code>true</code> to create an MD5 digest
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setCreateMD5(final boolean createMD5) {
         this.createMD5 = createMD5;
@@ -275,28 +287,28 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Create an MD5 digest file for the next VariantContextWriter created by this builder
+     * Create an MD5 digest file for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setCreateMD5() {
         return setCreateMD5(true);
     }
 
     /**
-     * Don't create an MD5 digest file for the next VariantContextWriter created by this builder
+     * Don't create an MD5 digest file for the next <code>VariantContextWriter</code> created by this builder.
      *
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder unsetCreateMD5() {
         return setCreateMD5(false);
     }
 
     /**
-     * Replace the set of Options for the VariantContextWriterBuilder with a new set
+     * Replace the set of <code>Options</code> for the <code>VariantContextWriterBuilder</code> with a new set.
      *
      * @param options the complete set of options to use
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOptions(final EnumSet<Options> options) {
         this.options = options;
@@ -304,10 +316,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Add one option to the set of Options for the VariantContextWriterBuilder, if it's not already present
+     * Add one option to the set of <code>Options</code> for the <code>VariantContextWriterBuilder</code>, if it's not already present.
      *
      * @param option the option to set
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOption(final Options option) {
         this.options.add(option);
@@ -315,10 +327,10 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Remove one option from the set of Options for the VariantContextWriterBuilder, if it's present
+     * Remove one option from the set of <code>Options</code> for the <code>VariantContextWriterBuilder</code>, if it's present.
      *
      * @param option the option to unset
-     * @return this VariantContextWriterBuilder
+     * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder unsetOption(final Options option) {
         this.options.remove(option);
@@ -326,7 +338,7 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Remove all options from the set of Options for the VariantContextWriterBuilder
+     * Remove all options from the set of <code>Options</code> for the <code>VariantContextWriterBuilder</code>.
      *
      * @return this VariantContextWriterBuilder
      */
@@ -336,9 +348,13 @@ public class VariantContextWriterBuilder {
     }
 
     /**
-     * Validate and build the VariantContextWriter
+     * Validate and build the <code>VariantContextWriter</code>.
      *
-     * @return the VariantContextWriter as specified by previous method calls
+     * @return the <code>VariantContextWriter</code> as specified by previous method calls
+     * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
+     * @throws IllegalArgumentException if no output file or stream is specified.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
      */
     public VariantContextWriter build() {
         VariantContextWriter writer = null;

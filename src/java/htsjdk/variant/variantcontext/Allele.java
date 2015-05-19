@@ -32,74 +32,86 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Immutable representation of an allele
- *
+ * Immutable representation of an allele.
+ *<p>
  * Types of alleles:
- *
- * Ref: a t C g a // C is the reference base
- *
- *    : a t G g a // C base is a G in some individuals
- *
- *    : a t - g a // C base is deleted w.r.t. the reference
- *
- *    : a t CAg a // A base is inserted w.r.t. the reference sequence
- *
- * In these cases, where are the alleles?
- *
- * SNP polymorphism of C/G  -> { C , G } -> C is the reference allele
- * 1 base deletion of C     -> { tC , t } -> C is the reference allele and we include the preceding reference base (null alleles are not allowed)
- * 1 base insertion of A    -> { C ; CA } -> C is the reference allele (because null alleles are not allowed)
- *
+ *</p>
+ *<pre>
+ Ref: a t C g a // C is the reference base
+    : a t G g a // C base is a G in some individuals
+    : a t - g a // C base is deleted w.r.t. the reference
+    : a t CAg a // A base is inserted w.r.t. the reference sequence
+ </pre>
+ *<p> In these cases, where are the alleles?</p>
+ *<ul>
+ * <li>SNP polymorphism of C/G  -&gt; { C , G } -&gt; C is the reference allele</li>
+ * <li>1 base deletion of C     -&gt; { tC , t } -&gt; C is the reference allele and we include the preceding reference base (null alleles are not allowed)</li>
+ * <li>1 base insertion of A    -&gt; { C ; CA } -&gt; C is the reference allele (because null alleles are not allowed)</li>
+ *</ul>
+ *<p>
  * Suppose I see a the following in the population:
- *
- * Ref: a t C g a // C is the reference base
- *    : a t G g a // C base is a G in some individuals
- *    : a t - g a // C base is deleted w.r.t. the reference
- *
+ *</p>
+ *<pre>
+ Ref: a t C g a // C is the reference base
+    : a t G g a // C base is a G in some individuals
+    : a t - g a // C base is deleted w.r.t. the reference
+ </pre>
+ * <p>
  * How do I represent this?  There are three segregating alleles:
- *
+ * </p>
+ *<blockquote>
  *  { C , G , - }
- *
- *  and these are represented as:
- *
+ *</blockquote>
+ *<p>and these are represented as:</p>
+ *<blockquote>
  *  { tC, tG, t }
- *
+ *</blockquote>
+ *<p>
  * Now suppose I have this more complex example:
- *
- * Ref: a t C g a // C is the reference base
- *    : a t - g a
- *    : a t - - a
- *    : a t CAg a
- *
+ </p>
+ <pre>
+ Ref: a t C g a // C is the reference base
+    : a t - g a
+    : a t - - a
+    : a t CAg a
+ </pre>
+ * <p>
  * There are actually four segregating alleles:
- *
+ * </p>
+ *<blockquote>
  *   { Cg , -g, --, and CAg } over bases 2-4
- *
- *   represented as:
- *
+ *</blockquote>
+ *<p>   represented as:</p>
+ *<blockquote>
  *   { tCg, tg, t, tCAg }
- *
+ *</blockquote>
+ *<p>
  * Critically, it should be possible to apply an allele to a reference sequence to create the
- * correct haplotype sequence:
- *
- * Allele + reference => haplotype
- *
+ * correct haplotype sequence:</p>
+ *<blockquote>
+ * Allele + reference =&gt; haplotype
+ *</blockquote>
+ *<p>
  * For convenience, we are going to create Alleles where the GenomeLoc of the allele is stored outside of the
  * Allele object itself.  So there's an idea of an A/C polymorphism independent of it's surrounding context.
  *
  * Given list of alleles it's possible to determine the "type" of the variation
- *
- *      A / C @ loc => SNP
- *      - / A => INDEL
- *
+ </p>
+ <pre>
+      A / C @ loc =&gt; SNP
+      - / A =&gt; INDEL
+ </pre>
+ * <p>
  * If you know where allele is the reference, you can determine whether the variant is an insertion or deletion.
- *
+ * </p>
+ * <p>
  * Alelle also supports is concept of a NO_CALL allele.  This Allele represents a haplotype that couldn't be
  * determined. This is usually represented by a '.' allele.
- *
+ * </p>
+ * <p>
  * Note that Alleles store all bases as bytes, in **UPPER CASE**.  So 'atc' == 'ATC' from the perspective of an
  * Allele.
-
+ * </p>
  * @author ebanks, depristo
  */
 public class Allele implements Comparable<Allele>, Serializable {
@@ -113,8 +125,8 @@ public class Allele implements Comparable<Allele>, Serializable {
 
     private byte[] bases = null;
 
-    public final static String NO_CALL_STRING = ".";
     /** A generic static NO_CALL allele for use */
+    public final static String NO_CALL_STRING = ".";
 
     // no public way to create an allele
     protected Allele(byte[] bases, boolean isRef) {
@@ -189,7 +201,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * Create a new Allele that includes bases and if tagged as the reference allele if isRef == true.  If bases
      * == '-', a Null allele is created.  If bases ==  '.', a no call Allele is created.
      *
-     * @param bases the DNA sequence of this variation, '-', of '.'
+     * @param bases the DNA sequence of this variation, '-', or '.'
      * @param isRef should we make this a reference allele?
      * @throws IllegalArgumentException if bases contains illegal characters or is otherwise malformated
      */
@@ -309,7 +321,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     }
 
     /**
-     * @see Allele(byte[], boolean)
+     * @see #Allele(byte[], boolean)
      *
      * @param bases  bases representing an allele
      * @param isRef  is this the reference allele?
@@ -393,7 +405,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     /**
      * Return the printed representation of this allele.
      * Same as getBaseString(), except for symbolic alleles.
-     * For symbolic alleles, the base string is empty while the display string contains <TAG>.
+     * For symbolic alleles, the base string is empty while the display string contains &lt;TAG&gt;.
      *
      * @return the allele string representation
      */
