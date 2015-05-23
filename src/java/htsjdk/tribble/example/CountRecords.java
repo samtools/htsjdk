@@ -29,7 +29,6 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.dbsnp.OldDbSNPCodec;
 import htsjdk.tribble.gelitext.GeliTextCodec;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
@@ -125,7 +124,6 @@ public class CountRecords {
         System.err.println("Usage: java -jar CountRecords.jar <inputFile>");
         System.err.println("    Where input can be of type: VCF (ends in .vcf or .VCF");
         System.err.println("                                Bed (ends in .bed or .bed");
-        System.err.println("                                OldDbSNP (ends in .snp or .rod");
         /**
          * you could add others here; also look in the GATK code-base for an example of a dynamic way
          * to load Tribble codecs.
@@ -195,8 +193,8 @@ public class CountRecords {
         //    return new VCFCodec();
         if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();
-        if (featureFile.getName().endsWith(".snp") || featureFile.getName().endsWith(".rod") )
-            return new OldDbSNPCodec();
+        //if (featureFile.getName().endsWith(".snp") || featureFile.getName().endsWith(".rod") )
+        //    return new OldDbSNPCodec();
         if (featureFile.getName().endsWith(".geli.calls") || featureFile.getName().endsWith(".geli") )
             return new GeliTextCodec();
         //if (featureFile.getName().endsWith(".txt") || featureFile.getName().endsWith(".TXT") )
