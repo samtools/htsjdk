@@ -281,6 +281,21 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     }
 
     /**
+     * Adds a fragment record (mapped or unmapped) to the set using the provided contig start and optionally the strand,
+     * cigar string, quality string or default quality score.
+     */
+    public SAMRecord addFrag(final String name, final int contig, final int start, final boolean negativeStrand,
+                             final boolean recordUnmapped, final String cigar, final String qualityString,
+                             final int defaultQuality, final boolean isSecondary, final boolean isSupplementary) throws SAMException {
+        final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
+        if (isSecondary) rec.setNotPrimaryAlignmentFlag(true);
+        if (isSupplementary) rec.setSupplementaryAlignmentFlag(true);
+        this.records.add(rec);
+        return rec;
+    }
+
+
+    /**
      * Fills in the bases and qualities for the given record. Quality data is randomly generated if the defaultQuality
      * is set to -1. Otherwise all qualities will be set to defaultQuality. If a quality string is provided that string
      * will be used instead of the defaultQuality.
