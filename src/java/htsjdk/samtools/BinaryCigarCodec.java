@@ -83,7 +83,7 @@ class BinaryCigarCodec {
      */
     private static CigarElement binaryCigarToCigarElement(final int cigarette) {
         final int binaryOp = cigarette & 0xf;
-        final int length = cigarette >> 4;
+        final int length = cigarette >>> 4;
         return new CigarElement(length, CigarOperator.binaryToEnum(binaryOp));
     }
 }
