@@ -305,7 +305,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
         builder.start(pos);
 
-        if ( parts[2].length() == 0 )
+        if ( parts[2].isEmpty() )
             generateException("The VCF specification requires a valid ID field");
         else if ( parts[2].equals(VCFConstants.EMPTY_ID_FIELD) )
             builder.noID();
@@ -398,7 +398,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     private Map<String, Object> parseInfo(String infoField) {
         Map<String, Object> attributes = new HashMap<String, Object>();
 
-        if ( infoField.length() == 0 )
+        if ( infoField.isEmpty() )
             generateException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
@@ -548,7 +548,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param lineNo  the line number for this record
      */
     private static void checkAllele(String allele, boolean isRef, int lineNo) {
-        if ( allele == null || allele.length() == 0 )
+        if ( allele == null || allele.isEmpty() )
             generateException(generateExceptionTextForBadAlleleBases(""), lineNo);
 
         if ( GeneralUtils.DEBUG_MODE_ENABLED && MAX_ALLELE_SIZE_BEFORE_WARNING != -1 && allele.length() > MAX_ALLELE_SIZE_BEFORE_WARNING ) {
@@ -580,7 +580,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return non-null exception text string
      */
     private static String generateExceptionTextForBadAlleleBases(final String allele) {
-        if ( allele.length() == 0 )
+        if ( allele.isEmpty() )
             return "empty alleles are not permitted in VCF records";
         if ( allele.contains("[") || allele.contains("]") || allele.contains(":") || allele.contains(".") )
             return "VCF support for complex rearrangements with breakends has not yet been implemented";

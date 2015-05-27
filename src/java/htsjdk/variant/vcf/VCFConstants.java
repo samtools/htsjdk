@@ -64,6 +64,8 @@ public final class VCFConstants {
     public static final String VALIDATED_KEY = "VALIDATED";
     public static final String THOUSAND_GENOMES_KEY = "1000G";
 
+    public static final String SPANNING_DELETION_ALLELE = "*";
+
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";
     public static final String GENOTYPE_FIELD_SEPARATOR = ":";

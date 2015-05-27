@@ -277,26 +277,37 @@ public class Allele implements Comparable<Allele>, Serializable {
     }
 
     /**
-     * @param bases  bases representing an allele
+     * @param bases  bases representing a reference allele
      * @return true if the bases represent the well formatted allele
      */
     public static boolean acceptableAlleleBases(String bases) {
         return acceptableAlleleBases(bases.getBytes(), true);
     }
 
-    public static boolean acceptableAlleleBases(String bases, boolean allowNsAsAcceptable) {
-        return acceptableAlleleBases(bases.getBytes(), allowNsAsAcceptable);
+    /**
+     * @param bases bases representing an allele
+     * @param isReferenceAllele is a reference allele
+     * @return true if the bases represent the well formatted allele
+     */
+    public static boolean acceptableAlleleBases(String bases, boolean isReferenceAllele) {
+        return acceptableAlleleBases(bases.getBytes(), isReferenceAllele);
     }
 
     /**
      * @param bases  bases representing an allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(byte[] bases) {
+    public static boolean acceptableAlleleBases(final byte[] bases) {
         return acceptableAlleleBases(bases, true); // default: N bases are acceptable
     }
-    
-    public static boolean acceptableAlleleBases(byte[] bases, boolean allowNsAsAcceptable) {
+
+    /**
+     *
+     * @param bases bases representing an allele
+     * @param isReferenceAllele is a reference allele
+     * @return true if the bases represent the well formatted allele
+     */
+    public static boolean acceptableAlleleBases(final byte[] bases, final boolean isReferenceAllele) {
         if ( wouldBeNullAllele(bases) )
             return false;
 
@@ -307,8 +318,8 @@ public class Allele implements Comparable<Allele>, Serializable {
             switch (base) {
                 case 'A': case 'C': case 'G': case 'T':  case 'a': case 'c': case 'g': case 't': 
                     break;
-                case 'N' : case 'n' :
-                    if (allowNsAsAcceptable)
+                case 'N' : case 'n' : case '*':
+                    if (isReferenceAllele)
                         break;
                     else
                         return false;
