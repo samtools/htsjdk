@@ -129,6 +129,9 @@ public class Allele implements Comparable<Allele>, Serializable {
     /** A generic static NO_CALL allele for use */
     public final static String NO_CALL_STRING = ".";
 
+    /** A generic static SPAN_DEL allele for use */
+    public final static String SPAN_DEL_STRING = "*";
+
     // no public way to create an allele
     protected Allele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
@@ -155,7 +158,7 @@ public class Allele implements Comparable<Allele>, Serializable {
         this.isRef = isRef;
         this.bases = bases;
 
-        if ( ! acceptableAlleleBases(bases) )
+        if ( ! acceptableAlleleBases(bases, isRef) )
             throw new IllegalArgumentException("Unexpected base in allele bases \'" + new String(bases)+"\'");
     }
 
@@ -190,7 +193,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     private final static Allele ALT_T = new Allele("T", false);
     private final static Allele REF_N = new Allele("N", true);
     private final static Allele ALT_N = new Allele("N", false);
-    private final static Allele SPAN_DEL = new Allele(VCFConstants.SPANNING_DELETION_ALLELE, false);
+    public final static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
     public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
 
     // ---------------------------------------------------------------------------------------------------------
@@ -255,7 +258,15 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent the null allele
      */
     public static boolean wouldBeNullAllele(final byte[] bases) {
-        return (bases.length == 1 && bases[0] == '-') || bases.length == 0;
+        return (bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NULL_ALLELE) || bases.length == 0;
+    }
+
+    /**
+     * @param bases bases representing an allele
+     * @return true if the bases represent the SPAN_DEL allele
+     */
+    public static boolean wouldBeStarAllele(final byte[] bases) {
+        return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE;
     }
 
     /**
@@ -263,7 +274,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent the NO_CALL allele
      */
     public static boolean wouldBeNoCallAllele(final byte[] bases) {
-        return bases.length == 1 && bases[0] == '.';
+        return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NO_CALL_ALLELE;
     }
 
     /**
@@ -299,17 +310,17 @@ public class Allele implements Comparable<Allele>, Serializable {
     }
 
     /**
-     * @param bases  bases representing an allele
+     * @param bases  bases representing a reference allele
      * @return true if the bases represent the well formatted allele
      */
     public static boolean acceptableAlleleBases(final byte[] bases) {
-        return acceptableAlleleBases(bases, true); // default: N bases are acceptable
+        return acceptableAlleleBases(bases, true);
     }
 
     /**
      *
      * @param bases bases representing an allele
-     * @param isReferenceAllele is a reference allele
+     * @param isReferenceAllele true if a reference allele
      * @return true if the bases represent the well formatted allele
      */
     public static boolean acceptableAlleleBases(final byte[] bases, final boolean isReferenceAllele) {
@@ -319,15 +330,17 @@ public class Allele implements Comparable<Allele>, Serializable {
         if ( wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases) )
             return true;
 
+        if ( wouldBeStarAllele(bases) ) {
+            if ( isReferenceAllele )
+                return false;
+            else
+                return true;
+        }
+
         for (byte base :  bases ) {
             switch (base) {
-                case 'A': case 'C': case 'G': case 'T':  case 'a': case 'c': case 'g': case 't': 
+                case 'A': case 'C': case 'G': case 'T':  case 'a': case 'c': case 'g': case 't': case 'N' : case 'n' :
                     break;
-                case 'N' : case 'n' : case '*':
-                    if (isReferenceAllele)
-                        break;
-                    else
-                        return false;
                 default:
                     return false;
             }

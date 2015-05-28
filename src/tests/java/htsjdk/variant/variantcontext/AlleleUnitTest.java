@@ -61,7 +61,7 @@ public class AlleleUnitTest extends VariantBaseTest {
 
         NoCall = Allele.create(Allele.NO_CALL_STRING);
 
-        SpandDel = Allele.create(htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE);
+        SpandDel = Allele.create(Allele.SPAN_DEL_STRING);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class AlleleUnitTest extends VariantBaseTest {
     public void testCreatingSpanningDeletionAlleles() {
         Assert.assertTrue(SpandDel.isNonReference());
         Assert.assertFalse(SpandDel.isReference());
-        Assert.assertTrue(SpandDel.basesMatch(htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE));
+        Assert.assertTrue(SpandDel.basesMatch(Allele.SPAN_DEL_STRING));
         Assert.assertEquals(SpandDel.length(), 1);
     }
 
@@ -248,7 +248,7 @@ public class AlleleUnitTest extends VariantBaseTest {
 
     @Test (expectedExceptions = IllegalArgumentException.class)
     public void testBadSpanningDeletionAllelel() {
-        Allele.create(htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE, true); // spanning deletion cannot be ref allele
+        Allele.create(Allele.SPAN_DEL_STRING, true); // spanning deletion cannot be ref allele
     }
 
     @Test

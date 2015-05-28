@@ -94,8 +94,11 @@ public final class VCFConstants {
     public static final char DELETION_ALLELE_v3 = 'D';
     public static final char INSERTION_ALLELE_v3 = 'I';
 
-    // spanning deletion allele
-    public static final String SPANNING_DELETION_ALLELE = "*";
+    // special alleles
+    public static final char SPANNING_DELETION_ALLELE = '*';
+    public static final char NO_CALL_ALLELE = '.';
+    public static final char NULL_ALLELE = '-';
+
 
     // missing/default values
     public static final String UNFILTERED = ".";
