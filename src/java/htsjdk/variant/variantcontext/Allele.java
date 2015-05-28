@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -129,7 +130,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     public final static String NO_CALL_STRING = ".";
 
     // no public way to create an allele
-    protected Allele(byte[] bases, boolean isRef) {
+    protected Allele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
         if ( wouldBeNullAllele(bases) ) {
             throw new IllegalArgumentException("Null alleles are not supported");
@@ -158,7 +159,7 @@ public class Allele implements Comparable<Allele>, Serializable {
             throw new IllegalArgumentException("Unexpected base in allele bases \'" + new String(bases)+"\'");
     }
 
-    protected Allele(String bases, boolean isRef) {
+    protected Allele(final String bases, final boolean isRef) {
         this(bases.getBytes(), isRef);
     }
 
@@ -189,6 +190,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     private final static Allele ALT_T = new Allele("T", false);
     private final static Allele REF_N = new Allele("N", true);
     private final static Allele ALT_N = new Allele("N", false);
+    private final static Allele SPAN_DEL = new Allele(VCFConstants.SPANNING_DELETION_ALLELE, false);
     public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
 
     // ---------------------------------------------------------------------------------------------------------
@@ -205,7 +207,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param isRef should we make this a reference allele?
      * @throws IllegalArgumentException if bases contains illegal characters or is otherwise malformated
      */
-    public static Allele create(byte[] bases, boolean isRef) {
+    public static Allele create(final byte[] bases, final boolean isRef) {
         if ( bases == null )
             throw new IllegalArgumentException("create: the Allele base string cannot be null; use new Allele() or new Allele(\"\") to create a Null allele");
 
@@ -215,6 +217,9 @@ public class Allele implements Comparable<Allele>, Serializable {
                 case '.':
                     if ( isRef ) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
                     return NO_CALL;
+                case '*':
+                    if ( isRef ) throw new IllegalArgumentException("Cannot tag a spanning deletions allele as the reference allele");
+                    return SPAN_DEL;
                 case 'A': case 'a' : return isRef ? REF_A : ALT_A;
                 case 'C': case 'c' : return isRef ? REF_C : ALT_C;
                 case 'G': case 'g' : return isRef ? REF_G : ALT_G;
@@ -227,15 +232,15 @@ public class Allele implements Comparable<Allele>, Serializable {
         }
     }
 
-    public static Allele create(byte base, boolean isRef) {
+    public static Allele create(final byte base, final boolean isRef) {
         return create( new byte[]{ base }, isRef);
     }
 
-    public static Allele create(byte base) {
+    public static Allele create(final byte base) {
         return create( base, false );
     }
 
-    public static Allele extend(Allele left, byte[] right) {
+    public static Allele extend(final Allele left, final byte[] right) {
         if (left.isSymbolic())
             throw new IllegalArgumentException("Cannot extend a symbolic allele");
         byte[] bases = new byte[left.length() + right.length];
@@ -249,7 +254,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent the null allele
      */
-    public static boolean wouldBeNullAllele(byte[] bases) {
+    public static boolean wouldBeNullAllele(final byte[] bases) {
         return (bases.length == 1 && bases[0] == '-') || bases.length == 0;
     }
 
@@ -257,7 +262,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent the NO_CALL allele
      */
-    public static boolean wouldBeNoCallAllele(byte[] bases) {
+    public static boolean wouldBeNoCallAllele(final byte[] bases) {
         return bases.length == 1 && bases[0] == '.';
     }
 
@@ -265,7 +270,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @return true if the bases represent a symbolic allele
      */
-    public static boolean wouldBeSymbolicAllele(byte[] bases) {
+    public static boolean wouldBeSymbolicAllele(final byte[] bases) {
     	if ( bases.length <= 1 )
             return false;
         else {
@@ -280,7 +285,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(String bases) {
+    public static boolean acceptableAlleleBases(final String bases) {
         return acceptableAlleleBases(bases.getBytes(), true);
     }
 
@@ -289,7 +294,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param isReferenceAllele is a reference allele
      * @return true if the bases represent the well formatted allele
      */
-    public static boolean acceptableAlleleBases(String bases, boolean isReferenceAllele) {
+    public static boolean acceptableAlleleBases(final String bases, boolean isReferenceAllele) {
         return acceptableAlleleBases(bases.getBytes(), isReferenceAllele);
     }
 
@@ -337,7 +342,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param bases  bases representing an allele
      * @param isRef  is this the reference allele?
      */
-    public static Allele create(String bases, boolean isRef) {
+    public static Allele create(final String bases, final boolean isRef) {
         return create(bases.getBytes(), isRef);
     }
 
@@ -347,7 +352,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      *
      * @param bases  bases representing an allele
      */
-    public static Allele create(String bases) {
+    public static Allele create(final String bases) {
         return create(bases, false);
     }
 
@@ -356,7 +361,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      *
      * @param bases  bases representing an allele
      */
-    public static Allele create(byte[] bases) {
+    public static Allele create(final byte[] bases) {
         return create(bases, false);
     }
 
@@ -458,7 +463,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @param ignoreRefState   if true, ignore ref state in comparison
      * @return true if this and other are equal
      */
-    public boolean equals(Allele other, boolean ignoreRefState) {
+    public boolean equals(final Allele other, final boolean ignoreRefState) {
         return this == other || (isRef == other.isRef || ignoreRefState) && isNoCall == other.isNoCall && (bases == other.bases || Arrays.equals(bases, other.bases));
     }
 
@@ -467,21 +472,21 @@ public class Allele implements Comparable<Allele>, Serializable {
      *
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
-    public boolean basesMatch(byte[] test) { return !isSymbolic && (bases == test || Arrays.equals(bases, test)); }
+    public boolean basesMatch(final byte[] test) { return !isSymbolic && (bases == test || Arrays.equals(bases, test)); }
 
     /**
      * @param test  bases to test against
      *
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
-    public boolean basesMatch(String test) { return basesMatch(test.toUpperCase().getBytes()); }
+    public boolean basesMatch(final String test) { return basesMatch(test.toUpperCase().getBytes()); }
 
     /**
      * @param test  allele to test against
      *
      * @return  true if this Allele contains the same bases as test, regardless of its reference status; handles Null and NO_CALL alleles
      */
-    public boolean basesMatch(Allele test) { return basesMatch(test.getBases()); }
+    public boolean basesMatch(final Allele test) { return basesMatch(test.getBases()); }
 
     /**
      * @return the length of this allele.  Null and NO_CALL alleles have 0 length.
@@ -496,7 +501,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    public static Allele getMatchingAllele(Collection<Allele> allAlleles, byte[] alleleBases) {
+    public static Allele getMatchingAllele(final Collection<Allele> allAlleles, final byte[] alleleBases) {
         for ( Allele a : allAlleles ) {
             if ( a.basesMatch(alleleBases) ) {
                 return a;
@@ -509,7 +514,7 @@ public class Allele implements Comparable<Allele>, Serializable {
             return null;    // couldn't find anything
     }
 
-    public int compareTo(Allele other) {
+    public int compareTo(final Allele other) {
         if ( isReference() && other.isNonReference() )
             return -1;
         else if ( isNonReference() && other.isReference() ) 
@@ -518,14 +523,14 @@ public class Allele implements Comparable<Allele>, Serializable {
             return getBaseString().compareTo(other.getBaseString()); // todo -- potential performance issue
     }
 
-    public static boolean oneIsPrefixOfOther(Allele a1, Allele a2) {
+    public static boolean oneIsPrefixOfOther(final Allele a1, final Allele a2) {
         if ( a2.length() >= a1.length() )
             return firstIsPrefixOfSecond(a1, a2);
         else
             return firstIsPrefixOfSecond(a2, a1);
     }
 
-    private static boolean firstIsPrefixOfSecond(Allele a1, Allele a2) {
+    private static boolean firstIsPrefixOfSecond(final Allele a1, final Allele a2) {
         String a1String = a1.getBaseString();
         return a2.getBaseString().substring(0, a1String.length()).equals(a1String);
     }
