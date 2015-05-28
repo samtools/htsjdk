@@ -24,15 +24,12 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 
 public class SAMRecordUnitTest {
 
@@ -50,15 +47,9 @@ public class SAMRecordUnitTest {
         final SAMRecord initialSAMRecord = reader.iterator().next();
         reader.close();
 
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
-        out.writeObject(initialSAMRecord);
-        out.close();
-
-        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
-        final SAMRecord deserializedSAMRecord = (SAMRecord)in.readObject();
-        in.close();
+        final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
 
         Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
+
 }

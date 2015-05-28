@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 
 // the imports for unit testing.
 
+import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.variant.VariantBaseTest;
@@ -39,18 +40,8 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class VariantContextUnitTest extends VariantBaseTest {
@@ -1011,14 +1002,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final AbstractFeatureReader<VariantContext, ?> featureReader = AbstractFeatureReader.getFeatureReader(testFile.getAbsolutePath(), codec, false);
         final VariantContext initialVC = featureReader.iterator().next();
 
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
-        out.writeObject(initialVC);
-        out.close();
-
-        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
-        final VariantContext vcDeserialized = (VariantContext)in.readObject();
-        in.close();
+        final VariantContext vcDeserialized = TestUtil.serializeAndDeserialize(initialVC);
 
         assertVariantContextsAreEqual(vcDeserialized, initialVC);
     }

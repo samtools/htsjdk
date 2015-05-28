@@ -25,38 +25,25 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.variant.VariantBaseTest;
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
+import java.io.*;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by IntelliJ IDEA.
@@ -290,14 +277,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFHeader originalHeader = reader.getFileHeader();
         reader.close();
 
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
-        out.writeObject(originalHeader);
-        out.close();
-
-        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
-        final VCFHeader deserializedHeader = (VCFHeader)in.readObject();
-        in.close();
+        final VCFHeader deserializedHeader = TestUtil.serializeAndDeserialize(originalHeader);
 
         Assert.assertEquals(deserializedHeader.getMetaDataInInputOrder(), originalHeader.getMetaDataInInputOrder(), "Header metadata does not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getContigLines(), originalHeader.getContigLines(), "Contig header lines do not match before/after serialization");
