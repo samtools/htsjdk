@@ -204,9 +204,9 @@ public class Allele implements Comparable<Allele>, Serializable {
 
     /**
      * Create a new Allele that includes bases and if tagged as the reference allele if isRef == true.  If bases
-     * == '-', a Null allele is created.  If bases ==  '.', a no call Allele is created.
+     * == '-', a Null allele is created.  If bases ==  '.', a no call Allele is created. If bases ==  '*', a spanning deletions Allele is created.
      *
-     * @param bases the DNA sequence of this variation, '-', or '.'
+     * @param bases the DNA sequence of this variation, '-', '.', or '*'
      * @param isRef should we make this a reference allele?
      * @throws IllegalArgumentException if bases contains illegal characters or is otherwise malformated
      */
