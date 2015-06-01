@@ -1,18 +1,20 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.cram.common.IntHashMap;
@@ -35,226 +37,184 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.TreeMap;
 
+@SuppressWarnings("unchecked")
 public class DataReaderFactory {
 
-	private boolean collectStats = false;
+    private final static boolean collectStats = false;
 
-	public AbstractReader buildReader(AbstractReader reader,
-			BitInputStream bis, Map<Integer, InputStream> inputMap,
-			CompressionHeader h, int refId) throws IllegalArgumentException,
-			IllegalAccessException {
-		reader.captureReadNames = h.readNamesIncluded;
-		reader.refId = refId;
-		reader.AP_delta = h.AP_seriesDelta ;
+    public AbstractReader buildReader(final AbstractReader reader,
+                                      final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap,
+                                      final CompressionHeader header, final int refId) throws IllegalArgumentException,
+            IllegalAccessException {
+        reader.captureReadNames = header.readNamesIncluded;
+        reader.refId = refId;
+        reader.APDelta = header.APDelta;
 
-		for (Field f : reader.getClass().getFields()) {
-			if (f.isAnnotationPresent(DataSeries.class)) {
-				DataSeries ds = f.getAnnotation(DataSeries.class);
-				EncodingKey key = ds.key();
-				DataSeriesType type = ds.type();
-				if (h.eMap.get(key) == null) {
-					System.err.println("Encoding not found for key: " + key);
-				}
-				f.set(reader,
-						createReader(type, h.eMap.get(key), bis, inputMap));
-			}
+        for (final Field field : reader.getClass().getFields()) {
+            if (field.isAnnotationPresent(DataSeries.class)) {
+                final DataSeries dataSeries = field.getAnnotation(DataSeries.class);
+                final EncodingKey key = dataSeries.key();
+                final DataSeriesType type = dataSeries.type();
+                if (header.encodingMap.get(key) == null) {
+                    System.err.println("Encoding not found for key: " + key);
+                }
+                field.set(reader,
+                        createReader(type, header.encodingMap.get(key), bitInputStream, inputMap));
+            }
 
-			if (f.isAnnotationPresent(DataSeriesMap.class)) {
-				DataSeriesMap dsm = f.getAnnotation(DataSeriesMap.class);
-				String name = dsm.name();
-				if ("TAG".equals(name)) {
-					IntHashMap map = new IntHashMap();
-					for (Integer key : h.tMap.keySet()) {
-						EncodingParams params = h.tMap.get(key);
-						DataReader<byte[]> tagReader = createReader(
-								DataSeriesType.BYTE_ARRAY, params, bis,
-								inputMap);
-						map.put(key, tagReader);
-					}
-					f.set(reader, map);
-				}
-			}
-		}
+            if (field.isAnnotationPresent(DataSeriesMap.class)) {
+                final DataSeriesMap dataSeriesMap = field.getAnnotation(DataSeriesMap.class);
+                final String name = dataSeriesMap.name();
+                if ("TAG".equals(name)) {
+                    final IntHashMap map = new IntHashMap();
+                    for (final Integer key : header.tMap.keySet()) {
+                        final EncodingParams params = header.tMap.get(key);
+                        final DataReader<byte[]> tagReader = createReader(
+                                DataSeriesType.BYTE_ARRAY, params, bitInputStream,
+                                inputMap);
+                        map.put(key, tagReader);
+                    }
+                    field.set(reader, map);
+                }
+            }
+        }
 
-		reader.tagIdDictionary = h.dictionary;
-		return reader;
-	}
+        reader.tagIdDictionary = header.dictionary;
+        return reader;
+    }
 
-	private <T> DataReader<T> createReader(DataSeriesType valueType,
-			EncodingParams params, BitInputStream bis,
-			Map<Integer, InputStream> inputMap) {
-		if (params.id == EncodingID.NULL)
-			return collectStats ? new DataReaderWithStats(
-					buildNullReader(valueType)) : buildNullReader(valueType);
+    private <T> DataReader<T> createReader(final DataSeriesType valueType,
+                                           final EncodingParams params, final BitInputStream bitInputStream,
+                                           final Map<Integer, InputStream> inputMap) {
+        if (params.id == EncodingID.NULL)
+            //noinspection ConstantConditions
+            return collectStats ? new DataReaderWithStats(
+                    buildNullReader(valueType)) : buildNullReader(valueType);
 
-		EncodingFactory f = new EncodingFactory();
-		Encoding<T> encoding = f.createEncoding(valueType, params.id);
-		if (encoding == null)
-			throw new RuntimeException("Encoding not found for value type "
-					+ valueType.name() + ", id=" + params.id);
-		encoding.fromByteArray(params.params);
+        final EncodingFactory encodingFactory = new EncodingFactory();
+        final Encoding<T> encoding = encodingFactory.createEncoding(valueType, params.id);
+        if (encoding == null)
+            throw new RuntimeException("Encoding not found for value type "
+                    + valueType.name() + ", id=" + params.id);
+        encoding.fromByteArray(params.params);
 
-		return collectStats ? new DataReaderWithStats(new DefaultDataReader<T>(
-				encoding.buildCodec(inputMap, null), bis))
-				: new DefaultDataReader<T>(encoding.buildCodec(inputMap, null),
-						bis);
-	}
+        //noinspection ConstantConditions
+        return collectStats ? new DataReaderWithStats(new DefaultDataReader<T>(
+                encoding.buildCodec(inputMap, null), bitInputStream))
+                : new DefaultDataReader<T>(encoding.buildCodec(inputMap, null),
+                bitInputStream);
+    }
 
-	private static <T> DataReader<T> buildNullReader(DataSeriesType valueType) {
-		switch (valueType) {
-		case BYTE:
-			return (DataReader<T>) new SingleValueReader<Byte>(new Byte(
-					(byte) 0));
-		case INT:
-			return (DataReader<T>) new SingleValueReader<Integer>(
-					new Integer(0));
-		case LONG:
-			return (DataReader<T>) new SingleValueReader<Long>(new Long(0));
-		case BYTE_ARRAY:
-			return (DataReader<T>) new SingleValueReader<byte[]>(new byte[] {});
+    private static <T> DataReader<T> buildNullReader(final DataSeriesType valueType) {
+        switch (valueType) {
+            case BYTE:
+                return (DataReader<T>) new SingleValueReader<Byte>((byte) 0);
+            case INT:
+                return (DataReader<T>) new SingleValueReader<Integer>(
+                        0);
+            case LONG:
+                return (DataReader<T>) new SingleValueReader<Long>((long) 0);
+            case BYTE_ARRAY:
+                return (DataReader<T>) new SingleValueReader<byte[]>(new byte[]{});
 
-		default:
-			throw new RuntimeException("Unknown data type: " + valueType.name());
-		}
-	}
+            default:
+                throw new RuntimeException("Unknown data type: " + valueType.name());
+        }
+    }
 
-	private static class DefaultDataReader<T> implements DataReader<T> {
-		private BitCodec<T> codec;
-		private BitInputStream bis;
+    private static class DefaultDataReader<T> implements DataReader<T> {
+        private final BitCodec<T> codec;
+        private final BitInputStream bitInputStream;
 
-		public DefaultDataReader(BitCodec<T> codec, BitInputStream bis) {
-			this.codec = codec;
-			this.bis = bis;
-		}
+        public DefaultDataReader(final BitCodec<T> codec, final BitInputStream bitInputStream) {
+            this.codec = codec;
+            this.bitInputStream = bitInputStream;
+        }
 
-		@Override
-		public T readData() throws IOException {
-			return codec.read(bis);
-		}
+        @Override
+        public T readData() throws IOException {
+            return codec.read(bitInputStream);
+        }
 
-		@Override
-		public T readDataArray(int len) throws IOException {
-			return codec.read(bis, len);
-		}
+        @Override
+        public T readDataArray(final int length) throws IOException {
+            return codec.read(bitInputStream, length);
+        }
 
-		@Override
-		public void skip() throws IOException {
-			codec.read(bis);
-		}
+    }
 
-		@Override
-		public void readByteArrayInto(byte[] dest, int offset, int len)
-				throws IOException {
-			codec.readInto(bis, dest, offset, len);
-		}
-	}
+    private static class SingleValueReader<T> implements DataReader<T> {
+        private final T value;
 
-	private static class SingleValueReader<T> implements DataReader<T> {
-		private T value;
-		private Byte byteValue;
+        public SingleValueReader(final T value) {
+            this.value = value;
+        }
 
-		public SingleValueReader(T value) {
-			this.value = value;
-			if (value instanceof Byte)
-				byteValue = (Byte) value;
-			else
-				byteValue = null;
-		}
+        @Override
+        public T readData() throws IOException {
+            return value;
+        }
 
-		@Override
-		public T readData() throws IOException {
-			return value;
-		}
+        @Override
+        public T readDataArray(final int length) {
+            return value;
+        }
+    }
 
-		@Override
-		public T readDataArray(int len) {
-			return value;
-		}
+    public static class DataReaderWithStats<T> implements DataReader<T> {
+        public long nanos = 0;
+        final DataReader<T> delegate;
 
-		@Override
-		public void skip() throws IOException {
-		}
+        public DataReaderWithStats(final DataReader<T> delegate) {
+            this.delegate = delegate;
+        }
 
-		@Override
-		public void readByteArrayInto(byte[] dest, int offset, int len)
-				throws IOException {
-			if (byteValue != null)
-				for (int i = 0; i < len; i++)
-					dest[i + offset] = byteValue;
-			else
-				throw new RuntimeException("Not a byte reader.");
-		}
+        @Override
+        public T readData() throws IOException {
+            final long time = System.nanoTime();
+            final T value = delegate.readData();
+            nanos += System.nanoTime() - time;
+            return value;
+        }
 
-	}
+        @Override
+        public T readDataArray(final int length) throws IOException {
+            final long time = System.nanoTime();
+            final T value = delegate.readDataArray(length);
+            nanos += System.nanoTime() - time;
+            return value;
+        }
+    }
 
-	public static class DataReaderWithStats<T> implements DataReader<T> {
-		public long nanos = 0;
-		DataReader<T> delegate;
+    public Map<String, DataReaderWithStats> getStats(final CramRecordReader reader)
+            throws IllegalArgumentException, IllegalAccessException {
+        final Map<String, DataReaderWithStats> map = new TreeMap<String, DataReaderFactory.DataReaderWithStats>();
+        //noinspection ConstantConditions,PointlessBooleanExpression
+        if (!collectStats)
+            return map;
 
-		public DataReaderWithStats(DataReader<T> delegate) {
-			this.delegate = delegate;
-		}
+        for (final Field field : reader.getClass().getFields()) {
+            if (field.isAnnotationPresent(DataSeries.class)) {
+                final DataSeries dataSeries = field.getAnnotation(DataSeries.class);
+                final EncodingKey key = dataSeries.key();
+                map.put(key.name(), (DataReaderWithStats) field.get(reader));
+            }
 
-		@Override
-		public T readData() throws IOException {
-			long time = System.nanoTime();
-			T value = delegate.readData();
-			nanos += System.nanoTime() - time;
-			return value;
-		}
+            if (field.isAnnotationPresent(DataSeriesMap.class)) {
+                final DataSeriesMap dataSeriesMap = field.getAnnotation(DataSeriesMap.class);
+                final String name = dataSeriesMap.name();
+                if ("TAG".equals(name)) {
+                    final Map<Integer, DataReader<byte[]>> tagMap = (Map<Integer, DataReader<byte[]>>) field
+                            .get(reader);
+                    for (final Integer key : tagMap.keySet()) {
+                        final String tag = ReadTag.intToNameType4Bytes(key);
+                        map.put(tag, (DataReaderWithStats) tagMap.get(key));
+                    }
+                }
+            }
+        }
 
-		@Override
-		public T readDataArray(int len) throws IOException {
-			long time = System.nanoTime();
-			T value = delegate.readDataArray(len);
-			nanos += System.nanoTime() - time;
-			return value;
-		}
+        return map;
+    }
 
-		@Override
-		public void skip() throws IOException {
-			long time = System.nanoTime();
-			delegate.skip();
-			nanos += System.nanoTime() - time;
-		}
-
-		@Override
-		public void readByteArrayInto(byte[] dest, int offset, int len)
-				throws IOException {
-			long time = System.nanoTime();
-			delegate.readByteArrayInto(dest, offset, len);
-			nanos += System.nanoTime() - time;
-		}
-	}
-
-	public Map<String, DataReaderWithStats> getStats(CramRecordReader reader)
-			throws IllegalArgumentException, IllegalAccessException {
-		Map<String, DataReaderWithStats> map = new TreeMap<String, DataReaderFactory.DataReaderWithStats>();
-		if (!collectStats)
-			return map;
-
-		for (Field f : reader.getClass().getFields()) {
-			if (f.isAnnotationPresent(DataSeries.class)) {
-				DataSeries ds = f.getAnnotation(DataSeries.class);
-				EncodingKey key = ds.key();
-				DataSeriesType type = ds.type();
-				map.put(key.name(), (DataReaderWithStats) f.get(reader));
-			}
-
-			if (f.isAnnotationPresent(DataSeriesMap.class)) {
-				DataSeriesMap dsm = f.getAnnotation(DataSeriesMap.class);
-				String name = dsm.name();
-				if ("TAG".equals(name)) {
-					Map<Integer, DataReader<byte[]>> tagMap = (Map<Integer, DataReader<byte[]>>) f
-							.get(reader);
-					for (Integer key : tagMap.keySet()) {
-						String tag = ReadTag.intToNameType4Bytes(key);
-						map.put(tag, (DataReaderWithStats) tagMap.get(key));
-					}
-				}
-			}
-		}
-
-		return map;
-	}
 }

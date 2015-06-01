@@ -267,7 +267,7 @@ public class BinaryTagCodec {
      * @param length How many bytes in binaryRep are tag storage.
      */
     public static SAMBinaryTagAndValue readTags(final byte[] binaryRep, final int offset,
-                                         final int length, final ValidationStringency validationStringency) {
+                                                final int length, final ValidationStringency validationStringency) {
         final ByteBuffer byteBuffer = ByteBuffer.wrap(binaryRep, offset, length);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 

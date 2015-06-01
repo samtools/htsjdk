@@ -1,239 +1,179 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
- *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.structure;
-
-import htsjdk.samtools.cram.io.BitwiseUtils;
-import htsjdk.samtools.util.Log;
 
 import java.util.Arrays;
 import java.util.Comparator;
 
 public class SubstitutionMatrix {
-	public static final byte[] BASES = new byte[] { 'A', 'C', 'G', 'T', 'N' };
-	public static final byte[] BASES_LC = new byte[] { 'a', 'c', 'g', 't', 'n' };
-	public static final byte[] ORDER;
-	static {
-		ORDER = new byte[255];
-		Arrays.fill(ORDER, (byte) -1);
-		ORDER['A'] = 0;
-		ORDER['C'] = 1;
-		ORDER['G'] = 2;
-		ORDER['T'] = 3;
-		ORDER['N'] = 4;
-	}
-	
-	private static Log log = Log.getInstance(SubstitutionMatrix.class) ;
-	
-	private byte[] bytes = new byte[5];
-	private byte[][] codes = new byte[255][255];
-	private byte[][] bases = new byte[255][255];
+    public static final byte[] BASES = new byte[]{'A', 'C', 'G', 'T', 'N'};
+    private static final byte[] BASES_LC = new byte[]{'a', 'c', 'g', 't', 'n'};
+    private static final byte[] ORDER;
 
-	public SubstitutionMatrix(long[][] freqs) {
-		for (int i = 0; i < BASES.length; i++) {
-			bytes[ORDER[BASES[i]]] = rank(BASES[i], freqs[BASES[i]]);
-		}
-		for (int i = 0; i < bases.length; i++)
-			Arrays.fill(bases[i], (byte) 'N');
+    static {
+        ORDER = new byte[255];
+        Arrays.fill(ORDER, (byte) -1);
+        ORDER['A'] = 0;
+        ORDER['C'] = 1;
+        ORDER['G'] = 2;
+        ORDER['T'] = 3;
+        ORDER['N'] = 4;
+    }
 
-		for (int i = 0; i < BASES.length; i++) {
-			byte r = BASES[i];
-			for (byte b : BASES) {
-				if (r == b)
-					continue;
-				bases[r][codes[r][b]] = b;
-				bases[BASES_LC[i]][codes[r][b]] = b;
-			}
-		}
-		
-		dump() ;
-	}
-	
-	public void dump () {
-		log.debug ("Subs matrix: " + Arrays.toString(bytes) + ": " + BitwiseUtils.toBitString(bytes));
-		
-		StringBuffer sb = new StringBuffer("Subs matrix decoded: ") ;
-		for (byte r:"ACGTN".getBytes()) {
-			sb.append((char)r);
-			sb.append(":");
-			for (int i=0; i<4; i++) {
-				sb.append((char)bases[r][i]);
-			}
-			sb.append("\t") ;
-		}
-		log.debug(sb.toString()) ;
-	}
+    private byte[] bytes = new byte[5];
+    private final byte[][] codes = new byte[255][255];
+    private final byte[][] bases = new byte[255][255];
 
-	public SubstitutionMatrix(byte[] matrix) {
-		this.bytes = matrix;
+    public SubstitutionMatrix(final long[][] frequencies) {
+        for (final byte base : BASES) {
+            bytes[ORDER[base]] = rank(base, frequencies[base]);
+        }
+        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
-		for (int i = 0; i < bases.length; i++)
-			Arrays.fill(bases[i], (byte) 'N');
+        for (int i = 0; i < BASES.length; i++) {
+            final byte r = BASES[i];
+            for (final byte b : BASES) {
+                if (r == b)
+                    continue;
+                bases[r][codes[r][b]] = b;
+                bases[BASES_LC[i]][codes[r][b]] = b;
+            }
+        }
+    }
 
-		bases['A'][(bytes[0] >> 6) & 3] = 'C' ;
-		bases['A'][(bytes[0] >> 4) & 3] = 'G' ;
-		bases['A'][(bytes[0] >> 2) & 3] = 'T' ;
-		bases['A'][(bytes[0] >> 0) & 3] = 'N' ;
-		for (int i = 0; i < 4; i++)
-			bases['a'][i] = bases['A'][i];
+    @Override
+    public String toString() {
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (final byte r : "ACGTN".getBytes()) {
+            stringBuilder.append((char) r);
+            stringBuilder.append(":");
+            for (int i = 0; i < 4; i++) {
+                stringBuilder.append((char) bases[r][i]);
+            }
+            stringBuilder.append("\t");
+        }
+        return stringBuilder.toString();
+    }
 
-		bases['C'][(bytes[1] >> 6) & 3] = 'A' ;
-		bases['C'][(bytes[1] >> 4) & 3] = 'G' ;
-		bases['C'][(bytes[1] >> 2) & 3] = 'T' ;
-		bases['C'][(bytes[1] >> 0) & 3] = 'N' ;
-		for (int i = 0; i < 4; i++)
-			bases['c'][i] = bases['C'][i];
+    public SubstitutionMatrix(final byte[] matrix) {
+        this.bytes = matrix;
 
-		bases['G'][(bytes[2] >> 6) & 3] = 'A' ;
-		bases['G'][(bytes[2] >> 4) & 3] = 'C' ;
-		bases['G'][(bytes[2] >> 2) & 3] = 'T' ;
-		bases['G'][(bytes[2] >> 0) & 3] = 'N' ;
-		for (int i = 0; i < 4; i++)
-			bases['g'][i] = bases['G'][i];
+        for (final byte[] base : bases) Arrays.fill(base, (byte) 'N');
 
-		bases['T'][(bytes[3] >> 6) & 3] = 'A' ;
-		bases['T'][(bytes[3] >> 4) & 3] = 'C' ;
-		bases['T'][(bytes[3] >> 2) & 3] = 'G' ;
-		bases['T'][(bytes[3] >> 0) & 3] = 'N' ;
-		for (int i = 0; i < 4; i++)
-			bases['t'][i] = bases['T'][i];
+        bases['A'][(bytes[0] >> 6) & 3] = 'C';
+        bases['A'][(bytes[0] >> 4) & 3] = 'G';
+        bases['A'][(bytes[0] >> 2) & 3] = 'T';
+        bases['A'][(bytes[0]) & 3] = 'N';
+        System.arraycopy(bases['A'], 0, bases['a'], 0, 4);
 
-		bases['N'][(bytes[4] >> 6) & 3] = 'A' ;
-		bases['N'][(bytes[4] >> 4) & 3] = 'C' ;
-		bases['N'][(bytes[4] >> 2) & 3] = 'G' ;
-		bases['N'][(bytes[4] >> 0) & 3] = 'T' ;
+        bases['C'][(bytes[1] >> 6) & 3] = 'A';
+        bases['C'][(bytes[1] >> 4) & 3] = 'G';
+        bases['C'][(bytes[1] >> 2) & 3] = 'T';
+        bases['C'][(bytes[1]) & 3] = 'N';
+        System.arraycopy(bases['C'], 0, bases['c'], 0, 4);
 
-		for (byte refBase : BASES) {
-			for (byte code = 0; code < 4; code++)
-				codes[refBase][bases[refBase][code]] = code;
-		}
-		
-		dump() ;
-	}
+        bases['G'][(bytes[2] >> 6) & 3] = 'A';
+        bases['G'][(bytes[2] >> 4) & 3] = 'C';
+        bases['G'][(bytes[2] >> 2) & 3] = 'T';
+        bases['G'][(bytes[2]) & 3] = 'N';
+        System.arraycopy(bases['G'], 0, bases['g'], 0, 4);
 
-	public byte[] getEncodedMatrix() {
-		return bytes;
-	}
+        bases['T'][(bytes[3] >> 6) & 3] = 'A';
+        bases['T'][(bytes[3] >> 4) & 3] = 'C';
+        bases['T'][(bytes[3] >> 2) & 3] = 'G';
+        bases['T'][(bytes[3]) & 3] = 'N';
+        System.arraycopy(bases['T'], 0, bases['t'], 0, 4);
 
-	private static class SubCode {
-		byte ref, base;
-		long freq;
-		byte rank;
+        bases['N'][(bytes[4] >> 6) & 3] = 'A';
+        bases['N'][(bytes[4] >> 4) & 3] = 'C';
+        bases['N'][(bytes[4] >> 2) & 3] = 'G';
+        bases['N'][(bytes[4]) & 3] = 'T';
 
-		public SubCode(byte ref, byte base, long freq) {
-			super();
-			this.ref = ref;
-			this.base = base;
-			this.freq = freq;
-		}
+        for (final byte refBase : BASES) {
+            for (byte code = 0; code < 4; code++)
+                codes[refBase][bases[refBase][code]] = code;
+        }
+    }
 
-		byte code;
-	}
+    public byte[] getEncodedMatrix() {
+        return bytes;
+    }
 
-	private static Comparator<SubCode> comparator = new Comparator<SubstitutionMatrix.SubCode>() {
+    private static class SubCode {
+        final byte base;
+        long freq;
+        byte rank;
 
-		@Override
-		public int compare(SubCode o1, SubCode o2) {
-			if (o1.freq != o2.freq)
-				return (int) (o2.freq - o1.freq);
-			return ORDER[o1.base] - ORDER[o2.base];
-		}
-	};
+        public SubCode(final byte base, final long freq) {
+            this.base = base;
+            this.freq = freq;
+        }
 
-	private byte rank(byte refBase, long[] freqs) {
-		// in alphabetical order:
-		SubCode[] subCodes = new SubCode[4];
-		{
-			int i = 0;
-			for (byte base : BASES) {
-				if (refBase == base)
-					continue;
-				subCodes[i++] = new SubCode(refBase, base, freqs[base]);
-			}
-		}
+    }
 
-		Arrays.sort(subCodes, comparator);
+    private static final Comparator<SubCode> comparator = new Comparator<SubstitutionMatrix.SubCode>() {
 
-		for (byte i = 0; i < subCodes.length; i++)
-			subCodes[i].rank = i;
+        @Override
+        public int compare(final SubCode o1, final SubCode o2) {
+            if (o1.freq != o2.freq)
+                return (int) (o2.freq - o1.freq);
+            return ORDER[o1.base] - ORDER[o2.base];
+        }
+    };
 
-		for (byte i = 0; i < subCodes.length; i++)
-			subCodes[i].freq = 0;
+    private byte rank(final byte refBase, final long[] frequencies) {
+        // in alphabetical order:
+        final SubCode[] subCodes = new SubCode[4];
+        {
+            int i = 0;
+            for (final byte base : BASES) {
+                if (refBase == base)
+                    continue;
+                subCodes[i++] = new SubCode(base, frequencies[base]);
+            }
+        }
 
-		Arrays.sort(subCodes, comparator);
+        Arrays.sort(subCodes, comparator);
 
-		byte rank = 0;
-		for (byte i = 0; i < subCodes.length; i++) {
-			rank <<= 2;
-			rank |= subCodes[i].rank;
+        for (byte i = 0; i < subCodes.length; i++)
+            subCodes[i].rank = i;
 
-			// SubCode s = subCodes[i];
-			// System.out
-			// .printf("i=%d, BASES[i]=%d, ORDER[BASES[i]]=%d, s.ref=%d, s.base=%d, s.code=%d, s.rank=%d\n",
-			// i, BASES[i], ORDER[BASES[i]], s.ref, s.base,
-			// s.code, s.rank);
-		}
+        for (final SubCode subCode1 : subCodes) subCode1.freq = 0;
 
-		for (SubCode s : subCodes)
-			codes[refBase][s.base] = s.rank;
+        Arrays.sort(subCodes, comparator);
 
-		return rank;
-	}
+        byte rank = 0;
+        for (final SubCode subCode : subCodes) {
+            rank <<= 2;
+            rank |= subCode.rank;
+        }
 
-	public byte code(byte refBase, byte readBase) {
-		return codes[refBase][readBase];
-	}
+        for (final SubCode s : subCodes)
+            codes[refBase][s.base] = s.rank;
 
-	public byte base(byte refBase, byte code) {
-		byte base = bases[refBase][code];
-		return base;
-	}
+        return rank;
+    }
 
-	public static void main(String[] args) {
-		SubstitutionMatrix m = new SubstitutionMatrix(new byte[] { 27,
-				(byte) 228, 27, 27, 27 });
+    public byte code(final byte refBase, final byte readBase) {
+        return codes[refBase][readBase];
+    }
 
-		for (byte refBase : BASES) {
-			for (byte base : BASES) {
-				if (refBase == base)
-					continue;
-				System.out.printf("Ref=%c, base=%c, code=%d\n", (char) refBase,
-						(char) base, m.code(refBase, base));
-			}
-		}
-		System.out.println(Arrays.toString(m.bytes));
-		System.out.println("===============================================");
-
-		long[][] freqs = new long[255][255];
-		for (int r = 0; r < BASES.length; r++) {
-			for (int b = 0; b < BASES.length; b++) {
-				if (r == b)
-					continue;
-				freqs[BASES[r]][BASES[b]] = b;
-			}
-		}
-
-		m = new SubstitutionMatrix(freqs);
-		for (byte refBase : BASES) {
-			for (byte base : BASES) {
-				if (refBase == base)
-					continue;
-				System.out.printf("Ref=%c, base=%c, code=%d\n", (char) refBase,
-						(char) base, m.code(refBase, base));
-			}
-		}
-		System.out.println(Arrays.toString(m.bytes));
-	}
+    public byte base(final byte refBase, final byte code) {
+        return bases[refBase][code];
+    }
 }
