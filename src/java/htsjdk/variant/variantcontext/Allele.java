@@ -330,12 +330,8 @@ public class Allele implements Comparable<Allele>, Serializable {
         if ( wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases) )
             return true;
 
-        if ( wouldBeStarAllele(bases) ) {
-            if ( isReferenceAllele )
-                return false;
-            else
-                return true;
-        }
+        if ( wouldBeStarAllele(bases) )
+            return !isReferenceAllele;
 
         for (byte base :  bases ) {
             switch (base) {
