@@ -332,12 +332,17 @@ public class SAMLineParser {
             parseTag(samRecord, mFields[i]);
         }
 
-        final List<SAMValidationError> validationErrors = samRecord.isValid();
-        if (validationErrors != null) {
-            for (final SAMValidationError errorMessage : validationErrors) {
-                reportErrorParsingLine(errorMessage.getMessage());
+        // Only call samRecord.isValid() if errors would be reported since the validation
+        // is quite expensive in and of itself.
+        if (this.validationStringency != ValidationStringency.SILENT) {
+            final List<SAMValidationError> validationErrors = samRecord.isValid();
+            if (validationErrors != null) {
+                for (final SAMValidationError errorMessage : validationErrors) {
+                    reportErrorParsingLine(errorMessage.getMessage());
+                }
             }
         }
+
         return samRecord;
     }
 
