@@ -565,7 +565,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 generateException("Insertions/Deletions are not supported when reading 3.x VCF's. Please" +
                         " convert your file to VCF4 using VCFTools, available at http://vcftools.sourceforge.net/index.html", lineNo);
 
-            if (!Allele.acceptableAlleleBases(allele))
+            if (!Allele.acceptableAlleleBases(allele, isRef))
                 generateException(generateExceptionTextForBadAlleleBases(allele), lineNo);
 
             if ( isRef && allele.equals(VCFConstants.EMPTY_ALLELE) )
