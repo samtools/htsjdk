@@ -4,7 +4,7 @@ import sbt.Package.ManifestAttributes
 
 name := "htsjdk"
 
-version := "1.133"
+version := "1.134"
 
 organization := "com.github.samtools"
 
