@@ -25,6 +25,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.util.Histogram.Bin;
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,7 +77,7 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
     }
 
     /** Represents a bin in the Histogram. */
-    public class Bin {
+    public class Bin implements Serializable{
         private final K id;
         private double value = 0;
 

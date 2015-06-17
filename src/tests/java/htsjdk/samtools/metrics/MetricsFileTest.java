@@ -27,12 +27,14 @@ package htsjdk.samtools.metrics;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -43,9 +45,9 @@ import java.util.Date;
  * @author Tim Fennell
  */
 public class MetricsFileTest {
-    public static enum TestEnum {One, Two, Three}
+    public enum TestEnum {One, Two, Three}
 
-    public static class TestMetric extends MetricBase implements Cloneable {
+    public static class TestMetric extends MetricBase implements Cloneable, Serializable {
         public String    STRING_PROP;
         public Date      DATE_PROP;
         public Short     SHORT_PROP;
@@ -64,11 +66,13 @@ public class MetricsFileTest {
         public boolean   BOOLEAN_PRIMITIVE;
         public char      CHAR_PRIMITIVE;
 
+        @Override
         public TestMetric clone()  {
             try { return (TestMetric) super.clone(); }
             catch (CloneNotSupportedException cnse) { throw new SAMException("That's Unpossible!"); }
         }
     }
+
 
     @Test
     public void testWriteMetricsFile() throws Exception {
@@ -142,7 +146,12 @@ public class MetricsFileTest {
 
         file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
-   }
+
+        //Test that we can serialize and deserialize this whole thing
+        MetricsFile<TestMetric, Integer> file3 = TestUtil.serializeAndDeserialize(file);
+
+        Assert.assertEquals(file, file3);
+    }
 
     /** Helper method to persist metrics to file and read them back again. */
     private MetricsFile<TestMetric, Integer> writeThenReadBack(MetricsFile<TestMetric,Integer> in) throws Exception {

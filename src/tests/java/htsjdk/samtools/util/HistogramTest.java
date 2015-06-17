@@ -4,6 +4,8 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+
 import static java.lang.Math.abs;
 
 /**
@@ -75,6 +77,17 @@ public class HistogramTest {
         Assert.assertTrue(abs(histo.estimateSdViaMad() - 1.4826) < 0.0001);
     }
 
+
+    @Test(dataProvider = "histogramData") //this data provider has several extra variables that we don't make use of here
+    public void testSerializeHistogram(final int[] values, final double mean, final double stdev, final Integer trimByWidth) throws IOException, ClassNotFoundException {
+        final Histogram<Integer> histo = new Histogram<Integer>();
+        for (int value : values) {
+            histo.increment(value);
+        }
+
+        Histogram<Integer> deserializedHistogram = TestUtil.serializeAndDeserialize(histo);
+        Assert.assertEquals(deserializedHistogram, histo);
+    }
 
     private double round(final double in) {
         long l = (long) (in * 10000);
