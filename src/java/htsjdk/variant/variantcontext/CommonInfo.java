@@ -29,10 +29,12 @@ package htsjdk.variant.variantcontext;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -239,6 +241,18 @@ public final class CommonInfo implements Serializable {
             return attributes.get(key);
         else
             return defaultValue;
+    }
+
+    /** returns the value as an empty list if the key was not found,
+        as a java.util.List if the value is a List or an Array,
+        as a Collections.singletonList if there is only one value */
+    @SuppressWarnings("unchecked")
+    public List<Object> getAttributeAsList(String key) {
+        Object o = getAttribute(key);
+        if ( o == null ) return Collections.emptyList();
+        if ( o instanceof List ) return (List<Object>)o;
+        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        return Collections.singletonList(o);
     }
 
     public String getAttributeAsString(String key, String defaultValue) {

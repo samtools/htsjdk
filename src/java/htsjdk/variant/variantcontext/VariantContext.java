@@ -740,6 +740,10 @@ public class VariantContext implements Feature, Serializable {
     public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
     public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
     public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
+    /** returns the value as an empty list if the key was not found,
+        as a java.util.List if the value is a List or an Array,
+        as a Collections.singletonList if there is only one value */
+    public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
 
     public CommonInfo getCommonInfo() {
         return commonInfo;
