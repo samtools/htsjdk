@@ -54,7 +54,7 @@ public class ReferenceSequenceFileFactory {
      *
      * @param file the reference sequence file on disk
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(File file) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(final File file) {
         return getReferenceSequenceFile(file, true);
     }
 
@@ -65,15 +65,28 @@ public class ReferenceSequenceFileFactory {
      * @param file the reference sequence file on disk
      * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
      */
-    public static ReferenceSequenceFile getReferenceSequenceFile(File file, boolean truncateNamesAtWhitespace) {
-        String name = file.getName();
-        for (String ext : FASTA_EXTENSIONS) {
+    public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
+        return getReferenceSequenceFile(file, truncateNamesAtWhitespace, true);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param file the reference sequence file on disk
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
+        final String name = file.getName();
+        for (final String ext : FASTA_EXTENSIONS) {
             if (name.endsWith(ext)) {
                 // Using faidx requires truncateNamesAtWhitespace
-                if (truncateNamesAtWhitespace && IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
+                if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
                     try {
                         return new IndexedFastaSequenceFile(file);
-                    } catch (FileNotFoundException e) {
+                    }
+                    catch (final FileNotFoundException e) {
                         throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
                     }
                 }
