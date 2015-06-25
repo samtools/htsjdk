@@ -116,65 +116,56 @@ public abstract class BCF2FieldEncoder {
     }
 
     /**
-     * True if this field has a constant, fixed number of elements (such as 1 for an atomic integer)
-     *
-     * @return
+     * @return True if this field has a constant, fixed number of elements (such as 1 for an atomic integer)
      */
     public boolean hasConstantNumElements() {
         return getCountType() == VCFHeaderLineCount.INTEGER;
     }
 
     /**
-     * True if the only way to determine how many elements this field contains is by
+     * @return True if the only way to determine how many elements this field contains is by
      * inspecting the actual value directly, such as when the number of elements
      * is a variable length list per site or per genotype.
-     * @return
      */
     public boolean hasValueDeterminedNumElements() {
         return getCountType() == VCFHeaderLineCount.UNBOUNDED;
     }
 
     /**
-     * True if this field has a non-fixed number of elements that depends only on the properties
+     * @return True if this field has a non-fixed number of elements that depends only on the properties
      * of the current VariantContext, such as one value per Allele or per genotype configuration.
-     *
-     * @return
      */
     public boolean hasContextDeterminedNumElements() {
         return ! hasConstantNumElements() && ! hasValueDeterminedNumElements();
     }
 
     /**
-     * Get the number of elements, assuming this field has a constant number of elements.
-     * @return
+     * @return the number of elements, assuming this field has a constant number of elements.
      */
     public int numElements() {
         return headerLine.getCount();
     }
 
     /**
-     * Get the number of elements by looking at the actual value provided
-     * @return
+     * @return the number of elements by looking at the actual value provided
      */
     public int numElements(final Object value) {
         return numElementsFromValue(value);
     }
 
     /**
-     * Get the number of elements, assuming this field has context-determined number of elements.
-     * @return
+     * @return the number of elements, assuming this field has context-determined number of elements.
      */
     public int numElements(final VariantContext vc) {
         return headerLine.getCount(vc);
     }
 
     /**
-     * A convenience access for the number of elements, returning
-     * the number of encoded elements, either from the fixed number
-     * it has, from the VC, or from the value itself.
+     * A convenience access for the number of elements.
      * @param vc
      * @param value
-     * @return
+     * @return the number of encoded elements, either from the fixed number
+     * it has, from the VC, or from the value itself.
      */
     public final int numElements(final VariantContext vc, final Object value) {
         if ( hasConstantNumElements() ) return numElements();
@@ -188,7 +179,7 @@ public abstract class BCF2FieldEncoder {
      * Assumes the value is encoded as a List
      *
      * @param value
-     * @return
+     * @return the number of elements we will encode for {@param value}.
      */
     protected int numElementsFromValue(final Object value) {
         if ( value == null ) return 0;
@@ -205,14 +196,14 @@ public abstract class BCF2FieldEncoder {
     /**
      * Is the BCF2 type of this field static, or does it have to be determine from
      * the actual field value itself?
-     * @return
+     * @return true if the field is static
      */
     public final boolean isStaticallyTyped() { return ! isDynamicallyTyped(); }
 
     /**
      * Is the BCF2 type of this field static, or does it have to be determine from
      * the actual field value itself?
-     * @return
+     * @return true if the field is not static
      */
     public final boolean isDynamicallyTyped() { return staticType == null; }
 
@@ -220,7 +211,7 @@ public abstract class BCF2FieldEncoder {
      * Get the BCF2 type for this field, either from the static type of the
      * field itself or by inspecting the value itself.
      *
-     * @return
+     * @return the BCF2 type for this field
      */
     public final BCF2Type getType(final Object value) {
         return isDynamicallyTyped() ? getDynamicType(value) : getStaticType();

@@ -142,7 +142,7 @@ public class FilteringIterator implements CloseableIterator<SAMRecord> {
                 }
             } else if (filterReadPairs && record.getReadPairedFlag() &&
                 record.getSecondOfPairFlag()) {
-                // assume that we did a filterOut(first, second) and it passed the filter
+                // assume that we did a pass(first, second) and it passed the filter
                 return record;
             } else if (!filter.filterOut(record)) {
                 return record;

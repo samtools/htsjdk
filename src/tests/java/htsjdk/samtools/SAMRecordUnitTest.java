@@ -52,4 +52,46 @@ public class SAMRecordUnitTest {
         Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
+    @DataProvider
+    public Object [][] offsetAtReferenceData() {
+        return new Object[][]{
+                {"3S9M",   7, 10, false},
+                {"3S9M",   0,  0, false},
+                {"3S9M",  -1,  0, false},
+                {"3S9M",  13,  0, false},
+                {"4M1D6M", 4,  4, false},
+                {"4M1D6M", 4,  4, true},
+                {"4M1D6M", 5,  0, false},
+                {"4M1D6M", 5,  4, true},
+                {"4M1I6M", 5,  6, false},
+                {"4M1I6M", 11, 0, false},
+        };
+    }
+
+    @Test(dataProvider = "offsetAtReferenceData")
+    public void testOffsetAtReference(String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted) {
+
+            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
+            Assert.assertEquals(SAMRecord.getReadPositionAtReferencePosition(sam, posInReference, returnLastBaseIfDeleted), expectedPosInRead);
+    }
+
+    @DataProvider
+    public Object [][] referenceAtReadData() {
+        return new Object[][]{
+                {"3S9M", 7, 10},
+                {"3S9M", 0, 0},
+                {"3S9M", 0, 13},
+                {"4M1D6M", 4, 4},
+                {"4M1D6M", 6, 5},
+                {"4M1I6M", 0, 5},
+                {"4M1I6M", 5, 6},
+        };
+    }
+
+    @Test(dataProvider = "referenceAtReadData")
+    public void testOffsetAtRead(String cigar, int expectedReferencePos, int posInRead) {
+
+            SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
+            Assert.assertEquals(sam.getReferencePositionAtReadPosition(posInRead), expectedReferencePos);
+    }
 }

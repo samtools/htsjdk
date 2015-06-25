@@ -1011,10 +1011,14 @@ public class VariantContext implements Feature, Serializable {
         return getGenotypes().containsSample(sample);
     }
 
+    /**
+     * @param ith the sample index
+     *
+     * @return the ith genotype in this context or null if there aren't that many genotypes
+     */
     public Genotype getGenotype(int ith) {
-        return genotypes.get(ith);
+        return genotypes.size() > ith ? genotypes.get(ith) : null;
     }
-
 
     /**
      * Returns the number of chromosomes carrying any allele in the genotypes (i.e., excluding NO_CALLS)
