@@ -541,13 +541,21 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         } else if (key.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
             return getGQ();
         } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
-            List<Integer> intList = new ArrayList<Integer>();
-            for(int i : getAD()) intList.add(i);
-            return intList;
+            if(hasAD()) {
+                List<Integer> intList = new ArrayList<Integer>(getAD().length);
+                for(int i : getAD()) intList.add(i);
+
+                return intList;
+            }
+            return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
-            List<Integer> intList = new ArrayList<Integer>();
-            for(int i : getPL()) intList.add(i);
-            return intList;
+            if(hasPL()) {
+                List<Integer> intList = new ArrayList<Integer>(getPL().length);
+                for(int i : getPL()) intList.add(i);
+
+                return intList;
+            }
+            return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return getDP();
         } else {
