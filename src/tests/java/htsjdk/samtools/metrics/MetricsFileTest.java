@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -48,6 +49,8 @@ public class MetricsFileTest {
     public enum TestEnum {One, Two, Three}
 
     public static class TestMetric extends MetricBase implements Cloneable, Serializable {
+        private static final long serialVersionUID = 1l;
+
         public String    STRING_PROP;
         public Date      DATE_PROP;
         public Short     SHORT_PROP;
@@ -73,9 +76,31 @@ public class MetricsFileTest {
         }
     }
 
+    public static class FloatingPointMetric extends MetricBase{
+        public double DOUBLE_PRIMITIVE;
+        public Double DOUBLE_PROP;
+        public float  FLOAT_PRIMITIVE;
+        public Float FLOAT_PROP;
+    }
 
     @Test
-    public void testWriteMetricsFile() throws Exception {
+    public void testFloatingPointEquality() throws IOException {
+        MetricsFile<FloatingPointMetric,Integer> file = new MetricsFile<FloatingPointMetric,Integer>();
+
+        FloatingPointMetric metric = new FloatingPointMetric();
+        metric.DOUBLE_PRIMITIVE = .0000000000000000001d;
+        metric.DOUBLE_PROP = .0000000000000000001d;
+        metric.FLOAT_PRIMITIVE = .0000000000000000001f;
+        metric.FLOAT_PROP = .0000000000000000001f;
+        file.addMetric(metric);
+
+        MetricsFile<FloatingPointMetric,Integer> file2 = writeThenReadBack(file);
+        Assert.assertEquals(file, file2);
+
+    }
+
+    @Test
+    public void testWriteMetricsFile() throws IOException, ClassNotFoundException {
         MetricsFile<TestMetric,Integer> file = new MetricsFile<TestMetric,Integer>();
         TestMetric metric = new TestMetric();
         metric.STRING_PROP       = "Hello World";
@@ -154,13 +179,13 @@ public class MetricsFileTest {
     }
 
     /** Helper method to persist metrics to file and read them back again. */
-    private MetricsFile<TestMetric, Integer> writeThenReadBack(MetricsFile<TestMetric,Integer> in) throws Exception {
+    private <METRIC extends MetricBase> MetricsFile<METRIC, Integer> writeThenReadBack(MetricsFile<METRIC,Integer> in) throws IOException {
         File f = File.createTempFile("test", ".metrics");
         f.deleteOnExit();
         FileWriter out = new FileWriter(f);
         in.write(out);
 
-        MetricsFile<TestMetric,Integer> retval = new MetricsFile<TestMetric,Integer>();
+        MetricsFile<METRIC,Integer> retval = new MetricsFile<METRIC,Integer>();
         retval.read(new FileReader(f));
         return retval;
     }
