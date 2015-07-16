@@ -80,7 +80,7 @@ public class IOUtil {
     /** Possible extensions for VCF files and related formats. */
     public static final String[] VCF_EXTENSIONS = new String[] {".vcf", ".vcf.gz", ".bcf"};
 
-    public static final String[] INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
+    public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
 
     public static final String SAM_FILE_EXTENSION = ".sam";
 
@@ -330,7 +330,7 @@ public class IOUtil {
      * and if it is a file then not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
-     * @param inputs the list of files to check for readability
+     * @param files the list of files to check for readability
      */
     public static void assertInputsAreValid(final List<String> inputs) {
         for (final String input : inputs) assertInputIsValid(input);
