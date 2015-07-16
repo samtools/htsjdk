@@ -61,7 +61,7 @@ import java.util.TreeSet;
  * @author Yossi Farjoun
  */
 public class IntervalList implements Iterable<Interval> {
-    public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
+    public static final String[] INTERVAL_LIST_FILE_EXTENSION = {".interval_list",".intervals"};
 
     private final SAMFileHeader header;
     private final List<Interval> intervals = new ArrayList<Interval>();
