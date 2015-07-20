@@ -31,8 +31,8 @@ import htsjdk.samtools.SAMRecord;
  */
 public interface ProgressLoggerInterface {
 
-	public boolean record(final String chrom, final int pos);
-	public boolean record(final SAMRecord rec);
-	public boolean record(final SAMRecord... recs);
+	boolean record(final String chrom, final int pos);
+	boolean record(final SAMRecord rec);
+	boolean record(final SAMRecord... recs);
 
 }
