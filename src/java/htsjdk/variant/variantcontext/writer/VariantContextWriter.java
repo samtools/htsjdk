@@ -42,5 +42,10 @@ public interface VariantContextWriter extends Closeable {
      */
     public void close();
 
+    /**
+     * @return true if the underlying stream is a java.io.PrintStream  and its checkError returned true, used for pipelines
+     */
+    public boolean checkError();
+    
     public void add(VariantContext vc);
 }
