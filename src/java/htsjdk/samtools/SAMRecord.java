@@ -33,6 +33,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -134,24 +135,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * abs(insertSize) must be <= this
      */
     public static final int MAX_INSERT_SIZE = 1<<29;
-
-    /**
-     * It is not necessary in general to use the flag constants, because there are getters
-     * & setters that handles these symbolically.
-     */
-    private static final int READ_PAIRED_FLAG = 0x1;
-    private static final int PROPER_PAIR_FLAG = 0x2;
-    private static final int READ_UNMAPPED_FLAG = 0x4;
-    private static final int MATE_UNMAPPED_FLAG = 0x8;
-    private static final int READ_STRAND_FLAG = 0x10;
-    private static final int MATE_STRAND_FLAG = 0x20;
-    private static final int FIRST_OF_PAIR_FLAG = 0x40;
-    private static final int SECOND_OF_PAIR_FLAG = 0x80;
-    private static final int NOT_PRIMARY_ALIGNMENT_FLAG = 0x100;
-    private static final int READ_FAILS_VENDOR_QUALITY_CHECK_FLAG = 0x200;
-    private static final int DUPLICATE_READ_FLAG = 0x400;
-    private static final int SUPPLEMENTARY_ALIGNMENT_FLAG = 0x800;
-
 
     private String mReadName = null;
     private byte[] mReadBases = NULL_SEQUENCE;
@@ -647,7 +630,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * the read is paired in sequencing, no matter whether it is mapped in a pair.
      */
     public boolean getReadPairedFlag() {
-        return (mFlags & READ_PAIRED_FLAG) != 0;
+        return (mFlags & SAMFlag.READ_PAIRED.flag) != 0;
     }
 
     private void requireReadPaired() {
@@ -665,14 +648,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean getProperPairFlagUnchecked() {
-        return (mFlags & PROPER_PAIR_FLAG) != 0;
+        return (mFlags & SAMFlag.PROPER_PAIR.flag) != 0;
     }
 
     /**
      * the query sequence itself is unmapped.
      */
     public boolean getReadUnmappedFlag() {
-        return (mFlags & READ_UNMAPPED_FLAG) != 0;
+        return (mFlags & SAMFlag.READ_UNMAPPED.flag) != 0;
     }
 
     /**
@@ -684,14 +667,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean getMateUnmappedFlagUnchecked() {
-        return (mFlags & MATE_UNMAPPED_FLAG) != 0;
+        return (mFlags & SAMFlag.MATE_UNMAPPED.flag) != 0;
     }
 
     /**
      * strand of the query (false for forward; true for reverse strand).
      */
     public boolean getReadNegativeStrandFlag() {
-        return (mFlags & READ_STRAND_FLAG) != 0;
+        return (mFlags & SAMFlag.READ_REVERSE_STRAND.flag) != 0;
     }
 
     /**
@@ -703,7 +686,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean getMateNegativeStrandFlagUnchecked() {
-        return (mFlags & MATE_STRAND_FLAG) != 0;
+        return (mFlags & SAMFlag.MATE_REVERSE_STRAND.flag) != 0;
     }
 
     /**
@@ -715,7 +698,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean getFirstOfPairFlagUnchecked() {
-        return (mFlags & FIRST_OF_PAIR_FLAG) != 0;
+        return (mFlags & SAMFlag.FIRST_OF_PAIR.flag) != 0;
     }
 
     /**
@@ -727,49 +710,49 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean getSecondOfPairFlagUnchecked() {
-        return (mFlags & SECOND_OF_PAIR_FLAG) != 0;
+        return (mFlags & SAMFlag.SECOND_OF_PAIR.flag) != 0;
     }
 
     /**
      * the alignment is not primary (a read having split hits may have multiple primary alignment records).
      */
     public boolean getNotPrimaryAlignmentFlag() {
-        return (mFlags & NOT_PRIMARY_ALIGNMENT_FLAG) != 0;
+        return (mFlags & SAMFlag.NOT_PRIMARY_ALIGNMENT.flag) != 0;
     }
 
     /**
      * the alignment is supplementary (TODO: further explanation?).
      */
     public boolean getSupplementaryAlignmentFlag() {
-        return (mFlags & SUPPLEMENTARY_ALIGNMENT_FLAG) != 0;
+        return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
     }
 
     /**
      * the read fails platform/vendor quality checks.
      */
     public boolean getReadFailsVendorQualityCheckFlag() {
-        return (mFlags & READ_FAILS_VENDOR_QUALITY_CHECK_FLAG) != 0;
+        return (mFlags & SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag) != 0;
     }
 
     /**
      * the read is either a PCR duplicate or an optical duplicate.
      */
     public boolean getDuplicateReadFlag() {
-        return (mFlags & DUPLICATE_READ_FLAG) != 0;
+        return (mFlags & SAMFlag.DUPLICATE_READ.flag) != 0;
     }
 
     /**
      * the read is paired in sequencing, no matter whether it is mapped in a pair.
      */
     public void setReadPairedFlag(final boolean flag) {
-        setFlag(flag, READ_PAIRED_FLAG);
+        setFlag(flag, SAMFlag.READ_PAIRED.flag);
     }
 
     /**
      * the read is mapped in a proper pair (depends on the protocol, normally inferred during alignment).
      */
     public void setProperPairFlag(final boolean flag) {
-        setFlag(flag, PROPER_PAIR_FLAG);
+        setFlag(flag, SAMFlag.PROPER_PAIR.flag);
     }
 
     /**
@@ -785,7 +768,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * the query sequence itself is unmapped.
      */
     public void setReadUnmappedFlag(final boolean flag) {
-        setFlag(flag, READ_UNMAPPED_FLAG);
+        setFlag(flag, SAMFlag.READ_UNMAPPED.flag);
         // Change to readUnmapped could change indexing bin
         setIndexingBin(null);
     }
@@ -794,63 +777,63 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * the mate is unmapped.
      */
     public void setMateUnmappedFlag(final boolean flag) {
-        setFlag(flag, MATE_UNMAPPED_FLAG);
+        setFlag(flag, SAMFlag.MATE_UNMAPPED.flag);
     }
 
     /**
      * strand of the query (false for forward; true for reverse strand).
      */
     public void setReadNegativeStrandFlag(final boolean flag) {
-        setFlag(flag, READ_STRAND_FLAG);
+        setFlag(flag, SAMFlag.READ_REVERSE_STRAND.flag);
     }
 
     /**
      * strand of the mate (false for forward; true for reverse strand).
      */
     public void setMateNegativeStrandFlag(final boolean flag) {
-        setFlag(flag, MATE_STRAND_FLAG);
+        setFlag(flag, SAMFlag.MATE_REVERSE_STRAND.flag);
     }
 
     /**
      * the read is the first read in a pair.
      */
     public void setFirstOfPairFlag(final boolean flag) {
-        setFlag(flag, FIRST_OF_PAIR_FLAG);
+        setFlag(flag, SAMFlag.FIRST_OF_PAIR.flag);
     }
 
     /**
      * the read is the second read in a pair.
      */
     public void setSecondOfPairFlag(final boolean flag) {
-        setFlag(flag, SECOND_OF_PAIR_FLAG);
+        setFlag(flag, SAMFlag.SECOND_OF_PAIR.flag);
     }
 
     /**
      * the alignment is not primary (a read having split hits may have multiple primary alignment records).
      */
     public void setNotPrimaryAlignmentFlag(final boolean flag) {
-        setFlag(flag, NOT_PRIMARY_ALIGNMENT_FLAG);
+        setFlag(flag, SAMFlag.NOT_PRIMARY_ALIGNMENT.flag);
     }
 
     /**
      * the alignment is supplementary (TODO: further explanation?).
      */
     public void setSupplementaryAlignmentFlag(final boolean flag) {
-        setFlag(flag, SUPPLEMENTARY_ALIGNMENT_FLAG);
+        setFlag(flag, SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag);
     }
 
     /**
      * the read fails platform/vendor quality checks.
      */
     public void setReadFailsVendorQualityCheckFlag(final boolean flag) {
-        setFlag(flag, READ_FAILS_VENDOR_QUALITY_CHECK_FLAG);
+        setFlag(flag, SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag);
     }
 
     /**
      * the read is either a PCR duplicate or an optical duplicate.
      */
     public void setDuplicateReadFlag(final boolean flag) {
-        setFlag(flag, DUPLICATE_READ_FLAG);
+        setFlag(flag, SAMFlag.DUPLICATE_READ.flag);
     }
 
     /**
@@ -1814,6 +1797,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             }
         }
         return builder.toString();
+    }
+    
+    /** 
+     * shortcut to <pre>SAMFlag.getFlags( this.getFlags() );</pre>
+     * @returns a set of SAMFlag associated to this sam record */
+    public final Set<SAMFlag> getSAMFlags() {
+        return SAMFlag.getFlags( this.getFlags() );
     }
 }
 
