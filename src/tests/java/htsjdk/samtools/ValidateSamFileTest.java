@@ -421,9 +421,8 @@ public class ValidateSamFileTest {
         Assert.assertNotNull(outputFile.getHistogram());
         return outputFile.getHistogram();
     }
-
-    @Test(dataProvider = "headerVersions")
-    public void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
+    
+    private void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
         final File samFile = File.createTempFile("validateHeader.", ".sam");
         samFile.deleteOnExit();
         final PrintWriter pw = new PrintWriter(samFile);
@@ -438,15 +437,14 @@ public class ValidateSamFileTest {
         }
     }
 
-    @DataProvider(name = "headerVersions")
-    public Object[][] testHeaderVersionScenarios() {
-        return new Object[][]{
-                {"1.0", true},
-                {"1.3", true},
-                {"1.4", true},
-                {"1.5", true},
-                {"1.6", false},
-        };
-    }
+    @Test
+    public void testHeaderVersions() throws Exception {
+        // Test the acceptable versions
+        for (final String version : SAMFileHeader.ACCEPTABLE_VERSIONS) {
+            testHeaderVersion(version, true);
+        }
 
+        // Test an unacceptable version
+        testHeaderVersion("1.6", false);
+    }
 }
