@@ -34,12 +34,14 @@ import htsjdk.tribble.FeatureCodec;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
+import htsjdk.tribble.TribbleException;
+import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.vcf.VCFConstants;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.*;
 
@@ -989,6 +991,379 @@ public class VariantContextUnitTest extends VariantBaseTest {
     	builder.attribute("Test", "value");
     }
 
+    // --------------------------------------------------------------------------------
+    //
+    // Test validation methods
+    //
+    // --------------------------------------------------------------------------------
+
+    // create a VariantContext object for various alleles and genotypes to test against
+    private VariantContext createTestVariantContext(final List<Allele> alleles, final Map<String, Object> attributes, final Genotype... genotypes) {
+        final EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
+        final Set<String> filters = null;
+        final boolean fullyDecoded = false;
+
+        // no genotypes needs to use GenotypesContext.NO_GENOTYPES,
+        // otherwise we build up a GenotypesContext from the passed genotypes
+        final GenotypesContext gc;
+        if (genotypes == null || genotypes.length == 0) {
+            gc = GenotypesContext.NO_GENOTYPES;
+        } else {
+            gc = new GenotypesContext();
+            for (final Genotype genotype : genotypes) {
+                gc.add(genotype);
+            }
+        }
+        // most of the fields are not important to the tests, we just need alleles and gc set properly
+        return new VariantContext("genotypes", VCFConstants.EMPTY_ID_FIELD, snpLoc, snpLocStart, snpLocStop, alleles,
+                gc, VariantContext.NO_LOG10_PERROR, filters, attributes,
+                fullyDecoded, toValidate);
+    }
+
+    // validateReferenceBases: PASS conditions
+    @DataProvider
+    public Object[][] testValidateReferencesBasesDataProvider() {
+        final VariantContext vc = createValidateReferencesContext(Arrays.asList(Aref, T));
+        return new Object[][]{
+                // null ref will pass validation
+                {vc, null, A},
+                // A vs A-ref will pass validation
+                {vc, Aref, A}
+        };
+    }
+    @Test(dataProvider = "testValidateReferencesBasesDataProvider")
+    public void testValidateReferenceBases(final VariantContext vc, final Allele allele1, final Allele allele2) {
+        // validateReferenceBases throws exceptions if it fails, so no Asserts here...
+        vc.validateReferenceBases(allele1, allele2);
+    }
+    // validateReferenceBases: FAIL conditions
+    @DataProvider
+    public Object[][] testValidateReferencesBasesFailureDataProvider() {
+        final VariantContext vc = createValidateReferencesContext(Arrays.asList(Aref, T));
+
+        final Allele symbolicAllele = Allele.create("<A>");
+
+        return new Object[][]{
+                // T vs A-ref will NOT pass validation
+                {vc, Aref, T},
+                // symbolic alleles will NOT pass validation
+                {vc, Aref, symbolicAllele}
+        };
+    }
+    @Test(dataProvider = "testValidateReferencesBasesFailureDataProvider", expectedExceptions = TribbleException.class)
+    public void testValidateReferenceBasesFailure(final VariantContext vc, final Allele allele1, final Allele allele2) {
+        // validateReferenceBases throws exceptions if it fails, so no Asserts here...
+        vc.validateReferenceBases(allele1, allele2);
+    }
+    private VariantContext createValidateReferencesContext(final List<Allele> alleles) {
+        return createTestVariantContext(alleles, null);
+    }
+
+
+    // validateRSIDs: PASS conditions
+    @DataProvider
+    public Object[][] testValidateRSIDsDataProvider() {
+        final VariantContext vcNoId = createTestVariantContextRsIds(VCFConstants.EMPTY_ID_FIELD);
+        final VariantContext vcNonRs = createTestVariantContextRsIds("abc456");
+        final VariantContext vc = createTestVariantContextRsIds("rs123");
+        final VariantContext vcMultipleRs = createTestVariantContextRsIds("rs123;rs456;rs789");
+
+        return new Object[][]{
+                // no ID will pass validation
+                {vcNoId, makeRsIDsSet("rs123")},
+                // non-rs ID will pass validation
+                {vcNonRs, makeRsIDsSet("rs123")},
+                // matching ID will pass validation
+                {vc, makeRsIDsSet("rs123")},
+                // null rsIDs to check will pass validation
+                {vc, null},
+                // context with multiple rsIDs that are contained within the rsID list will pass
+                {vcMultipleRs, makeRsIDsSet("rs123", "rs321", "rs456", "rs654", "rs789")}
+        };
+    }
+    @Test(dataProvider = "testValidateRSIDsDataProvider")
+    public void testValidateRSIDs(final VariantContext vc, final Set<String> rsIDs) {
+        // validateRSIDs throws exceptions if it fails, so no Asserts here...
+        vc.validateRSIDs(rsIDs);
+    }
+    // validateRSIDs: FAIL conditions
+    @DataProvider
+    public Object[][] testValidateRSIDsFailureDataProvider() {
+        final VariantContext vc = createTestVariantContextRsIds("rs123");
+        final VariantContext vcMultipleRs = createTestVariantContextRsIds("rs123;rs456;rs789");
+
+        return new Object[][]{
+                // mismatching ID will fail validation
+                {vc, makeRsIDsSet("rs123456")},
+                // null rsIDs to check will pass validation
+                {vcMultipleRs, makeRsIDsSet("rs456")}
+        };
+    }
+    @Test(dataProvider = "testValidateRSIDsFailureDataProvider", expectedExceptions = TribbleException.class)
+    public void testValidateRSIDsFailure(final VariantContext vc, final Set<String> rsIDs) {
+        // validateRSIDs throws exceptions if it fails, so no Asserts here...
+        vc.validateRSIDs(rsIDs);
+    }
+    // create a VariantContext appropriate for testing rsIDs
+    private VariantContext createTestVariantContextRsIds(final String rsId) {
+        final EnumSet<VariantContext.Validation> toValidate = EnumSet.noneOf(VariantContext.Validation.class);
+        final Set<String> filters = null;
+        final Map<String, Object> attributes = null;
+        final boolean fullyDecoded = false;
+
+        return new VariantContext("genotypes", rsId, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, T),
+                GenotypesContext.NO_GENOTYPES, VariantContext.NO_LOG10_PERROR, filters, attributes,
+                fullyDecoded, toValidate);
+    }
+    private Set<String> makeRsIDsSet(final String... rsIds) {
+        return new HashSet<String>(Arrays.asList(rsIds));
+    }
+
+
+    // validateAlternateAlleles: PASS conditions
+    @DataProvider
+    public Object[][] testValidateAlternateAllelesDataProvider() {
+        final Genotype homVarT = GenotypeBuilder.create("homVarT", Arrays.asList(T, T));
+
+        // no genotypes passes validateAlternateAlleles
+        final VariantContext vcNoGenotypes =
+                // A-ref/T with no GT
+                createValidateAlternateAllelesContext(Arrays.asList(Aref, T));
+
+        // genotypes that match ALTs will pass
+        final VariantContext vcHasGenotypes =
+                // A-ref/T vs T/T
+                createValidateAlternateAllelesContext(Arrays.asList(Aref, T), homVarT);
+
+        return new Object[][]{
+                {vcNoGenotypes},
+                {vcHasGenotypes}
+        };
+    }
+    @Test(dataProvider = "testValidateAlternateAllelesDataProvider")
+    public void testValidateAlternateAlleles(final VariantContext vc) {
+        // validateAlternateAlleles throws exceptions if it fails, so no Asserts here...
+        vc.validateAlternateAlleles();
+    }
+    // validateAlternateAlleles: FAIL conditions
+    @DataProvider
+    public Object[][] testValidateAlternateAllelesFailureDataProvider() {
+        final Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
+        final Genotype homVarA = GenotypeBuilder.create("homVarA", Arrays.asList(A, A));
+
+        // alts not observed in the genotypes will fail validation
+        // this is the throw in VariantContext from: if ( reportedAlleles.size() != observedAlleles.size() )
+        final VariantContext vcHasAltNotObservedInGT =
+                // A-ref/T vs A-ref/A-ref
+                createValidateAlternateAllelesContext(Arrays.asList(Aref, T), homRef);
+
+        // alts not observed in the genotypes will fail validation
+        // but this time it is the second throw in VariantContext after: observedAlleles.retainAll(reportedAlleles);
+        final VariantContext vcHasAltNotObservedInGTIntersection =
+                // A-ref/T vs A/A
+                createValidateAlternateAllelesContext(Arrays.asList(Aref, T), homVarA);
+
+        return new Object[][]{
+                {vcHasAltNotObservedInGT},
+                {vcHasAltNotObservedInGTIntersection}
+        };
+    }
+    @Test(dataProvider = "testValidateAlternateAllelesFailureDataProvider", expectedExceptions = TribbleException.class)
+    public void testValidateAlternateAllelesFailure(final VariantContext vc) {
+        // validateAlternateAlleles throws exceptions if it fails, so no Asserts here...
+        vc.validateAlternateAlleles();
+    }
+    private VariantContext createValidateAlternateAllelesContext(final List<Allele> alleles, final Genotype... genotypes) {
+        return createTestVariantContext(alleles, null, genotypes);
+    }
+
+
+
+    // validateChromosomeCounts: PASS conditions
+    @DataProvider
+    public Object[][] testValidateChromosomeCountsDataProvider() {
+        final Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
+        final Genotype homVarT = GenotypeBuilder.create("homVarT", Arrays.asList(T, T));
+        final Genotype hetVarTC = GenotypeBuilder.create("hetVarTC", Arrays.asList(T, C));
+        final Genotype homRefNoCall = GenotypeBuilder.create("homRefNoCall", Arrays.asList(Aref, Allele.NO_CALL));
+
+
+        // no genotypes passes validateChromosomeCounts
+        final VariantContext vcNoGenotypes =
+                // A-ref/T with no GT
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T), null);
+
+        /** AN : total number of alleles in called genotypes **/
+        // with AN set and hom-ref, we expect AN to be 2 for Aref/Aref
+        final Map<String, Object> attributesAN = new HashMap<String, Object>();
+        attributesAN.put(VCFConstants.ALLELE_NUMBER_KEY, "2");
+        final VariantContext vcANSet =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesAN, homRef);
+
+        // with AN set, one no-call (no-calls get ignored by getCalledChrCount() in VariantContext)
+        // we expect AN to be 1 for Aref/no-call
+        final Map<String, Object> attributesANNoCall = new HashMap<String, Object>();
+        attributesANNoCall.put(VCFConstants.ALLELE_NUMBER_KEY, "1");
+        final VariantContext vcANSetNoCall =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesANNoCall, homRefNoCall);
+
+
+        /** AC : allele count in genotypes, for each ALT allele, in the same order as listed **/
+        // with AC set, and T/T, we expect AC to be 2 (for 2 counts of ALT T)
+        final Map<String, Object> attributesAC = new HashMap<String, Object>();
+        attributesAC.put(VCFConstants.ALLELE_COUNT_KEY, "2");
+        final VariantContext vcACSet =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T), attributesAC, homVarT);
+
+        // with AC set and no ALT (GT is 0/0), we expect AC count to be 0
+        final Map<String, Object> attributesACNoAlts = new HashMap<String, Object>();
+        attributesACNoAlts.put(VCFConstants.ALLELE_COUNT_KEY, "0");
+        final VariantContext vcACSetNoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesACNoAlts, homRef);
+
+        // with AC set, and two different ALTs (T and C), with GT of 1/2, we expect a count of 1 for each.
+        // With two ALTs, a list is expected, so we set the attribute as a list of 1,1
+        final Map<String, Object> attributesACTwoAlts = new HashMap<String, Object>();
+        attributesACTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "1"));
+        final VariantContext vcACSetTwoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAlts, hetVarTC);
+
+        return new Object[][]{
+                {vcNoGenotypes},
+                {vcANSet},
+                {vcANSetNoCall},
+                {vcACSet},
+                {vcACSetNoAlts},
+                {vcACSetTwoAlts}
+        };
+    }
+    @Test(dataProvider = "testValidateChromosomeCountsDataProvider")
+    public void testValidateChromosomeCounts(final VariantContext vc) {
+        // validateChromosomeCounts throws exceptions if it fails, so no Asserts here...
+        vc.validateChromosomeCounts();
+    }
+    // validateChromosomeCounts: FAIL conditions
+    @DataProvider
+    public Object[][] testValidateChromosomeCountsFailureDataProvider() {
+        final Genotype homRef = GenotypeBuilder.create("homRef", Arrays.asList(Aref, Aref));
+        final Genotype hetVarTC = GenotypeBuilder.create("hetVarTC", Arrays.asList(T, C));
+        final Genotype homRefNoCall = GenotypeBuilder.create("homRefNoCall", Arrays.asList(Aref, Allele.NO_CALL));
+
+        /** AN : total number of alleles in called genotypes **/
+        // with AN set and hom-ref, we expect AN to be 2 for Aref/Aref, so 3 will fail
+        final Map<String, Object> attributesAN = new HashMap<String, Object>();
+        attributesAN.put(VCFConstants.ALLELE_NUMBER_KEY, "3");
+        final VariantContext vcANSet =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesAN, homRef);
+
+        // with AN set, one no-call (no-calls get ignored by getCalledChrCount() in VariantContext)
+        // we expect AN to be 1 for Aref/no-call, so 2 will fail
+        final Map<String, Object> attributesANNoCall = new HashMap<String, Object>();
+        attributesANNoCall.put(VCFConstants.ALLELE_NUMBER_KEY, "2");
+        final VariantContext vcANSetNoCall =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesANNoCall, homRefNoCall);
+
+        /** AC : allele count in genotypes, for each ALT allele, in the same order as listed **/
+        // with AC set but no ALTs, we expect a count of 0, so the wrong count will fail here
+        final Map<String, Object> attributesACWrongCount = new HashMap<String, Object>();
+        attributesACWrongCount.put(VCFConstants.ALLELE_COUNT_KEY, "2");
+        final VariantContext vcACWrongCount =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref), attributesACWrongCount, homRef);
+
+        // with AC set, two ALTs, but AC is not a list with count for each ALT
+        final Map<String, Object> attributesACTwoAlts = new HashMap<String, Object>();
+        attributesACTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, "1");
+        final VariantContext vcACSetTwoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAlts, hetVarTC);
+
+        // with AC set, two ALTs, and a list is correctly used, but wrong counts (we expect counts to be 1,1)
+        final Map<String, Object> attributesACTwoAltsWrongCount = new HashMap<String, Object>();
+        attributesACTwoAltsWrongCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "2"));
+        final VariantContext vcACSetTwoAltsWrongCount =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAltsWrongCount, hetVarTC);
+
+        // with AC set, two ALTs, but only count for one ALT (we expect two items in the list: 1,1)
+        final Map<String, Object> attributesACTwoAltsOneAltCount = new HashMap<String, Object>();
+        attributesACTwoAltsOneAltCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1"));
+        final VariantContext vcACSetTwoAltsOneAltCount =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAltsOneAltCount, hetVarTC);
+
+        return new Object[][]{
+                {vcANSet},
+                {vcANSetNoCall},
+                {vcACWrongCount},
+                {vcACSetTwoAlts},
+                {vcACSetTwoAltsWrongCount},
+                {vcACSetTwoAltsOneAltCount}
+        };
+    }
+    @Test(dataProvider = "testValidateChromosomeCountsFailureDataProvider", expectedExceptions = TribbleException.class)
+    public void testValidateChromosomeCountsFailure(final VariantContext vc) {
+        // validateChromosomeCounts throws exceptions if it fails, so no Asserts here...
+        vc.validateChromosomeCounts();
+    }
+    private VariantContext createValidateChromosomeCountsContext(final List<Allele> alleles, final Map<String, Object> attributes, final Genotype... genotypes) {
+        return createTestVariantContext(alleles, attributes, genotypes);
+    }
+
+
+    // the extraStrictValidation method calls the other validation methods
+    @DataProvider
+    public Object[][] testExtraStrictValidationDataProvider() {
+        // get the data providers for each of the passing tests of the individual methods
+        final Object[][] passingValidateReferenceBasesData = testValidateReferencesBasesDataProvider();
+        final Object[][] passingValidateRSIDsData = testValidateRSIDsDataProvider();
+        final Object[][] passingValidateAlternateAllelesData = testValidateAlternateAllelesDataProvider();
+        final Object[][] passingValidateChromosomeCountsData = testValidateChromosomeCountsDataProvider();
+
+        // the total number of tests we will run here is the sum of each of the test cases
+        final int numDataPoints =
+                passingValidateReferenceBasesData.length +
+                        passingValidateRSIDsData.length +
+                        passingValidateAlternateAllelesData.length +
+                        passingValidateChromosomeCountsData.length;
+
+        // create the data provider structure for this extra strict test
+        final Object[][] extraStrictData = new Object[numDataPoints][];
+
+        int testNum = 0;
+        for (final Object[] testRefBases : passingValidateReferenceBasesData) {
+            final VariantContext vc = (VariantContext) testRefBases[0];
+            final Allele refAllele = (Allele) testRefBases[1];
+            final Allele allele = (Allele) testRefBases[2];
+
+            // for this test, rsIds does not matter, so we hold it constant
+            extraStrictData[testNum++] = new Object[]{vc, refAllele, allele, null};
+        }
+
+        for (final Object[] testRsIDs : passingValidateRSIDsData) {
+            final VariantContext vc = (VariantContext) testRsIDs[0];
+            final Set<String> rsIDs = (Set<String>) testRsIDs[1];
+
+            // for this test, reportedReference and observedReference does not matter,
+            // so we hold it constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, rsIDs};
+        }
+
+        for (final Object[] testAlternateAlleles : passingValidateAlternateAllelesData) {
+            final VariantContext vc = (VariantContext) testAlternateAlleles[0];
+
+            // for this test, only VariantContext is used, so we hold
+            // reportedReference, observedReference and rsIds constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, null};
+        }
+
+        for (final Object[] testChromomeCounts : passingValidateChromosomeCountsData) {
+            final VariantContext vc = (VariantContext) testChromomeCounts[0];
+
+            // for this test, only VariantContext is used, so we hold
+            // reportedReference, observedReference and rsIds constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, null};
+        }
+
+        return extraStrictData;
+    }
+
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
@@ -1005,5 +1380,71 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final VariantContext vcDeserialized = TestUtil.serializeAndDeserialize(initialVC);
 
         assertVariantContextsAreEqual(vcDeserialized, initialVC);
+    }
+
+    @Test(dataProvider = "testExtraStrictValidationDataProvider")
+    public void testExtraStrictValidation(final VariantContext vc, final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
+        // extraStrictValidation throws exceptions if it fails, so no Asserts here...
+        vc.extraStrictValidation(reportedReference, observedReference, rsIDs);
+    }
+    @DataProvider
+    public Object[][] testExtraStrictValidationFailureDataProvider() {
+        // get the data providers for each of the failure tests of the individual methods
+        final Object[][] failingValidateReferenceBasesData = testValidateReferencesBasesFailureDataProvider();
+        final Object[][] failingValidateRSIDsData = testValidateRSIDsFailureDataProvider();
+        final Object[][] failingValidateAlternateAllelesData = testValidateAlternateAllelesFailureDataProvider();
+        final Object[][] failingValidateChromosomeCountsData = testValidateChromosomeCountsFailureDataProvider();
+
+        // the total number of tests we will run here is the sum of each of the test cases
+        final int numDataPoints =
+                failingValidateReferenceBasesData.length +
+                        failingValidateRSIDsData.length +
+                        failingValidateAlternateAllelesData.length +
+                        failingValidateChromosomeCountsData.length;
+
+        // create the data provider structure for this extra strict test
+        final Object[][] extraStrictData = new Object[numDataPoints][];
+
+        int testNum = 0;
+        for (final Object[] testRefBases : failingValidateReferenceBasesData) {
+            final VariantContext vc = (VariantContext) testRefBases[0];
+            final Allele refAllele = (Allele) testRefBases[1];
+            final Allele allele = (Allele) testRefBases[2];
+
+            // for this test, rsIds does not matter, so we hold it constant
+            extraStrictData[testNum++] = new Object[]{vc, refAllele, allele, null};
+        }
+
+        for (final Object[] testRsIDs : failingValidateRSIDsData) {
+            final VariantContext vc = (VariantContext) testRsIDs[0];
+            final Set<String> rsIDs = (Set<String>) testRsIDs[1];
+
+            // for this test, reportedReference and observedReference does not matter,
+            // so we hold it constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, rsIDs};
+        }
+
+        for (final Object[] testAlternateAlleles : failingValidateAlternateAllelesData) {
+            final VariantContext vc = (VariantContext) testAlternateAlleles[0];
+
+            // for this test, only VariantContext is used, so we hold
+            // reportedReference, observedReference and rsIds constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, null};
+        }
+
+        for (final Object[] testChromomeCounts : failingValidateChromosomeCountsData) {
+            final VariantContext vc = (VariantContext) testChromomeCounts[0];
+
+            // for this test, only VariantContext is used, so we hold
+            // reportedReference, observedReference and rsIds constant
+            extraStrictData[testNum++] = new Object[]{vc, Tref, T, null};
+        }
+
+        return extraStrictData;
+    }
+    @Test(dataProvider = "testExtraStrictValidationFailureDataProvider", expectedExceptions = TribbleException.class)
+    public void testExtraStrictValidationFailure(final VariantContext vc, final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
+        // extraStrictValidation throws exceptions if it fails, so no Asserts here...
+        vc.extraStrictValidation(reportedReference, observedReference, rsIDs);
     }
 }
