@@ -63,6 +63,13 @@ public class ValidateSamFileTest {
     }
 
     @Test
+    public void testSamFileVersion1pt5() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
+        final Histogram<String> results = executeValidation(samReader, null);
+        Assert.assertTrue(results.isEmpty());
+    }
+
+    @Test
     public void testSortOrder() throws IOException {
         Histogram<String> results = executeValidation(SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
                 .open(new File(TEST_DATA_DIR, "invalid_coord_sort_order.sam")), null);
@@ -437,7 +444,8 @@ public class ValidateSamFileTest {
                 {"1.0", true},
                 {"1.3", true},
                 {"1.4", true},
-                {"1.5", false},
+                {"1.5", true},
+                {"1.6", false},
         };
     }
 
