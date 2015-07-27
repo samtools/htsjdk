@@ -108,17 +108,20 @@ public class ReferenceSource {
             }
         }
 
-        { // try to fetch sequence by md5:
-            if (md5 != null)
-                try {
-                    bases = findBasesByMD5(md5.toLowerCase());
-                } catch (final Exception e) {
-                    throw new RuntimeException(e);
+        {
+            if (Defaults.USE_CRAM_REF_DOWNLOAD) { // try to fetch sequence by md5:
+                if (md5 != null) {
+                    try {
+                        bases = findBasesByMD5(md5.toLowerCase());
+                    } catch (final Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-            if (bases != null) {
-                SequenceUtil.upperCase(bases);
-                cacheW.put(md5, new WeakReference<byte[]>(bases));
-                return bases;
+                if (bases != null) {
+                    SequenceUtil.upperCase(bases);
+                    cacheW.put(md5, new WeakReference<byte[]>(bases));
+                    return bases;
+                }
             }
         }
 
