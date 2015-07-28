@@ -116,7 +116,7 @@ public class LiftOver {
             return null;
         }
 
-        return createToInterval(interval.getName(), targetIntersection);
+        return createToInterval(interval.getName(), interval.isNegativeStrand(), targetIntersection);
     }
 
     public List<PartialLiftover> diagnosticLiftover(final Interval interval) {
@@ -131,7 +131,7 @@ public class LiftOver {
             if (targetIntersection == null) {
                 ret.add(new PartialLiftover(intersectingChain, chain.id));
             } else {
-                Interval toInterval = createToInterval(interval.getName(), targetIntersection);
+                Interval toInterval = createToInterval(interval.getName(), interval.isNegativeStrand(), targetIntersection);
                 float percentLiftedOver = targetIntersection.intersectionLength/(float)interval.length();
                 ret.add(new PartialLiftover(intersectingChain, toInterval, targetIntersection.chain.id, percentLiftedOver));
             }
@@ -139,7 +139,7 @@ public class LiftOver {
         return ret;
     }
 
-    private static Interval createToInterval(final String intervalName, final TargetIntersection targetIntersection) {
+    private static Interval createToInterval(final String intervalName, final boolean sourceNegativeStrand, final TargetIntersection targetIntersection) {
         // Compute the query interval given the offsets of the target interval start and end into the first and
         // last ContinuousBlocks.
         int toStart = targetIntersection.chain.getBlock(targetIntersection.firstBlockIndex).toStart + targetIntersection.startOffset;
@@ -148,7 +148,7 @@ public class LiftOver {
             throw new SAMException("Something strange lifting over interval " + intervalName);
         }
 
-        if (targetIntersection.chain.toNegativeStrand) {
+        if (targetIntersection.chain.toOppositeStrand) {
             // Flip if query is negative.
             int negativeStart = targetIntersection.chain.toSequenceSize - toEnd;
             int negativeEnd = targetIntersection.chain.toSequenceSize - toStart;
@@ -156,8 +156,8 @@ public class LiftOver {
             toEnd = negativeEnd;
         }
         // Convert to 1-based, inclusive.
-        return new Interval(targetIntersection.chain.toSequenceName, toStart+1, toEnd, targetIntersection.chain.toNegativeStrand,
-                intervalName);
+        final boolean negativeStrand = targetIntersection.chain.toOppositeStrand ? !sourceNegativeStrand : sourceNegativeStrand;
+        return new Interval(targetIntersection.chain.toSequenceName, toStart+1, toEnd, negativeStrand, intervalName);
     }
 
     /**
