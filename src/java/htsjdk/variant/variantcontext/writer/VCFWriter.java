@@ -50,7 +50,7 @@ import java.io.Writer;
 class VCFWriter extends IndexingVariantContextWriter {
 
     private static final String VERSION_LINE =
-		    VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_1.getFormatString() + "=" + VCFHeaderVersion.VCF4_1.getVersionString();
+            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
 
 	// Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;

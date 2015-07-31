@@ -65,13 +65,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCF4ToVCF4() {
         VCFHeader header = createHeader(VCF4headerStrings);
-        checkMD5ofHeaderFile(header, "f05a57053a0c6a5bac15dba566f7f7ff");
+        checkMD5ofHeaderFile(header, "91c33dadb92e01ea349bd4bcdd02d6be");
     }
 
     @Test
     public void testVCF4ToVCF4_alternate() {
         VCFHeader header = createHeader(VCF4headerStrings_with_negativeOne);
-        checkMD5ofHeaderFile(header, "b1d71cc94261053131f8d239d65a8c9f");
+        checkMD5ofHeaderFile(header, "39318d9713897d55be5ee32a2119853f");
     }
 
     @Test
@@ -355,7 +355,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public static int VCF4headerStringCount = 16;
 
     public static String VCF4headerStrings =
-            "##fileformat=VCFv4.0\n" +
+            "##fileformat=VCFv4.2\n" +
                     "##filedate=2010-06-21\n" +
                     "##reference=NCBI36\n" +
                     "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n" +
@@ -375,7 +375,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
 
     public static String VCF4headerStrings_with_negativeOne =
-            "##fileformat=VCFv4.0\n" +
+            "##fileformat=VCFv4.2\n" +
                     "##filedate=2010-06-21\n" +
                     "##reference=NCBI36\n" +
                     "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n" +

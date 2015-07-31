@@ -28,8 +28,8 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
 	public VCFRecordCodec(final VCFHeader header) {
 		this.vcfEncoder = new VCFEncoder(header, false, false);
 		// Explicitly set the version because it's not available in the header itself.
-		this.vcfDecoder.setVCFHeader(header, VCFHeaderVersion.VCF4_1);
-	}
+		this.vcfDecoder.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
+    }
 
 	@Override
 	public void setOutputStream(final OutputStream stream) {
