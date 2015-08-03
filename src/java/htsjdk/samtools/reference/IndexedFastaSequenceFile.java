@@ -190,9 +190,12 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         final int terminatorLength = bytesPerLine - basesPerLine;
 
         long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
+        // Cast to long so the second argument cannot overflow a signed integer.
+        final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length % basesPerLine + 2) * (long)bytesPerLine);
+        if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " +  minBufferSize);
 
         // Allocate a buffer for reading in sequence data.
-        ByteBuffer channelBuffer = ByteBuffer.allocate(Math.min(Defaults.NON_ZERO_BUFFER_SIZE, (length % basesPerLine + 2) * bytesPerLine));
+        final ByteBuffer channelBuffer = ByteBuffer.allocate((int)minBufferSize);
 
         while(targetBuffer.position() < length) {
             // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.
