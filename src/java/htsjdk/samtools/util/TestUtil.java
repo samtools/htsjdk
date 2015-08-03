@@ -25,8 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 public class TestUtil {
 
@@ -65,5 +64,29 @@ public class TestUtil {
             }
             f.delete();
         }
+    }
+
+    /**
+     * Serialize and Deserialize an object
+     * Useful for testing if serialization is correctly handled for a class.
+     * @param input an object to serialize and then deserialize
+     * @param <T> any Serializable type
+     * @return a copy of the initial object
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public static <T extends Serializable> T serializeAndDeserialize(T input) throws IOException, ClassNotFoundException {
+        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
+
+        out.writeObject(input);
+        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
+
+        @SuppressWarnings("unchecked")
+        final T result = (T) in.readObject();
+
+        out.close();
+        in.close();
+        return result;
     }
 }

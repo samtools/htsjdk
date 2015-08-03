@@ -58,4 +58,9 @@ public class SortingVariantContextWriter extends SortingVariantContextWriterBase
         int mostUpstreamWritableIndex = vc.getStart() - maxCachingStartDistance;
         this.mostUpstreamWritableLoc = Math.max(BEFORE_MOST_UPSTREAM_LOC, mostUpstreamWritableIndex);
     }
+    
+    @Override
+    public boolean checkError() {
+        return false;
+    }
 }

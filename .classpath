@@ -31,5 +31,6 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="/home/novelbio/git/htsjdk/lib/apache-ant-1.8.2-bzip2.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -1,30 +1,33 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.encoding.read_features.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.read_features.Deletion;
-import htsjdk.samtools.cram.encoding.read_features.InsertBase;
-import htsjdk.samtools.cram.encoding.read_features.Insertion;
-import htsjdk.samtools.cram.encoding.read_features.ReadBase;
-import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
-import htsjdk.samtools.cram.encoding.read_features.SoftClip;
-import htsjdk.samtools.cram.encoding.read_features.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
+import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
+import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
+import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
+import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
+import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -35,251 +38,263 @@ import java.util.Arrays;
 import java.util.List;
 
 public class CramNormalizer {
-    private SAMFileHeader header;
+    private final SAMFileHeader header;
     private int readCounter = 0;
-    private String readNamePrefix = "";
-    private byte defaultQualityScore = '?' - '!';
 
     private static Log log = Log.getInstance(CramNormalizer.class);
     private ReferenceSource referenceSource;
 
-    public CramNormalizer(SAMFileHeader header) {
+    private CramNormalizer(final SAMFileHeader header) {
         this.header = header;
     }
 
-    public CramNormalizer(SAMFileHeader header, ReferenceSource referenceSource) {
+    public CramNormalizer(final SAMFileHeader header, final ReferenceSource referenceSource) {
         this.header = header;
         this.referenceSource = referenceSource;
     }
 
-    public void normalize(ArrayList<CramCompressionRecord> records, boolean resetPairing,
-                          byte[] ref, int alignmentStart,
-                          SubstitutionMatrix substitutionMatrix, boolean AP_delta) {
+    public void normalize(final ArrayList<CramCompressionRecord> records,
+                          final byte[] ref, final int refOffset_zeroBased,
+                          final SubstitutionMatrix substitutionMatrix) {
 
-        int startCounter = readCounter;
+        final int startCounter = readCounter;
 
-        for (CramCompressionRecord r : records) {
-            r.index = ++readCounter;
+        for (final CramCompressionRecord record : records) {
+            record.index = ++readCounter;
 
-            if (r.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                r.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-                r.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+            if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
+                record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
             } else {
-                r.sequenceName = header.getSequence(r.sequenceId)
+                record.sequenceName = header.getSequence(record.sequenceId)
                         .getSequenceName();
             }
         }
 
         {// restore pairing first:
-            for (CramCompressionRecord r : records) {
-                if (!r.isMultiFragment() || r.isDetached()) {
-                    r.recordsToNextFragment = -1;
+            for (final CramCompressionRecord record : records) {
+                if (!record.isMultiFragment() || record.isDetached()) {
+                    record.recordsToNextFragment = -1;
 
-                    r.next = null;
-                    r.previous = null;
+                    record.next = null;
+                    record.previous = null;
                     continue;
                 }
-                if (r.isHasMateDownStream()) {
-                    CramCompressionRecord downMate = records.get(r.index
-                            + r.recordsToNextFragment - startCounter);
-                    r.next = downMate;
-                    downMate.previous = r;
-
-                    r.mateAlignmentStart = downMate.alignmentStart;
-                    r.setMateUmapped(downMate.isSegmentUnmapped());
-                    r.setMateNegativeStrand(downMate.isNegativeStrand());
-                    r.mateSequenceID = downMate.sequenceId;
-                    if (r.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-                        r.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
-
-                    downMate.mateAlignmentStart = r.alignmentStart;
-                    downMate.setMateUmapped(r.isSegmentUnmapped());
-                    downMate.setMateNegativeStrand(r.isNegativeStrand());
-                    downMate.mateSequenceID = r.sequenceId;
-                    if (downMate.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
-                        downMate.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
-
-                    if (r.isFirstSegment()) {
-                        final int tlen = computeInsertSize(r, downMate);
-                        r.templateSize = tlen;
-                        downMate.templateSize = -tlen;
-                    } else {
-                        final int tlen = computeInsertSize(downMate, r);
-                        downMate.templateSize = tlen;
-                        r.templateSize = -tlen;
-                    }
+                if (record.isHasMateDownStream()) {
+                    final CramCompressionRecord downMate = records.get(record.index
+                            + record.recordsToNextFragment - startCounter);
+                    record.next = downMate;
+                    downMate.previous = record;
                 }
+            }
+            for (final CramCompressionRecord record : records) {
+                if (record.previous != null) continue;
+                if (record.next == null) continue;
+                restoreMateInfo(record);
             }
         }
 
         // assign some read names if needed:
-        for (CramCompressionRecord r : records) {
-            if (r.readName == null) {
-                String name = readNamePrefix + r.index;
-                r.readName = name;
-                if (r.next != null)
-                    r.next.readName = name;
-                if (r.previous != null)
-                    r.previous.readName = name;
+        for (final CramCompressionRecord record : records) {
+            if (record.readName == null) {
+                final String readNamePrefix = "";
+                final String name = readNamePrefix + record.index;
+                record.readName = name;
+                if (record.next != null)
+                    record.next.readName = name;
+                if (record.previous != null)
+                    record.previous.readName = name;
             }
         }
 
         // resolve bases:
-        for (CramCompressionRecord r : records) {
-            if (r.isSegmentUnmapped())
+        for (final CramCompressionRecord record : records) {
+            if (record.isSegmentUnmapped())
                 continue;
 
             byte[] refBases = ref;
-            if (referenceSource != null)
-                refBases = referenceSource.getReferenceBases(header.getSequence(r.sequenceId), true);
+            {
+                // ref could be supplied (aka forced) already or needs looking up:
+                // ref.length=0 is a special case of seqId=-2 (multiref)
+                if ((ref == null || ref.length == 0) && referenceSource != null)
+                    refBases = referenceSource.getReferenceBases(
+                            header.getSequence(record.sequenceId), true);
+            }
 
-            byte[] bases = restoreReadBases(r, refBases, substitutionMatrix);
-            r.readBases = bases;
+            if (record.isUnknownBases()) {
+                record.readBases = SAMRecord.NULL_SEQUENCE;
+            } else
+                record.readBases = restoreReadBases(record, refBases, refOffset_zeroBased,
+                        substitutionMatrix);
         }
 
         // restore quality scores:
+        final byte defaultQualityScore = '?' - '!';
         restoreQualityScores(defaultQualityScore, records);
     }
 
-    public static void restoreQualityScores(byte defaultQualityScore,
-                                            List<CramCompressionRecord> records) {
-        for (CramCompressionRecord record : records)
+    private static void restoreMateInfo(final CramCompressionRecord record) {
+        if (record.next == null) {
+
+            return;
+        }
+        CramCompressionRecord cur;
+        cur = record;
+        while (cur.next != null) {
+            setNextMate(cur, cur.next);
+            cur = cur.next;
+        }
+
+        // cur points to the last segment now:
+        final CramCompressionRecord last = cur;
+        setNextMate(last, record);
+//        record.setFirstSegment(true);
+//        last.setLastSegment(true);
+
+        final int templateLength = computeInsertSize(record, last);
+        record.templateSize = templateLength;
+        last.templateSize = -templateLength;
+    }
+
+    private static void setNextMate(final CramCompressionRecord record, final CramCompressionRecord next) {
+        record.mateAlignmentStart = next.alignmentStart;
+        record.setMateUnmapped(next.isSegmentUnmapped());
+        record.setMateNegativeStrand(next.isNegativeStrand());
+        record.mateSequenceID = next.sequenceId;
+        if (record.mateSequenceID == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+            record.mateAlignmentStart = SAMRecord.NO_ALIGNMENT_START;
+    }
+
+    public static void restoreQualityScores(final byte defaultQualityScore,
+                                            final List<CramCompressionRecord> records) {
+        for (final CramCompressionRecord record : records)
             restoreQualityScores(defaultQualityScore, record);
     }
 
-    public static byte[] restoreQualityScores(byte defaultQualityScore,
-                                              CramCompressionRecord record) {
+    private static byte[] restoreQualityScores(final byte defaultQualityScore,
+                                               final CramCompressionRecord record) {
         if (!record.isForcePreserveQualityScores()) {
-            byte[] scores = new byte[record.readLength];
+            boolean star = true;
+            final byte[] scores = new byte[record.readLength];
             Arrays.fill(scores, defaultQualityScore);
             if (record.readFeatures != null)
-                for (ReadFeature f : record.readFeatures) {
-                    switch (f.getOperator()) {
+                for (final ReadFeature feature : record.readFeatures) {
+                    switch (feature.getOperator()) {
                         case BaseQualityScore.operator:
-                            int pos = f.getPosition();
-                            byte q = ((BaseQualityScore) f).getQualityScore();
-
-                            try {
-                                scores[pos - 1] = q;
-                            } catch (ArrayIndexOutOfBoundsException e) {
-                                System.err.println("PROBLEM CAUSED BY:");
-                                System.err.println(record.toString());
-                                throw e;
-                            }
+                            int pos = feature.getPosition();
+                            scores[pos - 1] = ((BaseQualityScore) feature).getQualityScore();
+                            star = false;
                             break;
                         case ReadBase.operator:
-                            pos = f.getPosition();
-                            q = ((ReadBase) f).getQualityScore();
-
-                            try {
-                                scores[pos - 1] = q;
-                            } catch (ArrayIndexOutOfBoundsException e) {
-                                System.err.println("PROBLEM CAUSED BY:");
-                                System.err.println(record.toString());
-                                throw e;
-                            }
+                            pos = feature.getPosition();
+                            scores[pos - 1] = ((ReadBase) feature).getQualityScore();
+                            star = false;
                             break;
 
                         default:
                             break;
                     }
-
                 }
 
-            record.qualityScores = scores;
+            if (star)
+                record.qualityScores = SAMRecord.NULL_QUALS;
+            else
+                record.qualityScores = scores;
         } else {
-            byte[] scores = record.qualityScores;
+            final byte[] scores = record.qualityScores;
+            int missingScores = 0;
             for (int i = 0; i < scores.length; i++)
-                if (scores[i] == -1)
+                if (scores[i] == -1) {
                     scores[i] = defaultQualityScore;
+                    missingScores++;
+                }
+            if (missingScores == scores.length)
+                record.qualityScores = SAMRecord.NULL_QUALS;
         }
 
         return record.qualityScores;
     }
 
-    private static final long calcRefLength(CramCompressionRecord record) {
-        if (record.readFeatures == null || record.readFeatures.isEmpty())
-            return record.readLength;
-        long len = record.readLength;
-        for (ReadFeature rf : record.readFeatures) {
-            switch (rf.getOperator()) {
-                case Deletion.operator:
-                    len += ((Deletion) rf).getLength();
-                    break;
-                case Insertion.operator:
-                    len -= ((Insertion) rf).getSequence().length;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        return len;
-    }
-
-    private static final byte[] restoreReadBases(CramCompressionRecord record, byte[] ref,
-                                                 SubstitutionMatrix substitutionMatrix) {
-        int readLength = record.readLength;
-        byte[] bases = new byte[readLength];
+    private static byte[] restoreReadBases(final CramCompressionRecord record, final byte[] ref,
+                                           final int refOffsetZeroBased, final SubstitutionMatrix substitutionMatrix) {
+        if (record.isUnknownBases() || record.readLength == 0) return SAMRecord.NULL_SEQUENCE;
+        final int readLength = record.readLength;
+        final byte[] bases = new byte[readLength];
 
         int posInRead = 1;
-        int alignmentStart = record.alignmentStart - 1;
+        final int alignmentStart = record.alignmentStart - 1;
 
         int posInSeq = 0;
         if (record.readFeatures == null || record.readFeatures.isEmpty()) {
-            if (ref.length < alignmentStart + bases.length) {
+            if (ref.length + refOffsetZeroBased < alignmentStart
+                    + bases.length) {
                 Arrays.fill(bases, (byte) 'N');
-                System.arraycopy(ref, alignmentStart, bases, 0,
-                        Math.min(bases.length, ref.length - alignmentStart));
+                System.arraycopy(
+                        ref,
+                        alignmentStart - refOffsetZeroBased,
+                        bases,
+                        0,
+                        Math.min(bases.length, ref.length + refOffsetZeroBased
+                                - alignmentStart));
             } else
-                System.arraycopy(ref, alignmentStart, bases, 0, bases.length);
+                System.arraycopy(ref, alignmentStart - refOffsetZeroBased,
+                        bases, 0, bases.length);
             return bases;
         }
-        List<ReadFeature> variations = record.readFeatures;
-        for (ReadFeature v : variations) {
-            for (; posInRead < v.getPosition(); posInRead++)
-                bases[posInRead - 1] = ref[alignmentStart + posInSeq++];
+        final List<ReadFeature> variations = record.readFeatures;
+        for (final ReadFeature variation : variations) {
+            for (; posInRead < variation.getPosition(); posInRead++) {
+                final int rp = alignmentStart + posInSeq++ - refOffsetZeroBased;
+                bases[posInRead - 1] = getByteOrDefault(ref, rp, (byte) 'N');
+            }
 
-            switch (v.getOperator()) {
+            switch (variation.getOperator()) {
                 case Substitution.operator:
-                    Substitution sv = (Substitution) v;
-                    byte refBase = Utils.normalizeBase(ref[alignmentStart
-                            + posInSeq]);
-                    byte base = substitutionMatrix.base(refBase, sv.getCode());
-                    sv.setBase(base);
-                    sv.setRefernceBase(refBase);
+                    final Substitution substitution = (Substitution) variation;
+                    byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
+                            - refOffsetZeroBased, (byte) 'N');
+                    refBase = Utils.normalizeBase(refBase);
+                    final byte base = substitutionMatrix.base(refBase, substitution.getCode());
+                    substitution.setBase(base);
+                    substitution.setReferenceBase(refBase);
                     bases[posInRead++ - 1] = base;
                     posInSeq++;
                     break;
                 case Insertion.operator:
-                    Insertion iv = (Insertion) v;
-                    for (int i = 0; i < iv.getSequence().length; i++)
-                        bases[posInRead++ - 1] = iv.getSequence()[i];
+                    final Insertion insertion = (Insertion) variation;
+                    for (int i = 0; i < insertion.getSequence().length; i++)
+                        bases[posInRead++ - 1] = insertion.getSequence()[i];
                     break;
                 case SoftClip.operator:
-                    SoftClip sc = (SoftClip) v;
-                    for (int i = 0; i < sc.getSequence().length; i++)
-                        bases[posInRead++ - 1] = sc.getSequence()[i];
+                    final SoftClip softClip = (SoftClip) variation;
+                    for (int i = 0; i < softClip.getSequence().length; i++)
+                        bases[posInRead++ - 1] = softClip.getSequence()[i];
                     break;
                 case Deletion.operator:
-                    Deletion dv = (Deletion) v;
-                    posInSeq += dv.getLength();
+                    final Deletion deletion = (Deletion) variation;
+                    posInSeq += deletion.getLength();
                     break;
                 case InsertBase.operator:
-                    InsertBase ib = (InsertBase) v;
-                    bases[posInRead++ - 1] = ib.getBase();
+                    final InsertBase insert = (InsertBase) variation;
+                    bases[posInRead++ - 1] = insert.getBase();
+                    break;
+                case RefSkip.operator:
+                    posInSeq += ((RefSkip) variation).getLength();
                     break;
             }
         }
-        for (; posInRead <= readLength; posInRead++)
-            bases[posInRead - 1] = ref[alignmentStart + posInSeq++];
+        for (; posInRead <= readLength
+                && alignmentStart + posInSeq - refOffsetZeroBased < ref.length; posInRead++, posInSeq++) {
+            bases[posInRead - 1] = ref[alignmentStart + posInSeq
+                    - refOffsetZeroBased];
+        }
 
         // ReadBase overwrites bases:
-        for (ReadFeature v : variations) {
-            switch (v.getOperator()) {
+        for (final ReadFeature variation : variations) {
+            switch (variation.getOperator()) {
                 case ReadBase.operator:
-                    ReadBase rb = (ReadBase) v;
-                    bases[v.getPosition() - 1] = rb.getBase();
+                    final ReadBase readBase = (ReadBase) variation;
+                    bases[variation.getPosition() - 1] = readBase.getBase();
                     break;
                 default:
                     break;
@@ -293,18 +308,26 @@ public class CramNormalizer {
         return bases;
     }
 
+    private static byte getByteOrDefault(final byte[] array, final int pos,
+                                         final byte outOfBoundsValue) {
+        if (pos >= array.length)
+            return outOfBoundsValue;
+        else
+            return array[pos];
+    }
+
     /**
      * The method is similar in semantics to
      * {@link htsjdk.samtools.SamPairUtil#computeInsertSize(SAMRecord, SAMRecord)
      * computeInsertSize} but operates on CRAM native records instead of
      * SAMRecord objects.
      *
-     * @param firstEnd
-     * @param secondEnd
+     * @param firstEnd  first mate of the pair
+     * @param secondEnd second mate of the pair
      * @return template length
      */
-    private static int computeInsertSize(CramCompressionRecord firstEnd,
-                                         CramCompressionRecord secondEnd) {
+    public static int computeInsertSize(final CramCompressionRecord firstEnd,
+                                        final CramCompressionRecord secondEnd) {
         if (firstEnd.isSegmentUnmapped() || secondEnd.isSegmentUnmapped()) {
             return 0;
         }

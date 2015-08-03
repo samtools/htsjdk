@@ -33,9 +33,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -82,7 +80,7 @@ class Chain {
     /** Overall size of the "to" sequence. */
     final int toSequenceSize;
     /** "to" strand. If this is true, then the region covered by this chain is flipped in the "to" genome.  */
-    final boolean toNegativeStrand;
+    final boolean toOppositeStrand;
     /** Start of range covered in "to" sequence. */
     final int toChainStart;
     /** End of range covered in "to" sequence. */
@@ -95,14 +93,14 @@ class Chain {
      * Construct a Chain from the parsed header fields.
      */
     private Chain(final double score, final String fromSequenceName, final int fromSequenceSize, final int fromChainStart, final int fromChainEnd,
-          final String toSequenceName, final int toSequenceSize, final boolean toNegativeStrand,
+          final String toSequenceName, final int toSequenceSize, final boolean toOppositeStrand,
           final int toChainStart, final int toChainEnd, final int id) {
         // Convert  to one-based, inclusive for Interval.
         interval = new Interval(fromSequenceName, fromChainStart + 1, fromChainEnd);
         this.score = score;
         this.toChainEnd = toChainEnd;
         this.toSequenceName = toSequenceName;
-        this.toNegativeStrand = toNegativeStrand;
+        this.toOppositeStrand = toOppositeStrand;
         this.toSequenceSize = toSequenceSize;
         this.toChainStart = toChainStart;
         // not used
@@ -189,7 +187,7 @@ class Chain {
     void write(final PrintWriter writer) {
         writer.printf("chain\t%f\t%s\t%d\t+\t%d\t%d\t%s\t%d\t%s\t%d\t%d\t%d\n",
                 score, fromSequenceName, fromSequenceSize, fromChainStart, fromChainEnd,
-                toSequenceName, toSequenceSize, (toNegativeStrand? "-": "+"), toChainStart, toChainEnd, id);
+                toSequenceName, toSequenceSize, (toOppositeStrand ? "-": "+"), toChainStart, toChainEnd, id);
         for (int i = 0; i < blockList.size() - 1; ++i) {
             final ContinuousBlock thisBlock = blockList.get(i);
             final ContinuousBlock nextBlock = blockList.get(i+1);
@@ -275,7 +273,7 @@ class Chain {
         if (Double.compare(chain.score, score) != 0) return false;
         if (toChainEnd != chain.toChainEnd) return false;
         if (toChainStart != chain.toChainStart) return false;
-        if (toNegativeStrand != chain.toNegativeStrand) return false;
+        if (toOppositeStrand != chain.toOppositeStrand) return false;
         if (toSequenceSize != chain.toSequenceSize) return false;
         if (blockList != null ? !blockList.equals(chain.blockList) : chain.blockList != null) return false;
         if (fromSequenceName != null ? !fromSequenceName.equals(chain.fromSequenceName) : chain.fromSequenceName != null)
@@ -300,7 +298,7 @@ class Chain {
         result = 31 * result + fromChainEnd;
         result = 31 * result + (toSequenceName != null ? toSequenceName.hashCode() : 0);
         result = 31 * result + toSequenceSize;
-        result = 31 * result + (toNegativeStrand ? 1 : 0);
+        result = 31 * result + (toOppositeStrand ? 1 : 0);
         result = 31 * result + toChainStart;
         result = 31 * result + toChainEnd;
         result = 31 * result + id;
@@ -314,15 +312,10 @@ class Chain {
      * @return OverlapDetector will all Chains from reader loaded into it.
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
-        final Set<Integer> ids = new HashSet<Integer>();
-        BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
+        final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
         final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
         Chain chain;
         while ((chain = Chain.loadChain(reader, chainFile.toString())) != null) {
-            if (ids.contains(chain.id)) {
-                throw new SAMException("Chain id " + chain.id + " appears more than once in chain file.");
-            }
-            ids.add(chain.id);
             ret.addLhs(chain, chain.interval);
         }
         reader.close();
@@ -336,11 +329,18 @@ class Chain {
      * @return New Chain with associated ContinuousBlocks.
      */
     private static Chain loadChain(final BufferedLineReader reader, final String chainFile) {
-        String line = reader.readLine();
-        if (line == null) {
-            return null;
+        String line;
+        while (true) {
+            line = reader.readLine();
+            if (line == null) {
+                return null;
+            }
+            // Skip comment lines
+            if (!line.startsWith("#")) {
+                break;
+            }
         }
-        String[] chainFields = SPLITTER.split(line);
+        final String[] chainFields = SPLITTER.split(line);
         if (chainFields.length != 13) {
             throwChainFileParseException("chain line has wrong number of fields", chainFile, reader.getLineNumber());
         }

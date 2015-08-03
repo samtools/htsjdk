@@ -32,12 +32,12 @@ public class SamStreams {
 
     public static boolean isCRAMFile(final InputStream stream) throws IOException {
         stream.mark(4);
-        final int buffSize = CramHeader.magick.length;
+        final int buffSize = CramHeader.MAGIC.length;
         final byte[] buffer = new byte[buffSize];
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
 
-        return Arrays.equals(buffer, CramHeader.magick);
+        return Arrays.equals(buffer, CramHeader.MAGIC);
     }
     /**
      * @param stream stream.markSupported() must be true

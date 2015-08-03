@@ -35,6 +35,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,68 +49,81 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Class VariantContext
- *
- * == High-level overview ==
+ * 
+ * <h3> High-level overview </h3>
  *
  * The VariantContext object is a single general class system for representing genetic variation data composed of:
- *
- * * Allele: representing single genetic haplotypes (A, T, ATC, -) (note that null alleles are used here for illustration; see the Allele class for how to represent indels)
- * * Genotype: an assignment of alleles for each chromosome of a single named sample at a particular locus
- * * VariantContext: an abstract class holding all segregating alleles at a locus as well as genotypes
- *    for multiple individuals containing alleles at that locus
- *
+ * <ul>
+ * <li>Allele: representing single genetic haplotypes (A, T, ATC, -) (note that null alleles are used here for illustration; see the Allele class for how to represent indels)</li>
+ * <li>Genotype: an assignment of alleles for each chromosome of a single named sample at a particular locus</li>
+ * <li>VariantContext: an abstract class holding all segregating alleles at a locus as well as genotypes
+ *    for multiple individuals containing alleles at that locus</li>
+ * </ul>
+ * <p>
  * The class system works by defining segregating alleles, creating a variant context representing the segregating
  * information at a locus, and potentially creating and associating genotypes with individuals in the context.
- *
- * All of the classes are highly validating -- call validate() if you modify them -- so you can rely on the
- * self-consistency of the data once you have a VariantContext in hand.  The system has a rich set of assessor
- * and manipulator routines, as well as more complex static support routines in VariantContextUtils.
- *
- * The VariantContext (and Genotype) objects are attributed (supporting addition of arbitrary key/value pairs) and
+ *</p>
+ *<p>
+ * All of the classes are highly validating -- call <code>validate()</code> if you modify them -- so you can rely on the
+ * self-consistency of the data once you have a <code>VariantContext</code> in hand.  The system has a rich set of assessor
+ * and manipulator routines, as well as more complex static support routines in <code>VariantContextUtils</code>.
+ *</p>
+ *<p>
+ * The <code>VariantContext</code> (and <code>Genotype</code>) objects are attributed (supporting addition of arbitrary key/value pairs) and
  * filtered (can represent a variation that is viewed as suspect).
- *
- * VariantContexts are dynamically typed, so whether a VariantContext is a SNP, Indel, or NoVariant depends
- * on the properties of the alleles in the context.  See the detailed documentation on the Type parameter below.
- *
+ *</p>
+ *<p>
+ *<code>VariantContext</code>s are dynamically typed, so whether a <code>VariantContext</code> is a SNP, Indel, or NoVariant depends
+ * on the properties of the alleles in the context.  See the detailed documentation on the <code>Type</code> parameter below.
+ *</p>
+ *<p>
  * It's also easy to create subcontexts based on selected genotypes.
- *
- * == Working with Variant Contexts ==
+ *</p>
+ * <h3>Working with Variant Contexts</h3>
  * By default, VariantContexts are immutable.  In order to access (in the rare circumstances where you need them)
- * setter routines, you need to create MutableVariantContexts and MutableGenotypes.
+ * setter routines, you need to create <code>MutableVariantContext</code>s and <code>MutableGenotype</code>s.
  *
- * === Some example data ===
- *
+ * <h3>Some example data </h3>
+ *<pre>
  * Allele A, Aref, T, Tref;
  * Allele del, delRef, ATC, ATCref;
- *
+ *</pre>
+ *<p>
  * A [ref] / T at 10
+ *</p>
+ *<pre> 
  * GenomeLoc snpLoc = GenomeLocParser.createGenomeLoc("chr1", 10, 10);
- *
+ *</pre>
+ *<p>
  * A / ATC [ref] from 20-23
+ *</p>
+ *<pre>
  * GenomeLoc delLoc = GenomeLocParser.createGenomeLoc("chr1", 20, 22);
- *
+ *</pre>
+ *<p>
  *  // A [ref] / ATC immediately after 20
+ *  </p>
+ *  <pre>
  * GenomeLoc insLoc = GenomeLocParser.createGenomeLoc("chr1", 20, 20);
+ *</pre>
+ * <h3> Alleles </h3>
  *
- * === Alleles ===
+ * See the documentation in the <code>Allele</code> class itself
  *
- * See the documentation in the Allele class itself
+ * <h4>What are they?</h4>
  *
- * What are they?
+ * <p>Alleles can be either reference or non-reference</p>
  *
- * Alleles can be either reference or non-reference
- *
- * Examples of alleles used here:
- *
+ * <p>Examples of alleles used here:</p>
+ *<pre>
  *   A = new Allele("A");
  *   Aref = new Allele("A", true);
  *   T = new Allele("T");
  *   ATC = new Allele("ATC");
+ *</pre>
+ * <h3> Creating variant contexts </h3>
  *
- * === Creating variant contexts ===
- *
- * ==== By hand ====
+ * <h4> By hand </h4>
  *
  * Here's an example of a A/T polymorphism with the A being reference:
  *
@@ -136,7 +150,7 @@ import java.util.Set;
  * VariantContext vc = new VariantContext("name", insLoc, Arrays.asList(delRef, ATC));
  * </pre>
  *
- * ==== Converting rods and other data structures to VCs ====
+ * <h4> Converting rods and other data structures to <code>VariantContext</code>s </h4>
  *
  * You can convert many common types into VariantContexts using the general function:
  *
@@ -144,15 +158,15 @@ import java.util.Set;
  * VariantContextAdaptors.convertToVariantContext(name, myObject)
  * </pre>
  *
- * dbSNP and VCFs, for example, can be passed in as myObject and a VariantContext corresponding to that
- * object will be returned.  A null return type indicates that the type isn't yet supported.  This is the best
+ * dbSNP and VCFs, for example, can be passed in as <code>myObject</code> and a <code>VariantContext</code> corresponding to that
+ * object will be returned.  A <code>null</code> return value indicates that the type isn't yet supported.  This is the best
  * and easiest way to create contexts using RODs.
  *
  *
- * === Working with genotypes ===
+ * <h3> Working with genotypes </h3>
  *
  * <pre>
- * List<Allele> alleles = Arrays.asList(Aref, T);
+ * List&lt;Allele&gt; alleles = Arrays.asList(Aref, T);
  * Genotype g1 = new Genotype(Arrays.asList(Aref, Aref), "g1", 10);
  * Genotype g2 = new Genotype(Arrays.asList(Aref, T), "g2", 10);
  * Genotype g3 = new Genotype(Arrays.asList(T, T), "g3", 10);
@@ -161,7 +175,7 @@ import java.util.Set;
  *
  * At this point we have 3 genotypes in our context, g1-g3.
  *
- * You can assess a good deal of information about the genotypes through the VariantContext:
+ * You can assess a good deal of information about the genotypes through the <code>VariantContext</code>:
  *
  * <pre>
  * vc.hasGenotypes()
@@ -178,15 +192,15 @@ import java.util.Set;
  * vc.getCalledChrCount(T)
  * </pre>
  *
- * === NO_CALL alleles ===
+ * <h3> NO_CALL alleles </h3>
  *
- * The system allows one to create Genotypes carrying special NO_CALL alleles that aren't present in the
+ * The system allows one to create <code>Genotype</code>s carrying special NO_CALL alleles that aren't present in the
  * set of context alleles and that represent undetermined alleles in a genotype:
- *
+ *<pre>
  * Genotype g4 = new Genotype(Arrays.asList(Allele.NO_CALL, Allele.NO_CALL), "NO_DATA_FOR_SAMPLE", 10);
+ *</pre>
  *
- *
- * === subcontexts ===
+ * <h3> subcontexts </h3>
  * It's also very easy get subcontext based only the data in a subset of the genotypes:
  *
  * <pre>
@@ -194,23 +208,27 @@ import java.util.Set;
  * VariantContext vc1 = vc.subContextFromGenotypes(Arrays.asList(g1));
  * </pre>
  *
- * <s3>
- *     Fully decoding.  Currently VariantContexts support some fields, particularly those
+ * <!-- comment by jdenvir: not sure what this tag is supposed to do:-->
+ * <!-- <s3> -->
+ *     <h3>Fully decoding.</h3>  
+ *     Currently <code>VariantContext</code>s support some fields, particularly those
  *     stored as generic attributes, to be of any type.  For example, a field AB might
  *     be naturally a floating point number, 0.51, but when it's read into a VC its
  *     not decoded into the Java presentation but left as a string "0.51".  A fully
- *     decoded VariantContext is one where all values have been converted to their
- *     corresponding Java object types, based on the types declared in a VCFHeader.
+ *     decoded <code>VariantContext</code> is one where all values have been converted to their
+ *     corresponding Java object types, based on the types declared in a <code>VCFHeader</code>.
  *
- *     The fullyDecode() takes a header object and creates a new fully decoded VariantContext
- *     where all fields are converted to their true java representation.  The VCBuilder
+ *     The <code>fullyDecode(...)</code> method takes a header object and creates a new fully decoded <code>VariantContext</code>
+ *     where all fields are converted to their true java representation.  The <code>VCBuilder</code>
  *     can be told that all fields are fully decoded, in which case no work is done when
  *     asking for a fully decoded version of the VC.
- * </s3>
+ * <!-- </s3> -->
  *
  * @author depristo
  */
-public class VariantContext implements Feature { // to enable tribble integration
+public class VariantContext implements Feature, Serializable {
+    public static final long serialVersionUID = 1L;
+
     private final static boolean WARN_ABOUT_BAD_END = true;
     private final static int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
     private boolean fullyDecoded = false;
@@ -231,7 +249,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
     /** A set of the alleles segregating in this context */
     final protected List<Allele> alleles;
 
-    /** A mapping from sampleName -> genotype objects for all genotypes associated with this context */
+    /** A mapping from sampleName -&gt; genotype objects for all genotypes associated with this context */
     protected GenotypesContext genotypes = null;
 
     /** Counts for each of the possible Genotype types in this context */
@@ -407,7 +425,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
      * in this VC is returned as the set of alleles in the subContext, even if
      * some of those alleles aren't in the samples
      *
-     * WARNING: BE CAREFUL WITH rederiveAllelesFromGenotypes UNLESS YOU KNOW WHAT YOU ARE DOING?
+     * WARNING: BE CAREFUL WITH rederiveAllelesFromGenotypes UNLESS YOU KNOW WHAT YOU ARE DOING
      *
      * @param sampleNames    the sample names
      * @param rederiveAllelesFromGenotypes if true, returns the alleles to just those in use by the samples, true should be default
@@ -481,59 +499,77 @@ public class VariantContext implements Feature { // to enable tribble integratio
     // ---------------------------------------------------------------------------------------------------------
 
     /**
-     * see: http://www.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=handbook&part=ch5&rendertype=table&id=ch5.ch5_t3
+     * @see <a href="http://www.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=handbook&part=ch5&rendertype=table&id=ch5.ch5_t3">NCBI Handbook</a>
      *
-     * Format:
-     * dbSNP variation class
-     * Rules for assigning allele classes
-     * Sample allele definition
-     *
-     * Single Nucleotide Polymorphisms (SNPs)a
-     *   Strictly defined as single base substitutions involving A, T, C, or G.
-     *   A/T
-     *
-     * Deletion/Insertion Polymorphisms (DIPs)
-     *   Designated using the full sequence of the insertion as one allele, and either a fully
+     * <h3>Format:</h3>
+     * <ul>
+     * <li><strong>dbSNP variation class</strong></li>
+     * <li>Rules for assigning allele classes</li>
+     * <li>Sample allele definition</li>
+     * </ul>
+     * <h3>Supported Types</h3>
+     * <ul>
+     * <li><strong>Single Nucleotide Polymorphisms (SNPs)a</strong></li>
+     * <li>Strictly defined as single base substitutions involving A, T, C, or G.</li>
+     * <li>A/T</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>Deletion/Insertion Polymorphisms (DIPs)</strong></li>
+     * <li>Designated using the full sequence of the insertion as one allele, and either a fully
      *   defined string for the variant allele or a '-' character to specify the deleted allele.
      *   This class will be assigned to a variation if the variation alleles are of different lengths or
-     *   if one of the alleles is deleted ('-').
-     *   T/-/CCTA/G
-     *
-     * No-variation
-     *   Reports may be submitted for segments of sequence that are assayed and determined to be invariant
-     *   in the sample.
-     *   (NoVariation)
-     *
-     * Mixed
-     *   Mix of other classes
-     *
+     *   if one of the alleles is deleted ('-').</li>
+     * <li>T/-/CCTA/G</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>No-variation</strong></li>
+     * <li>Reports may be submitted for segments of sequence that are assayed and determined to be invariant
+     *   in the sample.</li>
+     * <li>(NoVariation)</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>Mixed</strong></li>
+     * <li>Mix of other classes</li>
+     * </ul>
+     * 
      * Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the population
      *
      *
-     * Not currently supported:
+     * <h3>Not currently supported:</h3>
      *
-     * Heterozygous sequence
-     * The term heterozygous is used to specify a region detected by certain methods that do not
+     * <ul>
+     * <li><strong>Heterozygous sequence</strong></li>
+     * <li>The term heterozygous is used to specify a region detected by certain methods that do not
      * resolve the polymorphism into a specific sequence motif. In these cases, a unique flanking
-     * sequence must be provided to define a sequence context for the variation.
-     * (heterozygous)
-     *
-     * Microsatellite or short tandem repeat (STR)
-     * Alleles are designated by providing the repeat motif and the copy number for each allele.
+     * sequence must be provided to define a sequence context for the variation.</li>
+     * <li>(heterozygous)</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>Microsatellite or short tandem repeat (STR)</strong></li>
+     * <li>Alleles are designated by providing the repeat motif and the copy number for each allele.
      * Expansion of the allele repeat motif designated in dbSNP into full-length sequence will
      * be only an approximation of the true genomic sequence because many microsatellite markers are
-     * not fully sequenced and are resolved as size variants only.
-     * (CAC)8/9/10/11
-     *
-     * Named variant
-     * Applies to insertion/deletion polymorphisms of longer sequence features, such as retroposon
+     * not fully sequenced and are resolved as size variants only.</li>
+     * <li>(CAC)8/9/10/11</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>Named variant</strong></li>
+     * <li>Applies to insertion/deletion polymorphisms of longer sequence features, such as retroposon
      * dimorphism for Alu or line elements. These variations frequently include a deletion '-' indicator
-     * for the absent allele.
-     * (alu) / -
-     *
-     * Multi-Nucleotide Polymorphism (MNP)
-     *   Assigned to variations that are multi-base variations of a single, common length
-     *   GGA/AGT
+     * for the absent allele.</li>
+     * <li>(alu) / -</li>
+     * </ul>
+     * <br>
+     * <ul>
+     * <li><strong>Multi-Nucleotide Polymorphism (MNP)</strong></li>
+     * <li>Assigned to variations that are multi-base variations of a single, common length</li>
+     * <li>GGA/AGT</li>
+     * </ul>
      */
     public enum Type {
         NO_VARIATION,
@@ -704,6 +740,10 @@ public class VariantContext implements Feature { // to enable tribble integratio
     public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
     public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
     public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
+    /** returns the value as an empty list if the key was not found,
+        as a java.util.List if the value is a List or an Array,
+        as a Collections.singletonList if there is only one value */
+    public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
 
     public CommonInfo getCommonInfo() {
         return commonInfo;
@@ -917,7 +957,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
     }
 
     /**
-     * Returns a map from sampleName -> Genotype for the genotype associated with sampleName.  Returns a map
+     * Returns a map from sampleName -&gt; Genotype for the genotype associated with sampleName.  Returns a map
      * for consistency with the multi-get function.
      *
      * @param sampleName   the sample name
@@ -929,7 +969,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
     }
 
     /**
-     * Returns a map from sampleName -> Genotype for each sampleName in sampleNames.  Returns a map
+     * Returns a map from sampleName -&gt; Genotype for each sampleName in sampleNames.  Returns a map
      * for consistency with the multi-get function.
      *
      * For testing convenience only
@@ -1046,7 +1086,7 @@ public class VariantContext implements Feature { // to enable tribble integratio
 
     /**
      * Genotype-specific functions -- are the genotypes polymorphic w.r.t. to the alleles segregating at this
-     * site?  That is, is the number of alternate alleles among all fo the genotype > 0?
+     * site?  That is, is the number of alternate alleles among all fo the genotype &gt; 0?
      *
      * @return true if it's polymorphic
      */
@@ -1619,7 +1659,8 @@ public class VariantContext implements Feature { // to enable tribble integratio
     /**
      * @return 1-based inclusive start position of the Variant
      * INDEL events usually start on the first unaltered reference base before the INDEL
-     * @warning be aware that the start position of the VariantContext is defined in terms of the start position specified in the
+     * 
+     * <strong>Warning:</strong> be aware that the start position of the VariantContext is defined in terms of the start position specified in the
      * underlying vcf file, VariantContexts representing the same biological event may have different start positions depending on the
      * specifics of the vcf file they are derived from
      */

@@ -1,35 +1,37 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFormatException;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.TagValueAndUnsignedArrayFlag;
-import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 
+/**
+ * CRAM counterpart of {@link htsjdk.samtools.SAMTag}.
+ * TODO: consider merging/dropping this class in favour of SAMTag or a SAMTag implementation.
+ */
 public class ReadTag implements Comparable<ReadTag> {
     private static final long MAX_INT = Integer.MAX_VALUE;
     private static final long MAX_UINT = MAX_INT * 2 + 1;
@@ -38,9 +40,6 @@ public class ReadTag implements Comparable<ReadTag> {
     private static final long MAX_BYTE = Byte.MAX_VALUE;
     private static final long MAX_UBYTE = MAX_BYTE * 2 + 1;
 
-    public static final int OQZ = (('O' << 16) | ('Q' << 8)) | 'Z';
-    public static final int BQZ = (('B' << 16) | ('Q' << 8)) | 'Z';
-
     // non-null
     private String key;
     private String keyAndType;
@@ -48,13 +47,12 @@ public class ReadTag implements Comparable<ReadTag> {
     public int keyType3BytesAsInt;
     private char type;
     private Object value;
-    public short code;
+    private short code;
     private byte index;
 
-    public ReadTag(int id, byte[] dataAsByteArray) {
+    public ReadTag(final int id, final byte[] dataAsByteArray) {
         this.type = (char) (0xFF & id);
-        key = new String(new char[]{(char) ((id >> 16) & 0xFF),
-                (char) ((id >> 8) & 0xFF)});
+        key = new String(new char[]{(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
         value = restoreValueFromByteArray(type, dataAsByteArray);
         keyType3Bytes = this.key + this.type;
 
@@ -63,7 +61,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
     }
 
-    public ReadTag(String key, char type, Object value) {
+    private ReadTag(final String key, final char type, final Object value) {
         if (key == null)
             throw new NullPointerException("Tag key cannot be null.");
         if (value == null)
@@ -87,7 +85,7 @@ public class ReadTag implements Comparable<ReadTag> {
         code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
     }
 
-    public static int name3BytesToInt(byte[] name) {
+    public static int name3BytesToInt(final byte[] name) {
         int value = 0xFF & name[0];
         value <<= 8;
         value |= 0xFF & name[1];
@@ -97,7 +95,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    public static int nameType3BytesToInt(String name, char type) {
+    public static int nameType3BytesToInt(final String name, final char type) {
         int value = 0xFF & name.charAt(0);
         value <<= 8;
         value |= 0xFF & name.charAt(1);
@@ -107,18 +105,18 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    public static String intToNameType3Bytes(int value) {
-        byte b3 = (byte) (0xFF & value);
-        byte b2 = (byte) (0xFF & (value >> 8));
-        byte b1 = (byte) (0xFF & (value >> 16));
+    public static String intToNameType3Bytes(final int value) {
+        final byte b3 = (byte) (0xFF & value);
+        final byte b2 = (byte) (0xFF & (value >> 8));
+        final byte b1 = (byte) (0xFF & (value >> 16));
 
         return new String(new byte[]{b1, b2, b3});
     }
 
-    public static String intToNameType4Bytes(int value) {
-        byte b3 = (byte) (0xFF & value);
-        byte b2 = (byte) (0xFF & (value >> 8));
-        byte b1 = (byte) (0xFF & (value >> 16));
+    public static String intToNameType4Bytes(final int value) {
+        final byte b3 = (byte) (0xFF & value);
+        final byte b2 = (byte) (0xFF & (value >> 8));
+        final byte b1 = (byte) (0xFF & (value >> 16));
 
         return new String(new byte[]{b1, b2, ':', b3});
     }
@@ -127,17 +125,14 @@ public class ReadTag implements Comparable<ReadTag> {
         return new SAMTagAndValue(key, value);
     }
 
-    public static ReadTag deriveTypeFromKeyAndType(String keyAndType,
-                                                   Object value) {
+    public static ReadTag deriveTypeFromKeyAndType(final String keyAndType, final Object value) {
         if (keyAndType.length() != 4)
-            throw new RuntimeException("Tag key and type must be 4 char long: "
-                    + keyAndType);
+            throw new RuntimeException("Tag key and type must be 4 char long: " + keyAndType);
 
-        return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3),
-                value);
+        return new ReadTag(keyAndType.substring(0, 2), keyAndType.charAt(3), value);
     }
 
-    public static ReadTag deriveTypeFromValue(String key, Object value) {
+    public static ReadTag deriveTypeFromValue(final String key, final Object value) {
         if (key.length() != 2)
             throw new RuntimeException("Tag key must be 2 char long: " + key);
 
@@ -149,24 +144,18 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     @Override
-    public int compareTo(ReadTag o) {
+    public int compareTo(@SuppressWarnings("NullableProblems") final ReadTag o) {
         return key.compareTo(o.key);
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (!(obj instanceof ReadTag))
             return false;
 
-        ReadTag foe = (ReadTag) obj;
-        if (!key.equals(foe.key))
-            return false;
-        if (value == null && foe.value == null)
-            return true;
-        if (value != null && value.equals(foe.value))
-            return true;
+        final ReadTag foe = (ReadTag) obj;
+        return key.equals(foe.key) && (value == null && foe.value == null || value != null && value.equals(foe.value));
 
-        return false;
     }
 
     @Override
@@ -178,7 +167,7 @@ public class ReadTag implements Comparable<ReadTag> {
         return value;
     }
 
-    public char getType() {
+    char getType() {
         return type;
     }
 
@@ -190,14 +179,14 @@ public class ReadTag implements Comparable<ReadTag> {
         return writeSingleValue((byte) type, value, false);
     }
 
-    public static Object restoreValueFromByteArray(char type, byte[] array) {
-        ByteBuffer buf = ByteBuffer.wrap(array);
-        buf.order(ByteOrder.LITTLE_ENDIAN);
-        return readSingleValue((byte) type, buf, null);
+    private static Object restoreValueFromByteArray(final char type, final byte[] array) {
+        final ByteBuffer buffer = ByteBuffer.wrap(array);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        return readSingleValue((byte) type, buffer);
     }
 
     // copied from net.sf.samtools.BinaryTagCodec 1.62:
-    public static char getTagValueType(final Object value) {
+    private static char getTagValueType(final Object value) {
         if (value instanceof String) {
             return 'Z';
         } else if (value instanceof Character) {
@@ -258,7 +247,7 @@ public class ReadTag implements Comparable<ReadTag> {
                 "Integer attribute value too negative to be encoded in BAM");
     }
 
-    public void setIndex(byte i) {
+    public void setIndex(final byte i) {
         this.index = i;
     }
 
@@ -268,7 +257,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
     // yeah, I'm that risky:
     // with a little less thread risky.
-    private static final ThreadLocal<ByteBuffer> bufLocal = new ThreadLocal<ByteBuffer>() {
+    private static final ThreadLocal<ByteBuffer> bufferLocal = new ThreadLocal<ByteBuffer>() {
         @Override
         protected ByteBuffer initialValue() {
             final ByteBuffer buf = ByteBuffer.allocateDirect(10 * 1024 * 1024);
@@ -279,96 +268,96 @@ public class ReadTag implements Comparable<ReadTag> {
 
     private static final Charset charset = Charset.forName("US-ASCII");
 
-    public static byte[] writeSingleValue(byte tagType, Object value,
-                                          boolean isUnsignedArray) {
+    public static byte[] writeSingleValue(final byte tagType, final Object value,
+                                          final boolean isUnsignedArray) {
 
-        final ByteBuffer buf = bufLocal.get();
-        buf.clear();
+        final ByteBuffer buffer = bufferLocal.get();
+        buffer.clear();
         switch (tagType) {
             case 'Z':
                 String s = (String) value;
-                buf.put(s.getBytes(charset));
-                buf.put((byte) 0);
+                buffer.put(s.getBytes(charset));
+                buffer.put((byte) 0);
                 break;
             case 'A':
-                buf.put((byte) ((Character) value).charValue());
+                buffer.put((byte) ((Character) value).charValue());
                 break;
             case 'I':
                 // this is tricky:
-                buf.putLong((Long) value);
-                buf.position(buf.position() - 4);
+                buffer.putLong((Long) value);
+                buffer.position(buffer.position() - 4);
                 break;
             case 'i':
-                buf.putInt((Integer) value);
+                buffer.putInt((Integer) value);
                 break;
             case 's':
-                buf.putShort(((Number) value).shortValue());
+                buffer.putShort(((Number) value).shortValue());
                 break;
             case 'S':
                 // Convert to unsigned short stored in an int
-                buf.putInt(((Number) value).intValue());
-                buf.position(buf.position() - 2);
+                buffer.putInt(((Number) value).intValue());
+                buffer.position(buffer.position() - 2);
                 break;
             case 'c':
-                buf.put(((Number) value).byteValue());
+                buffer.put(((Number) value).byteValue());
                 break;
             case 'C':
                 // Convert to unsigned byte stored in an int
-                buf.putShort(((Integer) value).shortValue());
-                buf.position(buf.position() - 1);
+                buffer.putShort(((Integer) value).shortValue());
+                buffer.position(buffer.position() - 1);
                 break;
             case 'f':
-                buf.putFloat((Float) value);
+                buffer.putFloat((Float) value);
                 break;
             case 'H':
                 s = StringUtil.bytesToHexString((byte[]) value);
-                buf.put(s.getBytes(charset));
-                buf.put((byte) 0);
+                buffer.put(s.getBytes(charset));
+                buffer.put((byte) 0);
                 break;
             case 'B':
-                writeArray(value, isUnsignedArray, buf);
+                writeArray(value, isUnsignedArray, buffer);
                 break;
             default:
                 throw new SAMFormatException("Unrecognized tag type: "
                         + (char) tagType);
         }
 
-        buf.flip();
-        byte[] bytes = new byte[buf.limit()];
-        buf.get(bytes);
+        buffer.flip();
+        final byte[] bytes = new byte[buffer.limit()];
+        buffer.get(bytes);
 
         return bytes;
     }
 
     private static void writeArray(final Object value,
-                                   final boolean isUnsignedArray, ByteBuffer buf) {
+                                   final boolean isUnsignedArray, final ByteBuffer buffer) {
         if (value instanceof byte[]) {
-            buf.put((byte) (isUnsignedArray ? 'C' : 'c'));
+            buffer.put((byte) (isUnsignedArray ? 'C' : 'c'));
             final byte[] array = (byte[]) value;
-            buf.putInt(array.length);
+            buffer.putInt(array.length);
             for (final byte element : array)
-                buf.put(element);
+                buffer.put(element);
 
         } else if (value instanceof short[]) {
-            buf.put((byte) (isUnsignedArray ? 'S' : 's'));
+            buffer.put((byte) (isUnsignedArray ? 'S' : 's'));
             final short[] array = (short[]) value;
-            buf.putInt(array.length);
+            buffer.putInt(array.length);
             for (final short element : array)
-                buf.putShort(element);
+                buffer.putShort(element);
 
         } else if (value instanceof int[]) {
-            buf.put((byte) (isUnsignedArray ? 'I' : 'i'));
+            buffer.put((byte) (isUnsignedArray ? 'I' : 'i'));
             final int[] array = (int[]) value;
-            buf.putInt(array.length);
+            buffer.putInt(array.length);
             for (final int element : array)
-                buf.putInt(element);
+                buffer.putInt(element);
 
         } else if (value instanceof float[]) {
-            buf.put((byte) 'f');
+            buffer.put((byte) 'f');
             final float[] array = (float[]) value;
-            buf.putInt(array.length);
+            buffer.putInt(array.length);
             for (final float element : array)
-                buf.putFloat(element);
+                buffer.putFloat(element);
 
         } else
             throw new SAMException("Unrecognized array value type: "
@@ -376,8 +365,7 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     public static Object readSingleValue(final byte tagType,
-                                         final ByteBuffer byteBuffer,
-                                         final ValidationStringency validationStringency) {
+                                         final ByteBuffer byteBuffer) {
         switch (tagType) {
             case 'Z':
                 return readNullTerminatedString(byteBuffer);
@@ -409,7 +397,7 @@ public class ReadTag implements Comparable<ReadTag> {
                 return StringUtil.hexStringToBytes(hexRep);
             case 'B':
                 final TagValueAndUnsignedArrayFlag valueAndFlag = readArray(
-                        byteBuffer, validationStringency);
+                        byteBuffer);
                 return valueAndFlag.value;
             default:
                 throw new SAMFormatException("Unrecognized tag type: "
@@ -425,8 +413,7 @@ public class ReadTag implements Comparable<ReadTag> {
      * indicating whether it is unsigned or not.
      */
     private static TagValueAndUnsignedArrayFlag readArray(
-            final ByteBuffer byteBuffer,
-            final ValidationStringency validationStringency) {
+            final ByteBuffer byteBuffer) {
         final byte arrayType = byteBuffer.get();
         final boolean isUnsigned = Character.isUpperCase(arrayType);
         final int length = byteBuffer.getInt();
@@ -476,8 +463,8 @@ public class ReadTag implements Comparable<ReadTag> {
         // Count the number of bytes in the string
         byteBuffer.mark();
         final int startPosition = byteBuffer.position();
-        while (byteBuffer.get() != 0) {
-        }
+        //noinspection StatementWithEmptyBody
+        while (byteBuffer.get() != 0) ;
         final int endPosition = byteBuffer.position();
 
         // Don't count null terminator
@@ -489,39 +476,4 @@ public class ReadTag implements Comparable<ReadTag> {
         byteBuffer.get();
         return StringUtil.bytesToString(buf);
     }
-
-    public static void main(String[] args) {
-        SAMFileHeader h = new SAMFileHeader();
-        SAMRecord r = new SAMRecord(h);
-        r.setAttribute("OQ", "A:LKAS:LKASDJKL".getBytes());
-        r.setAttribute("XA", 1333123);
-        r.setAttribute("XB", (byte) 31);
-        r.setAttribute("XB", 'Q');
-        r.setAttribute("XC", "A STRING");
-
-        int intValue = 1123123123;
-        byte[] data = writeSingleValue((byte) 'i', intValue, false);
-        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        Object value = readSingleValue((byte) 'i', byteBuffer, null);
-        if (intValue != ((Integer) value).intValue())
-            throw new RuntimeException("Failed for " + intValue);
-
-        String sValue = "qwe";
-        data = writeSingleValue((byte) 'Z', sValue, false);
-        byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = readSingleValue((byte) 'Z', byteBuffer, null);
-        if (!sValue.equals(value))
-            throw new RuntimeException("Failed for " + sValue);
-
-        byte[] baValue = "qwe".getBytes();
-        data = writeSingleValue((byte) 'B', baValue, false);
-        byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = readSingleValue((byte) 'B', byteBuffer, null);
-        if (!Arrays.equals(baValue, (byte[]) value))
-            throw new RuntimeException("Failed for " + baValue);
-    }
-
 }

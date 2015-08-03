@@ -21,6 +21,7 @@ package htsjdk.samtools.util.ftp;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.UserPasswordInput;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,7 +95,7 @@ public class FTPUtils {
         FTPClient ftp = new FTPClient();
         FTPReply reply = ftp.connect(host);
         if (!reply.isSuccess()) {
-            throw new RuntimeException("Could not connect to " + host);
+            throw new RuntimeIOException("Could not connect to " + host);
         }
 
         String user = "anonymous";
@@ -114,7 +115,7 @@ public class FTPUtils {
         reply = ftp.login(user, password);
         if (!reply.isSuccess()) {
         	if (userPasswordInput == null) {
-                throw new RuntimeException("Login failure for host: " + host);
+                throw new RuntimeIOException("Login failure for host: " + host);
         	}
         	else {
 	        	userPasswordInput.setHost(host);
@@ -135,14 +136,14 @@ public class FTPUtils {
 	                userInfo = user + ":" + password;
 	                userCredentials.put(host, userInfo);
 	            } else {
-	                throw new RuntimeException("Login failure for host: " + host);
+	                throw new RuntimeIOException("Login failure for host: " + host);
 	            }
         	}
         }
 
         reply = ftp.binary();
         if (!(reply.isSuccess())) {
-            throw new RuntimeException("Could not set binary mode on host: " + host);
+            throw new RuntimeIOException("Could not set binary mode on host: " + host);
         }
 
         return ftp;

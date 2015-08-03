@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 
@@ -77,7 +78,7 @@ public class SAMTools {
                 usage();
                 return false;
             }
-            mInputFile = new File(args[1]);
+            mInputFile = IOUtil.getFile(args[1]);
             if (!mInputFile.exists()) {
                 System.out.println("Input file not found: " + mInputFile);
                 return false;

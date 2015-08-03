@@ -79,7 +79,7 @@ public class GeneralUtils {
     }
 
     /**
-     * normalizes the log10-based array.  ASSUMES THAT ALL ARRAY ENTRIES ARE <= 0 (<= 1 IN REAL-SPACE).
+     * normalizes the log10-based array.  ASSUMES THAT ALL ARRAY ENTRIES ARE &lt;= 0 (&lt;= 1 IN REAL-SPACE).
      *
      * @param array the array to be normalized
      * @return a newly allocated array corresponding the normalized values in array
@@ -89,7 +89,7 @@ public class GeneralUtils {
     }
 
     /**
-     * normalizes the log10-based array.  ASSUMES THAT ALL ARRAY ENTRIES ARE <= 0 (<= 1 IN REAL-SPACE).
+     * normalizes the log10-based array.  ASSUMES THAT ALL ARRAY ENTRIES ARE &lt;= 0 (&lt;= 1 IN REAL-SPACE).
      *
      * @param array             the array to be normalized
      * @param takeLog10OfOutput if true, the output will be transformed back into log10 units
@@ -177,8 +177,8 @@ public class GeneralUtils {
      * Make all combinations of N size of objects
      *
      * if objects = [A, B, C]
-     * if N = 1 => [[A], [B], [C]]
-     * if N = 2 => [[A, A], [B, A], [C, A], [A, B], [B, B], [C, B], [A, C], [B, C], [C, C]]
+     * if N = 1 =&gt; [[A], [B], [C]]
+     * if N = 2 =&gt; [[A, A], [B, A], [C, A], [A, B], [B, B], [C, B], [A, C], [B, C], [C, C]]
      *
      * @param objects
      * @param n

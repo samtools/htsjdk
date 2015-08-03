@@ -395,7 +395,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             try {
                 buffer = new byte[uncompressedLength];
             } catch (final NegativeArraySizeException e) {
-                throw new RuntimeException("BGZF file has invalid uncompressedLength: " + uncompressedLength, e);
+                throw new RuntimeIOException("BGZF file has invalid uncompressedLength: " + uncompressedLength, e);
             }
         }
         blockGunzipper.unzipBlock(buffer, compressedBlock, compressedLength);

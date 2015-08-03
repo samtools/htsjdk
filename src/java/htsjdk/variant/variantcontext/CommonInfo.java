@@ -28,10 +28,13 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +44,9 @@ import java.util.Set;
  *
  * @author depristo
  */
-public final class CommonInfo {
+public final class CommonInfo implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     public static final double NO_LOG10_PERROR = 1.0;
 
     private static Set<String> NO_FILTERS = Collections.emptySet();
@@ -134,7 +139,17 @@ public final class CommonInfo {
      * @return the -1 * log10-based error estimate
      */
     public double getLog10PError() { return log10PError; }
-    public double getPhredScaledQual() { return getLog10PError() * -10; }
+
+    /**
+     * Floating-point arithmetic allows signed zeros such as +0.0 and -0.0.
+     * Adding the constant 0.0 to the result ensures that the returned value is never -0.0
+     * since (-0.0) + 0.0 = 0.0.
+     *
+     * When this is set to '0.0', the resulting VCF would be 0 instead of -0.
+     *
+     * @return double - Phred scaled quality score
+     */
+    public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
 
     public void setLog10PError(double log10PError) {
         if ( log10PError > 0 && log10PError != NO_LOG10_PERROR)
@@ -226,6 +241,18 @@ public final class CommonInfo {
             return attributes.get(key);
         else
             return defaultValue;
+    }
+
+    /** returns the value as an empty list if the key was not found,
+        as a java.util.List if the value is a List or an Array,
+        as a Collections.singletonList if there is only one value */
+    @SuppressWarnings("unchecked")
+    public List<Object> getAttributeAsList(String key) {
+        Object o = getAttribute(key);
+        if ( o == null ) return Collections.emptyList();
+        if ( o instanceof List ) return (List<Object>)o;
+        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        return Collections.singletonList(o);
     }
 
     public String getAttributeAsString(String key, String defaultValue) {

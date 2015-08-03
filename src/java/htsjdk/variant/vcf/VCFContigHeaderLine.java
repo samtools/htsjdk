@@ -34,6 +34,8 @@ import java.util.Map;
 /**
  * A special class representing a contig VCF header line.  Knows the true contig order and sorts on that
  *
+ * Note: this class has a natural ordering that is inconsistent with equals()
+ *
  * @author mdepristo
  */
 public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
@@ -81,6 +83,26 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
 		record.setSequenceIndex(this.contigIndex);
 		return record;
 	}
+
+    @Override
+    public boolean equals(final Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() || ! super.equals(o) ) {
+            return false;
+        }
+
+        final VCFContigHeaderLine that = (VCFContigHeaderLine) o;
+        return contigIndex.equals(that.contigIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + contigIndex.hashCode();
+        return result;
+    }
 
     /**
      * IT IS CRITICAL THAT THIS BE OVERRIDDEN SO WE SORT THE CONTIGS IN THE CORRECT ORDER

@@ -8,7 +8,7 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License countingInputStream distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -18,68 +18,92 @@ package htsjdk.samtools;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.Cram2SamRecordFactory;
-import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.build.CramNormalizer;
+import htsjdk.samtools.cram.build.CramSpanContainerIterator;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
-import htsjdk.samtools.util.IOUtil;
+
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.io.BufferedInputStream;
-import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 public class CRAMIterator implements SAMRecordIterator {
-    private static Log log = Log.getInstance(CRAMIterator.class);
-    private CountingInputStream is;
+	
+    private static final Log log = Log.getInstance(CRAMIterator.class);
+    private final CountingInputStream countingInputStream;
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
-    private int recordCounter = 0;
     private SAMRecord nextRecord = null;
+    @SuppressWarnings({"CanBeFinal", "FieldCanBeLocal"})
     private boolean restoreNMTag = true;
+    @SuppressWarnings({"CanBeFinal", "FieldCanBeLocal"})
     private boolean restoreMDTag = false;
     private CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-    private Container container;
-    private long containerOffset = 0;
+    public Container container;
     private SamReader mReader;
+    long firstContainerOffset = 0;
+    private Iterator<Container> containerIterator;
 
     private ContainerParser parser;
-    private ReferenceSource referenceSource;
+    private final ReferenceSource referenceSource;
 
-    private ValidationStringency validationStringency = ValidationStringency.SILENT;
+    private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
+
+    private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
     public ValidationStringency getValidationStringency() {
         return validationStringency;
     }
 
     public void setValidationStringency(
-            ValidationStringency validationStringency) {
+            final ValidationStringency validationStringency) {
         this.validationStringency = validationStringency;
     }
 
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
 
-    public CRAMIterator(InputStream is, ReferenceSource referenceSource)
+    public CRAMIterator(final InputStream inputStream, final ReferenceSource referenceSource)
             throws IOException {
-        this.is = new CountingInputStream(is);
+        this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
-        cramHeader = CramIO.readCramHeader(this.is);
+        final CramContainerIterator containerIterator = new CramContainerIterator(this.countingInputStream);
+        cramHeader = containerIterator.getCramHeader();
+        this.containerIterator = containerIterator;
+
+        firstContainerOffset = this.countingInputStream.getCount();
+        records = new ArrayList<SAMRecord>(10000);
+        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
+                referenceSource);
+        parser = new ContainerParser(cramHeader.getSamFileHeader());
+    }
+
+    public CRAMIterator(final SeekableStream seekableStream, final ReferenceSource referenceSource, final long[] coordinates)
+            throws IOException {
+        this.countingInputStream = new CountingInputStream(seekableStream);
+        this.referenceSource = referenceSource;
+        final CramSpanContainerIterator containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
+        cramHeader = containerIterator.getCramHeader();
+        this.containerIterator = containerIterator;
+
+        firstContainerOffset = containerIterator.getFirstContainerOffset();
         records = new ArrayList<SAMRecord>(10000);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
@@ -92,15 +116,26 @@ public class CRAMIterator implements SAMRecordIterator {
 
     private void nextContainer() throws IOException, IllegalArgumentException,
             IllegalAccessException {
-        recordCounter = 0;
 
-        containerOffset = is.getCount();
-        container = CramIO.readContainer(is);
-        if (container == null || container.isEOF()) {
-            records.clear();
-            nextRecord = null;
-            recordCounter = -1;
-            return;
+        if (containerIterator != null) {
+            if (!containerIterator.hasNext()) {
+                records.clear();
+                nextRecord = null;
+                return;
+            }
+            container = containerIterator.next();
+            if (container.isEOF()) {
+                records.clear();
+                nextRecord = null;
+                return;
+            }
+        } else {
+            container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
+            if (container.isEOF()) {
+                records.clear();
+                nextRecord = null;
+                return;
+            }
         }
 
         if (records == null)
@@ -112,11 +147,7 @@ public class CRAMIterator implements SAMRecordIterator {
         else
             cramRecords.clear();
 
-        try {
-            parser.getRecords(container, cramRecords);
-        } catch (EOFException e) {
-            throw e;
-        }
+        parser.getRecords(container, cramRecords);
 
         if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             refs = new byte[]{};
@@ -124,83 +155,106 @@ public class CRAMIterator implements SAMRecordIterator {
             refs = null;
             prevSeqId = -2;
         } else if (prevSeqId < 0 || prevSeqId != container.sequenceId) {
-            SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
+            final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                     .getSequence(container.sequenceId);
             refs = referenceSource.getReferenceBases(sequence, true);
             prevSeqId = container.sequenceId;
         }
 
-        try {
-            for (int i = 0; i < container.slices.length; i++) {
-                Slice s = container.slices[i];
-                if (s.sequenceId < 0)
-                    continue;
-                if (!s.validateRefMD5(refs)) {
-                    log.error(String
-                            .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s",
-                                    s.sequenceId, s.alignmentStart, s.alignmentSpan,
-                                    String.format("%032x", new BigInteger(1, s.refMD5))));
-                }
+        for (int i = 0; i < container.slices.length; i++) {
+            final Slice slice = container.slices[i];
+            if (slice.sequenceId < 0)
+                continue;
+            if (validationStringency != ValidationStringency.SILENT && !slice.validateRefMD5(refs)) {
+                log.error(String
+                        .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s", slice.sequenceId,
+                                slice.alignmentStart, slice.alignmentSpan, String.format("%032x", new BigInteger(1, slice.refMD5))));
             }
-        } catch (NoSuchAlgorithmException e1) {
-            throw new RuntimeException(e1);
         }
 
-        normalizer.normalize(cramRecords, true, refs, container.alignmentStart,
-                container.h.substitutionMatrix, container.h.AP_seriesDelta);
+        normalizer.normalize(cramRecords, refs, 0,
+                container.header.substitutionMatrix);
 
-        Cram2SamRecordFactory c2sFactory = new Cram2SamRecordFactory(
+        final Cram2SamRecordFactory cramToSamRecordFactory = new Cram2SamRecordFactory(
                 cramHeader.getSamFileHeader());
 
-        for (CramCompressionRecord r : cramRecords) {
-            SAMRecord s = c2sFactory.create(r);
-            if (!r.isSegmentUnmapped()) {
-                SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
-                        .getSequence(r.sequenceId);
+        for (final CramCompressionRecord cramRecord : cramRecords) {
+            final SAMRecord samRecord = cramToSamRecordFactory.create(cramRecord);
+            if (!cramRecord.isSegmentUnmapped()) {
+                final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
+                        .getSequence(cramRecord.sequenceId);
                 refs = referenceSource.getReferenceBases(sequence, true);
-                SequenceUtil.calculateMdAndNmTags(s, refs, restoreMDTag, restoreNMTag);
+                if (samRecord.getReadBases() != SAMRecord.NULL_SEQUENCE)
+                    SequenceUtil.calculateMdAndNmTags(samRecord, refs, restoreMDTag, restoreNMTag);
             }
 
-            s.setValidationStringency(validationStringency);
+            samRecord.setValidationStringency(validationStringency);
 
             if (validationStringency != ValidationStringency.SILENT) {
-                final List<SAMValidationError> validationErrors = s.isValid();
+                final List<SAMValidationError> validationErrors = samRecord.isValid();
                 SAMUtils.processValidationErrors(validationErrors,
                         samRecordIndex, validationStringency);
             }
 
             if (mReader != null) {
-                final long chunkStart = (containerOffset << 16) | r.sliceIndex;
-                final long chunkEnd = ((containerOffset << 16) | r.sliceIndex) + 1;
+                final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
+                final long chunkEnd = ((container.offset << 16) | cramRecord.sliceIndex) + 1;
                 nextRecord.setFileSource(new SAMFileSource(mReader,
                         new BAMFileSpan(new Chunk(chunkStart, chunkEnd))));
             }
 
-            records.add(s);
+            records.add(samRecord);
+            samRecordIndex++;
         }
         cramRecords.clear();
+        iterator = records.iterator();
+    }
+
+    /**
+     * Skip cached records until given alignment start position.
+     *
+     * @param refIndex reference sequence index
+     * @param pos      alignment start to skip to
+     */
+    public void jumpWithinContainerToPos(final int refIndex, final int pos) {
+        if (!hasNext()) return;
+        int i = 0;
+        for (final SAMRecord record : records) {
+            if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) continue;
+
+            if (pos <= 0) {
+                if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
+                    iterator = records.listIterator(i);
+                    return;
+                }
+            } else {
+                if (record.getAlignmentStart() >= pos) {
+                    iterator = records.listIterator(i);
+                    return;
+                }
+            }
+            i++;
+        }
+        iterator = Collections.<SAMRecord>emptyList().iterator();
     }
 
     @Override
     public boolean hasNext() {
         if (container != null && container.isEOF()) return false;
-        if (container == null || recordCounter >= records.size()) {
+        if (!iterator.hasNext()) {
             try {
                 nextContainer();
-                if (records.isEmpty())
-                    return false;
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 throw new RuntimeEOFException(e);
             }
         }
 
-        nextRecord = records.get(recordCounter++);
-        return true;
+        return !records.isEmpty();
     }
 
     @Override
     public SAMRecord next() {
-        return nextRecord;
+        return iterator.next();
     }
 
     @Override
@@ -211,47 +265,16 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public void close() {
         records.clear();
+        //noinspection EmptyCatchBlock
         try {
-            is.close();
-        } catch (IOException e) {
+            if (countingInputStream != null)
+                countingInputStream.close();
+        } catch (final IOException e) {
         }
-    }
-
-    public static class CramFileIterable implements Iterable<SAMRecord> {
-        private ReferenceSource referenceSource;
-        private File cramFile;
-        private ValidationStringency validationStringency;
-
-        public CramFileIterable(File cramFile, ReferenceSource referenceSource,
-                                ValidationStringency validationStringency) {
-            this.referenceSource = referenceSource;
-            this.cramFile = cramFile;
-            this.validationStringency = validationStringency;
-
-        }
-
-        public CramFileIterable(File cramFile, ReferenceSource referenceSource) {
-            this(cramFile, referenceSource,
-                    ValidationStringency.DEFAULT_STRINGENCY);
-        }
-
-        @Override
-        public Iterator<SAMRecord> iterator() {
-            try {
-                InputStream fis = IOUtil.getInputStream(cramFile);
-                BufferedInputStream bis = new BufferedInputStream(fis);
-                CRAMIterator iterator = new CRAMIterator(bis, referenceSource);
-                iterator.setValidationStringency(validationStringency);
-                return iterator;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
     }
 
     @Override
-    public SAMRecordIterator assertSorted(SortOrder sortOrder) {
+    public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
         throw new RuntimeException("Not implemented.");
     }
 
@@ -259,7 +282,7 @@ public class CRAMIterator implements SAMRecordIterator {
         return mReader;
     }
 
-    public void setFileSource(SamReader mReader) {
+    public void setFileSource(final SamReader mReader) {
         this.mReader = mReader;
     }
 

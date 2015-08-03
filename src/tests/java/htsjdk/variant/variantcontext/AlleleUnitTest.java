@@ -48,7 +48,7 @@ import org.testng.annotations.Test;
  * Basic unit test for RecalData
  */
 public class AlleleUnitTest extends VariantBaseTest {
-    Allele ARef, A, T, ATIns, ATCIns, NoCall;
+    Allele ARef, A, T, ATIns, ATCIns, NoCall, SpandDel;
     
     @BeforeSuite
     public void before() {
@@ -59,7 +59,9 @@ public class AlleleUnitTest extends VariantBaseTest {
         ATIns = Allele.create("AT");
         ATCIns = Allele.create("ATC");
 
-        NoCall = Allele.create(".");
+        NoCall = Allele.create(Allele.NO_CALL_STRING);
+
+        SpandDel = Allele.create(Allele.SPAN_DEL_STRING);
     }
 
     @Test
@@ -84,12 +86,19 @@ public class AlleleUnitTest extends VariantBaseTest {
     public void testCreatingNoCallAlleles() {
         Assert.assertTrue(NoCall.isNonReference());
         Assert.assertFalse(NoCall.isReference());
-        Assert.assertFalse(NoCall.basesMatch("."));
+        Assert.assertFalse(NoCall.basesMatch(Allele.NO_CALL_STRING));
         Assert.assertEquals(NoCall.length(), 0);
         Assert.assertTrue(NoCall.isNoCall());
         Assert.assertFalse(NoCall.isCalled());
     }
 
+    @Test
+    public void testCreatingSpanningDeletionAlleles() {
+        Assert.assertTrue(SpandDel.isNonReference());
+        Assert.assertFalse(SpandDel.isReference());
+        Assert.assertTrue(SpandDel.basesMatch(Allele.SPAN_DEL_STRING));
+        Assert.assertEquals(SpandDel.length(), 1);
+    }
 
     @Test
     public void testCreatingIndelAlleles() {
@@ -230,6 +239,16 @@ public class AlleleUnitTest extends VariantBaseTest {
     @Test (expectedExceptions = IllegalArgumentException.class)
     public void testBadConstructorArgs6() {
         Allele.create("<symbolic>", true); // symbolic cannot be ref allele
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testBadNoCallAllelel() {
+        Allele.create(Allele.NO_CALL_STRING, true); // no call cannot be ref allele
+    }
+
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testBadSpanningDeletionAllelel() {
+        Allele.create(Allele.SPAN_DEL_STRING, true); // spanning deletion cannot be ref allele
     }
 
     @Test

@@ -32,6 +32,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class ExampleSamUsage {
         /**
          * Simplest case
          */
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File("/my.bam"));
+        final SamReader reader = SamReaderFactory.makeDefault().open(IOUtil.getFile("/my.bam"));
 
         /**
          * With different reader options

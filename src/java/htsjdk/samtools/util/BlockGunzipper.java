@@ -109,7 +109,7 @@ public class BlockGunzipper {
             }
         } catch (DataFormatException e)
         {
-            throw new RuntimeException(e);
+            throw new RuntimeIOException(e);
         }
     }
 }

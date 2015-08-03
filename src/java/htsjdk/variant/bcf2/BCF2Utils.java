@@ -135,9 +135,9 @@ public final class BCF2Utils {
     /**
      * Collapse multiple strings into a comma separated list
      *
-     * ["s1", "s2", "s3"] => ",s1,s2,s3"
+     * ["s1", "s2", "s3"] =&gt; ",s1,s2,s3"
      *
-     * @param strings size > 1 list of strings
+     * @param strings size &gt; 1 list of strings
      * @return
      */
     public static String collapseStringList(final List<String> strings) {
@@ -158,7 +158,7 @@ public final class BCF2Utils {
     /**
      * Inverse operation of collapseStringList.
      *
-     * ",s1,s2,s3" => ["s1", "s2", "s3"]
+     * ",s1,s2,s3" =&gt; ["s1", "s2", "s3"]
      *
      *
      * @param collapsed
@@ -177,8 +177,8 @@ public final class BCF2Utils {
     /**
      * Returns a good name for a shadow BCF file for vcfFile.
      *
-     * foo.vcf => foo.bcf
-     * foo.xxx => foo.xxx.bcf
+     * foo.vcf =&gt; foo.bcf
+     * foo.xxx =&gt; foo.xxx.bcf
      *
      * If the resulting BCF file cannot be written, return null.  Happens
      * when vcfFile = /dev/null for example
@@ -270,9 +270,9 @@ public final class BCF2Utils {
      * Helper function that takes an object and returns a list representation
      * of it:
      *
-     * o == null => []
-     * o is a list => o
-     * else => [o]
+     * o == null =&gt; []
+     * o is a list =&gt; o
+     * else =&gt; [o]
      *
      * @param c  the class of the object
      * @param o  the object to convert to a Java List

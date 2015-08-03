@@ -1,5 +1,7 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 
 /**
@@ -53,6 +55,13 @@ public class Defaults {
     public static final String CUSTOM_READER_FACTORY;
 
     /**
+     * Boolean describing whether downloading a reference file is allowed (for CRAM files),
+     * in case the reference file is not specified by the user
+     * Enabling this is not necessarily a good idea, since this process often fails
+     */
+    public static final boolean USE_CRAM_REF_DOWNLOAD;
+
+    /**
      * A mask (pattern) to use when building EBI reference service URL for a
      * given MD5 checksum. Must contain one and only one string placeholder.
      */
@@ -73,6 +82,7 @@ public class Defaults {
             NON_ZERO_BUFFER_SIZE = BUFFER_SIZE;
         }
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
+        USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
         EBI_REFERENCE_SEVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
     }
@@ -98,6 +108,6 @@ public class Defaults {
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
         // TODO: assert that it is readable
-        return (null == value) ? null : new File(value);
+        return (null == value) ? null : IOUtil.getFile(value);
     }
 }

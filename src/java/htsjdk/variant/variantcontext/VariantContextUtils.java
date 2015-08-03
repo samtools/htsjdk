@@ -241,7 +241,17 @@ public class VariantContextUtils {
         return VariantContextUtils.initializeMatchExps(map);
     }
 
-    public static List<JexlVCMatchExp> initializeMatchExps(ArrayList<String> names, ArrayList<String> exps) {
+    /**
+     * Method for creating JexlVCMatchExp from input walker arguments names and exps.  These two lists contain
+     * the name associated with each JEXL expression. initializeMatchExps will parse each expression and return
+     * a list of JexlVCMatchExp, in order, that correspond to the names and exps.  These are suitable input to
+     * match() below.
+     *
+     * @param names names
+     * @param exps  expressions
+     * @return list of matches
+     */
+    public static List<JexlVCMatchExp> initializeMatchExps(List<String> names, List<String> exps) {
         String[] nameArray = new String[names.size()];
         String[] expArray = new String[exps.size()];
         return initializeMatchExps(names.toArray(nameArray), exps.toArray(expArray));
@@ -277,7 +287,7 @@ public class VariantContextUtils {
     }
 
     /**
-     * Returns true if exp match VC.  See collection<> version for full docs.
+     * Returns true if exp match VC.  See {@link #match(VariantContext, Collection)} for full docs.
      * @param vc    variant context
      * @param exp   expression
      * @return true if there is a match
@@ -302,7 +312,7 @@ public class VariantContextUtils {
     }
 
     /**
-     * Returns true if exp match VC/g.  See collection<> version for full docs.
+     * Returns true if exp match VC/g.  See {@link #match(VariantContext, Collection)} for full docs.
      * @param vc   variant context
      * @param g    genotype
      * @param exp   expression

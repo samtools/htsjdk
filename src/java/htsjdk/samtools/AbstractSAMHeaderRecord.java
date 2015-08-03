@@ -23,7 +23,8 @@
  */
 package htsjdk.samtools;
 
-import java.util.HashMap;
+import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,8 +32,10 @@ import java.util.Set;
  * Base class for the various concrete records in a SAM header, providing uniform
  * access to the attributes.
  */
-public abstract class AbstractSAMHeaderRecord {
-    private final Map<String,String> mAttributes = new HashMap<String, String>();
+public abstract class AbstractSAMHeaderRecord implements Serializable {
+    public static final long serialVersionUID = 1L;
+
+    private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);

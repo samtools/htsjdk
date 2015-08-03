@@ -31,17 +31,7 @@ import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,7 +48,7 @@ import java.util.TreeSet;
  *
  * @author Tim Fennell
  */
-public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
+public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> implements Serializable {
     public static final String MAJOR_HEADER_PREFIX = "## ";
     public static final String MINOR_HEADER_PREFIX = "# ";
     public static final String SEPARATOR = "\t";
@@ -473,7 +463,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> {
                 "picard.metrics",
                 "picard.illumina",
                 "picard.analysis",
-                "picard.analysis.directed"
+                "picard.analysis.directed",
+                "picard.vcf"
         };
 
         try { return Class.forName(className); }

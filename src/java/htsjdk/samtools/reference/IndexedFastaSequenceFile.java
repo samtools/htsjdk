@@ -192,8 +192,8 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
 
         long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
 
-        // Allocate a 128K buffer for reading in sequence data.
-        ByteBuffer channelBuffer = ByteBuffer.allocate(Defaults.NON_ZERO_BUFFER_SIZE);
+        // Allocate a buffer for reading in sequence data.
+        ByteBuffer channelBuffer = ByteBuffer.allocate(Math.min(Defaults.NON_ZERO_BUFFER_SIZE, (length % basesPerLine + 2) * bytesPerLine));
 
         while(targetBuffer.position() < length) {
             // If the bufferOffset is currently within the eol characters in the string, push the bufferOffset forward to the next printable character.

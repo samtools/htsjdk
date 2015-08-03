@@ -29,6 +29,7 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -49,12 +50,16 @@ public class SAMFileWriterFactory {
 
     private Integer maxRecordsInRam;
 
-    /** Sets the default for whether to create md5Files for BAM files this factory. */
+    /**
+     * Sets the default for whether to create md5Files for BAM files this factory.
+     */
     public static void setDefaultCreateMd5File(final boolean createMd5File) {
         defaultCreateMd5File = createMd5File;
     }
 
-    /** Sets whether to create md5Files for BAMs from this factory. */
+    /**
+     * Sets whether to create md5Files for BAMs from this factory.
+     */
     public SAMFileWriterFactory setCreateMd5File(final boolean createMd5File) {
         this.createMd5File = createMd5File;
         return this;
@@ -291,15 +296,41 @@ public class SAMFileWriterFactory {
             try {
                 return makeCRAMWriter(header, IOUtil.getOutputStream(outputFile), referenceFasta);
             } catch (final Exception e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
         return makeSAMOrBAMWriter(header, presorted, outputFile);
     }
 
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final OutputStream stream, final File referenceFasta) {
+
         final CRAMFileWriter writer = new CRAMFileWriter(stream, new ReferenceSource(referenceFasta), header, null);
         writer.setPreserveReadNames(true);
         writer.setCaptureAllTags(true);
         return writer;
     }
+
+    public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final File outputFile, final File referenceFasta) {
+
+        final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputFile);
+        if (this.createIndex && !createIndex) {
+            System.err.println("Cannot create index for CAM because output file is not a regular file: " + outputFile.getAbsolutePath());
+        }
+
+        try {
+
+            OutputStream indexOS = null ;
+            if (createIndex) {
+                File indexFile = IOUtil.getFile(outputFile.getAbsolutePath() + ".bai") ;
+                indexOS = IOUtil.getOutputStream(indexFile) ;
+            }
+            final CRAMFileWriter writer = new CRAMFileWriter(IOUtil.getOutputStream(outputFile), indexOS, new ReferenceSource(referenceFasta), header, null);
+            writer.setPreserveReadNames(true);
+            writer.setCaptureAllTags(true);
+            return writer;
+        } catch (final IOException ioe) {
+            throw new RuntimeIOException("Error opening file: " + outputFile.getAbsolutePath());
+        }
+    }
+
+
 }

@@ -274,7 +274,7 @@ public class SortingLongCollection {
                 isCurrentRecord = false;
                 currentRecord = 0;
             } catch (final IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
             return ret;
         }

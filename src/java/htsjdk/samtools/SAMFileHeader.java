@@ -46,9 +46,9 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
-    public static final String CURRENT_VERSION = "1.4";
+    public static final String CURRENT_VERSION = "1.5";
     public static final Set<String> ACCEPTABLE_VERSIONS =
-            new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4"));
+            new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4", "1.5"));
 
     /**
      * These tags are of known type, so don't need a type field in the text representation.
@@ -67,7 +67,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
         unsorted(null),
         queryname(SAMRecordQueryNameComparator.class),
-        coordinate(SAMRecordCoordinateComparator.class);
+        coordinate(SAMRecordCoordinateComparator.class),
+        duplicate(SAMRecordDuplicateComparator.class); // NB: this is not in the SAM spec!
 
         private final Class<? extends SAMRecordComparator> comparator;
 
@@ -352,5 +353,41 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         final StringWriter stringWriter = new StringWriter();
         codec.encode(stringWriter, this);
         return codec.decode(new StringLineReader(stringWriter.toString()), "SAMFileHeader.clone");
+    }
+
+    /** Little class to generate program group IDs */
+    public static class PgIdGenerator {
+        private int recordCounter;
+
+        private final Set<String> idsThatAreAlreadyTaken = new HashSet<String>();
+
+        public PgIdGenerator(final SAMFileHeader header) {
+            for (final SAMProgramRecord pgRecord : header.getProgramRecords()) {
+                idsThatAreAlreadyTaken.add(pgRecord.getProgramGroupId());
+            }
+            recordCounter = idsThatAreAlreadyTaken.size();
+        }
+
+        public String getNonCollidingId(final String recordId) {
+            if (!idsThatAreAlreadyTaken.contains(recordId)) {
+                // don't remap 1st record. If there are more records
+                // with this id, they will be remapped in the 'else'.
+                idsThatAreAlreadyTaken.add(recordId);
+                ++recordCounter;
+                return recordId;
+            } else {
+                String newId;
+                // Below we tack on one of roughly 1.7 million possible 4 digit base36 at random. We do this because
+                // our old process of just counting from 0 upward and adding that to the previous id led to 1000s of
+                // calls idsThatAreAlreadyTaken.contains() just to resolve 1 collision when merging 1000s of similarly
+                // processed bams.
+                while (idsThatAreAlreadyTaken.contains(newId = recordId + "." + SamFileHeaderMerger.positiveFourDigitBase36Str(recordCounter++)))
+                    ;
+
+                idsThatAreAlreadyTaken.add(newId);
+                return newId;
+            }
+
+        }
     }
 }

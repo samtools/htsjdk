@@ -46,7 +46,7 @@ public class ReferenceSequenceFileWalker implements Closeable {
     }
 
     public ReferenceSequenceFileWalker(final File file) {
-        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(file));
+        this(ReferenceSequenceFileFactory.getReferenceSequenceFile(file, true, false));
     }
 
     /**

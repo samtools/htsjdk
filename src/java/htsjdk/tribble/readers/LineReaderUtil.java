@@ -2,6 +2,7 @@ package htsjdk.tribble.readers;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.TribbleException;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class LineReaderUtil {
                         try {
                             return reader.readLine();
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeIOException(e);
                         }
                     }
 
@@ -76,7 +77,7 @@ public class LineReaderUtil {
                         try {
                             return reader.readLine();
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            throw new RuntimeIOException(e);
                         }
                     }
 

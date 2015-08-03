@@ -24,18 +24,19 @@
 package htsjdk.tribble.example;
 
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.dbsnp.OldDbSNPCodec;
 import htsjdk.tribble.gelitext.GeliTextCodec;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -62,7 +63,7 @@ public class CountRecords {
             printUsage();
 
         // our feature file
-        File featureFile = new File(args[0]);
+        File featureFile = IOUtil.getFile(args[0]);
         if (!featureFile.exists()) {
             System.err.println("File " + featureFile.getAbsolutePath() + " doesnt' exist");
             printUsage();
@@ -112,7 +113,7 @@ public class CountRecords {
             return recordCount;
 
         } catch (IOException e) {
-            throw new RuntimeException("Something went wrong while reading feature file " + featureInput, e);
+            throw new RuntimeIOException("Something went wrong while reading feature file " + featureInput, e);
         }
     }
 
@@ -123,7 +124,6 @@ public class CountRecords {
         System.err.println("Usage: java -jar CountRecords.jar <inputFile>");
         System.err.println("    Where input can be of type: VCF (ends in .vcf or .VCF");
         System.err.println("                                Bed (ends in .bed or .bed");
-        System.err.println("                                OldDbSNP (ends in .snp or .rod");
         /**
          * you could add others here; also look in the GATK code-base for an example of a dynamic way
          * to load Tribble codecs.
@@ -169,13 +169,14 @@ public class CountRecords {
             Index index = IndexFactory.createLinearIndex(featureFile, codec);
 
             // try to write it to disk
-            LittleEndianOutputStream stream = new LittleEndianOutputStream(IOUtil.getOutputStream(indexFile));
+            LittleEndianOutputStream stream = new LittleEndianOutputStream(new BufferedOutputStream(IOUtil.getOutputStream(indexFile)));
+            		
             index.write(stream);
             stream.close();
 
             return index;
         } catch (IOException e) {
-            throw new RuntimeException("Unable to create index from file " + featureFile,e);
+            throw new RuntimeIOException("Unable to create index from file " + featureFile,e);
         }
     }
 
@@ -192,8 +193,8 @@ public class CountRecords {
         //    return new VCFCodec();
         if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();
-        if (featureFile.getName().endsWith(".snp") || featureFile.getName().endsWith(".rod") )
-            return new OldDbSNPCodec();
+        //if (featureFile.getName().endsWith(".snp") || featureFile.getName().endsWith(".rod") )
+        //    return new OldDbSNPCodec();
         if (featureFile.getName().endsWith(".geli.calls") || featureFile.getName().endsWith(".geli") )
             return new GeliTextCodec();
         //if (featureFile.getName().endsWith(".txt") || featureFile.getName().endsWith(".TXT") )

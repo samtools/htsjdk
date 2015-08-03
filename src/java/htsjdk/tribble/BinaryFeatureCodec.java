@@ -2,6 +2,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ abstract public class BinaryFeatureCodec<T extends Feature> implements FeatureCo
         try {
             return source.isDone();
         } catch (final IOException e) {
-            throw new RuntimeException("Failure reading from stream.", e);
+            throw new RuntimeIOException("Failure reading from stream.", e);
         }
     }
 }

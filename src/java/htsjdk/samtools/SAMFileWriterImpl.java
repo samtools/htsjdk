@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.SortingCollection;
 
@@ -42,7 +43,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     private SAMFileHeader.SortOrder sortOrder;
     private SAMFileHeader header;
     private SortingCollection<SAMRecord> alignmentSorter;
-    private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+    private File tmpDir = IOUtil.getFile(System.getProperty("java.io.tmpdir"));
     private ProgressLoggerInterface progressLogger = null;
     private boolean isClosed = false;
 
@@ -160,6 +161,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
                 return new SAMRecordCoordinateComparator();
             case queryname:
                 return new SAMRecordQueryNameComparator();
+            case duplicate:
+                return new SAMRecordDuplicateComparator();
             case unsorted:
                 return null;
         }

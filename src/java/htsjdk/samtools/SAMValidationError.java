@@ -23,13 +23,17 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * Class that encapsulates a validation error message as well as a type code so that
  * errors can be aggregated by type.
  *
  * @author Doug Voet
  */
-public class SAMValidationError {
+public class SAMValidationError implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     public enum Severity {
         WARNING, ERROR
     }

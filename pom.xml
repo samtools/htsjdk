@@ -160,6 +160,17 @@
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
     </dependency>
+    
+	<dependency>
+  		<groupId>org.apache.commons</groupId>
+  		<artifactId>commons-compress</artifactId>
+  		<version>1.4.1</version>
+	</dependency>
+	<dependency>
+  <groupId>org.apache.ant</groupId>
+  <artifactId>ant</artifactId>
+  <version>1.8.4</version>
+</dependency>
     <dependency>
       <groupId>org.xerial.snappy</groupId>
       <artifactId>snappy-java</artifactId>

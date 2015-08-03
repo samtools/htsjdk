@@ -68,4 +68,18 @@ public class FastaSequenceFileTest {
         Assert.assertEquals(referenceSequence.getName(), chr1);
         Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), sequence + sequence + sequence);
     }
+
+    // There was a bug when reading a fasta with trailing whitespace, only when a sequence dictionary exists.
+    @Test
+    public void testTrailingWhitespaceWithPreexistingSequenceDictionary() throws Exception {
+        final File fasta = new File("testdata/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
+        final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
+        ReferenceSequence referenceSequence = fastaReader.nextSequence();
+        Assert.assertEquals(referenceSequence.getName(), "chr1");
+        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "ACGTACGT");
+        referenceSequence = fastaReader.nextSequence();
+        Assert.assertEquals(referenceSequence.getName(), "chr2");
+        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "TCGATCGA");
+
+    }
 }

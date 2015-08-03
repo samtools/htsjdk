@@ -30,6 +30,7 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.hdfs.FileOperate;
 
 import java.io.BufferedInputStream;
@@ -143,7 +144,7 @@ public class IOUtil {
     
     public static SeekableStream maybeBufferedSeekableStream(final File file) {
         try {
-            return maybeBufferedSeekableStream(new SeekableFileStream(file));
+            return maybeBufferedSeekableStream(SeekableStreamFactory.getInstance().getStreamFor(file));
         } catch (final FileNotFoundException e) {
             throw new RuntimeIOException(e);
         }
@@ -795,7 +796,7 @@ public class IOUtil {
             }
             return canonicalPath;
         } catch (final IOException ioe) {
-            throw new RuntimeException("Error getting full canonical path for " +
+            throw new RuntimeIOException("Error getting full canonical path for " +
                     file + ": " + ioe.getMessage(), ioe);
         }
    }

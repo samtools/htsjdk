@@ -26,7 +26,6 @@ package htsjdk.samtools.metrics;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
-import htsjdk.samtools.util.Objects;
 
 import java.lang.reflect.Field;
 
@@ -38,7 +37,8 @@ import java.lang.reflect.Field;
 public class MetricBase {
     /**
      * An equals method that checks equality by asserting that the classes are of the exact
-     * same type and that all public fields are equal.
+     * same type and that all public fields are equivalent.  Equivalence is checked by formatting
+     * the field as it would be written to disk and then checking String equality.
      *
      * @param o an instance to compare to
      * @return true if they are equal, false otherwise
@@ -46,7 +46,8 @@ public class MetricBase {
     public boolean equals(final Object o) {
         if (o == null) return false;
         if (o.getClass() != getClass()) return false;
-
+        
+        final FormatUtil formatter = new FormatUtil();
         // Loop through all the fields and check that they are either
         // null in both objects or equal in both objects
         for (final Field f : getClass().getFields()) {
@@ -58,12 +59,13 @@ public class MetricBase {
                     if (rhs == null) {
                         // keep going
                     }
-                    else if (rhs != null) {
+                    else {
                         return false;
                     }
                 }
                 else {
-                    if (lhs.equals(rhs)) {
+                    if (formatter.format(lhs).equals(formatter.format(rhs))) //compare based on the serialized representation
+                    {
                         // keep going
                     }
                     else {
@@ -80,11 +82,19 @@ public class MetricBase {
         return true;
     }
 
+    /**
+     * Computes a hashcode by formatting each field into its on disk representation 
+     * and summing the hashcodes of all the fields.
+     */
     public int hashCode() {
         int result = 0;
+        FormatUtil formatter = new FormatUtil();
         for (final Field f : getClass().getFields()) {
             try {
-                result = 31 * result + f.get(this).hashCode();
+                Object value = f.get(this);
+                value = formatter.format(value); //format the value the way it will be written to disk
+                final int fieldHash = value != null ? value.hashCode() : 0;
+                result = 31 * result + fieldHash;
             } catch (IllegalAccessException e) {
                 throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
             }
@@ -112,18 +122,4 @@ public class MetricBase {
         return buffer.toString();
     }
 
-    public boolean equals(MetricBase that) {
-        for (Field field : this.getClass().getFields()) {
-            try {
-                if (!Objects.equals(field.get(this), field.get(that))) {
-                    return false;
-                }
-            }
-            catch (IllegalAccessException ex) {
-                return false;
-            }
-        }
-        return true;
-
-    }
 }

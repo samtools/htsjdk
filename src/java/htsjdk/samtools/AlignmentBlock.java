@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * Represents the contiguous alignment of a subset of read bases to a reference
  * sequence. Simply put an alignment block tells you that read bases from
@@ -31,7 +33,9 @@ package htsjdk.samtools;
  *
  * @author Tim Fennell
  */
-public class AlignmentBlock {
+public class AlignmentBlock implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     private int readStart;
     private int referenceStart;
     private int length;

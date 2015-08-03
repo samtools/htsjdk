@@ -33,41 +33,40 @@ import java.util.Map;
  *
  * A genotype has several key fields
  *
- * -- a sample name, must be a non-null string
- *
- * -- an ordered list of alleles, intrepreted as the genotype of the sample,
+ * <ul>
+ * <li> a sample name, must be a non-null string</li>
+ * <li> an ordered list of alleles, intrepreted as the genotype of the sample,
  *    each allele for each chromosome given in order.  If alleles = [a*, t]
  *    then the sample is a/t, with a (the reference from the *) the first
- *    chromosome and t on the second chromosome
+ *    chromosome and t on the second chromosome</li>
+ * <li> an <code>isPhased</code> marker indicating where the alleles are phased with respect to some global
+ *    coordinate system.  See VCF4.1 spec for a detailed discussion</li>
+ * <li> Inline, optimized <code>int</code>s and <code>int[]</code> values for:
+ * <ul>
+ *      <li> GQ: the phred-scaled genotype quality, or <code>-1</code> if it's missing</li>
+ *      <li> DP: the count of reads at this locus for this sample, or <code>-1</code> if missing</li>
+ *      <li> AD: an array of counts of reads at this locus, one for each Allele at the site,
+ *             that is, for each allele in the surrounding <code>VariantContext</code>.  <code>null</code> if missing.</li>
+ *      <li> PL: phred-scaled genotype likelihoods in standard VCF4.1 order for
+ *             all combinations of the alleles in the surrounding <code>VariantContext</code>, given
+ *             the ploidy of the sample (from the alleles vector).  <code>null</code> if missing.</li>
+ * </ul>
+ * </li>
  *
- * -- a isPhased marker indicting where the alleles are phased with respect to some global
- *    coordinate system.  See VCF4.1 spec for a detailed discussion
- *
- * -- Inline, optimized ints and int[] values for:
- *      -- GQ: the phred-scaled genotype quality, of -1 if it's missing
- *
- *      -- DP: the count of reads at this locus for this sample, of -1 if missing
- *
- *      -- AD: an array of counts of reads at this locus, one for each Allele at the site.
- *             that is, for each allele in the surrounding VariantContext.  Null if missing.
- *
- *      -- PL: phred-scaled genotype likelihoods in standard VCF4.1 order for
- *             all combinations of the alleles in the surrounding VariantContext, given
- *             the ploidy of the sample (from the alleles vector).  Null if missing.
- *
- * -- A general map from String keys to -> Object values for all other attributes in
+ * <li> A general map from String keys to -&gt; Object values for all other attributes in
  *    this genotype.  Note that this map should not contain duplicate values for the
  *    standard bindings for GQ, DP, AD, and PL.  Genotype filters can be put into
- *    this genotype, but it isn't respected by the GATK in analyses
+ *    this genotype, but it isn't respected by the GATK in analyses</li>
+ *</ul>
  *
- * The only way to build a Genotype object is with a GenotypeBuilder, which permits values
- * to be set in any order, which means that GenotypeBuilder may at some in the chain of
+ * <p>The only way to build a <code>Genotype</code> object is with a <code>GenotypeBuilder</code>, which permits values
+ * to be set in any order, which means that <code>GenotypeBuilder</code> may at some in the chain of
  * sets pass through invalid states that are not permitted in a fully formed immutable
- * Genotype.
+ * <code>Genotype</code>.</p>
  *
- * Note this is a simplified, refactored Genotype object based on the original
+ * <p>Note this is a simplified, refactored Genotype object based on the original
  * generic (and slow) implementation from the original VariantContext + Genotype
- * codebase.
+ * codebase.</p>
  *
  * @author Mark DePristo
  * @since 05/12

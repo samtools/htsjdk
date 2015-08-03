@@ -23,11 +23,15 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * One component of a cigar string.  The component comprises the operator, and the number of bases to which
  * the  operator applies.
  */
-public class CigarElement {
+public class CigarElement implements Serializable {
+    public static final long serialVersionUID = 1L;
+
     private final int length;
     private final CigarOperator operator;
 

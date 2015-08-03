@@ -29,6 +29,7 @@ import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringLineReader;
 import htsjdk.samtools.util.hdfs.FileHadoop;
 
@@ -311,7 +312,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
             try {
                 mCompressedInputStream.seek(mFirstRecordPointer);
             } catch (final IOException exc) {
-                throw new RuntimeException(exc.getMessage(), exc);
+                throw new RuntimeIOException(exc.getMessage(), exc);
             }
         }
         mCurrentIterator = new BAMFileIterator();
@@ -481,7 +482,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
             mCurrentIterator = new BAMFileIndexUnmappedIterator();
             return mCurrentIterator;
         } catch (final IOException e) {
-            throw new RuntimeException("IOException seeking to unmapped reads", e);
+            throw new RuntimeIOException("IOException seeking to unmapped reads", e);
         }
     }
 
@@ -653,7 +654,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                     mNextRecord.eagerDecode();
                 }
             } catch (final IOException exc) {
-                throw new RuntimeException(exc.getMessage(), exc);
+                throw new RuntimeIOException(exc.getMessage(), exc);
             }
         }
 

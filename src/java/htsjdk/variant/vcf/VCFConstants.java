@@ -64,6 +64,7 @@ public final class VCFConstants {
     public static final String VALIDATED_KEY = "VALIDATED";
     public static final String THOUSAND_GENOMES_KEY = "1000G";
 
+
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";
     public static final String GENOTYPE_FIELD_SEPARATOR = ":";
@@ -92,6 +93,12 @@ public final class VCFConstants {
     // old indel alleles
     public static final char DELETION_ALLELE_v3 = 'D';
     public static final char INSERTION_ALLELE_v3 = 'I';
+
+    // special alleles
+    public static final char SPANNING_DELETION_ALLELE = '*';
+    public static final char NO_CALL_ALLELE = '.';
+    public static final char NULL_ALLELE = '-';
+
 
     // missing/default values
     public static final String UNFILTERED = ".";

@@ -43,11 +43,14 @@ import java.util.Date;
  * @author Tim Fennell
  */
 public class FormatUtil {
-    private DateFormat dateFormat;
-    private NumberFormat integerFormat;
-    private NumberFormat floatFormat;
+    public static final int DECIMAL_DIGITS_TO_PRINT = 6;
+    private final DateFormat dateFormat;
+    private final NumberFormat integerFormat;
+    private final NumberFormat floatFormat;
 
-    /** Constructs a new FormatUtil and initializes various internal formatters. */
+    /** Constructs a new FormatUtil and initializes various internal formatters. 
+    * This is necessary because SimpleDateFormat and other formatters are not threadsafe.
+    */
     public FormatUtil() {
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -56,7 +59,7 @@ public class FormatUtil {
 
         this.floatFormat = NumberFormat.getNumberInstance();
         this.floatFormat.setGroupingUsed(false);
-        this.floatFormat.setMaximumFractionDigits(6);
+        this.floatFormat.setMaximumFractionDigits(DECIMAL_DIGITS_TO_PRINT);
         this.floatFormat.setRoundingMode(RoundingMode.HALF_DOWN);
         if (this.floatFormat instanceof DecimalFormat) {
             final DecimalFormat decimalFormat = (DecimalFormat)this.floatFormat;
@@ -191,7 +194,7 @@ public class FormatUtil {
         if (returnType == Character.class || returnType == Character.TYPE) return parseChar(value);
         if (returnType == Iso8601Date.class)                               return parseIso8601Date(value);
         if (returnType == Date.class)                                      return parseDate(value);
-        if (returnType == File.class)                                      return new File(value);
+        if (returnType == File.class)                                      return IOUtil.getFile(value);
         if (Enum.class.isAssignableFrom(returnType)) return parseEnum(value, (Class<? extends Enum>)returnType);
         if (returnType == String.class) return value;
 

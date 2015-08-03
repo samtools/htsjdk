@@ -208,9 +208,9 @@ public class VCFEncoder {
 	/**
 	 * Takes a double value and pretty prints it to a String for display
 	 *
-	 * Large doubles => gets %.2f style formatting
-	 * Doubles < 1 / 10 but > 1/100 </>=> get %.3f style formatting
-	 * Double < 1/100 => %.3e formatting
+	 * Large doubles =&gt; gets %.2f style formatting
+	 * Doubles &lt; 1 / 10 but &gt; 1/100 =&gt; get %.3f style formatting
+	 * Double &lt; 1/100 =&gt; %.3e formatting
 	 * @param d
 	 * @return
 	 */

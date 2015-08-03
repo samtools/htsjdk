@@ -27,17 +27,22 @@ package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
 
+import java.io.Serializable;
 import java.util.Map;
 
 
 /**
  * @author ebanks
- *         <p/>
+ *         <p>
  *         Class VCFHeaderLine
- *         <p/>
+ *         </p>
+ *         <p>
  *         A class representing a key=value entry in the VCF header
+ *         </p>
  */
-public class VCFHeaderLine implements Comparable {
+public class VCFHeaderLine implements Comparable, Serializable {
+    public static final long serialVersionUID = 1L;
+
     protected static final boolean ALLOW_UNBOUND_DESCRIPTIONS = true;
     protected static final String UNBOUND_DESCRIPTION = "Not provided in original VCF header";
 
@@ -101,10 +106,25 @@ public class VCFHeaderLine implements Comparable {
         return mKey + "=" + mValue;
     }
 
-    public boolean equals(Object o) {
-        if ( !(o instanceof VCFHeaderLine) )
+    @Override
+    public boolean equals(final Object o) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
             return false;
-        return mKey.equals(((VCFHeaderLine)o).getKey()) && mValue.equals(((VCFHeaderLine)o).getValue());
+        }
+
+        final VCFHeaderLine that = (VCFHeaderLine) o;
+        return mKey.equals(that.mKey) &&                                             // key not nullable
+               (mValue != null ? mValue.equals(that.mValue) : that.mValue == null);  // value is nullable
+    }
+
+    @Override
+    public int hashCode() {
+        int result = mKey.hashCode();
+        result = 31 * result + (mValue != null ? mValue.hashCode() : 0);
+        return result;
     }
 
     public int compareTo(Object other) {
@@ -121,7 +141,7 @@ public class VCFHeaderLine implements Comparable {
 
     /**
      * create a string of a mapping pair for the target VCF version
-     * @param keyValues a mapping of the key->value pairs to output
+     * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {

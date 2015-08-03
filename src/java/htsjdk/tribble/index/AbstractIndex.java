@@ -24,6 +24,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -345,7 +346,7 @@ public abstract class AbstractIndex implements MutableIndex {
     public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
         if (!featureFile.isFile()) return;
         final LittleEndianOutputStream idxStream =
-                new LittleEndianOutputStream(IOUtil.getOutputStream(Tribble.indexFile(featureFile)));
+                new LittleEndianOutputStream(new BufferedOutputStream(IOUtil.getOutputStream(Tribble.indexFile(featureFile))));
         write(idxStream);
         idxStream.close();
 

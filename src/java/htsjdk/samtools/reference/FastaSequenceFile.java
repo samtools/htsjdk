@@ -137,6 +137,8 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
                 --sequenceLength;
             }
             if (sequenceLength == knownLength) {
+                // When length is known, make sure there is no trailing whitespace that hasn't been traversed.
+                skipToEoln();
                 break;
             }
             if (sequenceLength == bases.length) {
@@ -145,6 +147,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
                     bases = tmp;
             }
         }
+
         // And lastly resize the array down to the right size
         if (sequenceLength != bases.length || bases == basesBuffer) {
             final byte[] tmp = new byte[sequenceLength];
@@ -152,5 +155,12 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             bases = tmp;
         }
         return bases;
+    }
+
+    private void skipToEoln() {
+        byte[] ignoreBuffer = new byte[1024];
+        while (!in.eof() && !in.atEoln()) {
+            in.readToEndOfOutputBufferOrEoln(ignoreBuffer, 0);
+        }
     }
 }

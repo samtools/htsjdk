@@ -63,6 +63,13 @@ public class ValidateSamFileTest {
     }
 
     @Test
+    public void testSamFileVersion1pt5() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
+        final Histogram<String> results = executeValidation(samReader, null);
+        Assert.assertTrue(results.isEmpty());
+    }
+
+    @Test
     public void testSortOrder() throws IOException {
         Histogram<String> results = executeValidation(SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
                 .open(new File(TEST_DATA_DIR, "invalid_coord_sort_order.sam")), null);
@@ -414,9 +421,8 @@ public class ValidateSamFileTest {
         Assert.assertNotNull(outputFile.getHistogram());
         return outputFile.getHistogram();
     }
-
-    @Test(dataProvider = "headerVersions")
-    public void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
+    
+    private void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
         final File samFile = File.createTempFile("validateHeader.", ".sam");
         samFile.deleteOnExit();
         final PrintWriter pw = new PrintWriter(samFile);
@@ -431,14 +437,14 @@ public class ValidateSamFileTest {
         }
     }
 
-    @DataProvider(name = "headerVersions")
-    public Object[][] testHeaderVersionScenarios() {
-        return new Object[][]{
-                {"1.0", true},
-                {"1.3", true},
-                {"1.4", true},
-                {"1.5", false},
-        };
-    }
+    @Test
+    public void testHeaderVersions() throws Exception {
+        // Test the acceptable versions
+        for (final String version : SAMFileHeader.ACCEPTABLE_VERSIONS) {
+            testHeaderVersion(version, true);
+        }
 
+        // Test an unacceptable version
+        testHeaderVersion("1.6", false);
+    }
 }

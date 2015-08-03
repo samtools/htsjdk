@@ -27,6 +27,7 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,27 +40,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Builder class for VariantContext
+ * <p>Builder class for <code>VariantContext</code>.</p>
  *
- * Some basic assumptions here:
- *
- * 1 -- data isn't protectively copied.  If you provide an attribute map to
+ * <p>Some basic assumptions here:</p>
+ * <ol>
+ * <li> data isn't protectively copied.  If you provide an attribute map to
  * the build, and modify it later, the builder will see this and so will any
  * resulting variant contexts.  It's best not to modify collections provided
- * to a builder.
+ * to a builder.</li>
  *
- * 2 -- the system uses the standard builder model, allowing the simple construction idiom:
- *
- *   builder.source("a").genotypes(gc).id("x").make() => VariantContext
- *
- * 3 -- The best way to copy a VariantContext is:
- *
- *   new VariantContextBuilder(vc).make() => a copy of VC
- *
- * 4 -- validation of arguments is done at the during the final make() call, so a
- * VariantContextBuilder can exist in an inconsistent state as long as those issues
- * are resolved before the call to make() is issued.
- *
+ * <li> the system uses the standard builder model, allowing the simple construction idiom:
+ *<blockquote>
+ *   <code>builder.source("a").genotypes(gc).id("x").make()</code> =&gt; <code>VariantContext</code>
+ *</blockquote></li>
+ *<li>The best way to copy a VariantContext is:
+ *<blockquote>
+ *   <code>new VariantContextBuilder(vc).make()</code> =&gt; a copy of VC
+ *</blockquote>
+ * <li> validation of arguments is done at the during the final <code>make()</code> call, so a
+ * <code>VariantContextBuilder</code> can exist in an inconsistent state as long as those issues
+ * are resolved before the call to <code>make()</code> is issued.
+ *</ol>
  * @author depristo
  */
 public class VariantContextBuilder {
@@ -177,11 +178,15 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells this builder to use this map of attributes alleles for the resulting VariantContext
+     * Tells this builder to use this map of attributes alleles for the resulting <code>VariantContext</code>
      *
-     * Attributes can be null -> meaning there are no attributes.  After
+     * Attributes can be <code>null</code> -&gt; meaning there are no attributes.  After
      * calling this routine the builder assumes it can modify the attributes
      * object here, if subsequent calls are made to set attribute values
+     *
+     * Value for each attribute must be of a type that implements {@link Serializable} or else
+     * serialization will fail.
+     *
      * @param attributes
      */
     public VariantContextBuilder attributes(final Map<String, Object> attributes) {
@@ -197,11 +202,10 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Puts the key -> value mapping into this builder's attributes
+     * Puts the key -&gt; value mapping into this builder's attributes
      *
-     * @param key
-     * @param value
-     * @return
+     * @param key key for the attribute
+     * @param value value for the attribute (must be of a type that implements {@link Serializable} or else serialization will fail)
      */
     public VariantContextBuilder attribute(final String key, final Object value) {
         makeAttributesModifiable();
@@ -252,7 +256,7 @@ public class VariantContextBuilder {
     /**
      * This builder's filters are set to this value
      *
-     * filters can be null -> meaning there are no filters
+     * filters can be <code>null</code> -&gt; meaning there are no filters
      * @param filters
      */
     public VariantContextBuilder filters(final Set<String> filters) {
@@ -297,9 +301,9 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells this builder that the resulting VariantContext should use this genotypes GenotypeContext
+     * Tells this builder that the resulting <code>VariantContext</code> should use this genotype's <code>GenotypeContext</code>.
      *
-     * Note that genotypes can be null -> meaning there are no genotypes
+     * Note that genotypes can be <code>null</code> -&gt; meaning there are no genotypes
      *
      * @param genotypes
      */
@@ -316,9 +320,9 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells this builder that the resulting VariantContext should use a GenotypeContext containing genotypes
+     * Tells this builder that the resulting <code>VariantContext</code> should use a <code>GenotypeContext</code> containing genotypes
      *
-     * Note that genotypes can be null -> meaning there are no genotypes
+     * Note that genotypes can be <code>null</code>, meaning there are no genotypes
      *
      * @param genotypes
      */
@@ -327,7 +331,7 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells this builder that the resulting VariantContext should use a GenotypeContext containing genotypes
+     * Tells this builder that the resulting <code>VariantContext</code> should use a <code>GenotypeContext</code> containing genotypes
      * @param genotypes
      */
     public VariantContextBuilder genotypes(final Genotype ... genotypes) {
@@ -483,6 +487,12 @@ public class VariantContextBuilder {
      * VariantContexts from the same builder.
      */
     public VariantContext make() {
+        return make(false);
+    }
+
+    public VariantContext make(final boolean leaveModifyableAsIs) {
+        if(!leaveModifyableAsIs) attributesCanBeModified = false;
+
         return new VariantContext(source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,
                 fullyDecoded, toValidate);

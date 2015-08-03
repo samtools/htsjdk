@@ -4,7 +4,7 @@ import sbt.Package.ManifestAttributes
 
 name := "htsjdk"
 
-version := "1.130"
+version := "1.137"
 
 organization := "com.github.samtools"
 
@@ -14,7 +14,13 @@ libraryDependencies += "commons-logging" % "commons-logging" % "1.1.1"
 
 libraryDependencies += "org.xerial.snappy" % "snappy-java" % "1.0.3-rc3"
 
-libraryDependencies += "org.testng" % "testng" % "6.8.8" % Test
+libraryDependencies += "org.apache.commons" % "commons-compress" % "1.4.1"
+
+libraryDependencies += "org.tukaani" % "xz" % "1.5"
+ 
+libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
+
+libraryDependencies += "org.testng" % "testng" % "6.8.8"
 
 unmanagedBase := baseDirectory.value
 

@@ -170,7 +170,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     }
 
     private File makeFileForSequence(final int index) {
-        final File file = new File(workDir, index + ".tmp");
+        final File file = IOUtil.getFile(workDir, index + ".tmp");
         file.deleteOnExit();
         return file;
     }

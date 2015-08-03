@@ -1,5 +1,12 @@
 package htsjdk.samtools;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.zip.GZIPInputStream;
+
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
@@ -8,13 +15,6 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.zip.GZIPInputStream;
 
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
@@ -59,7 +59,7 @@ public abstract class SamReaderFactory {
 
     abstract public ValidationStringency validationStringency();
 
-    abstract public File referenceSequence();
+    abstract public ReferenceSource referenceSource();
 
     /** Set this factory's {@link htsjdk.samtools.SAMRecordFactory} to the provided one, then returns itself. */
     abstract public SamReaderFactory samRecordFactory(final SAMRecordFactory samRecordFactory);
@@ -75,6 +75,9 @@ public abstract class SamReaderFactory {
 
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
+
+    /** Sets the specified reference sequence * */
+    abstract public SamReaderFactory referenceSource(ReferenceSource referenceSequence);
 
     /** Utility method to open the file get the header and close the file */
     abstract public SAMFileHeader getFileHeader(File samFile);
@@ -113,7 +116,7 @@ public abstract class SamReaderFactory {
         private ValidationStringency validationStringency;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
-        private File referenceSequence;
+        private ReferenceSource referenceSource;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
@@ -137,8 +140,8 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        public File referenceSequence() {
-            return referenceSequence;
+        public ReferenceSource referenceSource() {
+            return referenceSource;
         }
 
         @Override
@@ -172,7 +175,13 @@ public abstract class SamReaderFactory {
 
         @Override
         public SamReaderFactory referenceSequence(final File referenceSequence) {
-            this.referenceSequence = referenceSequence;
+            this.referenceSource = new ReferenceSource(referenceSequence);
+            return this;
+        }
+
+        @Override
+        public SamReaderFactory referenceSource(final ReferenceSource referenceSource) {
+            this.referenceSource = referenceSource;
             return this;
         }
 
@@ -260,8 +269,8 @@ public abstract class SamReaderFactory {
                             bufferedStream = null;
                         }
                         // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                        if (referenceSequence != null) {
-                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream, new ReferenceSource(referenceSequence));
+                        if (referenceSource != null) {
+                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream, referenceSource);
                         } else {
                             primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream);
                         }

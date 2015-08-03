@@ -1,18 +1,20 @@
-/*******************************************************************************
+/**
+ * ****************************************************************************
  * Copyright 2013 EMBL-EBI
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.Cigar;
@@ -21,34 +23,34 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.encoding.read_features.Deletion;
-import htsjdk.samtools.cram.encoding.read_features.HardClip;
-import htsjdk.samtools.cram.encoding.read_features.InsertBase;
-import htsjdk.samtools.cram.encoding.read_features.Insertion;
-import htsjdk.samtools.cram.encoding.read_features.Padding;
-import htsjdk.samtools.cram.encoding.read_features.ReadBase;
-import htsjdk.samtools.cram.encoding.read_features.ReadFeature;
-import htsjdk.samtools.cram.encoding.read_features.RefSkip;
-import htsjdk.samtools.cram.encoding.read_features.SoftClip;
-import htsjdk.samtools.cram.encoding.read_features.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
+import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
+import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
+import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
+import htsjdk.samtools.cram.encoding.readfeatures.Padding;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
+import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
+import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
+import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class Cram2SamRecordFactory {
 
-    private SAMFileHeader header;
+    private final SAMFileHeader header;
 
-    public Cram2SamRecordFactory(SAMFileHeader header) {
+    public Cram2SamRecordFactory(final SAMFileHeader header) {
         this.header = header;
     }
 
-    public SAMRecord create(CramCompressionRecord cramRecord) {
-        SAMRecord samRecord = new SAMRecord(header);
+    public SAMRecord create(final CramCompressionRecord cramRecord) {
+        final SAMRecord samRecord = new SAMRecord(header);
 
         samRecord.setReadName(cramRecord.readName);
         copyFlags(cramRecord, samRecord);
@@ -72,9 +74,10 @@ public class Cram2SamRecordFactory {
         if (samRecord.getReadPairedFlag()) {
             samRecord.setMateReferenceIndex(cramRecord.mateSequenceID);
             samRecord
-                    .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ? cramRecord.mateAlignmentStart : SAMRecord.NO_ALIGNMENT_START);
+                    .setMateAlignmentStart(cramRecord.mateAlignmentStart > 0 ? cramRecord.mateAlignmentStart : SAMRecord
+                            .NO_ALIGNMENT_START);
             samRecord.setMateNegativeStrandFlag(cramRecord.isMateNegativeStrand());
-            samRecord.setMateUnmappedFlag(cramRecord.isMateUmapped());
+            samRecord.setMateUnmappedFlag(cramRecord.isMateUnmapped());
         } else {
             samRecord
                     .setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
@@ -86,11 +89,11 @@ public class Cram2SamRecordFactory {
         samRecord.setBaseQualities(cramRecord.qualityScores);
 
         if (cramRecord.tags != null)
-            for (ReadTag tag : cramRecord.tags)
+            for (final ReadTag tag : cramRecord.tags)
                 samRecord.setAttribute(tag.getKey(), tag.getValue());
 
         if (cramRecord.readGroupID > -1) {
-            SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(
+            final SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(
                     cramRecord.readGroupID);
             samRecord.setAttribute("RG", readGroupRecord.getId());
         }
@@ -98,36 +101,37 @@ public class Cram2SamRecordFactory {
         return samRecord;
     }
 
-    private static final void copyFlags(CramCompressionRecord cr, SAMRecord sr) {
-        sr.setReadPairedFlag(cr.isMultiFragment());
-        sr.setProperPairFlag(cr.isProperPair());
-        sr.setReadUnmappedFlag(cr.isSegmentUnmapped());
-        sr.setReadNegativeStrandFlag(cr.isNegativeStrand());
-        sr.setFirstOfPairFlag(cr.isFirstSegment());
-        sr.setSecondOfPairFlag(cr.isLastSegment());
-        sr.setNotPrimaryAlignmentFlag(cr.isSecondaryAlignment());
-        sr.setReadFailsVendorQualityCheckFlag(cr.isVendorFiltered());
-        sr.setDuplicateReadFlag(cr.isDuplicate());
+    private static void copyFlags(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
+        samRecord.setReadPairedFlag(cramRecord.isMultiFragment());
+        samRecord.setProperPairFlag(cramRecord.isProperPair());
+        samRecord.setReadUnmappedFlag(cramRecord.isSegmentUnmapped());
+        samRecord.setReadNegativeStrandFlag(cramRecord.isNegativeStrand());
+        samRecord.setFirstOfPairFlag(cramRecord.isFirstSegment());
+        samRecord.setSecondOfPairFlag(cramRecord.isLastSegment());
+        samRecord.setNotPrimaryAlignmentFlag(cramRecord.isSecondaryAlignment());
+        samRecord.setReadFailsVendorQualityCheckFlag(cramRecord.isVendorFiltered());
+        samRecord.setDuplicateReadFlag(cramRecord.isDuplicate());
+        samRecord.setSupplementaryAlignmentFlag(cramRecord.isSupplementary());
     }
 
-    private static final Cigar getCigar2(Collection<ReadFeature> features,
-                                         int readLength) {
+    private static Cigar getCigar2(final Collection<ReadFeature> features,
+                                   final int readLength) {
         if (features == null || features.isEmpty()) {
-            CigarElement ce = new CigarElement(readLength, CigarOperator.M);
-            return new Cigar(Arrays.asList(ce));
+            final CigarElement cigarElement = new CigarElement(readLength, CigarOperator.M);
+            return new Cigar(Collections.singletonList(cigarElement));
         }
 
-        List<CigarElement> list = new ArrayList<CigarElement>();
+        final List<CigarElement> list = new ArrayList<CigarElement>();
         int totalOpLen = 1;
-        CigarElement ce;
+        CigarElement cigarElement;
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;
         int lastOpLen = 0;
         int lastOpPos = 1;
-        CigarOperator co = null;
-        int rfLen = 0;
-        for (ReadFeature f : features) {
+        CigarOperator cigarOperator;
+        int readFeatureLength;
+        for (final ReadFeature feature : features) {
 
-            int gap = f.getPosition() - (lastOpPos + lastOpLen);
+            final int gap = feature.getPosition() - (lastOpPos + lastOpLen);
             if (gap > 0) {
                 if (lastOperator != CigarOperator.MATCH_OR_MISMATCH) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
@@ -141,78 +145,81 @@ public class Cram2SamRecordFactory {
                 lastOperator = CigarOperator.MATCH_OR_MISMATCH;
             }
 
-            switch (f.getOperator()) {
+            switch (feature.getOperator()) {
                 case Insertion.operator:
-                    co = CigarOperator.INSERTION;
-                    rfLen = ((Insertion) f).getSequence().length;
+                    cigarOperator = CigarOperator.INSERTION;
+                    readFeatureLength = ((Insertion) feature).getSequence().length;
                     break;
                 case SoftClip.operator:
-                    co = CigarOperator.SOFT_CLIP;
-                    rfLen = ((SoftClip) f).getSequence().length;
+                    cigarOperator = CigarOperator.SOFT_CLIP;
+                    readFeatureLength = ((SoftClip) feature).getSequence().length;
                     break;
                 case HardClip.operator:
-                    co = CigarOperator.HARD_CLIP;
-                    rfLen = ((HardClip) f).getLength();
+                    cigarOperator = CigarOperator.HARD_CLIP;
+                    readFeatureLength = ((HardClip) feature).getLength();
                     break;
                 case InsertBase.operator:
-                    co = CigarOperator.INSERTION;
-                    rfLen = 1;
+                    cigarOperator = CigarOperator.INSERTION;
+                    readFeatureLength = 1;
                     break;
                 case Deletion.operator:
-                    co = CigarOperator.DELETION;
-                    rfLen = ((Deletion) f).getLength();
+                    cigarOperator = CigarOperator.DELETION;
+                    readFeatureLength = ((Deletion) feature).getLength();
                     break;
                 case RefSkip.operator:
-                    co = CigarOperator.SKIPPED_REGION;
-                    rfLen = ((RefSkip) f).getLength();
+                    cigarOperator = CigarOperator.SKIPPED_REGION;
+                    readFeatureLength = ((RefSkip) feature).getLength();
                     break;
                 case Padding.operator:
-                    co = CigarOperator.PADDING;
-                    rfLen = ((Padding) f).getLength();
+                    cigarOperator = CigarOperator.PADDING;
+                    readFeatureLength = ((Padding) feature).getLength();
                     break;
                 case Substitution.operator:
                 case ReadBase.operator:
-                    co = CigarOperator.MATCH_OR_MISMATCH;
-                    rfLen = 1;
+                    cigarOperator = CigarOperator.MATCH_OR_MISMATCH;
+                    readFeatureLength = 1;
                     break;
                 default:
                     continue;
             }
 
-            if (lastOperator != co) {
+            if (lastOperator != cigarOperator) {
                 // add last feature
                 if (lastOpLen > 0) {
                     list.add(new CigarElement(lastOpLen, lastOperator));
                     totalOpLen += lastOpLen;
                 }
-                lastOperator = co;
-                lastOpLen = rfLen;
-                lastOpPos = f.getPosition();
+                lastOperator = cigarOperator;
+                lastOpLen = readFeatureLength;
+                lastOpPos = feature.getPosition();
             } else
-                lastOpLen += rfLen;
+                lastOpLen += readFeatureLength;
 
-            if (!co.consumesReadBases())
-                lastOpPos -= rfLen;
+            if (!cigarOperator.consumesReadBases())
+                lastOpPos -= readFeatureLength;
         }
 
         if (lastOperator != null) {
             if (lastOperator != CigarOperator.M) {
                 list.add(new CigarElement(lastOpLen, lastOperator));
                 if (readLength >= lastOpPos + lastOpLen) {
-                    ce = new CigarElement(readLength - (lastOpLen + lastOpPos)
+                    cigarElement = new CigarElement(readLength - (lastOpLen + lastOpPos)
                             + 1, CigarOperator.M);
-                    list.add(ce);
+                    list.add(cigarElement);
                 }
-            } else if (readLength > lastOpPos - 1) {
-                ce = new CigarElement(readLength - lastOpPos + 1,
-                        CigarOperator.M);
-                list.add(ce);
+            } else if (readLength == 0 || readLength > lastOpPos - 1) {
+                if (readLength == 0)
+                    cigarElement = new CigarElement(lastOpLen, CigarOperator.M);
+                else
+                    cigarElement = new CigarElement(readLength - lastOpPos + 1,
+                            CigarOperator.M);
+                list.add(cigarElement);
             }
         }
 
         if (list.isEmpty()) {
-            ce = new CigarElement(readLength, CigarOperator.M);
-            return new Cigar(Arrays.asList(ce));
+            cigarElement = new CigarElement(readLength, CigarOperator.M);
+            return new Cigar(Collections.singletonList(cigarElement));
         }
 
         return new Cigar(list);

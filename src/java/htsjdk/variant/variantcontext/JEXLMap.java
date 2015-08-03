@@ -102,6 +102,8 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
                 infoMap.put("isNoCall", g.isNoCall()? "1" : "0");
                 infoMap.put("isMixed", g.isMixed()? "1" : "0");
                 infoMap.put("isAvailable", g.isAvailable()? "1" : "0");
+                infoMap.put("isPassFT", g.isFiltered()? "0" : "1");
+                infoMap.put(VCFConstants.GENOTYPE_FILTER_KEY, g.isFiltered()?  g.getFilters() : "PASS");
 
                 infoMap.put(VCFConstants.GENOTYPE_QUALITY_KEY, g.getGQ());
                 if ( g.hasDP() )

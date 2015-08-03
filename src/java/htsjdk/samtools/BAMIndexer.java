@@ -281,7 +281,7 @@ public class BAMIndexer {
 
         BAMIndexer indexer = new BAMIndexer(output, reader.getFileHeader());
 
-        int totalRecords = 0;
+        long totalRecords = 0;
 
         // create and write the content
         for (SAMRecord rec : reader) {

@@ -68,11 +68,14 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
     public FeatureCodecHeader readHeader(final SOURCE source) throws IOException;
 
     /**
+     * <p>
      * This function returns the object the codec generates.  This is allowed to be Feature in the case where
      * conditionally different types are generated.  Be as specific as you can though.
-     * <p/>
+     * </p>
+     * <p>
      * This function is used by reflections based tools, so we can know the underlying type
-     *
+     * </p>
+     * 
      * @return the feature type this codec generates.
      */
     public Class<FEATURE_TYPE> getFeatureType();
@@ -100,12 +103,15 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
     public void close(final SOURCE source);
 
     /**
+     * <p>
      * This function returns true iff the File potentialInput can be parsed by this
-     * codec.
-     * <p/>
+     * codec. Note that checking the file's extension is a perfectly acceptable implementation of this method
+     * and file contents only rarely need to be checked.
+     * </p>
+     * <p>
      * There is an assumption that there's never a situation where two different Codecs
      * return true for the same file.  If this occurs, the recommendation would be to error out.
-     * <p/>
+     * </p>
      * Note this function must never throw an error.  All errors should be trapped
      * and false returned.
      *

@@ -83,11 +83,19 @@ public class IntervalList implements Iterable<Interval> {
     public Iterator<Interval> iterator() { return this.intervals.iterator(); }
 
     /** Adds an interval to the list of intervals. */
-    public void add(final Interval interval) { this.intervals.add(interval); }
+    public void add(final Interval interval) {
+        if (header.getSequence(interval.getContig()) == null) {
+            throw new IllegalArgumentException(String.format("Cannot add interval %s, contig not in header", interval.toString()));
+        }
+        this.intervals.add(interval);
+    }
 
     /** Adds a Collection of intervals to the list of intervals. */
     public void addall(final Collection<Interval> intervals) {
-        this.intervals.addAll(intervals);
+        //use this instead of addAll so that the contig checking happens.
+        for (Interval interval : intervals) {
+            add(interval);
+        }
     }
 
     /** Sorts the internal collection of intervals by coordinate. */
@@ -96,6 +104,26 @@ public class IntervalList implements Iterable<Interval> {
     public void sort() {
         Collections.sort(this.intervals, new IntervalCoordinateComparator(this.header));
         this.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+    }
+
+    /** Returns a new IntervalList where each interval is padded by the specified amount of bases. */
+    public IntervalList padded(final int before, final int after) {
+        if (before < 0 || after < 0) throw new IllegalArgumentException("Padding values must be >= 0.");
+        final IntervalList padded = new IntervalList(this.getHeader().clone());
+        final SAMSequenceDictionary dict = padded.getHeader().getSequenceDictionary();
+        for (final Interval i : this) {
+            final SAMSequenceRecord seq = dict.getSequence(i.getContig());
+            final int start = Math.max(1, i.getStart() - before);
+            final int end   = Math.min(seq.getSequenceLength(), i.getEnd() + after);
+            padded.add(new Interval(i.getContig(), start, end, i.isNegativeStrand(), i.getName()));
+        }
+
+        return padded;
+    }
+
+    /** Returns a new IntervalList where each interval is padded by 'padding' bases on each side. */
+    public IntervalList padded(final int padding) {
+        return padded(padding, padding);
     }
 
     /** returns an independent sorted IntervalList*/

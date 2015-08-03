@@ -28,10 +28,11 @@ package htsjdk.variant.vcf;
 
 /**
  * @author ebanks
- *         <p/>
+ *         <p>
  *         Class VCFFormatHeaderLine
- *         <p/>
- *         A class representing a key=value entry for genotype FORMAT fields in the VCF header
+ *         </p>
+ *         <p>
+ *         A class representing a key=value entry for genotype FORMAT fields in the VCF header</p>
  */
 public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
 
