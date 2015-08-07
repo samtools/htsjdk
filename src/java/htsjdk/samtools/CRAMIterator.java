@@ -28,6 +28,7 @@ import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
+
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
@@ -42,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class CRAMIterator implements SAMRecordIterator {
+	
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
     private CramHeader cramHeader;

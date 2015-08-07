@@ -1,10 +1,8 @@
 package htsjdk.samtools;
 
-import htsjdk.samtools.seekablestream.SeekableFTPStream;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -77,7 +75,7 @@ public class SamInputResource {
       } catch (MalformedURLException e) {
        // ignore
       }
-      return of(new File(string));
+      return of(IOUtil.getFile(string));
     }
     
     /** Updates the index to point at the provided resource, then returns itself. */
@@ -166,7 +164,7 @@ class FileInputResource extends InputResource {
         @Override
         public SeekableStream make() {
             try {
-                return new SeekableFileStream(fileResource);
+            	return SeekableStreamFactory.getInstance().getStreamFor(fileResource);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeIOException(e);
             }

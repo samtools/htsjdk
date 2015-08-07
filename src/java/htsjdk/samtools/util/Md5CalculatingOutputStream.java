@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -107,7 +108,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
         makeHash();
 
         if(digestFile != null) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(digestFile));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(IOUtil.getOutputStream(digestFile)));
             writer.write(hash);
             writer.close();
         }

@@ -46,7 +46,6 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -168,7 +167,7 @@ public class SamFileValidator {
     public void validateBamFileTermination(final File inputFile) {
         BufferedInputStream inputStream = null;
         try {
-            inputStream = IOUtil.toBufferedStream(new FileInputStream(inputFile));
+            inputStream = IOUtil.toBufferedStream(IOUtil.getInputStream(inputFile));
             if (!BlockCompressedInputStream.isValidFile(inputStream)) {
                 return;
             }

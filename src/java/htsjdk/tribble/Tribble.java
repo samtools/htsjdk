@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
@@ -95,6 +96,6 @@ public class Tribble {
      * @return a non-null File representing the index
      */
     private static File indexFile(final File file, final String extension) {
-        return new File(file.getAbsoluteFile() + extension);
+        return IOUtil.getFile(file.getAbsoluteFile() + extension);
     }
 }

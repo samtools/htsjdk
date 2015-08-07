@@ -27,15 +27,14 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -86,7 +85,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      */
     public BlockCompressedInputStream(final File file)
         throws IOException {
-        mFile = new SeekableFileStream(file);
+        mFile = SeekableStreamFactory.getInstance().getStreamFor(file);
         mStream = null;
 
     }
@@ -455,12 +454,23 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     public enum FileTermination {HAS_TERMINATOR_BLOCK, HAS_HEALTHY_LAST_BLOCK, DEFECTIVE}
 
     public static FileTermination checkTermination(final File file)
+            throws IOException {
+            final long fileSize = file.length();
+            if (fileSize < BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length) {
+                return FileTermination.DEFECTIVE;
+            }
+        //use SeekableStream instead of RandomAccessFile
+            final SeekableStream raFile = SeekableStreamFactory.getInstance().getStreamFor(file);
+            return checkTermination(fileSize, raFile);    
+    }
+    
+    //add a new method so that it can check whether the file is integrate just from SeekableStream
+    public static FileTermination checkTermination(long fileSize, SeekableStream raFile)
         throws IOException {
-        final long fileSize = file.length();
         if (fileSize < BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length) {
             return FileTermination.DEFECTIVE;
         }
-        final RandomAccessFile raFile = new RandomAccessFile(file, "r");
+        
         try {
             raFile.seek(fileSize - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
             byte[] buf = new byte[BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length];
@@ -508,5 +518,4 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         return true;
     }
 }
-
 

@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
@@ -63,7 +64,7 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
         } else {
             // Sort it!
             final int maxRecordsInRam = SAMFileWriterImpl.getDefaultMaxRecordsInRam();
-            final File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+            final File tmpDir = IOUtil.getFile(System.getProperty("java.io.tmpdir"));
             final SortingCollection<SAMRecord> alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
                     new BAMRecordCodec(header), comparator,
                     maxRecordsInRam, tmpDir);

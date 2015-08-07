@@ -1,12 +1,13 @@
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.InputStreamReader;
+
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * @author mccowan
@@ -21,8 +22,8 @@ public class LongLineBufferedReaderTest {
     @Test
     public void testReadLines() throws Exception {
         String filePath = TestUtils.DATA_DIR + "large.txt";
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
-        LongLineBufferedReader testReader = new LongLineBufferedReader(new InputStreamReader(new FileInputStream(filePath)));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(IOUtil.getInputStream(IOUtil.getFile(filePath))));
+        LongLineBufferedReader testReader = new LongLineBufferedReader(new InputStreamReader(IOUtil.getInputStream(IOUtil.getFile(filePath))));
         String line;
         while((line = reader.readLine()) != null){
             Assert.assertEquals(testReader.readLine(), line);

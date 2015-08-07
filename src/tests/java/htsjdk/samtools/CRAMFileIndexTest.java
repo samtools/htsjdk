@@ -5,23 +5,23 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import org.testng.Assert;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 
 /**
  * A collection of tests for CRAM index write/read that use BAMFileIndexTest/index_test.bam file as the source of the test data.
@@ -186,18 +186,18 @@ public class CRAMFileIndexTest {
         cramBytes = cramFromBAM(BAM_FILE, source);
         cramFile = File.createTempFile(BAM_FILE.getName(), ".cram") ;
         cramFile.deleteOnExit();
-        indexFile = new File (cramFile.getAbsolutePath() + ".bai");
+        indexFile = IOUtil.getFile(cramFile.getAbsolutePath() + ".bai");
         indexFile.deleteOnExit();
-        FileOutputStream fos = new FileOutputStream(cramFile);
+        OutputStream fos = IOUtil.getOutputStream(cramFile);
         fos.write(cramBytes);
         fos.close();
 
-        CRAMIndexer.createIndex(new SeekableFileStream(cramFile), indexFile, null);
+        CRAMIndexer.createIndex(SeekableStreamFactory.getInstance().getStreamFor(cramFile), indexFile, null);
         baiBytes = readFile(indexFile);
     }
 
     private static byte[] readFile(File file) throws FileNotFoundException {
-        FileInputStream fis = new FileInputStream(file);
+        InputStream fis = IOUtil.getInputStream(file);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         IOUtil.copyStream(fis, baos);
         return baos.toByteArray();

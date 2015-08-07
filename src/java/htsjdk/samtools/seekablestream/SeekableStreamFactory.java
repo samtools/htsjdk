@@ -23,7 +23,11 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.hdfs.FileHadoop;
+import htsjdk.samtools.util.hdfs.FileOperate;
+
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 
@@ -71,16 +75,29 @@ public class SeekableStreamFactory{
         public SeekableStream getStreamFor(final String path) throws IOException {
             // todo -- add support for SeekableBlockInputStream
 
-            if (path.startsWith("http:") || path.startsWith("https:")) {
-                final URL url = new URL(path);
-                return new SeekableHTTPStream(url);
-            } else if (path.startsWith("ftp:")) {
-                return new SeekableFTPStream(new URL(path));
-            } else {
-                return new SeekableFileStream(new File(path));
-            }
+        	  if (path.startsWith("http:") || path.startsWith("https:")) {
+                  final URL url = new URL(path);
+                  return new SeekableHTTPStream(url);
+              } else if (path.startsWith("ftp:")) {
+                  return new SeekableFTPStream(new URL(path));
+              } else if (FileHadoop.isHdfs(path)) {
+              	return new SeekableHDFSstream(new FileHadoop(path));
+              } else {
+              	return new SeekableFileStream(new File(path));
+  			}
+          }
+        
+        //Add a method to get SeekableStream from File, and inside the methd, it can 
+        // judge the File/ FileHadoop and return the corresponding SeekableStream
+        //by Zong Jie 20150329
+        public SeekableStream getStreamFor(final File file) throws FileNotFoundException {
+        	if (file instanceof FileHadoop) {
+				return new SeekableHDFSstream((FileHadoop) file);
+			} else {
+				return new SeekableFileStream(file);
+			}
         }
-
+        
         public SeekableStream getBufferedStream(SeekableStream stream){
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
         }

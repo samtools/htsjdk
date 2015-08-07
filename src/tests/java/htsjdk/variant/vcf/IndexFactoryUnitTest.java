@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Tribble;
@@ -36,6 +37,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -49,7 +51,7 @@ import java.util.EnumSet;
  */
 public class IndexFactoryUnitTest extends VariantBaseTest {
 
-    File inputFile = new File(variantTestDataRoot + "HiSeq.10000.vcf");
+    File inputFile = IOUtil.getFile(variantTestDataRoot + "HiSeq.10000.vcf");
     File outputFile = createTempFile("onTheFlyOutputTest", ".vcf");
     File outputFileIndex = Tribble.indexFile(outputFile);
 

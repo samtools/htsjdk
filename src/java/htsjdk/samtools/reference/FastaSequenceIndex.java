@@ -115,8 +115,8 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      */
     private void parseIndexFile(File indexFile) {
         try {
-            Scanner scanner = new Scanner(indexFile);
-
+        
+            Scanner scanner = new Scanner(IOUtil.getInputStream(indexFile));
             int sequenceIndex = 0;
             while( scanner.hasNext() ) {
                 // Tokenize and validate the index line.

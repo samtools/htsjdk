@@ -24,6 +24,7 @@
 
 package htsjdk.tribble.bed;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TestUtils;
@@ -32,15 +33,15 @@ import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
-import java.awt.*;
+import java.awt.Color;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class BEDCodecTest {
 
@@ -212,7 +213,7 @@ public class BEDCodecTest {
 
         LittleEndianOutputStream stream = null;
         try {
-            stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
+            stream = new LittleEndianOutputStream(new BufferedOutputStream(IOUtil.getOutputStream(idxFile)));
             idx.write(stream);
         } finally {
             if (stream != null) {

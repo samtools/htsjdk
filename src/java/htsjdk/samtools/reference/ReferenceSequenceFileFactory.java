@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.util.hdfs.FileHadoop;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashSet;
@@ -84,9 +86,12 @@ public class ReferenceSequenceFileFactory {
                 // Using faidx requires truncateNamesAtWhitespace
                 if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
                     try {
-                        return new IndexedFastaSequenceFile(file);
-                    }
-                    catch (final FileNotFoundException e) {
+                    	if (file instanceof FileHadoop) {
+					return new IndexedFastaSequenceFileHadoop(file);
+				} else {
+					 return new IndexedFastaSequenceFile(file);
+				}
+                    } catch (FileNotFoundException e) {
                         throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
                     }
                 }

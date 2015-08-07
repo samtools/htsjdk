@@ -1,5 +1,7 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 
 /**
@@ -106,6 +108,6 @@ public class Defaults {
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
         // TODO: assert that it is readable
-        return (null == value) ? null : new File(value);
+        return (null == value) ? null : IOUtil.getFile(value);
     }
 }

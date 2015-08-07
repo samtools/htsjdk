@@ -53,7 +53,7 @@ public class SeekableBufferedStreamTest {
         int length = 50000;
 
         byte[] buffer1 = new byte[length];
-        SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
+        SeekableStream unBufferedStream = SeekableStreamFactory.getInstance().getStreamFor(BAM_FILE);
         unBufferedStream.seek(startPosition);
         int bytesRead = unBufferedStream.read(buffer1, 0, length);
         assertEquals(length, bytesRead);
@@ -98,8 +98,8 @@ public class SeekableBufferedStreamTest {
         final int[] BUFFER_SIZES = new int[]{8, 96, 1024, 8*1024, 16*1024, 96*1024, 48*1024};
 
         for (final int bufferSize : BUFFER_SIZES) {
-            final SeekableBufferedStream in1 = new SeekableBufferedStream(new SeekableFileStream(BAM_FILE), bufferSize);
-            final SeekableBufferedStream in2 = new SeekableBufferedStream(new SeekableFileStream(BAM_FILE), bufferSize);
+            final SeekableBufferedStream in1 = new SeekableBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(BAM_FILE), bufferSize);
+            final SeekableBufferedStream in2 = new SeekableBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(BAM_FILE), bufferSize);
 
             final int SIZE = 10000;
             final byte[] bytes1 = new byte[SIZE];
@@ -151,7 +151,7 @@ public class SeekableBufferedStreamTest {
 
         final int BUFFERED_STREAM_BUFFER_SIZE = 100;
         final byte buffer[]=new byte[BUFFERED_STREAM_BUFFER_SIZE*10];
-        final SeekableFileStream fileStream = new SeekableFileStream(TestFile);
+        final SeekableStream fileStream = SeekableStreamFactory.getInstance().getStreamFor(TestFile);
         final SeekableBufferedStream  bufferedStream = new SeekableBufferedStream(fileStream,BUFFERED_STREAM_BUFFER_SIZE);
 
         for( int i=0; i<10*BUFFERED_STREAM_BUFFER_SIZE/length ; ++i ){

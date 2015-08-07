@@ -30,8 +30,14 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LocationAware;
-import htsjdk.tribble.*;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.CloseableTribbleIterator;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodec;
+import htsjdk.tribble.FeatureCodecHeader;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
@@ -48,9 +54,7 @@ import htsjdk.tribble.util.TabixUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -287,7 +291,7 @@ public class IndexFactory {
     public static void writeIndex(final Index idx, final File idxFile) throws IOException {
         LittleEndianOutputStream stream = null;
         try {
-            stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
+            stream = new LittleEndianOutputStream(new BufferedOutputStream(IOUtil.getOutputStream(idxFile)));
             idx.write(stream);
         }
         finally {
@@ -420,7 +424,8 @@ public class IndexFactory {
 
         private PositionalBufferedStream initStream(final File inputFile, final long skip) {
             try {
-                final FileInputStream fileStream = new FileInputStream(inputFile);
+				final InputStream fileStream = IOUtil.getInputStream(inputFile);
+
                 final InputStream is;
 
                 // if this looks like a block compressed file and it in fact is, we will use it

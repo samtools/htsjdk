@@ -32,7 +32,6 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
-import java.io.FileInputStream;
 
 /**
  * Provide core sequence dictionary functionality required by all fasta file readers.
@@ -55,7 +54,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
 
             try {
                 final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                final BufferedLineReader reader = new BufferedLineReader(new FileInputStream(dictionary));
+                final BufferedLineReader reader = new BufferedLineReader(IOUtil.getInputStream(dictionary));
                 final SAMFileHeader header = codec.decode(reader,
                         dictionary.toString());
                 if (header.getSequenceDictionary() != null && header.getSequenceDictionary().size() > 0) {
@@ -87,11 +86,11 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         if (!fileTypeSupported)
             throw new IllegalArgumentException("File is not a supported reference file type: " + file.getAbsolutePath());
 
-        final File dictionary = new File(dictionaryName);
+        final File dictionary = IOUtil.getFile(dictionaryName);
         if (dictionary.exists())
             return dictionary;
         // try without removing the file extension
-        final File dictionaryExt = new File(dictionaryNameExt);
+        final File dictionaryExt = IOUtil.getFile(dictionaryNameExt);
         if (dictionaryExt.exists())
             return dictionaryExt;
         else return null;

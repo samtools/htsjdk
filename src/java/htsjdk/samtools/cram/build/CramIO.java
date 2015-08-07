@@ -31,14 +31,15 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -136,7 +137,7 @@ public class CramIO {
      * @throws IOException as per java IO contract
      */
     public static boolean checkHeaderAndEOF(final File file) throws IOException {
-        final SeekableStream seekableStream = new SeekableFileStream(file);
+        final SeekableStream seekableStream = SeekableStreamFactory.getInstance().getStreamFor(file);
         final CramHeader cramHeader = readCramHeader(seekableStream);
         return checkEOF(cramHeader.getVersion(), seekableStream);
     }
@@ -246,7 +247,7 @@ public class CramIO {
 
         final int containerHeaderByteSize = ContainerIO.writeContainerHeader(major, container, os);
         os.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
-
+        
         return containerHeaderByteSize + byteArrayOutputStream.size();
     }
 
@@ -298,7 +299,7 @@ public class CramIO {
      */
     public static boolean replaceCramHeader(final File file, final CramHeader newHeader) throws IOException {
 
-        final CountingInputStream countingInputStream = new CountingInputStream(new FileInputStream(file));
+        final CountingInputStream countingInputStream = new CountingInputStream(IOUtil.getInputStream(file));
 
         final CramHeader header = readFormatDefinition(countingInputStream);
         final Container c = ContainerIO.readContainerHeader(header.getVersion().major, countingInputStream);

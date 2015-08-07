@@ -22,13 +22,14 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -209,7 +210,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         try {
             final CRAMIterator newIterator;
             if (cramFile != null) {
-                newIterator = new CRAMIterator(new FileInputStream(cramFile),
+                newIterator = new CRAMIterator(IOUtil.getInputStream(cramFile),
                         referenceSource);
             } else
                 newIterator = new CRAMIterator(inputStream, referenceSource);
@@ -352,7 +353,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         SeekableStream seekableStream = null;
         if (cramFile != null) {
             try {
-                seekableStream = new SeekableFileStream(cramFile);
+                seekableStream = SeekableStreamFactory.getInstance().getStreamFor(cramFile);
             } catch (final FileNotFoundException e) {
                 throw new RuntimeException(e);
             }

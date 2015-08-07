@@ -1,5 +1,7 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 
 /**
@@ -17,14 +19,14 @@ public class SamFiles {
         final String fileName = samFile.getName();
         if (fileName.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION)) {
             final String bai = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAMIndexSuffix;
-            indexFile = new File(samFile.getParent(), bai);
+            indexFile = IOUtil.getFile(samFile.getParent(), bai);
             if (indexFile.isFile()) {
                 return indexFile;
             }
         }
 
         // If foo.bai doesn't exist look for foo.bam.bai
-        indexFile = new File(samFile.getParent(), samFile.getName() + BAMIndex.BAMIndexSuffix);
+        indexFile = IOUtil.getFile(samFile.getParent(), samFile.getName() + BAMIndex.BAMIndexSuffix);
         if (indexFile.isFile()) {
             return indexFile;
         } else {

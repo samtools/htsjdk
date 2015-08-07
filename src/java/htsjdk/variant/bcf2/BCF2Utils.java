@@ -25,6 +25,7 @@
 
 package htsjdk.variant.bcf2;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
@@ -36,6 +37,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -187,15 +189,15 @@ public final class BCF2Utils {
     public static final File shadowBCF(final File vcfFile) {
         final String path = vcfFile.getAbsolutePath();
         if ( path.contains(".vcf") )
-            return new File(path.replace(".vcf", ".bcf"));
+            return IOUtil.getFile(path.replace(".vcf", ".bcf"));
         else {
-            final File bcf = new File( path + ".bcf" );
+            final File bcf = IOUtil.getFile( path + ".bcf" );
             if ( bcf.canRead() )
                 return bcf;
             else {
                 try {
                     // this is the only way to robustly decide if we could actually write to BCF
-                    final FileOutputStream o = new FileOutputStream(bcf);
+                    final OutputStream o = IOUtil.getOutputStream(bcf);
                     o.close();
                     bcf.delete();
                     return bcf;

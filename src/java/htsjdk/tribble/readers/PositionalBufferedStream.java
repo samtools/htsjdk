@@ -17,6 +17,7 @@
  */
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TribbleException;
 
 import java.io.BufferedReader;
@@ -169,7 +170,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
     }
 
     public static void main(String[] args) throws Exception {
-        final File testFile = new File(args[0]);
+        final File testFile = IOUtil.getFile(args[0]);
         final int iterations = Integer.valueOf(args[1]);
         final boolean includeInputStream = Boolean.valueOf(args[2]);
         final boolean doReadFileInChunks = Boolean.valueOf(args[3]);
@@ -177,7 +178,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
         System.out.printf("Testing %s%n", args[0]);
         for (int i = 0; i < iterations; i++) {
             if ( includeInputStream ) {
-                final InputStream is = new FileInputStream(testFile);
+                final InputStream is = IOUtil.getInputStream(testFile);
                 if ( doReadFileInChunks )
                     readFileInChunks("InputStream", is);
                 else
@@ -185,7 +186,7 @@ public final class PositionalBufferedStream extends InputStream implements Posit
                 is.close();
             }
 
-            final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
+            final PositionalBufferedStream pbs = new PositionalBufferedStream(IOUtil.getInputStream(testFile));
             if ( doReadFileInChunks )
                 readFileInChunks("PositionalBufferedStream", pbs);
             else

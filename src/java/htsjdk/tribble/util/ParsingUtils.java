@@ -23,9 +23,10 @@
  */
 package htsjdk.tribble.util;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.awt.Color;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -84,8 +85,8 @@ public class ParsingUtils {
         if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
             inputStream = getURLHelper(new URL(path)).openInputStream();
         } else {
-            File file = new File(path);
-            inputStream = new FileInputStream(file);
+            File file = IOUtil.getFile(path);
+            inputStream = IOUtil.getInputStream(file);
         }
 
         return inputStream;
@@ -401,7 +402,7 @@ public class ParsingUtils {
             URLHelper helper = getURLHelper(url);
             return helper.exists();
         } else {
-            return (new File(resource)).exists();
+            return (IOUtil.getFile(resource)).exists();
         }
     }
 

@@ -24,13 +24,14 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 
 public class FixBAMFile {
     public static void main(String[] args) {
-        File inputFile = new File(args[0]);
-        File outputFile = new File(args[1]);
+        File inputFile = IOUtil.getFile(args[0]);
+        File outputFile = IOUtil.getFile(args[1]);
         SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(inputFile);
         SAMFileHeader header = reader.getFileHeader();
         SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile);

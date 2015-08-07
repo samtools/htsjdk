@@ -2,7 +2,9 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -116,7 +118,7 @@ public class CRAMComplianceTest {
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
         if (t.cramFile_21.exists()) {
-            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), null, source, ValidationStringency.SILENT);
+            cramFileReader = new CRAMFileReader(IOUtil.getInputStream(t.cramFile_21), null, source, ValidationStringency.SILENT);
             cramFileReaderIterator = cramFileReader.getIterator();
             for (SAMRecord samRecord : samRecords) {
                 Assert.assertTrue(cramFileReaderIterator.hasNext());

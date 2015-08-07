@@ -30,15 +30,15 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.hdfs.FileOperate;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -144,7 +144,7 @@ public class IOUtil {
     
     public static SeekableStream maybeBufferedSeekableStream(final File file) {
         try {
-            return maybeBufferedSeekableStream(new SeekableFileStream(file));
+            return maybeBufferedSeekableStream(SeekableStreamFactory.getInstance().getStreamFor(file));
         } catch (final FileNotFoundException e) {
             throw new RuntimeIOException(e);
         }
@@ -250,8 +250,8 @@ public class IOUtil {
         final String user = System.getProperty("user.name");
         final String tmp = System.getProperty("java.io.tmpdir");
 
-        if (tmp.endsWith(File.separatorChar + user)) return new File(tmp);
-        else return new File(tmp, user);
+        if (tmp.endsWith(File.separatorChar + user)) return FileOperate.getFile(tmp);
+        else return FileOperate.getFile(tmp, user);
     }
 
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */
@@ -278,7 +278,7 @@ public class IOUtil {
         throw new IllegalArgumentException("Cannot check validity of null input.");
       }
       if (!isUrl(input)) {
-        assertFileIsReadable(new File(input));
+        assertFileIsReadable(FileOperate.getFile(input));
       }
     }
     
@@ -431,8 +431,8 @@ public class IOUtil {
             if (f1.length() != f2.length()) {
                 throw new SAMException("Files " + f1 + " and " + f2 + " are different lengths.");
             }
-            final FileInputStream s1 = new FileInputStream(f1);
-            final FileInputStream s2 = new FileInputStream(f2);
+            final InputStream s1 = FileOperate.getInputStream(f1);
+            final InputStream s2 = FileOperate.getInputStream(f2);
             final byte[] buf1 = new byte[1024 * 1024];
             final byte[] buf2 = new byte[1024 * 1024];
             int len1;
@@ -476,7 +476,7 @@ public class IOUtil {
                 return openGzipFileForReading(file);
             }
             else {
-                return new FileInputStream(file);
+                return FileOperate.getInputStream(file);
             }
         }
         catch (IOException ioe) {
@@ -494,13 +494,46 @@ public class IOUtil {
     public static InputStream openGzipFileForReading(final File file) {
 
         try {
-            return new GZIPInputStream(new FileInputStream(file));
+            return new GZIPInputStream(FileOperate.getInputStream(file));
         }
         catch (IOException ioe) {
             throw new SAMException("Error opening file: " + file.getName(), ioe);
         }
     }
-
+    
+    /**
+     * get the outputStream and doesn't add any other Stream such as GzipStream<br>
+     * overwriting the file if it already exists
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
+    public static OutputStream getOutputStream(final File file, boolean append) throws FileNotFoundException {
+    	return FileOperate.getOutputStream(file, append);
+    }
+    
+    /**
+     * get the outputStream and doesn't add any other Stream such as GzipStream<br>
+     * overwriting the file if it already exists
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
+    public static OutputStream getOutputStream(final File file) throws FileNotFoundException {
+    	return FileOperate.getOutputStream(file);
+    }
+    
+    /**
+     * get the inputStream and doesn't add any other Stream such as GzipStream
+     *
+     * @param file  the file to write to
+     * @return the output stream to write to
+     * @throws FileNotFoundException 
+     */
+    public static InputStream getInputStream(final File file) throws FileNotFoundException {
+    	return FileOperate.getInputStream(file);
+    }
+    
     /**
      * Opens a file for writing, overwriting the file if it already exists
      *
@@ -526,7 +559,7 @@ public class IOUtil {
                 return openGzipFileForWriting(file, append);
             }
             else {
-                return new FileOutputStream(file, append);
+                return FileOperate.getOutputStream(file, append);
             }
         }
         catch (IOException ioe) {
@@ -574,14 +607,13 @@ public class IOUtil {
      * @return the output stream to write to
      */
     public static OutputStream openGzipFileForWriting(final File file, final boolean append) {
-
         try {
             if (Defaults.BUFFER_SIZE > 0) {
-            return new CustomGzipOutputStream(new FileOutputStream(file, append),
+            return new CustomGzipOutputStream(FileOperate.getOutputStream(file, append),
                                               Defaults.BUFFER_SIZE,
                                               Defaults.COMPRESSION_LEVEL);
             } else {
-                return new CustomGzipOutputStream(new FileOutputStream(file, append), Defaults.COMPRESSION_LEVEL);
+                return new CustomGzipOutputStream(FileOperate.getOutputStream(file, append), Defaults.COMPRESSION_LEVEL);
             }
         }
         catch (IOException ioe) {
@@ -590,7 +622,7 @@ public class IOUtil {
     }
 
     public static OutputStream openFileForMd5CalculatingWriting(final File file) {
-        return new Md5CalculatingOutputStream(IOUtil.openFileForWriting(file), new File(file.getAbsolutePath() + ".md5"));
+        return new Md5CalculatingOutputStream(IOUtil.openFileForWriting(file), FileOperate.getFile(file.getAbsolutePath() + ".md5"));
     }
 
     /**
@@ -617,8 +649,8 @@ public class IOUtil {
      */
     public static void copyFile(final File input, final File output) {
         try {
-            final InputStream is = new FileInputStream(input);
-            final OutputStream os = new FileOutputStream(output);
+            final InputStream is = FileOperate.getInputStream(input);
+            final OutputStream os = FileOperate.getOutputStream(output);
             copyStream(is, os);
             os.close();
             is.close();
@@ -645,7 +677,19 @@ public class IOUtil {
             }
         });
     }
-
+    
+    public static File getFile(final String filePath) {
+        return FileOperate.getFile(filePath);
+    }
+    
+    public static File getFile(final String filePathParent, final String name) {
+        return FileOperate.getFile(filePathParent, name);
+    }
+    
+    public static File getFile(final File filePathParent, final String name) {
+        return FileOperate.getFile(filePathParent, name);
+    }
+    
     /**
      * Delete the given file or directory.  If a directory, all enclosing files and subdirs are also deleted.
      */
@@ -684,7 +728,7 @@ public class IOUtil {
         if (fileOrDirectory.isDirectory()) {
             destination.mkdir();
             for(final File f : fileOrDirectory.listFiles()) {
-                final File destinationFileOrDirectory =  new File(destination.getPath(),f.getName());
+                final File destinationFileOrDirectory =  FileOperate.getFile(destination.getPath(),f.getName());
                 if (f.isDirectory()){
                     copyDirectoryTree(f,destinationFileOrDirectory);
                 }
@@ -817,7 +861,7 @@ public class IOUtil {
 
     /** Returns all of the untrimmed lines in the provided file. */
     public static List<String> slurpLines(final File file) throws FileNotFoundException {
-        return slurpLines(new FileInputStream(file));
+        return slurpLines(FileOperate.getInputStream(file));
     }
 
     public static List<String> slurpLines(final InputStream is) throws FileNotFoundException {
@@ -827,7 +871,7 @@ public class IOUtil {
 
     /** Convenience overload for {@link #slurp(java.io.InputStream, java.nio.charset.Charset)} using the default charset {@link java.nio.charset.Charset#defaultCharset()}. */
     public static String slurp(final File file) throws FileNotFoundException {
-        return slurp(new FileInputStream(file));
+        return slurp(FileOperate.getInputStream(file));
     }
 
     /** Convenience overload for {@link #slurp(java.io.InputStream, java.nio.charset.Charset)} using the default charset {@link java.nio.charset.Charset#defaultCharset()}. */
@@ -883,7 +927,7 @@ public class IOUtil {
                 IOUtil.assertFileIsReadable(f);
 
                 for (final String s : IOUtil.readLines(f)) {
-                    if (!s.trim().isEmpty()) stack.push(new File(s.trim()));
+                    if (!s.trim().isEmpty()) stack.push(FileOperate.getFile(s.trim()));
                 }
             }
         }

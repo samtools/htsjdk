@@ -1,17 +1,13 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Iterables;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StopWatch;
 
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -20,6 +16,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SamReaderFactoryTest {
     private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
@@ -160,7 +160,7 @@ public class SamReaderFactoryTest {
                 return new SeekableStreamInputResource(new SeekableHTTPStream(url));
             case INPUT_STREAM:
                 try {
-                    return new InputStreamInputResource(new FileInputStream(f));
+                    return new InputStreamInputResource(IOUtil.getInputStream(f));
                 } catch (final FileNotFoundException e) {
                     throw new RuntimeIOException(e);
                 }

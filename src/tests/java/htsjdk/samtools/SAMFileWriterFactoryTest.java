@@ -91,7 +91,7 @@ public class SAMFileWriterFactoryTest {
         final File outputFile = File.createTempFile("roundtrip-out", ".sam");
         outputFile.delete();
         outputFile.deleteOnExit();
-        FileOutputStream os = new FileOutputStream(outputFile);
+        OutputStream os = IOUtil.getOutputStream(outputFile);
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         final SAMFileWriter writer = factory.makeSAMWriter(reader.getFileHeader(), false, os);
         for (SAMRecord rec : reader) {
@@ -100,11 +100,11 @@ public class SAMFileWriterFactoryTest {
         writer.close();
         os.close();
 
-        InputStream is = new FileInputStream(input);
+        InputStream is = IOUtil.getInputStream(input);
         String originalsam = IOUtil.readFully(is);
         is.close();
 
-        is = new FileInputStream(outputFile);
+        is = IOUtil.getInputStream(outputFile);
         String writtensam = IOUtil.readFully(is);
         is.close();
 

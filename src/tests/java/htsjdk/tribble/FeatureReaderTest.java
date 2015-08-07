@@ -1,6 +1,8 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.bed.BEDCodec;
@@ -9,6 +11,7 @@ import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.ParsingUtils;
+
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -145,7 +148,7 @@ public class FeatureReaderTest {
     @Test
     public void testReadingBeyondIntSizedBlock() throws IOException {
         final Block block = new Block(0, ((long) Integer.MAX_VALUE) * 2);
-        final SeekableFileStream stream = new SeekableFileStream(new File("/dev/zero"));
+        final SeekableStream stream = SeekableStreamFactory.getInstance().getStreamFor(new File("/dev/zero"));
         final TribbleIndexedFeatureReader.BlockStreamWrapper blockStreamWrapper = new TribbleIndexedFeatureReader.BlockStreamWrapper(stream, block);
         final int chunkSize = 100000; // 10 Mb
         final int chunksToRead = (int) Math.ceil(block.getSize() / (chunkSize * 1.0));
