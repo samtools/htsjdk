@@ -28,10 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlTransient;
+
 /**
  * Base class for the various concrete records in a SAM header, providing uniform
  * access to the attributes.
  */
+@XmlTransient /* don't consider this class for XML-serialization */
 public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 

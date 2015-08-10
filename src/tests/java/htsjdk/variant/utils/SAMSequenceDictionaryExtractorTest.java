@@ -23,6 +23,7 @@
  */
 package htsjdk.variant.utils;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -54,10 +55,11 @@ public class SAMSequenceDictionaryExtractorTest {
     public void testExtractDictionary(final String dictSource, final String dictExpected) throws Exception {
         final File dictSourceFile = new File(path, dictSource);
         final File dictExpectedFile = new File(path, dictExpected);
+        final SAMSequenceDictionary dict1 = SAMSequenceDictionaryExtractor.extractDictionary(dictSourceFile);
+        final SAMSequenceDictionary dict2 = SAMSequenceDictionaryExtractor.extractDictionary(dictExpectedFile);
 
-        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(
-                SAMSequenceDictionaryExtractor.extractDictionary(dictSourceFile),
-                SAMSequenceDictionaryExtractor.extractDictionary(dictExpectedFile)));
-
+        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1,
+                dict2));
+        Assert.assertTrue(dict1.md5().equals(dict2.md5()));
     }
 }

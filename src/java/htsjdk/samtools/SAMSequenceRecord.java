@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,11 +32,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlValue;
+
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
  */
+@XmlRootElement(name="Reference")
 public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable
 {
+    public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     private String mSequenceName = null; // Value must be interned() if it's ever set/modified
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
@@ -71,6 +76,11 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     // These are the chars matched by \\s.
     private static char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
+    /** a (private) empty constructor is required for JAXB.XML-serialisation */
+    @SuppressWarnings("unused")
+    private SAMSequenceRecord() {
+    }
+    
     /**
      * @deprecated Use SAMSequenceRecord(final String name, final int sequenceLength) instead.
      * sequenceLength is required for the object to be considered valid.
@@ -89,10 +99,12 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         }
         mSequenceLength = sequenceLength;
     }
-
+    
+    @XmlValue
     public String getSequenceName() { return mSequenceName; }
-    // We don't think this method should ever really be used, but we left it here
-    // in case we forget and go to implement it later!
+   
+    /* this private method is used by XML serialization */
+    @SuppressWarnings("unused")
     private void setSequenceName(final String name) {
         if (name != null) {
             mSequenceName = name.intern();
@@ -102,19 +114,26 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         }
     }
     
+    @XmlAttribute(name="length")
     public int getSequenceLength() { return mSequenceLength; }
     public void setSequenceLength(final int value) { mSequenceLength = value; }
 
-    public String getAssembly() { return (String) getAttribute("AS"); }
-    public void setAssembly(final String value) { setAttribute("AS", value); }
+    @XmlAttribute(name="assembly")
+    public String getAssembly() { return (String) getAttribute(ASSEMBLY_TAG); }
+    public void setAssembly(final String value) { setAttribute(ASSEMBLY_TAG, value); }
 
-    public String getSpecies() { return (String) getAttribute("SP"); }
-    public void setSpecies(final String value) { setAttribute("SP", value); }
+    @XmlAttribute(name="species")
+    public String getSpecies() { return (String) getAttribute(SPECIES_TAG); }
+    public void setSpecies(final String value) { setAttribute(SPECIES_TAG, value); }
 
+    @XmlAttribute(name="md5")
+    public String getMd5() { return (String) getAttribute(MD5_TAG); }
+    public void setMd5(final String value) { setAttribute(MD5_TAG, value); }
 
     /**
      * @return Index of this record in the sequence dictionary it lives in. 
      */
+    @XmlAttribute(name="index")
     public int getSequenceIndex() { return mSequenceIndex; }
 
     // Private state used only by SAM implementation.
