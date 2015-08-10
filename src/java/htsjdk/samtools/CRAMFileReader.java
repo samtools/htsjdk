@@ -17,6 +17,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SamReader.Type;
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -128,8 +129,28 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         iterator = new CRAMIterator(inputStream, referenceSource);
         iterator.setValidationStringency(validationStringency);
-        if (indexInputStream != null)
-        mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+        if (indexInputStream != null) {
+            try {
+                mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            } catch (Exception e) {
+                // try CRAI instead:
+                final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+                mIndex = new CachingBAMFileIndex(baiStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            }
+        }
+    }
+
+    public CRAMFileReader(final InputStream stream,
+                          final File indexFile, final ReferenceSource referenceSource,
+                          final ValidationStringency validationStringency) throws IOException {
+        this(stream, indexFile == null ? null: new SeekableFileStream(indexFile), referenceSource, validationStringency);
+    }
+
+    public CRAMFileReader(final File cramFile,
+                          final File indexFile, final ReferenceSource referenceSource,
+                          final ValidationStringency validationStringency) throws IOException {
+        this(new FileInputStream(cramFile), indexFile, referenceSource, validationStringency);
+        this.cramFile = cramFile;
     }
 
     @Override
@@ -165,10 +186,25 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (mIndex == null) {
             final SAMSequenceDictionary dictionary = getFileHeader()
                     .getSequenceDictionary();
-            mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile,
-                    dictionary, mEnableIndexMemoryMapping)
-                    : new DiskBasedBAMFileIndex(mIndexFile, dictionary,
-                    mEnableIndexMemoryMapping);
+            if (mIndexFile.getName().endsWith(BAMIndex.BAMIndexSuffix)) {
+                mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile,
+                        dictionary, mEnableIndexMemoryMapping)
+                        : new DiskBasedBAMFileIndex(mIndexFile, dictionary,
+                        mEnableIndexMemoryMapping);
+                return mIndex;
+            }
+
+            if (!mIndexFile.getName().endsWith(".crai")) return null;
+            // convert CRAI into BAI:
+            final SeekableStream baiStream;
+            try {
+                baiStream = CRAIIndex.openCraiFileAsBaiStream(mIndexFile, iterator.getSAMFileHeader().getSequenceDictionary());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(baiStream, getFileHeader().getSequenceDictionary()) :
+                    new DiskBasedBAMFileIndex(baiStream, getFileHeader().getSequenceDictionary());
         }
         return mIndex;
     }
@@ -187,6 +223,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     public SAMRecordIterator iterator(final SAMFileSpan fileSpan) {
         // get the file coordinates for the span:
         final long[] coordinateArray = ((BAMFileSpan) fileSpan).toCoordinateArray();
+        System.out.println("CRAMFileReader.iterator fileSpane: " + fileSpan);
         if (coordinateArray == null || coordinateArray.length == 0) return emptyIterator;
         try {
             // create an input stream that reads the source cram stream only within the coordinate pairs:

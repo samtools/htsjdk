@@ -262,17 +262,12 @@ public abstract class SamReaderFactory {
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
+                        if (referenceSource == null && Defaults.REFERENCE_FASTA != null) referenceSource = new ReferenceSource(Defaults.REFERENCE_FASTA);
                         if (sourceFile == null || !sourceFile.isFile()) {
-                            sourceFile = null;
+                            primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
                         } else {
                             bufferedStream.close();
-                            bufferedStream = null;
-                        }
-                        // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                        if (referenceSource != null) {
-                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream, referenceSource);
-                        } else {
-                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream);
+                            primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
                         }
                     } else {
                         if (indexDefined) {

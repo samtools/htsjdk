@@ -5,6 +5,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
+import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CoordMath;
@@ -41,6 +42,52 @@ public class CRAMFileIndexTest {
     private int nofReads = 10000 ;
     private int nofReadsPerContainer = 1000 ;
 
+
+    @Test
+    public void testConstructors () throws IOException {
+        CRAMFileReader reader = new CRAMFileReader(cramFile, indexFile, source, ValidationStringency.SILENT);
+        CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart("chrM", 1500);
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord record = iterator.next();
+
+        Assert.assertEquals(record.getReferenceName(), "chrM");
+        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        reader.close();
+
+        reader = new CRAMFileReader(new SeekableFileStream(cramFile), indexFile, source, ValidationStringency.SILENT);
+        iterator = reader.queryAlignmentStart("chrM", 1500);
+        Assert.assertTrue(iterator.hasNext());
+        record = iterator.next();
+
+        Assert.assertEquals(record.getReferenceName(), "chrM");
+        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        reader.close();
+
+        reader = new CRAMFileReader(new SeekableFileStream(cramFile), new SeekableFileStream(indexFile), source, ValidationStringency.SILENT);
+        iterator = reader.queryAlignmentStart("chrM", 1500);
+        Assert.assertTrue(iterator.hasNext());
+        record = iterator.next();
+
+        Assert.assertEquals(record.getReferenceName(), "chrM");
+        Assert.assertTrue(record.getAlignmentStart() >= 1500);
+        reader.close();
+
+        reader = new CRAMFileReader(new SeekableFileStream(cramFile), (File)null, source, ValidationStringency.SILENT);
+        try {
+            reader.queryAlignmentStart("chrM", 1500);
+            Assert.fail("Expecting query to fail when there is no index");
+        } catch (SAMException e) {
+        }
+        reader.close();
+
+        reader = new CRAMFileReader(new SeekableFileStream(cramFile), (SeekableFileStream)null, source, ValidationStringency.SILENT);
+        try {
+            reader.queryAlignmentStart("chrM", 1500);
+            Assert.fail("Expecting query to fail when there is no index");
+        } catch (SAMException e) {
+        }
+        reader.close();
+    }
 
     @Test
     public void test_chrM_1500_location() throws IOException {
