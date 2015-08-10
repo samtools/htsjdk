@@ -182,7 +182,6 @@ public class CRAMFileWriterWithIndexTest {
         for (SAMRecord record : list)
             writer.writeAlignment(record);
 
-        System.out.println();
         list.clear();
         writer.finish();
         writer.close();
