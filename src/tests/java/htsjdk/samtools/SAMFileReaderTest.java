@@ -53,6 +53,40 @@ public class SAMFileReaderTest {
         return scenarios;
     }
 
+    // tests for CRAM indexing
+
+    @Test(dataProvider = "SmallCRAMTest")
+    public void CRAMIndexTest(final String inputFile) {
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        Assert.assertTrue(reader.hasIndex());
+        CloserUtil.close(reader);
+    }
+
+    @DataProvider(name = "SmallCRAMTest")
+    public Object[][] CRAMIndexTestData() {
+        final Object[][] testFiles = new Object[][]{
+                {"cram/test.cram"},
+        };
+        return testFiles;
+    }
+
+    @Test(dataProvider = "NoIndexCRAMTest")
+    public void CRAMNoIndexTest(final String inputFile) {
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        Assert.assertFalse(reader.hasIndex());
+        CloserUtil.close(reader);
+    }
+
+    @DataProvider(name = "NoIndexCRAMTest")
+    public Object[][] CRAMNoIndexTestData() {
+        final Object[][] testFiles = new Object[][]{
+                {"cram/test2.cram"},
+        };
+        return testFiles;
+    }
+
     // Tests for the SAMRecordFactory usage
     class SAMRecordFactoryTester extends DefaultSAMRecordFactory {
         int samRecordsCreated;
