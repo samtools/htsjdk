@@ -47,6 +47,9 @@ public class CigarTest {
 
         // Soft-clip inside of hard-clip now allowed.
         Assert.assertNull(TextCigarCodec.decode("29M1S15H").isValid(null, -1));
+
+
+
     }
 
     @Test
@@ -70,6 +73,30 @@ public class CigarTest {
         errors = TextCigarCodec.decode("1M1D1S1M1H").isValid(null, -1);
         Assert.assertEquals(errors.size(), 1);
         Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+
+        // Soft clip must be at end of read or inside of hard clip
+        errors = TextCigarCodec.decode("1M1D1S1S").isValid(null, -1);
+        Assert.assertEquals(errors.size(), 1);
+        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+
+        // Soft clip must be at end of read or inside of hard clip
+        errors = TextCigarCodec.decode("1M1D1S1S1H").isValid(null, -1);
+        Assert.assertEquals(errors.size(), 1);
+        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+
+        // Soft clip must be at end of read or inside of hard clip
+        errors = TextCigarCodec.decode("1H1S1S1M1D").isValid(null, -1);
+        Assert.assertEquals(errors.size(), 1);
+        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+
+        // Soft clip must be at end of read or inside of hard clip
+        errors = TextCigarCodec.decode("1S1S1M1D").isValid(null, -1);
+        Assert.assertEquals(errors.size(), 1);
+        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+
+        // Soft-clip inside of hard-clip now allowed, but cigar needs to have a "real operator".
+        Assert.assertNull(TextCigarCodec.decode("1S15S").isValid(null, -1));
+
 
 /*
         // Zero length for an element not allowed.
