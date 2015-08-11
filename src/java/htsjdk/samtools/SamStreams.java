@@ -39,6 +39,7 @@ public class SamStreams {
 
         return Arrays.equals(buffer, CramHeader.MAGIC);
     }
+
     /**
      * @param stream stream.markSupported() must be true
      * @return true if this looks like a BAM file.

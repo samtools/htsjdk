@@ -9,6 +9,7 @@ import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.sra.SRAAccession;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import htsjdk.samtools.util.CloserUtil;
@@ -241,6 +242,8 @@ public abstract class SamReaderFactory {
                     } else {
                         throw new SAMFormatException("Unrecognized file format: " + data.asUnbufferedSeekableStream());
                     }
+                } else if (type == InputResource.Type.SRA_ACCESSION) {
+                    primitiveSamReader = new SRAFileReader(data.asSRAAccession());
                 } else {
                     InputStream bufferedStream =
                             IOUtil.maybeBufferInputStream(
@@ -269,6 +272,11 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
                         }
+                    } else if (sourceFile != null && SRAAccession.isValid(sourceFile.getPath())) {
+                        if (bufferedStream != null) {
+                            bufferedStream.close();
+                        }
+                        primitiveSamReader = new SRAFileReader(new SRAAccession(sourceFile.getPath()));
                     } else {
                         if (indexDefined) {
                             bufferedStream.close();
@@ -319,6 +327,11 @@ public abstract class SamReaderFactory {
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableFileSource(reader, true);
             }
+
+            @Override
+            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableFileSource(reader, true);
+            }
         },
 
         /**
@@ -341,6 +354,11 @@ public abstract class SamReaderFactory {
 
             @Override
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableIndexCaching(true);
+            }
+
+            @Override
+            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableIndexCaching(true);
             }
         },
@@ -367,6 +385,11 @@ public abstract class SamReaderFactory {
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
                 underlyingReader.enableIndexMemoryMapping(false);
             }
+
+            @Override
+            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
+                underlyingReader.enableIndexMemoryMapping(false);
+            }
         },
 
         /**
@@ -386,6 +409,11 @@ public abstract class SamReaderFactory {
 
             @Override
             void applyTo(final CRAMFileReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
+            }
+
+            @Override
+            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
                 logDebugIgnoringOption(reader, this);
             }
         },
@@ -410,6 +438,11 @@ public abstract class SamReaderFactory {
                 logDebugIgnoringOption(reader, this);
             }
 
+            @Override
+            void applyTo(final SRAFileReader underlyingReader, final SamReader reader) {
+                logDebugIgnoringOption(reader, this);
+            }
+
         };
 
         public static EnumSet<Option> DEFAULTS = EnumSet.noneOf(Option.class);
@@ -423,6 +456,8 @@ public abstract class SamReaderFactory {
                 applyTo((SAMTextReader) underlyingReader, reader);
             } else if (underlyingReader instanceof CRAMFileReader) {
                 applyTo((CRAMFileReader) underlyingReader, reader);
+            } else if (underlyingReader instanceof SRAFileReader) {
+                applyTo((SRAFileReader) underlyingReader, reader);
             } else {
                 throw new IllegalArgumentException(String.format("Unrecognized reader type: %s.", underlyingReader.getClass()));
             }
@@ -440,5 +475,7 @@ public abstract class SamReaderFactory {
         abstract void applyTo(final SAMTextReader underlyingReader, final SamReader reader);
 
         abstract void applyTo(final CRAMFileReader underlyingReader, final SamReader reader);
+
+        abstract void applyTo(final SRAFileReader underlyingReader, final SamReader reader);
     }
 }
