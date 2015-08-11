@@ -81,7 +81,7 @@ public enum VCFHeaderVersion {
         format = clean(format);
         for (VCFHeaderVersion hv : VCFHeaderVersion.values())
             if (hv.formatString.equals(format))
-                    return true;
+                return true;
         return false;
     }
 
