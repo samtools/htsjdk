@@ -98,14 +98,14 @@ public class BlockCompressedOutputStream
     private final byte[] singleByteArray = new byte[1];
 
     /**
-     * Uses default compression level, which is 5 unless changed by setDefaultCompressionLevel
+     * Uses default compression level, which is 5 unless changed by setCompressionLevel
      */
     public BlockCompressedOutputStream(final String filename) {
         this(filename, defaultCompressionLevel);
     }
 
     /**
-     * Uses default compression level, which is 5 unless changed by setDefaultCompressionLevel
+     * Uses default compression level, which is 5 unless changed by setCompressionLevel
      */
     public BlockCompressedOutputStream(final File file) {
         this(file, defaultCompressionLevel);
