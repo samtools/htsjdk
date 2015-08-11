@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -33,76 +34,61 @@ import java.util.List;
  */
 public class CigarTest {
 
-    @Test
-    public void testPositive() {
-        Assert.assertNull(TextCigarCodec.decode("").isValid(null, -1));
-        Assert.assertNull(TextCigarCodec.decode("2M1P4M1P2D1P6D").isValid(null, -1));
-        Assert.assertNull(TextCigarCodec.decode("10M5N1I12M").isValid(null, -1));
-        Assert.assertNull(TextCigarCodec.decode("10M1I5N1I12M").isValid(null, -1));
-        Assert.assertNull(TextCigarCodec.decode("9M1D5N1I12M").isValid(null, -1));
+    @DataProvider(name = "positiveTestsData")
+    public Object[][] testPositive() {
+        return new Object[][]{
+                {""},
+                {"2M1P4M1P2D1P6D"},
+                {"10M5N1I12M"},
+                {"10M1I5N1I12M"},
+                {"9M1D5N1I12M"},
 
-        // I followed by D and vice versa is now allowed.
-        Assert.assertNull(TextCigarCodec.decode("1M1I1D1M").isValid(null, -1));
-        Assert.assertNull(TextCigarCodec.decode("1M1D1I1M").isValid(null, -1));
+                // I followed by D and vice versa is now allowed.
+                {"1M1I1D1M"},
+                {"1M1D1I1M"},
 
-        // Soft-clip inside of hard-clip now allowed.
-        Assert.assertNull(TextCigarCodec.decode("29M1S15H").isValid(null, -1));
-
-
-
+                // Soft-clip inside of hard-clip now allowed.
+                {"29M1S15H"},
+        };
     }
 
-    @Test
-    public void testNegative() {
-        // Cannot have two consecutive insertions
-        List<SAMValidationError> errors = TextCigarCodec.decode("1M1I1I1M").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR);
+    @Test(dataProvider = "positiveTestsData")
+    public void testPositive(final String cigar) {
+        Assert.assertNull(TextCigarCodec.decode(cigar).isValid(null, -1));
+    }
 
-        // Cannot have two consecutive deletions
-        errors = TextCigarCodec.decode("1M1D1D1M").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR);
+    @DataProvider(name = "negativeTestsData")
+    public Object[][] negativeTestsData() {
 
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1M1D1S1M").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+        return new Object[][]{
+                // Cannot have two consecutive insertions (of the same type)
+                {"1M1D1D1M", SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR},
+                {"1M1I1I1M", SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR},
 
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1M1D1S1M1H").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+                // Soft clip must be at end of read or inside of hard clip
+                {"1M1D1S1M",   SAMValidationError.Type.INVALID_CIGAR},
+                {"1M1D1S1M1H", SAMValidationError.Type.INVALID_CIGAR},
+                {"1M1D1S1S",   SAMValidationError.Type.INVALID_CIGAR},
+                {"1M1D1S1S1H", SAMValidationError.Type.INVALID_CIGAR},
+                {"1H1S1S1M1D", SAMValidationError.Type.INVALID_CIGAR},
+                {"1S1S1M1D",   SAMValidationError.Type.INVALID_CIGAR},
 
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1M1D1S1S").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
-
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1M1D1S1S1H").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
-
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1H1S1S1M1D").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
-
-        // Soft clip must be at end of read or inside of hard clip
-        errors = TextCigarCodec.decode("1S1S1M1D").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
-
-        // Soft-clip inside of hard-clip now allowed, but cigar needs to have a "real operator".
-        Assert.assertNull(TextCigarCodec.decode("1S15S").isValid(null, -1));
-
-
+                // Soft clip must be at end of read or inside of hard clip, but there must be something left
+                {"1S1S", SAMValidationError.Type.INVALID_CIGAR},
+                {"1H1S", SAMValidationError.Type.INVALID_CIGAR},
+                {"1S1H", SAMValidationError.Type.INVALID_CIGAR},
+                {"1H1H", SAMValidationError.Type.INVALID_CIGAR},
+        };
 /*
-        // Zero length for an element not allowed.
-        errors = TextCigarCodec.decode("100M0D10M1D10M").isValid(null, -1);
-        Assert.assertEquals(errors.size(), 1);
-        Assert.assertEquals(errors.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
+        // Zero length for an element not allowed. TODO: not sure why this is commented out
+       {"100M0D10M1D10M", SAMValidationError.Type.INVALID_CIGAR}
 */
+    }
+
+    @Test(dataProvider = "negativeTestsData")
+    public void testNegative(final String cigar, final SAMValidationError.Type type) {
+        final List<SAMValidationError> errors = TextCigarCodec.decode(cigar).isValid(null, -1);
+        Assert.assertEquals(errors.size(), 1, String.format("Got %d error, expected exactly one error.", errors.size()));
+        Assert.assertEquals(errors.get(0).getType(), type);
     }
 }
