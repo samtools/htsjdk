@@ -268,11 +268,12 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             bufferedStream = null;
                         }
-                        // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
+
+                        // Always attempt to pass in the index. If it is null, that's fine. If the reference isn't supplied, use the default.
                         if (referenceSource != null) {
-                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream, referenceSource);
+                            primitiveSamReader = new CRAMFileReader(sourceFile, indexMaybe == null ? null : indexMaybe.asFile(), referenceSource);
                         } else {
-                            primitiveSamReader = new CRAMFileReader(sourceFile, bufferedStream);
+                            primitiveSamReader = new CRAMFileReader(sourceFile, indexMaybe == null ? null : indexMaybe.asFile(), new ReferenceSource(Defaults.REFERENCE_FASTA));
                         }
                     } else {
                         if (indexDefined) {
