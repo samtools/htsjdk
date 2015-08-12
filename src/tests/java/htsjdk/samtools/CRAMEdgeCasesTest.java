@@ -1,15 +1,16 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.*;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeEOFException;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -31,6 +32,29 @@ public class CRAMEdgeCasesTest {
         final Collection<SAMRecord> records = builder.getRecords();
 
         testRecords(records, records.iterator().next().getReadBases());
+    }
+
+    // int test for CRAMException
+    // testing for a contig found in the reads but not in the reference
+    @Test
+    public void testContigNotFoundInRef() throws IOException {
+        boolean sawException = false;
+        final File CRAMFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
+        final File refFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
+        final ReferenceSource refSource = new ReferenceSource(refFile);
+        final CRAMIterator iterator = new CRAMIterator(new FileInputStream(CRAMFile), refSource);
+        try {
+            while (iterator.hasNext()) {
+                iterator.next();
+            }
+        }
+        // the iterator is wrapping our exception; ensuring that it was actually a CRAMexception
+        catch (RuntimeEOFException e) {
+            Assert.assertEquals(e.getCause().getClass(), CRAMException.class);
+            sawException = true;
+        }
+
+        if (!sawException) {Assert.fail("Expected an exception to occur, none found");}
     }
 
     @Test
