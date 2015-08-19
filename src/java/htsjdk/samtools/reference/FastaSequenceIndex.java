@@ -30,6 +30,8 @@ import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -51,6 +53,15 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @throws FileNotFoundException if the index file cannot be found.
      */
     public FastaSequenceIndex( File indexFile ) {
+        this(indexFile == null ? null : indexFile.toPath());
+    }
+
+    /**
+     * Build a sequence index from the specified file.
+     * @param indexFile File to open.
+     * @throws FileNotFoundException if the index file cannot be found.
+     */
+    public FastaSequenceIndex( Path indexFile ) {
         IOUtil.assertFileIsReadable(indexFile);
         parseIndexFile(indexFile);
     }
@@ -111,12 +122,11 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     /**
      * Parse the contents of an index file, caching the results internally.
      * @param indexFile File to parse.
-     * @throws FileNotFoundException Thrown if file could not be opened.
+     * @throws IOException Thrown if file could not be opened.
      */
-    private void parseIndexFile(File indexFile) {
+    private void parseIndexFile(Path indexFile) {
         try {
             Scanner scanner = new Scanner(indexFile);
-
             int sequenceIndex = 0;
             while( scanner.hasNext() ) {
                 // Tokenize and validate the index line.
@@ -142,8 +152,9 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
                 add(new FastaSequenceIndexEntry(contig,location,size,basesPerLine,bytesPerLine, sequenceIndex++) );
             }
             scanner.close();
-        } catch (FileNotFoundException e) {
-            throw new SAMException("Fasta index file should be found but is not: " + indexFile, e);
+        } catch (IOException e) {
+            throw new SAMException("Fasta index file could not be opened: " + indexFile, e);
+
         }
     }
 

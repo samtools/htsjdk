@@ -26,6 +26,7 @@ package htsjdk.samtools.reference;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -78,24 +79,58 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        final String name = file.getName();
+        return getReferenceSequenceFile(file.toPath(), truncateNamesAtWhitespace, preferIndexed);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.  Sequence names
+     * will be truncated at first whitespace, if any.
+     *
+     * @param path the reference sequence file on disk
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path) {
+        return getReferenceSequenceFile(path, true);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param path the reference sequence file on disk
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace) {
+        return getReferenceSequenceFile(path, truncateNamesAtWhitespace, true);
+    }
+
+    /**
+     * Attempts to determine the type of the reference file and return an instance
+     * of ReferenceSequenceFile that is appropriate to read it.
+     *
+     * @param path the reference sequence file path
+     * @param truncateNamesAtWhitespace if true, only include the first word of the sequence name
+     * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
+     */
+    public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
+        final String name = path.getFileName().toString();
         for (final String ext : FASTA_EXTENSIONS) {
             if (name.endsWith(ext)) {
                 // Using faidx requires truncateNamesAtWhitespace
-                if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(file)) {
+                if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(path)) {
                     try {
-                        return new IndexedFastaSequenceFile(file);
+                        return new IndexedFastaSequenceFile(path);
                     }
                     catch (final FileNotFoundException e) {
                         throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
                     }
                 }
                 else {
-                    return new FastaSequenceFile(file, truncateNamesAtWhitespace);
+                    return new FastaSequenceFile(path, truncateNamesAtWhitespace);
                 }
             }
         }
 
-        throw new IllegalArgumentException("File is not a supported reference file type: " + file.getAbsolutePath());
+        throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());
     }
 }
