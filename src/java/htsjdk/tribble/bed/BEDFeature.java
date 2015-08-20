@@ -26,7 +26,8 @@ package htsjdk.tribble.bed;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
 
-import java.awt.*;
+import java.awt.Color;
+import java.util.List;
 
 /**
  * @author jrobinso
@@ -45,7 +46,7 @@ public interface BEDFeature extends Feature {
 
     String getDescription();
 
-    java.util.List<FullBEDFeature.Exon> getExons();
+    List<FeatureSubSequence> getExons();
 
     String getName();
 

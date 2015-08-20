@@ -25,32 +25,45 @@ package htsjdk.tribble.bed;
 
 import htsjdk.tribble.annotation.Strand;
 
+import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Object for full BED file.
  */
-public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
+public class FullBEDFeature implements BEDFeature {
 
-    private java.util.List<Exon> exons = new ArrayList();
+    protected String chr;
+    protected int start = -1;
+    protected int end = -1;
+    protected Strand strand = Strand.NONE;
+    private String name = "";
+    private float score = Float.NaN;
+    private String type = "";
+    private Color color;
+    private String description;
+    //protected float confidence;
+    //private String identifier;
+    private String link;
 
     public FullBEDFeature(String chr, int start, int end) {
-        super(start, end, chr);
-
+        this.start = start;
+        this.end = end;
+        this.chr = chr;
     }
 
-    public java.util.List<Exon> getExons() {
+    private List<FeatureSubSequence> exons = new ArrayList<FeatureSubSequence>();
+
+    public List<FeatureSubSequence> getExons() {
         return exons;
     }
 
-    public void setExons(java.util.List<Exon> exons) {
+    public void setExons(List<FeatureSubSequence> exons) {
         this.exons = exons;
     }
 
     public void addExon(Exon exon) {
-        if (exon == null) {
-            this.exons = new ArrayList();
-        }
         exons.add(exon);
     }
 
@@ -62,12 +75,97 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         addExon(exon);
     }
 
+    @Deprecated
+    public String getChr() {
+        return getContig();
+    }
+
+    public String getContig() {
+        return chr;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    public Strand getStrand() {
+        return strand;
+    }
+
+    public void setStrand(Strand strand) {
+        this.strand = strand;
+    }
+
+    public void setChr(String chr) {
+        this.chr = chr;
+    }
+
+    public void setStart(int start) {
+        this.start = start;
+    }
+
+    public void setEnd(int end) {
+        this.end = end;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Color getColor() {
+        return color;
+    }
+
+    public void setColor(Color color) {
+        this.color = color;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public float getScore() {
+        return score;
+    }
+
+    public void setScore(float score) {
+        this.score = score;
+    }
+
+    public String getLink() {
+        return link;
+    }
+
+    public void setLink(String link) {
+        this.link = link;
+    }
+
     /**
      * A sub region of a feature.  For example,  a Gene exon
      *
      * @author jrobinso
      */
-    public class Exon {
+    public class Exon implements FeatureSubSequence {
 
         int start;
         int end;
@@ -85,22 +183,14 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
         private int codingEnd;
         boolean utr = false;
 
-        // The position of the first base of this exon relative to the start of the mRNA.  This will correspond
-        // to either the beginning or end of the exon, depending on the strand
+        /** The position of the first base of this exon relative to the start of the mRNA.
+         * This will correspond to either the beginning or end of the exon, depending on the strand */
         private int mrnaBase = -1;
-
 
         public void setMrnaBase(int base) {
             this.mrnaBase = base;
         }
 
-
-        /**
-         * Constructs ...
-         *
-         * @param start
-         * @param end
-         */
         public Exon(int start, int end) {
             this.start = start;
             this.end = end;
@@ -110,11 +200,6 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             this.codingEnd = end;
         }
 
-        /**
-         * Flag indicating that the entire exon is the UTR.
-         *
-         * @param utr
-         */
         public void setUTR(boolean utr) {
             this.utr = utr;
             if (strand == Strand.POSITIVE) {
@@ -124,38 +209,18 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             }
         }
 
-        /**
-         * Method description
-         *
-         * @param codingStart
-         */
         public void setCodingStart(int codingStart) {
             this.codingStart = Math.max(start, codingStart);
         }
 
-        /**
-         * Method description
-         *
-         * @param codingEnd
-         */
         public void setCodingEnd(int codingEnd) {
             this.codingEnd = Math.min(end, codingEnd);
         }
 
-        /**
-         * Method description
-         *
-         * @param offset
-         */
         public void setReadingFrame(int offset) {
             this.readingFrame = offset;
         }
 
-        /**
-         * Method description
-         *
-         * @param phase
-         */
         public void setPhase(int phase) {
             if (strand == Strand.POSITIVE) {
                 readingFrame = phase;
@@ -165,39 +230,18 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             }
         }
 
-
-        /**
-         * Method description
-         *
-         * @return
-         */
         public int getCdStart() {
             return codingStart;
         }
 
-        /**
-         * Method description
-         *
-         * @return
-         */
         public int getCdEnd() {
             return this.codingEnd;
         }
 
-        /**
-         * Method description
-         *
-         * @return
-         */
         public int getCodingLength() {
             return utr ? 0 : Math.max(0, codingEnd - codingStart + 1);
         }
 
-        /**
-         * This is exposed for unit tests.
-         *
-         * @return
-         */
         int getReadingShift() {
             return readingFrame;
         }
@@ -218,7 +262,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
     }
 
 
-    public class Exon2 {
+    public class Exon2 implements FeatureSubSequence {
 
         /**
          * The index of the exon relative to the start codon.  The exon with the start
@@ -250,7 +294,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             this.codingEnd = codingDne;
         }
 
-
+        @Override
         public void setMrnaBase(int base) {
             this.mrnaBase = base;
         }
@@ -280,6 +324,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @param utr
          */
+        @Override
         public void setUTR(boolean utr) {
             this.utr = utr;
             if (getStrand() == Strand.POSITIVE) {
@@ -294,6 +339,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @param codingStart
          */
+        @Override
         public void setCodingStart(int codingStart) {
             this.codingStart = Math.max(getStart(), codingStart);
         }
@@ -312,6 +358,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @param offset
          */
+        @Override
         public void setReadingFrame(int offset) {
             this.readingFrame = offset;
         }
@@ -321,6 +368,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @param phase
          */
+        @Override
         public void setPhase(int phase) {
             if (getStrand() == Strand.POSITIVE) {
                 readingFrame = phase;
@@ -336,6 +384,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @return
          */
+        @Override
         public int getCdStart() {
             return codingStart;
         }
@@ -345,6 +394,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @return
          */
+        @Override
         public int getCdEnd() {
             return this.codingEnd;
         }
@@ -354,6 +404,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
          *
          * @return
          */
+        @Override
         public int getCodingLength() {
             return utr ? 0 : Math.max(0, codingEnd - codingStart);
         }
@@ -409,8 +460,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             }
         }
         */
-
-
+        @Override
         public String getValueString(double position) {
             String msg = number > 0 ? "Exon number: " + number : "";
             int aaNumber = this.getAminoAcidNumber((int) position);
@@ -420,10 +470,12 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
             return msg;
         }
 
+        @Override
         public int getNumber() {
             return number;
         }
 
+        @Override
         public void setNumber(int number) {
             this.number = number;
         }
