@@ -71,7 +71,7 @@ public class BEDCodecTest {
         BEDCodec codec = new BEDCodec();
 
         FullBEDFeature feature;
-        List<Exon> exons;
+        List<FeatureSubSequence> exons;
 
         // Borrowed samples from Example: on http://genome.ucsc.edu/FAQ/FAQformat#format1
 
@@ -88,15 +88,15 @@ public class BEDCodecTest {
         Assert.assertEquals(exons.size(), 2);
 
         Assert.assertEquals(exons.get(0).getNumber(), 1);
-        Assert.assertEquals(exons.get(0).start, 1001);
-        Assert.assertEquals(exons.get(0).end, 1567);
+        Assert.assertEquals(((Exon)exons.get(0)).start, 1001);
+        Assert.assertEquals(((Exon)exons.get(0)).end, 1567);
         Assert.assertEquals(exons.get(0).getCdStart(), 1001);
         Assert.assertEquals(exons.get(0).getCdEnd(), 1567);
         Assert.assertEquals(exons.get(0).getCodingLength(), 567);
 
         Assert.assertEquals(exons.get(1).getNumber(), 2);
-        Assert.assertEquals(exons.get(1).start, 4513);
-        Assert.assertEquals(exons.get(1).end, 5000);
+        Assert.assertEquals(((Exon)exons.get(1)).start, 4513);
+        Assert.assertEquals(((Exon)exons.get(1)).end, 5000);
         Assert.assertEquals(exons.get(1).getCdStart(), 4513);
         Assert.assertEquals(exons.get(1).getCdEnd(), 5000);
         Assert.assertEquals(exons.get(1).getCodingLength(), 488);
@@ -114,15 +114,15 @@ public class BEDCodecTest {
         Assert.assertEquals(exons.size(), 2);
 
         Assert.assertEquals(exons.get(0).getNumber(), 2);
-        Assert.assertEquals(exons.get(0).start, 2001);
-        Assert.assertEquals(exons.get(0).end, 2433);
+        Assert.assertEquals(((Exon)exons.get(0)).start, 2001);
+        Assert.assertEquals(((Exon)exons.get(0)).end, 2433);
         Assert.assertEquals(exons.get(0).getCdStart(), 2001);
         Assert.assertEquals(exons.get(0).getCdEnd(), 2433);
         Assert.assertEquals(exons.get(0).getCodingLength(), 433);
 
         Assert.assertEquals(exons.get(1).getNumber(), 1);
-        Assert.assertEquals(exons.get(1).start, 5602);
-        Assert.assertEquals(exons.get(1).end, 6000);
+        Assert.assertEquals(((Exon)exons.get(1)).start, 5602);
+        Assert.assertEquals(((Exon)exons.get(1)).end, 6000);
         Assert.assertEquals(exons.get(1).getCdStart(), 5602);
         Assert.assertEquals(exons.get(1).getCdEnd(), 6000);
         Assert.assertEquals(exons.get(1).getCodingLength(), 399);
