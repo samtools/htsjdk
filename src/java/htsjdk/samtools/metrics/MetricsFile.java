@@ -573,4 +573,21 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         }
 
     }
+
+    /**
+     * Compare the metrics and histograms in two files, ignoring headers.
+     */
+    public static boolean areMetricsAndHistogramsEqual(final File file1, final File file2) {
+        try {
+            final MetricsFile<MetricBase, Comparable<?>> mf1 = new MetricsFile<MetricBase, Comparable<?>>();
+            final MetricsFile<MetricBase, Comparable<?>> mf2 = new MetricsFile<MetricBase, Comparable<?>>();
+            mf1.read(new FileReader(file1));
+            mf2.read(new FileReader(file2));
+
+            return mf1.areMetricsEqual(mf2) && mf1.areHistogramsEqual(mf2);
+
+        } catch (FileNotFoundException e) {
+            throw new SAMException(e.getMessage(), e);
+        }
+    }
 }
