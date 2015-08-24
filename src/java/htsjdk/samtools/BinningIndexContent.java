@@ -134,7 +134,7 @@ public class BinningIndexContent {
         }
 
         if (chunkList.isEmpty()) {
-            return null;
+            return Collections.emptyList();
         }
 
         return Chunk.optimizeChunkList(chunkList, getLinearIndex().getMinimumOffset(startPos));

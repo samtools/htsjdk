@@ -26,11 +26,14 @@ package htsjdk.tribble.index.tabix;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
-import org.testng.Assert;
+import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.Iterator;
+
+import static org.testng.Assert.assertEquals;
 
 public class TabixIndexTest {
     private static final File SMALL_TABIX_FILE = new File("testdata/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
@@ -50,7 +53,7 @@ public class TabixIndexTest {
         index.write(los);
         los.close();
         final TabixIndex index2 = new TabixIndex(indexFile);
-        Assert.assertEquals(index, index2);
+        assertEquals(index, index2);
         // Unfortunately, can't do byte comparison of original file and temp file, because 1) different compression
         // levels; and more importantly, arbitrary order of bins in bin list.
     }
@@ -63,4 +66,34 @@ public class TabixIndexTest {
         };
     }
 
+    @Test
+    public void testQuery() {
+        File inputFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf");
+        File indexFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf.tbi");
+        VCFFileReader reader = new VCFFileReader(inputFile, indexFile);
+//        TabixIndex index = IndexFactory.createTabixIndex(inputFile, new VCFCodec(), TabixFormat.VCF, reader.getFileHeader().getSequenceDictionary());
+//        index.write(new File(tbi));
+
+        // just somewhere
+        assertEquals(42, countIteratedElements(reader.query("1", 868379 - 1, 1006891 + 1)));
+        // chromosome start
+        assertEquals(13, countIteratedElements(reader.query("1", 1, 836463 + 1)));
+        // chromosome end end
+        assertEquals(36, countIteratedElements(reader.query("1", 76690833 - 1, 76837502 + 11111111)));
+        // where's no one feature
+        assertEquals(0, countIteratedElements(reader.query("1", 36606472 + 1, 36623523 - 1)));
+        // before chromosome
+        assertEquals(0, countIteratedElements(reader.query("1", 1 , 10)));
+        // after chromosome
+        assertEquals(0, countIteratedElements(reader.query("1", 76837502*15 , 76837502*16)));
+    }
+
+    private static int countIteratedElements(Iterator iterator) {
+        int counter = 0;
+        while(iterator.hasNext()) {
+            iterator.next();
+            counter++;
+        }
+        return counter;
+    }
 }
