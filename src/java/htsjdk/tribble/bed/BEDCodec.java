@@ -113,7 +113,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
 
         // Name
         if (tokenCount > 3) {
-            String name = tokens[3].replaceAll("\"", "");
+            String name = tokens[3].replace("\"", "");
             feature.setName(name);
         }
 

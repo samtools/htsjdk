@@ -27,26 +27,24 @@ package htsjdk.tribble.annotation;
  * Enum for strand, which can be encoded as string
  */
 public enum Strand {
-    POSITIVE("+"), NEGATIVE("-"), NONE("!");  // not really sure what we should do for the NONE Enum
+    POSITIVE, NEGATIVE, NONE;  // not really sure what we should do for the NONE Enum
 
-    /**
-     * How we represent the strand information as text
-     */
-    private String encoding;
-    Strand(String str) {
-        encoding = str;
-    }
+    public static final String POSITIVE_NOTATION = "+";
+    public static final String NEGATIVE_NOTATION = "-";
+    public static final String NONE_NOTATION = "!";
 
     /**
      * provide a way to take an encoding string, and produce a Strand
+     *
      * @param encoding the encoding string
      * @return a Strand object, if an appropriate one cannot be located an IllegalArg exception
      */
     public static Strand toStrand(String encoding) {
-        for (Strand st : Strand.values())
-            if (st.encoding.equals(encoding))
-                return st;
-        throw new IllegalArgumentException("Unable to match encoding to Strand enum for encoding string " + encoding);
+        //TODO change on [switch (encoding){}] after end of Java 6 support
+        if      (POSITIVE_NOTATION.equals(encoding))    { return POSITIVE; }
+        else if (NEGATIVE_NOTATION.equals(encoding))    { return NEGATIVE; }
+        else if (NONE_NOTATION.equals(encoding))        { return NONE; }
+        else { throw new IllegalArgumentException("Unable to match encoding to Strand enum for encoding string " + encoding); }
     }
 
 }

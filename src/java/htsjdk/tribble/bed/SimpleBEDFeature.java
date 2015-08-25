@@ -32,6 +32,7 @@ import java.util.List;
 /**
  *  Feature from a BED file without exon blocks.
  */
+@Deprecated
 public class SimpleBEDFeature implements BEDFeature {
     protected String chr;
     protected int start = -1;
@@ -140,9 +141,9 @@ public class SimpleBEDFeature implements BEDFeature {
         this.link = link;
     }
 
-    final static List<FullBEDFeature.Exon> emptyExonList = new ArrayList();
+    final static List<FeatureSubSequence> emptyExonList = new ArrayList();
 
-    public java.util.List<FullBEDFeature.Exon> getExons() {
+    public List<FeatureSubSequence> getExons() {
         return emptyExonList;
     }
 }
