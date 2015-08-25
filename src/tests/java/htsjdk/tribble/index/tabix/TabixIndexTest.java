@@ -68,11 +68,9 @@ public class TabixIndexTest {
 
     @Test
     public void testQuery() {
-        File inputFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf");
-        File indexFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf.tbi");
+        File inputFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf.gz");
+        File indexFile = new File("testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf.gz.tbi");
         VCFFileReader reader = new VCFFileReader(inputFile, indexFile);
-//        TabixIndex index = IndexFactory.createTabixIndex(inputFile, new VCFCodec(), TabixFormat.VCF, reader.getFileHeader().getSequenceDictionary());
-//        index.write(new File(tbi));
 
         // just somewhere
         assertEquals(42, countIteratedElements(reader.query("1", 868379 - 1, 1006891 + 1)));
