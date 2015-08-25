@@ -478,21 +478,32 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
 
     /**
+     * @param offset 1-based location within the unclipped sequence or 0 if there is no position.
+     * <p/>
+     * Non static version of the static function with the same name.
      * @return 1-based inclusive reference position of the unclipped sequence at a given offset,
-     *         or 0 if there is no position.
-     *         For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
-     *         and a (1-based)offset 10 (start of GGG) it returns 7 (1-based offset starting after the soft clip.
-     *         For example: given the sequence AAACCCGGGTTT, cigar 4M1D6M, an alignment start of 1,
-     *         an offset of 4 returns reference position 4, an offset of 5 returns reference position 6.
-     *         Another example: given the sequence AAACCCGGGTTT, cigar 4M1I6M, an alignment start of 1,
-     *         an offset of 4 returns reference position 4, an offset of 5 returns 0.
-     * @offset 1-based location within the unclipped sequence
      */
     public int getReferencePositionAtReadPosition(final int offset) {
+        return getReferencePositionAtReadPosition(this, offset);
+    }
+
+    /**
+     * @param rec record to use
+     * @param offset 1-based location within the unclipped sequence
+     * @return 1-based inclusive reference position of the unclipped sequence at a given offset,
+     * or 0 if there is no position.
+     * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
+     * and a (1-based)offset 10 (start of GGG) it returns 7 (1-based offset starting after the soft clip.
+     * For example: given the sequence AAACCCGGGTTT, cigar 4M1D6M, an alignment start of 1,
+     * an offset of 4 returns reference position 4, an offset of 5 returns reference position 6.
+     * Another example: given the sequence AAACCCGGGTTT, cigar 4M1I6M, an alignment start of 1,
+     * an offset of 4 returns reference position 4, an offset of 5 returns 0.
+     */
+    public static int getReferencePositionAtReadPosition(final SAMRecord rec, final int offset) {
 
         if (offset == 0) return 0;
 
-        for (final AlignmentBlock alignmentBlock : getAlignmentBlocks()) {
+        for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
             if (CoordMath.getEnd(alignmentBlock.getReadStart(), alignmentBlock.getLength()) < offset) {
                 continue;
             } else if (offset < alignmentBlock.getReadStart()) {
@@ -502,6 +513,77 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             }
         }
         return 0; // offset not located in an alignment block
+    }
+
+
+    /**
+     * @param pos 1-based reference position
+     * return the offset
+     * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
+     * unclipped sequence at a given reference position, or 0 if there is no such position.
+     *
+     * See examples in the static version below
+     */
+    public int getReadPositionAtReferencePosition(final int pos) {
+        return getReadPositionAtReferencePosition(this, pos, false);
+    }
+
+    /**
+     * @param pos 1-based reference position
+     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read, function will
+     * return the offset
+     * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
+     * unclipped sequence at a given reference position,
+     * or 0 if there is no such position. If returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
+     * in the preceding block.
+     *
+     * Non-static version of static function with the same name. See examples below.
+     */
+    public int getReadPositionAtReferencePosition(final int pos, final boolean returnLastBaseIfDeleted) {
+        return getReadPositionAtReferencePosition(this, pos, returnLastBaseIfDeleted);
+    }
+
+    /**
+     * @param rec record to use
+     * @param pos 1-based reference position
+     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read, function will
+     * return the offset
+     * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
+     * unclipped sequence at a given reference position,
+     * or 0 if there is no such position. If returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
+     * in the preceding block.
+     * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
+     * and a (1-based)pos of 7 (start of GGG) it returns 10 (1-based offset including the soft clip.
+     * For example: given the sequence AAACCCGGGT, cigar 4M1D6M, an alignment start of 1,
+     * a reference position of 4 returns offset of 4, a reference of 5 also returns an offset 4 (using "left aligning") if returnLastBaseIfDeleted
+     * and 0 otherwise.
+     * For example: given the sequence AAACtCGGGTT, cigar 4M1I6M, an alignment start of 1,
+     * a position 4 returns an offset 5, a position of 5 returns 6 (the inserted base is the 5th offset), a position of 11 returns 0 since
+     * that position in the reference doesn't overlap the read at all.
+     *
+     */
+    public static int getReadPositionAtReferencePosition(final SAMRecord rec, final int pos, final boolean returnLastBaseIfDeleted) {
+
+        if (pos <= 0) {
+            return 0;
+        }
+
+        int lastAlignmentOffset = 0;
+        for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
+            if (CoordMath.getEnd(alignmentBlock.getReferenceStart(), alignmentBlock.getLength()) >= pos) {
+                if (pos < alignmentBlock.getReferenceStart()) {
+                    //There must have been a deletion block that skipped
+                    return returnLastBaseIfDeleted ? lastAlignmentOffset : 0;
+                } else {
+                    return  pos - alignmentBlock.getReferenceStart() + alignmentBlock.getReadStart() ;
+                }
+            } else {
+                // record the offset to the last base in the current block, in case the next block starts too late
+                lastAlignmentOffset = alignmentBlock.getReadStart() + alignmentBlock.getLength() - 1 ;
+            }
+        }
+        // if we are here, the reference position was not overlapping the read at all
+        return 0;
     }
 
     /**
