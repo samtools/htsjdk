@@ -97,6 +97,8 @@ public class MetricsFileTest {
         MetricsFile<FloatingPointMetric,Integer> file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
 
+
+
     }
 
     @Test
@@ -178,6 +180,22 @@ public class MetricsFileTest {
         Assert.assertEquals(file, file3);
     }
 
+    @Test
+    public void areMetricsFilesEqualTest(){
+        final File TEST_DIR = new File("testdata/htsjdk/samtools/metrics/");
+        final File file1 = new File(TEST_DIR,"metricsOne.metrics");
+        final File file2 = new File(TEST_DIR,"metricsOneCopy.metrics");
+        final File fileModifiedHist = new File(TEST_DIR,"metricsOneModifiedHistogram.metrics");
+        final File fileModifiedMet = new File(TEST_DIR,"metricsOneModifiedMetrics.metrics");
+
+        Assert.assertTrue(MetricsFile.areMetricsEqual(file1, file2));
+        Assert.assertTrue(MetricsFile.areMetricsEqual(file1, fileModifiedHist));
+
+        Assert.assertFalse(MetricsFile.areMetricsAndHistogramsEqual(file1, fileModifiedHist));
+        Assert.assertFalse(MetricsFile.areMetricsEqual(file1, fileModifiedMet));
+        Assert.assertFalse(MetricsFile.areMetricsAndHistogramsEqual(file1, fileModifiedMet));
+    }
+
     /** Helper method to persist metrics to file and read them back again. */
     private <METRIC extends MetricBase> MetricsFile<METRIC, Integer> writeThenReadBack(MetricsFile<METRIC,Integer> in) throws IOException {
         File f = File.createTempFile("test", ".metrics");
@@ -189,4 +207,7 @@ public class MetricsFileTest {
         retval.read(new FileReader(f));
         return retval;
     }
+
+
+
 }
