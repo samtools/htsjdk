@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
 
 public class SequenceUtil {
     /** Byte typed variables for all normal bases. */
-    public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N';
+    public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N', W = 'W';
     public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
     public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
 
@@ -74,10 +74,28 @@ public class SequenceUtil {
     }
 
     /**
+     * Attempts to efficiently compare two bases stored as bytes for equality. Differs from basesEqual in that it
+     * allows 'N' in the reference byte to match any (alphabetic && not-ACTG) read byte.
+     * */
+    public static boolean baseMatchesReference(byte read, byte referenceByte) {
+        if (referenceByte == read) return true;
+
+        // NB: this low-cost lowercase-ing would allow the characters: [\]^_` to match (in order) the characters ;<=>?@ but it should be
+        // safe to ignore this case.
+        byte refByteUpper = (referenceByte > 90) ? referenceByte -= 32 : referenceByte;
+        byte readByteUpper = (read > 90) ? read -= 32: read;
+
+        if(refByteUpper == readByteUpper) return true;
+        else return readByteUpper == N &&
+            !isValidBase(refByteUpper) &&
+            Character.isLetter(refByteUpper);
+    }
+
+    /**
      * returns true if the value of base represents a no call
      */
     public static boolean isNoCall(final byte base) {
-        return base == 'N' || base == 'n' || base == '.';
+        return base == N || base == n || base == '.';
     }
 
     /** Returns true if the byte is in [acgtACGT]. */
@@ -96,7 +114,7 @@ public class SequenceUtil {
         int gcs = 0;
         for (int i = 0; i < bases.length; ++i) {
             final byte b = bases[i];
-            if (b == 'C' || b == 'G' || b == 'c' || b == 'g') ++gcs;
+            if (b == C || b == G || b == c || b == g) ++gcs;
         }
 
         return gcs / (double) bases.length;
@@ -301,11 +319,11 @@ public class SequenceUtil {
 
                 for (int i = 0; i < length; ++i) {
                     if (!bisulfiteSequence) {
-                        if (!basesEqual(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i])) {
+                        if (!baseMatchesReference(readBases[readBlockStart + i], referenceBases[referenceBlockStart + i])) {
                             ++mismatches;
                         }
                     } else {
-                        if (!bisulfiteBasesEqual(read.getReadNegativeStrandFlag(), readBases[readBlockStart + i],
+                        if (!bisulfiteBaseMatchesReference(read.getReadNegativeStrandFlag(), readBases[readBlockStart + i],
                                 referenceBases[referenceBlockStart + i])) {
                             ++mismatches;
                         }
@@ -350,7 +368,7 @@ public class SequenceUtil {
             final int length = block.getLength();
 
             for (int i = 0; i < length; ++i) {
-                if (!basesEqual(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
+                if (!baseMatchesReference(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
                     ++mismatches;
                 }
             }
@@ -519,6 +537,7 @@ public class SequenceUtil {
     public static int calculateSamNmTag(final SAMRecord read, final byte[] referenceBases,
                                         final int referenceOffset, final boolean bisulfiteSequence) {
         int samNm = countMismatches(read, referenceBases, referenceOffset, bisulfiteSequence);
+
         for (final CigarElement el : read.getCigar().getCigarElements()) {
             if (el.getOperator() == CigarOperator.INSERTION || el.getOperator() == CigarOperator.DELETION) {
                 samNm += el.getLength();
@@ -544,7 +563,6 @@ public class SequenceUtil {
         }
         return samNm;
     }
-
 
     /**
      * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
@@ -627,6 +645,24 @@ public class SequenceUtil {
 
     public static boolean bisulfiteBasesEqual(final byte read, final byte reference) {
         return bisulfiteBasesEqual(false, read, reference);
+    }
+
+    /**
+     * Returns true if the base matches the reference OR if the mismatch cannot be accounted for by
+     * bisfulite treatment.  C->T on the positive strand and G->A on the negative strand
+     * do not count as mismatches. Allows a read byte of 'W' to match a reference byte of 'N'
+     */
+    public static boolean bisulfiteBaseMatchesReference(final boolean negativeStrand, final byte read, final byte reference) {
+        return (baseMatchesReference(read, reference) || isBisulfiteConverted(read, reference, negativeStrand));
+    }
+
+    /**
+     * Returns true if the base matches the reference OR if the mismatch cannot be accounted for by
+     * bisfulite treatment.  C->T on the positive strand and G->A on the negative strand
+     * do not count as mismatches. Allows a read byte of 'W' to match a reference byte of 'N'
+     */
+    public static boolean bisulfiteBaseMatchesReference(final byte read, final byte reference) {
+        return bisulfiteBaseMatchesReference(false, read, reference);
     }
 
     /**

@@ -35,7 +35,6 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -154,5 +153,58 @@ public class SequenceUtilTest {
         }
         final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
+    }
+
+    @Test(dataProvider = "baseMatchesReferenceTestCases")
+    public void testBaseMatchesReference(byte read, byte reference, boolean expectation) {
+        Assert.assertEquals(SequenceUtil.baseMatchesReference(read, reference), expectation);
+    }
+
+    @DataProvider(name = "baseMatchesReferenceTestCases")
+    public Object[][] baseMatchesReferenceTestCases() {
+        return new Object[][] {
+                {(byte)'a', (byte)'a', true},
+                {(byte)'a', (byte)'A', true},
+                {(byte)'a', (byte)'c', false},
+                {(byte)'N', (byte)'W', true},
+                {(byte)'N', (byte)'a', false},
+        };
+    }
+
+    @Test(dataProvider = "testSamNmTestCases")
+    public void testSamNmTag(String readSequence, String referenceSequence, int expectedMismatches) {
+        // Just set up a really basic SAM record to only return exactly the sequence in readSequence:
+        final SAMRecord rec = new SAMRecord(null);
+        rec.setReadName(readSequence);
+        rec.setReadString(readSequence);
+        rec.setCigarString(readSequence.length() + "M");
+        rec.setAlignmentStart(1);
+
+        Assert.assertEquals(SequenceUtil.calculateSamNmTag(rec, referenceSequence.getBytes()), expectedMismatches);
+
+        // Also test the alternative, deprecated version:
+        // TODO (Remove when this deprecated method is removed)
+        Assert.assertEquals(SequenceUtil.calculateSamNmTag(rec, referenceSequence.toCharArray(), 0), expectedMismatches);
+    }
+
+    @DataProvider(name = "testSamNmTestCases")
+    public Object[][] testSamNmTestCases() {
+        return new Object[][] {
+                // Base case:
+                {"acTG", "acTG", 0},
+                // Mismatch detection - 1 error:
+                {"acTC", "acTG", 1},
+                // Mismatch detection - 3 errors:
+                {"acTC", "aaAA", 3},
+                // Case insensitivity:
+                {"aCtG", "AcTg", 0},
+                // Allow 'N' in read to match 'W' in reference (i.e. 'convert' the reference W into N before matching):
+                {"aCNG", "AcWg", 0},
+                // Ensure 'N' in read matches 'N' in reference:
+                {"aCNG", "AcNg", 0},
+                // Don't allow 'N' in read to match A, C, T or G:
+                {"NNNN", "ACtg", 4},
+
+        };
     }
 }
