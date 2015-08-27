@@ -41,6 +41,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import htsjdk.samtools.cram.CRAMException;
+
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
@@ -113,7 +115,7 @@ public class CRAMIterator implements SAMRecordIterator {
     }
 
     private void nextContainer() throws IOException, IllegalArgumentException,
-            IllegalAccessException {
+            IllegalAccessException, CRAMException {
 
         if (containerIterator != null) {
             if (!containerIterator.hasNext()) {
@@ -156,6 +158,9 @@ public class CRAMIterator implements SAMRecordIterator {
             final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                     .getSequence(container.sequenceId);
             refs = referenceSource.getReferenceBases(sequence, true);
+            if (refs == null) {
+                throw new CRAMException(String.format("Contig %s not found in the reference file.", sequence.getSequenceName()));
+            }
             prevSeqId = container.sequenceId;
         }
 
