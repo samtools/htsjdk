@@ -46,7 +46,6 @@ import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
-import org.testng.Assert;
 
 import java.io.File;
 import java.io.IOException;
@@ -141,39 +140,6 @@ public class CRAMIndexer {
             outputWriter.writeReference(content);
             currentReference++;
             indexBuilder.startNewReference();
-        }
-    }
-
-    /**
-     * Generates a BAM index file, either textual or binary, from an input BAI file.
-     * Only used for testing, but located here for visibility into CachingBAMFileIndex.
-     *
-     * @param output     BAM Index (.bai) file (or bai.txt file when text)
-     * @param textOutput Whether to create text output or binary
-     */
-    static public void createAndWriteIndex(final File input, final File output, final boolean textOutput) {
-
-        // content is from an existing bai file.
-
-        final CachingBAMFileIndex existingIndex = new CachingBAMFileIndex(input, null);
-        final int nRef = existingIndex.getNumberOfReferences();
-        final BAMIndexWriter outputWriter;
-        if (textOutput) {
-            outputWriter = new TextualBAMIndexWriter(nRef, output);
-        } else {
-            outputWriter = new BinaryBAMIndexWriter(nRef, output);
-        }
-
-        // write the content one reference at a time
-        try {
-            for (int i = 0; i < nRef; i++) {
-                outputWriter.writeReference(existingIndex.getQueryResults(i));
-            }
-            outputWriter.writeNoCoordinateRecordCount(existingIndex.getNoCoordinateCount());
-            outputWriter.close();
-
-        } catch (final Exception e) {
-            throw new SAMException("Exception creating BAM index", e);
         }
     }
 
@@ -408,7 +374,7 @@ public class CRAMIndexer {
                 }
 
             } catch (final IOException e) {
-                Assert.fail("Failed to read cram container", e);
+                throw new RuntimeException("Failed to read cram container", e);
             }
 
         } while (!container.isEOF());

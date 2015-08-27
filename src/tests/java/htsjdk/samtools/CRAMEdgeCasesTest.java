@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -73,7 +74,7 @@ public class CRAMEdgeCasesTest {
         }
         cramFileWriter.close();
 
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, source, ValidationStringency.SILENT);
+        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream)null, source, ValidationStringency.SILENT);
         final SAMRecordIterator iterator = cramFileReader.getIterator();
         Assert.assertTrue(iterator.hasNext());
 
@@ -101,7 +102,7 @@ public class CRAMEdgeCasesTest {
         cramFileWriter.addAlignment(record);
         cramFileWriter.close();
 
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, source, ValidationStringency.SILENT);
+        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream)null, source, ValidationStringency.SILENT);
         final SAMRecordIterator iterator = cramFileReader.getIterator();
         Assert.assertTrue(iterator.hasNext());
         SAMRecord s2 = iterator.next();

@@ -2,6 +2,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -105,7 +106,7 @@ public class CRAMComplianceTest {
         cramFileWriter.close();
 
 
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, source, ValidationStringency.SILENT);
+        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream)null, source, ValidationStringency.SILENT);
         SAMRecordIterator cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
@@ -116,7 +117,7 @@ public class CRAMComplianceTest {
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
         if (t.cramFile_21.exists()) {
-            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), null, source, ValidationStringency.SILENT);
+            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream)null, source, ValidationStringency.SILENT);
             cramFileReaderIterator = cramFileReader.getIterator();
             for (SAMRecord samRecord : samRecords) {
                 Assert.assertTrue(cramFileReaderIterator.hasNext());
@@ -128,7 +129,7 @@ public class CRAMComplianceTest {
         }
 
         if (t.cramFile_30.exists()) {
-            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), null, source, ValidationStringency.SILENT);
+            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream)null, source, ValidationStringency.SILENT);
             cramFileReaderIterator = cramFileReader.getIterator();
             for (SAMRecord samRecord : samRecords) {
                 Assert.assertTrue(cramFileReaderIterator.hasNext());

@@ -52,6 +52,7 @@ import java.util.Arrays;
  * A collection of methods to open and close CRAM files.
  */
 public class CramIO {
+    public static final String CRAM_FILE_EXTENSION = ".cram";
     /**
      * The 'zero-B' EOF marker as per CRAM specs v2.1. This is basically a serialized empty CRAM container with sequence id set to some
      * number to spell out 'EOF' in hex.
@@ -101,13 +102,14 @@ public class CramIO {
     }
 
     private static boolean streamEndsWith(final SeekableStream seekableStream, final byte[] marker) throws IOException {
-        final byte[] tail = new byte[ZERO_B_EOF_MARKER.length];
+        final byte[] tail = new byte[marker.length];
 
         seekableStream.seek(seekableStream.length() - marker.length);
         InputStreamUtils.readFully(seekableStream, tail, 0, tail.length);
 
+        if (Arrays.equals(tail, marker)) return true ;
         // relaxing the ITF8 hanging bits:
-        tail[8] |= 0xf0;
+        tail[8] = marker[8];
         return Arrays.equals(tail, marker);
     }
 
@@ -122,8 +124,8 @@ public class CramIO {
     @SuppressWarnings("SimplifiableIfStatement")
     private static boolean checkEOF(final Version version, final SeekableStream seekableStream) throws IOException {
 
-        if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
-        if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
+        if (version.compatibleWith(CramVersions.CRAM_v3)) return streamEndsWith(seekableStream, ZERO_F_EOF_MARKER);
+        if (version.compatibleWith(CramVersions.CRAM_v2_1)) return streamEndsWith(seekableStream, ZERO_B_EOF_MARKER);
 
         return false;
     }
