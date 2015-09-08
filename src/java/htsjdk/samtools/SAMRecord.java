@@ -1832,6 +1832,53 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return newRecord;
     }
 
+    /**
+     * Returns a deep copy of the SAM record, with the following exceptions:
+     *
+     *  - The header field, which shares the reference with the original record
+     *  - The file source field, which will always always be set to null in the copy
+     *
+     *  Note that some fields, i.e. the cigar elements, alignment blocks, and
+     *  indexing bin, are not explicitly populated in the copy since they are lazily
+     *  generated on demand.
+     *
+     *  Also note that this fails:
+     *
+     *     original.deepCopy().equals(original)
+     *
+     *  due to the fact that SAMBinaryTagAndValue.equals winds up calling object.equals on the
+     *  value field, which uses reference equality.
+     *
+     */
+    public SAMRecord deepCopy() {
+        final SAMRecord newSAM = new SAMRecord(getHeader());
+
+        newSAM.setReadName(getReadName());
+        newSAM.setReadBases(Arrays.copyOf(getReadBases(), getReadLength()));
+        final byte baseQualities[] = getBaseQualities();
+        newSAM.setBaseQualities(Arrays.copyOf(baseQualities, baseQualities.length));
+        newSAM.setReferenceName(getReferenceName());
+        newSAM.setAlignmentStart(getAlignmentStart()); // clears mAlignmentEnd
+        newSAM.setMappingQuality(getMappingQuality());
+        newSAM.setCigarString(getCigarString()); // clears Cigar element and alignmentBlocks
+        newSAM.setFileSource(null);
+
+        newSAM.setFlags(getFlags());
+        newSAM.setMateReferenceName(getMateReferenceName());
+        newSAM.setMateAlignmentStart(getMateAlignmentStart());
+        newSAM.setInferredInsertSize(getInferredInsertSize());
+        newSAM.setReferenceIndex(getReferenceIndex());
+        newSAM.setMateReferenceIndex(getMateReferenceIndex());
+        newSAM.setValidationStringency(getValidationStringency());
+
+        SAMBinaryTagAndValue attributes = getBinaryAttributes();
+        if (null != attributes) {
+            newSAM.setAttributes(attributes.deepCopy());
+        }
+
+        return newSAM;
+    }
+
     /** Simple toString() that gives a little bit of useful info about the read. */
     @Override
     public String toString() {

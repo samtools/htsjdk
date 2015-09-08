@@ -34,12 +34,24 @@ public class SAMBinaryTagAndUnsignedArrayValue extends SAMBinaryTagAndValue {
         super(tag, value);
     }
 
-    /** Creates and returns a deep copy of the list of tag/values. */
+    /** Creates and returns a shallow copy of the list of tag/values. */
+    @Override
     public SAMBinaryTagAndValue copy() {
         final SAMBinaryTagAndValue retval = new SAMBinaryTagAndUnsignedArrayValue(this.tag, this.value);
         if (next != null) retval.next = next.copy();
         return retval;
     }
+
+    /** Creates and returns a deep copy of the list of tag/values. */
+    @Override
+    public SAMBinaryTagAndValue deepCopy() {
+        final SAMBinaryTagAndValue retval = new SAMBinaryTagAndUnsignedArrayValue(this.tag, cloneValue());
+        if (next != null) {
+            retval.next = next.deepCopy();
+        }
+        return retval;
+    }
+
 
     @Override
     public boolean isUnsignedArray() {
