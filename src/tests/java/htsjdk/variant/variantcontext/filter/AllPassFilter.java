@@ -27,12 +27,14 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  *  A trivial filter (always true) that can be used in testing
+ *
+ *  @author Yossi Farjoun
  */
 public class AllPassFilter implements VariantContextFilter {
 
     /* @return true so that all VCs are kept. */
     @Override
-    public boolean pass(final VariantContext record) {
+    public boolean test(final VariantContext record) {
 
         return true;
     }

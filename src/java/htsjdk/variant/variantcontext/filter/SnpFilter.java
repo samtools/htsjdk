@@ -21,23 +21,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- *
- * API for filtering VariantContexts
+ * A Predicate on VariantContexts that  returns true at sites that are SNPs
  *
  * @author Yossi Farjoun
- *
  */
-public interface VariantContextFilter {
+public class SnpFilter implements VariantContextFilter {
+
     /**
-     * Determines whether a VariantContext matches this filter
-     *
-     * @param record the VariantContext to evaluate
-     * @return true if the VariantContext matches the filter, otherwise false
+     * @return true if variantContext is a SNP
+     * @param variantContext the record to examine for being a SNP
      */
-    boolean test(VariantContext record);
+    @Override
+    public boolean test(final VariantContext variantContext) {
+        return variantContext.isSNP();
+    }
 }
