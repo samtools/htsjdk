@@ -26,18 +26,16 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
+ *  A trivial filter (always false) that can be used in testing
  *
- * API for filtering VariantContexts
- *
- * @author Yossi Farjoun
- *
+ *  @author Yossi Farjoun
  */
-public interface VariantContextFilter {
-    /**
-     * Determines whether a VariantContext matches this filter
-     *
-     * @param record the VariantContext to evaluate
-     * @return true if the VariantContext matches the filter, otherwise false
-     */
-    boolean test(VariantContext record);
+public class AllFailFilter implements VariantContextFilter {
+
+    /* @return false so that all VCs are filtered out. */
+    @Override
+    public boolean test(final VariantContext record) {
+
+        return false;
+    }
 }
