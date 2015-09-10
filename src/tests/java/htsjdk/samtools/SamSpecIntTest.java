@@ -43,6 +43,9 @@ public class SamSpecIntTest {
         final SamReader samReader = SamReaderFactory.makeDefault().open(SAM_INPUT);
         final File bamOutput = File.createTempFile("test", ".bam");
         final File samOutput = File.createTempFile("test", ".sam");
+        bamOutput.deleteOnExit();
+        samOutput.deleteOnExit();
+
         final SAMFileWriter samWriter = new SAMFileWriterFactory().makeWriter(samReader.getFileHeader(), true, samOutput, null);
         final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeWriter(samReader.getFileHeader(), true, bamOutput, null);
 
@@ -62,8 +65,6 @@ public class SamSpecIntTest {
         samWriter.close();
         bamWriter.close();
         Assert.assertEquals(errorMessages.size(), 2);
-        bamOutput.deleteOnExit();
-        samOutput.deleteOnExit();
     }
 
     @Test
@@ -72,6 +73,9 @@ public class SamSpecIntTest {
         final SamReader bamReader = SamReaderFactory.makeDefault().open(BAM_INPUT);
         final File bamOutput = File.createTempFile("test", ".bam");
         final File samOutput = File.createTempFile("test", ".sam");
+        bamOutput.deleteOnExit();
+        samOutput.deleteOnExit();
+
         final SAMFileWriter samWriter = new SAMFileWriterFactory().makeWriter(bamReader.getFileHeader(), true, samOutput, null);
         final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeWriter(bamReader.getFileHeader(), true, bamOutput, null);
         final SAMRecordIterator iterator = bamReader.iterator();
@@ -90,8 +94,6 @@ public class SamSpecIntTest {
         samWriter.close();
         bamWriter.close();
         Assert.assertEquals(errorMessages.size(), 2);
-        bamOutput.deleteOnExit();
-        samOutput.deleteOnExit();
-    }
+        }
 
 }

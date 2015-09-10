@@ -158,6 +158,7 @@ public class SAMIntegerTagTest {
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
         final File bamFile = File.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
+        bamFile.deleteOnExit();
         final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(rec.getHeader(), false, bamFile);
         bamWriter.addAlignment(rec);
         bamWriter.close();

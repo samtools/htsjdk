@@ -50,11 +50,14 @@ public class BAMIndexWriterTest {
     public void testWriteText() throws Exception {
         // Compare the text form of the c-generated bai file and a java-generated one
         final File cBaiTxtFile = File.createTempFile("cBai.", ".bai.txt");
+        cBaiTxtFile.deleteOnExit();
         BAMIndexer.createAndWriteIndex(BAI_FILE, cBaiTxtFile, true);
         verbose("Wrote textual C BAM Index file " + cBaiTxtFile);
 
         final File javaBaiFile = File.createTempFile("javaBai.", "java.bai");
+        javaBaiFile.deleteOnExit();
         final File javaBaiTxtFile = new File(javaBaiFile.getAbsolutePath() + ".txt");
+        javaBaiTxtFile.deleteOnExit();
         final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
         BAMIndexer.createIndex(bam, javaBaiFile);
         verbose("Wrote binary Java BAM Index file " + javaBaiFile);
@@ -64,9 +67,6 @@ public class BAMIndexWriterTest {
         // and compare them
         verbose("diff " + javaBaiTxtFile + " " + cBaiTxtFile);
         IOUtil.assertFilesEqual(javaBaiTxtFile, cBaiTxtFile);
-        cBaiTxtFile.deleteOnExit();
-        javaBaiFile.deleteOnExit();
-        javaBaiTxtFile.deleteOnExit();
         CloserUtil.close(bam);
     }
 
@@ -74,11 +74,13 @@ public class BAMIndexWriterTest {
     public void testWriteBinary() throws Exception {
         // Compare java-generated bai file with c-generated and sorted bai file
         final File javaBaiFile = File.createTempFile("javaBai.", ".bai");
+        javaBaiFile.deleteOnExit();
         final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
         BAMIndexer.createIndex(bam, javaBaiFile);
         verbose("Wrote binary java BAM Index file " + javaBaiFile);
 
         final File cRegeneratedBaiFile = File.createTempFile("cBai.", ".bai");
+        cRegeneratedBaiFile.deleteOnExit();
         BAMIndexer.createAndWriteIndex(BAI_FILE, cRegeneratedBaiFile, false);
         verbose("Wrote sorted C binary BAM Index file " + cRegeneratedBaiFile);
 
@@ -86,7 +88,6 @@ public class BAMIndexWriterTest {
         verbose("diff " + javaBaiFile + " " + cRegeneratedBaiFile);
         IOUtil.assertFilesEqual(javaBaiFile, cRegeneratedBaiFile);
         javaBaiFile.deleteOnExit();
-        cRegeneratedBaiFile.deleteOnExit();
         CloserUtil.close(bam);
     }
 
@@ -203,6 +204,7 @@ public class BAMIndexWriterTest {
     /** generates the index file using the latest java index generating code */
     private File createIndexFile(File bamFile) throws IOException {
         final File bamIndexFile = File.createTempFile("Bai.", ".bai");
+        bamIndexFile.deleteOnExit();
         final SamReader bam = SamReaderFactory.makeDefault().open(bamFile);
         BAMIndexer.createIndex(bam, bamIndexFile);
         verbose("Wrote BAM Index file " + bamIndexFile);
