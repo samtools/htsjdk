@@ -119,6 +119,36 @@ public class SequenceUtilTest {
         };
     }
 
+    @Test(dataProvider = "mismatchCountsDataProvider")
+    public void testCountMismatches(final String readString, final String cigar, final String reference, final int expectedNumMismatches) {
+        final SAMRecord rec = new SAMRecord(null);
+        rec.setReadName("test");
+        rec.setReadString(readString);
+        rec.setCigarString(cigar);
+
+        final byte[] refBases = StringUtil.stringToBytes(reference);
+        final int n = SequenceUtil.countMismatches(rec, refBases, -1);
+        Assert.assertEquals(n, expectedNumMismatches);
+    }
+
+    @DataProvider(name="mismatchCountsDataProvider")
+    public Object[][] testMakeMismatchCountsDataProvider() {
+        return new Object[][] {
+                {"A", "1M", "A", 0},
+                {"A", "1M", "R", 0},     // R=A|G
+                {"G", "1M", "R", 0},     // R=A|G
+                {"C", "1M", "R", 1},     // R=A|G
+                {"T", "1M", "R", 1},     // R=A|G
+                {"N", "1M", "R", 0},     // R=A|G
+                {"R", "1M", "A", 0},     // R=A|G
+                {"R", "1M", "C", 1},     // R=A|G
+                {"R", "1M", "G", 0},     // R=A|G
+                {"R", "1M", "T", 1},     // R=A|G
+                {"R", "1M", "N", 0},     // R=A|G
+                {"N", "1M", "N", 0}      // R=A|G
+        };
+    }
+
     @Test(dataProvider = "countInsertedAndDeletedBasesTestCases")
     public void testCountInsertedAndDeletedBases(final String cigarString, final int insertedBases, final int deletedBases) {
         final Cigar cigar = TextCigarCodec.decode(cigarString);
@@ -154,5 +184,170 @@ public class SequenceUtilTest {
         }
         final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
+    }
+
+    @Test(dataProvider = "basesEqualDataProvider")
+    public void testBasesEqual(final char base1, final char base2, final boolean expectedResult) {
+        final char[] base1UcLc = new char[] { toUpperCase(base1), toLowerCase(base1) };
+        final char[] base2UcLc = new char[] { toUpperCase(base2), toLowerCase(base2) };
+        // Test over all permutations - uc vs uc, uc vs lc, lc vs uc, lc vs lc
+        for (char theBase1 : base1UcLc) {
+            for (char theBase2 : base2UcLc) {
+                // Test that order does not matter
+                boolean result = SequenceUtil.basesEqual((byte) theBase1, (byte) theBase2);
+                Assert.assertEquals(result, expectedResult, "basesEqual test failed for '" + theBase1 + "' vs. '" + theBase2 + "'");
+
+                result = SequenceUtil.basesEqual((byte) theBase2, (byte) theBase1);
+                Assert.assertEquals(result, expectedResult, "basesEqual test failed for '" + theBase2 + "' vs. '" + theBase1 + "'");
+            }
+        }
+    }
+
+    @DataProvider(name="basesEqualDataProvider")
+    public Object[][] testBasesEqualDataProvider() {
+        return new Object[][] {
+                {'A', 'A', true},
+                {'A', 'C', false},
+                {'A', 'G', false},
+                {'A', 'T', false},
+                {'A', 'M', true},       // M = A|C
+                {'A', 'R', true},       // R = A|G
+                {'A', 'W', true},       // W = A|T
+                {'A', 'S', false},      // S = C|G
+                {'A', 'Y', false},      // Y = C|T
+                {'A', 'K', false},      // K = G|T
+                {'A', 'V', true},      // V = A|C|G
+                {'A', 'H', true},      // H = A|C|T
+                {'A', 'D', true},      // D = A|G|T
+                {'A', 'B', false},      // B = C|G|T
+                {'A', 'N', true},      // N = A|C|G|T
+
+                {'C', 'C', true},
+                {'C', 'G', false},
+                {'C', 'T', false},
+                {'C', 'M', true},       // M = A|C
+                {'C', 'R', false},       // R = A|G
+                {'C', 'W', false},       // W = A|T
+                {'C', 'S', true},      // S = C|G
+                {'C', 'Y', true},      // Y = C|T
+                {'C', 'K', false},      // K = G|T
+                {'C', 'V', true},      // V = A|C|G
+                {'C', 'H', true},      // H = A|C|T
+                {'C', 'D', false},      // D = A|G|T
+                {'C', 'B', true},      // B = C|G|T
+                {'C', 'N', true},      // N = A|C|G|T
+
+                {'G', 'G', true},
+                {'G', 'T', false},
+                {'G', 'M', false},       // M = A|C
+                {'G', 'R', true},       // R = A|G
+                {'G', 'W', false},       // W = A|T
+                {'G', 'S', true},      // S = C|G
+                {'G', 'Y', false},      // Y = C|T
+                {'G', 'K', true},      // K = G|T
+                {'G', 'V', true},      // V = A|C|G
+                {'G', 'H', false},      // H = A|C|T
+                {'G', 'D', true},      // D = A|G|T
+                {'G', 'B', true},      // B = C|G|T
+                {'G', 'N', true},      // N = A|C|G|T
+
+                {'T', 'T', true},
+                {'T', 'M', false},       // M = A|C
+                {'T', 'R', false},       // R = A|G
+                {'T', 'W', true},       // W = A|T
+                {'T', 'S', false},      // S = C|G
+                {'T', 'Y', true},      // Y = C|T
+                {'T', 'K', true},      // K = G|T
+                {'T', 'V', false},      // V = A|C|G
+                {'T', 'H', true},      // H = A|C|T
+                {'T', 'D', true},      // D = A|G|T
+                {'T', 'B', true},      // B = C|G|T
+                {'T', 'N', true},      // N = A|C|G|T
+
+                {'M', 'M', true},       // M = A|C
+                {'M', 'R', true},       // R = A|G
+                {'M', 'W', true},       // W = A|T
+                {'M', 'S', true},      // S = C|G
+                {'M', 'Y', true},      // Y = C|T
+                {'M', 'K', false},      // K = G|T
+                {'M', 'V', true},      // V = A|C|G
+                {'M', 'H', true},      // H = A|C|T
+                {'M', 'D', true},      // D = A|G|T
+                {'M', 'B', true},      // B = C|G|T
+                {'M', 'N', true},      // N = A|C|G|T
+
+                {'R', 'R', true},       // R = A|G
+                {'R', 'W', true},       // W = A|T
+                {'R', 'S', true},      // S = C|G
+                {'R', 'Y', false},      // Y = C|T
+                {'R', 'K', true},      // K = G|T
+                {'R', 'V', true},      // V = A|C|G
+                {'R', 'H', true},      // H = A|C|T
+                {'R', 'D', true},      // D = A|G|T
+                {'R', 'B', true},      // B = C|G|T
+                {'R', 'N', true},      // N = A|C|G|T
+
+                {'W', 'W', true},       // W = A|T
+                {'W', 'S', false},      // S = C|G
+                {'W', 'Y', true},      // Y = C|T
+                {'W', 'K', true},      // K = G|T
+                {'W', 'V', true},      // V = A|C|G
+                {'W', 'H', true},      // H = A|C|T
+                {'W', 'D', true},      // D = A|G|T
+                {'W', 'B', true},      // B = C|G|T
+                {'W', 'N', true},      // N = A|C|G|T
+
+                {'S', 'S', true},      // S = C|G
+                {'S', 'Y', true},      // Y = C|T
+                {'S', 'K', true},      // K = G|T
+                {'S', 'V', true},      // V = A|C|G
+                {'S', 'H', true},      // H = A|C|T
+                {'S', 'D', true},      // D = A|G|T
+                {'S', 'B', true},      // B = C|G|T
+                {'S', 'N', true},      // N = A|C|G|T
+
+                {'Y', 'Y', true},      // Y = C|T
+                {'Y', 'K', true},      // K = G|T
+                {'Y', 'V', true},      // V = A|C|G
+                {'Y', 'H', true},      // H = A|C|T
+                {'Y', 'D', true},      // D = A|G|T
+                {'Y', 'B', true},      // B = C|G|T
+                {'Y', 'N', true},      // N = A|C|G|T
+
+                {'K', 'K', true},      // K = G|T
+                {'K', 'V', true},      // V = A|C|G
+                {'K', 'H', true},      // H = A|C|T
+                {'K', 'D', true},      // D = A|G|T
+                {'K', 'B', true},      // B = C|G|T
+                {'K', 'N', true},      // N = A|C|G|T
+
+                {'V', 'V', true},      // V = A|C|G
+                {'V', 'H', true},      // H = A|C|T
+                {'V', 'D', true},      // D = A|G|T
+                {'V', 'B', true},      // B = C|G|T
+                {'V', 'N', true},      // N = A|C|G|T
+
+                {'H', 'H', true},      // H = A|C|T
+                {'H', 'D', true},      // D = A|G|T
+                {'H', 'B', true},      // B = C|G|T
+                {'H', 'N', true},      // N = A|C|G|T
+
+                {'D', 'D', true},      // D = A|G|T
+                {'D', 'B', true},      // B = C|G|T
+                {'D', 'N', true},      // N = A|C|G|T
+
+                {'B', 'B', true},      // B = C|G|T
+                {'B', 'N', true},      // N = A|C|G|T
+
+                {'N', 'n', true}
+        };
+    }
+
+    private char toUpperCase(final char base) {
+        return base > 90 ? (char) (base - 32) : base;
+    }
+
+    private char toLowerCase(final char base) {
+        return (char) (toUpperCase(base) + 32);
     }
 }
