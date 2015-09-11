@@ -177,7 +177,7 @@
             <fileset dir="${classes}" includes="htsjdk/tribble/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/variant/**/*.*"/>
             <manifest>
-                <attribute name="Implementation-Version" value="${hts-version}(${repository.revision})"/>
+                <attribute name="Implementation-Version" value="${htsjdk-version}(${repository.revision})"/>
                 <attribute name="Implementation-Vendor" value="Broad Institute"/>
             </manifest>
         </jar>
