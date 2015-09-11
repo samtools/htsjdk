@@ -84,7 +84,7 @@ public class StringUtil {
             tokens[nTokens++] = aString;
             return nTokens;
         }
-        while ((end > 0) && (nTokens < maxTokens))
+        while ((end >= 0) && (nTokens < maxTokens))
         {
             tokens[nTokens++] = aString.substring(start, end);
             start = end + 1;
@@ -125,7 +125,7 @@ public class StringUtil {
             tokens[nTokens++] = aString;
             return nTokens;
         }
-        while ((end > 0) && (nTokens < maxTokens - 1))
+        while ((end >= 0) && (nTokens < maxTokens - 1))
         {
             tokens[nTokens++] = aString.substring(start, end);
             start = end + 1;
