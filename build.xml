@@ -41,7 +41,7 @@
     <!-- Get GIT hash, if available, otherwise leave it blank.  -->
 
     <property name="repository.revision" value=""/>
-    <property name="htsjdk-version" value="1.138"/>
+    <property name="htsjdk-version" value="1.139"/>
     <property name="htsjdk-version-file" value="htsjdk.version.properties"/>
     <property name="testng.verbosity" value="1"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
