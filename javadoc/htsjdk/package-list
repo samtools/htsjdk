@@ -1,5 +1,6 @@
 htsjdk.samtools
 htsjdk.samtools.apps
+htsjdk.samtools.cram
 htsjdk.samtools.cram.build
 htsjdk.samtools.cram.common
 htsjdk.samtools.cram.digest
@@ -40,5 +41,6 @@ htsjdk.tribble.util.popgen
 htsjdk.variant.bcf2
 htsjdk.variant.utils
 htsjdk.variant.variantcontext
+htsjdk.variant.variantcontext.filter
 htsjdk.variant.variantcontext.writer
 htsjdk.variant.vcf
