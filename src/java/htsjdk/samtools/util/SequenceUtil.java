@@ -46,41 +46,8 @@ import java.util.regex.Pattern;
 public class SequenceUtil {
     /** Byte typed variables for all normal bases. */
     public static final byte a = 'a', c = 'c', g = 'g', t = 't', n = 'n', A = 'A', C = 'C', G = 'G', T = 'T', N = 'N';
-
     public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
     public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
-
-    private static final byte A_MASK = 1;
-    private static final byte C_MASK = 2;
-    private static final byte G_MASK = 4;
-    private static final byte T_MASK = 8;
-
-    private static final byte[] bases = new byte[127];
-
-    static {
-        Arrays.fill(bases, (byte) 0);
-        bases[A] = A_MASK;
-        bases[C] = C_MASK;
-        bases[G] = G_MASK;
-        bases[T] = T_MASK;
-        bases['M'] = A_MASK | C_MASK;
-        bases['R'] = A_MASK | G_MASK;
-        bases['W'] = A_MASK | T_MASK;
-        bases['S'] = C_MASK | G_MASK;
-        bases['Y'] = C_MASK | T_MASK;
-        bases['K'] = G_MASK | T_MASK;
-        bases['V'] = A_MASK | C_MASK | G_MASK;
-        bases['H'] = A_MASK | C_MASK | T_MASK;
-        bases['D'] = A_MASK | G_MASK | T_MASK;
-        bases['B'] = C_MASK | G_MASK | T_MASK;
-        bases['N'] = A_MASK | C_MASK | G_MASK | T_MASK;
-        // Also store the bases in lower case
-        for (int i = 'A'; i <= 'Z'; i++) {
-            bases[(byte) i + 32] = bases[(byte) i];
-        }
-        bases['.'] = A_MASK | C_MASK | G_MASK | T_MASK;
-    };
-
 
     /**
      * Calculate the reverse complement of the specified sequence
@@ -95,11 +62,15 @@ public class SequenceUtil {
         return htsjdk.samtools.util.StringUtil.bytesToString(bases);
     }
 
-    /**
-     * Attempts to efficiently compare two bases stored as bytes for equality.
-     */
+    /** Attempts to efficiently compare two bases stored as bytes for equality. */
     public static boolean basesEqual(byte lhs, byte rhs) {
-        return (bases[lhs] & bases[rhs]) > 0;
+        if (lhs == rhs) return true;
+        else {
+            if (lhs > 90) lhs -= 32;
+            if (rhs > 90) rhs -= 32;
+        }
+
+        return lhs == rhs;
     }
 
     /**
@@ -111,11 +82,10 @@ public class SequenceUtil {
 
     /** Returns true if the byte is in [acgtACGT]. */
     public static boolean isValidBase(final byte b) {
-        return isValidBase(b, VALID_BASES_UPPER) || isValidBase(b, VALID_BASES_LOWER);
-    }
-
-    private static boolean isValidBase(final byte b, final byte[] validBases) {
-        for (final byte validBase : validBases) {
+        for (final byte validBase : VALID_BASES_UPPER) {
+            if (b == validBase) return true;
+        }
+        for (final byte validBase : VALID_BASES_LOWER) {
             if (b == validBase) return true;
         }
         return false;
