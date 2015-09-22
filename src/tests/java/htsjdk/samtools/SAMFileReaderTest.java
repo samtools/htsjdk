@@ -120,4 +120,11 @@ public class SAMFileReaderTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
+    @Test
+    public void samRecordFactoryNullHeaderTest(final String inputFile) {
+        final SAMRecordFactory factory = new DefaultSAMRecordFactory();
+        final SAMRecord samRec = factory.createSAMRecord(null);
+        Assert.assertTrue(samRec.getHeader() == null);
+    }
+
 }

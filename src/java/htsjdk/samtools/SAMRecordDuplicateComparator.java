@@ -75,10 +75,16 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
         final String readGroupId = (String) rec.getAttribute("RG");
 
         if (readGroupId != null) {
-            final SAMReadGroupRecord rg = rec.getHeader().getReadGroup(readGroupId);
-            if (rg != null) {
-                final String libraryName = rg.getLibrary();
-                if (null != libraryName) return libraryName;
+            final SAMFileHeader samHeader = rec.getHeader();
+            if (null == samHeader) {
+               throw new SAMException("A non-null SAMHeader is required to resolve the library name: " + rec.getReadName());
+            }
+            else {
+                final SAMReadGroupRecord rg = samHeader.getReadGroup(readGroupId);
+                if (rg != null) {
+                    final String libraryName = rg.getLibrary();
+                    if (null != libraryName) return libraryName;
+                }
             }
         }
 

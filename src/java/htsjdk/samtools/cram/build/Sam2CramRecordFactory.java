@@ -89,6 +89,7 @@ public class Sam2CramRecordFactory {
         this.refBases = refBases;
         this.version = version;
 
+        // TODO: Assumes header is non-null - do we need to code defensively against null headers here ?
         final List<SAMReadGroupRecord> readGroups = samFileHeader.getReadGroups();
         for (int i = 0; i < readGroups.size(); i++) {
             final SAMReadGroupRecord readGroupRecord = readGroups.get(i);
