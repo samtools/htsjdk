@@ -581,7 +581,12 @@ public final class SAMUtils {
      * length of the sequence to which the record is mapped).
      */
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
-        return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        if (record.getHeader() == null) {
+            throw new SAMException("A non-null SAMHeader is required to resolve the mapping position: " + record.getReadName());
+        }
+        else {
+            return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        }
     }
 
     /**
@@ -865,14 +870,22 @@ public final class SAMUtils {
         // Don't know line number, and don't want to force read name to be decoded.
         List<SAMValidationError> ret = cigar.isValid(rec.getReadName(), recordNumber);
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            final SAMSequenceRecord sequence = rec.getHeader().getSequence(referenceIndex);
-            final int referenceSequenceLength = sequence.getSequenceLength();
-            for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
-                if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
-                            cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
-                    break;
+            SAMFileHeader samHeader = rec.getHeader();
+            if (null == samHeader) {
+                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
+                        cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
+            }
+            else {
+                final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
+                final int referenceSequenceLength = sequence.getSequenceLength();
+                for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
+                    if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
+                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
+                                cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
+                        break;
+                    }
                 }
             }
         }

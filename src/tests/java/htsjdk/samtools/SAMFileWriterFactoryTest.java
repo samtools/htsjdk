@@ -111,6 +111,35 @@ public class SAMFileWriterFactoryTest {
         Assert.assertEquals(writtensam, originalsam);
     }
 
+    @Test(description="Write SAM records with null SAMFileHeader")
+    public void samNullHeaderRoundTrip()  throws Exception  {
+        final File input = new File(TEST_DATA_DIR, "roundtrip.sam");
+
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        final File outputFile = File.createTempFile("nullheader-out", ".sam");
+        outputFile.delete();
+        outputFile.deleteOnExit();
+        FileOutputStream os = new FileOutputStream(outputFile);
+        final SAMFileWriterFactory factory = new SAMFileWriterFactory();
+        final SAMFileWriter writer = factory.makeSAMWriter(reader.getFileHeader(), false, os);
+        for (SAMRecord rec : reader) {
+            rec.setHeader(null);
+            writer.addAlignment(rec);
+        }
+        writer.close();
+        os.close();
+
+        InputStream is = new FileInputStream(input);
+        String originalsam = IOUtil.readFully(is);
+        is.close();
+
+        is = new FileInputStream(outputFile);
+        String writtensam = IOUtil.readFully(is);
+        is.close();
+
+        Assert.assertEquals(writtensam, originalsam);
+    }
+
     private void createSmallBam(final File outputFile) {
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         factory.setCreateIndex(true);
@@ -123,8 +152,8 @@ public class SAMFileWriterFactoryTest {
         fillSmallBam(writer);
         writer.close();
     }
-    
-    
+
+
    private void createSmallBamToOutputStream(final OutputStream outputStream,boolean binary) {
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         factory.setCreateIndex(false);

@@ -30,6 +30,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.util.List;
 
 public class SAMRecordUnitTest {
 
@@ -94,4 +95,123 @@ public class SAMRecordUnitTest {
             SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
             Assert.assertEquals(sam.getReferencePositionAtReadPosition(posInRead), expectedReferencePos);
     }
+
+    @Test
+    public void testNullHeaderRefName() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+
+        String origRefName = sam.getReferenceName();
+
+        // setting header to null retains ref name
+        sam.setHeader(null);
+        Assert.assertTrue(origRefName.equals(sam.getReferenceName()));
+
+        // null header allows ref name set
+        sam.setReferenceName("fakeref");
+        Assert.assertTrue("fakeref".equals(sam.getReferenceName()));
+    }
+
+    @Test
+    public void testNullHeaderMateRefName() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+
+        String origMateRefName = sam.getMateReferenceName();
+
+        // setting header to null retains ref name
+        sam.setHeader(null);
+        Assert.assertTrue(origMateRefName.equals(sam.getMateReferenceName()));
+
+        // null header allows ref name set
+        sam.setMateReferenceName("fakemateref");
+        Assert.assertTrue("fakemateref".equals(sam.getMateReferenceName()));
+    }
+
+    @Test
+    public void testSetNullHeaderGetRefIndex() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+
+        // setting header to null retains ref index
+        sam.setReferenceIndex(3);
+        Assert.assertTrue(sam.getReferenceIndex().equals(3));
+        sam.setHeader(null);
+        Assert.assertTrue(sam.getReferenceIndex().equals(3));
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testNullHeaderSetRefIndex() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        sam.setHeader(null);
+        sam.setReferenceIndex(3);
+    }
+
+    @Test
+    public void testNullHeaderGetMateRefIndex() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+
+        // setting header to null retains mate ref index
+        sam.setMateReferenceIndex(3);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(3));
+        sam.setHeader(null);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(3));
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testNullHeaderSetMateRefIndex() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        sam.setHeader(null);
+        sam.setMateReferenceIndex(3);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testNullHeaderGetReadGroup() {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+
+        Assert.assertTrue(null != sam.getReadGroup() && sam.getReadGroup().getId().equals("1"));
+        sam.setHeader(null);
+        sam.getReadGroup();
+    }
+
+    @Test(dataProvider = "serializationTestData")
+    public void testNullHeaderSerialization(final File inputFile) throws Exception {
+        final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
+        final SAMRecord initialSAMRecord = reader.iterator().next();
+        reader.close();
+
+        initialSAMRecord.setHeader(null);
+        final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
+        Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+    }
+
+    @Test(dataProvider = "offsetAtReferenceData")
+    public void testNullHeaderValidation(String cigar, int posInReference, int expectedPosInRead, boolean returnLastBaseIfDeleted) {
+        SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
+        sam.setHeader(null);
+
+        List<SAMValidationError> validationErrors = sam.isValid(false);
+        boolean foundMissing = false;
+        for (SAMValidationError val : validationErrors) {
+            if (val.getType() == SAMValidationError.Type.MISSING_HEADER) {
+                foundMissing = true;
+                break;
+            }
+        }
+        Assert.assertTrue(foundMissing);
+
+        validationErrors = sam.isValid(true);
+        Assert.assertTrue(validationErrors != null &&
+                            validationErrors.size() != 0 &&
+                            validationErrors.get(0)!= null &&
+                            validationErrors.get(0).getType() == SAMValidationError.Type.MISSING_HEADER);
+    }
+
 }
