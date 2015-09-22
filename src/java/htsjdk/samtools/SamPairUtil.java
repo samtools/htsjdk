@@ -183,8 +183,8 @@ public class SamPairUtil {
 
     /**
      * Write the mate info for two SAMRecords
-     * @param rec1 the first SAM record
-     * @param rec2 the second SAM record
+     * @param rec1 the first SAM record. Must have a non-null SAMFileHeader.
+     * @param rec2 the second SAM record. Must have a non-null SAMFileHeader.
      * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
      */
     public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final boolean setMateCigar) {

@@ -110,6 +110,25 @@ public class SamReaderFactoryTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(recordFactory.bamRecordsCreated, i);
     }
 
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void samRecordFactoryNullHeaderBAMTest() {
+        final SAMRecordFactory recordFactory = new DefaultSAMRecordFactory();
+        recordFactory.createBAMRecord(
+                null, // null header
+                0,
+                0,
+                (short) 0,
+                (short) 0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null);
+    }
+
 
     /**
      * Unit tests for asserting all permutations of data and index sources read the same records and header.

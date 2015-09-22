@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Create a SAMFileWriter for writing SAM or BAM.
+ * Create a writer for writing SAM, BAM, or CRAM files.
  */
 public class SAMFileWriterFactory {
     private static boolean defaultCreateIndexWhileWriting = Defaults.CREATE_INDEX;

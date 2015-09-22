@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.List;
 
 public class SAMRecordUnitTest {
 
@@ -486,5 +487,364 @@ public class SAMRecordUnitTest {
 
         record.setAttribute(tag, null);
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
+    }
+
+    private SAMRecord createTestRecordHelper() {
+        return new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+    }
+
+    @Test
+    public void testReferenceName() {
+        SAMRecord sam = createTestRecordHelper();
+
+        // NO_ALIGNMENT_NAME
+        sam.setReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        Assert.assertTrue(sam.getReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+        Assert.assertTrue(sam.getReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+
+        // valid reference name
+        sam = createTestRecordHelper();
+        sam.setReferenceName("chr4");
+        Assert.assertTrue(sam.getReferenceName().equals("chr4"));
+        Assert.assertTrue(sam.getReferenceIndex().equals(3));
+
+        // invalid reference name sets name but leaves ref index invalid
+        sam = createTestRecordHelper();
+        sam.setReferenceName("unresolvableName");
+        Assert.assertTrue(sam.getReferenceName().equals("unresolvableName"));
+        Assert.assertTrue(sam.getReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+    }
+
+    @Test
+    public void testReferenceIndex() {
+        // NO_ALIGNMENT_REFERENCE
+        SAMRecord sam = createTestRecordHelper();
+        sam.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertTrue(sam.getReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        Assert.assertTrue(sam.getReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+
+        // valid reference
+        sam = createTestRecordHelper();
+        sam.setReferenceIndex(3);
+        Assert.assertTrue(sam.getReferenceIndex().equals(3));
+        Assert.assertTrue(sam.getReferenceName().equals("chr4"));
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testInvalidReferenceIndex() {
+        // unresolvable reference
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReferenceIndex(9999);
+    }
+
+    @Test
+    public void testMateReferenceName() {
+        // NO_ALIGNMENT_NAME
+        SAMRecord sam = createTestRecordHelper();
+        sam.setMateReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        Assert.assertTrue(sam.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+
+        // valid reference
+        sam = createTestRecordHelper();
+        sam.setMateReferenceName("chr4");
+        Assert.assertTrue(sam.getMateReferenceName().equals("chr4"));
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(3));
+
+        // unresolvable reference
+        sam = createTestRecordHelper();
+        sam.setMateReferenceName("unresolvableName");
+        Assert.assertTrue(sam.getMateReferenceName().equals("unresolvableName"));
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+    }
+
+    @Test
+    public void testMateReferenceIndex() {
+        // NO_ALIGNMENT_REFERENCE
+        SAMRecord sam = createTestRecordHelper();
+        sam.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        Assert.assertTrue(sam.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+
+        // valid reference
+        sam = createTestRecordHelper();
+        sam.setMateReferenceIndex(3);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(3));
+        Assert.assertTrue(sam.getMateReferenceName().equals("chr4"));
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testInvalidMateReferenceIndex() {
+        // unresolvable reference
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setMateReferenceIndex(9999);
+    }
+
+    @Test
+    public void testRecordValidation() {
+        final SAMRecord sam = createTestRecordHelper();
+        List<SAMValidationError> validationErrors = sam.isValid(false);
+        Assert.assertTrue(validationErrors == null);
+    }
+
+    @Test
+    public void testInvalidAlignmentStartValidation() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setAlignmentStart(0);
+        List<SAMValidationError> validationErrors = sam.isValid(false);
+        Assert.assertTrue(validationErrors != null && validationErrors.size() == 1);
+    }
+
+    // ----------------- NULL header tests ---------------------
+
+    @Test
+    public void testNullHeaderReferenceName() {
+        final SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+        final String originalRefName = sam.getReferenceName();
+
+        // setting header to null retains the previously assigned ref name
+        sam.setHeader(null);
+        Assert.assertTrue(originalRefName.equals(sam.getReferenceName()));
+
+        // null header allows reference name to be set to NO_ALIGNMENT_REFERENCE_NAME
+        sam.setReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        Assert.assertTrue(sam.getReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+        Assert.assertTrue(sam.getReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+
+        // null header allows reference name to be reset to a valid namw
+        sam.setReferenceName(originalRefName);
+        Assert.assertTrue(sam.getReferenceName().equals(originalRefName));
+    }
+
+    @Test
+    public void testNullHeaderReferenceIndex() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        int originalRefIndex = sam.getReferenceIndex();
+        Assert.assertTrue(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX != originalRefIndex);
+
+        // setting header to null resets the reference index to null
+        sam.setHeader(null);
+        Assert.assertTrue(null == sam.mReferenceIndex);
+        // restoring the header to restores the reference index back to the original
+        sam.setHeader(samHeader);
+        Assert.assertTrue(sam.getReferenceIndex().equals(originalRefIndex));
+
+        // setting the header to null allows setting the reference index to NO_ALIGNMENT_REFERENCE_INDEX
+        sam.setHeader(null);
+        sam.setReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertTrue(sam.getReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        Assert.assertTrue(sam.getReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+
+        // force the internal SAMRecord reference index value to (null) initial state
+        sam = new SAMRecord(null);
+        Assert.assertTrue(null == sam.mReferenceIndex);
+        Assert.assertTrue(sam.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+
+        // an unresolvable reference name doesn't throw
+        final String unresolvableRefName = "unresolvable";
+        sam.setReferenceName(unresolvableRefName);
+        // now force the SAMRecord to try to resolve the unresolvable name
+        sam.setHeader(samHeader);
+        Assert.assertTrue(null == sam.mReferenceIndex);
+        Assert.assertTrue(sam.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderSetReferenceIndex() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setHeader(null);
+        // setReferenceIndex with null header throws
+        sam.setReferenceIndex(3);
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderGetReferenceIndex() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setHeader(null);
+        // getReferenceIndex with null header throws
+        sam.getReferenceIndex();
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderForceIndexResolutionFailure() {
+        // force the internal SAMRecord reference index value to null initial state
+        final SAMRecord sam = new SAMRecord(null);
+        sam.setReferenceName("unresolvable");
+        sam.getReferenceIndex();
+    }
+
+    @Test
+    public void testNullHeaderMateReferenceName() {
+        final SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        Assert.assertTrue(null != samHeader);
+        final String originalMateRefName = sam.getMateReferenceName();
+
+        // setting header to null retains the previously assigned mate ref name
+        sam.setHeader(null);
+        Assert.assertTrue(originalMateRefName.equals(sam.getMateReferenceName()));
+
+        // null header allows mate reference name to be set to NO_ALIGNMENT_REFERENCE_NAME
+        sam.setMateReferenceName(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+        Assert.assertTrue(sam.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+
+        // null header allows reference name to be reset to a valid namw
+        sam.setMateReferenceName(originalMateRefName);
+        Assert.assertTrue(sam.getMateReferenceName().equals(originalMateRefName));
+    }
+
+    @Test
+    public void testNullHeaderMateReferenceIndex() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        sam.setMateReferenceName("chr1");
+        int originalMateRefIndex = sam.getMateReferenceIndex();
+        Assert.assertTrue(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX != originalMateRefIndex);
+
+        // setting header to null resets the mate reference index to null
+        sam.setHeader(null);
+        Assert.assertTrue(null == sam.mMateReferenceIndex);
+        // restoring the header to restores the reference index back to the original
+        sam.setHeader(samHeader);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(originalMateRefIndex));
+
+        // setting the header to null allows setting the mate reference index to NO_ALIGNMENT_REFERENCE_INDEX
+        sam.setHeader(null);
+        sam.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+        Assert.assertTrue(sam.getMateReferenceIndex().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+        Assert.assertTrue(sam.getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME));
+
+        // force the internal SAMRecord mate reference index value to (null) initial state
+        sam = new SAMRecord(null);
+        Assert.assertTrue(null == sam.mMateReferenceIndex);
+        Assert.assertTrue(sam.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+
+        // an unresolvable mate reference name doesn't throw
+        final String unresolvableRefName = "unresolvable";
+        sam.setMateReferenceName(unresolvableRefName);
+        // now force the SAMRecord to try to resolve the unresolvable mate reference name
+        sam.setHeader(samHeader);
+        Assert.assertTrue(null == sam.mMateReferenceIndex);
+        Assert.assertTrue(sam.getMateReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderSetMateReferenceIndex() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setHeader(null);
+        sam.setMateReferenceIndex(3);
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderGetMateReferenceIndex() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setMateReferenceName("chr1");
+        sam.setHeader(null);
+        // getMateReferenceIndex with null header throws
+        sam.getMateReferenceIndex();
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testNullHeaderForceMateIndexResolutionFailure() {
+        // force the internal SAMRecord reference index value to null initial state
+        final SAMRecord sam = new SAMRecord(null);
+        sam.setMateReferenceName("unresolvable");
+        sam.getMateReferenceIndex();
+    }
+
+    @Test
+    public void testNullHeaderGetReadGroup() {
+        final SAMRecord sam = createTestRecordHelper();
+        Assert.assertTrue(null != sam.getHeader());
+
+        Assert.assertTrue(null != sam.getReadGroup() && sam.getReadGroup().getId().equals("1"));
+        sam.setHeader(null);
+        Assert.assertNull(sam.getReadGroup());
+    }
+
+    @Test(dataProvider = "serializationTestData")
+    public void testNullHeaderSerialization(final File inputFile) throws Exception {
+        final SamReader reader = SamReaderFactory.makeDefault().open(inputFile);
+        final SAMRecord initialSAMRecord = reader.iterator().next();
+        reader.close();
+
+        initialSAMRecord.setHeader(null);
+        final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
+        Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+    }
+
+    @Test
+    public void testNullHeaderRecordValidation() {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setHeader(null);
+        List<SAMValidationError> validationErrors = sam.isValid(false);
+        Assert.assertTrue(validationErrors == null);
+    }
+
+    @Test
+    private SAMRecord testNullHeaderDeepCopy() {
+        SAMRecord sam = createTestRecordHelper();
+        sam.setHeader(null);
+        final SAMRecord deepCopy = sam.deepCopy();
+
+        // force the indexing bins to be computed in order to satisfy equality test
+        sam.setIndexingBin(sam.computeIndexingBin());
+        deepCopy.setIndexingBin(deepCopy.computeIndexingBin());
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        return deepCopy;
+    }
+
+    private void testNullHeaderCigar(SAMRecord rec) {
+        Cigar origCigar = rec.getCigar();
+        Assert.assertNotNull(origCigar);
+        String originalCigarString = rec.getCigarString();
+
+        // set the cigar to null and then reset the cigar string in order to force getCigar to decode it
+        rec.setCigar(null);
+        Assert.assertNull(rec.getCigar());
+        rec.setCigarString(originalCigarString);
+        rec.setValidationStringency(ValidationStringency.STRICT);
+        rec.setHeader(null);
+        Assert.assertTrue(rec.getValidationStringency() == ValidationStringency.STRICT);
+
+        // force getCigar to decode the cigar string, validate that SAMRecord doesn't try to validate the cigar
+        Cigar cig = rec.getCigar();
+        Assert.assertNotNull(cig);
+        String cigString = TextCigarCodec.encode(cig);
+        Assert.assertEquals(cigString, originalCigarString);
+    }
+
+    @Test
+    private void testNullHeadGetCigarSAM() {
+        SAMRecord sam = createTestRecordHelper();
+        testNullHeaderCigar(sam);
+    }
+
+    @Test
+    private void testNullHeadGetCigarBAM() {
+        SAMRecord sam = createTestRecordHelper();
+        SAMRecordFactory factory = new DefaultSAMRecordFactory();
+        BAMRecord bamRec = factory.createBAMRecord(
+                sam.getHeader(),
+                sam.getReferenceIndex(),
+                sam.getAlignmentStart(),
+                (short) sam.getReadNameLength(),
+                (short) sam.getMappingQuality(),
+                0,
+                sam.getCigarLength(),
+                sam.getFlags(),
+                sam.getReadLength(),
+                sam.getMateReferenceIndex(),
+                sam.getMateAlignmentStart(),
+                0, null);
+
+        bamRec.setCigarString(sam.getCigarString());
+
+        testNullHeaderCigar(bamRec);
     }
 }

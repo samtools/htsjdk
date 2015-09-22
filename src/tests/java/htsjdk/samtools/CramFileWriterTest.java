@@ -52,6 +52,16 @@ public class CramFileWriterTest {
         doTest(createRecords(1000));
     }
 
+    @Test(description = "Tests a writing records with null SAMFileHeaders")
+    public void writeRecordsWithNullHeader() throws Exception {
+
+        final List<SAMRecord> samRecs = createRecords(50);
+        for (SAMRecord rec : samRecs) {
+            rec.setHeader(null);
+        }
+        doTest(samRecs);
+    }
+
     @Test(description = "Tests a unmapped record with sequence and quality fields")
     public void unmappedWithSequenceAndQualityField() throws Exception {
         unmappedSequenceAndQualityFieldHelper(true);
@@ -116,7 +126,7 @@ public class CramFileWriterTest {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         CRAMFileWriter writer = new CRAMFileWriter(os, source, header, null);
         for (SAMRecord record : samRecords) {
-            writer.writeAlignment(record);
+            writer.addAlignment(record);
         }
         writer.finish();
         writer.close();
