@@ -142,8 +142,9 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     public static boolean hasBlockCompressedExtension(final String path) {
 
         for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
-            if(ParsingUtils.pathHasExtension(path, extension));
+            if(ParsingUtils.pathHasExtension(path, extension)) {
                 return true;
+            }
         }
         return false;
     }
