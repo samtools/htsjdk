@@ -28,6 +28,7 @@ import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.exception.CodecLineParsingException;
 import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.util.ParsingUtils;
 
 import java.util.Arrays;
 
@@ -74,7 +75,7 @@ public class GeliTextCodec extends AsciiFeatureCodec<GeliTextFeature> {
 
     @Override
     public boolean canDecode(String path){
-	return path.toLowerCase().endsWith(".geli.calls") || path.toLowerCase().endsWith(".geli");
+	return ParsingUtils.pathHasExtension(path, ".geli.calls");
     }
 
     @Override

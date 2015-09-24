@@ -141,12 +141,8 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      */
     public static boolean hasBlockCompressedExtension(final String path) {
 
-        final String fileName = (path.startsWith("http://") || path.startsWith("https://")) ?
-                path.split("\\?", 2)[0] :
-                path;
-
         for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
-            if (fileName.toLowerCase().endsWith(extension))
+            if(ParsingUtils.pathHasExtension(path, extension));
                 return true;
         }
         return false;

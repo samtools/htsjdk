@@ -475,4 +475,15 @@ public class ParsingUtils {
         }
         return tabxIndex;
     }
+
+    /**
+     * Test if path ends with extension after stripping URL query string
+     */
+    public static boolean pathHasExtension(final String path, final String extension) {
+        final String strippedPath = (path.startsWith("http://") || path.startsWith("https://")) ?
+                path.split("\\?", 2)[0] :
+                path;
+
+        return strippedPath.toLowerCase().endsWith(extension.toLowerCase());
+    }
 }
