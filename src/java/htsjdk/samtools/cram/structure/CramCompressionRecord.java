@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
 import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
@@ -157,7 +158,10 @@ public class CramCompressionRecord {
     }
 
     void calculateAlignmentBoundaries() {
-        if (readFeatures == null || readFeatures.isEmpty()) {
+        if (isSegmentUnmapped()) {
+            alignmentSpan = 0;
+            alignmentEnd = SAMRecord.NO_ALIGNMENT_START;
+        } else if (readFeatures == null || readFeatures.isEmpty()) {
             alignmentSpan = readLength;
             alignmentEnd = alignmentStart + alignmentSpan - 1;
         } else {
