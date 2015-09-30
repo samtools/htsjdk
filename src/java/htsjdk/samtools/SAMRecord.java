@@ -966,8 +966,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Get the tag value and attempt to coerce it into the requested type.
      * @param tag The requested tag.
-     * @return The value of a tag, converted into an Integer if possible.
-     * @throws RuntimeException If the value is not an integer type, or will not fit in an Integer.
+     * @return The value of a tag, converted into a signed Integer if possible.
+     * @throws RuntimeException If the value is not an integer type, or will not fit in a signed Integer.
      */
     public Integer getIntegerAttribute(final String tag) {
         final Object val = getAttribute(tag);
@@ -983,6 +983,46 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             throw new RuntimeException("Value for tag " + tag + " is not in Integer range: " + longVal);
         }
         return (int)longVal;
+    }
+
+    /**
+     * A convenience method that will return a valid unsigned integer as a Long,
+     * or fail with an exception if the tag value is invalid.
+     *
+     * @param tag Two-character tag name.
+     * @return valid unsigned integer associated with the tag, as a Long
+     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     */
+    public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
+        return getUnsignedIntegerAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag));
+    }
+
+    /**
+     * A convenience method that will return a valid unsigned integer as a Long,
+     * or fail with an exception if the tag value is invalid.
+     *
+     * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
+     * @return valid unsigned integer associated with the tag, as a Long
+     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     */
+    public Long getUnsignedIntegerAttribute(final short tag) throws SAMException {
+        final Object value = getAttribute(tag);
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            final long lValue = ((Number)value).longValue();
+            if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+                return lValue;
+            } else {
+                throw new SAMException("Unsigned integer value of tag " +
+                        SAMTagUtil.getSingleton().makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
+            }
+        } else {
+            throw new SAMException("Unexpected attribute value data type " + value.getClass() + " for tag " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
+        }
     }
 
     /**
@@ -1161,14 +1201,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Set a named attribute onto the SAMRecord.  Passing a null value causes the attribute to be cleared.
      * @param tag two-character tag name.  See http://samtools.sourceforge.net/SAM1.pdf for standard and user-defined tags.
-     * @param value Supported types are String, Char, Integer, Float, byte[], short[]. int[], float[].
+     * @param value Supported types are String, Char, Integer, Float,
+     *              Long (for values that fit into a signed or unsigned 32-bit integer only),
+     *              byte[], short[], int[], float[].
      * If value == null, tag is cleared.
      *
      * Byte and Short are allowed but discouraged.  If written to a SAM file, these will be converted to Integer,
      * whereas if written to BAM, getAttribute() will return as Byte or Short, respectively.
      *
-     * Long with value between 0 and MAX_UINT is allowed for BAM but discouraged.  Attempting to write such a value
-     * to SAM will cause an exception to be thrown.
+     * Long is allowed for values that fit into a signed or unsigned 32-bit integer only, but discouraged.
      *
      * To set unsigned byte[], unsigned short[] or unsigned int[] (which is discouraged because of poor Java language
      * support), setUnsignedArrayAttribute() must be used instead of this method.
@@ -1206,24 +1247,43 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         setAttribute(tag, value, false);
     }
 
+    /**
+     * Checks if the value is allowed as an attribute value.
+     *
+     * @param value the value to be checked
+     * @return true if the value is valid and false otherwise
+     */
+    protected static boolean isAllowedAttributeValue(final Object value) {
+        if (value instanceof Byte || value instanceof Short || value instanceof Integer ||
+                value instanceof String || value instanceof Character || value instanceof Float ||
+                value instanceof byte[] || value instanceof short[] || value instanceof int[] ||
+                value instanceof float[]) {
+            return true;
+        }
+
+        // A special case for Longs: we require Long values to fit into either a uint32_t or an int32_t,
+        // as that is what the BAM spec allows.
+        if (value instanceof Long) {
+            return SAMUtils.isValidUnsignedIntegerAttribute((Long) value)
+                    || ((Long) value >= Integer.MIN_VALUE && (Long) value <= Integer.MAX_VALUE);
+        }
+        return false;
+    }
+
     protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
-        if (value != null &&
-                !(value instanceof Byte || value instanceof Short || value instanceof Integer ||
-                        value instanceof String || value instanceof Character || value instanceof Float ||
-                        value instanceof byte[] || value instanceof short[] || value instanceof int[] ||
-                        value instanceof float[])) {
-            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
-        }
         if (value == null) {
-            if (this.mAttributes != null) this.mAttributes = this.mAttributes.remove(tag);
-        }
-        else {
-            final SAMBinaryTagAndValue tmp;
-            if(!isUnsignedArray) {
-                tmp = new SAMBinaryTagAndValue(tag, value);
+            // setting a tag value to null removes the tag:
+            if (this.mAttributes != null) {
+                this.mAttributes = this.mAttributes.remove(tag);
             }
-            else {
+            return;
+        }
+
+        if (isAllowedAttributeValue(value)) {
+            final SAMBinaryTagAndValue tmp;
+            if (!isUnsignedArray) {
+                tmp = new SAMBinaryTagAndValue(tag, value);
+            } else {
                 if (!value.getClass().isArray() || value instanceof float[]) {
                     throw new SAMException("Attribute type " + value.getClass() +
                             " cannot be encoded as an unsigned array. Tag: " +
@@ -1231,8 +1291,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
-            if (this.mAttributes == null) this.mAttributes = tmp;
-            else this.mAttributes = this.mAttributes.insert(tmp);
+
+            if (this.mAttributes == null) {
+                this.mAttributes = tmp;
+            } else {
+                this.mAttributes = this.mAttributes.insert(tmp);
+            }
+        } else {
+            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
         }
     }
 

@@ -17,7 +17,9 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.readfeatures.Bases;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
@@ -38,6 +40,11 @@ import java.util.LinkedList;
 
 public class CramRecordReader extends AbstractReader {
     private CramCompressionRecord prevRecord;
+    private ValidationStringency validationStringency;
+
+    public CramRecordReader(ValidationStringency validationStringency) {
+        this.validationStringency = validationStringency;
+    }
 
     @SuppressWarnings("ConstantConditions")
     public void read(final CramCompressionRecord cramRecord) {
@@ -87,7 +94,7 @@ public class CramRecordReader extends AbstractReader {
                 for (int i = 0; i < ids.length; i++) {
                     final int id = ReadTag.name3BytesToInt(ids[i]);
                     final DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-                    final ReadTag tag = new ReadTag(id, dataReader.readData());
+                    final ReadTag tag = new ReadTag(id, dataReader.readData(), validationStringency);
                     cramRecord.tags[i] = tag;
                 }
             }
@@ -186,10 +193,19 @@ public class CramRecordReader extends AbstractReader {
             recordCounter++;
 
             prevRecord = cramRecord;
-        } catch (final Exception e) {
-            if (prevRecord != null)
+        }
+        catch (final SAMFormatException e) {
+            if (prevRecord != null) {
                 System.err.printf("Failed at record %d. Here is the previously read record: %s\n", recordCounter,
                         prevRecord.toString());
+            }
+            throw e;
+        }
+        catch (final Exception e) {
+            if (prevRecord != null) {
+                System.err.printf("Failed at record %d. Here is the previously read record: %s\n", recordCounter,
+                        prevRecord.toString());
+            }
             throw new RuntimeException(e);
         }
     }

@@ -379,6 +379,8 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
             outputStream.flush();
             if (indexer != null)
                 indexer.finish();
+        } catch (final RuntimeException re) {
+            throw re;
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }

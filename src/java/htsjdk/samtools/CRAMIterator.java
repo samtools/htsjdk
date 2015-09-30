@@ -153,7 +153,7 @@ public class CRAMIterator implements SAMRecordIterator {
         else
             cramRecords.clear();
 
-        parser.getRecords(container, cramRecords);
+        parser.getRecords(container, cramRecords, validationStringency);
 
         if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             refs = new byte[]{};
@@ -253,7 +253,12 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!iterator.hasNext()) {
             try {
                 nextContainer();
-            } catch (final Exception e) {
+            } catch (CRAMException ce) {
+                throw ce;
+            } catch (SAMFormatException se) {
+                throw se;
+            }
+            catch (final Exception e) {
                 throw new RuntimeEOFException(e);
             }
         }
