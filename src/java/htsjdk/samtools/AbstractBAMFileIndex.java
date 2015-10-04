@@ -64,8 +64,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     {
         mBamDictionary = dictionary;
         mIndexBuffer = new IndexStreamBuffer(stream);
-        
-        seek(4);
+
+        verifyBAMMagicNumber(stream.getSource());
+
         sequenceIndexes = new int[readInteger() + 1];
         Arrays.fill(sequenceIndexes, -1);
     }
@@ -78,15 +79,8 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         mBamDictionary = dictionary;
         mIndexBuffer = (useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
 
-        // Verify the magic number.
-        seek(0);
-        final byte[] buffer = new byte[4];
-        readBytes(buffer);
-        if (!Arrays.equals(buffer, BAMFileConstants.BAM_INDEX_MAGIC)) {
-            throw new RuntimeIOException("Invalid file header in BAM index " + file +
-                                       ": " + new String(buffer));
-        }
-        
+        verifyBAMMagicNumber(file.getName());
+
         sequenceIndexes = new int[readInteger() + 1];
         Arrays.fill(sequenceIndexes, -1);
     }
@@ -397,6 +391,17 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      */
     protected List<Chunk> optimizeChunkList(final List<Chunk> chunks, final long minimumOffset) {
         return Chunk.optimizeChunkList(chunks, minimumOffset);
+    }
+
+    private void verifyBAMMagicNumber(final String sourceName) {
+        // Verify the magic number.
+        seek(0);
+        final byte[] buffer = new byte[4];
+        readBytes(buffer);
+        if (!Arrays.equals(buffer, BAMFileConstants.BAM_INDEX_MAGIC)) {
+            throw new RuntimeIOException("Invalid file header in BAM index " + sourceName +
+                    ": " + new String(buffer));
+        }
     }
 
     private void skipToSequence(final int sequenceIndex) {
