@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAMException;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -56,25 +58,36 @@ public class SAMFileReaderTest {
     // tests for CRAM indexing
 
     @Test(dataProvider = "SmallCRAMTest")
-    public void CRAMIndexTest(final String inputFile) {
+    public void CRAMIndexTest(final String inputFile, final String referenceFile, QueryInterval queryInterval, String expectedReadName) {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
         Assert.assertTrue(reader.hasIndex());
+
+        final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[]{queryInterval}, false);
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord r1 = iterator.next();
+        Assert.assertEquals(r1.getReadName(), expectedReadName);
+
         CloserUtil.close(reader);
     }
 
     @DataProvider(name = "SmallCRAMTest")
     public Object[][] CRAMIndexTestData() {
         final Object[][] testFiles = new Object[][]{
-                {"cram/test.cram"},
+                {"cram/test.cram", "cram/auxf.fa", new QueryInterval(0, 12, 13), "Jim"},
+                {"cram_with_bai_index.cram", "hg19mini.fasta", new QueryInterval(3, 700, 0), "k"},
+                {"cram_with_crai_index.cram", "hg19mini.fasta", new QueryInterval(2, 350, 0), "i"},
         };
         return testFiles;
     }
 
+
     @Test(dataProvider = "NoIndexCRAMTest")
-    public void CRAMNoIndexTest(final String inputFile) {
+    public void CRAMNoIndexTest(final String inputFile, final String referenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
-        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
         Assert.assertFalse(reader.hasIndex());
         CloserUtil.close(reader);
     }
@@ -82,7 +95,7 @@ public class SAMFileReaderTest {
     @DataProvider(name = "NoIndexCRAMTest")
     public Object[][] CRAMNoIndexTestData() {
         final Object[][] testFiles = new Object[][]{
-                {"cram/test2.cram"},
+                {"cram/test2.cram", "cram/auxf.fa"},
         };
         return testFiles;
     }
@@ -120,4 +133,40 @@ public class SAMFileReaderTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
+    @DataProvider(name = "cramNegativeTestCases")
+    public Object[][] cramTestNegativeCases() {
+        final Object[][] scenarios = new Object[][]{
+                {"cram_with_bai_index.cram",},
+                {"cram_with_crai_index.cram"},
+        };
+        return scenarios;
+    }
+
+    @Test(dataProvider = "cramNegativeTestCases", expectedExceptions=CRAMException.class)
+    public void testReferenceRequiredForCRAM(final String inputFile) {
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        for (final SAMRecord rec : reader) {
+        }
+        CloserUtil.close(reader);
+    }
+
+    @DataProvider(name = "cramPositiveTestCases")
+    public Object[][] cramTestPositiveCases() {
+        final Object[][] scenarios = new Object[][]{
+                {"cram_with_bai_index.cram", "hg19mini.fasta"},
+                {"cram_with_crai_index.cram", "hg19mini.fasta"},
+        };
+        return scenarios;
+    }
+
+    @Test(dataProvider = "cramPositiveTestCases")
+    public void testIterateCRAMWithIndex(final String inputFile, final String referenceFile) {
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        final File reference = new File(TEST_DATA_DIR, referenceFile);
+        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
+        for (final SAMRecord rec : reader) {
+        }
+        CloserUtil.close(reader);
+    }
 }

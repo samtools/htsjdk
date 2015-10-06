@@ -82,6 +82,9 @@ public class CRAMIterator implements SAMRecordIterator {
 
     public CRAMIterator(final InputStream inputStream, final ReferenceSource referenceSource)
             throws IOException {
+        if (null == referenceSource) {
+            throw new CRAMException("A reference source is required for CRAM files");
+        }
         this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
         final CramContainerIterator containerIterator = new CramContainerIterator(this.countingInputStream);
@@ -97,6 +100,9 @@ public class CRAMIterator implements SAMRecordIterator {
 
     public CRAMIterator(final SeekableStream seekableStream, final ReferenceSource referenceSource, final long[] coordinates)
             throws IOException {
+        if (null == referenceSource) {
+            throw new CRAMException("A reference source is required for CRAM files");
+        }
         this.countingInputStream = new CountingInputStream(seekableStream);
         this.referenceSource = referenceSource;
         final CramSpanContainerIterator containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);

@@ -5,6 +5,8 @@ import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -88,6 +90,45 @@ public class CRAIEntryTest {
         Assert.assertFalse(CRAIEntry.intersect(newEntry(10, 1, 2), newEntry(11, 2, 1)));
     }
 
+    @Test
+    public void testCompareTo () {
+        final List<CRAIEntry> list = new ArrayList<CRAIEntry>(2);
+        CRAIEntry e1;
+        CRAIEntry e2;
+
+        e1 = new CRAIEntry();
+        e1.sequenceId = 100;
+        e2 = new CRAIEntry();
+        e2.sequenceId = 200;
+        list.add(e2);
+        list.add(e1);
+        Assert.assertTrue(list.get(1).sequenceId < list.get(0).sequenceId);
+        Collections.sort(list);
+        Assert.assertTrue(list.get(0).sequenceId < list.get(1).sequenceId);
+
+        list.clear();
+        e1 = new CRAIEntry();
+        e1.alignmentStart = 100;
+        e2 = new CRAIEntry();
+        e2.alignmentStart = 200;
+        list.add(e2);
+        list.add(e1);
+        Assert.assertTrue(list.get(1).alignmentStart < list.get(0).alignmentStart);
+        Collections.sort(list);
+        Assert.assertTrue(list.get(0).alignmentStart < list.get(1).alignmentStart);
+
+        list.clear();
+        e1 = new CRAIEntry();
+        e1.containerStartOffset = 100;
+        e2 = new CRAIEntry();
+        e2.containerStartOffset = 200;
+        list.add(e2);
+        list.add(e1);
+        Assert.assertTrue(list.get(1).containerStartOffset < list.get(0).containerStartOffset);
+        Collections.sort(list);
+        Assert.assertTrue(list.get(0).containerStartOffset < list.get(1).containerStartOffset);
+    }
+
     private static CRAIEntry newEntry(final int start, final int span) {
         return newEntry(1, start, span);
     }
@@ -99,5 +140,6 @@ public class CRAIEntryTest {
         e1.alignmentSpan = span;
         return e1;
     }
+
 
 }

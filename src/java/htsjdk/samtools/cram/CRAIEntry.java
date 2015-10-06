@@ -91,7 +91,7 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
             return 1;
         }
         if (sequenceId != o.sequenceId) {
-            return o.sequenceId - sequenceId;
+            return sequenceId - o.sequenceId;
         }
         if (alignmentStart != o.alignmentStart) {
             return alignmentStart - o.alignmentStart;
