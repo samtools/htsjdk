@@ -546,6 +546,14 @@ public final class SAMUtils {
         }
     }
 
+    /**
+     * Strip mapping information from a SAMRecord.
+     *
+     * WARNING: by clearing the secondary and supplementary flags,
+     * this may have the affect of producing multiple distinct records with the
+     * same read name and flags, which may lead to invalid SAM/BAM output.
+     * Callers of this method should make sure to deal with this issue.
+     */
     public static void makeReadUnmapped(final SAMRecord rec) {
         if (rec.getReadNegativeStrandFlag()) {
             SAMRecordUtil.reverseComplement(rec);
@@ -558,10 +566,31 @@ public final class SAMUtils {
         rec.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
         rec.setInferredInsertSize(0);
         rec.setNotPrimaryAlignmentFlag(false);
+        rec.setSupplementaryAlignmentFlag(false);
         rec.setProperPairFlag(false);
         rec.setReadUnmappedFlag(true);
     }
 
+    /**
+     * Strip mapping information from a SAMRecord, but preserve it in the 'O' tags if it isn't already set.
+     */
+    public static void makeReadUnmappedWithOriginalTags(final SAMRecord rec) {
+        if (!hasOriginalMappingInformation(rec)) {
+            rec.setAttribute(SAMTag.OP.name(), rec.getAlignmentStart());
+            rec.setAttribute(SAMTag.OC.name(), rec.getCigarString());
+            rec.setAttribute(SAMTag.OF.name(), rec.getFlags());
+        }
+        makeReadUnmapped(rec);
+    }
+
+    /**
+     * See if any tags pertaining to original mapping information have been set.
+     */
+    public static boolean hasOriginalMappingInformation(final SAMRecord rec) {
+        return rec.getAttribute(SAMTag.OP.name()) != null
+                || rec.getAttribute(SAMTag.OC.name()) != null
+                || rec.getAttribute(SAMTag.OF.name()) != null;
+    }
 
     /**
      * Determines if a cigar has any element that both consumes read bases and consumes reference bases

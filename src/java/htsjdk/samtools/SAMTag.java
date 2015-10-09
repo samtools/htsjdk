@@ -41,6 +41,7 @@ public enum SAMTag {
     E2,
     FI,
     FS,
+    FT,
     FZ,
     GC, // for backwards compatibility
     GS, // for backwards compatibility
@@ -60,6 +61,7 @@ public enum SAMTag {
     OQ,
     OP,
     OC,
+    OF,
     PG,
     PQ,
     PT,
