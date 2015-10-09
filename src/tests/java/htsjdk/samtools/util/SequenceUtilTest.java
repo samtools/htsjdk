@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.TextCigarCodec;
@@ -53,6 +54,27 @@ public class SequenceUtilTest {
         final SAMSequenceDictionary sd2 = makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
                 "3332ed720ac7eaa9b3655c06f6b9e196");
         SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2);
+    }
+
+    @DataProvider
+    public Object[][] compatibleNonEqualLists(){
+        final String s = HEADER +
+                String.format("@SQ\tSN:phix174.seq\tLN:%d\tUR:%s\tAS:PhiX174\tM5:%s\n", 5386, "/seq/references/PhiX174/v0/PhiX174.fasta", "3332ed720ac7eaa9b3655c06f6b9e196")+
+                String.format("@SQ\tSN:phix175.seq\tLN:%d\tUR:%s\tAS:HiMom\tM5:%s\n", 5385, "/seq/references/PhiX174/v0/HiMom.fasta", "deadbeed");
+
+        return new Object[][]{ {makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
+                "3332ed720ac7eaa9b3655c06f6b9e196"),
+                new SAMTextHeaderCodec().decode(new StringLineReader(s), null).getSequenceDictionary()}};
+    }
+
+    @Test(dataProvider = "compatibleNonEqualLists")
+    public void testCompatible(SAMSequenceDictionary sd1, SAMSequenceDictionary sd2) {
+         SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2, true);
+    }
+
+    @Test(dataProvider = "compatibleNonEqualLists",expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
+    public void testinCompatible(SAMSequenceDictionary sd1, SAMSequenceDictionary sd2) {
+        SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2, false);
     }
 
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)

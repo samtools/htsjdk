@@ -103,21 +103,43 @@ public class SequenceUtil {
     }
 
     /**
-     * Throws an exception only if both parameters are not null
+     * default signature that forces the lists to be the same size
      *
      * @param s1 a list of sequence headers
      * @param s2 a second list of sequence headers
      */
     public static void assertSequenceListsEqual(final List<SAMSequenceRecord> s1, final List<SAMSequenceRecord> s2) {
+        assertSequenceListsEqual(s1, s2, false);
+    }
+    /**
+     * Throws an exception only if both (first) parameters are not null
+     * optionally check that one list is a (nonempty) prefix of the other.
+     *
+     * @param s1 a list of sequence headers
+     * @param s2 a second list of sequence headers
+     * @param checkPrefixOnly a flag specifying whether to only look at the first records in the lists. This will then check that the
+     * records of the smaller dictionary are equal to the records of the beginning of the larger dictionary, which can be useful since
+     * sometimes different pipelines choose to use only the first contigs of a standard reference.
+     */
+    public static void assertSequenceListsEqual(final List<SAMSequenceRecord> s1, final List<SAMSequenceRecord> s2, final boolean checkPrefixOnly) {
         if (s1 != null && s2 != null) {
 
-            if (s1.size() != s2.size()) {
-                throw new SequenceListsDifferException(
-                        "Sequence dictionaries are not the same size (" + s1.size() + ", " + s2.size() +
-                                ")");
-            }
+            final int sizeToTest;
 
-            for (int i = 0; i < s1.size(); ++i) {
+            if (checkPrefixOnly) {
+                sizeToTest = Math.min(s1.size(), s2.size());
+                if (sizeToTest == 0) {
+                    throw new SequenceListsDifferException("Neither of the dictionaries can be empty.");
+                }
+            } else {
+                sizeToTest = s1.size();
+                if (s1.size() != s2.size()) {
+                    throw new SequenceListsDifferException(
+                            "Sequence dictionaries are not the same size (" + s1.size() + ", " + s2.size() +
+                                    ")");
+                }
+            }
+            for (int i = 0; i < sizeToTest; ++i) {
                 if (!s1.get(i).isSameSequence(s2.get(i))) {
                     String s1Attrs = "";
                     for (final java.util.Map.Entry<String, String> entry : s1.get(i)
@@ -159,6 +181,9 @@ public class SequenceUtil {
 
     /**
      * Returns true if both parameters are null or equal, otherwise returns false
+     *
+     * @param s1 a list of sequence headers
+     * @param s2 a second list of sequence headers
      */
     public static boolean areSequenceDictionariesEqual(final SAMSequenceDictionary s1, final SAMSequenceDictionary s2) {
         if (s1 == null && s2 == null) return true;
@@ -174,10 +199,26 @@ public class SequenceUtil {
 
     /**
      * Throws an exception if both parameters are non-null and unequal.
+     *
+     * @param s1 a list of sequence headers
+     * @param s2 a second list of sequence headers
      */
     public static void assertSequenceDictionariesEqual(final SAMSequenceDictionary s1, final SAMSequenceDictionary s2) {
+        assertSequenceDictionariesEqual(s1, s2, false);
+    }
+
+    /**
+     * Throws an exception if both (first) parameters are non-null and unequal (if checkPrefixOnly, checks prefix of lists only).
+     *
+     * @param s1 a list of sequence headers
+     * @param s2 a second list of sequence headers
+     * @param checkPrefixOnly a flag specifying whether to only look at the first records in the lists. This will then check that the
+     * records of the smaller dictionary are equal to the records of the beginning of the larger dictionary, which can be useful since
+     * sometimes different pipelines choose to use only the first contigs of a standard reference.
+     */
+    public static void assertSequenceDictionariesEqual(final SAMSequenceDictionary s1, final SAMSequenceDictionary s2, final boolean checkPrefixOnly) {
         if (s1 == null || s2 == null) return;
-        assertSequenceListsEqual(s1.getSequences(), s2.getSequences());
+        assertSequenceListsEqual(s1.getSequences(), s2.getSequences(), checkPrefixOnly);
     }
 
     /**
