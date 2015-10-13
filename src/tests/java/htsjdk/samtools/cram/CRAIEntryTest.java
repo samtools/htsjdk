@@ -42,7 +42,7 @@ public class CRAIEntryTest {
         final int sequenceId = counter++;
         final int alignmentStart = counter++;
         final int alignmentSpan = counter++;
-        final int containerOffset = counter++;
+        final int containerOffset = Integer.MAX_VALUE + counter++;
         final int sliceOffset = counter++;
         final int sliceSise = counter++;
 
