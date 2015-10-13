@@ -45,7 +45,6 @@ import static java.lang.Math.*;
 public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
     private String binLabel   = "BIN";
     private String valueLabel = "VALUE";
-    private Double mean;
 
     /** Constructs a new Histogram with default bin and value labels. */
     public Histogram() { }
@@ -73,7 +72,6 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
         super(in);
         this.binLabel = in.binLabel;
         this.valueLabel = in.valueLabel;
-        this.mean = in.mean;
     }
 
     /** Represents a bin in the Histogram. */
@@ -146,7 +144,6 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
         }
 
         bin.value += increment;
-        mean = null;
     }
 
     public String getBinLabel() { return binLabel; }
@@ -164,12 +161,23 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
                 super.equals(o);
     }
 
+    /**
+     * Assuming that the key type for the histogram is a Number type, returns the mean of
+     * all the items added to the histogram.
+     */
     public double getMean() {
-        if (mean == null) {
-            mean = getSum() / getCount();
+        // Could use simply getSum() / getCount(), but that would require iterating over the
+        // values() set twice, which seems inefficient given how simply the computation is.
+        double product=0, totalCount=0;
+        for (final Bin bin : values()) {
+            final double idValue = bin.getIdValue();
+            final double count   = bin.getValue();
+
+            product += idValue * count;
+            totalCount += count;
         }
 
-        return mean;
+        return product / totalCount;
     }
 
     /**
