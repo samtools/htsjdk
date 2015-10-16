@@ -97,7 +97,7 @@ public class CramFileWriterTest {
         return list;
     }
 
-    private void doTest(final List<SAMRecord> samRecords) {
+    private void doTest(final List<SAMRecord> samRecords) throws java.io.IOException {
         final SAMFileHeader header = new SAMFileHeader();
         header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
         header.addSequence(new SAMSequenceRecord("chr1", 123));
