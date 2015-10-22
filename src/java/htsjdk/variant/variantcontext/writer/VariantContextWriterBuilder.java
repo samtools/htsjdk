@@ -125,7 +125,7 @@ public class VariantContextWriterBuilder {
     private IndexCreator idxCreator = null;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
-    private EnumSet<Options> options = DEFAULT_OPTIONS.clone();
+    protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
 
     /**
      * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
@@ -364,7 +364,7 @@ public class VariantContextWriterBuilder {
      * @return this VariantContextWriterBuilder
      */
     public VariantContextWriterBuilder clearOptions() {
-        this.options = NO_OPTIONS;
+        this.options = NO_OPTIONS.clone();
         return this;
     }
 
