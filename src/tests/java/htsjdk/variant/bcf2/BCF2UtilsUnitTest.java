@@ -93,6 +93,21 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         Assert.assertEquals(7,dict_size);
     }
 
+    /**
+     * Wrapper class for HeaderOrderTestProvider test cases to prevent TestNG from calling toString()
+     * on the VCFHeaders and spamming the log output.
+     */
+    private static class HeaderOrderTestCase {
+        public final VCFHeader inputHeader;
+        public final VCFHeader testHeader;
+        public final boolean expectedConsistent;
+
+        public HeaderOrderTestCase( final VCFHeader inputHeader, final VCFHeader testHeader, final boolean expectedConsistent ) {
+            this.inputHeader = inputHeader;
+            this.testHeader = testHeader;
+            this.expectedConsistent = expectedConsistent;
+        }
+    }
 
     @DataProvider(name = "HeaderOrderTestProvider")
     public Object[][] makeHeaderOrderTestProvider() {
@@ -132,7 +147,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
                     allLines.addAll(permutation);
                     final VCFHeader testHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(allLines));
                     final boolean expectedConsistent = expectedConsistent(testHeader, inputLineCounter);
-                    tests.add(new Object[]{inputHeader, testHeader, expectedConsistent});
+                    tests.add(new Object[]{new HeaderOrderTestCase(inputHeader, testHeader, expectedConsistent)});
                 }
             }
         }
@@ -153,7 +168,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
                 for ( final List<String> testSamplesPermutation : permutations ) {
                     final VCFHeader testHeaderWithSamples = new VCFHeader(inputHeader.getMetaDataInInputOrder(), testSamplesPermutation);
                     final boolean expectedConsistent = testSamples.equals(inSamples);
-                    tests.add(new Object[]{inputHeaderWithSamples, testHeaderWithSamples, expectedConsistent});
+                    tests.add(new Object[]{new HeaderOrderTestCase(inputHeaderWithSamples, testHeaderWithSamples, expectedConsistent)});
                 }
             }
         }
@@ -182,9 +197,9 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     // even when the header file is slightly different
     //
     @Test(dataProvider = "HeaderOrderTestProvider")
-    public void testHeaderOrder(final VCFHeader inputHeader, final VCFHeader testHeader, final boolean expectedConsistent) {
-        final boolean actualOrderConsistency = BCF2Utils.headerLinesAreOrderedConsistently(testHeader, inputHeader);
-        Assert.assertEquals(actualOrderConsistency, expectedConsistent);
+    public void testHeaderOrder( final HeaderOrderTestCase testCase ) {
+        final boolean actualOrderConsistency = BCF2Utils.headerLinesAreOrderedConsistently(testCase.testHeader, testCase.inputHeader);
+        Assert.assertEquals(actualOrderConsistency, testCase.expectedConsistent);
     }
 
 
