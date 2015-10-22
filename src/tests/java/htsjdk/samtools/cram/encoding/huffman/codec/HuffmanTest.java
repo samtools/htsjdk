@@ -1,9 +1,7 @@
 package htsjdk.samtools.cram.encoding.huffman.codec;
 
-import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
-import htsjdk.samtools.cram.structure.ReadTag;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -15,49 +13,40 @@ import java.io.IOException;
  * Created by vadim on 22/04/2015.
  */
 public class HuffmanTest {
+
     @Test
-    public void testHuffmanIntHelper() throws IOException {
-        int size = 1000000;
+    public void testHuffmanByteHelper() throws IOException {
+        final int size = 100;
 
-        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
-        cal.add(ReadTag.nameType3BytesToInt("OQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XA", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XC", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XT", 'A'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OP", 'i'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OC", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("BQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("AM", 'c'), size);
-
+        final HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
+        for (byte i = Byte.MIN_VALUE; i < Byte.MAX_VALUE; i++) {
+            cal.add(i, (i + Byte.MIN_VALUE )/3 + 1);
+        }
         cal.calculate();
 
-        HuffmanIntHelper helper = new HuffmanIntHelper(cal.values(), cal.bitLens());
+        final HuffmanByteHelper helper = new HuffmanByteHelper(cal.getValuesAsBytes(), cal.getBitLens());
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 
         for (int i = 0; i < size; i++) {
-            for (int b : cal.values()) {
+            for (final byte b : cal.getValuesAsBytes()) {
                 helper.write(bos, b);
             }
         }
 
         bos.close();
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+
+        final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        final DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 
         int counter = 0;
         for (int i = 0; i < size; i++) {
-            for (int b : cal.values()) {
-                int v = helper.read(bis);
-                if (v != b)
+            for (final byte b : cal.getValuesAsBytes()) {
+                final byte v = helper.read(bis);
+                if (v != b) {
                     Assert.fail("Mismatch: " + v + " vs " + b + " at " + counter);
+                }
 
                 counter++;
             }
@@ -65,37 +54,38 @@ public class HuffmanTest {
     }
 
     @Test
-    public void testHuffmanByteHelper () throws IOException {
-                int size = 1000000;
+    public void testHuffmanIntHelper() throws IOException {
+        final int size = 100;
 
-        long time5 = System.nanoTime();
-        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
-        for (byte i = 33; i < 33 + 15; i++)
-            cal.add(i);
+        final HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
+        for (int i = -300; i < 300; i++) {
+            cal.add(i, 1+ (i + 300) / 3);
+        }
         cal.calculate();
 
-        HuffmanByteHelper helper = new HuffmanByteHelper(cal.valuesAsBytes(), cal.bitLens());
+        final HuffmanIntHelper helper = new HuffmanIntHelper(cal.getValues(), cal.getBitLens());
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final DefaultBitOutputStream bos = new DefaultBitOutputStream(baos);
 
         for (int i = 0; i < size; i++) {
-            for (byte b : cal.valuesAsBytes()) {
+            for (final int b : cal.getValues()) {
                 helper.write(bos, b);
             }
         }
 
         bos.close();
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        DefaultBitInputStream bis = new DefaultBitInputStream(bais);
+        final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        final DefaultBitInputStream bis = new DefaultBitInputStream(bais);
 
         int counter = 0;
         for (int i = 0; i < size; i++) {
-            for (int b : cal.values()) {
-                int v = helper.read(bis);
-                if (v != b)
+            for (final int b : cal.getValues()) {
+                final int v = helper.read(bis);
+                if (v != b) {
                     Assert.fail("Mismatch: " + v + " vs " + b + " at " + counter);
+                }
 
                 counter++;
             }
