@@ -42,7 +42,7 @@ class HuffmanByteHelper {
     private final int[] bitCodeToValue;
     private final HuffmanBitCode[] valueToCode;
 
-    HuffmanByteHelper(final byte[] values, final int[] bitLengths) {
+    public HuffmanByteHelper(final byte[] values, final int[] bitLengths) {
         this.values = new int[values.length];
         for (int i = 0; i < values.length; i++)
             this.values[i] = 0xFF & values[i];
@@ -78,10 +78,10 @@ class HuffmanByteHelper {
             bitCodeToValue[sortedCodes[i].bitCode] = i;
         }
 
-        valueToCode = new HuffmanBitCode[255];
+        valueToCode = new HuffmanBitCode[256];
         Arrays.fill(valueToCode, null);
         for (final HuffmanBitCode code : sortedCodes) {
-            valueToCode[code.value] = code;
+            valueToCode[code.value&0xFF] = code;
         }
     }
 
@@ -126,10 +126,10 @@ class HuffmanByteHelper {
         }
     }
 
-    final long write(final BitOutputStream bitOutputStream, final byte value)
+    public final long write(final BitOutputStream bitOutputStream, final byte value)
             throws IOException {
-        final HuffmanBitCode code = valueToCode[value];
-        if (code.value != value)
+        final HuffmanBitCode code = valueToCode[value&0xFF];
+        if (code.value != (value&0xFF))
             throw new RuntimeException(String.format(
                     "Searching for %d but found %s.", value, code.toString()));
         bitOutputStream.write(code.bitCode, code.bitLength);
@@ -137,7 +137,7 @@ class HuffmanByteHelper {
         return code.bitLength;
     }
 
-    final byte read(final BitInputStream bitInputStream) throws IOException {
+    public final byte read(final BitInputStream bitInputStream) throws IOException {
         int prevLen = 0;
         int bits = 0;
         for (int i = 0; i < sortedCodes.length; i++) {

@@ -17,29 +17,18 @@
  */
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.SAMFormatException;
 import htsjdk.samtools.cram.common.MutableInt;
-import htsjdk.samtools.cram.encoding.BetaIntegerEncoding;
-import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
 import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
-import htsjdk.samtools.cram.encoding.Encoding;
-import htsjdk.samtools.cram.encoding.ExternalByteArrayEncoding;
 import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
 import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
-import htsjdk.samtools.cram.encoding.GammaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.NullEncoding;
-import htsjdk.samtools.cram.encoding.SubexponentialIntegerEncoding;
-import htsjdk.samtools.cram.encoding.huffman.HuffmanCode;
-import htsjdk.samtools.cram.encoding.huffman.HuffmanTree;
-import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanByteEncoding;
 import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanParamsCalculator;
 import htsjdk.samtools.cram.encoding.rans.RANS;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Padding;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -49,7 +38,8 @@ import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import htsjdk.samtools.util.Log;
 
-import java.nio.charset.Charset;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -60,128 +50,121 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-public class CompressionHeaderFactory {
-    private static final Charset charset = Charset.forName("US-ASCII");
+/**
+ * Implementation of {@link htsjdk.samtools.cram.build.CramCompression} that mostly relies on GZIP and RANS.
+ */
+public class CompressionHeaderFactory implements CramCompression {
     private static final Log log = Log.getInstance(CompressionHeaderFactory.class);
-    private static final int oqz = ReadTag.nameType3BytesToInt("OQ", 'Z');
-    private static final int bqz = ReadTag.nameType3BytesToInt("BQ", 'Z');
 
-    public CompressionHeader build(final List<CramCompressionRecord> records, final SubstitutionMatrix substitutionMatrix, final boolean sorted) {
+    private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<Integer, EncodingDetails>();
+
+    /**
+     * Decides on compression methods to use for the given records.
+     *
+     * @param records            the data to be compressed
+     * @param substitutionMatrix a matrix of base substitution frequencies, can be null, in which case it is re-calculated.
+     * @param sorted             if true the records are assumed to be sorted by alignment
+     *                           position
+     * @return {@link htsjdk.samtools.cram.structure.CompressionHeader} object describing the encoding chosen for the data
+     */
+    @Override
+    public CompressionHeader buildCompressionHeader(final List<CramCompressionRecord> records,
+                                                    final SubstitutionMatrix substitutionMatrix, final boolean sorted) {
         final CompressionHeader header = new CompressionHeader();
         header.externalIds = new ArrayList<Integer>();
         int exCounter = 0;
 
         final int baseID = exCounter++;
         header.externalIds.add(baseID);
-        header.externalCompressors.put(baseID,
-                ExternalCompressor.createRANS(RANS.ORDER.ONE));
+        header.externalCompressors.put(baseID, ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
         final int qualityScoreID = exCounter++;
         header.externalIds.add(qualityScoreID);
-        header.externalCompressors.put(qualityScoreID,
-                ExternalCompressor.createRANS(RANS.ORDER.ONE));
+        header.externalCompressors.put(qualityScoreID, ExternalCompressor.createRANS(RANS.ORDER.ONE));
 
         final int readNameID = exCounter++;
         header.externalIds.add(readNameID);
         header.externalCompressors.put(readNameID, ExternalCompressor.createGZIP());
 
-        final int mateInfoID = exCounter++;
-        header.externalIds.add(mateInfoID);
-        header.externalCompressors.put(mateInfoID,
-                ExternalCompressor.createRANS(RANS.ORDER.ONE));
-
         header.encodingMap = new TreeMap<EncodingKey, EncodingParams>();
-        for (final EncodingKey key : EncodingKey.values())
+        for (final EncodingKey key : EncodingKey.values()) {
             header.encodingMap.put(key, NullEncoding.toParam());
+        }
 
         header.tMap = new TreeMap<Integer, EncodingParams>();
 
         { // bit flags encoding:
-            getOptimalIntegerEncoding(header, EncodingKey.BF_BitFlags, 0, records);
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.BF_BitFlags, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // compression bit flags encoding:
-            getOptimalIntegerEncoding(header, EncodingKey.CF_CompressionBitFlags, 0, records);
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.CF_CompressionBitFlags, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // ref id:
-
-            getOptimalIntegerEncoding(header, EncodingKey.RI_RefId, -2, records);
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
+            header.encodingMap.put(EncodingKey.RI_RefId, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // read length encoding:
-            getOptimalIntegerEncoding(header, EncodingKey.RL_ReadLength, 0, records);
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.RL_ReadLength, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // alignment offset:
-            if (sorted) { // alignment offset:
+            if (sorted) {
                 header.APDelta = true;
-                getOptimalIntegerEncoding(header, EncodingKey.AP_AlignmentPositionOffset, 0, records);
+
+                final int aStartID = exCounter++;
+                header.encodingMap.put(EncodingKey.AP_AlignmentPositionOffset,
+                        ExternalIntegerEncoding.toParam(aStartID));
+                header.externalIds.add(aStartID);
+                header.externalCompressors.put(aStartID, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
             } else {
                 final int aStartID = exCounter++;
                 header.APDelta = false;
                 header.encodingMap.put(EncodingKey.AP_AlignmentPositionOffset,
                         ExternalIntegerEncoding.toParam(aStartID));
                 header.externalIds.add(aStartID);
-                header.externalCompressors.put(aStartID,
-                        ExternalCompressor.createRANS(RANS.ORDER.ONE));
+                header.externalCompressors.put(aStartID, ExternalCompressor.createRANS(RANS.ORDER.ZERO));
                 log.debug("Assigned external id to alignment starts: " + aStartID);
             }
         }
 
         { // read group
-            getOptimalIntegerEncoding(header, EncodingKey.RG_ReadGroup, -1, records);
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.RG_ReadGroup, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // read name encoding:
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                calculator.add(record.readName.length());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.RN_ReadName, ByteArrayLenEncoding.toParam(
-                    HuffmanIntegerEncoding.toParam(calculator.values(),
-                            calculator.bitLens()), ExternalByteArrayEncoding
-                            .toParam(readNameID)));
+            header.externalIds.add(readNameID);
+            header.externalCompressors.put(readNameID, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.RN_ReadName, ByteArrayStopEncoding.toParam((byte) '\t', readNameID));
         }
 
         { // records to next fragment
-            final IntegerEncodingCalculator calc = new IntegerEncodingCalculator(
-                    EncodingKey.NF_RecordsToNextFragment.name(), 0);
-            for (final CramCompressionRecord r : records) {
-                if (r.isHasMateDownStream())
-                    calc.addValue(r.recordsToNextFragment);
-            }
-
-            final Encoding<Integer> bestEncoding = calc.getBestEncoding();
-            header.encodingMap.put(
-                    EncodingKey.NF_RecordsToNextFragment,
-                    new EncodingParams(bestEncoding.id(), bestEncoding
-                            .toByteArray()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.NF_RecordsToNextFragment, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // tag count
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                calculator.add(record.tags == null ? 0 : record.tags.length);
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.TC_TagCount, HuffmanIntegerEncoding.toParam(
-                    calculator.values(), calculator.bitLens()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.TC_TagCount, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // tag name and type
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records) {
-                if (record.tags == null)
-                    continue;
-                for (final ReadTag tag : record.tags)
-                    calculator.add(tag.keyType3BytesAsInt);
-            }
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.TN_TagNameAndType, HuffmanIntegerEncoding
-                    .toParam(calculator.values(), calculator.bitLens()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.TN_TagNameAndType, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         {
@@ -198,12 +181,15 @@ public class CompressionHeaderFactory {
 
                 @Override
                 public int compare(final byte[] o1, final byte[] o2) {
-                    if (o1.length - o2.length != 0)
+                    if (o1.length - o2.length != 0) {
                         return o1.length - o2.length;
+                    }
 
-                    for (int i = 0; i < o1.length; i++)
-                        if (o1[i] != o2[i])
+                    for (int i = 0; i < o1.length; i++) {
+                        if (o1[i] != o2[i]) {
                             return o1[i] - o2[i];
+                        }
+                    }
 
                     return 0;
                 }
@@ -241,7 +227,6 @@ public class CompressionHeaderFactory {
 
             final byte[][][] dic = new byte[map.size()][][];
             int i = 0;
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             for (final byte[] idsAsBytes : map.keySet()) {
                 final int nofIds = idsAsBytes.length / 3;
                 dic[i] = new byte[nofIds][];
@@ -252,91 +237,65 @@ public class CompressionHeaderFactory {
                     dic[i][idIndex][1] = idsAsBytes[j++];
                     dic[i][idIndex][2] = idsAsBytes[j++];
                 }
-                calculator.add(i, map.get(idsAsBytes).value);
                 map.get(idsAsBytes).value = i++;
             }
 
-            calculator.calculate();
-            header.encodingMap.put(EncodingKey.TL_TagIdList,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()));
             header.dictionary = dic;
+
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.TL_TagIdList, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // tag values
-            @SuppressWarnings("UnnecessaryLocalVariable") final int unsortedTagValueExternalID = exCounter;
-            header.externalIds.add(unsortedTagValueExternalID);
-            header.externalCompressors.put(unsortedTagValueExternalID,
-                    ExternalCompressor.createRANS(RANS.ORDER.ONE));
-
             final Set<Integer> tagIdSet = new HashSet<Integer>();
-            for (final CramCompressionRecord record : records) {
-                if (record.tags == null)
-                    continue;
 
-                for (final ReadTag tag : record.tags)
+            for (final CramCompressionRecord record : records) {
+                if (record.tags == null) {
+                    continue;
+                }
+
+                for (final ReadTag tag : record.tags) {
                     tagIdSet.add(tag.keyType3BytesAsInt);
+                }
             }
 
             for (final int id : tagIdSet) {
                 final int externalID;
-                final byte type = (byte) (id & 0xFF);
-                switch (type) {
-                    case 'Z':
-                    case 'B':
-                        externalID = id;
-                        break;
-
-                    default:
-                        externalID = unsortedTagValueExternalID;
-                        break;
+                if (bestEncodings.containsKey(id)) {
+                    final EncodingDetails e = bestEncodings.get(id);
+                    externalID = id;
+                    header.externalIds.add(externalID);
+                    header.externalCompressors.put(externalID, e.compressor);
+                    header.tMap.put(id, e.params);
+                    continue;
                 }
 
+                externalID = id;
+                final EncodingDetails e = buildEncodingForTag(records, id, externalID);
                 header.externalIds.add(externalID);
-                header.externalCompressors.put(externalID,
-                        ExternalCompressor.createRANS(RANS.ORDER.ONE));
-                header.tMap.put(id, ByteArrayLenEncoding.toParam(
-                        ExternalIntegerEncoding.toParam(externalID),
-                        ExternalByteEncoding.toParam(externalID)));
+                header.externalCompressors.put(externalID, e.compressor);
+                header.tMap.put(id, e.params);
+                bestEncodings.put(id, e);
             }
         }
 
         { // number of read features
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord r : records)
-                calculator.add(r.readFeatures == null ? 0 : r.readFeatures.size());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.FN_NumberOfReadFeatures,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.FN_NumberOfReadFeatures, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // feature position
-            final IntegerEncodingCalculator calc = new IntegerEncodingCalculator("read feature position", 0);
-            for (final CramCompressionRecord record : records) {
-                int prevPos = 0;
-                if (record.readFeatures == null)
-                    continue;
-                for (final ReadFeature rf : record.readFeatures) {
-                    calc.addValue(rf.getPosition() - prevPos);
-                    prevPos = rf.getPosition();
-                }
-            }
-
-            final Encoding<Integer> bestEncoding = calc.getBestEncoding();
-            header.encodingMap.put(EncodingKey.FP_FeaturePosition,
-                    new EncodingParams(bestEncoding.id(), bestEncoding.toByteArray()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.FP_FeaturePosition, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // feature code
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
-                    for (final ReadFeature readFeature : record.readFeatures)
-                        calculator.add(readFeature.getOperator());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.FC_FeatureCode, HuffmanByteEncoding.toParam(
-                    calculator.valuesAsBytes(), calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.FC_FeatureCode, ExternalByteEncoding.toParam(exCounter++));
         }
 
         { // bases:
@@ -351,23 +310,25 @@ public class CompressionHeaderFactory {
             if (substitutionMatrix == null) {
                 final long[][] frequencies = new long[200][200];
                 for (final CramCompressionRecord record : records) {
-                    if (record.readFeatures != null)
-                        for (final ReadFeature readFeature : record.readFeatures)
+                    if (record.readFeatures != null) {
+                        for (final ReadFeature readFeature : record.readFeatures) {
                             if (readFeature.getOperator() == Substitution.operator) {
                                 final Substitution substitution = ((Substitution) readFeature);
                                 final byte refBase = substitution.getReferenceBase();
                                 final byte base = substitution.getBase();
                                 frequencies[refBase][base]++;
                             }
+                        }
+                    }
                 }
 
                 header.substitutionMatrix = new SubstitutionMatrix(frequencies);
-            } else
+            } else {
                 header.substitutionMatrix = substitutionMatrix;
+            }
 
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
+            for (final CramCompressionRecord record : records) {
+                if (record.readFeatures != null) {
                     for (final ReadFeature recordFeature : record.readFeatures) {
                         if (recordFeature.getOperator() == Substitution.operator) {
                             final Substitution substitution = ((Substitution) recordFeature);
@@ -376,429 +337,218 @@ public class CompressionHeaderFactory {
                                 final byte base = substitution.getBase();
                                 substitution.setCode(header.substitutionMatrix.code(refBase, base));
                             }
-                            calculator.add(substitution.getCode());
                         }
                     }
-            calculator.calculate();
+                }
+            }
 
-            header.encodingMap.put(EncodingKey.BS_BaseSubstitutionCode,
-                    HuffmanIntegerEncoding.toParam(calculator.values, calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.BS_BaseSubstitutionCode, ExternalByteEncoding.toParam(exCounter++));
         }
 
         { // insertion bases
-            header.encodingMap.put(EncodingKey.IN_Insertion, ByteArrayStopEncoding.toParam((byte) 0, baseID));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.IN_Insertion, ByteArrayStopEncoding.toParam((byte) '\t', exCounter++));
         }
 
         { // insertion bases
-            header.encodingMap.put(EncodingKey.SC_SoftClip, ByteArrayStopEncoding.toParam((byte) 0, baseID));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.SC_SoftClip, ByteArrayStopEncoding.toParam((byte) '\t', exCounter++));
         }
 
         { // deletion length
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
-                    for (final ReadFeature recordFeature : record.readFeatures)
-                        if (recordFeature.getOperator() == Deletion.operator)
-                            calculator.add(((Deletion) recordFeature).getLength());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.DL_DeletionLength,
-                    HuffmanIntegerEncoding.toParam(calculator.values, calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.DL_DeletionLength, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // hard clip length
-            final IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.HC_HardClip.name(), 0);
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
-                    for (final ReadFeature recordFeature : record.readFeatures)
-                        if (recordFeature.getOperator() == HardClip.operator)
-                            calculator.addValue(((HardClip) recordFeature).getLength());
-
-            final Encoding<Integer> bestEncoding = calculator.getBestEncoding();
-            header.encodingMap.put(EncodingKey.HC_HardClip, new EncodingParams(bestEncoding.id(), bestEncoding.toByteArray()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.HC_HardClip, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // padding length
-            final IntegerEncodingCalculator calculator = new IntegerEncodingCalculator(EncodingKey.PD_padding.name(), 0);
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
-                    for (final ReadFeature recordFeature : record.readFeatures)
-                        if (recordFeature.getOperator() == Padding.operator)
-                            calculator.addValue(((Padding) recordFeature).getLength());
-
-            final Encoding<Integer> bestEncoding = calculator.getBestEncoding();
-            header.encodingMap.put(EncodingKey.PD_padding, new EncodingParams(bestEncoding.id(), bestEncoding.toByteArray()));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.PD_padding, ExternalIntegerEncoding.toParam(exCounter++));
 
         }
 
         { // ref skip length
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (record.readFeatures != null)
-                    for (final ReadFeature recordFeature : record.readFeatures)
-                        if (recordFeature.getOperator() == RefSkip.operator)
-                            calculator.add(((RefSkip) recordFeature).getLength());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.RS_RefSkip, HuffmanIntegerEncoding.toParam(calculator.values, calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.RS_RefSkip, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // mapping quality score
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (!record.isSegmentUnmapped())
-                    calculator.add(record.mappingQuality);
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.MQ_MappingQualityScore,
-                    HuffmanIntegerEncoding.toParam(calculator.values(), calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.MQ_MappingQualityScore, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // mate bit flags
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                calculator.add(record.getMateFlags());
-            calculator.calculate();
-
-            header.encodingMap.put(EncodingKey.MF_MateBitFlags,
-                    HuffmanIntegerEncoding.toParam(calculator.values, calculator.bitLens));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.MF_MateBitFlags, ExternalIntegerEncoding.toParam(exCounter++));
         }
 
-        { // next fragment ref id:
-            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-            for (final CramCompressionRecord record : records)
-                if (record.isDetached())
-                    calculator.add(record.mateSequenceID);
-            calculator.calculate();
-
-            if (calculator.values.length == 0)
-                header.encodingMap.put(EncodingKey.NS_NextFragmentReferenceSequenceID, NullEncoding.toParam());
-
+        { // next fragment ref id
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
             header.encodingMap.put(EncodingKey.NS_NextFragmentReferenceSequenceID,
-                    HuffmanIntegerEncoding.toParam(calculator.values(),
-                            calculator.bitLens()));
-            log.debug("NS: "
-                    + header.encodingMap.get(EncodingKey.NS_NextFragmentReferenceSequenceID));
+                    ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // next fragment alignment start
-            header.encodingMap.put(EncodingKey.NP_NextFragmentAlignmentStart, ExternalIntegerEncoding.toParam(mateInfoID));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createGZIP());
+            header.encodingMap.put(EncodingKey.NP_NextFragmentAlignmentStart,
+                    ExternalIntegerEncoding.toParam(exCounter++));
         }
 
         { // template size
-            header.encodingMap.put(EncodingKey.TS_InsetSize, ExternalIntegerEncoding.toParam(mateInfoID));
+            header.externalIds.add(exCounter);
+            header.externalCompressors.put(exCounter, ExternalCompressor.createRANS(RANS.ORDER.ONE));
+            header.encodingMap.put(EncodingKey.TS_InsetSize, ExternalIntegerEncoding.toParam(exCounter));
         }
 
         return header;
     }
 
-    private static int getValue(final EncodingKey key, final CramCompressionRecord record) {
-        switch (key) {
-            case AP_AlignmentPositionOffset:
-                return record.alignmentDelta;
-            case BF_BitFlags:
-                return record.flags;
-            case CF_CompressionBitFlags:
-                return record.compressionFlags;
-            case FN_NumberOfReadFeatures:
-                return record.readFeatures == null ? 0 : record.readFeatures.size();
-            case MF_MateBitFlags:
-                return record.mateFlags;
-            case MQ_MappingQualityScore:
-                return record.mappingQuality;
-            case NF_RecordsToNextFragment:
-                return record.recordsToNextFragment;
-            case NP_NextFragmentAlignmentStart:
-                return record.mateAlignmentStart;
-            case NS_NextFragmentReferenceSequenceID:
-                return record.mateSequenceID;
-            case RG_ReadGroup:
-                return record.readGroupID;
-            case RI_RefId:
-                return record.sequenceId;
-            case RL_ReadLength:
-                return record.readLength;
-            case TC_TagCount:
-                return record.tags == null ? 0 : record.tags.length;
+    EncodingDetails buildEncodingForTag(final List<CramCompressionRecord> records, final int id, final int externalID) {
+        @SuppressWarnings("resource") final
+        ByteArrayOutputStream os = new ByteArrayOutputStream(1024 * 1024);
+        final Map<Integer, MutableInt> byteSizes = new HashMap<Integer, MutableInt>();
+        final byte type = (byte) (id & 0xFF);
+        for (final CramCompressionRecord record : records) {
+            if (record.tags == null) {
+                continue;
+            }
+
+            for (final ReadTag tag : record.tags) {
+                if (tag.keyType3BytesAsInt != id) {
+                    continue;
+                }
+                final byte[] data = tag.getValueAsByteArray();
+                try {
+                    os.write(data);
+                } catch (final IOException e) {
+                    throw new RuntimeException(e);
+                }
+                if (!byteSizes.containsKey(data.length)) {
+                    byteSizes.put(data.length, new MutableInt());
+                }
+                byteSizes.get(data.length).value++;
+            }
+        }
+
+        final byte[] data = os.toByteArray();
+
+        final ExternalCompressor gzip = ExternalCompressor.createGZIP();
+        final int gzipLen = gzip.compress(data).length;
+
+        final ExternalCompressor rans0 = ExternalCompressor.createRANS(RANS.ORDER.ZERO);
+        final int rans0Len = rans0.compress(data).length;
+
+        final ExternalCompressor rans1 = ExternalCompressor.createRANS(RANS.ORDER.ONE);
+        final int rans1Len = rans1.compress(data).length;
+
+        final EncodingDetails d = new EncodingDetails();
+
+        final int minLen = Math.min(gzipLen, Math.min(rans0Len, rans1Len));
+        if (minLen == rans0Len) {
+            d.compressor = rans0;
+        } else if (minLen == rans1Len) {
+            d.compressor = rans1;
+        } else {
+            d.compressor = gzip;
+        }
+
+        switch (type) {
+            case 'A':
+            case 'I':
+            case 'i':
+            case 's':
+            case 'S':
+            case 'c':
+            case 'C':
+            case 'f':
+                final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
+                calculator.add(getTagValueByteSize(type));
+                calculator.calculate();
+                d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(calculator.getValues(), calculator.getBitLens()),
+                        ExternalByteEncoding.toParam(externalID));
+                return d;
 
             default:
-                throw new RuntimeException("Unexpected encoding key: " + key.name());
-        }
-    }
-
-    private static void getOptimalIntegerEncoding(final CompressionHeader header, final EncodingKey key, final int minValue,
-                                                  final List<CramCompressionRecord> records) {
-        final IntegerEncodingCalculator calc = new IntegerEncodingCalculator(key.name(), minValue);
-        for (final CramCompressionRecord record : records) {
-            final int value = getValue(key, record);
-            calc.addValue(value);
+                break;
         }
 
-        final Encoding<Integer> bestEncoding = calc.getBestEncoding();
-        header.encodingMap.put(key, new EncodingParams(bestEncoding.id(), bestEncoding.toByteArray()));
-    }
-
-    private static class BitCode implements Comparable<BitCode> {
-        final int value;
-        final int length;
-
-        public BitCode(final int value, final int length) {
-            this.value = value;
-            this.length = length;
+        int maxSize = 0;
+        int minSize = 0;
+        for (final int size : byteSizes.keySet()) {
+            maxSize = Math.max(maxSize, size);
+            minSize = Math.min(minSize, size);
         }
 
-        @Override
-        public int compareTo(@SuppressWarnings("NullableProblems") final BitCode o) {
-            final int result = value - o.value;
-            if (result != 0)
-                return result;
-            return length - o.length;
-        }
-    }
-
-    public static class HuffmanParamsCalculator {
-        private final HashMap<Integer, MutableInt> countMap = new HashMap<Integer, MutableInt>();
-        private int[] values = new int[]{};
-        private int[] bitLens = new int[]{};
-
-        public void add(final int value) {
-            MutableInt counter = countMap.get(value);
-            if (counter == null) {
-                counter = new MutableInt();
-                countMap.put(value, counter);
-            }
-            counter.value++;
+        if (type != 'Z') {
+            d.params = ByteArrayLenEncoding.toParam(ExternalIntegerEncoding.toParam(externalID),
+                    ExternalByteEncoding.toParam(externalID));
+            return d;
         }
 
-        public void add(final Integer value, final int inc) {
-            MutableInt counter = countMap.get(value);
-            if (counter == null) {
-                counter = new MutableInt();
-                countMap.put(value, counter);
-            }
-            counter.value += inc;
-        }
-
-        public int[] bitLens() {
-            return bitLens;
-        }
-
-        public int[] values() {
-            return values;
-        }
-
-        public Integer[] valuesAsAutoIntegers() {
-            final Integer[] intValues = new Integer[values.length];
-            for (int i = 0; i < intValues.length; i++)
-                intValues[i] = values[i];
-
-            return intValues;
-        }
-
-        public byte[] valuesAsBytes() {
-            final byte[] byteValues = new byte[values.length];
-            for (int i = 0; i < byteValues.length; i++)
-                byteValues[i] = (byte) (0xFF & values[i]);
-
-            return byteValues;
-        }
-
-        public Byte[] valuesAsAutoBytes() {
-            final Byte[] byteValues = new Byte[values.length];
-            for (int i = 0; i < byteValues.length; i++)
-                byteValues[i] = (byte) (0xFF & values[i]);
-
-            return byteValues;
-        }
-
-        public void calculate() {
-            final HuffmanTree<Integer> tree;
-            {
-                final int size = countMap.size();
-                final int[] frequencies = new int[size];
-                final int[] values = new int[size];
-
-                int i = 0;
-                for (final Integer key : countMap.keySet()) {
-                    values[i] = key;
-                    frequencies[i] = countMap.get(key).value;
-                    i++;
-                }
-                tree = HuffmanCode.buildTree(frequencies, autobox(values));
-            }
-
-            final List<Integer> valueList = new ArrayList<Integer>();
-            final List<Integer> lens = new ArrayList<Integer>();
-            HuffmanCode.getValuesAndBitLengths(valueList, lens, tree);
-
-            // the following sorting is not really required, but whatever:
-            final BitCode[] codes = new BitCode[valueList.size()];
-            for (int i = 0; i < valueList.size(); i++) {
-                codes[i] = new BitCode(valueList.get(i), lens.get(i));
-            }
-            Arrays.sort(codes);
-
-            values = new int[codes.length];
-            bitLens = new int[codes.length];
-
-            for (int i = 0; i < codes.length; i++) {
-                final BitCode code = codes[i];
-                bitLens[i] = code.length;
-                values[i] = code.value;
-            }
-        }
-    }
-
-    private static Integer[] autobox(final int[] array) {
-        final Integer[] newArray = new Integer[array.length];
-        for (int i = 0; i < array.length; i++)
-            newArray[i] = array[i];
-        return newArray;
-    }
-
-    public static class EncodingLengthCalculator {
-        private final BitCodec<Integer> codec;
-        private final Encoding<Integer> encoding;
-        private long length;
-
-        public EncodingLengthCalculator(final Encoding<Integer> encoding) {
-            this.encoding = encoding;
-            codec = encoding.buildCodec(null, null);
-        }
-
-        public void add(final int value) {
-            length += codec.numberOfBits(value);
-        }
-
-        public void add(final int value, final int inc) {
-            length += inc * codec.numberOfBits(value);
-        }
-
-        public long length() {
-            return length;
-        }
-    }
-
-    public static class IntegerEncodingCalculator {
-        public final List<EncodingLengthCalculator> calculators = new ArrayList<EncodingLengthCalculator>();
-        private int max = 0;
-        private int count = 0;
-        private final String name;
-        private HashMap<Integer, MutableInt> dictionary = new HashMap<Integer, MutableInt>();
-        private final int dictionaryThreshold = 100;
-        private final int minValue;
-
-        public IntegerEncodingCalculator(final String name, final int dictionaryThreshold, final int minValue) {
-            this.name = name;
-            this.minValue = minValue;
-            // for (int i = 2; i < 10; i++)
-            // calculators.add(new EncodingLengthCalculator(
-            // new GolombIntegerEncoding(i)));
-            //
-            // for (int i = 2; i < 20; i++)
-            // calculators.add(new EncodingLengthCalculator(
-            // new GolombRiceIntegerEncoding(i)));
-
-            calculators.add(new EncodingLengthCalculator(new GammaIntegerEncoding(1 - minValue)));
-
-            for (int i = 2; i < 5; i++)
-                calculators.add(new EncodingLengthCalculator(new SubexponentialIntegerEncoding(0 - minValue, i)));
-
-            if (dictionaryThreshold < 1)
-                dictionary = null;
-            else {
-                dictionary = new HashMap<Integer, MutableInt>();
-                // int pow = (int) Math.ceil(Math.log(dictionaryThreshold)
-                // / Math.log(2f));
-                // dictionaryThreshold = 1 << pow ;
-                // dictionary = new HashMap<Integer,
-                // MutableInt>(dictionaryThreshold, 1);
-            }
-        }
-
-        public IntegerEncodingCalculator(final String name, final int minValue) {
-            this(name, 255, minValue);
-        }
-
-        public void addValue(final int value) {
-            count++;
-            if (value > max)
-                max = value;
-
-            for (final EncodingLengthCalculator calculator : calculators)
-                calculator.add(value);
-
-            if (dictionary != null) {
-                if (dictionary.size() >= dictionaryThreshold - 1)
-                    dictionary = null;
-                else {
-                    MutableInt mutableInt = dictionary.get(value);
-                    if (mutableInt == null) {
-                        mutableInt = new MutableInt();
-                        dictionary.put(value, mutableInt);
-                    }
-                    mutableInt.value++;
-                }
-
-            }
-
-        }
-
-        public Encoding<Integer> getBestEncoding() {
-            if (dictionary != null && dictionary.size() == 1) {
-                final int value = dictionary.keySet().iterator().next();
-                final EncodingParams param = HuffmanIntegerEncoding.toParam(new int[]{value}, new int[]{0});
-                final HuffmanIntegerEncoding huffmanEncoding = new HuffmanIntegerEncoding();
-                huffmanEncoding.fromByteArray(param.params);
-                return huffmanEncoding;
-            }
-
-            EncodingLengthCalculator bestCalculator = calculators.get(0);
-
-            for (final EncodingLengthCalculator calculator : calculators) {
-                if (calculator.length() < bestCalculator.length())
-                    bestCalculator = calculator;
-            }
-
-            Encoding<Integer> bestEncoding = bestCalculator.encoding;
-            long bits = bestCalculator.length();
-
-            { // check if beta is better:
-
-                final int betaLength = (int) Math.round(Math.log(max - minValue) / Math.log(2) + 0.5);
-                if (bits > betaLength * count) {
-                    bestEncoding = new BetaIntegerEncoding(-minValue, betaLength);
-                    bits = betaLength * count;
+        final int minSize_threshold_ForByteArrayStopEncoding = 200;
+        final int byteSizes_sizeThreshold_ForByteArrayStopEncoding = 50;
+        if (byteSizes.size() > byteSizes_sizeThreshold_ForByteArrayStopEncoding
+                || minSize > minSize_threshold_ForByteArrayStopEncoding) {
+            d.params = ByteArrayStopEncoding.toParam((byte) '\t', externalID);
+        } else {
+            final HuffmanParamsCalculator c = new HuffmanParamsCalculator();
+            for (final int size : byteSizes.keySet()) {
+                for (int count = 0; count < byteSizes.get(size).value; count++) {
+                    c.add(size);
                 }
             }
+            c.calculate();
+            d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(c.getValues(), c.getBitLens()),
+                    ExternalByteEncoding.toParam(externalID));
+        }
 
-            { // try huffman:
-                if (dictionary != null) {
-                    final HuffmanParamsCalculator huffmanParamsCalculator = new HuffmanParamsCalculator();
-                    for (final Integer value : dictionary.keySet())
-                        huffmanParamsCalculator.add(value, dictionary.get(value).value);
+        return d;
+    }
 
-                    huffmanParamsCalculator.calculate();
+    private int getTagValueByteSize(final byte type) {
+        switch (type) {
+            case 'A':
+                return 1;
+            case 'I':
+                return 4;
+            case 'i':
+                return 4;
+            case 's':
+                return 2;
+            case 'S':
+                return 2;
+            case 'c':
+                return 1;
+            case 'C':
+                return 1;
+            case 'f':
+                return 4;
+            default:
+                throw new SAMFormatException("Unrecognized tag type: " + type);
+        }
+    }
 
-                    final EncodingParams param = HuffmanIntegerEncoding.toParam(huffmanParamsCalculator.values(), huffmanParamsCalculator.bitLens());
-                    final HuffmanIntegerEncoding huffmanEncoding = new HuffmanIntegerEncoding();
-                    huffmanEncoding.fromByteArray(param.params);
-                    final EncodingLengthCalculator calculator = new EncodingLengthCalculator(huffmanEncoding);
-                    for (final Integer key : dictionary.keySet())
-                        calculator.add(key, dictionary.get(key).value);
+    private static class EncodingDetails {
+        ExternalCompressor compressor;
+        EncodingParams params;
 
-                    if (calculator.length() < bits) {
-                        bestEncoding = huffmanEncoding;
-                        bits = calculator.length();
-                    }
-                }
-            }
-
-            byte[] params = bestEncoding.toByteArray();
-            params = Arrays.copyOf(params, Math.min(params.length, 20));
-            log.debug("Best encoding for " + name + ": " + bestEncoding.id().name() + Arrays.toString(params) + ", bits=" + bits);
-
-            return bestEncoding;
+        public EncodingDetails() {
         }
     }
 }
