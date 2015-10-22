@@ -6,7 +6,7 @@ jdk:
   - openjdk7
   - openjdk6
 install: ant
-script: ant all test
+script: ant all test | grep -v "PASSED:"
 after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
