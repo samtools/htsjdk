@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
 import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
@@ -123,9 +124,15 @@ public class CramNormalizer {
 
             if (record.isUnknownBases()) {
                 record.readBases = SAMRecord.NULL_SEQUENCE;
-            } else
+            } else {
+                if (refBases != null) {
                 record.readBases = restoreReadBases(record, refBases, refOffset_zeroBased,
                         substitutionMatrix);
+                } else {
+                     throw new CRAMException(String.format("Contig %s not found in the reference file.", header.getSequence(record.sequenceId).toString()));
+                }
+            }
+                
         }
 
         // restore quality scores:
