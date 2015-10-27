@@ -64,7 +64,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
 
         if (!this.isClosed.getAndSet(true)) {
             try {
-            	this.writer.interrupt(); // signal to writer clean up
+                if (this.queue.isEmpty()) this.writer.interrupt(); // signal to writer clean up
             	this.writer.join();
             } catch (final InterruptedException ie) {
             	throw new RuntimeException("Interrupted waiting on writer thread.", ie);
