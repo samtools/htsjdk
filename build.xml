@@ -25,8 +25,8 @@
 
 <project name="htsjdk" basedir="." default="all">
 
-    <property name="src" value="src/java"/>
-    <property name="src.test" value="src/tests"/>
+    <property name="src" value="src/main/java"/>
+    <property name="src.test" value="src/test"/>
     <property name="src.test.java" value="${src.test}/java"/>
     <property name="lib" value="lib"/>
     <property name="dist" value="dist"/>

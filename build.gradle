@@ -1,0 +1,122 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter() // for shadow plugin
+    }
+
+    dependencies {
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.4.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+        classpath 'com.github.ben-manes:gradle-versions-plugin:0.11.3'  //used for identifying dependencies that need updating
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: "jacoco"
+apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.github.ben-manes.versions'
+
+repositories {
+    mavenCentral()
+}
+
+jacocoTestReport {
+    dependsOn test
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
+
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.1.201405082137"
+}
+
+dependencies {
+    compile files("${System.properties['java.home']}/../lib/tools.jar")
+
+    compile "org.apache.commons:commons-jexl:2.1.1"
+    compile "commons-logging:commons-logging:1.1.1"
+    compile "org.xerial.snappy:snappy-java:1.0.3-rc3"
+    compile "org.apache.commons:commons-compress:1.4.1"
+    compile "org.tukaani:xz:1.5"
+    compile "org.apache.ant:ant:1.8.2"
+
+    testCompile "org.testng:testng:6.8.8"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+version="2.0.0"
+
+logger.info("build for version:" + version)
+group = 'com.github.samtools'
+
+
+
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'HTSJDK',
+                'Implementation-Vendor' : 'Broad Institute',
+                'Implementation-Version': version
+    }
+}
+
+
+test {
+    String CI = "$System.env.CI"
+    useTestNG{}
+
+    // set heap size for the test JVM(s)
+    minHeapSize = "1G"
+    maxHeapSize = "2G"
+
+    if (CI == "true") {
+        int count = 0
+        // listen to events in the test execution lifecycle
+        testLogging {
+            events "skipped", "failed"
+            exceptionFormat = "full"
+        }
+
+        beforeTest { descriptor ->
+            count++
+            if( count % 10000 == 0) {
+                logger.lifecycle("Finished "+ Integer.toString(count++) + " tests")
+            }
+        }
+    } else {
+        // show standard out and standard error of the test JVM(s) on the console
+        testLogging.showStandardStreams = true
+        beforeTest { descriptor ->
+            logger.lifecycle("Running Test: " + descriptor)
+        }
+
+        // listen to standard out and standard error of the test JVM(s)
+        onOutput { descriptor, event ->
+            logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+        }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.8'
+}
+
+// This is a hack to disable the java 8 default javadoc lint until we fix the html formatting
+if (JavaVersion.current().isJava8Compatible()) {
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+}
+
