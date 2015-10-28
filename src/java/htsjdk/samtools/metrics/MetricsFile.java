@@ -84,6 +84,13 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         else return null;
     }
 
+    /** Returns the histogram contained in the metrics file if any. Adds capability of retrieving multiple histograms
+     *  from metrics file. */
+    public Histogram<HKEY> getHistogram(final int index) {
+        if (histograms.size() > 0 && index < this.histograms.size()) return this.histograms.get(index);
+        else return null;
+    }
+
     /** Sets the histogram contained in the metrics file. */
     public void setHistogram(final Histogram<HKEY> histogram) {
         if (this.histograms.isEmpty()) {
