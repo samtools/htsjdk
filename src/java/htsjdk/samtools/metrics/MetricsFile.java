@@ -434,6 +434,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                         final HKEY key = (HKEY) formatter.parseObject(fields[0], keyClass);
 
                         for (int i=1; i<fields.length; ++i) {
+                            if(fields[i].equals("")) continue;
                             final double value = formatter.parseDouble(fields[i]);
                             this.histograms.get(i-1).increment(key, value);
                         }

@@ -187,6 +187,19 @@ public class MetricsFileTest {
         file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
 
+        //Test that multiple differently sized histograms can be written and read back correctly
+        Histogram<Integer> histo3 = new Histogram<Integer>();
+        histo3.setBinLabel("small_number");
+        histo3.setValueLabel("big_number");
+        histo3.increment(1, 101);
+        histo3.increment(2, 202);
+        histo3.increment(3, 4000);
+        histo3.increment(5, 123981);
+        file.addHistogram(histo3);
+
+        file2 = writeThenReadBack(file);
+        Assert.assertEquals(file, file2);
+
         // And lastly add some more metrics rows to the file
         TestMetric metric2 = metric.clone();
         metric2.ENUM_PROP = TestEnum.One;
