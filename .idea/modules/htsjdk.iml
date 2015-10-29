@@ -39,5 +39,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="apache-ant-1.8.2-bzip2" level="application" />
+    <orderEntry type="library" name="testng-5.5-jdk15" level="application" />
   </component>
 </module>

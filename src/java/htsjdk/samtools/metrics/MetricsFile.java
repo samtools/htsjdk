@@ -87,8 +87,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
     /** Returns the histogram contained in the metrics file if any. Adds capability of retrieving multiple histograms
      *  from metrics file. */
     public Histogram<HKEY> getHistogram(final int index) {
-        if (histograms.size() > 0 && index < this.histograms.size()) return this.histograms.get(index);
-        else return null;
+        try { return this.histograms.get(index); }
+        catch (final ArrayIndexOutOfBoundsException excep) { throw new SAMException("Index is out of bounds: " + index); }
     }
 
     /** Sets the histogram contained in the metrics file. */
@@ -274,10 +274,10 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
             for (final Histogram<HKEY> histo : nonEmptyHistograms) {
                 final Histogram<HKEY>.Bin bin = histo.get(key);
-                final double value = (bin == null ? 0 : bin.getValue());
+               // final double value = (bin == null ? 0 : bin.getValue());
 
                 out.append(SEPARATOR);
-                out.append(formatter.format(value));
+                if(bin != null) out.append(formatter.format(bin.getValue()));
             }
 
             out.newLine();
