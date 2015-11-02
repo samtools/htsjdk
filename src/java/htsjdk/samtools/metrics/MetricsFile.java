@@ -275,7 +275,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
             for (final Histogram<HKEY> histo : nonEmptyHistograms) {
                 final Histogram<HKEY>.Bin bin = histo.get(key);
                 out.append(SEPARATOR);
-                
+
                 if(bin != null) out.append(formatter.format(bin.getValue()));
             }
 
