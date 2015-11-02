@@ -167,7 +167,8 @@ public class IndexedFastaSequenceFileHadoop extends AbstractFastaSequenceFile {
 		if (start > stop + 1) throw new SAMException(String.format("Malformed query; start point %d lies after end point %d", start, stop));
 
 		FastaSequenceIndexEntry indexEntry = index.getIndexEntry(contig);
-
+		
+		if (start <= 0) throw new SAMException("Query start site cannot small than zero");
 		if (stop > indexEntry.getSize()) throw new SAMException("Query asks for data past end of contig");
 		if (randomChrFileInt == null) {
 			throw new SAMException("no file exist: " + file.getName());
@@ -225,10 +226,6 @@ public class IndexedFastaSequenceFileHadoop extends AbstractFastaSequenceFile {
 	 * modify the coordinates of real start and end to the RandomFileInt's  coordinates
 	 */
 	private long[] getStartEndReal(FastaSequenceIndexEntry indexEntry, long start, long end) {
-
-		long chrLength = indexEntry.getSize();
-		if (start <= 0) start = 1;
-		if (end <= 0 || end > chrLength) end = chrLength;
 		start--;
 
 		long startChr = indexEntry.getLocation();
