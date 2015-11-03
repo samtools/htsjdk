@@ -579,6 +579,7 @@ public final class SAMUtils {
             rec.setAttribute(SAMTag.OP.name(), rec.getAlignmentStart());
             rec.setAttribute(SAMTag.OC.name(), rec.getCigarString());
             rec.setAttribute(SAMTag.OF.name(), rec.getFlags());
+            rec.setAttribute(SAMTag.OR.name(), rec.getReferenceName());
         }
         makeReadUnmapped(rec);
     }
@@ -589,7 +590,8 @@ public final class SAMUtils {
     public static boolean hasOriginalMappingInformation(final SAMRecord rec) {
         return rec.getAttribute(SAMTag.OP.name()) != null
                 || rec.getAttribute(SAMTag.OC.name()) != null
-                || rec.getAttribute(SAMTag.OF.name()) != null;
+                || rec.getAttribute(SAMTag.OF.name()) != null
+                || rec.getAttribute(SAMTag.OR.name()) != null;
     }
 
     /**

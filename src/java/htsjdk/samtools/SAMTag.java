@@ -62,6 +62,7 @@ public enum SAMTag {
     OP,
     OC,
     OF,
+    OR,
     PG,
     PQ,
     PT,
