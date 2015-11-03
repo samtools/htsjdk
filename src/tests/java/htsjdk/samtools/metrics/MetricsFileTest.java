@@ -25,7 +25,6 @@
 package htsjdk.samtools.metrics;
 
 import htsjdk.samtools.SAMException;
-import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.TestUtil;
