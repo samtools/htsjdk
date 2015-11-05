@@ -36,6 +36,9 @@ public class DuplicateScoringStrategy {
         TOTAL_MAPPED_REFERENCE_LENGTH
     }
 
+    /** An enum to use for storing temporary attributes on SAMRecords. */
+    private static enum Attr { DuplicateScore }
+
     /** Calculates a score for the read which is the sum of scores over Q15. */
     private static short getSumOfBaseQualities(final SAMRecord rec) {
         short score = 0;
@@ -60,22 +63,30 @@ public class DuplicateScoringStrategy {
      * computed on both ends.
      */
     public static short computeDuplicateScore(final SAMRecord record, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
-        short score = 0;
+        Short storedScore = (Short) record.getTransientAttribute(Attr.DuplicateScore);
 
-        switch (scoringStrategy) {
-            case SUM_OF_BASE_QUALITIES:
-                score += getSumOfBaseQualities(record);
-                break;
-            case TOTAL_MAPPED_REFERENCE_LENGTH:
-                if (!record.getReadUnmappedFlag()) {
-                    score += record.getCigar().getReferenceLength();
-                }
-                if (assumeMateCigar && record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
-                    score += SAMUtils.getMateCigar(record).getReferenceLength();
-                }
-                break;
+        if (storedScore == null) {
+            short score = 0;
+
+            switch (scoringStrategy) {
+                case SUM_OF_BASE_QUALITIES:
+                    score += getSumOfBaseQualities(record);
+                    break;
+                case TOTAL_MAPPED_REFERENCE_LENGTH:
+                    if (!record.getReadUnmappedFlag()) {
+                        score += record.getCigar().getReferenceLength();
+                    }
+                    if (assumeMateCigar && record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
+                        score += SAMUtils.getMateCigar(record).getReferenceLength();
+                    }
+                    break;
+            }
+
+            storedScore = score;
+            record.setTransientAttribute(Attr.DuplicateScore, storedScore);
         }
-        return score;
+
+        return storedScore;
     }
 
     /**

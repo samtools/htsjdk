@@ -32,7 +32,9 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -167,6 +169,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     private transient SAMFileSource mFileSource;
     private SAMFileHeader mHeader = null;
+
+    /** Transient Map of attributes for use by anyone. */
+    private transient Map<Object,Object> transientAttributes;
 
     public SAMRecord(final SAMFileHeader header) {
         mHeader = header;
@@ -1932,7 +1937,39 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * shortcut to <pre>SAMFlag.getFlags( this.getFlags() );</pre>
      * @returns a set of SAMFlag associated to this sam record */
     public final Set<SAMFlag> getSAMFlags() {
-        return SAMFlag.getFlags( this.getFlags() );
+        return SAMFlag.getFlags(this.getFlags());
+    }
+
+    /**
+     * Fetches the value of a transient attribute on the SAMRecord, of null if not set.
+     *
+     * The intended use for transient attributes is to store values that are 1-to-1 with the SAMRecord,
+     * may be needed many times and are expensive to compute.  These values can be computed lazily and
+     * then stored as transient attributes to avoid frequent re-computation.
+     */
+    public final Object getTransientAttribute(final Object key) {
+        return (this.transientAttributes == null) ? null : this.transientAttributes.get(key);
+    }
+
+    /**
+     * Sets the value of a transient attribute, and returns the previous value if defined.
+     *
+     * The intended use for transient attributes is to store values that are 1-to-1 with the SAMRecord,
+     * may be needed many times and are expensive to compute.  These values can be computed lazily and
+     * then stored as transient attributes to avoid frequent re-computation.
+     */
+    public final Object setTransientAttribute(final Object key, final Object value) {
+        if (this.transientAttributes == null) this.transientAttributes = new HashMap<Object,Object>();
+        return this.transientAttributes.put(key, value);
+    }
+
+    /**
+     * Removes a transient attribute if it is stored, and returns the stored value. If there is not
+     * a stored value, will return null.
+     */
+    public final Object removeTransientAttribute(final Object key) {
+        if (this.transientAttributes != null) return this.transientAttributes.remove(key);
+        else return null;
     }
 }
 
