@@ -157,7 +157,7 @@
 
         <testng suitename="htsjdk-single-test" classpathref="classpath" outputdir="${test.output}"
                 verbose="${testng.verbosity}">
-            <jvmarg line="-Xmx512M ${debug.jvm.args}"/>
+            <jvmarg line="-Xmx512m ${debug.jvm.args}"/>
             <classpath>
                 <pathelement path="${classes}"/>
                 <pathelement path="${classes.test}"/>
