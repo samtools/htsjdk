@@ -349,4 +349,14 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .setOption(Options.INDEX_ON_THE_FLY)
                 .build();
     }
+
+    @Test
+    public void testClearOptions() {
+        // Verify that clearOptions doesn't have a side effect of carrying previously set options
+        // forward to subsequent builders
+        VariantContextWriterBuilder vcwb = new VariantContextWriterBuilder();
+        vcwb.clearOptions().setOption(Options.INDEX_ON_THE_FLY);
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder().clearOptions();
+        Assert.assertTrue(builder.options.isEmpty());
+    }
 }
