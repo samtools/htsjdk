@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -56,7 +57,7 @@ public class DuplicateSetIteratorTest {
         }
 
         //we expect 15 duplicate sets one for the initial two reads and one for each of the additional 14 reads.
-        assert (allSets.size() == 15);
-        assert (allSets.get("READ0").size() == 2);
+        Assert.assertEquals(allSets.size(), 15, "Wrong number of duplicate sets.");
+        Assert.assertEquals(allSets.get("READ0").size(), 2, "Should be two reads in the READ0 duplicate set, but there are not.");
     }
 }

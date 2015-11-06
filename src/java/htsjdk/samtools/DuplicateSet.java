@@ -32,21 +32,23 @@ import java.util.List;
  * considered the representative of the duplicate, and typically does not have it's duplicate flag set.  
  * The records' duplicate flag will be set appropriately as records are added.  This behavior can be 
  * turned off.
- * 
+ *
  * At this time, this set does not track optical duplicates.
  *
  * @author nhomer
  */
 public class DuplicateSet {
-    
+
     private final List<SAMRecord> records;
 
     private static final SAMRecordDuplicateComparator defaultComparator = new SAMRecordDuplicateComparator();
 
     private final SAMRecordDuplicateComparator comparator;
-    
+
+    private SAMRecord representative = null;
+
     private boolean needsSorting = false;
-    
+
     private boolean setDuplicateFlag = false;
 
     /** Sets the duplicate flag by default */
@@ -67,7 +69,7 @@ public class DuplicateSet {
         this.setDuplicateFlag = setDuplicateFlag;
         this.comparator = comparator;
     }
-           
+
     /**
      * Adds a record to the set and returns zero if either the set is empty, or it is a duplicate of the records already in the set.  Otherwise,
      * it does not add the record and returns non-zero.
@@ -77,24 +79,32 @@ public class DuplicateSet {
     public int add(final SAMRecord record) {
 
         if (!this.records.isEmpty()) {
-            final int cmp = this.comparator.duplicateSetCompare(this.getRepresentative(), record);
+            final int cmp = this.comparator.duplicateSetCompare(this.representative, record);
             if (0 != cmp) {
                 return cmp;
             }
+
+            // update representative
+            if (0 < this.comparator.compare(this.representative, record)) {
+                this.representative = record;
+            }
         }
-        
+        else {
+            this.representative = record;
+        }
+
         this.records.add(record);
         needsSorting = true;
-        
+
         return 0;
     }
 
     private void sort() {
         if (!records.isEmpty()) {
-            Collections.sort(records, this.comparator);
-            
-            final SAMRecord representative = records.get(0);
-            
+            if (1 < records.size()) {
+                Collections.sort(records, this.comparator);
+            }
+
             if (setDuplicateFlag) {
                 // reset duplicate flags
                 for (final SAMRecord record : records) {
@@ -104,30 +114,42 @@ public class DuplicateSet {
                 }
                 records.get(0).setDuplicateReadFlag(false);
             }
+
+            if (!records.get(0).equals(this.representative)) {
+                throw new SAMException("BUG: the representative was not the first record after sorting."
+                + "\nFIRST: " + records.get(0).getSAMString() + "\nSECOND: " + this.representative.getSAMString());
+            }
         }
         needsSorting = false; // this could be in the if above if you think hard about it
     }
 
     /**
      * Gets the list of records from this set.
+     *
+     * Setting sort to false likely will not yield records in duplicate order within the set.
+     *
+     * @param sort true if we want the records in the duplicate set sorted by duplicate order, false if we do not care about the order.
      */
-    public List<SAMRecord> getRecords() {
-        if (needsSorting) {
+    public List<SAMRecord> getRecords(final boolean sort) {
+        if (sort && needsSorting) {
             sort();
         }
-        
+
         return this.records;
+    }
+
+    /**
+     * Gets the list of records from this set.
+     */
+    public List<SAMRecord> getRecords() {
+        return getRecords(true);
     }
 
     /**
      * Gets the representative record according to the duplicate comparator.
      */
     public SAMRecord getRepresentative() {
-        if (needsSorting) {
-            sort();
-        }
-        
-        return records.get(0);
+        return this.representative;
     }
 
     /**
@@ -149,8 +171,8 @@ public class DuplicateSet {
             }
         }
         return n;
-    }    
-    
+    }
+
     public boolean isEmpty() {
         return this.records.isEmpty();
     }
@@ -158,5 +180,5 @@ public class DuplicateSet {
     /**
      * Controls if we should update the duplicate flag of the records in this set.
      */
-    public void setDuplicateFlag(boolean setDuplicateFlag) { this.setDuplicateFlag = setDuplicateFlag; }
+    public void setDuplicateFlag(final boolean setDuplicateFlag) { this.setDuplicateFlag = setDuplicateFlag; }
 }
