@@ -30,6 +30,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class SAMRecordUnitTest {
 
@@ -94,4 +95,218 @@ public class SAMRecordUnitTest {
             SAMRecord sam = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, cigar, null, 2);
             Assert.assertEquals(sam.getReferencePositionAtReadPosition(posInRead), expectedReferencePos);
     }
+
+    @DataProvider(name = "deepCopyTestData")
+    public Object [][] deepCopyTestData() {
+        return new Object[][]{
+                { new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2) },
+                { new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "4M1I6M", null, 2) }
+        };
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepCopyRef(final SAMRecord sam) {
+        testDeepCopy(sam);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepCopyMutate(final SAMRecord sam) {
+        final byte[] initialBaseQualityCopy = Arrays.copyOf(sam.getBaseQualities(), sam.getBaseQualities().length);
+        final int initialStart = sam.getAlignmentStart();
+
+        final SAMRecord deepCopy = testDeepCopy(sam);
+        Assert.assertTrue(Arrays.equals(sam.getBaseQualities(), deepCopy.getBaseQualities()));
+        Assert.assertTrue(sam.getAlignmentStart() == deepCopy.getAlignmentStart());
+
+        // mutate copy and make sure original remains unchanged
+        final byte[] copyBaseQuals = deepCopy.getBaseQualities();
+        for (int i = 0; i < copyBaseQuals.length; i++) {
+            copyBaseQuals[i]++;
+        }
+        deepCopy.setBaseQualities(copyBaseQuals);
+        deepCopy.setAlignmentStart(initialStart + 1);
+        Assert.assertTrue(Arrays.equals(sam.getBaseQualities(), initialBaseQualityCopy));
+        Assert.assertTrue(sam.getAlignmentStart() == initialStart);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepByteAttributes( final SAMRecord sam ) throws Exception {
+        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
+        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
+        SAMRecord deepCopy = testDeepCopy(sam);
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        final byte bytes[] = { -2, -1, 0, 1, 2 };
+        sam.setAttribute("BY", bytes);
+        deepCopy = sam.deepCopy();
+
+        // validate reference inequality and content equality
+        final byte samBytes[] = sam.getByteArrayAttribute("BY");
+        final byte copyBytes[] = deepCopy.getByteArrayAttribute("BY");
+        Assert.assertFalse(copyBytes == samBytes);
+        Assert.assertTrue(Arrays.equals(copyBytes, samBytes));
+
+        // validate mutation independence
+        final byte testByte = -1;
+        Assert.assertTrue(samBytes[2] != testByte);  // ensure initial test condition
+        Assert.assertTrue(copyBytes[2] != testByte); // ensure initial test condition
+        samBytes[2] = testByte;                      // mutate original
+        Assert.assertTrue(samBytes[2] == testByte);
+        Assert.assertTrue(copyBytes[2] != testByte);
+        sam.setAttribute("BY", samBytes);
+        Assert.assertTrue(sam.getByteArrayAttribute("BY")[2] != deepCopy.getByteArrayAttribute("BY")[2]);
+
+        // now unsigned...
+        sam.setUnsignedArrayAttribute("BY", bytes);
+        deepCopy = sam.deepCopy();
+        final byte samUBytes[] = sam.getUnsignedByteArrayAttribute("BY");
+        final byte copyUBytes[] = deepCopy.getUnsignedByteArrayAttribute("BY");
+        Assert.assertFalse(copyUBytes == bytes);
+        Assert.assertTrue(Arrays.equals(copyUBytes, samUBytes));
+
+        // validate mutation independence
+        final byte uByte = 1;
+        Assert.assertTrue(samUBytes[2] != uByte); //  ensure initial test condition
+        Assert.assertTrue(samUBytes[2] != uByte); //  ensure initial test condition
+        samUBytes[2] = uByte;  // mutate original
+        Assert.assertTrue(samUBytes[2] == uByte);
+        Assert.assertTrue(copyUBytes[2] != uByte);
+        sam.setUnsignedArrayAttribute("BY", samBytes);
+        Assert.assertTrue(sam.getUnsignedByteArrayAttribute("BY")[2] != deepCopy.getUnsignedByteArrayAttribute("BY")[2]);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepShortAttributes( final SAMRecord sam ) throws Exception {
+        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
+        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
+        SAMRecord deepCopy = testDeepCopy(sam);
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        final short shorts[] = { -20, -10, 0, 10, 20 };
+        sam.setAttribute("SH", shorts);
+        deepCopy = sam.deepCopy();
+
+        // validate reference inequality, content equality
+        final short samShorts[] = sam.getSignedShortArrayAttribute("SH");
+        final short copyShorts[] = deepCopy.getSignedShortArrayAttribute("SH");
+        Assert.assertFalse(copyShorts == samShorts);
+        Assert.assertTrue(Arrays.equals(copyShorts, samShorts));
+
+        // validate mutation independence
+        final short testShort = -1;
+        Assert.assertTrue(samShorts[2] != testShort); //  ensure initial test condition
+        Assert.assertTrue(samShorts[2] != testShort); //  ensure initial test condition
+        samShorts[2] = testShort;  // mutate original
+        Assert.assertTrue(samShorts[2] == testShort);
+        Assert.assertTrue(copyShorts[2] != testShort);
+        sam.setAttribute("SH", samShorts);
+        Assert.assertTrue(sam.getSignedShortArrayAttribute("SH")[2] != deepCopy.getSignedShortArrayAttribute("SH")[2]);
+
+        // now unsigned...
+        sam.setUnsignedArrayAttribute("SH", shorts);
+        deepCopy = sam.deepCopy();
+
+        final short samUShorts[] = sam.getUnsignedShortArrayAttribute("SH");
+        final short copyUShorts[] = deepCopy.getUnsignedShortArrayAttribute("SH");
+        Assert.assertFalse(copyUShorts == shorts);
+        Assert.assertTrue(Arrays.equals(copyUShorts, samUShorts));
+
+        // validate mutation independence
+        final byte uShort = 1;
+        Assert.assertTrue(samUShorts[2] != uShort); //  ensure initial test condition
+        Assert.assertTrue(samUShorts[2] != uShort); //  ensure initial test condition
+        samUShorts[2] = uShort;  // mutate original
+        Assert.assertTrue(samUShorts[2] == uShort);
+        Assert.assertTrue(copyUShorts[2] != uShort);
+        sam.setUnsignedArrayAttribute("SH", samShorts);
+        Assert.assertTrue(sam.getUnsignedShortArrayAttribute("SH")[2] != deepCopy.getUnsignedShortArrayAttribute("SH")[2]);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepIntAttributes( final SAMRecord sam ) throws Exception {
+        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
+        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
+        SAMRecord deepCopy = testDeepCopy(sam);
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        final int ints[] = { -200, -100, 0, 100, 200 };
+        sam.setAttribute("IN", ints);
+        deepCopy = sam.deepCopy();
+
+        // validate reference inequality and content equality
+        final  int samInts[] = sam.getSignedIntArrayAttribute("IN");
+        final  int copyInts[] = deepCopy.getSignedIntArrayAttribute("IN");
+        Assert.assertFalse(copyInts == ints);
+        Assert.assertTrue(Arrays.equals(copyInts, samInts));
+
+        // validate mutation independence
+        final short testInt = -1;
+        Assert.assertTrue(samInts[2] != testInt); //  ensure initial test condition
+        Assert.assertTrue(samInts[2] != testInt); //  ensure initial test condition
+        samInts[2] = testInt;  // mutate original
+        Assert.assertTrue(samInts[2] == testInt);
+        Assert.assertTrue(copyInts[2] != testInt);
+        sam.setAttribute("IN", samInts);
+        Assert.assertTrue(sam.getSignedIntArrayAttribute("IN")[2] != deepCopy.getSignedIntArrayAttribute("IN")[2]);
+
+        // now unsigned...
+        sam.setUnsignedArrayAttribute("IN", ints);
+        deepCopy = sam.deepCopy();
+
+        final int samUInts[] = sam.getUnsignedIntArrayAttribute("IN");
+        final int copyUInts[] = deepCopy.getUnsignedIntArrayAttribute("IN");
+        Assert.assertFalse(copyUInts == ints);
+        Assert.assertTrue(Arrays.equals(copyUInts, samUInts));
+
+        // validate mutation independence
+        byte uInt = 1;
+        Assert.assertTrue(samUInts[2] != uInt); //  ensure initial test condition
+        Assert.assertTrue(samUInts[2] != uInt); //  ensure initial test condition
+        samInts[2] = uInt;  // mutate original
+        Assert.assertTrue(samUInts[2] == uInt);
+        Assert.assertTrue(copyUInts[2] != uInt);
+        sam.setUnsignedArrayAttribute("IN", samInts);
+        Assert.assertTrue(sam.getUnsignedIntArrayAttribute("IN")[2] != deepCopy.getUnsignedIntArrayAttribute("IN")[2]);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepFloatAttributes( final SAMRecord sam ) throws Exception {
+        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
+        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
+        SAMRecord deepCopy = testDeepCopy(sam);
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        final float floats[] = { -2.4f, -1.2f, 0, 2.3f, 4.6f };
+        sam.setAttribute("FL", floats);
+        deepCopy = sam.deepCopy();
+
+        // validate reference inequality and content equality
+        final float samFloats[] = sam.getFloatArrayAttribute("FL");
+        final float copyFloats[] = deepCopy.getFloatArrayAttribute("FL");
+        Assert.assertFalse(copyFloats == floats);
+        Assert.assertFalse(copyFloats == samFloats);
+        Assert.assertTrue(Arrays.equals(copyFloats, samFloats));
+
+        // validate mutation independence
+        final float testFloat = -1.0f;
+        Assert.assertTrue(samFloats[2] != testFloat); //  ensure initial test condition
+        Assert.assertTrue(samFloats[2] != testFloat); //  ensure initial test condition
+        samFloats[2] = testFloat;  // mutate original
+        Assert.assertTrue(samFloats[2] == testFloat);
+        Assert.assertTrue(copyFloats[2] != testFloat);
+        sam.setAttribute("FL", samFloats);
+        Assert.assertTrue(sam.getFloatArrayAttribute("FL")[2] != deepCopy.getFloatArrayAttribute("FL")[2]);
+    }
+
+    private SAMRecord testDeepCopy(SAMRecord sam) {
+        final SAMRecord deepCopy = sam.deepCopy();
+
+        // force the indexing bins to be computed in order to satisfy equality test
+        sam.setIndexingBin(sam.computeIndexingBin());
+        deepCopy.setIndexingBin(deepCopy.computeIndexingBin());
+        Assert.assertTrue(sam.equals(deepCopy));
+
+        return deepCopy;
+    }
+
 }
