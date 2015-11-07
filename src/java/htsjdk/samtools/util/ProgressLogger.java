@@ -47,6 +47,6 @@ public class ProgressLogger extends AbstractProgressLogger {
 
     @Override
     protected void log(final String... message) {
-        log.info(message);
+        log.info((Object[])message);
     }
 }
