@@ -1,43 +1,20 @@
 buildscript {
     repositories {
         mavenCentral()
-        jcenter() // for shadow plugin
+        jcenter()
     }
 
     dependencies {
-        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.4.0'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
         classpath 'com.github.ben-manes:gradle-versions-plugin:0.11.3'  //used for identifying dependencies that need updating
     }
 }
 
 apply plugin: 'java'
 apply plugin: 'idea'
-apply plugin: "jacoco"
-apply plugin: 'com.github.kt3k.coveralls'
-apply plugin: 'maven'
-apply plugin: 'signing'
-apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'com.github.ben-manes.versions'
 
 repositories {
     mavenCentral()
-}
-
-jacocoTestReport {
-    dependsOn test
-    group = "Reporting"
-    description = "Generate Jacoco coverage reports after running tests."
-    additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
-
-    reports {
-        xml.enabled = true // coveralls plugin depends on xml format report
-        html.enabled = true
-    }
-}
-
-jacoco {
-    toolVersion = "0.7.1.201405082137"
 }
 
 dependencies {
@@ -61,9 +38,6 @@ version="2.0.0"
 logger.info("build for version:" + version)
 group = 'com.github.samtools'
 
-
-
-
 jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
@@ -72,10 +46,17 @@ jar {
     }
 }
 
+import org.gradle.internal.os.OperatingSystem;
 
 test {
     String CI = "$System.env.CI"
-    useTestNG{}
+    useTestNG {
+        if( OperatingSystem.current().isUnix() ){
+            excludeGroups "slow", "broken"
+        } else {
+            excludeGroups "slow", "broken", "unix"
+        }
+    }
 
     // set heap size for the test JVM(s)
     minHeapSize = "1G"
