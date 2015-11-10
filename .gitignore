@@ -1,4 +1,6 @@
 htsjdk.iws
+htsjdk.ipr
+htsjdk.iml
 .command_tmp
 classes
 testclasses
