@@ -12,5 +12,6 @@ intellij.classes
 /bin
 /test-output
 target
-.idea/libraries
-.idea/workspace.xml
+build
+.idea
+
