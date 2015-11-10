@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
@@ -969,5 +970,104 @@ public final class SAMUtils {
         if (null == name) name = record.getReadName();
         else name = name + ":" + record.getReadName();
         return name;
+    }
+
+    /**
+     * Returns the number of bases that need to be clipped due to overlapping pairs.  If the record is not paired,
+     * or the given record's start position is greater than its mate's start position, zero is automatically returned.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param rec
+     * @return the number of bases at the end of the read that need to be clipped such that there would be no overlapping bases with its mate.
+     * Read bases include only those from insertion, match, or mismatch Cigar operators.
+     */
+    public static int getNumOverlappingAlignedBasesToClip(final SAMRecord rec) {
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+
+        if (!rec.getReadPairedFlag() || rec.getReadUnmappedFlag() || rec.getMateUnmappedFlag()) return 0;
+
+        // Only clip records that are left-most in genomic order and overlapping.
+        if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
+
+        // Find the number of read bases after the given mate's alignment start.
+        int numBasesToClip = 0;
+        final int refStartPos = rec.getMateAlignmentStart(); // relative reference position after which we should start clipping
+        final Cigar cigar = rec.getCigar();
+        int refPos = rec.getAlignmentStart();
+        for (final CigarElement el : cigar.getCigarElements()) {
+            final CigarOperator operator = el.getOperator();
+            final int refBasesLength = operator.consumesReferenceBases() ? el.getLength() : 0;
+            if (refStartPos <= refPos + refBasesLength - 1) { // add to clipped bases
+                if (operator == CigarOperator.MATCH_OR_MISMATCH) { // M
+                    if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
+                    else numBasesToClip += (refPos + refBasesLength) - refStartPos;  // since the mate's alignment start can be in the middle of a cigar element
+                }
+                else if (operator == CigarOperator.SOFT_CLIP || operator == CigarOperator.HARD_CLIP || operator == CigarOperator.PADDING || operator == CigarOperator.SKIPPED_REGION) {
+                    // ignore
+                }
+                else { // ID
+                    numBasesToClip += operator.consumesReadBases() ? el.getLength() : 0; // clip all the bases in the read from this operator
+                }
+            }
+            refPos += refBasesLength;
+        }
+
+        if (numBasesToClip < 0) return 0; // left-most but not overlapping
+
+        return numBasesToClip;
+    }
+
+    /**
+     * Returns a (possibly new) record that has been clipped if isa  mapped paired and has overlapping bases with its mate.
+     * See {@link #getNumOverlappingAlignedBasesToClip(SAMRecord)} for how the number of overlapping bases is computed.
+     * NB: this does not properly consider a cigar like: 100M20S10H.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param record the record from which to clip bases.
+     * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
+     * @return
+     */
+    public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final boolean noSideEffects) {
+        return clipOverlappingAlignedBases(record, getNumOverlappingAlignedBasesToClip(record), noSideEffects);
+    }
+
+    /**
+     * Returns a (possibly new) SAMRecord with the given number of bases soft-clipped at the end of the read if is a mapped
+     * paired and has overlapping bases with its mate.
+     * NB: this does not properly consider a cigar like: 100M20S10H.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param record the record from which to clip bases.
+     * @param numOverlappingBasesToClip the number of bases to clip at the end of the read.
+     * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
+     * @return
+     */
+    public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final int numOverlappingBasesToClip, final boolean noSideEffects) {
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+
+        if (numOverlappingBasesToClip <= 0 || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()) return record;
+
+        try {
+            final SAMRecord rec = noSideEffects ? ((SAMRecord)record.clone()) : record;
+
+            // watch out for when the second read overlaps all of the first read
+            if (rec.getMateAlignmentStart() <= rec.getAlignmentStart()) { // make it unmapped
+                rec.setReadUnmappedFlag(true);
+                return rec;
+            }
+
+            // 1-based index of first base in read to clip.
+            int clipFrom = rec.getReadLength() - numOverlappingBasesToClip + 1;
+            // we have to check if the last cigar element is soft-clipping, so we can subtract that from clipFrom
+            final CigarElement cigarElement = rec.getCigar().getCigarElement(rec.getCigarLength()-1);
+            if (CigarOperator.SOFT_CLIP == cigarElement.getOperator()) clipFrom -= cigarElement.getLength();
+            // FIXME: does not properly consider a cigar like: 100M20S10H
+
+            // clip it, clip it good
+            rec.setCigar(new Cigar(CigarUtil.softClipEndOfRead(clipFrom, rec.getCigar().getCigarElements())));
+            return rec;
+        } catch (final CloneNotSupportedException e) {
+            throw new SAMException(e.getMessage(), e);
+        }
     }
 }
