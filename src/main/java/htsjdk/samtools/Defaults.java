@@ -30,9 +30,6 @@ public class Defaults {
      */
     public static final int NON_ZERO_BUFFER_SIZE;
 
-    /** Should BlockCompressedOutputStream attempt to load libIntelDeflater? */
-    public static final boolean TRY_USE_INTEL_DEFLATER;
-
     /**
      * Path to libIntelDeflater.so.  If this is not set, the library is looked for in the directory
      * where the executable jar lives.
@@ -72,7 +69,6 @@ public class Defaults {
         USE_ASYNC_IO = getBooleanProperty("use_async_io", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
-        TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", true);
         INTEL_DEFLATER_SHARED_LIBRARY_PATH = getStringProperty("intel_deflater_so_path", null);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
