@@ -25,9 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.PeekableIterator;
-import htsjdk.samtools.util.ProgressLogger;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -52,9 +50,9 @@ public class SamPairUtil {
     {
         FR,     // ( 5' --F-->       <--R-- 5'  )  - aka. innie
         RF,     // (   <--R-- 5'   5' --F-->    )  - aka. outie
-        TANDEM; // ( 5' --F-->   5' --F-->  or  (  <--R-- 5'   <--R-- 5'  )
+        TANDEM // ( 5' --F-->   5' --F-->  or  (  <--R-- 5'   <--R-- 5'  )
 
-    };
+    }
 
 
     /**
@@ -64,7 +62,7 @@ public class SamPairUtil {
      * @throws IllegalArgumentException If the record is not a paired read, or
      * one or both reads are unmapped.
      */
-    public static PairOrientation getPairOrientation(SAMRecord r)
+    public static PairOrientation getPairOrientation(final SAMRecord r)
     {
         final boolean readIsOnReverseStrand = r.getReadNegativeStrandFlag();
 
@@ -361,6 +359,7 @@ public class SamPairUtil {
 
         private final Queue<SAMRecord> records = new LinkedList<SAMRecord>();
         private final boolean setMateCigar;
+        private final boolean ignoreMissingMates;
         private long numMateCigarsAdded = 0;
 
         /**
@@ -376,8 +375,18 @@ public class SamPairUtil {
          * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
          */
         public SetMateInfoIterator(final Iterator<SAMRecord> iterator, final boolean setMateCigar) {
+            this(iterator, setMateCigar, false);
+        }
+
+        /**
+         * @param iterator the iterator to wrap
+         * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+         * @param ignoreMissingMates set this to true if we are to ignore missing mates, otherwise an exception will be thrown when a missing mate is encountered
+         */
+        public SetMateInfoIterator(final Iterator<SAMRecord> iterator, final boolean setMateCigar, final boolean ignoreMissingMates) {
             super(iterator);
             this.setMateCigar = setMateCigar;
+            this.ignoreMissingMates = ignoreMissingMates;
         }
 
         /**
@@ -414,8 +423,7 @@ public class SamPairUtil {
                                 throw new SAMException("Found two records that are paired, not supplementary, and first of the pair");
                             }
                             firstPrimaryRecord = record;
-                        }
-                        else if (record.getSecondOfPairFlag()) {
+                        } else if (record.getSecondOfPairFlag()) {
                             if (null != secondPrimaryRecord) {
                                 throw new SAMException("Found two records that are paired, not supplementary, and second of the pair");
                             }
@@ -426,26 +434,33 @@ public class SamPairUtil {
                 }
                 records.add(record);
             }
+            // TODO: should we check that we do not have a mix of paired and fragment reads?
+
 
             // we must find both records to update the mate info
             if (null != firstPrimaryRecord && null != secondPrimaryRecord) {
                 // Update mate info
                 SamPairUtil.setMateInfo(firstPrimaryRecord, secondPrimaryRecord, this.setMateCigar);
                 if (this.setMateCigar) this.numMateCigarsAdded += 2;
-            }
 
-            // Set mate information on supplemental records
-            if (containsSupplementalRecord) {
-                for (final SAMRecord record : records) {
-                    if (record.getReadPairedFlag() && record.getSupplementaryAlignmentFlag()) {
-                        if (record.getFirstOfPairFlag()) {
-                            SamPairUtil.setMateInformationOnSupplementalAlignment(record, secondPrimaryRecord, this.setMateCigar);
+                // Set mate information on supplemental records
+                if (containsSupplementalRecord) {
+                    for (final SAMRecord record : records) {
+                        if (record.getReadPairedFlag() && record.getSupplementaryAlignmentFlag()) {
+                            if (record.getFirstOfPairFlag()) {
+                                SamPairUtil.setMateInformationOnSupplementalAlignment(record, secondPrimaryRecord, this.setMateCigar);
+                            } else {
+                                SamPairUtil.setMateInformationOnSupplementalAlignment(record, firstPrimaryRecord, this.setMateCigar);
+                            }
+                            this.numMateCigarsAdded++;
                         }
-                        else {
-                            SamPairUtil.setMateInformationOnSupplementalAlignment(record, firstPrimaryRecord, this.setMateCigar);
-                        }
-                        this.numMateCigarsAdded++;
                     }
+                }
+            } else if (!this.ignoreMissingMates) {
+                if (null != firstPrimaryRecord && firstPrimaryRecord.getReadPairedFlag()) {
+                    throw new SAMException("Missing second read of pair: " + firstPrimaryRecord.getReadName());
+                } else if (null != secondPrimaryRecord && secondPrimaryRecord.getReadPairedFlag()) {
+                    throw new SAMException("Missing first read of pair: " + secondPrimaryRecord.getReadName());
                 }
             }
         }
