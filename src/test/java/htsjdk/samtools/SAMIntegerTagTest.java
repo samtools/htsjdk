@@ -38,7 +38,7 @@ import java.util.Map;
  * @author alecw@broadinstitute.org
  */
 public class SAMIntegerTagTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/SAMIntegerTagTest");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
 
     private static final String BYTE_TAG = "BY";
     private static final String SHORT_TAG = "SH";

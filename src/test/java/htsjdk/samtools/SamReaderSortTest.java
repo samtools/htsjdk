@@ -37,9 +37,9 @@ import java.io.File;
  */
 public class SamReaderSortTest {
 
-    public static final String COORDINATE_SORTED_FILE = "testdata/htsjdk/samtools/coordinate_sorted.sam";
-    public static final String QUERYNAME_SORTED_FILE = "testdata/htsjdk/samtools/queryname_sorted.sam";
-    public static final String QUERYNAME_SORTED_NO_HEADER_SORT = "testdata/htsjdk/samtools/unsorted.sam";
+    public static final String COORDINATE_SORTED_FILE = "src/test/resources/htsjdk/samtools/coordinate_sorted.sam";
+    public static final String QUERYNAME_SORTED_FILE = "src/test/resources/htsjdk/samtools/queryname_sorted.sam";
+    public static final String QUERYNAME_SORTED_NO_HEADER_SORT = "src/test/resources/htsjdk/samtools/unsorted.sam";
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testSortsDisagree() throws Exception {

@@ -39,8 +39,8 @@ import static org.testng.Assert.assertTrue;
  */
 public class BAMIndexWriterTest {
     // Two input files for basic test
-    private final String BAM_FILE_LOCATION = "testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
-    private final String BAI_FILE_LOCATION = "testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";
+    private final String BAM_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
+    private final String BAI_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";
     private final File BAM_FILE = new File(BAM_FILE_LOCATION);
     private final File BAI_FILE = new File(BAI_FILE_LOCATION);
 

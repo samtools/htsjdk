@@ -35,7 +35,7 @@ import java.io.File;
  * @author alecw@broadinstitute.org
  */
 public class BAMIteratorTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "dataProvider")
     public void testIterateEmptyBam(final String bam) throws Exception {

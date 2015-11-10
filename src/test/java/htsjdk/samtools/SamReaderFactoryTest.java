@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class SamReaderFactoryTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     private static final Log LOG = Log.getInstance(SamReaderFactoryTest.class);
 
@@ -114,8 +114,8 @@ public class SamReaderFactoryTest {
     /**
      * Unit tests for asserting all permutations of data and index sources read the same records and header.
      */
-    final File localBam = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    final File localBamIndex = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    final File localBam = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    final File localBamIndex = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
 
     final URL bamUrl, bamIndexUrl;
 

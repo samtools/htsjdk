@@ -37,7 +37,7 @@ import java.io.OutputStream;
 
 public class SAMFileWriterFactoryTest {
 
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     /** PIC-442Confirm that writing to a special file does not cause exception when writing additional files. */
     @Test(groups={"unix"})

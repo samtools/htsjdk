@@ -60,7 +60,7 @@ import static org.testng.Assert.assertEquals;
  */
 public class SamFileHeaderMergerTest {
 
-    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     /** tests that if we've set the merging to false, we get a SAMException for bam's with different dictionaries. */
     @Test(expectedExceptions = SequenceUtil.SequenceListsDifferException.class)

@@ -34,8 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SamSpecIntTest {
-    private static final File SAM_INPUT = new File("testdata/htsjdk/samtools/inttest.sam");
-    private static final File BAM_INPUT = new File("testdata/htsjdk/samtools/inttest.bam");
+    private static final File SAM_INPUT = new File("src/test/resources/htsjdk/samtools/inttest.sam");
+    private static final File BAM_INPUT = new File("src/test/resources/htsjdk/samtools/inttest.bam");
 
     @Test
     public void testSamIntegers() throws IOException {

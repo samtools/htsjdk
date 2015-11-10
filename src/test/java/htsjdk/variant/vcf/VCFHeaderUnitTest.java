@@ -127,7 +127,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private VCFHeader getHiSeqVCFHeader() {
-        final File vcf = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
+        final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf);
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
@@ -215,7 +215,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddMetaDataLineDoesNotDuplicateContigs() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -236,7 +236,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateContigLine() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -253,7 +253,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateHeaderLine() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -273,7 +273,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderSerialization() throws Exception {
-        final VCFFileReader reader = new VCFFileReader(new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), false);
+        final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
         final VCFHeader originalHeader = reader.getFileHeader();
         reader.close();
 

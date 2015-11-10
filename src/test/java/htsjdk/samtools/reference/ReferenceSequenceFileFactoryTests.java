@@ -9,7 +9,7 @@ import java.io.File;
  * Simple tests for the reference sequence file factory
  */
 public class ReferenceSequenceFileFactoryTests {
-    public static final File hg18 = new File("testdata/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
+    public static final File hg18 = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
 
     @Test public void testPositivePath() {
         final ReferenceSequenceFile f = ReferenceSequenceFileFactory.getReferenceSequenceFile(hg18);

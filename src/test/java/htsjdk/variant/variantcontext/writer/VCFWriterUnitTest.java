@@ -257,7 +257,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      */
     @Test
     public void testModifyHeader() {
-        final File originalVCF = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
+        final File originalVCF = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(originalVCF, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();

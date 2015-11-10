@@ -31,9 +31,9 @@ import java.io.IOException;
  * Created by Vadim on 14/03/2015.
  */
 public class CRAMFileIndexTest {
-    private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
-    private File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
+    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private File cramFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
+    private File indexFile = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
     private byte[] cramBytes;
     private byte[] baiBytes;
     private ReferenceSource source;

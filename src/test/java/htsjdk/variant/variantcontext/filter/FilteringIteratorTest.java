@@ -37,7 +37,7 @@ import java.io.File;
  */
 
 public class FilteringIteratorTest {
-    final File testDir = new File("testdata/htsjdk/variant");
+    final File testDir = new File("src/test/resources/htsjdk/variant");
 
     @DataProvider
     public Object [][] filteringIteratorData() {

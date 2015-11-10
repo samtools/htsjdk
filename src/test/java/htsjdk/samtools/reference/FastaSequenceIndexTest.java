@@ -37,7 +37,7 @@ import java.util.Iterator;
  * Test the fasta sequence index reader.
  */
 public class FastaSequenceIndexTest {
-    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/reference");
+    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
 
     @DataProvider(name="homosapiens")
     public Object[][] provideHomoSapiens() throws FileNotFoundException {

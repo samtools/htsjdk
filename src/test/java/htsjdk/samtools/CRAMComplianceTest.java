@@ -83,7 +83,7 @@ public class CRAMComplianceTest {
 
     @Test(dataProvider = "test1")
     public void test(String name) throws IOException {
-        TestCase t = new TestCase(new File("testdata/htsjdk/samtools/cram/"), name);
+        TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 //        TestCase t = new TestCase(new File("C:\\temp\\htslib\\test"), name);
 
         ReferenceSource source = null;

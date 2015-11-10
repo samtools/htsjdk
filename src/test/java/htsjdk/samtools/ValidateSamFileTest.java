@@ -53,7 +53,7 @@ import java.util.Iterator;
  * @author Doug Voet
  */
 public class ValidateSamFileTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/ValidateSamFileTest");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/ValidateSamFileTest");
 
     @Test
     public void testValidSamFile() throws Exception {
@@ -329,7 +329,7 @@ public class ValidateSamFileTest {
 
     @Test(enabled = false, description = "File is actually valid for Standard quality scores so this test fails with an NPE.")
     public void testQualityFormatValidation() throws Exception {
-        final SamReader samReader = SamReaderFactory.makeDefault().open(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
+        final SamReader samReader = SamReaderFactory.makeDefault().open(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
         final Histogram<String> results = executeValidation(samReader, null);
         final Histogram<String>.Bin bin = results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
         final double value = bin.getValue();

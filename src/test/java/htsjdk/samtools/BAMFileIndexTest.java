@@ -47,7 +47,7 @@ import static org.testng.Assert.*;
  * Test BAM file indexing.
  */
 public class BAMFileIndexTest {
-    private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
 
     @Test
