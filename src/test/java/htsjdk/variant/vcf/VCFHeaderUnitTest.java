@@ -127,7 +127,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private VCFHeader getHiSeqVCFHeader() {
-        final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf);
+        final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
