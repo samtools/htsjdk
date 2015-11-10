@@ -14,4 +14,4 @@ intellij.classes
 target
 build
 .idea
-
+.gradle
