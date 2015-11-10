@@ -101,10 +101,10 @@ public class BinaryCodec implements Closeable {
         try {
             this.isWriting = writing;
             if (this.isWriting) {
-                this.outputStream = new FileOutputStream(file);
+                this.outputStream = IOUtil.maybeBufferOutputStream(new FileOutputStream(file));
                 this.outputFileName = file.getName();
             } else {
-                this.inputStream = new FileInputStream(file);
+                this.inputStream = IOUtil.maybeBufferInputStream(new FileInputStream(file));
                 this.inputFileName = file.getName();
             }
         } catch (FileNotFoundException e) {
