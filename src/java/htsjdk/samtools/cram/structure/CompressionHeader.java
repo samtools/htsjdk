@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -296,4 +297,31 @@ public class CompressionHeader {
         }
     }
 
+    public void dump(PrintStream ps) {
+        ps.println("header.APDelta: " + APDelta);
+        ps.println("header.dictionary");
+        for (byte[][] one : dictionary) {
+            for (byte[] two : one) {
+                for (byte b : two) {
+                    ps.print('\t' + b);
+                }
+                ps.println();
+            }
+            ps.println();
+        }
+
+        ps.println("header.encodingMap");
+        for (EncodingKey key : encodingMap.keySet()) {
+            ps.println(key.name() + ": " + encodingMap.get(key).toString());
+        }
+
+        ps.println("header.externalCompressors");
+        for (int id : externalCompressors.keySet()) {
+            ps.println(id + ": " + externalCompressors.get(id).getMethod().name());
+        }
+
+        for (int id : tMap.keySet()) {
+            ps.println(id + ": " + tMap.get(id).toString());
+        }
+    }
 }
