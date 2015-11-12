@@ -23,7 +23,7 @@ public class HuffmanParamsCalculator {
      *
      * @param value an integer value to be encoded
      */
-    public void add(final int value) {
+    public void addOne(final int value) {
         MutableInt counter = countMap.get(value);
         if (counter == null) {
             counter = new MutableInt();
@@ -54,12 +54,7 @@ public class HuffmanParamsCalculator {
      * @param inc   how many times the value occurs
      */
     public void add(final Byte value, final int inc) {
-        MutableInt counter = countMap.get(value & 0xFF);
-        if (counter == null) {
-            counter = new MutableInt();
-            countMap.put(value & 0xFF, counter);
-        }
-        counter.value += inc;
+        add(value& 0xFF, inc);
     }
 
     /**

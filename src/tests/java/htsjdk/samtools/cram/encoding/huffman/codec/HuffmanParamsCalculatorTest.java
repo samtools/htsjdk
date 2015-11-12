@@ -14,7 +14,7 @@ public class HuffmanParamsCalculatorTest {
     @Test
     public void test_add_1() {
         final HuffmanParamsCalculator c = new HuffmanParamsCalculator();
-        c.add(1);
+        c.addOne(1);
         c.calculate();
 
         final int[] values = c.getValues();
@@ -46,12 +46,12 @@ public class HuffmanParamsCalculatorTest {
     @Test
     public void test_add_many() {
         final HuffmanParamsCalculator c = new HuffmanParamsCalculator();
-        c.add(1);
-        c.add(2);
-        c.add(2);
-        c.add(3);
-        c.add(3);
-        c.add(3);
+        c.addOne(1);
+        c.addOne(2);
+        c.addOne(2);
+        c.addOne(3);
+        c.addOne(3);
+        c.addOne(3);
         c.calculate();
 
         final Map<Integer, Integer> expectations_Value2BitLen = new HashMap<Integer, Integer>();

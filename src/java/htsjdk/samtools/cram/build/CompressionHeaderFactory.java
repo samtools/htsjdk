@@ -36,6 +36,7 @@ import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,6 +55,12 @@ import java.util.TreeMap;
  */
 public class CompressionHeaderFactory implements CramCompression {
     private final Map<Integer, EncodingDetails> bestEncodings = new HashMap<Integer, EncodingDetails>();
+    private
+    final ByteArrayOutputStream baosForTagValues;
+
+    public CompressionHeaderFactory() {
+        baosForTagValues = new ByteArrayOutputStream(1024 * 1024);
+    }
 
     /**
      * Decides on compression methods to use for the given records.
@@ -133,13 +140,13 @@ public class CompressionHeaderFactory implements CramCompression {
             }
         }
 
-        for (final int id : tagIdSet) {
-            if (bestEncodings.containsKey(id)) {
-                builder.addTagEncoding(id, bestEncodings.get(id));
+        for (final int tagId : tagIdSet) {
+            if (bestEncodings.containsKey(tagId)) {
+                builder.addTagEncoding(tagId, bestEncodings.get(tagId));
             } else {
-                final EncodingDetails e = buildEncodingForTag(records, id);
-                builder.addTagEncoding(id, e);
-                bestEncodings.put(id, e);
+                final EncodingDetails e = buildEncodingForTag(records, tagId);
+                builder.addTagEncoding(tagId, e);
+                bestEncodings.put(tagId, e);
             }
         }
     }
@@ -147,8 +154,8 @@ public class CompressionHeaderFactory implements CramCompression {
     /**
      * Given the records update the substitution matrix with actual substitution codes.
      *
-     * @param records
-     * @param substitutionMatrix
+     * @param records CRAM records
+     * @param substitutionMatrix the matrix to be updated
      */
     private static void updateSubstitutionCodes(final List<CramCompressionRecord> records, final SubstitutionMatrix substitutionMatrix) {
         for (final CramCompressionRecord record : records) {
@@ -271,6 +278,34 @@ public class CompressionHeaderFactory implements CramCompression {
     }
 
     /**
+     * Tag id is and integer where the first byte is its type and the other 2 bytes represent the name.
+     * For example 'OQZ', where 'OQ' stands for original quality score tag and 'Z' stands for string type.
+     *
+     * @param tagID a 3 byte tag id stored in an int
+     * @return tag type, the lowest byte in the tag id
+     */
+    private static byte getTagType(final int tagID) {
+        return (byte) (tagID & 0xFF);
+    }
+
+    private static boolean canBeRepresentedAsInteger(final byte type) {
+        switch (type) {
+            case 'A':
+            case 'I':
+            case 'i':
+            case 's':
+            case 'S':
+            case 'c':
+            case 'C':
+            case 'f':
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Build an encoding for a specific tag for given records.
      *
      * @param records CRAM records holding the tags
@@ -278,10 +313,13 @@ public class CompressionHeaderFactory implements CramCompression {
      * @return an encoding for the tag
      */
     private EncodingDetails buildEncodingForTag(final List<CramCompressionRecord> records, final int tagID) {
-        @SuppressWarnings("resource") final
-        ByteArrayOutputStream os = new ByteArrayOutputStream(1024 * 1024);
+        baosForTagValues.reset();
         final Map<Integer, MutableInt> byteSizes = new HashMap<Integer, MutableInt>();
-        final byte type = (byte) (tagID & 0xFF);
+        final Map<Integer, MutableInt> distinctValues = new HashMap<Integer, MutableInt>();
+        final byte type = getTagType(tagID);
+
+        final int maxDistinctValues = 256;
+
         for (final CramCompressionRecord record : records) {
             if (record.tags == null) {
                 continue;
@@ -292,10 +330,19 @@ public class CompressionHeaderFactory implements CramCompression {
                     continue;
                 }
                 final byte[] data = tag.getValueAsByteArray();
+
+                if (distinctValues.size() < maxDistinctValues) {
+                    final int hashCode = Arrays.hashCode(data);
+                    if (!distinctValues.containsKey(hashCode)) {
+                        distinctValues.put(hashCode, new MutableInt());
+                    }
+                    distinctValues.get(hashCode).value++;
+                }
+
                 try {
-                    os.write(data);
+                    baosForTagValues.write(data);
                 } catch (final IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeIOException(e);
                 }
                 if (!byteSizes.containsKey(data.length)) {
                     byteSizes.put(data.length, new MutableInt());
@@ -304,7 +351,7 @@ public class CompressionHeaderFactory implements CramCompression {
             }
         }
 
-        final byte[] data = os.toByteArray();
+        final byte[] data = baosForTagValues.toByteArray();
 
         final ExternalCompressor gzip = ExternalCompressor.createGZIP();
         final int gzipLen = gzip.compress(data).length;
@@ -326,24 +373,14 @@ public class CompressionHeaderFactory implements CramCompression {
             d.compressor = gzip;
         }
 
-        switch (type) {
-            case 'A':
-            case 'I':
-            case 'i':
-            case 's':
-            case 'S':
-            case 'c':
-            case 'C':
-            case 'f':
-                final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
-                calculator.add(getTagValueByteSize(type));
-                calculator.calculate();
-                d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(calculator.getValues(), calculator.getBitLens()),
-                        ExternalByteEncoding.toParam(tagID));
-                return d;
-
-            default:
-                break;
+        final boolean lowDiversity = distinctValues.size() < maxDistinctValues - 1;
+        if (!lowDiversity && canBeRepresentedAsInteger(type)) {
+            final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
+            calculator.addOne(getTagValueByteSize(type));
+            calculator.calculate();
+            d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(calculator.getValues(), calculator.getBitLens()),
+                    ExternalByteEncoding.toParam(tagID));
+            return d;
         }
 
         int maxSize = 0;
@@ -368,7 +405,7 @@ public class CompressionHeaderFactory implements CramCompression {
             final HuffmanParamsCalculator c = new HuffmanParamsCalculator();
             for (final int size : byteSizes.keySet()) {
                 for (int count = 0; count < byteSizes.get(size).value; count++) {
-                    c.add(size);
+                    c.addOne(size);
                 }
             }
             c.calculate();
@@ -415,9 +452,6 @@ public class CompressionHeaderFactory implements CramCompression {
     private static class EncodingDetails {
         ExternalCompressor compressor;
         EncodingParams params;
-
-        public EncodingDetails() {
-        }
     }
 
     /**
@@ -445,7 +479,7 @@ public class CompressionHeaderFactory implements CramCompression {
             return header;
         }
 
-        void addExternalEncoding(final EncodingKey encodingKey, EncodingParams params, final ExternalCompressor compressor) {
+        void addExternalEncoding(final EncodingKey encodingKey, final EncodingParams params, final ExternalCompressor compressor) {
             header.externalIds.add(externalBlockCounter);
             header.externalCompressors.put(externalBlockCounter, compressor);
             header.encodingMap.put(encodingKey, params);
@@ -453,7 +487,7 @@ public class CompressionHeaderFactory implements CramCompression {
         }
 
         void addExternalByteArrayStopTabGzipEncoding(final EncodingKey encodingKey) {
-            addExternalEncoding(encodingKey, ByteArrayStopEncoding.toParam((byte)'\t', externalBlockCounter), ExternalCompressor.createGZIP());
+            addExternalEncoding(encodingKey, ByteArrayStopEncoding.toParam((byte) '\t', externalBlockCounter), ExternalCompressor.createGZIP());
         }
 
         void addExternalIntegerEncoding(final EncodingKey encodingKey, final ExternalCompressor compressor) {
