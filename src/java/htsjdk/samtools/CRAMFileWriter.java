@@ -250,7 +250,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
                                 last = last.next;
                             }
                             if (last.templateSize != -templateLength) detach(cramRecord);
-                        }
+                        }else detach(cramRecord);
                     } else detach(cramRecord);
                 }
 
