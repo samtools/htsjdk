@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -309,4 +310,181 @@ public class SAMRecordUnitTest {
         return deepCopy;
     }
 
+    @Test
+    public void test_getUnsignedIntegerAttribute_valid() {
+        final String stringTag = "UI";
+        final short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag(stringTag);
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertNull(record.getUnsignedIntegerAttribute(binaryTag));
+
+        record.setAttribute("UI", 0L);
+        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
+
+        record.setAttribute("UI", BinaryCodec.MAX_UINT);
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(binaryTag));
+
+        final SAMBinaryTagAndValue tv_zero = new SAMBinaryTagAndUnsignedArrayValue(binaryTag, 0L);
+        record = new SAMRecord(header){
+            {
+                setAttributes(tv_zero);
+            }
+        };
+        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
+
+        final SAMBinaryTagAndValue tv_max = new SAMBinaryTagAndUnsignedArrayValue(binaryTag, BinaryCodec.MAX_UINT);
+        record = new SAMRecord(header){
+            {
+                setAttributes(tv_max);
+            }
+        };
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(stringTag));
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(binaryTag));
+    }
+
+    /**
+     * This is an alternative to test_getUnsignedIntegerAttribute_valid().
+     * The purpose is to ensure that the hacky way of setting arbitrary tag values works ok.
+     * This is required for testing invalid (out of range) unsigned integer value.
+     */
+    @Test
+    public void test_getUnsignedIntegerAttribute_valid_alternative() {
+        final short tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record;
+
+        record = new SAMRecord(header) {
+            {
+                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, 0L));
+            }
+        };
+        Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(tag));
+
+        record = new SAMRecord(header) {
+            {
+                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT));
+            }
+        };
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(tag));
+
+        // the following works because we bypass value checks implemented in SAMRecord:
+        record = new SAMRecord(header) {
+            {
+                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT+1L));
+            }
+        };
+        // check that the invalid value is still there:
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT+1L), (Long)record.getBinaryAttributes().value);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void test_getUnsignedIntegerAttribute_negative() {
+        short tag = 0;
+        SAMRecord record = null;
+        try {
+            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+            SAMFileHeader header = new SAMFileHeader();
+            final SAMBinaryTagAndValue tv = new SAMBinaryTagAndUnsignedArrayValue(tag, -1L);
+            record = new SAMRecord(header) {
+                {
+                    setAttributes(tv);
+                }
+            };
+        } catch (Exception e) {
+            Assert.fail("Unexpected exception", e);
+        }
+        record.getUnsignedIntegerAttribute(tag);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void test_getUnsignedIntegerAttribute_tooLarge() {
+        short tag = 0;
+        SAMRecord record = null;
+        try {
+            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+            SAMFileHeader header = new SAMFileHeader();
+            final SAMBinaryTagAndValue tv = new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT + 1);
+            record = new SAMRecord(header) {
+                {
+                    setAttributes(tv);
+                }
+            };
+        } catch (Exception e) {
+            Assert.fail("Unexpected exception", e);
+        }
+
+        record.getUnsignedIntegerAttribute(tag);
+    }
+
+    @Test
+    public void test_isAllowedAttributeDataType() {
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Byte((byte) 0)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Short((short) 0)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Integer(0)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue("a string"));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Character('C')));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Float(0.1F)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new byte[]{0}));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new short[]{0}));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new int[]{0}));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new float[]{0.1F}));
+
+        // unsigned integers:
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(0)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(BinaryCodec.MAX_UINT)));
+        Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(-1L)));
+        Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(BinaryCodec.MAX_UINT + 1L)));
+        Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(Integer.MIN_VALUE - 1L)));
+
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void test_setAttribute_unsigned_int_negative() {
+        short tag = 0;
+        SAMRecord record = null;
+        try {
+            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+            SAMFileHeader header = new SAMFileHeader();
+            record = new SAMRecord(header);
+            Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
+        } catch (SAMException e) {
+            Assert.fail("Unexpected exception", e);
+        }
+
+        record.setAttribute(tag, (long)Integer.MIN_VALUE-1L);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void test_setAttribute_unsigned_int_tooLarge() {
+        short tag = 0;
+        SAMRecord record = null;
+        try {
+            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+            SAMFileHeader header = new SAMFileHeader();
+            record = new SAMRecord(header);
+            Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
+        } catch (SAMException e) {
+            Assert.fail("Unexpected exception", e);
+        }
+
+        record.setAttribute(tag, BinaryCodec.MAX_UINT + 1L);
+    }
+
+    @Test
+    public void test_setAttribute_null_removes_tag() {
+        final short tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
+
+        record.setAttribute(tag, BinaryCodec.MAX_UINT);
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(tag));
+
+        record.setAttribute(tag, null);
+        Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
+    }
 }

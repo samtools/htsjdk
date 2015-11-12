@@ -320,12 +320,15 @@ public class BinaryTagCodec {
                 return (char)byteBuffer.get();
             case 'I':
                 final long val = byteBuffer.getInt() & 0xffffffffL;
-                if (val <= Integer.MAX_VALUE) {
+                if ( val <= Integer.MAX_VALUE ) {
                     return (int)val;
                 }
-                SAMUtils.processValidationError(new SAMValidationError(SAMValidationError.Type.TAG_VALUE_TOO_LARGE,
-                        "Tag value " + val + " too large to store as signed integer.", null), validationStringency);
-                // convert to unsigned int stored in a long
+                // If it won't fit into a signed integer, but is within range for an unsigned 32-bit integer,
+                // return it directly as a long
+                if (! SAMUtils.isValidUnsignedIntegerAttribute(val)) {
+                    SAMUtils.processValidationError(new SAMValidationError(SAMValidationError.Type.TAG_VALUE_TOO_LARGE,
+                            "Unsigned integer is out of range for a 32-bit unsigned value: " + val, null), validationStringency);
+                }
                 return val;
             case 'i':
                 return byteBuffer.getInt();

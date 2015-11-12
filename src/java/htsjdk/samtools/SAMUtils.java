@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
@@ -1069,5 +1070,15 @@ public final class SAMUtils {
         } catch (final CloneNotSupportedException e) {
             throw new SAMException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Checks if a long attribute value is within the allowed range of a 32-bit unsigned integer.
+     *
+     * @param value a long value to check
+     * @return true if value is >= 0 and <= {@link BinaryCodec#MAX_UINT}, and false otherwise
+     */
+    public static boolean isValidUnsignedIntegerAttribute(long value) {
+        return value >= 0 && value <= BinaryCodec.MAX_UINT;
     }
 }

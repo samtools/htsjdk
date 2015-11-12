@@ -19,9 +19,13 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFormatException;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTagUtil;
+import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.SAMValidationError;
 import htsjdk.samtools.TagValueAndUnsignedArrayFlag;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -50,10 +54,10 @@ public class ReadTag implements Comparable<ReadTag> {
     private short code;
     private byte index;
 
-    public ReadTag(final int id, final byte[] dataAsByteArray) {
+    public ReadTag(final int id, final byte[] dataAsByteArray, ValidationStringency validationStringency) {
         this.type = (char) (0xFF & id);
         key = new String(new char[]{(char) ((id >> 16) & 0xFF), (char) ((id >> 8) & 0xFF)});
-        value = restoreValueFromByteArray(type, dataAsByteArray);
+        value = restoreValueFromByteArray(type, dataAsByteArray, validationStringency);
         keyType3Bytes = this.key + this.type;
 
         keyType3BytesAsInt = id;
@@ -179,10 +183,10 @@ public class ReadTag implements Comparable<ReadTag> {
         return writeSingleValue((byte) type, value, false);
     }
 
-    private static Object restoreValueFromByteArray(final char type, final byte[] array) {
+    private static Object restoreValueFromByteArray(final char type, final byte[] array, ValidationStringency validationStringency) {
         final ByteBuffer buffer = ByteBuffer.wrap(array);
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        return readSingleValue((byte) type, buffer);
+        return readSingleValue((byte) type, buffer, validationStringency);
     }
 
     // copied from net.sf.samtools.BinaryTagCodec 1.62:
@@ -216,8 +220,7 @@ public class ReadTag implements Comparable<ReadTag> {
     // copied from net.sf.samtools.BinaryTagCodec:
     static private char getIntegerType(final long val) {
         if (val > MAX_UINT) {
-            throw new IllegalArgumentException(
-                    "Integer attribute value too large to be encoded in BAM");
+            throw new IllegalArgumentException("Integer attribute value too large: "+val);
         }
         if (val > MAX_INT) {
             return 'I';
@@ -288,7 +291,7 @@ public class ReadTag implements Comparable<ReadTag> {
                 buffer.position(buffer.position() - 4);
                 break;
             case 'i':
-                buffer.putInt((Integer) value);
+                buffer.putInt(((Number) value).intValue());
                 break;
             case 's':
                 buffer.putShort(((Number) value).shortValue());
@@ -365,7 +368,7 @@ public class ReadTag implements Comparable<ReadTag> {
     }
 
     public static Object readSingleValue(final byte tagType,
-                                         final ByteBuffer byteBuffer) {
+                                         final ByteBuffer byteBuffer, ValidationStringency validationStringency) {
         switch (tagType) {
             case 'Z':
                 return readNullTerminatedString(byteBuffer);
@@ -374,10 +377,15 @@ public class ReadTag implements Comparable<ReadTag> {
             case 'I':
                 final long val = byteBuffer.getInt() & 0xffffffffL;
                 if (val <= Integer.MAX_VALUE) {
-                    return (int) val;
+                    return (int)val;
                 }
-                throw new RuntimeException(
-                        "Tag value is too large to store as signed integer.");
+                // If it won't fit into a signed integer, but is within range for an unsigned 32-bit integer,
+                // return it directly as a long
+                if (! SAMUtils.isValidUnsignedIntegerAttribute(val)) {
+                    SAMUtils.processValidationError(new SAMValidationError(SAMValidationError.Type.TAG_VALUE_TOO_LARGE,
+                            "Unsigned integer is out of range for a 32-bit unsigned value: " + val, null), validationStringency);
+                }
+                return val;
             case 'i':
                 return byteBuffer.getInt();
             case 's':

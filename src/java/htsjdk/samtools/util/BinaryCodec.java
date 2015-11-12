@@ -79,9 +79,9 @@ public class BinaryCodec implements Closeable {
     private static final ByteOrder LITTLE_ENDIAN = ByteOrder.LITTLE_ENDIAN;
     private static final byte NULL_BYTE[] = {0};
 
-    private static final long MAX_UBYTE = (Byte.MAX_VALUE * 2) + 1;
-    private static final long MAX_USHORT = (Short.MAX_VALUE * 2) + 1;
-    private static final long MAX_UINT = ((long)Integer.MAX_VALUE * 2) + 1;
+    public static final long MAX_UBYTE = (Byte.MAX_VALUE * 2) + 1;
+    public static final long MAX_USHORT = (Short.MAX_VALUE * 2) + 1;
+    public static final long MAX_UINT = ((long)Integer.MAX_VALUE * 2) + 1;
 
     // We never serialize more than this much at a time (except for Strings)
     private static final int MAX_BYTE_BUFFER = 8;
