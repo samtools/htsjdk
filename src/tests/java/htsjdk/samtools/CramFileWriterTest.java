@@ -33,6 +33,8 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,9 +89,10 @@ public class CramFileWriterTest {
         }
 
         int posInRef = 1;
-        for (int i = 0; i < count / 2; i++)
+        for (int i = 0; i < count / 2; i++) {
             builder.addPair(Integer.toString(i), 0, posInRef += 1,
                     posInRef += 3);
+        }
         list.addAll(builder.getRecords());
 
         Collections.sort(list, new SAMRecordCoordinateComparator());
@@ -124,7 +127,7 @@ public class CramFileWriterTest {
         SAMRecordIterator iterator2 = cReader.getIterator();
         int index = 0;
         while (iterator2.hasNext()) {
-            SAMRecord actualRecord= iterator2.next();
+            SAMRecord actualRecord = iterator2.next();
             SAMRecord expectedRecord = samRecords.get(index++);
 
             Assert.assertEquals(actualRecord.getReadName(), expectedRecord.getReadName());
@@ -140,5 +143,31 @@ public class CramFileWriterTest {
             Assert.assertEquals(actualRecord.getBaseQualities(), expectedRecord.getBaseQualities());
         }
         cReader.close();
+    }
+
+    @Test
+    public void test_roundtrip_tlen_preserved() throws IOException {
+        SamReader reader = SamReaderFactory.make().open(new File("testdata/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ReferenceSource source = new ReferenceSource(new File("testdata/htsjdk/samtools/cram_tlen.fasta"));
+        CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram");
+        SAMRecordIterator iterator = reader.iterator();
+        List<SAMRecord> records = new ArrayList<SAMRecord>();
+        while (iterator.hasNext()) {
+            final SAMRecord record = iterator.next();
+            writer.addAlignment(record);
+            records.add(record);
+        }
+        writer.close();
+
+        CRAMFileReader cramReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT);
+        iterator = cramReader.getIterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            SAMRecord record1 = iterator.next();
+            SAMRecord record2 = records.get(i++);
+            Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
+        }
+        Assert.assertEquals(records.size(), i);
     }
 }
