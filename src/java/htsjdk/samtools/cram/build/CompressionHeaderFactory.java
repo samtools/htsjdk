@@ -329,10 +329,10 @@ public class CompressionHeaderFactory implements CramCompression {
                 if (tag.keyType3BytesAsInt != tagID) {
                     continue;
                 }
-                final byte[] data = tag.getValueAsByteArray();
+                final byte[] valueBytes = tag.getValueAsByteArray();
 
                 if (distinctValues.size() < maxDistinctValues) {
-                    final int hashCode = Arrays.hashCode(data);
+                    final int hashCode = Arrays.hashCode(valueBytes);
                     if (!distinctValues.containsKey(hashCode)) {
                         distinctValues.put(hashCode, new MutableInt());
                     }
@@ -340,14 +340,14 @@ public class CompressionHeaderFactory implements CramCompression {
                 }
 
                 try {
-                    baosForTagValues.write(data);
+                    baosForTagValues.write(valueBytes);
                 } catch (final IOException e) {
                     throw new RuntimeIOException(e);
                 }
-                if (!byteSizes.containsKey(data.length)) {
-                    byteSizes.put(data.length, new MutableInt());
+                if (!byteSizes.containsKey(valueBytes.length)) {
+                    byteSizes.put(valueBytes.length, new MutableInt());
                 }
-                byteSizes.get(data.length).value++;
+                byteSizes.get(valueBytes.length).value++;
             }
         }
 
@@ -364,6 +364,7 @@ public class CompressionHeaderFactory implements CramCompression {
 
         final EncodingDetails d = new EncodingDetails();
 
+        // find the best of general purpose codecs:
         final int minLen = Math.min(gzipLen, Math.min(rans0Len, rans1Len));
         if (minLen == rans0Len) {
             d.compressor = rans0;
@@ -373,16 +374,21 @@ public class CompressionHeaderFactory implements CramCompression {
             d.compressor = gzip;
         }
 
+        // try Huffman if the number of distinct integer values is not too high:
         final boolean lowDiversity = distinctValues.size() < maxDistinctValues - 1;
         if (!lowDiversity && canBeRepresentedAsInteger(type)) {
             final HuffmanParamsCalculator calculator = new HuffmanParamsCalculator();
             calculator.addOne(getTagValueByteSize(type));
             calculator.calculate();
-            d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(calculator.getValues(), calculator.getBitLens()),
-                    ExternalByteEncoding.toParam(tagID));
-            return d;
+            if (minLen > 8*calculator.getDataBitSize()) {
+                // use Huffman if it is more efficient than general purpose codecs:
+                d.params = ByteArrayLenEncoding.toParam(HuffmanIntegerEncoding.toParam(calculator.getValues(), calculator.getBitLens()),
+                        ExternalByteEncoding.toParam(tagID));
+                return d;
+            }
         }
 
+        // find the minimum and the maximum byte lengths of the tag values:
         int maxSize = 0;
         int minSize = 0;
         for (final int size : byteSizes.keySet()) {

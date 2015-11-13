@@ -145,4 +145,16 @@ public class HuffmanParamsCalculator {
             return length - o.length;
         }
     }
+
+    /**
+     * Calculates the bit size of the data encoded with Huffman.
+     * @return number of bits required to encode the values
+     */
+    public long getDataBitSize() {
+        long len = 0;
+        for (int i = 0; i < values.length; i++) {
+            len += countMap.get(i).value * bitLens[i];
+        }
+        return len;
+    }
 }
