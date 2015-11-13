@@ -106,8 +106,8 @@ public class HuffmanParamsCalculator {
 
         for (int i = 0; i < codes.length; i++) {
             final BitCode code = codes[i];
-            getBitLens()[i] = code.length;
-            getValues()[i] = code.value;
+            bitLens[i] = code.length;
+            values[i] = code.value;
         }
     }
 
