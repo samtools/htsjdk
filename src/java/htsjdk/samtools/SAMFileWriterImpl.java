@@ -184,9 +184,6 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
             alignment.setHeader(header); // re-establish the record header and attempt to resolve reference index values
         }
         if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-            if (!header.getGroupOrder().equals(SAMFileHeader.GroupOrder.none)) {
-                throw new UnsupportedOperationException("GroupOrder " + header.getGroupOrder() + " is not supported");
-            }
             writeAlignment(alignment);
         } else if (presorted) {
             assertPresorted(alignment);
