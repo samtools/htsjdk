@@ -73,7 +73,7 @@ public class TextTagCodec {
             value = getArrayType(value, false) + "," + encodeArrayValue(value);
         } else if (tagType == 'i') {
             final long longVal = ((Number) value).longValue();
-            // as the spec says: [−2^31, 2^32)
+            // as the spec says: [-2^31, 2^32)
             if (longVal < Integer.MIN_VALUE || longVal > BinaryCodec.MAX_UINT) {
                 throw new IllegalArgumentException("Value for tag " + tagName + " cannot be stored in either a signed or unsigned 32-bit integer: " + longVal);
             }
