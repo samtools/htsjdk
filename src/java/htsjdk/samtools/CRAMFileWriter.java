@@ -331,6 +331,10 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         while ((cramRecord = cramRecord.next) != null);
     }
 
+    /**
+     * Write an alignment record.
+     * @param alignment must not be null and must have a valid SAMFileHeader.
+     */
     @Override
     protected void writeAlignment(final SAMRecord alignment) {
         if (shouldFlushContainer(alignment)) try {

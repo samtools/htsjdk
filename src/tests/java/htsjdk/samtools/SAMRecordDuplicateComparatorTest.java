@@ -27,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -213,6 +214,20 @@ public class SAMRecordDuplicateComparatorTest {
         records.addPair("READ1", 2, 55, 55);
 
         assertEquals(Arrays.asList(-1,-1,-1), records, false);
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testNullHeaders() {
+        final SAMRecordSetBuilder records = getSAMRecordSetBuilder();
+
+        records.addPair("READ0", 1, 55, 55);
+        records.addPair("READ1", 2, 55, 55);
+        Collection<SAMRecord> recs = records.getRecords();
+        for (SAMRecord rec : recs) {
+            rec.setHeader(null);
+        }
+
+        assertEquals(Arrays.asList(-1, -1, -1), records, false);
     }
 
 }

@@ -169,4 +169,12 @@ public class SAMFileReaderTest {
         }
         CloserUtil.close(reader);
     }
+
+    @Test
+    public void samRecordFactoryNullHeaderTest() {
+        final SAMRecordFactory factory = new DefaultSAMRecordFactory();
+        final SAMRecord samRec = factory.createSAMRecord(null);
+        Assert.assertTrue(samRec.getHeader() == null);
+    }
+
 }

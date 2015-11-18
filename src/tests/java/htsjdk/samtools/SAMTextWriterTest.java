@@ -44,7 +44,19 @@ public class SAMTextWriterTest {
 
     @Test
     public void testBasic() throws Exception {
+        doTest(getSAMReader(true, SAMFileHeader.SortOrder.coordinate));
+    }
+
+    @Test
+    public void testNullHeader() throws Exception {
         final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
+        for (final SAMRecord rec : recordSetBuilder.getRecords()) {
+            rec.setHeader(null);
+        }
+        doTest(recordSetBuilder);
+    }
+
+    private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception{
         SamReader inputSAM = recordSetBuilder.getSamReader();
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
