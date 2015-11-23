@@ -151,8 +151,14 @@ public class SamReaderFactoryTest {
     public Object[][] composeAllPermutationsOfSamInputResource() {
         final List<SamInputResource> sources = new ArrayList<SamInputResource>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
+            if (dataType.equals(InputResource.Type.SRA_ACCESSION))
+                continue;
+
             sources.add(new SamInputResource(composeInputResourceForType(dataType, false)));
             for (final InputResource.Type indexType : InputResource.Type.values()) {
+                if (indexType.equals(InputResource.Type.SRA_ACCESSION))
+                    continue;
+
                 sources.add(new SamInputResource(
                         composeInputResourceForType(dataType, false),
                         composeInputResourceForType(indexType, true)

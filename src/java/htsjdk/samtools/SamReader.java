@@ -57,6 +57,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
         }
 
+        public static Type SRA_TYPE = new TypeImpl("SRA", "sra", null);
         public static Type CRAM_TYPE = new TypeImpl("CRAM", "cram", "crai");
         public static Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
         public static Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
