@@ -8,6 +8,8 @@ val buildVersion = "1.141"
 
 organization := "com.github.samtools"
 
+libraryDependencies += "gov.nih.nlm.ncbi" % "ngs-java" % "1.2.2"
+
 libraryDependencies += "org.apache.commons" % "commons-jexl" % "2.1.1"
 
 libraryDependencies += "commons-logging" % "commons-logging" % "1.1.1"
