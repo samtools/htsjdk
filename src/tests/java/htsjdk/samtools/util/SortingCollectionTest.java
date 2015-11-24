@@ -24,7 +24,9 @@
 package htsjdk.samtools.util;
 
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -41,31 +43,23 @@ import java.util.Random;
 
 public class SortingCollectionTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
-    protected final File tmpDir = new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
-            "SortingCollectionTest");
-    @BeforeTest void setup() {
-        // Clear out any existing files if the directory exists
-        if (tmpDir.exists()) {
-            for (final File f : tmpDir.listFiles()) {
-                f.delete();
-            }
-        }
-        tmpDir.mkdirs();
+    protected File tmpDir() {
+        return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());
     }
+    
+    @BeforeMethod void setup() { resetTmpDir(); }
+    @AfterMethod void tearDown() { resetTmpDir(); }
 
-    @AfterTest void tearDown() {
-        System.err.println("In SortingCollectionTest.tearDown.  tmpDir: " + tmpDir);
-        if (tmpDir.exists()) {
-            for (final File f : tmpDir.listFiles()) {
-                f.delete();
-            }
-            tmpDir.delete();
-        }
+    /** Deletes and re-creates the temporary directory. */
+    void resetTmpDir() {
+        System.err.println("Resetting tmpdir");
+        IOUtil.deleteDirectoryTree(tmpDir());
+        if (!tmpDir().mkdirs()) throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
+
     }
 
     protected boolean tmpDirIsEmpty() {
-        System.err.println("In SortingCollectionTest.tmpDirIsEmpty.  tmpDir: " + tmpDir);
-        return tmpDir.listFiles().length == 0;
+        return tmpDir().listFiles().length == 0;
     }
 
     @DataProvider(name = "test1")
@@ -105,7 +99,7 @@ public class SortingCollectionTest {
         assertIteratorEqualsList(strings, sortingCollection.iterator());
         
         sortingCollection.cleanup();
-        Assert.assertEquals(tmpDir.list().length, 0);
+        Assert.assertEquals(tmpDir().list().length, 0);
     }
 
     private void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
@@ -118,8 +112,7 @@ public class SortingCollectionTest {
     }
 
     private SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
-        return SortingCollection.newInstance(String.class, new StringCodec(), new StringComparator(),
-                maxRecordsInRam, tmpDir);
+        return SortingCollection.newInstance(String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
     }
 
     /**

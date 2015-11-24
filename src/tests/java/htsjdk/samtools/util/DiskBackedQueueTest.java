@@ -25,14 +25,15 @@
 package htsjdk.samtools.util;
 
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 
-/**
- * Created by bradt on 4/28/14.
- */
 public class DiskBackedQueueTest extends SortingCollectionTest {
     @DataProvider(name = "diskBackedQueueProvider")
     public Object[][] createDBQTestData() {
@@ -48,6 +49,9 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
                 {"exactly threshold", 100, 100},
         };
     }
+
+    @BeforeMethod void setup() { resetTmpDir(); }
+    @AfterMethod void tearDown() { resetTmpDir(); }
 
     /**
      * Generate some strings, put into SortingCollection, confirm that the right number of
@@ -85,12 +89,12 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
     }
 
     private DiskBackedQueue<String> makeDiskBackedQueue(final int maxRecordsInRam) {
-        return DiskBackedQueue.newInstance(new StringCodec(), maxRecordsInRam, Collections.singletonList(tmpDir));
+        return DiskBackedQueue.newInstance(new StringCodec(), maxRecordsInRam, Collections.singletonList(tmpDir()));
     }
 
     @Test
     public void testReadOnlyQueueJustBeforeReadingFromDisk() {
-        DiskBackedQueue<String> queue = makeDiskBackedQueue(2);
+        final DiskBackedQueue<String> queue = makeDiskBackedQueue(2);
         queue.add("foo");
         queue.add("bar");
         queue.add("baz");
@@ -109,4 +113,20 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
         Assert.assertTrue(queue.canAdd());
     }
 
+    /** See: https://github.com/broadinstitute/picard/issues/327 */
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testPathologyIssue327() {
+
+        final DiskBackedQueue<String> queue = makeDiskBackedQueue(2);
+
+        // testing a particular order of adding to the queue, setting the result state, and emitting.
+        queue.add("0");
+        queue.add("1");
+        queue.add("2"); // spills to disk
+        Assert.assertEquals(queue.poll(), "0"); // gets from ram, so now there is space in ram, but a record on disk
+        queue.add("3"); // adds, but we assumed we added all records before removing them
+        Assert.assertEquals(queue.poll(), "1");
+        Assert.assertEquals(queue.poll(), "2");
+        Assert.assertEquals(queue.poll(), "3");
+    }
 }
