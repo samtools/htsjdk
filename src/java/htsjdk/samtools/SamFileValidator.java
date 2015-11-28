@@ -25,6 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMValidationError.Type;
+import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -90,7 +91,7 @@ public class SamFileValidator {
     private Set<Type> errorsToIgnore = EnumSet.noneOf(Type.class);
     private boolean ignoreWarnings = false;
     private boolean bisulfiteSequenced = false;
-    private boolean validateIndex = false;
+    private IndexValidationStringency indexValidationStringency = IndexValidationStringency.NONE;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted = false;
     private final int maxTempFiles;
 
@@ -198,9 +199,14 @@ public class SamFileValidator {
             orderChecker = new SAMSortOrderChecker(samReader.getFileHeader().getSortOrder());
             validateSamRecordsAndQualityFormat(samReader, samReader.getFileHeader());
             validateUnmatchedPairs();
-            if (validateIndex) {
+            if (indexValidationStringency != IndexValidationStringency.NONE) {
                 try {
-                    BamIndexValidator.exhaustivelyTestIndex(samReader);
+                    if (indexValidationStringency == IndexValidationStringency.LESS_EXHAUSTIVE) {
+                        BamIndexValidator.lessExhaustivelyTestIndex(samReader);
+                    }
+                    else {
+                        BamIndexValidator.exhaustivelyTestIndex(samReader);
+                    }
                 } catch (Exception e) {
                     addError(new SAMValidationError(Type.INVALID_INDEX_FILE_POINTER, e.getMessage(), null));
                 }
@@ -581,10 +587,16 @@ public class SamFileValidator {
         this.bisulfiteSequenced = bisulfiteSequenced;
     }
 
-    public SamFileValidator setValidateIndex(boolean validateIndex) {
+    /**
+     * @deprecated use setIndexValidationStringency instead
+     */
+    public SamFileValidator setValidateIndex(final boolean validateIndex) {
         // The SAMFileReader must also have IndexCaching enabled to have the index validated,
-        // samReader.enableIndexCaching(true);
-        this.validateIndex = validateIndex;
+        return this.setIndexValidationStringency(validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);
+    }
+
+    public SamFileValidator setIndexValidationStringency(final IndexValidationStringency stringency) {
+        this.indexValidationStringency = stringency;
         return this;
     }
 
