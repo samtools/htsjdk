@@ -29,6 +29,8 @@ package htsjdk.samtools;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import htsjdk.samtools.util.Interval;
+
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
@@ -39,6 +41,55 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 public class SAMSequenceDictionaryTest {
+    
+    @Test void testIntervalParser() {
+        final int contigLength = 100;
+        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", contigLength);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(
+                Arrays.asList(ssr1));
+        Assert.assertEquals(dict.size(), 1);
+        Assert.assertEquals(
+                dict.parseInterval("1"),
+                new Interval("1", 1, contigLength)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10"),
+                new Interval("1", 10, 10)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10bp"),
+                new Interval("1", 10, 10)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10-10kb"),
+                new Interval("1", 10, contigLength)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10+2"),
+                new Interval("1", 8, 12)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:"+(contigLength-5)+"+20"),
+                new Interval("1", contigLength-25, contigLength)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:4+50"),
+                new Interval("1", 1, 54)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10-"),
+                new Interval("1", 10,contigLength)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10-20"),
+                new Interval("1", 10, 20)
+               );
+        Assert.assertEquals(
+                dict.parseInterval("1:10-"+(contigLength+100)),
+                new Interval("1", 10, contigLength)
+               );
+    }
+    
     @Test
     public void testAliases() {
         final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);
