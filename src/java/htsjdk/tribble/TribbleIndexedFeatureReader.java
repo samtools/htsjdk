@@ -215,7 +215,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path);
-            if (path.endsWith("gz")) {
+            if (ParsingUtils.pathHasExtension(path, ".gz")) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
@@ -287,7 +287,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final InputStream inputStream = ParsingUtils.openInputStream(path);
 
             final PositionalBufferedStream pbs;
-            if (path.endsWith(".gz")) {
+            if ( (ParsingUtils.pathHasExtension(path, ".gz"))) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
                 final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));

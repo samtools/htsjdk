@@ -170,10 +170,10 @@ public class IndexFactory {
         final LittleEndianInputStream dis = null;
         try {
             InputStream  inputStream = ParsingUtils.openInputStream(indexFile);
-            if (indexFile.endsWith(".gz")) {
+            if (ParsingUtils.pathHasExtension(indexFile, ".gz")) {
                 inputStream = new GZIPInputStream(inputStream);
             }
-            else if (indexFile.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
+            else if (ParsingUtils.pathHasExtension(indexFile, TabixUtils.STANDARD_INDEX_EXTENSION)) {
                 inputStream = new BlockCompressedInputStream(inputStream);
             }
             // Must be buffered, because getIndexType uses mark and reset
