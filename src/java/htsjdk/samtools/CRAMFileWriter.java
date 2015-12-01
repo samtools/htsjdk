@@ -32,6 +32,7 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringLineReader;
 
 import java.io.IOException;
@@ -72,22 +73,75 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     private CRAMIndexer indexer;
     private long offset;
 
-    public CRAMFileWriter(final OutputStream outputStream, final ReferenceSource source, final SAMFileHeader samFileHeader, final String fileName) {
-        this(outputStream, null, source, samFileHeader, fileName);
+    /**
+     * Create a CRAMFileWriter on an output stream. Requires input records to be presorted to match the
+     * sort order defined by the input {@code samFileHeader}.
+     *
+     * @param outputStream where to write the output.
+     * @param source reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error messages
+     */
+    public CRAMFileWriter(
+            final OutputStream outputStream,
+            final ReferenceSource source,
+            final SAMFileHeader samFileHeader,
+            final String fileName)
+    {
+        this(outputStream, null, source, samFileHeader, fileName); // defaults to presorted == true
     }
 
-    public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final ReferenceSource source, final SAMFileHeader samFileHeader, final String fileName) {
+    /**
+     * Create a CRAMFileWriter and index on output streams. Requires input records to be presorted to match the
+     * sort order defined by the input {@code samFileHeader}.
+     *
+     * @param outputStream where to write the output.
+     * @param indexOS where to write the output index. Can be null if no index is required.
+     * @param source reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error messages
+     */
+    public CRAMFileWriter(
+            final OutputStream outputStream,
+            final OutputStream indexOS,
+            final ReferenceSource source,
+            final SAMFileHeader samFileHeader,
+            final String fileName)
+    {
+        this(outputStream, indexOS, true, source, samFileHeader, fileName); // defaults to presorted==true
+    }
+
+    /**
+     * Create a CRAMFileWriter and index on output streams.
+     *
+     * @param outputStream where to write the output.
+     * @param indexOS where to write the output index. Can be null if no index is required.
+     * @param presorted if true records written to this writer must already be sorted in the order specified by the header
+     * @param source reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error message display
+     */
+    public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
+                          final ReferenceSource source, final SAMFileHeader samFileHeader, final String fileName) {
         this.outputStream = outputStream;
-        this.source = source;
         this.samFileHeader = samFileHeader;
         this.fileName = fileName;
-        setSortOrder(samFileHeader.getSortOrder(), true);
+        initCRAMWriter(indexOS, source, samFileHeader, presorted);
+    }
+
+    private void initCRAMWriter(final OutputStream indexOS, final ReferenceSource source, final SAMFileHeader samFileHeader, final boolean preSorted) {
+        this.source = source;
+        setSortOrder(samFileHeader.getSortOrder(), preSorted);
         setHeader(samFileHeader);
 
-        if (this.source == null) this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
+        if (this.source == null) {
+            this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
+        }
 
         containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
-        if (indexOS != null) indexer = new CRAMIndexer(indexOS, samFileHeader);
+        if (indexOS != null) {
+            indexer = new CRAMIndexer(indexOS, samFileHeader);
+        }
     }
 
     /**
@@ -99,7 +153,6 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      */
     protected boolean shouldFlushContainer(final SAMRecord nextRecord) {
         return samRecords.size() >= containerSize || refSeqIndex != REF_SEQ_INDEX_NOT_INITIALIZED && refSeqIndex != nextRecord.getReferenceIndex();
-
     }
 
     private static void updateTracks(final List<SAMRecord> samRecords, final ReferenceTracks tracks) {
@@ -337,10 +390,14 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      */
     @Override
     protected void writeAlignment(final SAMRecord alignment) {
-        if (shouldFlushContainer(alignment)) try {
-            flushContainer();
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
+        if (shouldFlushContainer(alignment)) {
+            try {
+                flushContainer();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         updateReferenceContext(alignment.getReferenceIndex());
@@ -378,14 +435,18 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     @Override
     protected void finish() {
         try {
-            if (!samRecords.isEmpty()) flushContainer();
+            if (!samRecords.isEmpty()) {
+                flushContainer();
+            }
             CramIO.issueEOF(cramVersion, outputStream);
             outputStream.flush();
-            if (indexer != null)
+            if (indexer != null) {
                 indexer.finish();
-        } catch (final RuntimeException re) {
-            throw re;
-        } catch (final Exception e) {
+            }
+            outputStream.close();
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        } catch (final IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

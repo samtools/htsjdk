@@ -180,7 +180,7 @@ public class CRAMFileWriterWithIndexTest {
         Collections.sort(list, new SAMRecordCoordinateComparator());
 
         for (SAMRecord record : list)
-            writer.writeAlignment(record);
+            writer.addAlignment(record);
 
         list.clear();
         writer.finish();
