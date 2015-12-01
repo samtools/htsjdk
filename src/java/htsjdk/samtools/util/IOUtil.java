@@ -50,6 +50,8 @@ import java.io.Writer;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -320,16 +322,26 @@ public class IOUtil {
      * @param file the file to check for readability
      */
     public static void assertFileIsReadable(final File file) {
-        if (file == null) {
-			throw new IllegalArgumentException("Cannot check readability of null file.");
-		} else if (!file.exists()) {
-            throw new SAMException("Cannot read non-existent file: " + file.getAbsolutePath());
+        assertFileIsReadable(file == null ? null : file.toPath());
+    }
+
+    /**
+     * Checks that a file is non-null, exists, is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param path the file to check for readability
+     */
+    public static void assertFileIsReadable(final Path path) {
+        if (path == null) {
+            throw new IllegalArgumentException("Cannot check readability of null file.");
+        } else if (!Files.exists(path)) {
+            throw new SAMException("Cannot read non-existent file: " + path.toAbsolutePath());
         }
-        else if (file.isDirectory()) {
-            throw new SAMException("Cannot read file because it is a directory: " + file.getAbsolutePath());
+        else if (Files.isDirectory(path)) {
+            throw new SAMException("Cannot read file because it is a directory: " + path.toAbsolutePath());
         }
-        else if (!file.canRead()) {
-            throw new SAMException("File exists but is not readable: " + file.getAbsolutePath());
+        else if (!Files.isReadable(path)) {
+            throw new SAMException("File exists but is not readable: " + path.toAbsolutePath());
         }
     }
 
@@ -487,18 +499,28 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openFileForReading(final File file) {
+        return openFileForReading(file.toPath());
+    }
+
+    /**
+     * Opens a file for reading, decompressing it if necessary
+     *
+     * @param path  The file to open
+     * @return the input stream to read from
+     */
+    public static InputStream openFileForReading(final Path path) {
 
         try {
-            if (file.getName().endsWith(".gz") ||
-                file.getName().endsWith(".bfq"))  {
-                return openGzipFileForReading(file);
+            if (path.getFileName().toString().endsWith(".gz") ||
+                path.getFileName().toString().endsWith(".bfq"))  {
+                return openGzipFileForReading(path);
             }
             else {
-                return new FileInputStream(file);
+                return Files.newInputStream(path);
             }
         }
         catch (IOException ioe) {
-            throw new SAMException("Error opening file: " + file.getName(), ioe);
+            throw new SAMException("Error opening file: " + path, ioe);
         }
 
     }
@@ -510,12 +532,22 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openGzipFileForReading(final File file) {
+        return openGzipFileForReading(file.toPath());
+    }
+
+    /**
+     * Opens a GZIP-encoded file for reading, decompressing it if necessary
+     *
+     * @param path  The file to open
+     * @return the input stream to read from
+     */
+    public static InputStream openGzipFileForReading(final Path path) {
 
         try {
-            return new GZIPInputStream(new FileInputStream(file));
+            return new GZIPInputStream(Files.newInputStream(path));
         }
         catch (IOException ioe) {
-            throw new SAMException("Error opening file: " + file.getName(), ioe);
+            throw new SAMException("Error opening file: " + path, ioe);
         }
     }
 

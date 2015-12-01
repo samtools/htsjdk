@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,8 +51,12 @@ public class ReferenceSource {
     }
 
     public ReferenceSource(final File file) {
-        if (file != null)
-            rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(file);
+        this(file == null ? null : file.toPath());
+    }
+
+    public ReferenceSource(final Path path) {
+        if (path != null)
+            rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(path);
     }
 
     public ReferenceSource(final ReferenceSequenceFile rsFile) {
