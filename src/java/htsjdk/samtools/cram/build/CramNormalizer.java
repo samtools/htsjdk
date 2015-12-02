@@ -49,6 +49,9 @@ public class CramNormalizer {
     }
 
     public CramNormalizer(final SAMFileHeader header, final ReferenceSource referenceSource) {
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required.");
+        }
         this.header = header;
         this.referenceSource = referenceSource;
     }

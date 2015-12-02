@@ -205,6 +205,27 @@ public class CramFileWriterTest {
         Assert.assertTrue(indexStream.size() != 0);
     }
 
+    @Test(description = "Test CRAMWriter constructor reference required 1", expectedExceptions = IllegalArgumentException.class)
+    public void testCRAMWriterConstructorRequiredReference_1() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        new CRAMFileWriter(outStream, null, header, null);
+    }
+
+    @Test(description = "Test CRAMWriter constructor reference required 2", expectedExceptions = IllegalArgumentException.class)
+    public void testCRAMWriterConstructorRequiredReference_2() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        new CRAMFileWriter(outStream, null, null, header, null);
+    }
+
+    @Test(description = "Test CRAMWriter constructor reference required 3", expectedExceptions = IllegalArgumentException.class)
+    public void testCRAMWriterConstructorRequiredReference_3() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        new CRAMFileWriter(outStream, null, true, null, header, null);
+    }
+
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
         SamReader reader = SamReaderFactory.make().open(new File("testdata/htsjdk/samtools/cram_tlen_reads.sorted.sam"));

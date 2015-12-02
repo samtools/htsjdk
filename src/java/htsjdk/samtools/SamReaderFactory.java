@@ -265,7 +265,9 @@ public abstract class SamReaderFactory {
                     } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
-                        if (referenceSource == null && Defaults.REFERENCE_FASTA != null) referenceSource = new ReferenceSource(Defaults.REFERENCE_FASTA);
+                        if (referenceSource == null) {
+                            referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
+                        }
                         if (sourceFile == null || !sourceFile.isFile()) {
                             primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
                         } else {

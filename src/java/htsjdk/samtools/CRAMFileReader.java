@@ -58,32 +58,40 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     private ValidationStringency validationStringency;
 
     /**
-     * Open CRAM data for reading using either the file or the input stream
-     * supplied in the arguments. The
-     * {@link htsjdk.samtools.Defaults#REFERENCE_FASTA default} reference fasta
-     * file will be used.
+     * Create a CRAMFileReader from either a file or input stream using the reference source returned by
+     * {@link ReferenceSource#getDefaultCRAMReferenceSource() getDefaultCRAMReferenceSource}.
+     *
      *
      * @param cramFile CRAM file to open
-     * @param inputStream   CRAM stream to read
+     * @param inputStream CRAM stream to read
+     *
+     * @throws IllegalArgumentException if the {@code cramFile} and the {@code inputStream} are both null
+     * @throws IllegalStateException if a {@link ReferenceSource#getDefaultCRAMReferenceSource() default}
+     * reference source cannot be acquired
      */
     public CRAMFileReader(final File cramFile, final InputStream inputStream) {
-        this(cramFile, inputStream, new ReferenceSource(Defaults.REFERENCE_FASTA));
+        this(cramFile, inputStream, ReferenceSource.getDefaultCRAMReferenceSource());
     }
 
     /**
-     * Open CRAM data for reading using either the file or the input stream
-     * supplied in the arguments.
+     * Create a CRAMFileReader from either a file or input stream using the supplied reference source.
      *
-     * @param cramFile            CRAM file to read
-     * @param inputStream              index file to be used for random access
+     * @param cramFile        CRAM file to read
+     * @param inputStream     CRAM stream to read
      * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
-     *                        reference sequences
+     *                        reference sequences. May not be null.
+     *
+     * @throws IllegalArgumentException if the {@code cramFile} and the {@code inputStream} are both null
+     * or if the {@code ReferenceSource} is null
      */
     public CRAMFileReader(final File cramFile, final InputStream inputStream,
                           final ReferenceSource referenceSource) {
-        if (cramFile == null && inputStream == null)
-            throw new IllegalArgumentException(
-                    "Either file or input stream is required.");
+        if (cramFile == null && inputStream == null) {
+            throw new IllegalArgumentException("Either file or input stream is required.");
+        }
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required for CRAM readers");
+        }
 
         this.cramFile = cramFile;
         this.inputStream = inputStream;
@@ -92,18 +100,22 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     }
 
     /**
-     * Open CRAM file for reading. If index file is supplied than random access
-     * will be available.
+     * Create a CRAMFileReader from a file and optional index file using the supplied reference source. If index file
+     * is supplied then random access will be available.
      *
-     * @param cramFile        CRAM file to read
-     * @param indexFile       index file to be used for random access
+     * @param cramFile        CRAM file to read. May not be null.
+     * @param indexFile       index file to be used for random access. May be null.
      * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
-     *                        reference sequences
+     *                        reference sequences. May not be null.
+     * @throws IllegalArgumentException if the {@code cramFile} or the {@code ReferenceSource} is null
      */
     public CRAMFileReader(final File cramFile, final File indexFile,
                           final ReferenceSource referenceSource) {
         if (cramFile == null)
             throw new IllegalArgumentException("File is required.");
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required for CRAM readers");
+        }
 
         this.cramFile = cramFile;
         this.mIndexFile = indexFile;
@@ -112,10 +124,20 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         getIterator();
     }
 
+    /**
+     * Create a CRAMFileReader from a file using the supplied reference source.
+     *
+     * @param cramFile        CRAM file to read. Can not be null.
+     * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+     *                        reference sequences. May not be null.
+     * @throws IllegalArgumentException if the {@code cramFile} or the {@code ReferenceSource} is null
+     */
     public CRAMFileReader(final File cramFile, final ReferenceSource referenceSource) {
-        if (cramFile == null && inputStream == null)
-            throw new IllegalArgumentException(
-                    "Either file or input stream is required.");
+        if (cramFile == null)
+            throw new IllegalArgumentException("CRAM file cannot be null.");
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required for CRAM readers");
+        }
 
         this.cramFile = cramFile;
         this.referenceSource = referenceSource;
@@ -123,8 +145,27 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         getIterator();
     }
 
+    /**
+     * Create a CRAMFileReader from an input stream and optional index stream using the supplied reference
+     * source and validation stringency.
+     *
+     * @param inputStream      CRAM stream to read. May not be null.
+     * @param indexInputStream index stream to be used for random access. May be null.
+     * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+     *                        reference sequences. May not be null.
+     * @param validationStringency Validation stringency to be used when reading
+     *
+     * @throws IllegalArgumentException if the {@code inputStream} or the {@code ReferenceSource} is null
+     */
     public CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
                           final ReferenceSource referenceSource, final ValidationStringency validationStringency) throws IOException {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("Input stream can not be null for CRAM reader");
+        }
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required for CRAM readers");
+        }
+
         this.inputStream = inputStream;
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
@@ -142,12 +183,36 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         }
     }
 
+    /**
+     * Create a CRAMFileReader from an input stream and optional index file using the supplied reference
+     * source and validation stringency.
+     *
+     * @param stream            CRAM stream to read. May not be null.
+     * @param indexFile         index file to be used for random access. May be null.
+     * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+     *                        reference sequences. May not be null.
+     * @param validationStringency Validation stringency to be used when reading
+     *
+     * @throws IllegalArgumentException if the {@code inputStream} or the {@code ReferenceSource} is null
+     */
     public CRAMFileReader(final InputStream stream,
                           final File indexFile, final ReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {
         this(stream, indexFile == null ? null: new SeekableFileStream(indexFile), referenceSource, validationStringency);
     }
 
+    /**
+     * Create a CRAMFileReader from a CRAM file and optional index file using the supplied reference
+     * source and validation stringency.
+     *
+     * @param cramFile        CRAM stream to read. May not be null.
+     * @param indexFile       index file to be used for random access. May be null.
+     * @param referenceSource a {@link htsjdk.samtools.cram.ref.ReferenceSource source} of
+     *                        reference sequences. May not be null.
+     * @param validationStringency Validation stringency to be used when reading
+     *
+     * @throws IllegalArgumentException if the {@code cramFile} or the {@code ReferenceSource} is null
+     */
     public CRAMFileReader(final File cramFile,
                           final File indexFile, final ReferenceSource referenceSource,
                           final ValidationStringency validationStringency) throws IOException {

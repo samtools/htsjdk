@@ -142,7 +142,7 @@ public class SAMFileReaderTest {
         return scenarios;
     }
 
-    @Test(dataProvider = "cramNegativeTestCases", expectedExceptions=CRAMException.class)
+    @Test(dataProvider = "cramNegativeTestCases", expectedExceptions=IllegalStateException.class)
     public void testReferenceRequiredForCRAM(final String inputFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
