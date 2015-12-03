@@ -197,7 +197,7 @@
                 protected="true"
                 use="true"
                 version="true"
-                additionalparam="-notimestamp"
+                additionalparam="-Xdoclint:none -notimestamp"
                 failonerror="true">
             <classpath>
                 <pathelement location="${java.home}/../lib/tools.jar" />
