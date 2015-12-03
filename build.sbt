@@ -89,6 +89,8 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 crossPaths := false
 
+javacOptions in (Compile,doc) ++= Seq("-Xdoclint:none")
+
 packageOptions := Seq(ManifestAttributes(
   ("Implementation-Version", s"${implementationVersion.value}"),
   ("Implementation-Vendor", "Broad Institute")
