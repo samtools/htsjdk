@@ -22,6 +22,7 @@ htsjdk.samtools.liftover
 htsjdk.samtools.metrics
 htsjdk.samtools.reference
 htsjdk.samtools.seekablestream
+htsjdk.samtools.sra
 htsjdk.samtools.util
 htsjdk.samtools.util.ftp
 htsjdk.samtools.util.zip
