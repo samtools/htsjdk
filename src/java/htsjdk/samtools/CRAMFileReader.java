@@ -127,8 +127,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
 
-        iterator = new CRAMIterator(inputStream, referenceSource);
-        iterator.setValidationStringency(validationStringency);
+        iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
         if (indexInputStream != null) {
             try {
                 mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
@@ -228,7 +227,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         try {
             // create an input stream that reads the source cram stream only within the coordinate pairs:
             final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
-            return new CRAMIterator(seekableStream, referenceSource, coordinateArray);
+            return new CRAMIterator(seekableStream, referenceSource, coordinateArray, validationStringency);
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
@@ -247,11 +246,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             final CRAMIterator newIterator;
             if (cramFile != null) {
                 newIterator = new CRAMIterator(new FileInputStream(cramFile),
-                        referenceSource);
+                        referenceSource, validationStringency);
             } else
-                newIterator = new CRAMIterator(inputStream, referenceSource);
+                newIterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
 
-            newIterator.setValidationStringency(validationStringency);
             iterator = newIterator;
             return iterator;
         } catch (final Exception e) {
@@ -359,7 +357,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (filePointers == null || filePointers.length == 0)
             return emptyIterator;
 
-        final CRAMIterator newIterator = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers);
+        final CRAMIterator newIterator = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers, validationStringency);
         return new IntervalIterator(newIterator, new QueryInterval(referenceIndex, start, end), overlap);
     }
 
@@ -371,8 +369,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         final CRAMIterator newIterator;
         try {
             seekableStream.seek(0);
-            newIterator = new CRAMIterator(seekableStream, referenceSource);
-            newIterator.setValidationStringency(validationStringency);
+            newIterator = new CRAMIterator(seekableStream, referenceSource, validationStringency);
             seekableStream.seek(startOfLastLinearBin >>> 16);
             final Container container = ContainerIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
             seekableStream.seek(seekableStream.position() + container.containerByteSize);
