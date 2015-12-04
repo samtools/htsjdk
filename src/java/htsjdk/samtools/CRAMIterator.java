@@ -118,6 +118,12 @@ public class CRAMIterator implements SAMRecordIterator {
         parser = new ContainerParser(cramHeader.getSamFileHeader());
     }
 
+    @Deprecated
+    public CRAMIterator(final SeekableStream seekableStream, final ReferenceSource referenceSource, final long[] coordinates)
+            throws IOException {
+        this(seekableStream, referenceSource, coordinates, ValidationStringency.DEFAULT_STRINGENCY);
+    }
+
     public CramHeader getCramHeader() {
         return cramHeader;
     }
