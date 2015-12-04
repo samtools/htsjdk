@@ -132,6 +132,25 @@ public class CRAMFileIndexTest {
     }
 
     @Test
+    public void testNoStringencyConstructor() throws IOException {
+        final File CRAMFile = new File("testdata/htsjdk/samtools/cram/auxf#values.3.0.cram");
+        final File refFile = new File("testdata/htsjdk/samtools/cram/auxf.fa");
+        ReferenceSource refSource = new ReferenceSource(refFile);
+        File indexFile = null;
+
+        long start = 0;
+        long end = CRAMFile.length();
+        long[] boundaries = new long[] {start << 16, (end - 1) << 16};
+        final CRAMIterator iterator = new CRAMIterator(new SeekableFileStream(CRAMFile), refSource, boundaries);
+        long count = 0;
+        while (iterator.hasNext()) {
+            count++;
+            iterator.next();
+        }
+        Assert.assertEquals(count, 2);
+    }
+
+    @Test
     public void testIteratorFromFileSpan_WholeFile() throws IOException {
         CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);
         reader.setValidationStringency(ValidationStringency.SILENT);
