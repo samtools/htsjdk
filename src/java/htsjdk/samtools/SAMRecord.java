@@ -32,6 +32,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1712,7 +1713,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         List<SAMValidationError> ret = null;
 
         if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
-            ret = SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
+            try {
+                //make sure that the cashed version is good
+                //wrapped in a try to catch an un-parsable string
+                return SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
+            } catch( final IllegalArgumentException e){
+                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,e.getMessage(),getReadName(),recordNumber));
+            }
         }
         return ret;
     }
