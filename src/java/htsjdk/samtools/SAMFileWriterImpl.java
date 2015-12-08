@@ -174,15 +174,15 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Add an alignment record to be emitted by the writer.
      *
-     * @param alignment Must not be null. If the alignment record's SAMFileHeader is null, the record will be
-     *                  updated to the header used by this writer, which will in turn cause any unresolved reference and
-     *                  mate reference indices to be resolved against the new header's sequence dictionary.
+     * @param alignment Must not be null. The record will be updated to use the header used by this writer, which will
+     *                  in turn cause any unresolved reference and mate reference indices to be resolved against the
+     *                  header's sequence dictionary.
+     * @throws IllegalArgumentException if the record's reference or mate reference indices cannot be
+     * resolved against the writer's header using the current reference and mate reference names
      */
     public void addAlignment(final SAMRecord alignment)
     {
-        if (null == alignment.getHeader()) {
-            alignment.setHeader(header); // re-establish the record header and attempt to resolve reference index values
-        }
+        alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
         if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
             writeAlignment(alignment);
         } else if (presorted) {
