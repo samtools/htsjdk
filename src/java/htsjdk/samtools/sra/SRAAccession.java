@@ -29,11 +29,19 @@ package htsjdk.samtools.sra;
 import htsjdk.samtools.util.Log;
 import gov.nih.nlm.ncbi.ngs.NGS;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
- * Describes a single SRA accession
+ * Describes a single SRA accession for SRA read collection
  * Also provides app string functionality and allows to check if working SRA is supported on the running platform
+ *
+ * Important: due to checks performed in SRAAccession.isValid(), we won't recognise any accessions other
+ * than ones that follow the pattern "^[SED]RR[0-9]{6,9}$", e.g. SRR000123
  */
 public class SRAAccession implements Serializable {
     private static final Log log = Log.getInstance(SRAAccession.class);
@@ -75,11 +83,31 @@ public class SRAAccession implements Serializable {
      * @return true if a string is a valid SRA accession
      */
     public static boolean isValid(String acc) {
-        if (!isSupported()) {
-            return false;
+        boolean looksLikeSRA = false;
+        File f = new File(acc);
+        if (f.isFile()) {
+            byte[] buffer = new byte[8];
+            byte[] signature1 = "NCBI.sra".getBytes();
+            byte[] signature2 = "NCBInenc".getBytes();
+
+            try (InputStream is = new FileInputStream(f)) {
+                int numRead = is.read(buffer);
+
+                looksLikeSRA = numRead == buffer.length &&
+                        (Arrays.equals(buffer, signature1) || Arrays.equals(buffer, signature2));
+            } catch (IOException e) {
+                looksLikeSRA = false;
+            }
+        } else if (f.exists()) {
+            // anything else local other than a file is not an SRA archive
+            looksLikeSRA = false;
+        } else {
+            looksLikeSRA = acc.toUpperCase().matches ( "^[SED]RR[0-9]{6,9}$" );
         }
 
-        return NGS.isValid(acc);
+        if (!looksLikeSRA) return false;
+
+        return isSupported() && NGS.isValid(acc);
     }
 
     /**
