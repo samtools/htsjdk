@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Iterator that traverses a SAM File, accumulating information on a per-locus basis.
@@ -444,6 +445,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 		// 0-based offset into the read of the current base
 		int readBase = 0;
 		// 0-based offset for the reference of the current base
+        // the accumulator could have the previous position because an indel is accumulating
 		int refBase = 0;
 		// iterate over the cigar element
 		for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
@@ -466,8 +468,8 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 					break; // matches consumes both ref and read bases
                 case I:
                     // insertions are included in the previous base
-                    int accumulatorIndex = refBase;
-                    accumulator.get(refBase).addInsertion(rec, readBase);
+                    final int accIndex = (refBase == 0) ? 0 : refBase - 1;
+                    accumulator.get(accIndex).addInsertion(rec, readBase);
                     readBase += e.getLength();
                     break;
 				case D:
