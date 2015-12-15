@@ -24,6 +24,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.AlignmentBlock;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -75,12 +77,15 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
     /**
      * The unit of iteration.  Holds information about the locus (the SAMSequenceRecord and 1-based position
-     * on the reference), plus List of ReadAndOffset objects, one for each read that overlaps the locus
+     * on the reference), plus List of ReadAndOffset objects, one for each read that overlaps the locus;
+	 * two more List of ReadAndOffset objects includes reads that overlaps the locus with insertions/deletions
      */
     public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
         private final int position;
         private final List<RecordAndOffset> recordAndOffsets = new ArrayList<RecordAndOffset>(100);
+		private final List<RecordAndOffset> deletedInRecord = new ArrayList<RecordAndOffset>();
+		private final List<RecordAndOffset> insertionInRecord = new ArrayList<RecordAndOffset>();
 
         LocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
             this.referenceSequence = referenceSequence;
@@ -92,14 +97,37 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             recordAndOffsets.add(new RecordAndOffset(read, position));
         }
 
+		/** Accumulate info for one read with a deletion */
+		public void addDeleted(final SAMRecord read, int previousPosition) {
+			deletedInRecord.add(new RecordAndOffset(read, previousPosition));
+		}
+
+		/**
+		 * Accumulate info for one read with an insertion.
+		 * For this locus, the reads in the insertion are included also in recordAndOffsets
+		 */
+		public void addInsertion(final SAMRecord read, int firstPosition) {
+			insertionInRecord.add(new RecordAndOffset(read, firstPosition));
+		}
+
         public int getSequenceIndex() { return referenceSequence.getSequenceIndex(); }
 
         /** @return 1-based reference position */
         public int getPosition() { return position; }
         public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
+		public List<RecordAndOffset> getDeletedInRecord() { return Collections.unmodifiableList(deletedInRecord); }
+		public List<RecordAndOffset> getInsertionInRecord() { return Collections.unmodifiableList(insertionInRecord); }
         public String getSequenceName() { return referenceSequence.getSequenceName(); }
         @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
         public int getSequenceLength() {return referenceSequence.getSequenceLength();}
+
+        /**
+         * @return <code>true</code> if all the RecordAndOffset lists are empty;
+         *         <code>false</code> if at least one have records
+         */
+        public boolean isEmpty() {
+            return recordAndOffsets.isEmpty() && deletedInRecord.isEmpty() && insertionInRecord.isEmpty();
+        }
     }
 
 
@@ -141,6 +169,11 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      * If false, emit a LocusInfo only if a locus has coverage.
      */
     private boolean emitUncoveredLoci = true;
+
+	/**
+	 * If true, include indels in the LocusInfo
+	 */
+	private boolean includeIndels = false;
 
     // When there is a target mask, these members remember the last locus for which a LocusInfo has been
     // returned, so that any uncovered locus in the target mask can be covered by a 0-coverage LocusInfo
@@ -287,8 +320,14 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 continue;
             }
 
-            final Locus alignmentStart = new LocusImpl(rec.getReferenceIndex(), rec.getAlignmentStart());
-
+            int start = rec.getAlignmentStart();
+            // only if we are including indels and the record does not start in the first base of the reference
+            // the stop locus to populate the queue is not the same if the record starts with an insertion
+            if(includeIndels && start != 1 && rec.getCigar().getCigarElement(0).getOperator().equals(CigarOperator.I)) {
+                // the start to populate is one less
+                start--;
+            }
+            final Locus alignmentStart = new LocusImpl(rec.getReferenceIndex(), start);
             // emit everything that is before the start of the current read, because we know no more
             // coverage will be accumulated for those loci.
             while (!accumulator.isEmpty() && locusComparator.compare(accumulator.get(0), alignmentStart) < 0) {
@@ -303,17 +342,20 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             }
 
             // at this point, either the accumulator list is empty or the head should
-            // be the same position as the first base of the read
+            // be the same position as the first base of the read (or insertion if first)
             if (!accumulator.isEmpty()) {
                 if (accumulator.get(0).getSequenceIndex() != rec.getReferenceIndex() ||
-                        accumulator.get(0).position != rec.getAlignmentStart()) {
+                        accumulator.get(0).position != start) {
                     throw new IllegalStateException("accumulator should be empty or aligned with current SAMRecord");
                 }
             }
 
             // Store the loci for the read in the accumulator
             accumulateSamRecord(rec);
-
+			// Store the indels if requested
+			if(includeIndels) {
+				accumulateIndels(rec);
+			}
             samIterator.next();
         }
 
@@ -353,9 +395,17 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         final int alignmentEnd    = rec.getAlignmentEnd();
         final int alignmentLength = alignmentEnd - alignmentStart;
 
+        // get the offset for an insertion if we are tracking them
+        final int insOffset =
+                (includeIndels && rec.getCigar().getCigarElement(0).getOperator().equals(CigarOperator.I)) ? 1 : 0;
+        // if there is an insertion in the first base and it is not tracked in the accumulator, add it
+        if(insOffset == 1 && accumulator.isEmpty()) {
+            accumulator.add(new LocusInfo(ref, alignmentStart - 1));
+        }
+
         // Ensure there are LocusInfos up to and including this position
-        for (int i=accumulator.size(); i<=alignmentLength; ++i) {
-            accumulator.add(new LocusInfo(ref, alignmentStart + i));
+        for (int i=accumulator.size(); i<=alignmentLength+insOffset; ++i) {
+            accumulator.add(new LocusInfo(ref, alignmentStart + i - insOffset));
         }
 
         final int minQuality = getQualityScoreCutoff();
@@ -373,7 +423,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 final int readOffset = readStart + i - 1;
 
                 // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
-                final int refOffset =  refStart + i - alignmentStart;
+                final int refOffset =  refStart + i - alignmentStart + insOffset;
 
                 // if the quality score cutoff is met, accumulate the base info
                 if (dontCheckQualities || baseQualities[readOffset] >= minQuality) {
@@ -382,6 +432,55 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             }
         }
     }
+
+	/**
+	 * Requires that the accumulator for the record is previously fill with
+     * {@link #accumulateSamRecord(htsjdk.samtools.SAMRecord)}.
+     * Include in the LocusInfo the indels; the quality threshold does not affect insertions/deletions
+	 */
+	private void accumulateIndels(final SAMRecord rec) {
+		// get the cigar elements
+		final List<CigarElement> cigar = rec.getCigar().getCigarElements();
+		// 0-based offset into the read of the current base
+		int readBase = 0;
+		// 0-based offset for the reference of the current base
+		int refBase = 0;
+		// iterate over the cigar element
+		for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
+			final CigarElement e = cigar.get(elementIndex);
+			switch (e.getOperator()) {
+				case H:
+				case P: // ignore hard clips and pads (do not consume bases)
+					break;
+				case S:
+                    readBase += e.getLength();
+                    break; // soft clip and insertions consume bases in the read
+				case N:
+					refBase += e.getLength();
+					break; // reference skip consume bases in the reference
+				case M:
+				case EQ:
+				case X:
+					readBase += e.getLength();
+					refBase += e.getLength();
+					break; // matches consumes both ref and read bases
+                case I:
+                    // insertions are included in the previous base
+                    int accumulatorIndex = refBase;
+                    accumulator.get(refBase).addInsertion(rec, readBase);
+                    readBase += e.getLength();
+                    break;
+				case D:
+					// accumulate for each position that spans the deletion
+					for (int i = 0; i < e.getLength(); i++) {
+						// the offset is the one for the previous base
+						accumulator.get(refBase).addDeleted(rec, readBase - 1);
+                        refBase++;
+					}
+					break;
+			}
+		}
+	}
 
     /**
      * Create the next relevant zero-coverage LocusInfo
@@ -431,8 +530,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      */
     private void populateCompleteQueue(final Locus stopBeforeLocus) {
         // Because of gapped alignments, it is possible to create LocusInfo's with no reads associated with them.
-        // Skip over these.
-        while (!accumulator.isEmpty() && accumulator.get(0).getRecordAndPositions().isEmpty() &&
+        // Skip over these if not including indels
+        while (!accumulator.isEmpty() && accumulator.get(0).isEmpty() &&
+                // accumulator.get(0).getRecordAndPositions().isEmpty() && !(includeIndels && !accumulator.get(0).getDeletedInRecord().isEmpty()) &&
                locusComparator.compare(accumulator.get(0), stopBeforeLocus) < 0) {
             accumulator.remove(0);
         }
@@ -512,5 +612,13 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     public void setEmitUncoveredLoci(final boolean emitUncoveredLoci) {
         this.emitUncoveredLoci = emitUncoveredLoci;
     }
+
+	public boolean isIncludeIndels() {
+		return includeIndels;
+	}
+
+	public void setIncludeIndels(final boolean includeIndels) {
+		this.includeIndels = includeIndels;
+	}
 }
 
