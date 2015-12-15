@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Iterator that traverses a SAM File, accumulating information on a per-locus basis.
@@ -79,14 +78,14 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     /**
      * The unit of iteration.  Holds information about the locus (the SAMSequenceRecord and 1-based position
      * on the reference), plus List of ReadAndOffset objects, one for each read that overlaps the locus;
-	 * two more List of ReadAndOffset objects includes reads that overlaps the locus with insertions/deletions
+     * two more List of ReadAndOffset objects includes reads that overlaps the locus with insertions/deletions
      */
     public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
         private final int position;
         private final List<RecordAndOffset> recordAndOffsets = new ArrayList<RecordAndOffset>(100);
-		private final List<RecordAndOffset> deletedInRecord = new ArrayList<RecordAndOffset>();
-		private final List<RecordAndOffset> insertionInRecord = new ArrayList<RecordAndOffset>();
+        private final List<RecordAndOffset> deletedInRecord = new ArrayList<RecordAndOffset>();
+        private final List<RecordAndOffset> insertionInRecord = new ArrayList<RecordAndOffset>();
 
         LocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
             this.referenceSequence = referenceSequence;
@@ -98,26 +97,26 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             recordAndOffsets.add(new RecordAndOffset(read, position));
         }
 
-		/** Accumulate info for one read with a deletion */
-		public void addDeleted(final SAMRecord read, int previousPosition) {
-			deletedInRecord.add(new RecordAndOffset(read, previousPosition));
-		}
+        /** Accumulate info for one read with a deletion */
+        public void addDeleted(final SAMRecord read, int previousPosition) {
+            deletedInRecord.add(new RecordAndOffset(read, previousPosition));
+        }
 
-		/**
-		 * Accumulate info for one read with an insertion.
-		 * For this locus, the reads in the insertion are included also in recordAndOffsets
-		 */
-		public void addInsertion(final SAMRecord read, int firstPosition) {
-			insertionInRecord.add(new RecordAndOffset(read, firstPosition));
-		}
+        /**
+         * Accumulate info for one read with an insertion.
+         * For this locus, the reads in the insertion are included also in recordAndOffsets
+         */
+        public void addInsertion(final SAMRecord read, int firstPosition) {
+            insertionInRecord.add(new RecordAndOffset(read, firstPosition));
+        }
 
         public int getSequenceIndex() { return referenceSequence.getSequenceIndex(); }
 
         /** @return 1-based reference position */
         public int getPosition() { return position; }
         public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
-		public List<RecordAndOffset> getDeletedInRecord() { return Collections.unmodifiableList(deletedInRecord); }
-		public List<RecordAndOffset> getInsertionInRecord() { return Collections.unmodifiableList(insertionInRecord); }
+        public List<RecordAndOffset> getDeletedInRecord() { return Collections.unmodifiableList(deletedInRecord); }
+        public List<RecordAndOffset> getInsertionInRecord() { return Collections.unmodifiableList(insertionInRecord); }
         public String getSequenceName() { return referenceSequence.getSequenceName(); }
         @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
         public int getSequenceLength() {return referenceSequence.getSequenceLength();}
@@ -171,10 +170,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      */
     private boolean emitUncoveredLoci = true;
 
-	/**
-	 * If true, include indels in the LocusInfo
-	 */
-	private boolean includeIndels = false;
+    /**
+     * If true, include indels in the LocusInfo
+     */
+    private boolean includeIndels = false;
 
     // When there is a target mask, these members remember the last locus for which a LocusInfo has been
     // returned, so that any uncovered locus in the target mask can be covered by a 0-coverage LocusInfo
@@ -353,10 +352,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
             // Store the loci for the read in the accumulator
             accumulateSamRecord(rec);
-			// Store the indels if requested
-			if(includeIndels) {
-				accumulateIndels(rec);
-			}
+            // Store the indels if requested
+            if(includeIndels) {
+                accumulateIndels(rec);
+            }
             samIterator.next();
         }
 
@@ -434,55 +433,55 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         }
     }
 
-	/**
-	 * Requires that the accumulator for the record is previously fill with
+    /**
+     * Requires that the accumulator for the record is previously fill with
      * {@link #accumulateSamRecord(htsjdk.samtools.SAMRecord)}.
      * Include in the LocusInfo the indels; the quality threshold does not affect insertions/deletions
-	 */
-	private void accumulateIndels(final SAMRecord rec) {
-		// get the cigar elements
-		final List<CigarElement> cigar = rec.getCigar().getCigarElements();
-		// 0-based offset into the read of the current base
-		int readBase = 0;
-		// 0-based offset for the reference of the current base
+     */
+    private void accumulateIndels(final SAMRecord rec) {
+        // get the cigar elements
+        final List<CigarElement> cigar = rec.getCigar().getCigarElements();
+        // 0-based offset into the read of the current base
+        int readBase = 0;
+        // 0-based offset for the reference of the current base
         // the accumulator could have the previous position because an indel is accumulating
-		int refBase = 0;
-		// iterate over the cigar element
-		for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
-			final CigarElement e = cigar.get(elementIndex);
-			switch (e.getOperator()) {
-				case H:
-				case P: // ignore hard clips and pads (do not consume bases)
-					break;
-				case S:
+        int refBase = 0;
+        // iterate over the cigar element
+        for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
+            final CigarElement e = cigar.get(elementIndex);
+            switch (e.getOperator()) {
+                case H:
+                case P: // ignore hard clips and pads (do not consume bases)
+                    break;
+                case S:
                     readBase += e.getLength();
                     break; // soft clip and insertions consume bases in the read
-				case N:
-					refBase += e.getLength();
-					break; // reference skip consume bases in the reference
-				case M:
-				case EQ:
-				case X:
-					readBase += e.getLength();
-					refBase += e.getLength();
-					break; // matches consumes both ref and read bases
+                case N:
+                    refBase += e.getLength();
+                    break; // reference skip consume bases in the reference
+                case M:
+                case EQ:
+                case X:
+                    readBase += e.getLength();
+                    refBase += e.getLength();
+                    break; // matches consumes both ref and read bases
                 case I:
                     // insertions are included in the previous base
                     final int accIndex = (refBase == 0) ? 0 : refBase - 1;
                     accumulator.get(accIndex).addInsertion(rec, readBase);
                     readBase += e.getLength();
                     break;
-				case D:
-					// accumulate for each position that spans the deletion
-					for (int i = 0; i < e.getLength(); i++) {
-						// the offset is the one for the previous base
-						accumulator.get(refBase).addDeleted(rec, readBase - 1);
+                case D:
+                    // accumulate for each position that spans the deletion
+                    for (int i = 0; i < e.getLength(); i++) {
+                        // the offset is the one for the previous base
+                        accumulator.get(refBase).addDeleted(rec, readBase - 1);
                         refBase++;
-					}
-					break;
-			}
-		}
-	}
+                    }
+                    break;
+            }
+        }
+    }
 
     /**
      * Create the next relevant zero-coverage LocusInfo
@@ -615,12 +614,12 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         this.emitUncoveredLoci = emitUncoveredLoci;
     }
 
-	public boolean isIncludeIndels() {
-		return includeIndels;
-	}
+    public boolean isIncludeIndels() {
+        return includeIndels;
+    }
 
-	public void setIncludeIndels(final boolean includeIndels) {
-		this.includeIndels = includeIndels;
-	}
+    public void setIncludeIndels(final boolean includeIndels) {
+        this.includeIndels = includeIndels;
+    }
 }
 
