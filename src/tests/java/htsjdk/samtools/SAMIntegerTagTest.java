@@ -318,7 +318,7 @@ public class SAMIntegerTagTest {
         w.addAlignment(record);
         w.close();
 
-        final SamReader reader = SamReaderFactory.make().validationStringency(validationStringency).referenceSource(new ReferenceSource()).
+        final SamReader reader = SamReaderFactory.make().validationStringency(validationStringency).referenceSource(new ReferenceSource((File)null)).
                 open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
         final SAMRecordIterator iterator = reader.iterator();
         Assert.assertTrue(iterator.hasNext());

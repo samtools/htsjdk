@@ -9,7 +9,7 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.lossy.QualityScorePreservation;
-import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceTracks;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
@@ -43,7 +43,7 @@ public class CRAMContainerStreamWriter {
     private final SAMFileHeader samFileHeader;
     private final String cramID;
     private final OutputStream outputStream;
-    private ReferenceSource source;
+    private CRAMReferenceSource source;
 
     private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
     private ContainerFactory containerFactory;
@@ -73,7 +73,7 @@ public class CRAMContainerStreamWriter {
     public CRAMContainerStreamWriter(
             final OutputStream outputStream,
             final OutputStream indexStream,
-            final ReferenceSource source,
+            final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
             final String cramId) {
         this.outputStream = outputStream;

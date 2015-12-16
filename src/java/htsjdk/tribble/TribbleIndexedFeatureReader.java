@@ -35,6 +35,8 @@ import htsjdk.tribble.util.ParsingUtils;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -215,7 +217,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path);
-            if (path.endsWith("gz")) {
+            if (isGZIPPath(path)) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
@@ -271,6 +273,27 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         return new WFIterator();
     }
 
+    //Visible for testing
+    static boolean isGZIPPath(final String path) {
+        if (path.toLowerCase().endsWith(".gz")) {
+            return true;
+        }
+        else {
+            String uriPath = null;
+            try {
+                URI uri = new URI(path);
+                if (uri != null) {
+                    uriPath = uri.getPath();
+                    return uriPath != null && uriPath.toLowerCase().endsWith(".gz");
+                }
+                return false;
+            }
+            catch (URISyntaxException e) {
+                return false;
+            }
+        }
+    }
+
     /**
      * Class to iterator over an entire file.
      */
@@ -287,7 +310,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final InputStream inputStream = ParsingUtils.openInputStream(path);
 
             final PositionalBufferedStream pbs;
-            if (path.endsWith(".gz")) {
+            if (isGZIPPath(path)) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
                 final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));
@@ -320,7 +343,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
             return ret;
         }
-
 
         /**
          * Advance to the next record in the query interval.

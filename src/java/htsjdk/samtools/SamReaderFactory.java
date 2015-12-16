@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.sra.SRAAccession;
@@ -60,7 +61,7 @@ public abstract class SamReaderFactory {
 
     abstract public ValidationStringency validationStringency();
 
-    abstract public ReferenceSource referenceSource();
+    abstract public CRAMReferenceSource referenceSource();
 
     /** Set this factory's {@link htsjdk.samtools.SAMRecordFactory} to the provided one, then returns itself. */
     abstract public SamReaderFactory samRecordFactory(final SAMRecordFactory samRecordFactory);
@@ -78,7 +79,7 @@ public abstract class SamReaderFactory {
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
 
     /** Sets the specified reference sequence * */
-    abstract public SamReaderFactory referenceSource(ReferenceSource referenceSequence);
+    abstract public SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
 
     /** Utility method to open the file get the header and close the file */
     abstract public SAMFileHeader getFileHeader(File samFile);
@@ -124,7 +125,7 @@ public abstract class SamReaderFactory {
         private boolean asynchronousIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
-        private ReferenceSource referenceSource;
+        private CRAMReferenceSource referenceSource;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
@@ -148,7 +149,7 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        public ReferenceSource referenceSource() {
+        public CRAMReferenceSource referenceSource() {
             return referenceSource;
         }
 
@@ -188,7 +189,7 @@ public abstract class SamReaderFactory {
         }
 
         @Override
-        public SamReaderFactory referenceSource(final ReferenceSource referenceSource) {
+        public SamReaderFactory referenceSource(final CRAMReferenceSource referenceSource) {
             this.referenceSource = referenceSource;
             return this;
         }
