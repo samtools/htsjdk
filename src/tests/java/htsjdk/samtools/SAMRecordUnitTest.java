@@ -31,6 +31,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -456,7 +457,7 @@ public class SAMRecordUnitTest {
             Assert.fail("Unexpected exception", e);
         }
 
-        record.setAttribute(tag, (long)Integer.MIN_VALUE-1L);
+        record.setAttribute(tag, (long) Integer.MIN_VALUE - 1L);
     }
 
     @Test(expectedExceptions = SAMException.class)
@@ -775,6 +776,23 @@ public class SAMRecordUnitTest {
         initialSAMRecord.setHeader(null);
         final SAMRecord deserializedSAMRecord = TestUtil.serializeAndDeserialize(initialSAMRecord);
         Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
+    }
+
+
+    @Test
+    public void testValidateNonsenseCigar(){
+        // Create nonsense record
+        SAMRecord rec = createTestRecordHelper();
+        rec.setCigarString("nonsense");
+
+        //The default validationStringency of a sam record is SILENT.
+        rec.setValidationStringency(ValidationStringency.STRICT);
+        // Validate record
+        List<SAMValidationError> err = rec.validateCigar(-1);
+
+        Assert.assertNotNull(err);
+        Assert.assertEquals(err.size(), 1);
+        Assert.assertEquals(err.get(0).getType(), SAMValidationError.Type.INVALID_CIGAR);
     }
 
     @Test
