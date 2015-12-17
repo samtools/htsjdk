@@ -945,14 +945,14 @@ public final class SAMUtils {
             } else {
                 if (getMateCigarString(rec) != null) {
                     ret = new ArrayList<SAMValidationError>();
-                    if (rec.getMateUnmappedFlag()) {
+                    if (!rec.getReadPairedFlag()) {
+                        // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error
+                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
+                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
+                    } else { // will hit here if rec.getMateUnmappedFlag() is true
                         // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
                                 "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped", rec.getReadName(), recordNumber));
-                    } else {
-                        // If the Mate is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
-                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
-                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
                     }
                 }
             }
