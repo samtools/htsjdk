@@ -38,12 +38,19 @@ public class SamLocusIteratorTest {
     /** the read length for the testss */
     final static int readLength = 36;
 
-    /** the sequence length for the tests */
-    final static int sequenceLength = 100000;
+    final static SAMFileHeader header = new SAMFileHeader();
+
+    static {
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        SAMSequenceDictionary dict = new SAMSequenceDictionary();
+        dict.addSequence(new SAMSequenceRecord("chrM", 100000));
+        header.setSequenceDictionary(dict);
+    }
 
     /** Get the record builder for the tests with the default parameters that are needed */
     private static SAMRecordSetBuilder getRecordBuilder() {
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, false, sequenceLength);
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        builder.setHeader(header);
         builder.setReadLength(readLength);
         return builder;
     }
@@ -62,13 +69,13 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", null, 10);
         }
         // test both for include indels and do not include indels
         for (final boolean incIndels : new boolean[]{false, true}){
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
-            // make sure we accumulated depthfor each position
+            // make sure we accumulated depth for each position
             int pos = startPosition;
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos++);
@@ -88,10 +95,11 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", null, 10);
         }
 
         final int coveredEnd = CoordMath.getEnd(startPosition, readLength);
+
         // test both for include indels and do not include indels
         for (final boolean incIndels : new boolean[]{false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
@@ -111,7 +119,7 @@ public class SamLocusIteratorTest {
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             }
-            Assert.assertEquals(pos, sequenceLength + 1);
+            Assert.assertEquals(pos, header.getSequence(0).getSequenceLength() + 1);
         }
     }
 
@@ -129,7 +137,7 @@ public class SamLocusIteratorTest {
                 qualityString = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*";
             }
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", qualityString, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", qualityString, 10);
         }
 
         // test both for include indels and do not include indels
@@ -159,7 +167,7 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
         }
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
@@ -208,7 +216,7 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
         }
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
@@ -285,8 +293,8 @@ public class SamLocusIteratorTest {
         // add records up to coverage for the test in that position
         final int startPosition = 165;
         // Were it not for the gap, these two reads would not overlap
-        builder.addFrag("record1", 24, startPosition, true, false, "18M10D18M", null, 10);
-        builder.addFrag("record2", 24, startPosition, true, false, "36M", null, 10);
+        builder.addFrag("record1", 0, startPosition, true, false, "18M10D18M", null, 10);
+        builder.addFrag("record2", 0, startPosition, true, false, "36M", null, 10);
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
 
@@ -347,8 +355,8 @@ public class SamLocusIteratorTest {
         // add records up to coverage for the test in that position
         final int startPosition = 165;
         // Were it not for the gap, these two reads would not overlap
-        builder.addFrag("record1", 24, startPosition, true, false, "18M10D18M", null, 10);
-        builder.addFrag("record2", 24, startPosition, true, false, "36M", null, 10);
+        builder.addFrag("record1", 0, startPosition, true, false, "18M10D18M", null, 10);
+        builder.addFrag("record2", 0, startPosition, true, false, "36M", null, 10);
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
         sli.setIncludeIndels(true);
@@ -427,7 +435,7 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "3I33M", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "3I33M", null, 10);
         }
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
@@ -450,7 +458,7 @@ public class SamLocusIteratorTest {
         final int startPosition = 165;
         for(int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 24, startPosition, true, false, "3I33M", null, 10);
+            builder.addFrag("record"+i, 0, startPosition, true, false, "3I33M", null, 10);
         }
 
         final SamLocusIterator sli = createSamLocusIterator(builder);
