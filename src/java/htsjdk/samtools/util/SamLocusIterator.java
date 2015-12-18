@@ -447,36 +447,22 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         // iterate over the cigar element
         for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
             final CigarElement e = cigar.get(elementIndex);
-            switch (e.getOperator()) {
-                case H:
-                case P: // ignore hard clips and pads (do not consume bases)
-                    break;
-                case S:
-                    readBase += e.getLength();
-                    break; // soft clip and insertions consume bases in the read
-                case N:
-                    refBase += e.getLength();
-                    break; // reference skip consume bases in the reference
-                case M:
-                case EQ:
-                case X:
-                    readBase += e.getLength();
-                    refBase += e.getLength();
-                    break; // matches consumes both ref and read bases
-                case I:
-                    // insertions are included in the previous base
-                    final int accIndex = (refBase == 0) ? 0 : refBase - 1;
-                    accumulator.get(accIndex).addInserted(rec, readBase);
-                    readBase += e.getLength();
-                    break;
-                case D:
-                    // accumulate for each position that spans the deletion
-                    for (int i = 0; i < e.getLength(); i++) {
-                        // the offset is the one for the previous base
-                        accumulator.get(refBase).addDeleted(rec, readBase - 1);
-                        refBase++;
-                    }
-                    break;
+            final CigarOperator operator = e.getOperator();
+            if (operator.equals(CigarOperator.I)) {
+                // insertions are included in the previous base
+                final int accIndex = (refBase == 0) ? 0 : refBase - 1;
+                accumulator.get(accIndex).addInserted(rec, readBase);
+                readBase += e.getLength();
+            } else if (operator.equals(CigarOperator.D)) {
+                // accumulate for each position that spans the deletion
+                for (int i = 0; i < e.getLength(); i++) {
+                    // the offset is the one for the previous base
+                    accumulator.get(refBase).addDeleted(rec, readBase - 1);
+                    refBase++;
+                }
+            } else {
+                if (operator.consumesReadBases()) readBase += e.getLength();
+                if (operator.consumesReferenceBases()) refBase += e.getLength();
             }
         }
     }
