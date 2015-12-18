@@ -403,23 +403,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      * creating new LocusInfos as needed.
      */
     private void accumulateSamRecord(final SAMRecord rec) {
-        final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
-        final int alignmentStart  = rec.getAlignmentStart();
-        final int alignmentEnd    = rec.getAlignmentEnd();
-        final int alignmentLength = alignmentEnd - alignmentStart;
 
-        // get the offset for an insertion if we are tracking them
-        final int insOffset =
-                (includeIndels && rec.getCigar().getCigarElement(0).getOperator().equals(CigarOperator.I)) ? 1 : 0;
-        // if there is an insertion in the first base and it is not tracked in the accumulator, add it
-        if(insOffset == 1 && accumulator.isEmpty()) {
-            accumulator.add(new LocusInfo(ref, alignmentStart - 1));
-        }
-
-        // Ensure there are LocusInfos up to and including this position
-        for (int i=accumulator.size(); i<=alignmentLength+insOffset; ++i) {
-            accumulator.add(new LocusInfo(ref, alignmentStart + i - insOffset));
-        }
+        // get the accumulator offset
+        int accOffset = getAccumulatorOffset(rec);
 
         final int minQuality = getQualityScoreCutoff();
         final boolean dontCheckQualities = minQuality == 0;
@@ -435,11 +421,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 // 0-based offset into the read of the current base
                 final int readOffset = readStart + i - 1;
 
-                // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
-                final int refOffset =  refStart + i - alignmentStart + insOffset;
-
                 // if the quality score cutoff is met, accumulate the base info
                 if (dontCheckQualities || baseQualities[readOffset] >= minQuality) {
+                    // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
+                    final int refOffset = refStart + i - accOffset;
                     accumulator.get(refOffset).add(rec, readOffset);
                 }
             }
@@ -581,6 +566,29 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
         lastReferenceSequence = sequenceIndex;
         lastPosition = locusInfo.getPosition();
+    }
+
+    /**
+     * Ensure that the queue is populated and get the accumulator offset for the current record
+     */
+    private int getAccumulatorOffset(SAMRecord rec) {
+        final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
+        final int alignmentStart  = rec.getAlignmentStart();
+        final int alignmentEnd    = rec.getAlignmentEnd();
+        final int alignmentLength = alignmentEnd - alignmentStart;
+        // get the offset for an insertion if we are tracking them
+        final int insOffset =
+                (includeIndels && rec.getCigar().getCigarElement(0).getOperator().equals(CigarOperator.I)) ? 1 : 0;
+        // if there is an insertion in the first base and it is not tracked in the accumulator, add it
+        if(insOffset == 1 && accumulator.isEmpty()) {
+            accumulator.add(new LocusInfo(ref, alignmentStart - 1));
+        }
+
+        // Ensure there are LocusInfos up to and including this position
+        for (int i=accumulator.size(); i<=alignmentLength+insOffset; ++i) {
+            accumulator.add(new LocusInfo(ref, alignmentStart + i - insOffset));
+        }
+        return alignmentStart - insOffset;
     }
 
     private SAMSequenceRecord getReferenceSequence(final int referenceSequenceIndex) {
