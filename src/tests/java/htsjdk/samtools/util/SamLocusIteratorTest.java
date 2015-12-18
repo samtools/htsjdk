@@ -66,7 +66,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(2, li.getRecordAndPositions().size());
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
 
     }
@@ -91,7 +91,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(2, li.getRecordAndPositions().size());
             // make sure that there are no indels if accumulating
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
 
     }
@@ -123,7 +123,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
         Assert.assertEquals(pos, 100001);
 
@@ -157,7 +157,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
             // make sure that there are no indels if accumulating
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
         Assert.assertEquals(pos, 100001);
 
@@ -186,7 +186,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(pos++, li.getPosition());
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
 
     }
@@ -214,7 +214,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(pos++, li.getPosition());
             // make sure that there are no indels if accumulating
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
 
     }
@@ -263,7 +263,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(li.getRecordAndPositions().get(1).getOffset(), expectedReadOffsets[i]);
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             ++i;
         }
     }
@@ -319,12 +319,12 @@ public class SamLocusIteratorTest {
             // check the insertions
             if(li.getPosition() == expectedInsertionPosition) {
                 // check the accumulated coverage
-                Assert.assertEquals(2, li.getInsertionInRecord().size());
+                Assert.assertEquals(2, li.getInsertedInRecord().size());
                 // check the record offset
-                Assert.assertEquals(expectedInsertionOffset, li.getInsertionInRecord().get(0).getOffset());
-                Assert.assertEquals(expectedInsertionOffset, li.getInsertionInRecord().get(1).getOffset());
+                Assert.assertEquals(expectedInsertionOffset, li.getInsertedInRecord().get(0).getOffset());
+                Assert.assertEquals(expectedInsertionOffset, li.getInsertedInRecord().get(1).getOffset());
             } else {
-                Assert.assertEquals(0, li.getInsertionInRecord().size());
+                Assert.assertEquals(0, li.getInsertedInRecord().size());
             }
             // check the range of deletions
             if(expectedPositions[i] >= firstDelBase && expectedPositions[i] <= lastDelBase) {
@@ -402,7 +402,7 @@ public class SamLocusIteratorTest {
             }
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             ++i;
         }
     }
@@ -482,7 +482,7 @@ public class SamLocusIteratorTest {
                 Assert.assertEquals(li.getDeletedInRecord().get(0).getOffset(), expectedDelOffset);
             }
             // checking that insertions are not accumulating
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             ++i;
         }
     }
@@ -508,7 +508,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(2, li.getRecordAndPositions().size());
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
         }
     }
 
@@ -536,17 +536,17 @@ public class SamLocusIteratorTest {
                 // no accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 // accumulation of 2 for insertion
-                Assert.assertEquals(li.getInsertionInRecord().size(), 2);
+                Assert.assertEquals(li.getInsertedInRecord().size(), 2);
                 // and the offset is the first in the read
-                Assert.assertEquals(li.getInsertionInRecord().get(0).getOffset(), 0);
-                Assert.assertEquals(li.getInsertionInRecord().get(1).getOffset(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().get(1).getOffset(), 0);
                 indelPos = false;
             } else {
                 Assert.assertEquals(2, li.getRecordAndPositions().size());
                 Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), pos - 165 + 3);
                 // make sure that we are not accumulating indels
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-                Assert.assertEquals(li.getInsertionInRecord().size(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             }
             pos++;
         }

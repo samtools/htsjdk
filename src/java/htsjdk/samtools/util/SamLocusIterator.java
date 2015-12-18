@@ -78,14 +78,15 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     /**
      * The unit of iteration.  Holds information about the locus (the SAMSequenceRecord and 1-based position
      * on the reference), plus List of ReadAndOffset objects, one for each read that overlaps the locus;
-     * two more List of ReadAndOffset objects includes reads that overlaps the locus with insertions/deletions
+     * two more List_s_ of ReadAndOffset objects include reads that overlap the locus with insertions and deletions
+     * respectively
      */
     public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
         private final int position;
         private final List<RecordAndOffset> recordAndOffsets = new ArrayList<RecordAndOffset>(100);
-        private final List<RecordAndOffset> deletedInRecord = new ArrayList<RecordAndOffset>();
-        private final List<RecordAndOffset> insertionInRecord = new ArrayList<RecordAndOffset>();
+        private List<RecordAndOffset> deletedInRecord = null;
+        private List<RecordAndOffset> insertedInRecord = null;
 
         LocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
             this.referenceSequence = referenceSequence;
@@ -99,6 +100,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
         /** Accumulate info for one read with a deletion */
         public void addDeleted(final SAMRecord read, int previousPosition) {
+            if(deletedInRecord == null) {
+                deletedInRecord = new ArrayList<>();
+            }
             deletedInRecord.add(new RecordAndOffset(read, previousPosition));
         }
 
@@ -106,8 +110,11 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
          * Accumulate info for one read with an insertion.
          * For this locus, the reads in the insertion are included also in recordAndOffsets
          */
-        public void addInsertion(final SAMRecord read, int firstPosition) {
-            insertionInRecord.add(new RecordAndOffset(read, firstPosition));
+        public void addInserted(final SAMRecord read, int firstPosition) {
+            if(insertedInRecord == null) {
+                insertedInRecord = new ArrayList<>();
+            }
+            insertedInRecord.add(new RecordAndOffset(read, firstPosition));
         }
 
         public int getSequenceIndex() { return referenceSequence.getSequenceIndex(); }
@@ -115,8 +122,12 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         /** @return 1-based reference position */
         public int getPosition() { return position; }
         public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
-        public List<RecordAndOffset> getDeletedInRecord() { return Collections.unmodifiableList(deletedInRecord); }
-        public List<RecordAndOffset> getInsertionInRecord() { return Collections.unmodifiableList(insertionInRecord); }
+        public List<RecordAndOffset> getDeletedInRecord() {
+            return (deletedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(deletedInRecord);
+        }
+        public List<RecordAndOffset> getInsertedInRecord() {
+            return (insertedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(insertedInRecord);
+        }
         public String getSequenceName() { return referenceSequence.getSequenceName(); }
         @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
         public int getSequenceLength() {return referenceSequence.getSequenceLength();}
@@ -126,7 +137,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
          *         <code>false</code> if at least one have records
          */
         public boolean isEmpty() {
-            return recordAndOffsets.isEmpty() && deletedInRecord.isEmpty() && insertionInRecord.isEmpty();
+            return recordAndOffsets.isEmpty() &&
+                    (deletedInRecord == null || deletedInRecord.isEmpty()) &&
+                    (insertedInRecord == null || insertedInRecord.isEmpty());
         }
     }
 
@@ -468,7 +481,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 case I:
                     // insertions are included in the previous base
                     final int accIndex = (refBase == 0) ? 0 : refBase - 1;
-                    accumulator.get(accIndex).addInsertion(rec, readBase);
+                    accumulator.get(accIndex).addInserted(rec, readBase);
                     readBase += e.getLength();
                     break;
                 case D:
