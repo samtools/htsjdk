@@ -23,200 +23,130 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SamInputResource;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.io.ByteArrayInputStream;
 
 /**
  * @author alecw@broadinstitute.org
  */
 public class SamLocusIteratorTest {
-    private SamReader createSamFileReader(final String samExample) {
-        final ByteArrayInputStream inputStream = new ByteArrayInputStream(samExample.getBytes());
-        return SamReaderFactory.makeDefault().open(SamInputResource.of(inputStream));
+
+    /** Coverage for tests with the same reads */
+    final static int coverage = 2;
+
+    /** the read length for the testss */
+    final static int readLength = 36;
+
+    /** the sequence length for the tests */
+    final static int sequenceLength = 100000;
+
+    /** Get the record builder for the tests with the default parameters that are needed */
+    private static SAMRecordSetBuilder getRecordBuilder() {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate, false, sequenceLength);
+        builder.setReadLength(readLength);
+        return builder;
     }
 
-    private SamLocusIterator createSamLocusIterator(final SamReader samReader) {
-        final SamLocusIterator ret = new SamLocusIterator(samReader);
+    /** Create the SamLocusIterator with the builder*/
+    private SamLocusIterator createSamLocusIterator(final SAMRecordSetBuilder builder) {
+        final SamLocusIterator ret = new SamLocusIterator(builder.getSamReader());
         ret.setEmitUncoveredLoci(false);
         return ret;
     }
 
     @Test
     public void testBasicIterator() {
-
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
-
-
-        // make sure we accumulated depth of 2 for each position
-        int pos = 165;
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(pos++, li.getPosition());
-            Assert.assertEquals(2, li.getRecordAndPositions().size());
-            // make sure that we are not accumulating indels
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", null, 10);
         }
-
-    }
-
-    @Test
-    public void testBasicIteratorWithIndels() {
-
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
-        sli.setIncludeIndels(true);
-
-        // make sure we accumulated depth of 2 for each position
-        int pos = 165;
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(pos++, li.getPosition());
-            Assert.assertEquals(2, li.getRecordAndPositions().size());
-            // make sure that there are no indels if accumulating
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+        // test both for include indels and do not include indels
+        for (final boolean incIndels : new boolean[]{false, true}){
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setIncludeIndels(incIndels);
+            // make sure we accumulated depthfor each position
+            int pos = startPosition;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                Assert.assertEquals(li.getPosition(), pos++);
+                Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                // make sure that we are not accumulating indels
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+            }
         }
-
     }
 
     @Test
     public void testEmitUncoveredLoci() {
 
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = new SamLocusIterator(samReader);
-
-        // make sure we accumulated depth of 2 for each position
-        int pos = 1;
-        final int coveredStart = 165;
-        final int coveredEnd = CoordMath.getEnd(coveredStart, seq1.length());
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(li.getPosition(), pos++);
-            final int expectedReads;
-            if (li.getPosition() >= coveredStart && li.getPosition() <= coveredEnd) {
-                expectedReads = 2;
-            } else {
-                expectedReads = 0;
-            }
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
-            // make sure that we are not accumulating indels
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", null, 10);
         }
-        Assert.assertEquals(pos, 100001);
 
-    }
-
-    @Test
-    public void testEmitUncoveredLociWithIndels() {
-
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = new SamLocusIterator(samReader);
-        sli.setIncludeIndels(true);
-
-        // make sure we accumulated depth of 2 for each position
-        int pos = 1;
-        final int coveredStart = 165;
-        final int coveredEnd = CoordMath.getEnd(coveredStart, seq1.length());
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(li.getPosition(), pos++);
-            final int expectedReads;
-            if (li.getPosition() >= coveredStart && li.getPosition() <= coveredEnd) {
-                expectedReads = 2;
-            } else {
-                expectedReads = 0;
+        final int coveredEnd = CoordMath.getEnd(startPosition, readLength);
+        // test both for include indels and do not include indels
+        for (final boolean incIndels : new boolean[]{false, true}) {
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setIncludeIndels(incIndels);
+            // make sure we accumulated depth of 2 for each position
+            int pos = 1;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                Assert.assertEquals(li.getPosition(), pos++);
+                final int expectedReads;
+                if (li.getPosition() >= startPosition && li.getPosition() <= coveredEnd) {
+                    expectedReads = coverage;
+                } else {
+                    expectedReads = 0;
+                }
+                Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
+                // make sure that we are not accumulating indels
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             }
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
-            // make sure that there are no indels if accumulating
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+            Assert.assertEquals(pos, sequenceLength + 1);
         }
-        Assert.assertEquals(pos, 100001);
-
     }
 
     @Test
     public void testQualityFilter() {
-
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String qual2 = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*"; // phred 10,9...
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String s2 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual2 + "\n";
-        final String exampleSam = sqHeader + s1 + s2;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
-        sli.setQualityScoreCutoff(10);
-
-
-        // make sure we accumulated depth 2 for even positions, 1 for odd positions
-        int pos = 165;
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals((pos % 2 == 0) ? 1 : 2, li.getRecordAndPositions().size());
-            Assert.assertEquals(pos++, li.getPosition());
-            // make sure that we are not accumulating indels
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            final String qualityString;
+            // half of the reads have a different quality
+            if(i % 2 == 0) {
+                qualityString = null;
+            } else {
+                qualityString = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*";
+            }
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "36M", qualityString, 10);
         }
 
-    }
-
-    @Test
-    public void testQualityFilterWithIndels() {
-
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String qual2 = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*"; // phred 10,9...
-        final String s1 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String s2 = "3851612\t16\tchrM\t165\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual2 + "\n";
-        final String exampleSam = sqHeader + s1 + s2;
-
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
-        sli.setQualityScoreCutoff(10);
-        sli.setIncludeIndels(true);
-
-        // make sure we accumulated depth 2 for even positions, 1 for odd positions
-        int pos = 165;
-        for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals((pos % 2 == 0) ? 1 : 2, li.getRecordAndPositions().size());
-            Assert.assertEquals(pos++, li.getPosition());
-            // make sure that there are no indels if accumulating
-            Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-            Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+        // test both for include indels and do not include indels
+        for (final boolean incIndels : new boolean[]{false, true}) {
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setQualityScoreCutoff(10);
+            sli.setIncludeIndels(incIndels);
+            // make sure we accumulated depth coverage for even positions, coverage/2 for odd positions
+            int pos = startPosition;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                Assert.assertEquals(li.getRecordAndPositions().size(), (pos % 2 == 0) ? coverage / 2 : coverage);
+                Assert.assertEquals(li.getPosition(), pos++);
+                // make sure that we are not accumulating indels
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+            }
         }
-
     }
 
     /**
@@ -224,17 +154,17 @@ public class SamLocusIteratorTest {
      */
     @Test
     public void testSimpleGappedAlignment() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t3S3M3N3M3D3M3I18M3S\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
+        }
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
 
-
-        // make sure we accumulated depth of 2 for each position
+        // make sure we accumulated depth for each position
         final int[] expectedReferencePositions = new int[]{
                 // 3S
                 165, 166, 167, // 3M
@@ -257,7 +187,7 @@ public class SamLocusIteratorTest {
         };
         int i = 0;
         for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(li.getRecordAndPositions().size(), 2);
+            Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
             Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), expectedReadOffsets[i]);
             Assert.assertEquals(li.getRecordAndPositions().get(1).getOffset(), expectedReadOffsets[i]);
@@ -273,14 +203,15 @@ public class SamLocusIteratorTest {
      */
     @Test
     public void testSimpleGappedAlignmentWithIndels() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t3S3M3N3M3D3M3I18M3S\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
+        }
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
         sli.setIncludeIndels(true);
 
         // make sure we accumulated depth of 2 for each position
@@ -319,24 +250,25 @@ public class SamLocusIteratorTest {
             // check the insertions
             if(li.getPosition() == expectedInsertionPosition) {
                 // check the accumulated coverage
-                Assert.assertEquals(2, li.getInsertedInRecord().size());
+                Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                 // check the record offset
-                Assert.assertEquals(expectedInsertionOffset, li.getInsertedInRecord().get(0).getOffset());
-                Assert.assertEquals(expectedInsertionOffset, li.getInsertedInRecord().get(1).getOffset());
+                Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), expectedInsertionOffset);
+                Assert.assertEquals(li.getInsertedInRecord().get(1).getOffset(), expectedInsertionOffset);
             } else {
-                Assert.assertEquals(0, li.getInsertedInRecord().size());
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
             }
             // check the range of deletions
             if(expectedPositions[i] >= firstDelBase && expectedPositions[i] <= lastDelBase) {
                 // check the coverage for insertion and normal records
-                Assert.assertEquals(li.getDeletedInRecord().size(), 2);
+                Assert.assertEquals(li.getDeletedInRecord().size(), coverage);
                 Assert.assertEquals(li.getRecordAndPositions().size(), 0);
                 // check the offset for the deletion
                 Assert.assertEquals(li.getDeletedInRecord().get(0).getOffset(), expectedReadOffsets[i]);
                 Assert.assertEquals(li.getDeletedInRecord().get(1).getOffset(), expectedReadOffsets[i]);
             } else {
                 // if it is not a deletion, perform the same test as before
-                Assert.assertEquals(li.getRecordAndPositions().size(), 2);
+                Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), expectedReadOffsets[i]);
                 Assert.assertEquals(li.getRecordAndPositions().get(1).getOffset(), expectedReadOffsets[i]);
             }
@@ -349,16 +281,15 @@ public class SamLocusIteratorTest {
      */
     @Test
     public void testOverlappingGappedAlignments() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
         // Were it not for the gap, these two reads would not overlap
-        final String s1 = "3851612\t16\tchrM\t165\t255\t18M10D18M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String s2 = "3851613\t16\tchrM\t206\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s2;
+        builder.addFrag("record1", 24, startPosition, true, false, "18M10D18M", null, 10);
+        builder.addFrag("record2", 24, startPosition, true, false, "36M", null, 10);
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
+
         // 5 base overlap btw the two reads
         final int numBasesCovered = 36 + 36 - 5;
         final int[] expectedReferencePositions = new int[numBasesCovered];
@@ -368,26 +299,26 @@ public class SamLocusIteratorTest {
         int i;
         // First 18 bases are from the first read
         for (i = 0; i < 18; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedReadOffsets[i] = new int[]{i};
         }
         // Gap of 10, then 13 bases from the first read
         for (; i < 36 - 5; ++i) {
-            expectedReferencePositions[i] = 165 + 10 + i;
+            expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 1;
             expectedReadOffsets[i] = new int[]{i};
         }
         // Last 5 bases of first read overlap first 5 bases of second read
         for (; i < 36; ++i) {
-            expectedReferencePositions[i] = 165 + 10 + i;
+            expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 2;
             expectedReadOffsets[i] = new int[]{i, i - 31};
 
         }
         // Last 31 bases of 2nd read
         for (; i < 36 + 36 - 5; ++i) {
-            expectedReferencePositions[i] = 165 + 10 + i;
+            expectedReferencePositions[i] = startPosition + 10 + i;
             expectedDepths[i] = 1;
             expectedReadOffsets[i] = new int[]{i - 31};
         }
@@ -412,17 +343,16 @@ public class SamLocusIteratorTest {
      */
     @Test
     public void testOverlappingGappedAlignmentsWithIndels() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
         // Were it not for the gap, these two reads would not overlap
-        final String s1 = "3851612\t16\tchrM\t165\t255\t18M10D18M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String s2 = "3851613\t16\tchrM\t206\t255\t36M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s2;
+        builder.addFrag("record1", 24, startPosition, true, false, "18M10D18M", null, 10);
+        builder.addFrag("record2", 24, startPosition, true, false, "36M", null, 10);
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
         sli.setIncludeIndels(true);
+
         // 46 for the gapped alignment, and 5 base overlap btw the two reads
         final int numBasesCovered = 46 + 36 - 5;
         final int[] expectedReferencePositions = new int[numBasesCovered];
@@ -434,35 +364,35 @@ public class SamLocusIteratorTest {
         int i;
         // First 18 bases are from the first read
         for (i = 0; i < 18; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
             expectedReadOffsets[i] = new int[]{i};
         }
         // Gap of 10
         for(; i < 18 + 10; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 0;
             expectedDelDepths[i] = 1;
             expectedReadOffsets[i] = new int[0];
         }
         // the next bases for the first read (without the 5 overlapping)
         for(; i < 46 - 5; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
             expectedReadOffsets[i] = new int[]{i - 10};
         }
         // last 5 bases of the first read overlap first 5 bases of second read
         for(; i < 46; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 2;
             expectedDelDepths[i] = 0;
             expectedReadOffsets[i] = new int[]{i - 10, i + 10 - 46 - 5 };
         }
         // Last 31 bases of 2nd read
         for(; i < numBasesCovered; ++i) {
-            expectedReferencePositions[i] = 165 + i;
+            expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
             expectedReadOffsets[i] = new int[]{i + 10 - 46 - 5};
@@ -474,7 +404,7 @@ public class SamLocusIteratorTest {
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
             Assert.assertEquals(li.getRecordAndPositions().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
-                Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j], li.toString());
+                Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j]);
             }
             // check the deletions
             Assert.assertEquals(li.getDeletedInRecord().size(), expectedDelDepths[i]);
@@ -492,20 +422,21 @@ public class SamLocusIteratorTest {
      */
     @Test
     public void testStartWithInsertion() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t3I33M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "3I33M", null, 10);
+        }
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
 
-        // make sure we accumulated depth of 2 for each position
-        int pos = 165;
+        // make sure we accumulated depth for each position
+        int pos = startPosition;
         for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(pos++, li.getPosition());
-            Assert.assertEquals(2, li.getRecordAndPositions().size());
+            Assert.assertEquals(li.getPosition(), pos++);
+            Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
             Assert.assertEquals(li.getInsertedInRecord().size(), 0);
@@ -514,18 +445,19 @@ public class SamLocusIteratorTest {
 
     @Test
     public void testStartWithInsertionWithIndels() {
-        final String sqHeader = "@HD\tSO:coordinate\tVN:1.0\n@SQ\tSN:chrM\tAS:HG18\tLN:100000\n";
-        final String seq1 = "ACCTACGTTCAATATTACAGGCGAACATACTTACTA";
-        final String qual1 = "++++++++++++++++++++++++++++++++++++"; // phred 10
-        final String s1 = "3851612\t16\tchrM\t165\t255\t3I33M\t*\t0\t0\t" + seq1 + "\t" + qual1 + "\n";
-        final String exampleSam = sqHeader + s1 + s1;
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for(int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record"+i, 24, startPosition, true, false, "3I33M", null, 10);
+        }
 
-        final SamReader samReader = createSamFileReader(exampleSam);
-        final SamLocusIterator sli = createSamLocusIterator(samReader);
+        final SamLocusIterator sli = createSamLocusIterator(builder);
         sli.setIncludeIndels(true);
 
         // make sure that it starts in the previous position
-        int pos = 164;
+        int pos = startPosition - 1;
         boolean indelPos = true;
         for (final SamLocusIterator.LocusInfo li : sli) {
             Assert.assertEquals(li.getPosition(), pos);
@@ -536,14 +468,14 @@ public class SamLocusIteratorTest {
                 // no accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 // accumulation of 2 for insertion
-                Assert.assertEquals(li.getInsertedInRecord().size(), 2);
+                Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                 // and the offset is the first in the read
                 Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 0);
                 Assert.assertEquals(li.getInsertedInRecord().get(1).getOffset(), 0);
                 indelPos = false;
             } else {
                 Assert.assertEquals(2, li.getRecordAndPositions().size());
-                Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), pos - 165 + 3);
+                Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), pos - startPosition + 3);
                 // make sure that we are not accumulating indels
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 Assert.assertEquals(li.getInsertedInRecord().size(), 0);
