@@ -103,6 +103,7 @@ public class SamLocusIteratorTest {
         // test both for include indels and do not include indels
         for (final boolean incIndels : new boolean[]{false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setEmitUncoveredLoci(true);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth of 2 for each position
             int pos = 1;
