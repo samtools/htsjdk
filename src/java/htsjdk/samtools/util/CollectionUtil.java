@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * Small utility methods for dealing with collection classes.
@@ -42,34 +43,29 @@ import java.util.Set;
 public class CollectionUtil {
 
     /** Simple case-insensitive lexical comparator of objects using their {@link Object#toString()} value. */
-    final public static Comparator<Object> OBJECT_TOSTRING_COMPARATOR = new Comparator<Object>() {
-        @Override
-        public int compare(final Object o1, final Object o2) {
-            return o1.toString().compareToIgnoreCase(o2.toString());
-        }
-    };
+    final public static Comparator<Object> OBJECT_TOSTRING_COMPARATOR = (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString());
 
-    public static <T> List<T> makeList (final T... list) {
-        final List<T> result = new ArrayList<T>();
+    public static <T> List<T> makeList(final T... list) {
+        final List<T> result = new ArrayList<>();
         Collections.addAll(result, list);
 
         return result;
     }
-    
-    public static <T> Set<T> makeSet (final T... list) {
-        final Set<T> result = new HashSet<T>();
+
+    public static <T> Set<T> makeSet(final T... list) {
+        final Set<T> result = new HashSet<>();
         Collections.addAll(result, list);
         return result;
     }
-    
-    public static <T> Collection<T> makeCollection (final Iterator<T> i) {
-        final List<T> list = new LinkedList<T>();
+
+    public static <T> Collection<T> makeCollection(final Iterator<T> i) {
+        final List<T> list = new LinkedList<>();
         while (i.hasNext()) {
             list.add(i.next());
         }
         return list;
     }
-    
+
     /** Construct a string by toString()ing each item in the collection with inBetween between each item. */
     public static String join(final Collection<?> items, final String inBetween) {
         final StringBuilder builder = new StringBuilder();
@@ -86,7 +82,7 @@ public class CollectionUtil {
             throw new IllegalArgumentException(String.format("Expected a single element in %s, but found %s.", items, items.size()));
         return items.iterator().next();
     }
-    
+
     /** Simple multi-map for convenience of storing collections in map values. */
     public static class MultiMap<K, V> extends HashMap<K, Collection<V>> {
         public void append(final K k, final V v) {
@@ -101,25 +97,39 @@ public class CollectionUtil {
 
         private void initializeKeyIfUninitialized(final K k) {
             if (!this.containsKey(k))
-                this.put(k, new LinkedList<V>());
+                this.put(k, new LinkedList<>());
         }
     }
 
-    /** 
+    /**
      * Partitions a collection into groups based on a characteristics of that group.  Partitions are embodied in a map, whose keys are the
      * value of that characteristic, and the values are the partition of elements whose characteristic evaluate to that key.
      */
-    public static <K, V> Map<K,Collection<V>> partition(final Collection<V> collection,  final Partitioner<V, K> p) {
-        final MultiMap<K, V> partitionToValues = new MultiMap<K, V>();
+    @Deprecated //use java8 .stream().collect(Collectors.groupingBy(()-> function)) instead
+    public static <K, V> Map<K, Collection<V>> partition(final Collection<V> collection, final Partitioner<V, K> p) {
+        final MultiMap<K, V> partitionToValues = new MultiMap<>();
         for (final V entry : collection) {
             partitionToValues.append(p.getPartition(entry), entry);
         }
         return partitionToValues;
     }
+    @Deprecated //not needed, use Collectors.groupingBy instead
     public static abstract class Partitioner<V, K> {
         public abstract K getPartition(final V v);
     }
-    
+
+    /**
+     * Partitions a collection into groups based on a characteristics of that group.  Partitions are embodied in a map, whose keys are the
+     * value of that characteristic, and the values are the partition of elements whose characteristic evaluate to that key.
+     */
+    public static <K, V> Map<K, Collection<V>> partition(final Collection<V> collection, final Function<? super V, ? extends K> keyer) {
+        final MultiMap<K, V> partitionToValues = new MultiMap<>();
+        for (final V entry : collection) {
+            partitionToValues.append(keyer.apply(entry), entry);
+        }
+        return partitionToValues;
+    }
+
     /**
      * A defaulting map, which returns a default value when a value that does not exist in the map is looked up.
      * 
@@ -138,12 +148,7 @@ public class CollectionUtil {
         
         /** Creates a defaulting map which defaults to the provided value and with injecting-on-default disabled. */
         public DefaultingMap(final V defaultValue) {
-            this(new Factory<V, K>() {
-                @Override
-                public V make(final K k) {
-                    return defaultValue;
-                }
-            }, false);
+            this(k -> defaultValue, false);
         }
         
         /**

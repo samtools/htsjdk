@@ -40,6 +40,7 @@ import org.apache.commons.jexl2.JexlEngine;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -165,7 +166,7 @@ public class VariantContextUtils {
      */
     public static void calculateChromosomeCounts(VariantContextBuilder builder, boolean removeStaleValues) {
         VariantContext vc = builder.make();
-        builder.attributes(calculateChromosomeCounts(vc, new HashMap<String, Object>(vc.getAttributes()), removeStaleValues, new HashSet<String>(0)));
+        builder.attributes(calculateChromosomeCounts(vc, new HashMap<>(vc.getAttributes()), removeStaleValues, new HashSet<>(0)));
     }
 
     /**
@@ -179,7 +180,7 @@ public class VariantContextUtils {
      */
     public static void calculateChromosomeCounts(VariantContextBuilder builder, boolean removeStaleValues, final Set<String> founderIds) {
         VariantContext vc = builder.make();
-        builder.attributes(calculateChromosomeCounts(vc, new HashMap<String, Object>(vc.getAttributes()), removeStaleValues, founderIds));
+        builder.attributes(calculateChromosomeCounts(vc, new HashMap<>(vc.getAttributes()), removeStaleValues, founderIds));
     }
 
     public final static VCFCompoundHeaderLine getMetaDataForField(final VCFHeader header, final String field) {
@@ -268,7 +269,7 @@ public class VariantContextUtils {
      * @return list of matches
      */
     public static List<JexlVCMatchExp> initializeMatchExps(Map<String, String> names_and_exps) {
-        List<JexlVCMatchExp> exps = new ArrayList<JexlVCMatchExp>();
+        List<JexlVCMatchExp> exps = new ArrayList<>();
 
         for ( Map.Entry<String, String> elt : names_and_exps.entrySet() ) {
             String name = elt.getKey();
@@ -293,7 +294,7 @@ public class VariantContextUtils {
      * @return true if there is a match
      */
     public static boolean match(VariantContext vc, JexlVCMatchExp exp) {
-        return match(vc,Arrays.asList(exp)).get(exp);
+        return match(vc, Collections.singletonList(exp)).get(exp);
     }
 
     /**
@@ -319,7 +320,7 @@ public class VariantContextUtils {
      * @return true if there is a match
      */
     public static boolean match(VariantContext vc, Genotype g, JexlVCMatchExp exp) {
-        return match(vc,g,Arrays.asList(exp)).get(exp);
+        return match(vc,g, Collections.singletonList(exp)).get(exp);
     }
 
     /**
@@ -336,6 +337,55 @@ public class VariantContextUtils {
     public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps) {
         return new JEXLMap(exps,vc,g);
     }
+
+    /**
+     * Answers if the provided variant is transitional (otherwise, it's transversional).
+     * Transitions:
+     * A->G
+     * G->A
+     * C->T
+     * T->C
+     * <p/>
+     * Transversions:
+     * A->C
+     * A->T
+     * C->A
+     * C->G
+     * G->C
+     * G->T
+     * T->A
+     * T->G
+     *
+     * @param vc a biallelic polymorphic SNP
+     * @return true if a transition and false if transversion
+     * @throws IllegalArgumentException if vc is monomorphic, not a SNP or not bi-allelic.
+
+          */
+
+    static public boolean isTransition(final VariantContext vc) throws IllegalArgumentException {
+        final byte refAllele = vc.getReference().getBases()[0];
+        final Collection<Allele> altAlleles = vc.getAlternateAlleles();
+
+        if(vc.type == VariantContext.Type.NO_VARIATION) {
+            throw new IllegalArgumentException("Variant context is monomorphic: " + vc.toString());
+        }
+
+        if(vc.type != VariantContext.Type.SNP) {
+            throw new IllegalArgumentException("Variant context is not a SNP: " + vc.toString());
+        }
+
+        if(altAlleles.size() != 1 ) {
+            throw new IllegalArgumentException("Expected exactly 1 alternative Allele. Found: " + altAlleles.size());
+        }
+
+        final Byte altAllele = altAlleles.iterator().next().getBases()[0];
+
+        return (refAllele == 'A' && altAllele == 'G')
+                || (refAllele == 'G' && altAllele == 'A')
+                || (refAllele == 'C' && altAllele == 'T')
+                || (refAllele == 'T' && altAllele == 'C');
+    }
+
 
     /**
      * Returns a newly allocated VC that is the same as VC, but without genotypes
