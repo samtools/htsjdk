@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.Interval;
 
 import java.io.Serializable;
 import java.math.BigInteger;
@@ -216,125 +215,6 @@ public class SAMSequenceDictionary implements Serializable {
         }
         mSequenceMap.put(altName, originalSeqRecord);
         return originalSeqRecord;
-    }
-    
-    /** 
-     * called by `parseInterval`. Parse a coordinate string, remove the comma look at the suffix (bp,kb,mp,gb) to scale,
-     * verify that the result is a positive integer
-     * @author Pierre Lindenbaum 
-     * @param numStr the coordinate
-     * @return the coordinate as integer
-     */
-    private static int parseCoordinate(final String numStr)
-        {
-        long factor = 1L;
-        String num = numStr.replace(",","").trim().toLowerCase();
-        if(num.endsWith("bp"))
-            {
-            factor = 1L;
-            num = num.substring(0,num.length()-2).trim();
-            }
-        else if(num.endsWith("kb"))
-            {
-            factor = 1000L;//1E3
-            num = num.substring(0,num.length()-2).trim();
-            }
-        else if(num.endsWith("mb"))
-            {
-            factor = 1000000L;//1E6
-            num = num.substring(0,num.length()-2).trim();
-            }
-        else if(num.endsWith("gb"))
-            {
-            factor = 1000000000L;//1E9
-            num = num.substring(0,num.length()-2).trim();
-            }
-        
-        try {
-            long pos = Long.parseLong(num);
-            pos *= factor;
-            if(pos < 1L || pos > Integer.MAX_VALUE)  throw new IllegalArgumentException("Cannot convert "+numStr+" to a positive integer");
-            return (int)pos;
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Cannot convert "+numStr+" to a coordinate");
-            }
-        }
-    
-    /** 
-     * parses the interval String and returns a htsjdk.samtools.util.Interval
-     * The contig/chromosome must exist in the dictionary. out-of-bound index <code>!(1<= index <= sequence.length())</code> will be clipped 
-     * coordinate suffixes like 'bp,Mb,Gb' will be interpreted.
-     * Comma in the coordinate will be removed.
-     * left/right white spaces will be trimmed.
-     * Position=0 will be set to 1.
-     * A Position larger than the contig size will be set to the contig size
-     * 
-     * Valid syntax -> convertion :
-     * <pre> 
-     *     CHROM -> CHROM:1-seq.length()
-     *     CHROM:POS ->  CHROM:POS-POS
-     *     CHROM:POS+NUM -> CHROM:{POS-NUM}-{POS+NUM}
-     *     CHROM:BEGIN- ->  CHROM:BEGIN-seq.length()
-     *     CHROM:BEGIN-END ->  CHROM:BEGIN-END
-     * </pre>
-     * @author Pierre Lindenbaum 
-     * @param region a 1-based coordinate region.  
-     * @return the parsed htsjdk.samtools.util.Interval
-     */
-    public Interval parseInterval(final String region) {
-        if( region == null) throw new IllegalArgumentException("parseInterval: region is null");
-        if(region.isEmpty())  throw new IllegalArgumentException("parseInterval: region is empty");
-        final int colon = region.indexOf(':');
-        // no colon, chromosome only
-        if(colon == -1) {
-            final SAMSequenceRecord record = getSequence(region);
-            if(record == null) throw new IllegalArgumentException("Unknown chromosome \""+region+"\".");
-            // return whole chromosome
-            return new Interval(
-                    record.getSequenceName(),
-                    1,
-                    record.getSequenceLength()
-                    );
-        }
-        if(colon == 0)  throw new IllegalArgumentException("Empty chromosome in "+region);
-        final SAMSequenceRecord record = getSequence(region.substring(0,colon).trim());
-        if(record == null) throw new IllegalArgumentException("Unknown chromosome in \""+region+"\".");
-        final int hyphen = region.indexOf('-',colon+1);
-        final int plus = region.indexOf('+',colon+1);
-        //CHROM:POS
-        if(hyphen == -1 && plus == -1) {
-            final int pos = parseCoordinate(region.substring(colon+1));
-            if( pos < 1 || pos > record.getSequenceLength()) throw new IllegalArgumentException("In "+region +", position="+pos+" out of bounds 1<=pos<="+record.getSequenceLength());
-            return new Interval( record.getSequenceName(),pos,pos);
-        }
-        //CHROM:POS+NUM
-        if(hyphen == -1 && plus > colon) {
-            final int pos = parseCoordinate(region.substring(colon+1,plus));
-            final int extend = parseCoordinate(region.substring(plus+1));
-            if( extend < 0)  throw new IllegalArgumentException("Extend cannot be negative in "+region);
-            if( pos - extend  > record.getSequenceLength() || pos+extend  <1 ) throw new IllegalArgumentException("In "+region +", position="+pos+"+/-"+extend+" out of bounds 1<=pos<="+record.getSequenceLength());
-            return new Interval( record.getSequenceName(),
-                    Math.max(1,pos-extend),
-                    Math.min(pos+extend,record.getSequenceLength())
-                    );
-        }
-      //CHROM:START-END or CHROM:START-
-       final int chromStart = parseCoordinate(region.substring(colon+1,hyphen));
-       if(chromStart > record.getSequenceLength()) throw new IllegalArgumentException("In "+region +", position="+chromStart+" out of bounds 1<=pos<="+record.getSequenceLength());
-       //CHROM:START-
-       if( region.substring(hyphen+1).trim().isEmpty()) {
-           return new Interval( record.getSequenceName(),
-                   Math.max(1,chromStart),
-                   record.getSequenceLength()
-                   );
-           }
-       //CHROM:START-END
-       final int chromEnd = parseCoordinate(region.substring(hyphen+1));
-       if(chromEnd < chromStart)  throw new IllegalArgumentException("In "+region +", start>end");
-       return new Interval( record.getSequenceName(),
-               Math.max(1,chromStart),
-               Math.min(chromEnd,record.getSequenceLength())
-               );
     }
     
     /**
