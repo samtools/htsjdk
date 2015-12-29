@@ -188,7 +188,12 @@ public class IntervalUtil {
         final int plus = region.indexOf('+', colon + 1);
         // CHROM:POS
         if (hyphen == -1 && plus == -1) {
-            final int pos = IntervalUtil.parseCoordinate(region.substring(colon + 1));
+            final int pos;
+            try {
+                pos = IntervalUtil.parseCoordinate(region.substring(colon + 1));
+            } catch (IllegalArgumentException error) {
+                throw new IllegalArgumentException("Cannot parse " + region , error);
+            }
             // if pos is out of bounds, we cannot trim here
             if (pos < 1 || pos > record.getSequenceLength())
                 throw new IllegalArgumentException(
@@ -203,8 +208,9 @@ public class IntervalUtil {
         if (hyphen == -1 && plus > colon) {
             final int pos = parseCoordinate(region.substring(colon + 1, plus));
             final int extend = parseCoordinate(region.substring(plus + 1));
-            if (extend < 0)
+            if (extend < 0) {
                 throw new IllegalArgumentException("Extend cannot be negative in " + region);
+            }
             return new Interval(
                     record.getSequenceName(),
                     Math.max(1, pos - extend),
