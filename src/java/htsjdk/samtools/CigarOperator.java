@@ -179,6 +179,31 @@ public enum CigarOperator {
         return e.character;
     }
 
+    /** Returns true if the operator is a clipped (hard or soft) operator */
+    public boolean isClipping() {
+        return this == S || this == H;
+    }
+
+    /** Returns true if the operator is a Insertion or Deletion operator */
+    public boolean isIndel() {
+        return this == I || this == D;
+    }
+
+    /** Returns true if the operator is a Skipped Region Insertion or Deletion operator */
+    public boolean isIndelOrSkippedRegion() {
+        return this == N || isIndel();
+    }
+
+    /** Returns true if the operator is a M, a X or a EQ */
+    public boolean isAlignment() {
+        return this == M || this == X || this == EQ;
+    }
+    
+    /** Returns true if the operator is a Padding operator */
+    public boolean isPadding() {
+        return this == P;
+    }
+    
     /** Returns the cigar operator as it would be seen in a SAM file. */
     @Override public String toString() {
         return this.string;
