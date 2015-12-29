@@ -37,6 +37,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -47,7 +50,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     /**
      * The interface facilitating direct access to the fasta.
      */
-    private final FileChannel channel;
+    private final SeekableByteChannel channel;
 
     /**
      * A representation of the sequence index, stored alongside the fasta in a .fasta.fai file.
@@ -66,21 +69,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
-        super(file);
-        if (index == null) throw new IllegalArgumentException("Null index for fasta " + file);
-        this.index = index;
-        IOUtil.assertFileIsReadable(file);
-        final FileInputStream in;
-        try {
-            in = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            throw new SAMException("Fasta file should be readable but is not: " + file, e);
-        }
-        channel = in.getChannel();
-        reset();
-
-        if(getSequenceDictionary() != null)
-            sanityCheckDictionaryAgainstIndex(file.getAbsolutePath(),sequenceDictionary,index);
+        this(file == null ? null : file.toPath(), index);
     }
 
     /**
@@ -92,6 +81,35 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(file))));
     }
 
+    /**
+     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
+     * @param path The file to open.
+     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
+     */
+    public IndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
+        super(path);
+        if (index == null) throw new IllegalArgumentException("Null index for fasta " + path);
+        this.index = index;
+        IOUtil.assertFileIsReadable(path);
+        try {
+            this.channel = Files.newByteChannel(path);
+        } catch (IOException e) {
+            throw new SAMException("Fasta file should be readable but is not: " + path, e);
+        }
+        reset();
+
+        if(getSequenceDictionary() != null)
+            sanityCheckDictionaryAgainstIndex(path.toAbsolutePath().toString(),sequenceDictionary,index);
+    }
+
+    /**
+     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
+     * @param path The file to open.
+     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+     */
+    public IndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
+        this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+    }
 
     public boolean isIndexed() {return true;}
 
@@ -114,6 +132,27 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     public static boolean canCreateIndexedFastaReader(final File fastaFile) {
         return (fastaFile.exists() &&
                 findFastaIndex(fastaFile) != null);
+    }
+
+    private static Path findFastaIndex(Path fastaFile) {
+        Path indexFile = getFastaIndexFileName(fastaFile);
+        if (!Files.exists(indexFile)) return null;
+        return indexFile;
+    }
+
+    private static Path getFastaIndexFileName(Path fastaFile) {
+        return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
+    }
+
+    private static Path findRequiredFastaIndexFile(Path fastaFile) throws FileNotFoundException {
+        Path ret = findFastaIndex(fastaFile);
+        if (ret == null) throw new FileNotFoundException(getFastaIndexFileName(fastaFile) + " not found.");
+        return ret;
+    }
+
+    public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
+        return (Files.exists(fastaFile) &&
+            findFastaIndex(fastaFile) != null);
     }
 
     /**
@@ -202,10 +241,10 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
             startOffset += Math.max((int)(startOffset%bytesPerLine - basesPerLine + 1),0);
 
             try {
-                 startOffset += channel.read(channelBuffer,indexEntry.getLocation()+startOffset);
+                startOffset += readFromPosition(channel, channelBuffer, indexEntry.getLocation()+startOffset);
             }
             catch(IOException ex) {
-                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + file);
+                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + getAbsolutePath(), ex);
             }
 
             // Reset the buffer for outbound transfers.
@@ -235,6 +274,29 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     }
 
     /**
+     * Reads a sequence of bytes from this channel into the given buffer,
+     * starting at the given file position.
+     * @param channel the channel to read from
+     * @param buffer the buffer into which bytes are to be transferred
+     * @param position the position to start reading at
+     * @return the number of bytes read
+     * @throws IOException if an I/O error occurs while reading
+     */
+    private static int readFromPosition(final SeekableByteChannel channel, final ByteBuffer buffer, long position) throws IOException {
+        if (channel instanceof FileChannel) { // special case to take advantage of native code path
+            return ((FileChannel) channel).read(buffer,position);
+        } else {
+            long oldPos = channel.position();
+            try {
+                channel.position(position);
+                return channel.read(buffer);
+            } finally {
+                channel.position(oldPos);
+            }
+        }
+    }
+
+    /**
      * Gets the next sequence if available, or null if not present.
      * @return next sequence if available, or null if not present.
      */
@@ -256,7 +318,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @return String representation of the file.
      */
     public String toString() {
-        return this.file.getAbsolutePath();
+        return getAbsolutePath();
     }
 
     @Override

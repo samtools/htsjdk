@@ -33,6 +33,8 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,8 +48,18 @@ public class CramFileWriterTest {
     }
 
     @Test(description = "Test for lossy CRAM compression invariants.")
-    public void lossyCramInvariantsTest() throws Exception {
+    public void lossyCramInvariantsTest() {
         doTest(createRecords(1000));
+    }
+
+    @Test(description = "Tests a writing records with null SAMFileHeaders")
+    public void writeRecordsWithNullHeader() throws Exception {
+
+        final List<SAMRecord> samRecs = createRecords(50);
+        for (SAMRecord rec : samRecs) {
+            rec.setHeader(null);
+        }
+        doTest(samRecs);
     }
 
     @Test(description = "Tests a unmapped record with sequence and quality fields")
@@ -79,17 +91,18 @@ public class CramFileWriterTest {
         doTest(list);
     }
 
-    private List<SAMRecord> createRecords(int count) throws Exception {
+    private List<SAMRecord> createRecords(int count) {
         List<SAMRecord> list = new ArrayList<SAMRecord>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
-            throw new Exception("Read group expected in the header");
+            throw new IllegalStateException("Read group expected in the header");
         }
 
         int posInRef = 1;
-        for (int i = 0; i < count / 2; i++)
+        for (int i = 0; i < count / 2; i++) {
             builder.addPair(Integer.toString(i), 0, posInRef += 1,
                     posInRef += 3);
+        }
         list.addAll(builder.getRecords());
 
         Collections.sort(list, new SAMRecordCoordinateComparator());
@@ -97,35 +110,38 @@ public class CramFileWriterTest {
         return list;
     }
 
-    private void doTest(final List<SAMRecord> samRecords) {
+    private SAMFileHeader createSAMHeader(SAMFileHeader.SortOrder sortOrder) {
         final SAMFileHeader header = new SAMFileHeader();
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.setSortOrder(sortOrder);
         header.addSequence(new SAMSequenceRecord("chr1", 123));
         SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("1");
         header.addReadGroup(readGroupRecord);
+        return header;
+    }
 
+    private ReferenceSource createReferenceSource() {
         byte[] refBases = new byte[1024 * 1024];
         Arrays.fill(refBases, (byte) 'A');
         InMemoryReferenceSequenceFile rsf = new InMemoryReferenceSequenceFile();
         rsf.add("chr1", refBases);
-        ReferenceSource source = new ReferenceSource(rsf);
+        return new ReferenceSource(rsf);
+    }
 
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        CRAMFileWriter writer = new CRAMFileWriter(os, source, header, null);
+    private void writeRecordsToCRAM(CRAMFileWriter writer, List<SAMRecord> samRecords) {
         for (SAMRecord record : samRecords) {
-            writer.writeAlignment(record);
+            writer.addAlignment(record);
         }
-        writer.finish();
         writer.close();
+    }
 
-        CRAMFileReader cReader = new CRAMFileReader(null,
-                new ByteArrayInputStream(os.toByteArray()),
-                new ReferenceSource(rsf));
+    private void validateRecords(final List<SAMRecord> expectedRecords, ByteArrayInputStream is, ReferenceSource referenceSource) {
+        CRAMFileReader cReader = new CRAMFileReader(null, is, referenceSource);
+
         SAMRecordIterator iterator2 = cReader.getIterator();
         int index = 0;
         while (iterator2.hasNext()) {
-            SAMRecord actualRecord= iterator2.next();
-            SAMRecord expectedRecord = samRecords.get(index++);
+            SAMRecord actualRecord = iterator2.next();
+            SAMRecord expectedRecord = expectedRecords.get(index++);
 
             Assert.assertEquals(actualRecord.getReadName(), expectedRecord.getReadName());
             Assert.assertEquals(actualRecord.getFlags(), expectedRecord.getFlags());
@@ -141,4 +157,78 @@ public class CramFileWriterTest {
         }
         cReader.close();
     }
+
+    private void doTest(final List<SAMRecord> samRecords) {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ReferenceSource refSource = createReferenceSource();
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+        CRAMFileWriter writer = new CRAMFileWriter(os, refSource, header, null);
+        writeRecordsToCRAM(writer, samRecords);
+
+        validateRecords(samRecords, new ByteArrayInputStream(os.toByteArray()), refSource);
+    }
+
+    @Test(description = "Test CRAMWriter constructor with index stream")
+    public void testCRAMWriterWithIndex() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ReferenceSource refSource = createReferenceSource();
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ByteArrayOutputStream indexStream = new ByteArrayOutputStream();
+
+        final List<SAMRecord> samRecords = createRecords(100);
+        CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, refSource, header, null);
+
+        writeRecordsToCRAM(writer, samRecords);
+        validateRecords(samRecords, new ByteArrayInputStream(outStream.toByteArray()), refSource);
+        Assert.assertTrue(indexStream.size() != 0);
+    }
+
+    @Test(description = "Test CRAMWriter constructor with presorted==false")
+    public void testCRAMWriterNotPresorted() {
+        final SAMFileHeader header = createSAMHeader(SAMFileHeader.SortOrder.coordinate);
+        final ReferenceSource refSource = createReferenceSource();
+        final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
+        final ByteArrayOutputStream indexStream = new ByteArrayOutputStream();
+
+        CRAMFileWriter writer = new CRAMFileWriter(outStream, indexStream, false, refSource, header, null);
+
+        // force records to not be coordinate sorted to ensure we're relying on presorted=false
+        final List<SAMRecord> samRecords = createRecords(100);
+        Collections.sort(samRecords, new SAMRecordCoordinateComparator().reversed());
+
+        writeRecordsToCRAM(writer, samRecords);
+
+        // for validation, restore the sort order of the expected records so they match the order of the written records
+        Collections.sort(samRecords, new SAMRecordCoordinateComparator());
+        validateRecords(samRecords, new ByteArrayInputStream(outStream.toByteArray()), refSource);
+        Assert.assertTrue(indexStream.size() != 0);
+    }
+
+    @Test
+    public void test_roundtrip_tlen_preserved() throws IOException {
+        SamReader reader = SamReaderFactory.make().open(new File("testdata/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ReferenceSource source = new ReferenceSource(new File("testdata/htsjdk/samtools/cram_tlen.fasta"));
+        CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram");
+        SAMRecordIterator iterator = reader.iterator();
+        List<SAMRecord> records = new ArrayList<SAMRecord>();
+        while (iterator.hasNext()) {
+            final SAMRecord record = iterator.next();
+            writer.addAlignment(record);
+            records.add(record);
+        }
+        writer.close();
+
+        CRAMFileReader cramReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (File) null, source, ValidationStringency.STRICT);
+        iterator = cramReader.getIterator();
+        int i = 0;
+        while (iterator.hasNext()) {
+            SAMRecord record1 = iterator.next();
+            SAMRecord record2 = records.get(i++);
+            Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
+        }
+        Assert.assertEquals(records.size(), i);
+    }
+
 }

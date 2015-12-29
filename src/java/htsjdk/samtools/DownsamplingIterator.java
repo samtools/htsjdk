@@ -25,127 +25,89 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Random;
-
 /**
- * An iterator of SAMRecords that can downsample on the fly.  Allows for inclusion of secondary and/or
- * supplemental records (off by default), though this will cause memory use to increase as the decisions
- * for each read name must be cached permanently.
+ * Abstract base class for all DownsamplingIterators that provides a uniform interface for recording
+ * and reporting statistics bout how many records have been kept and discarded.
+ *
+ * A DownsamplingIterator is an iterator that takes another iterator of SAMRecords and filters out a
+ * subset of those records in a random way, while ensuring that all records for a template (i.e. record name)
+ * are either retained or discarded.  Strictly speaking the proportion parameter applies to templates,
+ * though in most instances it is safe to think about it being applied to records.
  *
  * @author Tim Fennell
  */
-public class DownsamplingIterator implements CloseableIterator<SAMRecord>, Iterable<SAMRecord> {
-    private final Iterator<SAMRecord> underlyingIterator;
-    private final Random random;
-    private final double probabilityOfKeeping;
-    private SAMRecord nextRecord;
-    private long totalReads, keptReads;
-    private final Map<String, Boolean> decisions = new HashMap<String, Boolean>();
-    private boolean allowSecondaryAlignments = false;
-    private boolean allowSupplementalAlignments = false;
-    private boolean includeNoRefReads = true;
+public abstract class DownsamplingIterator implements CloseableIterator<SAMRecord> {
+    private long recordsSeen;
+    private long recordsAccepted;
+    private double targetProportion;
 
-    /** Constructs a downsampling iterator upon the supplied iterator, using the Random as the source of randomness. */
-    public DownsamplingIterator(final Iterator<SAMRecord> iterator, final Random random, final double probabilityOfKeeping) {
-        this.underlyingIterator = iterator;
-        this.random = random;
-        this.probabilityOfKeeping = probabilityOfKeeping;
+    /** Constructs a downsampling iterator that aims to retain the targetProportion of reads. */
+    public DownsamplingIterator(final double targetProportion) {
+        if (targetProportion < 0) throw new IllegalArgumentException("targetProportion must be >= 0");
+        if (targetProportion > 1) throw new IllegalArgumentException("targetProportion must be <= 1");
+        this.targetProportion = targetProportion;
     }
 
-    /** Sets whether or not secondary alignments are allowed (true) or all discarded (false). */
-    public DownsamplingIterator setAllowSecondaryAlignments(final boolean allowSecondaryAlignments) {
-        this.allowSecondaryAlignments = allowSecondaryAlignments;
-        return this;
+    /** Does nothing. */
+    @Override public void close() { /** No Op. */ }
+
+    /** Returns the number of records seen, including accepted and discarded, since creation of the last call to resetStatistics. */
+    public long getSeenCount() { return this.recordsSeen; }
+
+    /** Returns the number of records returned since creation of the last call to resetStatistics. */
+    public long getAcceptedCount() { return this.recordsAccepted; }
+
+    /** Returns the number of records discarded since creation of the last call to resetStatistics. */
+    public long getDiscardedCount() { return this.recordsSeen - this.recordsAccepted; }
+
+    /** Gets the fraction of records discarded since creation or the last call to resetStatistics(). */
+    public double getDiscardedFraction() { return getDiscardedCount() / (double) getSeenCount(); }
+
+    /** Gets the fraction of records accepted since creation or the last call to resetStatistics(). */
+    public double getAcceptedFraction() { return getAcceptedCount() / (double) getSeenCount(); }
+
+    /** Resets the statistics for records seen/accepted/discarded. */
+    public void resetStatistics() {
+        this.recordsSeen = 0;
+        this.recordsAccepted = 0;
     }
 
-    /** Sets whether or not supplemental alignments are allowed (true) or all discarded (false). */
-    public DownsamplingIterator setAllowSupplementalAlignments(final boolean allowSupplementalAlignments) {
-        this.allowSupplementalAlignments = allowSupplementalAlignments;
-        return this;
+    /** Gets the target proportion of records that should be retained during downsampling. */
+    public double getTargetProportion() {
+        return targetProportion;
     }
 
-    /** Sets whether the iterator will stop when no-ref reads are encountered, or keep downsampling through them. */
-    public DownsamplingIterator setIncludeNoRefReads(final boolean includeNoRefReads) {
-        this.includeNoRefReads = includeNoRefReads;
-        return this;
-    }
-
-    /** Returns the total number of reads/records considered up to the point when the method is called. */
-    public long getTotalReads() { return totalReads; }
-
-    /** Returns the number of reads/records kept post-downsampling up to the point when the method is called. */
-    public long getKeptReads() { return keptReads; }
-
-    /** Simple implementation of iterable that returns this iterator. */
-    @Override public Iterator<SAMRecord> iterator() { return this; }
+    /** Method for subclasses to record a record as being discarded. */
+    protected final void recordDiscardedRecord() { this.recordsSeen++; }
 
     /**
-     * Clears the current record and attempts to advance through the underlying iterator until a
-     * record is kept during downsampling.  If no more records are kept and the end of the input
-     * is reached this.nextRecord will be null.
-     *
-     * @return true if a record is available after advancing, false otherwise
+     * Method for subclasses to record a specific record as being accepted. Null may be passed if a record
+     * was discarded but access to the object is no longer available.
      */
-    private boolean advance() {
-        this.nextRecord = null;
-        final boolean oneRecPerRead = !allowSecondaryAlignments && !allowSupplementalAlignments;
+    protected final void recordAcceptedRecord() { this.recordsSeen++; this.recordsAccepted++; }
 
-        while (this.nextRecord == null && this.underlyingIterator.hasNext()) {
-            final SAMRecord rec = this.underlyingIterator.next();
-            if (!this.allowSecondaryAlignments    && rec.getNotPrimaryAlignmentFlag()) continue;
-            if (!this.allowSupplementalAlignments && rec.getSupplementaryAlignmentFlag()) continue;
-            if (!this.includeNoRefReads && rec.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) break;
-
-            ++totalReads;
-
-            final String key = rec.getReadName();
-            final Boolean previous = oneRecPerRead ? decisions.remove(key) : decisions.get(key);
-            final boolean keeper;
-
-            if (previous == null) {
-                keeper = this.random.nextDouble() <= this.probabilityOfKeeping;
-                if (rec.getReadPairedFlag() || this.allowSecondaryAlignments || this.allowSupplementalAlignments) decisions.put(key, keeper);
-            }
-            else {
-                keeper = previous;
-            }
-
-            if (keeper) {
-                this.nextRecord = rec;
-                ++keptReads;
-            }
-        }
-
-        return this.nextRecord != null;
+    /** Record one or more records as having been discarded. */
+    protected final void recordDiscardRecords(final long n) {
+        this.recordsSeen += n;
     }
 
-    /** Returns true if there is another record available post-downsampling, false otherwise. */
-    @Override public boolean hasNext() {
-        return this.nextRecord != null || advance();
+    /** Record one or more records as having been discarded. */
+    protected final void recordAcceptedRecords(final long n) {
+        this.recordsSeen += n;
+        this.recordsAccepted += n;
     }
 
-    /** Returns the next record from the iterator, or throws an exception if there is no next record. */
-    @Override public SAMRecord next() {
-        if (this.nextRecord == null) {
-            throw new NoSuchElementException("Call to next() when hasNext() == false");
-        }
-        else {
-            final SAMRecord retval = this.nextRecord;
-            advance();
-            return retval;
-        }
+    /**
+     * Indicates whether or not the strategy implemented by this DownsamplingIterator makes any effort to
+     * increase accuracy beyond random sampling (i.e. to reduce the delta between the requested proportion
+     * of reads and the actually emitted proportion of reads).
+     */
+    public boolean isHigherAccuracy() {
+        return false;
     }
 
-    /** Unsupported operation. */
+    /** Not supported. */
     @Override public void remove() {
-        throw new UnsupportedOperationException("remove() is not supported.");
-    }
-
-    @Override public void close() {
-        // Do nothing.
+        throw new UnsupportedOperationException("remove() not supported in DownsamplingIterators");
     }
 }

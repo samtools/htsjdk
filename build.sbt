@@ -4,9 +4,11 @@ import sbt.Package.ManifestAttributes
 
 name := "htsjdk"
 
-val buildVersion = "1.140"
+val buildVersion = "2.0.1"
 
 organization := "com.github.samtools"
+
+libraryDependencies += "gov.nih.nlm.ncbi" % "ngs-java" % "1.2.2"
 
 libraryDependencies += "org.apache.commons" % "commons-jexl" % "2.1.1"
 
@@ -87,9 +89,7 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 crossPaths := false
 
-javacOptions in Compile ++= Seq("-source", "1.6")
-
-javacOptions in(Compile, compile) ++= Seq("-target", "1.6")
+javacOptions in (Compile,doc) ++= Seq("-Xdoclint:none")
 
 packageOptions := Seq(ManifestAttributes(
   ("Implementation-Version", s"${implementationVersion.value}"),

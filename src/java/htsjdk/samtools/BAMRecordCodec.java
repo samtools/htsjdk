@@ -200,7 +200,11 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final BAMRecord ret = this.samRecordFactory.createBAMRecord(
                 header, referenceID, coordinate, readNameLength, mappingQuality,
                 bin, cigarLen, flags, readLen, mateReferenceID, mateCoordinate, insertSize, restOfRecord);
-        ret.setHeader(header); 
+
+        if (null != header) {
+            // don't reset a null header as this will clobber the reference and mate reference indices
+            ret.setHeader(header);
+        }
         return ret;
     }
 }

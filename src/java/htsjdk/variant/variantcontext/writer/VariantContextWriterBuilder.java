@@ -125,7 +125,7 @@ public class VariantContextWriterBuilder {
     private IndexCreator idxCreator = null;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private boolean createMD5 = Defaults.CREATE_MD5;
-    private EnumSet<Options> options = DEFAULT_OPTIONS.clone();
+    protected EnumSet<Options> options = DEFAULT_OPTIONS.clone();
 
     /**
      * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
@@ -338,12 +338,33 @@ public class VariantContextWriterBuilder {
     }
 
     /**
+     * Add one option to the set of default <code>Options</code> that will be used as the initial set of options
+     * for all VariantContextWriterBuilders created after this call.
+     *
+     * @param option the option to set
+     */
+    public static void setDefaultOption(final Options option) {
+        VariantContextWriterBuilder.DEFAULT_OPTIONS.add(option);
+    }
+
+    /**
+     * Remove an option from the set of default <code>Options</code> that will be used as the initial set of options
+     * for all VariantContextWriterBuilders created after this call.
+     *
+     * @param option the option to unset
+     * @return this <code>VariantContextWriterBuilder</code>
+     */
+    public static void unsetDefaultOption(final Options option) {
+        VariantContextWriterBuilder.DEFAULT_OPTIONS.remove(option);
+    }
+
+    /**
      * Remove all options from the set of <code>Options</code> for the <code>VariantContextWriterBuilder</code>.
      *
      * @return this VariantContextWriterBuilder
      */
     public VariantContextWriterBuilder clearOptions() {
-        this.options = NO_OPTIONS;
+        this.options = NO_OPTIONS.clone();
         return this;
     }
 

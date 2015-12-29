@@ -110,6 +110,25 @@ public class SamReaderFactoryTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(recordFactory.bamRecordsCreated, i);
     }
 
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void samRecordFactoryNullHeaderBAMTest() {
+        final SAMRecordFactory recordFactory = new DefaultSAMRecordFactory();
+        recordFactory.createBAMRecord(
+                null, // null header
+                0,
+                0,
+                (short) 0,
+                (short) 0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                null);
+    }
+
 
     /**
      * Unit tests for asserting all permutations of data and index sources read the same records and header.
@@ -132,8 +151,14 @@ public class SamReaderFactoryTest {
     public Object[][] composeAllPermutationsOfSamInputResource() {
         final List<SamInputResource> sources = new ArrayList<SamInputResource>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
+            if (dataType.equals(InputResource.Type.SRA_ACCESSION))
+                continue;
+
             sources.add(new SamInputResource(composeInputResourceForType(dataType, false)));
             for (final InputResource.Type indexType : InputResource.Type.values()) {
+                if (indexType.equals(InputResource.Type.SRA_ACCESSION))
+                    continue;
+
                 sources.add(new SamInputResource(
                         composeInputResourceForType(dataType, false),
                         composeInputResourceForType(indexType, true)

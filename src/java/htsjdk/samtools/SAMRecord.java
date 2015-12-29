@@ -32,54 +32,78 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
 /**
  * Java binding for a SAM file record.  c.f. http://samtools.sourceforge.net/SAM1.pdf
- *
+ * <p>
  * The presence of reference name/reference index and alignment start
  * do not necessarily mean that a read is aligned.  Those values may merely be set to force a SAMRecord
  * to appear in a certain place in the sort order.  The readUnmappedFlag must be checked to determine whether
  * or not a read is mapped.  Only if the readUnmappedFlag is false can the reference name/index and alignment start
  * be interpreted as indicating an actual alignment position.
- *
+ * <p>
  * Likewise, presence of mate reference name/index and mate alignment start do not necessarily mean that the
  * mate is aligned.  These may be set for an unaligned mate if the mate has been forced into a particular place
  * in the sort order per the above paragraph.  Only if the mateUnmappedFlag is false can the mate reference name/index
  * and mate alignment start be interpreted as indicating the actual alignment position of the mate.
- *
+ * <p>
  * Note also that there are a number of getters & setters that are linked, i.e. they present different representations
  * of the same underlying data.  In these cases there is typically a representation that is preferred because it
  * ought to be faster than some other representation.  The following are the preferred representations:
- *
- * getReadNameLength() is preferred to getReadName().length()
- * get/setReadBases() is preferred to get/setReadString()
- * get/setBaseQualities() is preferred to get/setBaseQualityString()
- * get/setReferenceIndex() is preferred to get/setReferenceName()
- * get/setMateReferenceIndex() is preferred to get/setMateReferenceName()
- * getCigarLength() is preferred to getCigar().getNumElements()
- * get/setCigar() is preferred to get/setCigarString()
- *
- * Note that setIndexingBin() need not be called when writing SAMRecords.  It will be computed as necessary.  It is only
- * present as an optimization in the event that the value is already known and need not be computed.
- *
- * setHeader() need not be called when writing SAMRecords.  It may be convenient to call it, however, because
- * get/setReferenceIndex() and get/setMateReferenceIndex() must have access to the SAM header, either as an argument
- * or previously passed to setHeader().
- *
+ * </p><ul>
+ * <li>getReadNameLength() is preferred to getReadName().length()</li>
+ * <li>get/setReadBases() is preferred to get/setReadString()</li>
+ * <li>get/setBaseQualities() is preferred to get/setBaseQualityString()</li>
+ * <li>get/setReferenceIndex() is preferred to get/setReferenceName() for records with valid SAMFileHeaders</li>
+ * <li>get/setMateReferenceIndex() is preferred to get/setMateReferenceName() for records with valid SAMFileHeaders</li>
+ * <li>getCigarLength() is preferred to getCigar().getNumElements()</li>
+ * <li>get/setCigar() is preferred to get/setCigarString()</li>
+ * </ul>
+ * <p>
  * setHeader() is called by the SAM reading code, so the get/setReferenceIndex() and get/setMateReferenceIndex()
- * methods will have access to the sequence dictionary.
- *
+ * methods will have access to the sequence dictionary to resolve reference and mate reference names to dictionary
+ * indices.
+ * <p>
+ * setHeader() need not be called explicitly when writing SAMRecords, however the writers require a record
+ * in order to call get/setReferenceIndex() and get/setMateReferenceIndex(). Therefore adding records to a writer
+ * has a side effect: any record that does not have an assigned header at the time it is added to a writer will be
+ * updated and assigned the header associated with the writer.
+ * <p>
  * Some of the get() methods return values that are mutable, due to the limitations of Java.  A caller should
  * never change the value returned by a get() method.  If you want to change the value of some attribute of a
  * SAMRecord, create a new value object and call the appropriate set() method.
- *
+ * </p>
+ * Note that setIndexingBin() need not be called when writing SAMRecords.  It will be computed as necessary.  It is only
+ * present as an optimization in the event that the value is already known and need not be computed.
+ * <p>
  * By default, extensive validation of SAMRecords is done when they are read.  Very limited validation is done when
  * values are set onto SAMRecords.
- */
-/**
+ * <p>
+ * <h3>Notes on Headerless SAMRecords</h3>
+ * <p>
+ * If the header is null, the following SAMRecord methods may throw exceptions:
+ * <ul>
+ * <li>getReferenceIndex</li>
+ * <li>setReferenceIndex</li>
+ * <li>getMateReferenceIndex</li>
+ * <li>setMateReferenceIndex</li>
+ * </ul><p>
+ * Record comparators (i.e. SAMRecordCoordinateComparator and SAMRecordDuplicateComparator) require records with
+ * non-null header values.
+ * <p>
+ * A record with null a header may be validated by the isValid method, but the reference and mate reference indices,
+ * read group, sequence dictionary, and alignment start will not be fully validated unless a header is present.
+ * <p>
+ * Also, SAMTextWriter, BAMFileWriter, and CRAMFileWriter all require records to have a valid header in order to be
+ * written. Any record that does not have a header at the time it is added to the writer will be updated to use the
+ * header associated with the writer.
+ * <p>
  * @author alecw@broadinstitute.org
  * @author mishali.naik@intel.com
  */
@@ -167,6 +191,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     private transient SAMFileSource mFileSource;
     private SAMFileHeader mHeader = null;
+
+    /** Transient Map of attributes for use by anyone. */
+    private transient Map<Object,Object> transientAttributes;
 
     public SAMRecord(final SAMFileHeader header) {
         mHeader = header;
@@ -286,8 +313,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private static boolean hasReferenceName(final Integer referenceIndex, final String referenceName) {
-        return (referenceIndex != null && referenceIndex != NO_ALIGNMENT_REFERENCE_INDEX) ||
-                !NO_ALIGNMENT_REFERENCE_NAME.equals(referenceName);
+        return (referenceIndex != null && !referenceIndex.equals(NO_ALIGNMENT_REFERENCE_INDEX)) ||
+                (!NO_ALIGNMENT_REFERENCE_NAME.equals(referenceName));
     }
 
     /**
@@ -305,119 +332,208 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @return Reference name, or null if record has no reference.
+     * @return Reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no reference name
      */
-    public String getReferenceName() {
-        return mReferenceName;
-    }
+    public String getReferenceName() { return mReferenceName; }
 
-    public void setReferenceName(final String value) {
-        /* String.intern() is surprisingly expensive, so avoid it by looking up in sequence dictionary if possible */
-        if (NO_ALIGNMENT_REFERENCE_NAME.equals(value)) {
+    /**
+     * Sets the reference name for this record. If the record has a valid SAMFileHeader and the reference
+     * name is present in the associated sequence dictionary, the record's reference index will also be
+     * updated with the corresponding sequence index. If referenceName is NO_ALIGNMENT_REFERENCE_NAME, sets
+     * the reference index to NO_ALIGNMENT_REFERENCE_INDEX.
+     *
+     * @param referenceName - must not be null
+     */
+    public void setReferenceName(final String referenceName) {
+        if (null == referenceName) {
+            throw new IllegalArgumentException(
+                    "Reference name must not be null. Use SAMRecord.NO_ALIGNMENT_REFERENCE_NAME to reset the reference name.");
+        }
+        else if (NO_ALIGNMENT_REFERENCE_NAME.equals(referenceName)) {
             mReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
             mReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            return;
-        } else if (mHeader != null) {
-            final int referenceIndex = mHeader.getSequenceIndex(value);
-            if (referenceIndex != -1) {
-                setReferenceIndex(referenceIndex);
-                return;
+        }
+        else if (null != mHeader) {
+            // String.intern() is surprisingly expensive, so avoid it by looking up in sequence dictionary if possible
+            final int referenceIndex = mHeader.getSequenceIndex(referenceName);
+            if (-1 != referenceIndex) {
+                setReferenceIndex(referenceIndex); // sets reference name and index
+            }
+            else {
+                mReferenceName = referenceName.intern();
+                mReferenceIndex = null;
             }
         }
-        // Drop through from above if nothing done.
-        mReferenceName = value.intern();
-        mReferenceIndex = null;
+        else {
+            mReferenceName = referenceName.intern();
+            mReferenceIndex = null;
+        }
     }
 
     /**
-     * @return index of the reference sequence for this read in the sequence dictionary, or -1
-     * if read has no reference sequence set, or if a String reference name is not found in the sequence index..
+     * Returns the reference index for this record.
+     *
+     * If the reference name for this record has previously been resolved against the sequence dictionary, the corresponding
+     * index is returned directly. Otherwise, the record must have a non-null SAMFileHeader that can be used to
+     * resolve the index for the record's current reference name, unless the reference name is NO_ALIGNMENT_REFERENCE_NAME.
+     * If the record has a header, and the name does not appear in the header's sequence dictionary, the value
+     * NO_ALIGNMENT_REFERENCE_INDEX (-1) will be returned. If the record does not have a header, an IllegalStateException
+     * is thrown.
+     *
+     * @return Index in the sequence dictionary of the reference sequence. If the read has no reference sequence, or if
+     * the reference name is not found in the sequence index, NO_ALIGNMENT_REFERENCE_INDEX (-1) is returned.
+     *
+     * @throws IllegalStateException if the reference index cannot be resolved because the SAMFileHeader for the
+     * record is null.
      */
     public Integer getReferenceIndex() {
-        if (mReferenceIndex == null) {
-            if (mReferenceName == null) {
+        if (null == mReferenceIndex) {
+            // try to resolve the reference index
+            if (NO_ALIGNMENT_REFERENCE_NAME.equals(mReferenceName)) {
                 mReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            } else if (NO_ALIGNMENT_REFERENCE_NAME.equals(mReferenceName)) {
-                mReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            } else {
+            }
+            else if (null != mHeader) {
                 mReferenceIndex = mHeader.getSequenceIndex(mReferenceName);
+            }
+            else {
+                throw new IllegalStateException("A non-null SAMFileHeader is required to resolve the reference index");
             }
         }
         return mReferenceIndex;
     }
 
     /**
-     * @param referenceIndex Must either equal -1 (indicating no reference), or exist in the sequence dictionary
-     * in the header associated with this record.
+     * Updates the reference index. The record must have a valid SAMFileHeader unless the referenceIndex parameter equals
+     * NO_ALIGNMENT_REFERENCE_INDEX, and the reference index must appear in  the header's sequence dictionary. If the
+     * reference index is valid, the reference name will also be resolved and updated to the name for the sequence
+     * dictionary entry corresponding to the index.
+     *
+     * @param referenceIndex Must either equal NO_ALIGNMENT_REFERENCE_INDEX (-1) indicating no reference, or the
+     *                       record must have a SAMFileHeader and the index must exist in the associated sequence
+     *                       dictionary.
+     * @throws IllegalStateException if the SAMFileHeader is null for this record or the reference index is not
+     *         found in the sequence dictionary for this record.
      */
     public void setReferenceIndex(final int referenceIndex) {
-        mReferenceIndex = referenceIndex;
-        if (mReferenceIndex == NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (referenceIndex == NO_ALIGNMENT_REFERENCE_INDEX) {
+            mReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
             mReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
-        } else {
-            try {
-                mReferenceName = mHeader.getSequence(referenceIndex).getSequenceName();
-            } catch (final NullPointerException e) {
-                throw new IllegalArgumentException("Reference index " + referenceIndex + " not found in sequence dictionary.", e);
+        }
+        else if (null == mHeader) {
+            throw new IllegalStateException("A non-null SAMFileHeader is required to resolve the reference index");
+        }
+        else {
+            SAMSequenceRecord samSequence = mHeader.getSequence(referenceIndex);
+            if (null != samSequence) {
+                mReferenceIndex = referenceIndex;
+                mReferenceName = samSequence.getSequenceName();
+            }
+            else {
+                throw new IllegalArgumentException("Reference index " + referenceIndex + " not found in sequence dictionary.");
             }
         }
     }
 
     /**
-     * @return Mate reference name, or null if one is not assigned.
+     * @return Mate reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no mate reference name
      */
     public String getMateReferenceName() {
         return mMateReferenceName;
     }
 
+    /**
+     * Sets the mate reference name for this record. If the record has a valid SAMFileHeader and the mate reference
+     * name is present in the associated sequence dictionary, the record's mate reference index will also be
+     * updated with the corresponding sequence index. If mateReferenceName is NO_ALIGNMENT_REFERENCE_NAME, sets the
+     * mate reference index to NO_ALIGNMENT_REFERENCE_INDEX.
+     *
+     * @param mateReferenceName - must not be null
+     */
     public void setMateReferenceName(final String mateReferenceName) {
-        /* String.intern() is surprisingly expensive, so avoid it by looking up in sequence dictionary if possible */
-        if (NO_ALIGNMENT_REFERENCE_NAME.equals(mateReferenceName)) {
+        if (null == mateReferenceName) {
+            throw new IllegalArgumentException("Mate reference name must not be null");
+        }
+        else if (NO_ALIGNMENT_REFERENCE_NAME.equals(mateReferenceName)) {
             mMateReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
             mMateReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            return;
-        } else if (mHeader != null) {
-            final int referenceIndex = mHeader.getSequenceIndex(mateReferenceName);
-            if (referenceIndex != -1) {
-                setMateReferenceIndex(referenceIndex);
-                return;
+        }
+        else if (null != mHeader) {
+            final int mateReferenceIndex = mHeader.getSequenceIndex(mateReferenceName);
+            if (-1 != mateReferenceIndex) {
+                setMateReferenceIndex(mateReferenceIndex); // sets mate reference name and index
+            }
+            else {
+                mMateReferenceName = mateReferenceName.intern();
+                mMateReferenceIndex = null;
             }
         }
-        // Drop through from above if nothing done.
-        this.mMateReferenceName = mateReferenceName.intern();
-        mMateReferenceIndex = null;
+        else {
+            mMateReferenceName = mateReferenceName.intern();
+            mMateReferenceIndex = null;
+        }
     }
 
     /**
-     * @return index of the reference sequence for this read's mate in the sequence dictionary, or -1
-     * if mate has no reference sequence set.
+     * Returns the mate reference index for this record.
+     *
+     * If the mate reference name for this record has previously been resolved against the sequence dictionary, the
+     * corresponding index is returned directly. Otherwise, the record must have a non-null SAMFileHeader that can be
+     * used to resolve the index for the record's current mate reference name, unless the mate reference name is
+     * NO_ALIGNMENT_REFERENCE_NAME. If the record has a header, and the name does not appear in the header's
+     * sequence dictionary, the value NO_ALIGNMENT_REFERENCE_INDEX (-1) will be returned. If the record does not have
+     * a header, an IllegalStateException is thrown.
+     *
+     * @return Index in the sequence dictionary of the mate reference sequence. If the read has no mate reference
+     * sequence, or if the mate reference name is not found in the sequence index, NO_ALIGNMENT_REFERENCE_INDEX (-1)
+     * is returned.
+     *
+     * @throws IllegalStateException if the mate reference index cannot be resolved because the SAMFileHeader for the
+     * record is null.
      */
     public Integer getMateReferenceIndex() {
-        if (mMateReferenceIndex == null) {
-            if (mMateReferenceName == null) {
+        if (null == mMateReferenceIndex) {
+            // try to resolve the reference index
+            if (NO_ALIGNMENT_REFERENCE_NAME.equals(mMateReferenceName)) {
                 mMateReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            } else if (NO_ALIGNMENT_REFERENCE_NAME.equals(mMateReferenceName)){
-                mMateReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
-            } else {
+            }
+            else if (null != mHeader) {
                 mMateReferenceIndex = mHeader.getSequenceIndex(mMateReferenceName);
+            }
+            else {
+                throw new IllegalStateException("A non-null SAMFileHeader is required to resolve the mate reference index");
             }
         }
         return mMateReferenceIndex;
     }
 
     /**
-     * @param referenceIndex Must either equal -1 (indicating no reference), or exist in the sequence dictionary
-     * in the header associated with this record.
+     * Updates the mate reference index. The record must have a valid SAMFileHeader, and the mate reference index must appear in
+     * the header's sequence dictionary, unless the mateReferenceIndex parameter equals NO_ALIGNMENT_REFERENCE_INDEX. If the mate
+     * reference index is valid, the mate reference name will also be resolved and updated to the name for the sequence dictionary
+     * entry corresponding to the index.
+     *
+     * @param mateReferenceIndex Must either equal NO_ALIGNMENT_REFERENCE_INDEX (-1) indicating no reference, or the
+     *                       record must have a SAMFileHeader and the index must exist in the associated sequence
+     *                       dictionary.
+     * @throws IllegalStateException if the SAMFileHeader is null for this record or the mate reference index is not
+     *         found in the sequence dictionary for this record.
      */
-    public void setMateReferenceIndex(final int referenceIndex) {
-        mMateReferenceIndex = referenceIndex;
-        if (mMateReferenceIndex == NO_ALIGNMENT_REFERENCE_INDEX) {
+    public void setMateReferenceIndex(final int mateReferenceIndex) {
+        if (mateReferenceIndex == NO_ALIGNMENT_REFERENCE_INDEX) {
+            mMateReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
             mMateReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
-        } else {
-            try {
-                mMateReferenceName = mHeader.getSequence(referenceIndex).getSequenceName();
-            } catch (final NullPointerException e) {
-                throw new IllegalArgumentException("Reference index " + referenceIndex + " not found in sequence dictionary.", e);
+        }
+        else if (null == mHeader) {
+            throw new IllegalStateException("A non-null SAMFileHeader is required to resolve the mate reference index");
+        }
+        else {
+            SAMSequenceRecord samSequence = mHeader.getSequence(mateReferenceIndex);
+            if (null != samSequence) {
+                mMateReferenceIndex = mateReferenceIndex;
+                mMateReferenceName = samSequence.getSequenceName();
+            }
+            else {
+                throw new IllegalArgumentException("Reference index " + mateReferenceIndex + " not found in sequence dictionary.");
             }
         }
     }
@@ -645,7 +761,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     public Cigar getCigar() {
         if (mCigar == null && mCigarString != null) {
             mCigar = TextCigarCodec.decode(mCigarString);
-            if (getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
+            if (null != getHeader() &&
+                    getValidationStringency() != ValidationStringency.SILENT &&
+                    !this.getReadUnmappedFlag()) {
                 // Don't know line number, and don't want to force read name to be decoded.
                 SAMUtils.processValidationErrors(this.validateCigar(-1L), -1L, getValidationStringency());
             }
@@ -683,16 +801,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Get the SAMReadGroupRecord for this SAMRecord.
      * @return The SAMReadGroupRecord from the SAMFileHeader for this SAMRecord, or null if
      * 1) this record has no RG tag, or 2) the header doesn't contain the read group with
-     * the given ID.
-     * @throws NullPointerException if this.getHeader() returns null.
+     * the given ID.or 3) this record has no SAMFileHeader
      * @throws ClassCastException if RG tag does not have a String value.
      */
     public SAMReadGroupRecord getReadGroup() {
         final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
-        if (rgId == null) {
+        if (rgId == null || getHeader() == null) {
             return null;
+        } else {
+            return getHeader().getReadGroup(rgId);
         }
-        return getHeader().getReadGroup(rgId);
     }
 
     /**
@@ -961,8 +1079,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Get the tag value and attempt to coerce it into the requested type.
      * @param tag The requested tag.
-     * @return The value of a tag, converted into an Integer if possible.
-     * @throws RuntimeException If the value is not an integer type, or will not fit in an Integer.
+     * @return The value of a tag, converted into a signed Integer if possible.
+     * @throws RuntimeException If the value is not an integer type, or will not fit in a signed Integer.
      */
     public Integer getIntegerAttribute(final String tag) {
         final Object val = getAttribute(tag);
@@ -978,6 +1096,46 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             throw new RuntimeException("Value for tag " + tag + " is not in Integer range: " + longVal);
         }
         return (int)longVal;
+    }
+
+    /**
+     * A convenience method that will return a valid unsigned integer as a Long,
+     * or fail with an exception if the tag value is invalid.
+     *
+     * @param tag Two-character tag name.
+     * @return valid unsigned integer associated with the tag, as a Long
+     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     */
+    public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
+        return getUnsignedIntegerAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag));
+    }
+
+    /**
+     * A convenience method that will return a valid unsigned integer as a Long,
+     * or fail with an exception if the tag value is invalid.
+     *
+     * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
+     * @return valid unsigned integer associated with the tag, as a Long
+     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     */
+    public Long getUnsignedIntegerAttribute(final short tag) throws SAMException {
+        final Object value = getAttribute(tag);
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Number) {
+            final long lValue = ((Number)value).longValue();
+            if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+                return lValue;
+            } else {
+                throw new SAMException("Unsigned integer value of tag " +
+                        SAMTagUtil.getSingleton().makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
+            }
+        } else {
+            throw new SAMException("Unexpected attribute value data type " + value.getClass() + " for tag " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
+        }
     }
 
     /**
@@ -1156,14 +1314,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Set a named attribute onto the SAMRecord.  Passing a null value causes the attribute to be cleared.
      * @param tag two-character tag name.  See http://samtools.sourceforge.net/SAM1.pdf for standard and user-defined tags.
-     * @param value Supported types are String, Char, Integer, Float, byte[], short[]. int[], float[].
+     * @param value Supported types are String, Char, Integer, Float,
+     *              Long (for values that fit into a signed or unsigned 32-bit integer only),
+     *              byte[], short[], int[], float[].
      * If value == null, tag is cleared.
      *
      * Byte and Short are allowed but discouraged.  If written to a SAM file, these will be converted to Integer,
      * whereas if written to BAM, getAttribute() will return as Byte or Short, respectively.
      *
-     * Long with value between 0 and MAX_UINT is allowed for BAM but discouraged.  Attempting to write such a value
-     * to SAM will cause an exception to be thrown.
+     * Long is allowed for values that fit into a signed or unsigned 32-bit integer only, but discouraged.
      *
      * To set unsigned byte[], unsigned short[] or unsigned int[] (which is discouraged because of poor Java language
      * support), setUnsignedArrayAttribute() must be used instead of this method.
@@ -1201,24 +1360,43 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         setAttribute(tag, value, false);
     }
 
+    /**
+     * Checks if the value is allowed as an attribute value.
+     *
+     * @param value the value to be checked
+     * @return true if the value is valid and false otherwise
+     */
+    protected static boolean isAllowedAttributeValue(final Object value) {
+        if (value instanceof Byte || value instanceof Short || value instanceof Integer ||
+                value instanceof String || value instanceof Character || value instanceof Float ||
+                value instanceof byte[] || value instanceof short[] || value instanceof int[] ||
+                value instanceof float[]) {
+            return true;
+        }
+
+        // A special case for Longs: we require Long values to fit into either a uint32_t or an int32_t,
+        // as that is what the BAM spec allows.
+        if (value instanceof Long) {
+            return SAMUtils.isValidUnsignedIntegerAttribute((Long) value)
+                    || ((Long) value >= Integer.MIN_VALUE && (Long) value <= Integer.MAX_VALUE);
+        }
+        return false;
+    }
+
     protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
-        if (value != null &&
-                !(value instanceof Byte || value instanceof Short || value instanceof Integer ||
-                        value instanceof String || value instanceof Character || value instanceof Float ||
-                        value instanceof byte[] || value instanceof short[] || value instanceof int[] ||
-                        value instanceof float[])) {
-            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
-        }
         if (value == null) {
-            if (this.mAttributes != null) this.mAttributes = this.mAttributes.remove(tag);
-        }
-        else {
-            final SAMBinaryTagAndValue tmp;
-            if(!isUnsignedArray) {
-                tmp = new SAMBinaryTagAndValue(tag, value);
+            // setting a tag value to null removes the tag:
+            if (this.mAttributes != null) {
+                this.mAttributes = this.mAttributes.remove(tag);
             }
-            else {
+            return;
+        }
+
+        if (isAllowedAttributeValue(value)) {
+            final SAMBinaryTagAndValue tmp;
+            if (!isUnsignedArray) {
+                tmp = new SAMBinaryTagAndValue(tag, value);
+            } else {
                 if (!value.getClass().isArray() || value instanceof float[]) {
                     throw new SAMException("Attribute type " + value.getClass() +
                             " cannot be encoded as an unsigned array. Tag: " +
@@ -1226,8 +1404,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
-            if (this.mAttributes == null) this.mAttributes = tmp;
-            else this.mAttributes = this.mAttributes.insert(tmp);
+
+            if (this.mAttributes == null) {
+                this.mAttributes = tmp;
+            } else {
+                this.mAttributes = this.mAttributes.insert(tmp);
+            }
+        } else {
+            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
         }
     }
 
@@ -1337,16 +1522,70 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return GenomicIndexUtil.reg2bin(alignmentStart, alignmentEnd);
     }
 
+    /**
+     * @return the SAMFileHeader for this record. If the header is null, the following SAMRecord methods may throw
+     * exceptions:
+     * <p><ul>
+     * <li>getReferenceIndex</li>
+     * <li>setReferenceIndex</li>
+     * <li>getMateReferenceIndex</li>
+     * <li>setMateReferenceIndex</li>
+     * </ul><p>
+     * Record comparators (i.e. SAMRecordCoordinateComparator and SAMRecordDuplicateComparator) require records with
+     * non-null header values.
+     * <p>
+     * A record with null a header may be validated by the isValid method, but the reference and mate reference indices,
+     * read group, sequence dictionary, and alignment start will not be fully validated unless a header is present.
+     * <p>
+     * SAMTextWriter, BAMFileWriter, and CRAMFileWriter all require records to have a valid header in order to be
+     * written. Any record that does not have a header at the time it is added to the writer will be updated to use the
+     * header associated with the writer.
+     */
     public SAMFileHeader getHeader() {
         return mHeader;
     }
 
     /**
-     * Setting header into SAMRecord facilitates conversion btw reference sequence names and indices
+     * Sets the SAMFileHeader for this record. Setting the header into SAMRecord facilitates conversion between reference
+     * sequence names and indices.
+     * <p>
+     * <b>NOTE:</b> If the record has a reference or mate reference name, the corresponding reference and mate reference
+     * indices are resolved and updated using the sequence dictionary in the new header. setHeader does not throw an
+     * exception if either the reference or mate reference name does not appear in the new header's sequence dictionary.
+     * <p>
+     * When the SAMFileHeader is set to null, the reference and mate reference indices are cleared. Therefore, calls to
+     * the following SAMRecord methods on records with a null header may throw IllegalArgumentExceptions:
+     * <ul>
+     * <li>getReferenceIndex</li>
+     * <li>setReferenceIndex</li>
+     * <li>getMateReferenceIndex</li>
+     * <li>setMateReferenceIndex</li>
+     * </ul><p>
+     * Record comparators (i.e. SAMRecordCoordinateComparator and SAMRecordDuplicateComparator) require records with
+     * non-null header values.
+     * <p>
+     * A record with null a header may be validated by the isValid method, but the reference and mate reference indices,
+     * read group, sequence dictionary, and alignment start will not be fully validated unless a header is present.
+     * <p>
+     * SAMTextWriter, BAMFileWriter, and CRAMFileWriter all require records to have a valid header in order to be
+     * written. Any record that does not have a header at the time it is added to the writer will be updated to use the
+     * header associated with the writer.
+     *
      * @param header contains sequence dictionary for this SAMRecord
      */
     public void setHeader(final SAMFileHeader header) {
         this.mHeader = header;
+        if (null == header) {
+            // mark the reference indices as unresolved
+            mReferenceIndex = null;
+            mMateReferenceIndex = null;
+        }
+        else {
+            // attempt to resolve the existing reference names and indices against the new sequence dictionary, but
+            // don't throw if the names don't appear in the dictionary
+            setReferenceName(mReferenceName);
+            setMateReferenceName(mMateReferenceName);
+        }
     }
 
     /**
@@ -1473,8 +1712,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     public List<SAMValidationError> validateCigar(final long recordNumber) {
         List<SAMValidationError> ret = null;
 
-        if (getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
-            ret = SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
+        if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
+            try {
+                //make sure that the cashed version is good
+                //wrapped in a try to catch an un-parsable string
+                return SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
+            } catch( final IllegalArgumentException e){
+                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,e.getMessage(),getReadName(),recordNumber));
+            }
         }
         return ret;
     }
@@ -1542,7 +1787,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Perform various validations of SAMRecord.
      * Note that this method deliberately returns null rather than Collections.emptyList() if there
      * are no validation errors, because callers tend to assume that if a non-null list is returned, it is modifiable.
+     *
+     * A record with null a header may be validated by the isValid method, but the reference and mate reference indices,
+     * read group, sequence dictionary, and alignment start will not be fully validated unless a header is present.
+     *
      * @return null if valid.  If invalid, returns a list of error messages.
+     *
      */
     public List<SAMValidationError> isValid() {
         return isValid(false);
@@ -1552,6 +1802,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Perform various validations of SAMRecord.
      * Note that this method deliberately returns null rather than Collections.emptyList() if there
      * are no validation errors, because callers tend to assume that if a non-null list is returned, it is modifiable.
+     *
+     * A record with null a header may be validated by the isValid method, but the reference and mate reference indices,
+     * read group, sequence dictionary, and alignment start will not be fully validated unless a header is present.
+     *
      * @param firstOnly return only the first error if true, false otherwise
      * @return null if valid.  If invalid, returns a list of error messages.
      */
@@ -1585,7 +1839,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR, "Second of pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getMateReferenceIndex() != NO_ALIGNMENT_REFERENCE_INDEX) {
+            if (null != getHeader() && getMateReferenceIndex() != NO_ALIGNMENT_REFERENCE_INDEX) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_MATE_REF_INDEX, "MRNM should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
@@ -1665,7 +1919,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             */
                 if (firstOnly) return ret;
             }
-            if (getHeader().getSequenceDictionary().size() == 0) {
+            if (getHeader() != null && getHeader().getSequenceDictionary().size() == 0) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_SEQUENCE_DICTIONARY, "Empty sequence dictionary.", getReadName()));
                 if (firstOnly) return ret;
@@ -1688,11 +1942,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
         // Validate the RG ID is found in header
         final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
-        if (rgId != null && getHeader().getReadGroup(rgId) == null) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
-            ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
-                    "RG ID on SAMRecord not found in header: " + rgId, getReadName()));
-            if (firstOnly) return ret;
+        if (rgId != null && getHeader() != null && getHeader().getReadGroup(rgId) == null) {
+                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
+                        "RG ID on SAMRecord not found in header: " + rgId, getReadName()));
+                if (firstOnly) return ret;
         }
         final List<SAMValidationError> errors = isValidReferenceIndexAndPosition(mReferenceIndex, mReferenceName, getAlignmentStart(), false);
         if (errors != null) {
@@ -1792,8 +2046,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start should != 0 because reference name != *.", isMate), getReadName()));
                 if (firstOnly) return ret;
             }
-
-            if (getHeader().getSequenceDictionary().size() > 0) {
+            if (getHeader() != null && getHeader().getSequenceDictionary().size() > 0) {
                 final SAMSequenceRecord sequence =
                         (referenceIndex != null? getHeader().getSequence(referenceIndex): getHeader().getSequence(referenceName));
                 if (sequence == null) {
@@ -1830,6 +2083,58 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
 
         return newRecord;
+    }
+
+    /**
+     * Returns a deep copy of the SAM record, with the following exceptions:
+     *
+     *  - The header field, which shares the reference with the original record
+     *  - The file source field, which will always always be set to null in the copy
+     *
+     *  Note that some fields, i.e. the cigar elements, alignment blocks, and
+     *  indexing bin, are not explicitly populated in the copy since they are lazily
+     *  generated on demand.
+     *
+     *  Also note that this fails:
+     *
+     *     original.deepCopy().equals(original)
+     *
+     *  due to the fact that SAMBinaryTagAndValue.equals winds up calling object.equals on the
+     *  value field, which uses reference equality.
+     *
+     */
+    public SAMRecord deepCopy() {
+        final SAMRecord newSAM = new SAMRecord(getHeader());
+
+        newSAM.setReadName(getReadName());
+        newSAM.setReadBases(Arrays.copyOf(getReadBases(), getReadLength()));
+        final byte baseQualities[] = getBaseQualities();
+        newSAM.setBaseQualities(Arrays.copyOf(baseQualities, baseQualities.length));
+        newSAM.setReferenceName(getReferenceName());
+        newSAM.setAlignmentStart(getAlignmentStart()); // clears mAlignmentEnd
+        newSAM.setMappingQuality(getMappingQuality());
+        newSAM.setCigarString(getCigarString()); // clears Cigar element and alignmentBlocks
+        newSAM.setFileSource(null);
+
+        newSAM.setFlags(getFlags());
+        newSAM.setMateReferenceName(getMateReferenceName());
+        newSAM.setMateAlignmentStart(getMateAlignmentStart());
+        newSAM.setInferredInsertSize(getInferredInsertSize());
+        if (null != getHeader()) {
+            newSAM.setReferenceIndex(getReferenceIndex());
+            newSAM.setMateReferenceIndex(getMateReferenceIndex());
+        }
+        else {
+            newSAM.mReferenceIndex = null;
+            newSAM.mMateReferenceIndex = null;
+        }
+        newSAM.setValidationStringency(getValidationStringency());
+        SAMBinaryTagAndValue attributes = getBinaryAttributes();
+        if (null != attributes) {
+            newSAM.setAttributes(attributes.deepCopy());
+        }
+
+        return newSAM;
     }
 
     /** Simple toString() that gives a little bit of useful info about the read. */
@@ -1885,7 +2190,39 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * shortcut to <pre>SAMFlag.getFlags( this.getFlags() );</pre>
      * @returns a set of SAMFlag associated to this sam record */
     public final Set<SAMFlag> getSAMFlags() {
-        return SAMFlag.getFlags( this.getFlags() );
+        return SAMFlag.getFlags(this.getFlags());
+    }
+
+    /**
+     * Fetches the value of a transient attribute on the SAMRecord, of null if not set.
+     *
+     * The intended use for transient attributes is to store values that are 1-to-1 with the SAMRecord,
+     * may be needed many times and are expensive to compute.  These values can be computed lazily and
+     * then stored as transient attributes to avoid frequent re-computation.
+     */
+    public final Object getTransientAttribute(final Object key) {
+        return (this.transientAttributes == null) ? null : this.transientAttributes.get(key);
+    }
+
+    /**
+     * Sets the value of a transient attribute, and returns the previous value if defined.
+     *
+     * The intended use for transient attributes is to store values that are 1-to-1 with the SAMRecord,
+     * may be needed many times and are expensive to compute.  These values can be computed lazily and
+     * then stored as transient attributes to avoid frequent re-computation.
+     */
+    public final Object setTransientAttribute(final Object key, final Object value) {
+        if (this.transientAttributes == null) this.transientAttributes = new HashMap<Object,Object>();
+        return this.transientAttributes.put(key, value);
+    }
+
+    /**
+     * Removes a transient attribute if it is stored, and returns the stored value. If there is not
+     * a stored value, will return null.
+     */
+    public final Object removeTransientAttribute(final Object key) {
+        if (this.transientAttributes != null) return this.transientAttributes.remove(key);
+        else return null;
     }
 }
 

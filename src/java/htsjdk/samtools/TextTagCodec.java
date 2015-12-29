@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.Iso8601Date;
 import htsjdk.samtools.util.StringUtil;
@@ -72,8 +73,9 @@ public class TextTagCodec {
             value = getArrayType(value, false) + "," + encodeArrayValue(value);
         } else if (tagType == 'i') {
             final long longVal = ((Number) value).longValue();
-            if (longVal > Integer.MAX_VALUE || longVal < Integer.MIN_VALUE) {
-                throw new SAMFormatException("Value for tag " + tagName + " cannot be stored in an Integer: " + longVal);
+            // as the spec says: [-2^31, 2^32)
+            if (longVal < Integer.MIN_VALUE || longVal > BinaryCodec.MAX_UINT) {
+                throw new IllegalArgumentException("Value for tag " + tagName + " cannot be stored in either a signed or unsigned 32-bit integer: " + longVal);
             }
         }
         sb.append(tagType);
@@ -182,10 +184,21 @@ public class TextTagCodec {
             }
             return stringVal.charAt(0);
         } else if (type.equals("i")) {
+            final long lValue;
             try {
-                return new Integer(stringVal);
+                lValue = Long.valueOf(stringVal);
             } catch (NumberFormatException e) {
                 throw new SAMFormatException("Tag of type i should have signed decimal value");
+            }
+
+            if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
+                return (int) lValue;
+            }
+            else if (SAMUtils.isValidUnsignedIntegerAttribute(lValue)) {
+                return lValue;
+            }
+            else {
+                throw new SAMFormatException("Integer is out of range for both a 32-bit signed and unsigned integer: " + stringVal);
             }
         } else if (type.equals("f")) {
             try {

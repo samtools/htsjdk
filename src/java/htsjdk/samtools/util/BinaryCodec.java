@@ -79,9 +79,9 @@ public class BinaryCodec implements Closeable {
     private static final ByteOrder LITTLE_ENDIAN = ByteOrder.LITTLE_ENDIAN;
     private static final byte NULL_BYTE[] = {0};
 
-    private static final long MAX_UBYTE = (Byte.MAX_VALUE * 2) + 1;
-    private static final long MAX_USHORT = (Short.MAX_VALUE * 2) + 1;
-    private static final long MAX_UINT = ((long)Integer.MAX_VALUE * 2) + 1;
+    public static final long MAX_UBYTE = (Byte.MAX_VALUE * 2) + 1;
+    public static final long MAX_USHORT = (Short.MAX_VALUE * 2) + 1;
+    public static final long MAX_UINT = ((long)Integer.MAX_VALUE * 2) + 1;
 
     // We never serialize more than this much at a time (except for Strings)
     private static final int MAX_BYTE_BUFFER = 8;
@@ -101,10 +101,10 @@ public class BinaryCodec implements Closeable {
         try {
             this.isWriting = writing;
             if (this.isWriting) {
-                this.outputStream = new FileOutputStream(file);
+                this.outputStream = IOUtil.maybeBufferOutputStream(new FileOutputStream(file));
                 this.outputFileName = file.getName();
             } else {
-                this.inputStream = new FileInputStream(file);
+                this.inputStream = IOUtil.maybeBufferInputStream(new FileInputStream(file));
                 this.inputFileName = file.getName();
             }
         } catch (FileNotFoundException e) {

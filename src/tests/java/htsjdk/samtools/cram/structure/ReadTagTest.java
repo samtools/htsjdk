@@ -25,6 +25,7 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.ValidationStringency;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -53,22 +54,34 @@ public class ReadTagTest {
         byte[] data = ReadTag.writeSingleValue((byte) 'i', intValue, false);
         ByteBuffer byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        Object value = ReadTag.readSingleValue((byte) 'i', byteBuffer);
+        Object value = ReadTag.readSingleValue((byte) 'i', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
         Assert.assertEquals (((Integer) value).intValue(), intValue);
 
         String sValue = "value";
         data = ReadTag.writeSingleValue((byte) 'Z', sValue, false);
         byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = ReadTag.readSingleValue((byte) 'Z', byteBuffer);
+        value = ReadTag.readSingleValue((byte) 'Z', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
         Assert.assertEquals(sValue, value);
 
         byte[] baValue = "value".getBytes();
         data = ReadTag.writeSingleValue((byte) 'B', baValue, false);
         byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = ReadTag.readSingleValue((byte) 'B', byteBuffer);
+        value = ReadTag.readSingleValue((byte) 'B', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
         Assert.assertEquals((byte[]) value, baValue);
+    }
+
+    @Test
+    public void testUnsignedInt() {
+        long intValue = Integer.MAX_VALUE+1L;
+        byte[] data = ReadTag.writeSingleValue((byte) 'I', intValue, false);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        Object value = ReadTag.readSingleValue((byte) 'I', byteBuffer, ValidationStringency.SILENT);
+        Assert.assertTrue(value instanceof Long);
+        long lValue = (Long)value;
+        Assert.assertEquals (lValue & 0xFFFFFFFF, intValue);
     }
 
     @Test
@@ -109,7 +122,7 @@ public class ReadTagTest {
         final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
         final ByteBuffer byteBuffer = ByteBuffer.wrap(data);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        final Object readValue = ReadTag.readSingleValue(tagType, byteBuffer);
+        final Object readValue = ReadTag.readSingleValue(tagType, byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
         Assert.assertEquals(readValue, originalValue);
     }
 

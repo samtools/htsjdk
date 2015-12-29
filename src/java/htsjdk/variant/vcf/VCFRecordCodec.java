@@ -16,20 +16,20 @@ import java.io.PrintStream;
  * with SortingCollection ONLY.
  */
 public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
-
-	final VCFCodec vcfDecoder = new VCFCodec();
-
-	final VCFEncoder vcfEncoder;
-
+	private final VCFCodec vcfDecoder = new VCFCodec();
+	private final VCFEncoder vcfEncoder;
 	private PrintStream outputStream = null;
-
 	private BufferedReader inputReader = null;
 
 	public VCFRecordCodec(final VCFHeader header) {
-		this.vcfEncoder = new VCFEncoder(header, false, false);
+		this(header, false);
+    }
+
+	public VCFRecordCodec(final VCFHeader header, final boolean allowMissingFieldsInHeader) {
+		this.vcfEncoder = new VCFEncoder(header, allowMissingFieldsInHeader, false);
 		// Explicitly set the version because it's not available in the header itself.
 		this.vcfDecoder.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
-    }
+	}
 
 	@Override
 	public void setOutputStream(final OutputStream stream) {
@@ -58,7 +58,7 @@ public class VCFRecordCodec implements SortingCollection.Codec<VariantContext> {
 
 	@Override
 	public VCFRecordCodec clone() {
-		return new VCFRecordCodec(this.vcfEncoder.getVCFHeader());
+		return new VCFRecordCodec(this.vcfEncoder.getVCFHeader(), this.vcfEncoder.getAllowMissingFieldsInHeader());
 	}
 }
 

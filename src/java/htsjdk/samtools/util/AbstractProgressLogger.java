@@ -76,7 +76,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     @Override
     public synchronized boolean record(final SAMRecord rec) {
-        if (rec.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(rec.getReferenceName())) {
             return record(null, 0);
         }
         else {

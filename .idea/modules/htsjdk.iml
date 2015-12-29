@@ -34,6 +34,7 @@
           <root url="jar://$MODULE_DIR$/../../lib/commons-logging-1.1.1.jar!/" />
           <root url="jar://$MODULE_DIR$/../../lib/snappy-java-1.0.3-rc3.jar!/" />
           <root url="jar://$MODULE_DIR$/../../lib/commons-jexl-2.1.1.jar!/" />
+          <root url="jar://$MODULE_DIR$/../../lib/ngs-java-1.2.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />

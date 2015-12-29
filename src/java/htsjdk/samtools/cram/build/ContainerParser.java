@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.CramRecordReader;
 import htsjdk.samtools.cram.encoding.reader.DataReaderFactory;
 import htsjdk.samtools.cram.encoding.reader.DataReaderFactory.DataReaderWithStats;
@@ -50,14 +51,14 @@ public class ContainerParser {
     }
 
     public List<CramCompressionRecord> getRecords(final Container container,
-                                                  ArrayList<CramCompressionRecord> records) throws IllegalArgumentException,
+                                                  ArrayList<CramCompressionRecord> records, ValidationStringency validationStringency) throws IllegalArgumentException,
             IllegalAccessException {
         final long time1 = System.nanoTime();
         if (records == null)
             records = new ArrayList<CramCompressionRecord>(container.nofRecords);
 
         for (final Slice slice : container.slices)
-            records.addAll(getRecords(slice, container.header));
+            records.addAll(getRecords(slice, container.header, validationStringency));
 
         final long time2 = System.nanoTime();
 
@@ -73,7 +74,7 @@ public class ContainerParser {
     }
 
     ArrayList<CramCompressionRecord> getRecords(ArrayList<CramCompressionRecord> records,
-                                                final Slice slice, final CompressionHeader header) throws IllegalArgumentException,
+                                                final Slice slice, final CompressionHeader header, ValidationStringency validationStringency) throws IllegalArgumentException,
             IllegalAccessException {
         String seqName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
         switch (slice.sequenceId) {
@@ -97,7 +98,7 @@ public class ContainerParser {
         }
 
         long time;
-        final CramRecordReader reader = new CramRecordReader();
+        final CramRecordReader reader = new CramRecordReader(validationStringency);
         dataReaderFactory.buildReader(reader, new DefaultBitInputStream(
                         new ByteArrayInputStream(slice.coreBlock.getRawContent())),
                 inputMap, header, slice.sequenceId);
@@ -150,8 +151,8 @@ public class ContainerParser {
         return records;
     }
 
-    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header)
+    List<CramCompressionRecord> getRecords(final Slice slice, final CompressionHeader header, ValidationStringency validationStringency)
             throws IllegalArgumentException, IllegalAccessException {
-        return getRecords(null, slice, header);
+        return getRecords(null, slice, header, validationStringency);
     }
 }

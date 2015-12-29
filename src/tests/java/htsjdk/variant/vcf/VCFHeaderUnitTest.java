@@ -34,7 +34,6 @@ import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -127,20 +126,17 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
-    @DataProvider(name = "HiSeqVCFHeaderDataProvider")
-    public Object[][] getHiSeqVCFHeaderData() {
+    private VCFHeader getHiSeqVCFHeader() {
         final File vcf = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
-
-        return new Object[][] {
-                { header }
-        };
+        return header;
     }
 
-    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
-    public void testVCFHeaderAddInfoLine( final VCFHeader header ) {
+    @Test
+    public void testVCFHeaderAddInfoLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
         final VCFInfoHeaderLine infoLine = new VCFInfoHeaderLine("TestInfoLine", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test info line");
         header.addMetaDataLine(infoLine);
 
@@ -154,8 +150,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getOtherHeaderLines().contains(infoLine), "TestInfoLine present in other header lines");
     }
 
-    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
-    public void testVCFHeaderAddFormatLine( final VCFHeader header ) {
+    @Test
+    public void testVCFHeaderAddFormatLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
         final VCFFormatHeaderLine formatLine = new VCFFormatHeaderLine("TestFormatLine", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test format line");
         header.addMetaDataLine(formatLine);
 
@@ -169,8 +166,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getOtherHeaderLines().contains(formatLine), "TestFormatLine present in other header lines");
     }
 
-    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
-    public void testVCFHeaderAddFilterLine( final VCFHeader header ) {
+    @Test
+    public void testVCFHeaderAddFilterLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
         final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine");
         header.addMetaDataLine(filterLine);
 
@@ -184,8 +182,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getOtherHeaderLines().contains(filterLine), "TestFilterLine present in other header lines");
     }
 
-    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
-    public void testVCFHeaderAddContigLine( final VCFHeader header ) {
+    @Test
+    public void testVCFHeaderAddContigLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
         final VCFContigHeaderLine contigLine = new VCFContigHeaderLine("<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, "chr1", 0);
         header.addMetaDataLine(contigLine);
 
@@ -198,8 +197,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getOtherHeaderLines().contains(contigLine), "Test contig line present in other header lines");
     }
 
-    @Test(dataProvider = "HiSeqVCFHeaderDataProvider")
-    public void testVCFHeaderAddOtherLine( final VCFHeader header ) {
+    @Test
+    public void testVCFHeaderAddOtherLine() {
+        final VCFHeader header = getHiSeqVCFHeader();
         final VCFHeaderLine otherLine = new VCFHeaderLine("TestOtherLine", "val");
         header.addMetaDataLine(otherLine);
 

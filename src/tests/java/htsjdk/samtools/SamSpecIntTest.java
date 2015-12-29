@@ -61,7 +61,7 @@ public class SamSpecIntTest {
         CloserUtil.close(samReader);
         samWriter.close();
         bamWriter.close();
-        Assert.assertEquals(errorMessages.size(), 2);
+        Assert.assertEquals(errorMessages.size(), 0);
         bamOutput.deleteOnExit();
         samOutput.deleteOnExit();
     }
@@ -89,7 +89,7 @@ public class SamSpecIntTest {
         CloserUtil.close(bamReader);
         samWriter.close();
         bamWriter.close();
-        Assert.assertEquals(errorMessages.size(), 2);
+        Assert.assertEquals(errorMessages.size(), 0);
         bamOutput.deleteOnExit();
         samOutput.deleteOnExit();
     }

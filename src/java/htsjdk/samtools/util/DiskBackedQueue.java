@@ -25,6 +25,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.SAMException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -100,13 +101,13 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * Syntactic sugar around the ctor, to save some typing of type parameters
      *
      * @param codec For writing records to file and reading them back into RAM
-     * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
+     * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
      */
     public static <T> DiskBackedQueue<T> newInstance(final SortingCollection.Codec<T> codec,
-                                                     final int maxRecordsInRAM,
+                                                     final int maxRecordsInRam,
                                                      final List<File> tmpDir) {
-        return new DiskBackedQueue<T>(codec, maxRecordsInRAM, tmpDir);
+        return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir);
     }
 
     public boolean canAdd() {
@@ -135,12 +136,14 @@ public class DiskBackedQueue<E> implements Queue<E> {
         // NB: we add all the records before removing them, so we can never have spilled to disk unless all the space for ram records
         // have been exhausted.
         if (this.headRecord == null) { // this is the first record in the queue
+            if (0 < this.numRecordsOnDisk) throw new SAMException("Head record was null but we have records on disk. Bug!");
             this.headRecord = record;
         }
         else if (this.ramRecords.size() == this.maxRecordsInRamQueue) {
             spillToDisk(record);
         }
         else {
+            if (0 < this.numRecordsOnDisk) throw new SAMException("Trying to add records to RAM but there were records on disk. Bug!");
             this.ramRecords.add(record);
         }
         return true;
@@ -274,11 +277,14 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private void updateQueueHead() {
         if (!this.ramRecords.isEmpty()) {
             this.headRecord = this.ramRecords.poll();
+            if (0 < numRecordsOnDisk) this.canAdd = false;
         }
         else if (this.diskRecords != null) {
             this.headRecord = this.readFileRecord(this.diskRecords);
+            this.canAdd = false;
         }
         else {
+            this.canAdd = true;
             this.headRecord = null;
         }
     }

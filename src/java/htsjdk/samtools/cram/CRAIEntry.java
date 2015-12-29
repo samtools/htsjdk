@@ -42,23 +42,7 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
     }
 
     public static CRAIEntry fromCraiLine(final String line) {
-        final String[] chunks = line.split("\t");
-        if (chunks.length != 6) {
-            throw new CRAIIndex.CRAIIndexException("Expecting 6 columns but got " + chunks.length);
-        }
-
-        try {
-            final CRAIEntry e = new CRAIEntry();
-            e.sequenceId = Integer.valueOf(chunks[0]);
-            e.alignmentStart = Integer.valueOf(chunks[1]);
-            e.alignmentSpan = Integer.valueOf(chunks[2]);
-            e.containerStartOffset = Integer.valueOf(chunks[3]);
-            e.sliceOffset = Integer.valueOf(chunks[4]);
-            e.sliceSize = Integer.valueOf(chunks[5]);
-            return e;
-        } catch (final NumberFormatException e) {
-            throw new CRAIIndex.CRAIIndexException(e);
-        }
+        return new CRAIEntry(line);
     }
 
     public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
@@ -68,12 +52,12 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
         }
 
         try {
-            sequenceId = Integer.valueOf(chunks[0]);
-            alignmentStart = Integer.valueOf(chunks[1]);
-            alignmentSpan = Integer.valueOf(chunks[2]);
-            containerStartOffset = Integer.valueOf(chunks[3]);
-            sliceOffset = Integer.valueOf(chunks[4]);
-            sliceSize = Integer.valueOf(chunks[5]);
+            sequenceId = Integer.parseInt(chunks[0]);
+            alignmentStart = Integer.parseInt(chunks[1]);
+            alignmentSpan = Integer.parseInt(chunks[2]);
+            containerStartOffset = Long.parseLong(chunks[3]);
+            sliceOffset = Integer.parseInt(chunks[4]);
+            sliceSize = Integer.parseInt(chunks[5]);
         } catch (final NumberFormatException e) {
             throw new CRAIIndex.CRAIIndexException(e);
         }

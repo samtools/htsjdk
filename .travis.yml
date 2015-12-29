@@ -1,16 +1,13 @@
 language: java
 sudo: true
 jdk:
-  - oraclejdk7
   - oraclejdk8
-  - openjdk7
-  - openjdk6
 install: ant
 script: ant all test
 after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
-    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$JAVA_HOME" == "/usr/lib/jvm/java-7-oracle" ]; then
+    if [ "$TRAVIS_BRANCH" == "master" ] && [ "$JAVA_HOME" == "/usr/lib/jvm/java-8-oracle" ]; then
       sbt \
         'set buildSnapshot := true' \
         'set javacOptions in (Compile, doc) ++= Seq("-quiet")' \

@@ -15,6 +15,8 @@ Not all sub-packages of htsjdk are subject to the same license, so a license not
 
 #### Java Minimum Version Support Policy
 
+> **NOTE: _Effective November 24th 2015, HTSJDK has ended support of Java 7 and previous versions. Java 8 is now required_.**
+
 We will support all Java SE versions supported by Oracle until at least six months after Oracle's Public Updates period has ended ([see this link](http://www.oracle.com/technetwork/java/eol-135779.html)).
 
 Java SE Major Release | End of Java SE Oracle Public Updates | Proposed End of Support in HTSJDK | Actual End of Support in HTSJDK

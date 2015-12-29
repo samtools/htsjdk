@@ -45,8 +45,12 @@ public class SAMBinaryTagAndValue implements Serializable {
     /**
      * @param tag tagname (in binary form) for this attribute
      * @param value value for this attribute (must be of a type that implements {@link Serializable} or else serialization will fail)
+     *              Cannot be null.
      */
     public SAMBinaryTagAndValue(final short tag, final Object value) {
+        if (null == value) {
+            throw new IllegalArgumentException("SAMBinaryTagAndValue value may not be null");
+        }
         this.tag = tag;
         this.value = value;
     }
@@ -76,11 +80,46 @@ public class SAMBinaryTagAndValue implements Serializable {
         return result;
     }
 
-    /** Creates and returns a deep copy of the list of tag/values. */
+    /** Creates and returns a shallow copy of the list of tag/values. */
     public SAMBinaryTagAndValue copy() {
         final SAMBinaryTagAndValue retval = new SAMBinaryTagAndValue(this.tag, this.value);
-        if (next != null) retval.next = next.copy();
+        if (next != null) {
+            retval.next = next.copy();
+        }
         return retval;
+    }
+
+    /** Creates and returns a deep copy of the list of tag/values. */
+    public SAMBinaryTagAndValue deepCopy() {
+        final SAMBinaryTagAndValue retval = new SAMBinaryTagAndValue(this.tag, cloneValue());
+        if (next != null) {
+            retval.next = next.deepCopy();
+        }
+        return retval;
+    }
+
+    /* Create and return a clone of value object */
+    protected Object cloneValue() {
+        Object valueClone;
+
+        if (value instanceof byte[]) {
+            valueClone = ((byte[]) value).clone();
+        }
+        else if (value instanceof short[]) {
+            valueClone = ((short[]) value).clone();
+        }
+        else if (value instanceof int[]) {
+            valueClone = ((int[]) value).clone();
+        }
+        else if (value instanceof float[]) {
+            valueClone = ((float[]) value).clone();
+        }
+        else {
+            // otherwise, the api limits the remaining possible value types to
+            // immutable (String or boxed primitive) types
+            valueClone = value;
+        }
+        return valueClone;
     }
 
     // The methods below are for implementing a light-weight, single-direction linked list

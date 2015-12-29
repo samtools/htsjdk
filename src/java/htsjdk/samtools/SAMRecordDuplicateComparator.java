@@ -35,10 +35,15 @@ import java.util.Map;
  * There are three orderings provided by this comparator: compare, duplicateSetCompare, and fileOrderCompare.
  *  
  * Specify the headers when constructing this comparator if you would like to consider the library as the major sort key.
+ * The records being compared must also have non-null SAMFileHeaders.
  *
  * @author nhomer
  */
 public class SAMRecordDuplicateComparator implements SAMRecordComparator {
+    /** An enum to provide type-safe keys for transient attributes the comparator puts on SAMRecords. */
+    private static enum Attr {
+        LibraryId, ReadCoordinate, MateCoordinate
+    }
 
     private static final byte FF = 0, FR = 1, F = 2, RF = 3, RR = 4, R = 5;
 
@@ -67,6 +72,18 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
     }
 
     /**
+     * Populates the set of transient attributes on SAMRecords if they are not already there.
+     */
+    private void populateTransientAttributes(final SAMRecord... recs) {
+        for (final SAMRecord rec : recs) {
+            if (rec.getTransientAttribute(Attr.LibraryId) != null) continue;
+            rec.setTransientAttribute(Attr.LibraryId, getLibraryId(rec));
+            rec.setTransientAttribute(Attr.ReadCoordinate, rec.getReadNegativeStrandFlag() ? rec.getUnclippedEnd() : rec.getUnclippedStart());
+            rec.setTransientAttribute(Attr.MateCoordinate, getMateCoordinate(rec));
+        }
+    }
+
+    /**
      * Gets the library name from the header for the record. If the RG tag is not present on
      * the record, or the library isn't denoted on the read group, a constant string is
      * returned.
@@ -75,10 +92,13 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
         final String readGroupId = (String) rec.getAttribute("RG");
 
         if (readGroupId != null) {
-            final SAMReadGroupRecord rg = rec.getHeader().getReadGroup(readGroupId);
-            if (rg != null) {
-                final String libraryName = rg.getLibrary();
-                if (null != libraryName) return libraryName;
+            final SAMFileHeader samHeader = rec.getHeader();
+            if (null != samHeader) {
+                final SAMReadGroupRecord rg = samHeader.getReadGroup(readGroupId);
+                if (rg != null) {
+                    final String libraryName = rg.getLibrary();
+                    if (null != libraryName) return libraryName;
+                }
             }
         }
 
@@ -198,6 +218,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
      * properly choose the first end for optical duplicate identification when both ends are mapped to the same position etc. 
      */ 
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
+        populateTransientAttributes(samRecord1, samRecord2);
         int cmp;
 
         // temporary variables for comparisons
@@ -234,15 +255,20 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
      *  
      */
     private int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, final boolean collapseOrientation, final boolean considerNumberOfEndsMappedAndPairing) {
+        populateTransientAttributes(samRecord1, samRecord2);
         int cmp;
+
+        if (null == samRecord1.getHeader() || null == samRecord2.getHeader()) {
+            throw new IllegalArgumentException("Records must have non-null SAMFileHeaders to be compared");
+        }
 
         // temporary variables for comparisons
         int samRecord1Value, samRecord2Value;
 
         // library identifier
         {
-            samRecord1Value = getLibraryId(samRecord1);
-            samRecord2Value = getLibraryId(samRecord2);
+            samRecord1Value = (Short) samRecord1.getTransientAttribute(Attr.LibraryId);
+            samRecord2Value = (Short) samRecord2.getTransientAttribute(Attr.LibraryId);
             cmp = samRecord1Value - samRecord2Value;
         }
         // reference index
@@ -262,8 +288,8 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
         }
         // read coordinate
         if (cmp == 0) {
-            samRecord1Value = samRecord1.getReadNegativeStrandFlag() ? samRecord1.getUnclippedEnd() : samRecord1.getUnclippedStart();
-            samRecord2Value = samRecord2.getReadNegativeStrandFlag() ? samRecord2.getUnclippedEnd() : samRecord2.getUnclippedStart();
+            samRecord1Value = (Integer) samRecord1.getTransientAttribute(Attr.ReadCoordinate);
+            samRecord2Value = (Integer) samRecord2.getTransientAttribute(Attr.ReadCoordinate);
             cmp = samRecord1Value - samRecord2Value;
         }
         // orientation
@@ -287,8 +313,8 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
             }
             // mate's coordinate
             if (cmp == 0) {
-                samRecord1Value = getMateCoordinate(samRecord1);
-                samRecord2Value = getMateCoordinate(samRecord2);
+                samRecord1Value = (Integer) samRecord1.getTransientAttribute(Attr.MateCoordinate);
+                samRecord2Value = (Integer) samRecord2.getTransientAttribute(Attr.MateCoordinate);;
                 cmp = samRecord1Value - samRecord2Value;
             }
         }

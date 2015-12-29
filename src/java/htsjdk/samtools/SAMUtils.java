@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
@@ -546,6 +548,14 @@ public final class SAMUtils {
         }
     }
 
+    /**
+     * Strip mapping information from a SAMRecord.
+     *
+     * WARNING: by clearing the secondary and supplementary flags,
+     * this may have the affect of producing multiple distinct records with the
+     * same read name and flags, which may lead to invalid SAM/BAM output.
+     * Callers of this method should make sure to deal with this issue.
+     */
     public static void makeReadUnmapped(final SAMRecord rec) {
         if (rec.getReadNegativeStrandFlag()) {
             SAMRecordUtil.reverseComplement(rec);
@@ -558,10 +568,33 @@ public final class SAMUtils {
         rec.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
         rec.setInferredInsertSize(0);
         rec.setNotPrimaryAlignmentFlag(false);
+        rec.setSupplementaryAlignmentFlag(false);
         rec.setProperPairFlag(false);
         rec.setReadUnmappedFlag(true);
     }
 
+    /**
+     * Strip mapping information from a SAMRecord, but preserve it in the 'O' tags if it isn't already set.
+     */
+    public static void makeReadUnmappedWithOriginalTags(final SAMRecord rec) {
+        if (!hasOriginalMappingInformation(rec)) {
+            rec.setAttribute(SAMTag.OP.name(), rec.getAlignmentStart());
+            rec.setAttribute(SAMTag.OC.name(), rec.getCigarString());
+            rec.setAttribute(SAMTag.OF.name(), rec.getFlags());
+            rec.setAttribute(SAMTag.OR.name(), rec.getReferenceName());
+        }
+        makeReadUnmapped(rec);
+    }
+
+    /**
+     * See if any tags pertaining to original mapping information have been set.
+     */
+    public static boolean hasOriginalMappingInformation(final SAMRecord rec) {
+        return rec.getAttribute(SAMTag.OP.name()) != null
+                || rec.getAttribute(SAMTag.OC.name()) != null
+                || rec.getAttribute(SAMTag.OF.name()) != null
+                || rec.getAttribute(SAMTag.OR.name()) != null;
+    }
 
     /**
      * Determines if a cigar has any element that both consumes read bases and consumes reference bases
@@ -579,9 +612,15 @@ public final class SAMUtils {
     /**
      * Tests if the provided record is mapped entirely beyond the end of the reference (i.e., the alignment start is greater than the
      * length of the sequence to which the record is mapped).
+     * @param record must not have a null SamFileHeader
      */
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
-        return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        if (record.getHeader() == null) {
+            throw new SAMException("A non-null SAMHeader is required to resolve the mapping position: " + record.getReadName());
+        }
+        else {
+            return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        }
     }
 
     /**
@@ -865,14 +904,22 @@ public final class SAMUtils {
         // Don't know line number, and don't want to force read name to be decoded.
         List<SAMValidationError> ret = cigar.isValid(rec.getReadName(), recordNumber);
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            final SAMSequenceRecord sequence = rec.getHeader().getSequence(referenceIndex);
-            final int referenceSequenceLength = sequence.getSequenceLength();
-            for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
-                if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
-                            cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
-                    break;
+            SAMFileHeader samHeader = rec.getHeader();
+            if (null == samHeader) {
+                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
+                        cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
+            }
+            else {
+                final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
+                final int referenceSequenceLength = sequence.getSequenceLength();
+                for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
+                    if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
+                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
+                                cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
+                        break;
+                    }
                 }
             }
         }
@@ -898,14 +945,14 @@ public final class SAMUtils {
             } else {
                 if (getMateCigarString(rec) != null) {
                     ret = new ArrayList<SAMValidationError>();
-                    if (rec.getMateUnmappedFlag()) {
+                    if (!rec.getReadPairedFlag()) {
+                        // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error
+                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
+                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
+                    } else { // will hit here if rec.getMateUnmappedFlag() is true
                         // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
                                 "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped", rec.getReadName(), recordNumber));
-                    } else {
-                        // If the Mate is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
-                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
-                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
                     }
                 }
             }
@@ -938,5 +985,114 @@ public final class SAMUtils {
         if (null == name) name = record.getReadName();
         else name = name + ":" + record.getReadName();
         return name;
+    }
+
+    /**
+     * Returns the number of bases that need to be clipped due to overlapping pairs.  If the record is not paired,
+     * or the given record's start position is greater than its mate's start position, zero is automatically returned.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param rec
+     * @return the number of bases at the end of the read that need to be clipped such that there would be no overlapping bases with its mate.
+     * Read bases include only those from insertion, match, or mismatch Cigar operators.
+     */
+    public static int getNumOverlappingAlignedBasesToClip(final SAMRecord rec) {
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+
+        if (!rec.getReadPairedFlag() || rec.getReadUnmappedFlag() || rec.getMateUnmappedFlag()) return 0;
+
+        // Only clip records that are left-most in genomic order and overlapping.
+        if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
+
+        // Find the number of read bases after the given mate's alignment start.
+        int numBasesToClip = 0;
+        final int refStartPos = rec.getMateAlignmentStart(); // relative reference position after which we should start clipping
+        final Cigar cigar = rec.getCigar();
+        int refPos = rec.getAlignmentStart();
+        for (final CigarElement el : cigar.getCigarElements()) {
+            final CigarOperator operator = el.getOperator();
+            final int refBasesLength = operator.consumesReferenceBases() ? el.getLength() : 0;
+            if (refStartPos <= refPos + refBasesLength - 1) { // add to clipped bases
+                if (operator == CigarOperator.MATCH_OR_MISMATCH) { // M
+                    if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
+                    else numBasesToClip += (refPos + refBasesLength) - refStartPos;  // since the mate's alignment start can be in the middle of a cigar element
+                }
+                else if (operator == CigarOperator.SOFT_CLIP || operator == CigarOperator.HARD_CLIP || operator == CigarOperator.PADDING || operator == CigarOperator.SKIPPED_REGION) {
+                    // ignore
+                }
+                else { // ID
+                    numBasesToClip += operator.consumesReadBases() ? el.getLength() : 0; // clip all the bases in the read from this operator
+                }
+            }
+            refPos += refBasesLength;
+        }
+
+        if (numBasesToClip < 0) return 0; // left-most but not overlapping
+
+        return numBasesToClip;
+    }
+
+    /**
+     * Returns a (possibly new) record that has been clipped if isa  mapped paired and has overlapping bases with its mate.
+     * See {@link #getNumOverlappingAlignedBasesToClip(SAMRecord)} for how the number of overlapping bases is computed.
+     * NB: this does not properly consider a cigar like: 100M20S10H.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param record the record from which to clip bases.
+     * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
+     * @return
+     */
+    public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final boolean noSideEffects) {
+        return clipOverlappingAlignedBases(record, getNumOverlappingAlignedBasesToClip(record), noSideEffects);
+    }
+
+    /**
+     * Returns a (possibly new) SAMRecord with the given number of bases soft-clipped at the end of the read if is a mapped
+     * paired and has overlapping bases with its mate.
+     * NB: this does not properly consider a cigar like: 100M20S10H.
+     * NB: This method assumes that the record's mate is not contained within the given record's alignment.
+     *
+     * @param record the record from which to clip bases.
+     * @param numOverlappingBasesToClip the number of bases to clip at the end of the read.
+     * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
+     * @return
+     */
+    public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final int numOverlappingBasesToClip, final boolean noSideEffects) {
+        // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
+
+        if (numOverlappingBasesToClip <= 0 || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()) return record;
+
+        try {
+            final SAMRecord rec = noSideEffects ? ((SAMRecord)record.clone()) : record;
+
+            // watch out for when the second read overlaps all of the first read
+            if (rec.getMateAlignmentStart() <= rec.getAlignmentStart()) { // make it unmapped
+                rec.setReadUnmappedFlag(true);
+                return rec;
+            }
+
+            // 1-based index of first base in read to clip.
+            int clipFrom = rec.getReadLength() - numOverlappingBasesToClip + 1;
+            // we have to check if the last cigar element is soft-clipping, so we can subtract that from clipFrom
+            final CigarElement cigarElement = rec.getCigar().getCigarElement(rec.getCigarLength()-1);
+            if (CigarOperator.SOFT_CLIP == cigarElement.getOperator()) clipFrom -= cigarElement.getLength();
+            // FIXME: does not properly consider a cigar like: 100M20S10H
+
+            // clip it, clip it good
+            rec.setCigar(new Cigar(CigarUtil.softClipEndOfRead(clipFrom, rec.getCigar().getCigarElements())));
+            return rec;
+        } catch (final CloneNotSupportedException e) {
+            throw new SAMException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Checks if a long attribute value is within the allowed range of a 32-bit unsigned integer.
+     *
+     * @param value a long value to check
+     * @return true if value is >= 0 and <= {@link BinaryCodec#MAX_UINT}, and false otherwise
+     */
+    public static boolean isValidUnsignedIntegerAttribute(long value) {
+        return value >= 0 && value <= BinaryCodec.MAX_UINT;
     }
 }

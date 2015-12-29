@@ -268,4 +268,45 @@ public class MergingSamRecordIteratorTest {
         builder1.getSamReader().close();
         builder2.getSamReader().close();
     }
+
+    @Test
+    public void testReferenceIndexMapping() throws Exception {
+        // Create two SamReaders with sequence dictionaries such that a merging iterator with merged
+        // headers will require remapping a record's reference index to the merged dictionary
+        final SAMRecordSetBuilder builder1 = new SAMRecordSetBuilder();
+        SAMSequenceRecord fakeSequenceRec = new SAMSequenceRecord("FAKE_CONTIG_A", 0);
+        builder1.getHeader().addSequence(fakeSequenceRec);
+
+        final SAMRecordSetBuilder builder2 = new SAMRecordSetBuilder();
+        fakeSequenceRec = new SAMSequenceRecord("FAKE_CONTIG_B", 0);
+        builder2.getHeader().addSequence(fakeSequenceRec);
+
+        // create a record with a reference index that will need to be remapped after merging
+        SAMRecord recRequiresMapping = new SAMRecord(builder2.getHeader());
+        recRequiresMapping.setReadName("fakeread");
+        recRequiresMapping.setReferenceName("FAKE_CONTIG_B");
+        builder2.addRecord(recRequiresMapping);
+        // cache the original reference index
+        int originalRefIndex = recRequiresMapping.getReferenceIndex();
+        Assert.assertTrue(25 == originalRefIndex);
+
+        // get a merging iterator with a merged header
+        final SamReader samReader1 = builder1.getSamReader();
+        final SamReader samReader2 = builder2.getSamReader();
+        final List<SamReader> readerList = new ArrayList<SamReader>();
+        readerList.add(samReader1);
+        readerList.add(samReader2);
+        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        headerList.add(samReader1.getFileHeader());
+        headerList.add(samReader2.getFileHeader());
+        final SamFileHeaderMerger samFileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, true);
+        final MergingSamRecordIterator iterator = new MergingSamRecordIterator(samFileHeaderMerger, readerList, false);
+
+        Assert.assertTrue(iterator.hasNext());
+        final SAMRecord rec = iterator.next();
+        Assert.assertTrue(26  == rec.getReferenceIndex());
+
+        samReader1.close();
+        samReader2.close();
+    }
 }
