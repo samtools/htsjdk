@@ -119,12 +119,12 @@ public class IntervalUtil {
     }
     
 
-    /** finds user's contig by name.
+    /** finds user's contig by name (trimmed).
      * @throws IllegalArgumentException if not found.
      */
     private static SAMSequenceRecord findSequenceByName(final SAMSequenceDictionary dictionary, final String contig) {
         /* first try using the map.get(contig) */
-        final SAMSequenceRecord samSequenceRecord = dictionary.getSequence(contig);
+        final SAMSequenceRecord samSequenceRecord = dictionary.getSequence(contig.trim());
         if( samSequenceRecord != null) return samSequenceRecord;
         /* build error message */
         final StringBuilder sb = new StringBuilder( "Cannot find contig \"" + contig+"\" in dictionary. Available are:");
@@ -137,23 +137,24 @@ public class IntervalUtil {
        }
     
     /** 
-     * parses the interval String and returns a htsjdk.samtools.util.Interval
-     * The contig/chromosome must exist in the dictionary (ignoring case ). out-of-bound index <code>!(1<= index <= sequence.length())</code> will be clipped 
-     * coordinate will be parsed by <pre>htsjdk.samtools.util.Interval.parseCoordinate</pre>.
-     * Comma in the coordinate will be removed.
+     * This is a utility to parse a user input in a gui, in a command line. 
+     * It parses the interval String and returns a htsjdk.samtools.util.Interval
+     * The contig/chromosome must exist in the dictionary.
+     * Out-of-bound index <code>!(1<= index <= sequence.length())</code> will be clipped where it's possible. 
+     * coordinate will be parsed by <pre>IntervalUtil.parseCoordinate</pre>.
      * left/right white spaces will be trimmed.
-     * A Position larger than the contig size will be set to the contig size
+     * Position 'start' should be lower or equals to position 'end' (deletions are not supported).
      * 
      * Valid syntax -> conversion :
      * <pre> 
      *     CHROM -> CHROM:1-seq.length()
      *     CHROM:POS ->  CHROM:POS-POS (POS must be greater than 0)
      *     CHROM:POS+NUM -> CHROM:{POS-NUM}-{POS+NUM}
-     *     CHROM:BEGIN- ->  CHROM:BEGIN-seq.length()
+     *     CHROM:BEGIN- ->  CHROM:BEGIN-seq.length() (BEGIN must be &lt;= than contig.length )
      *     CHROM:BEGIN-END ->  CHROM:BEGIN-END
      * </pre>
      * @author Pierre Lindenbaum
-     * @param dictionary dictionary. The config must be present in the dictionary. 
+     * @param dictionary dictionary. The contig must be present in the dictionary. 
      * @param region a 1-based coordinate region. 
      * @return the parsed htsjdk.samtools.util.Interval
      * @throws IllegalArgumentException if 'region' cannot be converted.
@@ -240,11 +241,7 @@ public class IntervalUtil {
             throw new IllegalArgumentException("Cannot parse "+region+" bot are equals to zero.");
         }
         if (chromEnd < chromStart) {// this is legal for deletions
-            return new Interval(
-                    record.getSequenceName(),
-                    Math.max(1, chromEnd),
-                    Math.min(chromStart, record.getSequenceLength())
-                    );
+            throw new IllegalArgumentException("Cannot parse "+region+" when chromEnd < chromStart (deletion are not supported).");
         } else {
             return new Interval(
                     record.getSequenceName(),

@@ -56,11 +56,11 @@ public class SAMSequenceDictionaryTest {
                 {"1:"+(CONTIG_LENGTH-5)+"+20" , new Interval("1", CONTIG_LENGTH-25, CONTIG_LENGTH)},
                 {"1:10+2" , new Interval("1", 8, 12)},
                 {"1:0-1" , new Interval("1",1,1)},
-                {"1:4+50" , new Interval("1", 1, 54)},
-                {"1:10-20" , new Interval("1",10,20)},
+                {"1:4 + 50" , new Interval("1", 1, 54)},
+                {"1: 10-20" , new Interval("1",10,20)},
                 {"1 : 10 - 20  " , new Interval("1",10,20)},
                 {"1 : 1,0 - 2,0  " , new Interval("1",10,20)},
-                {"1:10-" , new Interval("1",10,CONTIG_LENGTH)},
+                {"1 :10-" , new Interval("1",10,CONTIG_LENGTH)},
                 {"1:10-"+(CONTIG_LENGTH+100) , new Interval("1", 10, CONTIG_LENGTH)}
         };
     }
@@ -88,6 +88,8 @@ public class SAMSequenceDictionaryTest {
                 {"1:"+(CONTIG_LENGTH+10)+"-"+(CONTIG_LENGTH+11)},
                 {"1:10zz"},
                 {"1:1--10"},
+                {"1:20-10"},
+                {"1:1gp"}
         };
     }
 
@@ -99,8 +101,6 @@ public class SAMSequenceDictionaryTest {
         Assert.assertEquals(dict.size(), 1);
         IntervalUtil.parseInterval(dict,intervalStr);   
     }
-
-    
     
     @Test
     public void testAliases() {
