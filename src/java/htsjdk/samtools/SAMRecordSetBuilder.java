@@ -549,7 +549,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         final File tempFile;
 
         try {
-            tempFile = File.createTempFile("temp", ".sam");
+            tempFile = File.createTempFile("temp", ".bam");
         } catch (final IOException e) {
             throw new RuntimeIOException("problems creating tempfile", e);
         }
