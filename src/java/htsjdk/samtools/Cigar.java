@@ -241,7 +241,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     }
 
     private static boolean isInDelOperator(final CigarOperator op) {
-        return op !=null && op.isIndel();
+        return op !=null && op.isIndelOrSkippedRegion();
     }
 
     private static boolean isClippingOperator(final CigarOperator op) {
