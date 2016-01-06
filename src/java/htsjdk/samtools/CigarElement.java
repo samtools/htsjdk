@@ -67,4 +67,9 @@ public class CigarElement implements Serializable {
         result = 31 * result + (operator != null ? operator.hashCode() : 0);
         return result;
     }
+    
+    @Override
+    public String toString() {
+        return String.valueOf(this.length)+this.operator;
+    }
 }
