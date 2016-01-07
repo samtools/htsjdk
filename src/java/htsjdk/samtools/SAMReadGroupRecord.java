@@ -32,12 +32,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Header information about a read group.
  */
-@XmlRootElement(name="read-group")
+@XmlRootElement(name="ReadGroup")
 public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 {
     private static final long serialVersionUID = 1L;
@@ -126,6 +127,8 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public String getDescription() { return getAttribute(DESCRIPTION_TAG); }
     public void setDescription(final String description) { setAttribute(DESCRIPTION_TAG, description); }
 
+    
+    @XmlElement(name="predictedInsertSize")//ga4gh
     public Integer getPredictedMedianInsertSize() {
         final String stringRep = getAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG);
         if (stringRep == null) return null;

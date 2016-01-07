@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -114,7 +113,7 @@ import javax.xml.bind.annotation.XmlValue;
  * @author alecw@broadinstitute.org
  * @author mishali.naik@intel.com
  */
-@XmlRootElement(name="read")
+@XmlRootElement(name="readAlignment")
 public class SAMRecord implements Cloneable, Locatable, Serializable {
     public static final long serialVersionUID = 1L;
 
@@ -234,7 +233,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return read sequence as a string of ACGTN=.
      */
-    @XmlElement(name="sequence")
+    @XmlElement(name="alignedSequence")//ga4gh
     public String getReadString() {
         final byte[] readBases = getReadBases();
         if (readBases.length == 0) {
@@ -280,7 +279,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Base qualities, encoded as a FASTQ string.
      */
-    @XmlElement(name="qualities")
+    @XmlElement(name="alignedQuality")//ga4gh
     public String getBaseQualityString() {
         if (Arrays.equals(NULL_QUALS, getBaseQualities())) {
             return NULL_QUALS_STRING;
@@ -355,7 +354,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no reference name
      */
-    @XmlElement(name="reference")
+    @XmlElement(name="fragmentName")//ga4gh
     public String getReferenceName() { return mReferenceName; }
 
     /**
@@ -460,7 +459,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Mate reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no mate reference name
      */
-    @XmlElement(name="mate-reference")
+    @XmlElement(name="mate-fragmentName")
     public String getMateReferenceName() {
         return mMateReferenceName;
     }
@@ -566,7 +565,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return 1-based inclusive leftmost position of the clipped sequence, or 0 if there is no position.
      */
-    @XmlElement(name="start")
+    @XmlElement(name="position")//ga4gh
     public int getAlignmentStart() {
         return mAlignmentStart;
     }
@@ -734,7 +733,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return 1-based inclusive leftmost position of the clipped mate sequence, or 0 if there is no position.
      */
-    @XmlElement(name="mate-start")
+    @XmlElement(name="mate-position")
     public int getMateAlignmentStart() {
         return mMateAlignmentStart;
     }
@@ -747,7 +746,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return insert size (difference btw 5' end of read & 5' end of mate), if possible, else 0.
      * Negative if mate maps to lower position than read.
      */
-    @XmlElement(name="tlen")
+    @XmlElement(name="fragmentLength")//ga4gh
     public int getInferredInsertSize() {
         return mInferredInsertSize;
     }
@@ -759,7 +758,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return phred scaled mapping quality.  255 implies valid mapping but quality is hard to compute.
      */
-    @XmlElement(name="mapq")
+    @XmlElement(name="mappingQuality")//ga4gh
     public int getMappingQuality() {
         return mMappingQuality;
     }
@@ -1531,7 +1530,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         @XmlTransient
         public final Object value;
 
-        /** empty ctor for xml serialization */
+        /** empty constructor for xml serialization */
         @SuppressWarnings("unused")
         private SAMTagAndValue() {
             this("","");

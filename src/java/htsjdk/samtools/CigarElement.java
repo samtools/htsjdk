@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * One component of a cigar string.  The component comprises the operator, and the number of bases to which
  * the  operator applies.
  */
-@XmlRootElement(name="element")
+@XmlRootElement(name="CigarUnit")
 public class CigarElement implements Serializable {
     public static final long serialVersionUID = 1L;
 
@@ -51,12 +51,12 @@ public class CigarElement implements Serializable {
         this.operator = operator;
     }
 
-    @XmlAttribute(name="size")
+    @XmlAttribute(name="operationLength")//ga4gh
     public int getLength() {
         return length;
     }
 
-    @XmlAttribute(name="op")
+    @XmlAttribute(name="operation")//ga4gh
     public CigarOperator getOperator() {
         return operator;
     }

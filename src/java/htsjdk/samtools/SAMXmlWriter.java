@@ -41,7 +41,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
 /**
- * Writer for text-format SAM files.
+ * Writer for xml SAM files using JAXB marshalling
+ * @author Pierre Lindenbaum @yokofakun
  */
 public class SAMXmlWriter implements SAMFileWriter {
 
@@ -53,21 +54,26 @@ public class SAMXmlWriter implements SAMFileWriter {
     private final boolean close_stream_at_end;
     /** xml fragment (don't print XML header ) */
     private final boolean xml_fragment;
-   /** progress */
+    /** progress */
     private ProgressLoggerInterface progress = null;
     /** sam file header */
     private final SAMFileHeader header;
     /** xml marshaller */
-   private Marshaller marshaller;
-    
+    private Marshaller marshaller;
+
     /**
-     * Constructs a SAMTextWriter that writes to a File.
+     * Constructs a SAMXmlWriter that writes to a File.
+     * 
+     * @param header sam header
      * @param file Where to write the output.
      */
-    public SAMXmlWriter(final SAMFileHeader header,final File file) {
+    public SAMXmlWriter(final SAMFileHeader header, final File file) {
+        if( header == null) throw new IllegalArgumentException("null header");
+        if( file == null) throw new IllegalArgumentException("null file");
         try {
             this.header = header;
-            final XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
+            final XMLOutputFactory xmlOutputFactory = XMLOutputFactory
+                    .newFactory();
             this.out = new FileWriter(file);
             this.xw = xmlOutputFactory.createXMLStreamWriter(this.out);
             this.close_stream_at_end = true;
@@ -77,12 +83,17 @@ public class SAMXmlWriter implements SAMFileWriter {
             throw new RuntimeIOException(e);
         }
     }
-    
+
     /**
-     * Constructs a SAMTextWriter that writes to a File.
-     * @param file Where to write the output.
+     * Constructs a SAMXmlWriter that writes to a XMLStreamWriter.
+     * 
+     * @param header sam header
+     * @param xwriter existing XMLStreamWriter
      */
-    public SAMXmlWriter(final SAMFileHeader header,final XMLStreamWriter xwriter) {
+    public SAMXmlWriter(final SAMFileHeader header,
+            final XMLStreamWriter xwriter) {
+        if( header == null) throw new IllegalArgumentException("null header");
+        if( xwriter == null) throw new IllegalArgumentException("null file");
         try {
             this.header = header;
             this.out = null;
@@ -96,13 +107,17 @@ public class SAMXmlWriter implements SAMFileWriter {
     }
 
     /**
-     * Constructs a SAMTextWriter that writes to a File.
-     * @param file Where to write the output.
+     * Constructs a SAMXmlWriter that writes to a XMLStreamWriter.
+     * 
+     * @param header sam header
+     * @param outputStream existing OutputStream
      */
-    public SAMXmlWriter(final SAMFileHeader header,final OutputStream outputStream) {
+    public SAMXmlWriter(final SAMFileHeader header,
+            final OutputStream outputStream) {
         try {
             this.header = header;
-            final XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newFactory();
+            final XMLOutputFactory xmlOutputFactory = XMLOutputFactory
+                    .newFactory();
             this.out = new PrintWriter(outputStream);
             this.xw = xmlOutputFactory.createXMLStreamWriter(this.out);
             this.close_stream_at_end = false;
@@ -114,36 +129,43 @@ public class SAMXmlWriter implements SAMFileWriter {
         }
     }
 
-    
-    private void writeHeader()
-        {
+    /** called by the constructors:
+     * creates the XML marshaller
+     * writes the XML declaration if needed,
+     * starts the XML document,
+     * writes the header
+     * starts the read section
+     */
+    private void writeHeader() {
         try {
-            JAXBContext context = JAXBContext.newInstance(SAMFileHeader.class,SAMRecord.class);
+            /* create the JAXB context */
+            final JAXBContext context = JAXBContext.newInstance(
+                    SAMFileHeader.class,
+                    SAMRecord.class
+                    );
             this.marshaller = context.createMarshaller();
+            /* never print the XML declaration */
             this.marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
-            if(!this.xml_fragment) this.xw.writeStartDocument("UTF-8", "1.0");
+            if (!this.xml_fragment)
+                this.xw.writeStartDocument("UTF-8", "1.0");
             this.xw.writeStartElement("sam-file");
             this.marshaller.marshal(this.header, this.xw);
             this.xw.writeStartElement("reads");
-        } catch (JAXBException err)
-            {
-            throw new RuntimeException("Java IO/XML error",err);
-            }
-        catch (XMLStreamException err)
-            {
-            throw new RuntimeException("Java IO/XML error",err);
-            }
-        catch (Throwable e) {
-           e.printStackTrace();
-           throw new RuntimeException("Java IO/XML error",e);
+        } catch (JAXBException err) {
+            throw new RuntimeException("Java IO/XML error", err);
+        } catch (XMLStreamException err) {
+            throw new RuntimeException("Java IO/XML error", err);
         }
-        }
+    }
 
     @Override
     public void addAlignment(final SAMRecord alignment) {
-        if(this.xw==null) throw new IllegalStateException("xml stream closed");
+        if (this.xw == null)
+            throw new IllegalStateException("xml stream closed");
         try {
             this.marshaller.marshal(alignment, this.xw);
+            if (this.progress != null)
+                this.progress.record(alignment);
         } catch (JAXBException e) {
             throw new RuntimeIOException(e);
         }
@@ -161,37 +183,20 @@ public class SAMXmlWriter implements SAMFileWriter {
 
     @Override
     public void close() {
-       
-        if( this.xw != null)
-            {
+        if (this.xw != null) {
             try {
-                this.xw.writeEndElement();//reads
-                this.xw.writeEndElement();//sam file
-                if(!this.xml_fragment) this.xw.writeEndDocument();
+                this.xw.writeEndElement();// reads
+                this.xw.writeEndElement();// sam file
+                if (!this.xml_fragment)
+                    this.xw.writeEndDocument();
                 this.xw.flush();
-                this.xw=null;
-            }
-            catch(XMLStreamException err)
-                {
+                this.xw = null;
+            } catch (XMLStreamException err) {
                 throw new RuntimeIOException(err);
-                }
             }
-        if( this.close_stream_at_end )
-            {
+        }
+        if (this.close_stream_at_end) {
             CloserUtil.close(this.out);
-            }
-    }
-    
-    public static void main(String[] args) throws Exception {
-        SamReader samReader = SamReaderFactory.makeDefault().open(new File(args[0]));
-        SAMXmlWriter w = new SAMXmlWriter(samReader.getFileHeader(), System.out);
-        SAMRecordIterator iter= samReader.iterator();
-        while(iter.hasNext()) w.addAlignment(iter.next());
-        w.close();
+        }
     }
 }
-    
-    
-
-
-   

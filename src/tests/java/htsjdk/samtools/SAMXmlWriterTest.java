@@ -23,13 +23,48 @@
  */
 package htsjdk.samtools;
 
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import htsjdk.samtools.SAMFileReaderTest.SAMRecordFactoryTester;
+import htsjdk.samtools.util.CloserUtil;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 public class SAMXmlWriterTest {
+    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+
+    @DataProvider(name = "bamfiles")
+    public Object[][] bamFiles() {
+        return new Object[][]{
+                {"block_compressed.sam.gz"},
+                {"uncompressed.sam"},
+                {"compressed.sam.gz"},
+                {"compressed.bam"},
+        };
+    }
+    
+    @Test(dataProvider = "bamfiles")
+    public void samRecordFactoryTest(final String inputFile) throws Exception {
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        final File samFile = File.createTempFile("tmp.", ".xml");
+        samFile.deleteOnExit();
+        final SAMFileWriter xmlWriter= new SAMXmlWriter(
+                reader.getFileHeader(),
+                samFile
+                );
+                
+        for (final SAMRecord rec : reader) {
+            xmlWriter.addAlignment(rec);
+        }
+        CloserUtil.close(reader);
+        CloserUtil.close(xmlWriter);
+    }
+
 
     private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
         final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
@@ -55,7 +90,7 @@ public class SAMXmlWriterTest {
     }
 
     private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception{
-        SamReader inputSAM = recordSetBuilder.getSamReader();
+        final SamReader inputSAM = recordSetBuilder.getSamReader();
         final File samFile = File.createTempFile("tmp.", ".xml");
         samFile.deleteOnExit();
         final Map<String, Object> tagMap = new HashMap<String, Object>();
