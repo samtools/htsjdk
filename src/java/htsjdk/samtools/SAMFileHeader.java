@@ -38,11 +38,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
 /**
  * Header information from a SAM or BAM file.
  */
+@XmlRootElement(name="sam-header")
 public class SAMFileHeader extends AbstractSAMHeaderRecord
 {
+    private static final long serialVersionUID = 1L;
     public static final String VERSION_TAG = "VN";
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
@@ -56,6 +64,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final Set<String> STANDARD_TAGS =
             new HashSet<String>(Arrays.asList(VERSION_TAG, SORT_ORDER_TAG, GROUP_ORDER_TAG));
 
+    @XmlTransient
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
@@ -120,18 +129,23 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         setAttribute(VERSION_TAG, CURRENT_VERSION);
     }
 
+    @XmlAttribute(name="version")
     public String getVersion() {
         return (String) getAttribute("VN");
     }
 
+    @XmlAttribute(name="creator")
     public String getCreator() {
         return (String) getAttribute("CR");
     }
 
+    @XmlElement(name="dictionary")
     public SAMSequenceDictionary getSequenceDictionary() {
         return mSequenceDictionary;
     }
 
+    @XmlElementWrapper(name="read-groups")
+    @XmlElement(name="read-group")
     public List<SAMReadGroupRecord> getReadGroups() {
         return Collections.unmodifiableList(mReadGroups);
     }
@@ -197,6 +211,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         mReadGroupMap.put(readGroup.getReadGroupId(), readGroup);
     }
 
+    @XmlElementWrapper(name="program-records")
+    @XmlElement(name="program-record")
     public List<SAMProgramRecord> getProgramRecords() {
         return Collections.unmodifiableList(mProgramRecords);
     }
@@ -241,6 +257,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         throw new IllegalStateException("Surprising number of SAMProgramRecords");
     }
 
+    @XmlAttribute(name="sort-order")
     public SortOrder getSortOrder() {
         final String so = getAttribute("SO");
         if (so == null || so.equals("unknown")) {
@@ -253,6 +270,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         setAttribute("SO", so.name());
     }
 
+    @XmlAttribute(name="group-order")
     public GroupOrder getGroupOrder() {
         if (getAttribute("GO") == null) {
             return GroupOrder.none;
@@ -275,6 +293,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      *
      * Invalid header lines may appear in value but are not stored in the SAMFileHeader object.
      */
+    @XmlTransient
     public String getTextHeader() {
         return textHeader;
     }
@@ -283,6 +302,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         this.textHeader = textHeader;
     }
 
+    @XmlElementWrapper(name="comments")
+    @XmlElement(name="comment")
     public List<String> getComments() {
         return Collections.unmodifiableList(mComments);
     }
@@ -305,6 +326,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         }
     }
 
+    @XmlTransient
     public List<SAMValidationError> getValidationErrors() {
         return Collections.unmodifiableList(mValidationErrors);
     }

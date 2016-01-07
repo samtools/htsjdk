@@ -29,10 +29,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * In-memory representation of @PG SAM header record.
  */
+@XmlRootElement(name="program-record")
 public class SAMProgramRecord extends AbstractSAMHeaderRecord {
+    private static final long serialVersionUID = 1L;
     public static final String PROGRAM_GROUP_ID_TAG = "ID";
     public static final String PROGRAM_NAME_TAG = "PN";
     public static final String PROGRAM_VERSION_TAG = "VN";
@@ -45,7 +49,11 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
                     PROGRAM_VERSION_TAG,
                     COMMAND_LINE_TAG,
                     PREVIOUS_PROGRAM_GROUP_ID_TAG)) );
-
+    /** private constructor for xml serialization */
+    @SuppressWarnings("unused")
+    private SAMProgramRecord() {
+    }
+    
     public SAMProgramRecord(final String programGroupId) {
         this.mProgramGroupId = programGroupId;
     }

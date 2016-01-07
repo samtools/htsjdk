@@ -29,6 +29,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
 /**
  * A list of CigarElements, which describes how a read aligns with the reference.
  * E.g. the Cigar string 10M1D25M means
@@ -38,6 +43,7 @@ import java.util.List;
  *
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for complete CIGAR specification.
  */
+@XmlRootElement(name="cigar")
 public class Cigar implements Serializable, Iterable<CigarElement> {
     public static final long serialVersionUID = 1L;
 
@@ -50,6 +56,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
         this.cigarElements.addAll(cigarElements);
     }
 
+    @XmlElement(name="element")
     public List<CigarElement> getCigarElements() {
         return Collections.unmodifiableList(cigarElements);
     }
@@ -66,6 +73,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
         return cigarElements.size();
     }
 
+    @XmlTransient
     public boolean isEmpty() {
         return cigarElements.isEmpty();
     }
@@ -73,6 +81,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     /**
      * @return The number of reference bases that the read covers, excluding padding.
      */
+    @XmlTransient
     public int getReferenceLength() {
         int length = 0;
         for (final CigarElement element : cigarElements) {
@@ -114,6 +123,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     /**
      * @return The number of read bases that the read covers.
      */
+    @XmlTransient
     public int getReadLength() {
         return getReadLength(cigarElements);
     }
@@ -305,26 +315,31 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
     }
     
     /** returns the first cigar element */
+    @XmlTransient
     public CigarElement getFirstCigarElement() {
         return isEmpty() ? null : this.cigarElements.get(0); 
     }
     
     /** returns the last cigar element */
+    @XmlTransient
     public CigarElement getLastCigarElement() {
         return isEmpty() ? null : this.cigarElements.get(this.numCigarElements() - 1 ); 
     }
     
     /** returns true if the cigar string starts With a clipping operator */
+    @XmlTransient
     public boolean isLeftClipped() {
         return !isEmpty() && isClippingOperator(getFirstCigarElement().getOperator());
     }
 
     /** returns true if the cigar string ends With a clipping operator */
+    @XmlTransient
     public boolean isRightClipped() {
         return !isEmpty() && isClippingOperator(getLastCigarElement().getOperator());
     }
 
     /** returns true if the cigar is clipped */
+    @XmlTransient
     public boolean isClipped() {
         return isLeftClipped() || isRightClipped();
     }

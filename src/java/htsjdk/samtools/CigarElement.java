@@ -25,25 +25,38 @@ package htsjdk.samtools;
 
 import java.io.Serializable;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * One component of a cigar string.  The component comprises the operator, and the number of bases to which
  * the  operator applies.
  */
+@XmlRootElement(name="element")
 public class CigarElement implements Serializable {
     public static final long serialVersionUID = 1L;
 
     private final int length;
     private final CigarOperator operator;
 
+    @SuppressWarnings("unused")
+    /* constructor for XML serialization */
+    private CigarElement()
+        {
+        this(1,CigarOperator.P);
+        }
+    
     public CigarElement(final int length, final CigarOperator operator) {
         this.length = length;
         this.operator = operator;
     }
 
+    @XmlAttribute(name="size")
     public int getLength() {
         return length;
     }
 
+    @XmlAttribute(name="op")
     public CigarOperator getOperator() {
         return operator;
     }

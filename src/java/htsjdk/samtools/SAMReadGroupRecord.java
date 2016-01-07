@@ -32,11 +32,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Header information about a read group.
  */
+@XmlRootElement(name="read-group")
 public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 {
+    private static final long serialVersionUID = 1L;
     private String mReadGroupId = null;
     public static final String READ_GROUP_ID_TAG = "ID";
     public static final String SEQUENCING_CENTER_TAG = "CN";
@@ -65,6 +69,11 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
                     PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));
 
+    /** private constructor for XML serialization */
+    @SuppressWarnings("unused")
+    private SAMReadGroupRecord() {
+    }
+    
     public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
 
     public SAMReadGroupRecord(final String id, final SAMReadGroupRecord srcProgramRecord) {
