@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2015 Pierre Lindenbaum @yokofakun Institut du Thorax Nantes France
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,11 +23,9 @@
  */
 package htsjdk.samtools;
 
-import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import htsjdk.samtools.SAMFileReaderTest.SAMRecordFactoryTester;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.io.File;

@@ -201,7 +201,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /** Transient Map of attributes for use by anyone. */
     private transient Map<Object,Object> transientAttributes;
-
+    
     /* used for xml serialization */
     @SuppressWarnings("unused")
     private SAMRecord() {
@@ -1100,7 +1100,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             mFlags &= ~bit;
         }
     }
-    
+
     @XmlTransient
     public ValidationStringency getValidationStringency() {
         return mValidationStringency;

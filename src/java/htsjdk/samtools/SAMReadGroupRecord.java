@@ -126,7 +126,6 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public String getDescription() { return getAttribute(DESCRIPTION_TAG); }
     public void setDescription(final String description) { setAttribute(DESCRIPTION_TAG, description); }
-
     
     @XmlElement(name="predictedInsertSize")//ga4gh
     public Integer getPredictedMedianInsertSize() {
