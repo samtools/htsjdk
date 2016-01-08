@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.Tuple;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -36,6 +37,7 @@ import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +49,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -1687,30 +1690,19 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        for ( final Allele a: alleles ) {
-            if (a.isSymbolic()) {
-                return true;
-            }
-        }
-        return false;
+        return alleles.stream().anyMatch(Allele::isSymbolic);
     }
 
     public Allele getAltAlleleWithHighestAlleleCount() {
-        // optimization: for bi-allelic sites, just return the 1only alt allele
+        // optimization: for bi-allelic sites, just return the only alt allele
         if ( isBiallelic() )
             return getAlternateAllele(0);
 
-        Allele best = null;
-        int maxAC1 = 0;
-        for ( Allele a : getAlternateAlleles() ) {
-            final int ac = getCalledChrCount(a);
-            if ( ac >= maxAC1 ) {
-                maxAC1 = ac;
-                best = a;
-            }
-
-        }
-        return best;
+        return getAlternateAlleles().stream()
+                .map(allele -> new Tuple<>(allele, getCalledChrCount(allele)))
+                .max((alleleAndCount1, alleleAndCount2) -> Integer.compare(alleleAndCount1.b, alleleAndCount2.b))
+                .get()
+                .a;
     }
 
     /**
@@ -1730,10 +1722,9 @@ public class VariantContext implements Feature, Serializable {
      * @return a list of indices for each allele, in order
      */
     public List<Integer> getAlleleIndices(final Collection<Allele> alleles) {
-        final List<Integer> indices = new LinkedList<Integer>();
-        for ( final Allele allele : alleles )
-            indices.add(getAlleleIndex(allele));
-        return indices;
+        return alleles.stream()
+                .map(this::getAlleleIndex)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
     }
 
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
