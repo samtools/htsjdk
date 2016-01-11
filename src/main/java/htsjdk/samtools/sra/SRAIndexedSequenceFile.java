@@ -4,19 +4,13 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.sra.SRAAccession;
 import ngs.ErrorMsg;
 import ngs.ReadCollection;
 import ngs.Reference;
 import ngs.ReferenceIterator;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Allows reading Reference data from SRA
@@ -24,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SRAIndexedSequenceFile implements ReferenceSequenceFile {
     private SRAAccession acc;
     private ReadCollection run;
-    private ThreadLocal<HashMap<Integer, Reference>> cachedReferences = new ThreadLocal<HashMap<Integer, Reference>>();
+    private Reference cachedReference;
 
     private Iterator<SAMSequenceRecord> sequenceRecordIterator;
 
@@ -84,18 +78,15 @@ public class SRAIndexedSequenceFile implements ReferenceSequenceFile {
         byte[] bases;
 
         try {
-            HashMap<Integer, Reference> localRefs = cachedReferences.get();
-            if (localRefs == null) {
-                localRefs = new HashMap<Integer, Reference>();
-                cachedReferences.set(localRefs);
-            }
-            Reference reference = localRefs.get(referenceIndex);
-            if (reference == null) {
-                reference = run.getReference(contig);
-                localRefs.put(referenceIndex, reference);
-            }
+            Reference reference;
+            synchronized (this) {
+                if (cachedReference == null || !cachedReference.getCanonicalName().equals(contig)) {
+                    cachedReference = run.getReference(contig);
+                }
+                reference = cachedReference;
 
-            bases = reference.getReferenceBases(start - 1, stop - (start - 1)).getBytes();
+                bases = reference.getReferenceBases(start - 1, stop - (start - 1)).getBytes();
+            }
         } catch (ErrorMsg e) {
             throw new RuntimeException(e);
         }
@@ -105,7 +96,7 @@ public class SRAIndexedSequenceFile implements ReferenceSequenceFile {
 
     @Override
     public void close() throws IOException {
-
+        cachedReference = null;
     }
 
     protected SAMSequenceDictionary loadSequenceDictionary() throws ErrorMsg {
