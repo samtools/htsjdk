@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.TextCigarCodec;
@@ -36,7 +35,6 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -141,6 +139,43 @@ public class SequenceUtilTest {
         };
     }
 
+    @Test(dataProvider = "mismatchCountsDataProvider")
+    public void testCountMismatches(final String readString, final String cigar, final String reference,
+                                    final int expectedMismatchesExact, final int expectedMismatchesAmbiguous) {
+        final SAMRecord rec = new SAMRecord(null);
+        rec.setReadName("test");
+        rec.setReadString(readString);
+        rec.setCigarString(cigar);
+
+        final byte[] refBases = StringUtil.stringToBytes(reference);
+
+        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, false, false);
+        Assert.assertEquals(nExact, expectedMismatchesExact);
+
+        final int nAmbiguous = SequenceUtil.countMismatches(rec, refBases, -1, false, true);
+        Assert.assertEquals(nAmbiguous, expectedMismatchesAmbiguous);
+    }
+
+    @DataProvider(name="mismatchCountsDataProvider")
+    public Object[][] testMakeMismatchCountsDataProvider() {
+        // note: R=A|G
+        return new Object[][] {
+                {"A", "1M", "A", 0, 0},
+                {"A", "1M", "R", 1, 0},
+                {"G", "1M", "R", 1, 0},
+                {"C", "1M", "R", 1, 1},
+                {"T", "1M", "R", 1, 1},
+                {"N", "1M", "R", 1, 1},
+                {"R", "1M", "A", 1, 1},
+                {"R", "1M", "C", 1, 1},
+                {"R", "1M", "G", 1, 1},
+                {"R", "1M", "T", 1, 1},
+                {"R", "1M", "N", 1, 0},
+                {"R", "1M", "R", 0, 0},
+                {"N", "1M", "N", 0, 0}
+        };
+    }
+
     @Test(dataProvider = "countInsertedAndDeletedBasesTestCases")
     public void testCountInsertedAndDeletedBases(final String cigarString, final int insertedBases, final int deletedBases) {
         final Cigar cigar = TextCigarCodec.decode(cigarString);
@@ -176,5 +211,202 @@ public class SequenceUtilTest {
         }
         final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
+    }
+
+    @DataProvider(name = "testBisulfiteConversionDataProvider")
+    public Object[][] testBisulfiteConversionDataProvider() {
+        // C ref -> T read on the positive strand, and G ref -> A read on the negative strand
+        return new Object[][] {
+                {'C', 'T', false, false},
+                {'C', 'A', false, false},
+                {'C', 'C', false, false},
+                {'T', 'C', true, false},
+                {'G', 'T', false, false},
+                {'G', 'A', false, false},
+                {'G', 'G', false, false},
+                {'A', 'G', false, true}
+        };
+    }
+
+    @Test(dataProvider = "testBisulfiteConversionDataProvider")
+    public void testBisulfiteConversion(final char readBase, final char refBase, final boolean posStrandExpected, final boolean negStrandExpected) {
+        final boolean posStrand = SequenceUtil.isBisulfiteConverted((byte) readBase, (byte) refBase, false);
+        Assert.assertEquals(posStrand, posStrandExpected);
+        final boolean negStrand = SequenceUtil.isBisulfiteConverted((byte) readBase, (byte) refBase, true);
+        Assert.assertEquals(negStrand, negStrandExpected);
+    }
+
+    @Test(dataProvider = "basesEqualDataProvider")
+    public void testBasesEqual(final char base1, final char base2,
+                               final boolean expectedB1EqualsB2,
+                               final boolean expectedB1ReadMatchesB2Ref,
+                               final boolean expectedB2ReadMatchesB1Ref) {
+
+        final char[] base1UcLc = new char[] { toUpperCase(base1), toLowerCase(base1) };
+        final char[] base2UcLc = new char[] { toUpperCase(base2), toLowerCase(base2) };
+        // Test over all permutations - uc vs uc, uc vs lc, lc vs uc, lc vs lc
+        for (char theBase1 : base1UcLc) {
+            for (char theBase2 : base2UcLc) {
+                // for equality, order should not matter
+                final boolean b1EqualsB2 = SequenceUtil.basesEqual((byte) theBase1, (byte) theBase2);
+                Assert.assertEquals(b1EqualsB2, expectedB1EqualsB2, "basesEqual test failed for '" + theBase1 + "' vs. '" + theBase2 + "'");
+                final boolean b2EqualsB1 = SequenceUtil.basesEqual((byte) theBase2, (byte) theBase1);
+                Assert.assertEquals(b2EqualsB1, expectedB1EqualsB2, "basesEqual test failed for '" + theBase1 + "' vs. '" + theBase2 + "'");
+
+                // for ambiguous read/ref matching, the order does matter
+                final boolean b1ReadMatchesB2Ref = SequenceUtil.readBaseMatchesRefBaseWithAmbiguity((byte) theBase1, (byte) theBase2);
+                Assert.assertEquals(b1ReadMatchesB2Ref, expectedB1ReadMatchesB2Ref, "readBaseMatchesRefBaseWithAmbiguity test failed for '" + theBase1 + "' vs. '" + theBase2 + "'");
+                final boolean b2ReadMatchesB1Ref = SequenceUtil.readBaseMatchesRefBaseWithAmbiguity((byte) theBase2, (byte) theBase1);
+                Assert.assertEquals(b2ReadMatchesB1Ref, expectedB2ReadMatchesB1Ref, "readBaseMatchesRefBaseWithAmbiguity test failed for '" + theBase1 + "' vs. '" + theBase2 + "'");
+            }
+        }
+    }
+
+    /*
+     * For reference:
+     * M = A|C
+     * R = A|G
+     * W = A|T
+     * S = C|G
+     * Y = C|T
+     * K = G|T
+     * V = A|C|G
+     * H = A|C|T
+     * D = A|G|T
+     * B = C|G|T
+     * N = A|C|G|T
+     */
+    @DataProvider(name="basesEqualDataProvider")
+    public Object[][] testBasesEqualDataProvider() {
+        return new Object[][] {
+                {'A', 'A', true, true, true},
+                {'A', 'C', false, false, false},
+                {'A', 'G', false, false, false},
+                {'A', 'T', false, false, false},
+                {'A', 'M', false, true, false},
+                {'A', 'R', false, true, false},
+                {'A', 'W', false, true, false},
+                {'A', 'S', false, false, false},
+                {'A', 'Y', false, false, false},
+                {'A', 'K', false, false, false},
+                {'A', 'V', false, true, false},
+                {'A', 'H', false, true, false},
+                {'A', 'D', false, true, false},
+                {'A', 'B', false, false, false},
+                {'A', 'N', false, true, false},
+                {'C', 'C', true, true, true},
+                {'C', 'G', false, false, false},
+                {'C', 'T', false, false, false},
+                {'C', 'M', false, true, false},
+                {'C', 'R', false, false, false},
+                {'C', 'W', false, false, false},
+                {'C', 'S', false, true, false},
+                {'C', 'Y', false, true, false},
+                {'C', 'K', false, false, false},
+                {'C', 'V', false, true, false},
+                {'C', 'H', false, true, false},
+                {'C', 'D', false, false, false},
+                {'C', 'N', false, true, false},
+                {'G', 'G', true, true, true},
+                {'G', 'T', false, false, false},
+                {'G', 'M', false, false, false},
+                {'G', 'R', false, true, false},
+                {'G', 'W', false, false, false},
+                {'G', 'S', false, true, false},
+                {'G', 'Y', false, false, false},
+                {'G', 'K', false, true, false},
+                {'G', 'V', false, true, false},
+                {'G', 'H', false, false, false},
+                {'G', 'N', false, true, false},
+                {'T', 'T', true, true, true},
+                {'T', 'W', false, true, false},
+                {'T', 'Y', false, true, false},
+                {'T', 'V', false, false, false},
+                {'M', 'T', false, false, false},
+                {'M', 'M', true, true, true},
+                {'M', 'R', false, false, false},
+                {'M', 'W', false, false, false},
+                {'M', 'S', false, false, false},
+                {'M', 'Y', false, false, false},
+                {'M', 'V', false, true, false},
+                {'M', 'N', false, true, false},
+                {'R', 'T', false, false, false},
+                {'R', 'R', true, true, true},
+                {'R', 'W', false, false, false},
+                {'R', 'S', false, false, false},
+                {'R', 'Y', false, false, false},
+                {'R', 'V', false, true, false},
+                {'W', 'W', true, true, true},
+                {'W', 'Y', false, false, false},
+                {'S', 'T', false, false, false},
+                {'S', 'W', false, false, false},
+                {'S', 'S', true, true, true},
+                {'S', 'Y', false, false, false},
+                {'S', 'V', false, true, false},
+                {'Y', 'Y', true, true, true},
+                {'K', 'T', false, false, true},
+                {'K', 'M', false, false, false},
+                {'K', 'R', false, false, false},
+                {'K', 'W', false, false, false},
+                {'K', 'S', false, false, false},
+                {'K', 'Y', false, false, false},
+                {'K', 'K', true, true, true},
+                {'K', 'V', false, false, false},
+                {'K', 'N', false, true, false},
+                {'V', 'W', false, false, false},
+                {'V', 'Y', false, false, false},
+                {'V', 'V', true, true, true},
+                {'H', 'T', false, false, true},
+                {'H', 'M', false, false, true},
+                {'H', 'R', false, false, false},
+                {'H', 'W', false, false, true},
+                {'H', 'S', false, false, false},
+                {'H', 'Y', false, false, true},
+                {'H', 'K', false, false, false},
+                {'H', 'V', false, false, false},
+                {'H', 'H', true, true, true},
+                {'H', 'N', false, true, false},
+                {'D', 'G', false, false, true},
+                {'D', 'T', false, false, true},
+                {'D', 'M', false, false, false},
+                {'D', 'R', false, false, true},
+                {'D', 'W', false, false, true},
+                {'D', 'S', false, false, false},
+                {'D', 'Y', false, false, false},
+                {'D', 'K', false, false, true},
+                {'D', 'V', false, false, false},
+                {'D', 'H', false, false, false},
+                {'D', 'D', true, true, true},
+                {'D', 'N', false, true, false},
+                {'B', 'C', false, false, true},
+                {'B', 'G', false, false, true},
+                {'B', 'T', false, false, true},
+                {'B', 'M', false, false, false},
+                {'B', 'R', false, false, false},
+                {'B', 'W', false, false, false},
+                {'B', 'S', false, false, true},
+                {'B', 'Y', false, false, true},
+                {'B', 'K', false, false, true},
+                {'B', 'V', false, false, false},
+                {'B', 'H', false, false, false},
+                {'B', 'D', false, false, false},
+                {'B', 'B', true, true, true},
+                {'B', 'N', false, true, false},
+                {'N', 'T', false, false, true},
+                {'N', 'R', false, false, true},
+                {'N', 'W', false, false, true},
+                {'N', 'S', false, false, true},
+                {'N', 'Y', false, false, true},
+                {'N', 'V', false, false, true},
+                {'N', 'N', true, true, true}
+        };
+    }
+
+    private char toUpperCase(final char base) {
+        return base > 90 ? (char) (base - 32) : base;
+    }
+
+    private char toLowerCase(final char base) {
+        return (char) (toUpperCase(base) + 32);
     }
 }
