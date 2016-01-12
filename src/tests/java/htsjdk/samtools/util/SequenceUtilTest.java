@@ -177,4 +177,33 @@ public class SequenceUtilTest {
         final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
     }
+
+    @Test(dataProvider = "testGetSamReadNameFromFastqHeader")
+    public void testGetSamReadNameFromFastqHeader(final String fastqHeader,
+                                                  final boolean paired,
+                                                  final boolean stripUnpairedMateNumber,
+                                                  final String expectedSamReadName) {
+        Assert.assertEquals(SequenceUtil.getSamReadNameFromFastqHeader(fastqHeader, paired, stripUnpairedMateNumber), expectedSamReadName);
+    }
+
+    @DataProvider(name = "testGetSamReadNameFromFastqHeader")
+    public Object[][] testGetSamReadNameFromFastqHeaderTestCases() {
+        return new Object[][] {
+                {"Simple:Name", false, false, "Simple:Name"},
+                {"Simple:Name", true, false, "Simple:Name"},
+                {"Simple:Name", false, true, "Simple:Name"},
+                {"Simple:Name", true, true, "Simple:Name"},
+                {"Name/1", true, false, "Name/1"},
+                {"Name/1", false, false, "Name/1"},
+                {"Name/1", true, true, "Name/1"},
+                {"Name/1", false, true, "Name"},
+                {"Name/2", true, false, "Name/2"},
+                {"Name/2", false, false, "Name/2"},
+                {"Name/2", true, true, "Name/2"},
+                {"Name/2", false, true, "Name"},
+                {"Simple:Name Blank", false, false, "Simple:Name"},
+                {"Simple:Name Blank /1", false, false, "Simple:Name"},
+                {"Name/1/2", false, true, "Name"}
+        };
+    }
 }
