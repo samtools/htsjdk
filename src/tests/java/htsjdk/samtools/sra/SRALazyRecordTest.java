@@ -23,6 +23,8 @@ public class SRALazyRecordTest {
 
     @Test(dataProvider = "serializationTestData")
     public void testSerialization(SRAAccession accession) throws Exception {
+        if (!SRAAccession.isSupported()) return;
+        
         SRAFileReader reader = new SRAFileReader(accession);
         final SAMRecord initialSAMRecord = reader.getIterator().next();
         reader.close();
@@ -34,6 +36,8 @@ public class SRALazyRecordTest {
 
     @Test
     public void testCloneAndEquals() throws Exception {
+        if (!SRAAccession.isSupported()) return;
+        
         SRAFileReader reader = new SRAFileReader(DEFAULT_ACCESSION);
         final SAMRecord record = reader.getIterator().next();
         reader.close();
