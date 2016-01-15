@@ -32,17 +32,17 @@ import java.util.List;
 /**
  * A class for reading BAM file indices, hitting the disk once per query.
  */
-class DiskBasedBAMFileIndex extends AbstractBAMFileIndex
+public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex
 {
-    DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
+    public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
         super(file, dictionary);
     }
 
-    DiskBasedBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+    public DiskBasedBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
         super(stream, dictionary);
     }
 
-    DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+    public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
         super(file, dictionary, useMemoryMapping);
     }
 
