@@ -38,6 +38,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlValue;
+
 
 /**
  * Java binding for a SAM file record.  c.f. http://samtools.sourceforge.net/SAM1.pdf
@@ -107,6 +113,7 @@ import java.util.Set;
  * @author alecw@broadinstitute.org
  * @author mishali.naik@intel.com
  */
+@XmlRootElement(name="readAlignment")
 public class SAMRecord implements Cloneable, Locatable, Serializable {
     public static final long serialVersionUID = 1L;
 
@@ -194,11 +201,17 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /** Transient Map of attributes for use by anyone. */
     private transient Map<Object,Object> transientAttributes;
-
+    
+    /* used for xml serialization */
+    @SuppressWarnings("unused")
+    private SAMRecord() {
+    }
+    
     public SAMRecord(final SAMFileHeader header) {
         mHeader = header;
     }
 
+    @XmlElement(name="name")
     public String getReadName() {
         return mReadName;
     }
@@ -208,6 +221,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * it may be faster.
      * @return length not including a null terminator.
      */
+    @XmlTransient
     public int getReadNameLength() {
         return mReadName.length();
     }
@@ -219,6 +233,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return read sequence as a string of ACGTN=.
      */
+    @XmlElement(name="alignedSequence")//ga4gh
     public String getReadString() {
         final byte[] readBases = getReadBases();
         if (readBases.length == 0) {
@@ -243,6 +258,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * byte[] and call setReadBases() or call setReadString().
      * @return read sequence as ASCII bytes ACGTN=.
      */
+    @XmlTransient
     public byte[] getReadBases() {
         return mReadBases;
     }
@@ -255,6 +271,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * This method is preferred over getReadBases().length, because for BAMRecord it may be faster.
      * @return number of bases in the read.
      */
+    @XmlTransient
     public int getReadLength() {
         return getReadBases().length;
     }
@@ -262,6 +279,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Base qualities, encoded as a FASTQ string.
      */
+    @XmlElement(name="alignedQuality")//ga4gh
     public String getBaseQualityString() {
         if (Arrays.equals(NULL_QUALS, getBaseQualities())) {
             return NULL_QUALS_STRING;
@@ -282,6 +300,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * byte[] and call setBaseQualities() or call setBaseQualityString().
      * @return Base qualities, as binary phred scores (not ASCII).
      */
+    @XmlTransient
     public byte[] getBaseQualities() {
         return mBaseQualities;
     }
@@ -294,6 +313,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * If the original base quality scores have been store in the "OQ" tag will return the numeric
      * score as a byte[]
      */
+    @XmlTransient
     public byte[] getOriginalBaseQualities() {
         final String oqString = (String) getAttribute("OQ");
         if (oqString != null && oqString.length() > 0) {
@@ -334,6 +354,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no reference name
      */
+    @XmlElement(name="fragmentName")//ga4gh
     public String getReferenceName() { return mReferenceName; }
 
     /**
@@ -386,6 +407,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws IllegalStateException if the reference index cannot be resolved because the SAMFileHeader for the
      * record is null.
      */
+    @XmlTransient
     public Integer getReferenceIndex() {
         if (null == mReferenceIndex) {
             // try to resolve the reference index
@@ -437,6 +459,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return Mate reference name, or NO_ALIGNMENT_REFERENCE_NAME (*) if the record has no mate reference name
      */
+    @XmlElement(name="mate-fragmentName")
     public String getMateReferenceName() {
         return mMateReferenceName;
     }
@@ -490,6 +513,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws IllegalStateException if the mate reference index cannot be resolved because the SAMFileHeader for the
      * record is null.
      */
+    @XmlTransient
     public Integer getMateReferenceIndex() {
         if (null == mMateReferenceIndex) {
             // try to resolve the reference index
@@ -541,6 +565,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return 1-based inclusive leftmost position of the clipped sequence, or 0 if there is no position.
      */
+    @XmlElement(name="position")//ga4gh
     public int getAlignmentStart() {
         return mAlignmentStart;
     }
@@ -559,6 +584,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return 1-based inclusive rightmost position of the clipped sequence, or 0 read if unmapped.
      */
+    @XmlTransient
     public int getAlignmentEnd() {
         if (getReadUnmappedFlag()) {
             return NO_ALIGNMENT_START;
@@ -577,6 +603,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * Invalid to call on an unmapped read.
      */
+    @XmlTransient
     public int getUnclippedStart() {
         return SAMUtils.getUnclippedStart(getAlignmentStart(), getCigar());
     }
@@ -588,6 +615,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * Invalid to call on an unmapped read.
      */
+    @XmlTransient
     public int getUnclippedEnd() {
         return SAMUtils.getUnclippedEnd(getAlignmentEnd(), getCigar());
     }
@@ -705,6 +733,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return 1-based inclusive leftmost position of the clipped mate sequence, or 0 if there is no position.
      */
+    @XmlElement(name="mate-position")
     public int getMateAlignmentStart() {
         return mMateAlignmentStart;
     }
@@ -717,6 +746,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return insert size (difference btw 5' end of read & 5' end of mate), if possible, else 0.
      * Negative if mate maps to lower position than read.
      */
+    @XmlElement(name="fragmentLength")//ga4gh
     public int getInferredInsertSize() {
         return mInferredInsertSize;
     }
@@ -728,6 +758,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * @return phred scaled mapping quality.  255 implies valid mapping but quality is hard to compute.
      */
+    @XmlElement(name="mappingQuality")//ga4gh
     public int getMappingQuality() {
         return mMappingQuality;
     }
@@ -736,6 +767,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         mMappingQuality = value;
     }
 
+    @XmlTransient
     public String getCigarString() {
         if (mCigarString == null && getCigar() != null) {
             mCigarString = TextCigarCodec.encode(getCigar());
@@ -758,6 +790,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Cigar and call setCigar() or call setCigarString()
      * @return Cigar object for the read, or null if there is none.
      */
+    @XmlElement(name="cigar")
     public Cigar getCigar() {
         if (mCigar == null && mCigarString != null) {
             mCigar = TextCigarCodec.decode(mCigarString);
@@ -775,6 +808,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * This method is preferred over getCigar().getNumElements(), because for BAMRecord it may be faster.
      * @return number of cigar elements (number + operator) in the cigar string.
      */
+    @XmlTransient
     public int getCigarLength() {
         return getCigar().numCigarElements();
     }
@@ -804,6 +838,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * the given ID.or 3) this record has no SAMFileHeader
      * @throws ClassCastException if RG tag does not have a String value.
      */
+    @XmlTransient
     public SAMReadGroupRecord getReadGroup() {
         final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
         if (rgId == null || getHeader() == null) {
@@ -816,6 +851,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * It is preferable to use the get*Flag() methods that handle the flag word symbolically.
      */
+    @XmlElement(name="flags")
     public int getFlags() {
         return mFlags;
     }
@@ -829,6 +865,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read is paired in sequencing, no matter whether it is mapped in a pair.
      */
+    @XmlTransient
     public boolean getReadPairedFlag() {
         return (mFlags & SAMFlag.READ_PAIRED.flag) != 0;
     }
@@ -842,6 +879,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read is mapped in a proper pair (depends on the protocol, normally inferred during alignment).
      */
+    @XmlTransient
     public boolean getProperPairFlag() {
         requireReadPaired();
         return getProperPairFlagUnchecked();
@@ -854,6 +892,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the query sequence itself is unmapped.
      */
+    @XmlTransient
     public boolean getReadUnmappedFlag() {
         return (mFlags & SAMFlag.READ_UNMAPPED.flag) != 0;
     }
@@ -861,6 +900,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the mate is unmapped.
      */
+    @XmlTransient
     public boolean getMateUnmappedFlag() {
         requireReadPaired();
         return getMateUnmappedFlagUnchecked();
@@ -873,6 +913,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * strand of the query (false for forward; true for reverse strand).
      */
+    @XmlTransient
     public boolean getReadNegativeStrandFlag() {
         return (mFlags & SAMFlag.READ_REVERSE_STRAND.flag) != 0;
     }
@@ -880,6 +921,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * strand of the mate (false for forward; true for reverse strand).
      */
+    @XmlTransient
     public boolean getMateNegativeStrandFlag() {
         requireReadPaired();
         return getMateNegativeStrandFlagUnchecked();
@@ -892,6 +934,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read is the first read in a pair.
      */
+    @XmlTransient
     public boolean getFirstOfPairFlag() {
         requireReadPaired();
         return getFirstOfPairFlagUnchecked();
@@ -904,6 +947,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read is the second read in a pair.
      */
+    @XmlTransient
     public boolean getSecondOfPairFlag() {
         requireReadPaired();
         return getSecondOfPairFlagUnchecked();
@@ -916,6 +960,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the alignment is not primary (a read having split hits may have multiple primary alignment records).
      */
+    @XmlTransient
     public boolean getNotPrimaryAlignmentFlag() {
         return (mFlags & SAMFlag.NOT_PRIMARY_ALIGNMENT.flag) != 0;
     }
@@ -923,6 +968,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the alignment is supplementary (TODO: further explanation?).
      */
+    @XmlTransient
     public boolean getSupplementaryAlignmentFlag() {
         return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
     }
@@ -930,6 +976,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read fails platform/vendor quality checks.
      */
+    @XmlTransient
     public boolean getReadFailsVendorQualityCheckFlag() {
         return (mFlags & SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag) != 0;
     }
@@ -937,6 +984,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * the read is either a PCR duplicate or an optical duplicate.
      */
+    @XmlTransient
     public boolean getDuplicateReadFlag() {
         return (mFlags & SAMFlag.DUPLICATE_READ.flag) != 0;
     }
@@ -1040,6 +1088,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Tests if this record is either a secondary and/or supplementary alignment;
      * equivalent to {@code (getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag())}.
      */
+    @XmlTransient
     public boolean isSecondaryOrSupplementary() {
         return getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag();
     }
@@ -1052,6 +1101,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
+    @XmlTransient
     public ValidationStringency getValidationStringency() {
         return mValidationStringency;
     }
@@ -1441,6 +1491,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return reference name, null if this is unmapped
      */
     @Override
+    @XmlTransient
     public String getContig() {
         if( getReadUnmappedFlag()) {
             return null;
@@ -1454,6 +1505,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return 1-based inclusive leftmost position of the clipped sequence, or 0 if there is no position.
      */
     @Override
+    @XmlTransient
     public int getStart() {
         return getAlignmentStart();
     }
@@ -1463,6 +1515,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return 1-based inclusive rightmost position of the clipped sequence, or 0 read if unmapped.
      */
     @Override
+    @XmlTransient
     public int getEnd() {
         return getAlignmentEnd();
     }
@@ -1470,19 +1523,44 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Tag name and value of an attribute, for getAttributes() method.
      */
+    @XmlRootElement(name="attr")
     public static class SAMTagAndValue {
+        @XmlTransient
         public final String tag;
+        @XmlTransient
         public final Object value;
 
+        /** empty constructor for xml serialization */
+        @SuppressWarnings("unused")
+        private SAMTagAndValue() {
+            this("","");
+        }
+        
         public SAMTagAndValue(final String tag, final Object value) {
             this.tag = tag;
             this.value = value;
         }
+        
+        @XmlTransient
+        public String getTag() {
+            return tag;
+        }
+        @XmlTransient
+        public Object getValue() {
+            return value;
+        }
+        @XmlValue
+        public String getValueAsString() {
+            return new TextTagCodec().encode(this.tag, this.value);
+        }
+        
     }
 
     /**
      * @return list of {tag, value} tuples
      */
+    @XmlElementWrapper(name="attributes")
+    @XmlElement(name="attribute")
     public List<SAMTagAndValue> getAttributes() {
         SAMBinaryTagAndValue binaryAttributes = getBinaryAttributes();
         final List<SAMTagAndValue> ret = new ArrayList<SAMTagAndValue>();
@@ -1494,6 +1572,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return ret;
     }
 
+    @XmlTransient
     Integer getIndexingBin() {
         return mIndexingBin;
     }
@@ -1541,6 +1620,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * written. Any record that does not have a header at the time it is added to the writer will be updated to use the
      * header associated with the writer.
      */
+    @XmlTransient
     public SAMFileHeader getHeader() {
         return mHeader;
     }
@@ -1594,6 +1674,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * for BAMRecords that have not been eagerDecoded(), and for which none of the data in the variable-length
      * portion has been changed.
      */
+    @XmlTransient
     public byte[] getVariableBinaryRepresentation() {
         return null;
     }
@@ -1696,6 +1777,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * reference sequence. Note that clipped portions of the read and inserted and
      * deleted bases (vs. the reference) are not represented in the alignment blocks.
      */
+    @XmlTransient
     public List<AlignmentBlock> getAlignmentBlocks() {
         if (this.mAlignmentBlocks == null) {
             this.mAlignmentBlocks = SAMUtils.getAlignmentBlocks(getCigar(), getAlignmentStart(), "read cigar");
@@ -1794,6 +1876,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return null if valid.  If invalid, returns a list of error messages.
      *
      */
+    @XmlTransient
     public List<SAMValidationError> isValid() {
         return isValid(false);
     }
@@ -2010,6 +2093,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * whence it came. 
      * @return The file source.  Note that the reader will be null if not activated using SAMFileReader.enableFileSource().
      */
+    @XmlTransient
     public SAMFileSource getFileSource() {
         return mFileSource;
     }
@@ -2169,10 +2253,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      Returns the record in the SAM line-based text format.  Fields are
      separated by '\t' characters, and the String is terminated by '\n'.
      */
+    @XmlTransient
     public String getSAMString() {
         return SAMTextWriter.getSAMString(this);
     }
 
+    @XmlTransient
     public String getPairedReadName() {
         final StringBuilder builder = new StringBuilder(64);
         builder.append(getReadName());
@@ -2189,6 +2275,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /** 
      * shortcut to <pre>SAMFlag.getFlags( this.getFlags() );</pre>
      * @returns a set of SAMFlag associated to this sam record */
+    @XmlTransient
     public final Set<SAMFlag> getSAMFlags() {
         return SAMFlag.getFlags(this.getFlags());
     }

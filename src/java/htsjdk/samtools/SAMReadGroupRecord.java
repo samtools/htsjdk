@@ -32,11 +32,16 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Header information about a read group.
  */
+@XmlRootElement(name="ReadGroup")
 public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 {
+    private static final long serialVersionUID = 1L;
     private String mReadGroupId = null;
     public static final String READ_GROUP_ID_TAG = "ID";
     public static final String SEQUENCING_CENTER_TAG = "CN";
@@ -65,6 +70,11 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
                     PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));
 
+    /** private constructor for XML serialization */
+    @SuppressWarnings("unused")
+    private SAMReadGroupRecord() {
+    }
+    
     public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
 
     public SAMReadGroupRecord(final String id, final SAMReadGroupRecord srcProgramRecord) {
@@ -116,7 +126,8 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public String getDescription() { return getAttribute(DESCRIPTION_TAG); }
     public void setDescription(final String description) { setAttribute(DESCRIPTION_TAG, description); }
-
+    
+    @XmlElement(name="predictedInsertSize")//ga4gh
     public Integer getPredictedMedianInsertSize() {
         final String stringRep = getAttribute(PREDICTED_MEDIAN_INSERT_SIZE_TAG);
         if (stringRep == null) return null;

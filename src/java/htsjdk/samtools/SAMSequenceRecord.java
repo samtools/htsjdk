@@ -165,6 +165,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return true;
     }
 
+    @SuppressWarnings("unused")
     private URI makeURI(final String s) throws URISyntaxException {
         URI uri = new URI(s);
         if (uri.getScheme() == null) {

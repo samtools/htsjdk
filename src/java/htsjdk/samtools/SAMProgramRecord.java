@@ -29,10 +29,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * In-memory representation of @PG SAM header record.
  */
+@XmlRootElement(name="Program")
 public class SAMProgramRecord extends AbstractSAMHeaderRecord {
+    private static final long serialVersionUID = 1L;
     public static final String PROGRAM_GROUP_ID_TAG = "ID";
     public static final String PROGRAM_NAME_TAG = "PN";
     public static final String PROGRAM_VERSION_TAG = "VN";
@@ -45,7 +50,12 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
                     PROGRAM_VERSION_TAG,
                     COMMAND_LINE_TAG,
                     PREVIOUS_PROGRAM_GROUP_ID_TAG)) );
-
+    
+    /** private constructor for xml serialization */
+    @SuppressWarnings("unused")
+    private SAMProgramRecord() {
+    }
+    
     public SAMProgramRecord(final String programGroupId) {
         this.mProgramGroupId = programGroupId;
     }
@@ -57,6 +67,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         }
     }
 
+    @XmlElement(name="id")
     public String getId() {
         return getProgramGroupId();
     }
@@ -65,6 +76,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         return mProgramGroupId;
     }
 
+    @XmlElement(name="name")
     public String getProgramName() {
         return (String)getAttribute(PROGRAM_NAME_TAG);
     }
@@ -73,6 +85,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         setAttribute(PROGRAM_NAME_TAG, name);
     }
 
+    @XmlElement(name="version")
     public String getProgramVersion() {
         return (String)getAttribute(PROGRAM_VERSION_TAG);
     }
@@ -81,6 +94,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         setAttribute(PROGRAM_VERSION_TAG, version);
     }
 
+    @XmlElement(name="commandLine")
     public String getCommandLine() {
         return (String)getAttribute(COMMAND_LINE_TAG);
     }
@@ -89,6 +103,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         setAttribute(COMMAND_LINE_TAG, commandLine);
     }
 
+    @XmlElement(name="prevProgramId")
     public String getPreviousProgramGroupId() {
         return (String)getAttribute(PREVIOUS_PROGRAM_GROUP_ID_TAG);
     }
