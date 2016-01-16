@@ -59,7 +59,7 @@ public class JavascriptVariantFilterTest {
             vcfReader.close();
             return;
         }
-        final FilteringIterator iter = new FilteringIterator(vcfReader.iterator(), filter);
+        final FilteringVariantContextIterator iter = new FilteringVariantContextIterator(vcfReader.iterator(), filter);
         int count = 0;
         while (iter.hasNext()) {
             iter.next();
