@@ -111,7 +111,7 @@ public class SeekableFileStream extends SeekableStream {
 		}
 		ByteBuffer buffer = ByteBuffer.allocate(1);
 		seekableByteChannel.read(buffer);
-		return buffer.array()[0];
+		return buffer.array()[0]&0xff;
     }
 
     @Override
