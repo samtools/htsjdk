@@ -51,12 +51,21 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
         this(iterator, header, false);
     }
 
+    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
+                                final SAMFileHeader header,
+                                final boolean preSorted) {
+        this(iterator, header, preSorted, new SAMRecordDuplicateComparator(Collections.singletonList(header)));
+    }
+
     /**
      * Allows the user of this iterator to skip the sorting of the input if the input is already sorted.  If the records are said to be
      * sorted but not actually sorted in the correct order, an exception during iteration will be thrown.
      */
-    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator, final SAMFileHeader header, final boolean preSorted) {
-        this.comparator = new SAMRecordDuplicateComparator(Collections.singletonList(header));
+    public DuplicateSetIterator(final CloseableIterator<SAMRecord> iterator,
+                                final SAMFileHeader header,
+                                final boolean preSorted,
+                                final SAMRecordDuplicateComparator comparator) {
+        this.comparator = comparator;
 
         if (preSorted) {
             this.wrappedIterator = iterator;
@@ -85,6 +94,9 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
 
     }
 
+    @Deprecated
+    /** Do not use this method as the first duplicate set will not be compared with this scoring strategy.
+      * Instead, provide a comparator to the constructor that has the scoring strategy set. */
     public void setScoringStrategy(final DuplicateScoringStrategy.ScoringStrategy scoringStrategy) {
         this.comparator.setScoringStrategy(scoringStrategy);
     }
