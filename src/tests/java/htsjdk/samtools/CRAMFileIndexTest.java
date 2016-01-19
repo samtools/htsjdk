@@ -274,15 +274,15 @@ public class CRAMFileIndexTest {
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
         final SAMRecordIterator iterator = reader.iterator();
         // to reduce granularity let's use this hacky approach:
-        int previousValue = CRAMFileWriter.DEFAULT_RECORDS_PER_SLICE ;
-        CRAMFileWriter.DEFAULT_RECORDS_PER_SLICE = nofReadsPerContainer;
+        int previousValue = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE ;
+        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = nofReadsPerContainer;
         CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), bamFile.getName());
         while (iterator.hasNext()) {
             SAMRecord record = iterator.next();
             writer.addAlignment(record);
         }
         writer.close();
-        CRAMFileWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
+        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
         return baos.toByteArray();
     }
 }
