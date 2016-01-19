@@ -38,7 +38,7 @@ import java.io.OutputStream;
 /**
  * Create a writer for writing SAM, BAM, or CRAM files.
  */
-public class SAMFileWriterFactory {
+public class SAMFileWriterFactory implements Cloneable {
     private final static Log log = Log.getInstance(SAMFileWriterFactory.class);
     private static boolean defaultCreateIndexWhileWriting = Defaults.CREATE_INDEX;
     private boolean createIndex = defaultCreateIndexWhileWriting;
@@ -48,10 +48,32 @@ public class SAMFileWriterFactory {
     private int asyncOutputBufferSize = AsyncSAMFileWriter.DEFAULT_QUEUE_SIZE;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private File tmpDir;
+    /** compression level 0: min 9:max */
+    private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
+    private Integer maxRecordsInRam = null;
 
-
-    private Integer maxRecordsInRam;
-
+    /** simple constructor */
+    public SAMFileWriterFactory() {
+    }
+    
+    /** copy constructor */
+    public SAMFileWriterFactory( final SAMFileWriterFactory other) {
+        if( other == null ) throw new IllegalArgumentException("SAMFileWriterFactory(null)");
+        this.createIndex = other.createIndex;
+        this.createMd5File = other.createMd5File;
+        this.useAsyncIo = other.useAsyncIo;
+        this.asyncOutputBufferSize = other.asyncOutputBufferSize;
+        this.bufferSize = other.bufferSize;
+        this.tmpDir = other.tmpDir;
+        this.compressionLevel = other.compressionLevel;
+        this.maxRecordsInRam = other.maxRecordsInRam;
+    }
+    
+    @Override
+    public SAMFileWriterFactory clone() {
+        return new SAMFileWriterFactory(this);
+    }
+    
     /**
      * Sets the default for whether to create md5Files for BAM files this factory.
      */
@@ -67,6 +89,15 @@ public class SAMFileWriterFactory {
         return this;
     }
 
+    /** set compression level 0!none 9: max */
+    public void setCompressionLevel(final int compressionLevel) {
+        this.compressionLevel = Math.min(9, Math.max(0, compressionLevel));
+    }
+    
+    public int getCompressionLevel() {
+        return compressionLevel;
+    }
+    
     /**
      * Sets the default for subsequent SAMFileWriterFactories
      * that do not specify whether to create an index.
@@ -154,7 +185,7 @@ public class SAMFileWriterFactory {
      * @param outputFile where to write the output.
      */
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
-        return makeBAMWriter(header, presorted, outputFile, BlockCompressedOutputStream.getDefaultCompressionLevel());
+        return makeBAMWriter(header, presorted, outputFile, this.getCompressionLevel());
     }
 
     /**
@@ -250,7 +281,7 @@ public class SAMFileWriterFactory {
      */
 
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, true, new BAMFileWriter(stream, null));
+        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel()));
     }
 
     /**
@@ -404,7 +435,7 @@ public class SAMFileWriterFactory {
             throw new RuntimeIOException("Error creating CRAM file: " + outputFile.getAbsolutePath());
         }
 
-        CRAMFileWriter writer = new CRAMFileWriter(
+        final CRAMFileWriter writer = new CRAMFileWriter(
                 createMd5File ? new Md5CalculatingOutputStream(cramOS, new File(outputFile.getAbsolutePath() + ".md5")) : cramOS,
                 indexOS,
                 presorted,
@@ -417,9 +448,17 @@ public class SAMFileWriterFactory {
     }
 
     // Set the default CRAM writer preservation parameters
-    private void setCRAMWriterDefaults(CRAMFileWriter writer) {
+    private void setCRAMWriterDefaults(final CRAMFileWriter writer) {
         writer.setPreserveReadNames(true);
         writer.setCaptureAllTags(true);
+    }
+
+    @Override
+    public String toString() {
+        return "SAMFileWriterFactory [createIndex=" + createIndex + ", createMd5File=" + createMd5File + ", useAsyncIo="
+                + useAsyncIo + ", asyncOutputBufferSize=" + asyncOutputBufferSize + ", bufferSize=" + bufferSize
+                + ", tmpDir=" + tmpDir + ", compressionLevel=" + compressionLevel + ", maxRecordsInRam="
+                + maxRecordsInRam + "]";
     }
 
 }
