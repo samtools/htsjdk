@@ -1003,6 +1003,7 @@ public final class SAMUtils {
 
         // Only clip records that are left-most in genomic order and overlapping.
         if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
+        else if (rec.getMateAlignmentStart() == rec.getAlignmentStart() && rec.getFirstOfPairFlag()) return 0; // same start, so pick the first end
 
         // Find the number of read bases after the given mate's alignment start.
         int numBasesToClip = 0;

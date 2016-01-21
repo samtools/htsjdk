@@ -55,8 +55,8 @@ public class SAMUtilsTest {
         record.setCigar(TextCigarCodec.decode("10M"));
         record.setReferenceIndex(0);
         record.setAlignmentStart(1);
-        record.setMateAlignmentStart(6); // should overlap 5M
         record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(6); // should overlap 5M
         record.setReadBases("AAAAAAAAAA".getBytes());
 
         final int numToClip = SAMUtils.getNumOverlappingAlignedBasesToClip(record);
@@ -81,8 +81,8 @@ public class SAMUtilsTest {
         record.setCigar(TextCigarCodec.decode("5M5S"));
         record.setReferenceIndex(0);
         record.setAlignmentStart(1);
-        record.setMateAlignmentStart(5); // should overlap 1M5S
         record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(5); // should overlap 1M5S
         record.setReadBases("AAAAAAAAAA".getBytes());
 
         final int numToClip = SAMUtils.getNumOverlappingAlignedBasesToClip(record);
@@ -107,8 +107,8 @@ public class SAMUtilsTest {
         record.setCigar(TextCigarCodec.decode("5M1I5M"));
         record.setReferenceIndex(0);
         record.setAlignmentStart(1);
-        record.setMateAlignmentStart(5); // should overlap the 1M1I5M
         record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(5); // should overlap the 1M1I5M
         record.setReadBases("AAAAAAAAAAA".getBytes());
 
 
@@ -120,8 +120,6 @@ public class SAMUtilsTest {
         Assert.assertTrue(record.getCigar().equals(TextCigarCodec.decode("4M7S")));
 
     }
-
-    // TODO: deletion
 
     @Test
     public void testClippingOfRecordWithDeletion() {
@@ -137,8 +135,8 @@ public class SAMUtilsTest {
         record.setCigar(TextCigarCodec.decode("5M1D5M"));
         record.setReferenceIndex(0);
         record.setAlignmentStart(1);
-        record.setMateAlignmentStart(5); // should overlap the 1M1D5M
         record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(5); // should overlap the 1M1D5M
         record.setReadBases("AAAAAAAAAA".getBytes());
 
         final int numToClip = SAMUtils.getNumOverlappingAlignedBasesToClip(record);
@@ -147,5 +145,32 @@ public class SAMUtilsTest {
         SAMUtils.clipOverlappingAlignedBases(record, numToClip, false); // Side-effects are OK
         Assert.assertTrue(record.getCigar().equals(TextCigarCodec.decode("4M6S")));
 
+    }
+
+    @Test
+    public void testClippingOfRecordWithMateAtSamePosition() {
+        /**
+         * Tests that we clip the first end of a pair if we have perfect overlap of a pair
+         */
+
+        // setup the record
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("1", 1000));
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadPairedFlag(true);
+        record.setFirstOfPairFlag(true);
+        record.setCigar(TextCigarCodec.decode("10M"));
+        record.setReferenceIndex(0);
+        record.setAlignmentStart(1);
+        record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(1);
+        record.setReadBases("AAAAAAAAAA".getBytes());
+
+        Assert.assertEquals(SAMUtils.getNumOverlappingAlignedBasesToClip(record), 0);
+
+        // now make it the second end
+        record.setFirstOfPairFlag(false);
+        record.setSecondOfPairFlag(true);
+        Assert.assertEquals(SAMUtils.getNumOverlappingAlignedBasesToClip(record), 10);
     }
 }
