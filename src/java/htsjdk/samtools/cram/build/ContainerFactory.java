@@ -62,7 +62,8 @@ public class ContainerFactory {
             IOException {
         // get stats, create compression header and slices
         final long time1 = System.nanoTime();
-        final CompressionHeader header = new CompressionHeaderFactory().build(records,
+        // re-create CompressionHeaderFactory for each container:
+        final CompressionHeader header = new CompressionHeaderFactory().buildCompressionHeader(records,
                 substitutionMatrix, samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
         header.APDelta = true;
         final long time2 = System.nanoTime();

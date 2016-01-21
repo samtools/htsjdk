@@ -24,6 +24,6 @@ class HuffmanBitCode {
 
     @Override
     public String toString() {
-        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
+        return value + ":\t" + Integer.toBinaryString(bitCode) + " " + bitCode;
     }
 }
