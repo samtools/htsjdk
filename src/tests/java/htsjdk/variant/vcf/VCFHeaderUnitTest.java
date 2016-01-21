@@ -25,7 +25,10 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
@@ -33,16 +36,19 @@ import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.
@@ -53,12 +59,27 @@ import java.util.List;
  */
 public class VCFHeaderUnitTest extends VariantBaseTest {
 
+    private File tempDir;
+
     private VCFHeader createHeader(String headerStr) {
         VCFCodec codec = new VCFCodec();
         VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(LineReaderUtil.fromStringReader(
                 new StringReader(headerStr), LineReaderUtil.LineReaderOption.SYNCHRONOUS)));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF4headerStringCount);
         return header;
+    }
+
+    @BeforeClass
+    private void createTemporaryDirectory() {
+        tempDir = TestUtil.getTempDirectory("VCFHeader", "VCFHeaderTest");
+    }
+
+    @AfterClass
+    private void deleteTemporaryDirectory() {
+        for (File f : tempDir.listFiles()) {
+            f.delete();
+        }
+        tempDir.delete();
     }
 
     @Test
@@ -291,6 +312,80 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(deserializedHeader.getSampleNamesInOrder(), originalHeader.getSampleNamesInOrder(), "Sorted list of sample names in header not the same before/after serialization");
         Assert.assertEquals(deserializedHeader.getSampleNameToOffset(), originalHeader.getSampleNameToOffset(), "Sample name to offset map not the same before/after serialization");
         Assert.assertEquals(deserializedHeader.toString(), originalHeader.toString(), "String representation of header not the same before/after serialization");
+    }
+
+    @Test
+    public void testVCFHeaderQuoteEscaping() throws Exception {
+        // this test ensures that the end-to-end process of quote escaping is stable when headers are
+        // read and re-written; ie that quotes that are already escaped won't be re-escaped. It does
+        // this by reading a test file, adding a header line with an unescaped quote, writing out a copy
+        // of the file, reading it back in and writing a second copy, and finally reading back the second
+        // copy and comparing it to the first.
+
+        // read an existing VCF
+        final VCFFileReader originalFileReader = new VCFFileReader(new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), false);
+        final VCFHeader originalHeader = originalFileReader.getFileHeader();
+
+        // add a header line with quotes to the header
+        final Map<String, String> attributes = new LinkedHashMap<>();
+        attributes.put("ID", "VariantFiltration");
+        attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
+        final VCFSimpleHeaderLine addedHeaderLine = new VCFSimpleHeaderLine("GATKCommandLine.Test", attributes);
+        originalHeader.addMetaDataLine(addedHeaderLine);
+
+        // write the file out into a new copy
+        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", ".vcf");
+        firstCopyVCFFile.deleteOnExit();
+
+        final VariantContextWriter firstCopyWriter = new VariantContextWriterBuilder()
+                .setOutputFile(firstCopyVCFFile)
+                .setReferenceDictionary(createArtificialSequenceDictionary())
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        firstCopyWriter.writeHeader(originalHeader);
+        final CloseableIterator<VariantContext> firstCopyVariantIterator = originalFileReader.iterator();
+        while (firstCopyVariantIterator.hasNext()) {
+            VariantContext variantContext = firstCopyVariantIterator.next();
+            firstCopyWriter.add(variantContext);
+        }
+        originalFileReader.close();
+        firstCopyWriter.close();
+
+        // read the copied file back in
+        final VCFFileReader firstCopyReader = new VCFFileReader(firstCopyVCFFile, false);
+        final VCFHeader firstCopyHeader = firstCopyReader.getFileHeader();
+        final VCFHeaderLine firstCopyNewHeaderLine = firstCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
+        Assert.assertNotNull(firstCopyNewHeaderLine);
+
+        // write one more copy to make sure things don't get double escaped
+        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", ".vcf");
+        secondCopyVCFFile.deleteOnExit();
+        final VariantContextWriter secondCopyWriter = new VariantContextWriterBuilder()
+                .setOutputFile(secondCopyVCFFile)
+                .setReferenceDictionary(createArtificialSequenceDictionary())
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        secondCopyWriter.writeHeader(firstCopyHeader);
+        final CloseableIterator<VariantContext> secondCopyVariantIterator = firstCopyReader.iterator();
+        while (secondCopyVariantIterator.hasNext()) {
+            VariantContext variantContext = secondCopyVariantIterator.next();
+            secondCopyWriter.add(variantContext);
+        }
+        secondCopyWriter.close();
+
+        // read the second copy back in and verify that the two files have the same header line
+        final VCFFileReader secondCopyReader = new VCFFileReader(secondCopyVCFFile, false);
+        final VCFHeader secondCopyHeader = secondCopyReader.getFileHeader();
+
+        final VCFHeaderLine secondCopyNewHeaderLine = secondCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
+        Assert.assertNotNull(secondCopyNewHeaderLine);
+        Assert.assertEquals(firstCopyNewHeaderLine, secondCopyNewHeaderLine);
+        Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+        Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+
+        firstCopyReader.close();
+        secondCopyReader.close();
+
     }
 
     /**
