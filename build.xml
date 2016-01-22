@@ -176,6 +176,7 @@
             <fileset dir="${classes}" includes ="htsjdk/samtools/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/tribble/**/*.*"/>
             <fileset dir="${classes}" includes="htsjdk/variant/**/*.*"/>
+            <fileset dir="etc" includes="META-INF/**/*.*"/>
             <manifest>
                 <attribute name="Implementation-Version" value="${htsjdk-version}(${repository.revision})"/>
                 <attribute name="Implementation-Vendor" value="Broad Institute"/>
