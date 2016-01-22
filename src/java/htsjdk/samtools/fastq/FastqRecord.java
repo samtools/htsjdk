@@ -23,11 +23,13 @@
  */
 package htsjdk.samtools.fastq;
 
+import java.io.Serializable;
+
 /**
  * Represents a fastq record, fairly literally, i.e. without any conversion.
  */
-public class FastqRecord {
-
+public class FastqRecord implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String seqHeaderPrefix;
     private final String seqLine;
     private final String qualHeaderPrefix;
@@ -41,6 +43,15 @@ public class FastqRecord {
         this.seqLine = seqLine ;
         this.qualLine = qualLine ;
     }
+    
+    /** copy constructor */
+    public FastqRecord(final FastqRecord other) {
+        if( other == null ) throw new IllegalArgumentException("new FastqRecord(null)");
+        this.seqHeaderPrefix = other.seqHeaderPrefix;
+        this.seqLine = other.seqLine;
+        this.qualHeaderPrefix = other.qualHeaderPrefix;
+        this.qualLine = other.qualLine;
+    }
 
     /** @return the read name */
     public String getReadHeader() { return seqHeaderPrefix; }
@@ -52,7 +63,6 @@ public class FastqRecord {
     public String getBaseQualityString() { return qualLine; }
     /** shortcut to getReadString().length() */
     public int length() { return this.seqLine==null?0:this.seqLine.length();}
-    
     
     @Override
     public int hashCode() {

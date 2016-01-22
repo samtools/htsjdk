@@ -156,6 +156,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      */
     public File getFile() { return fastqFile ; }
 
+    @Override
     public void close() {
         try {
             reader.close();
