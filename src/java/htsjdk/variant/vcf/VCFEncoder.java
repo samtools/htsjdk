@@ -37,6 +37,9 @@ public class VCFEncoder {
 
 	private boolean outputTrailingFormatFields = false;
 
+	/** length of longest VCF line seen so far, used in StringBuilder(capacity) */
+	private int vcfLineLengthCapacity = 100;
+
 	/**
 	 * Prepare a VCFEncoder that will encode records appropriate to the given VCF header, optionally
 	 * allowing missing fields in the header.
@@ -69,10 +72,10 @@ public class VCFEncoder {
 			throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
 		}
 
-		final StringBuilder stringBuilder = new StringBuilder();
+		final StringBuilder stringBuilder = new StringBuilder(this.vcfLineLengthCapacity);
 
 		// CHROM
-		stringBuilder.append(context.getChr()).append(VCFConstants.FIELD_SEPARATOR);
+		stringBuilder.append(context.getContig()).append(VCFConstants.FIELD_SEPARATOR);
 
 		// POS
 		stringBuilder.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR);
@@ -140,7 +143,7 @@ public class VCFEncoder {
 				addGenotypeData(context, alleleStrings, genotypeAttributeKeys, stringBuilder);
 			}
 		}
-
+		this.vcfLineLengthCapacity = Math.max(this.vcfLineLengthCapacity,stringBuilder.length());
 		return stringBuilder.toString();
 	}
 
@@ -174,7 +177,7 @@ public class VCFEncoder {
 	private void fieldIsMissingFromHeaderError(final VariantContext vc, final String id, final String field) {
 		if ( ! allowMissingFieldsInHeader)
 			throw new IllegalStateException("Key " + id + " found in VariantContext field " + field
-					+ " at " + vc.getChr() + ":" + vc.getStart()
+					+ " at " + vc.getContig() + ":" + vc.getStart()
 					+ " but this key isn't defined in the VCFHeader.  We require all VCFs to have"
 					+ " complete VCF headers by default.");
 	}
@@ -188,7 +191,7 @@ public class VCFEncoder {
 		else if ( val instanceof Boolean )
 			result = (Boolean)val ? "" : null; // empty string for true, null for false
 		else if ( val instanceof List ) {
-			result = formatVCFField(((List)val).toArray());
+			result = formatVCFField(((List<?>)val).toArray());
 		} else if ( val.getClass().isArray() ) {
 			final int length = Array.getLength(val);
 			if ( length == 0 )
@@ -355,7 +358,7 @@ public class VCFEncoder {
 
 			builder.append(entry.getKey());
 
-			if ( ! entry.getValue().equals("")) {
+			if ( ! entry.getValue().isEmpty()) {
 				final VCFInfoHeaderLine metaData = this.header.getInfoHeaderLine(entry.getKey());
 				if ( metaData == null || metaData.getCountType() != VCFHeaderLineCount.INTEGER || metaData.getCount() != 0 ) {
 					builder.append("=");
