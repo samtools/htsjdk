@@ -94,7 +94,7 @@ public class VariantContextBuilder {
      * Create an empty VariantContextBuilder where all values adopt their default values, but the bare min.
      * of info (source, chr, start, stop, and alleles) have been provided to start.
      */
-    public VariantContextBuilder(String source, String contig, long start, long stop, Collection<Allele> alleles) {
+    public VariantContextBuilder(final String source, final String contig, final long start, final long stop, final Collection<Allele> alleles) {
         this.source = source;
         this.contig = contig;
         this.start = start;
@@ -110,14 +110,14 @@ public class VariantContextBuilder {
      *
      * @param parent  Cannot be null
      */
-    public VariantContextBuilder(VariantContext parent) {
+    public VariantContextBuilder(final VariantContext parent) {
         if ( parent == null ) throw new IllegalArgumentException("BUG: VariantContextBuilder parent argument cannot be null in VariantContextBuilder");
-        this.alleles = parent.alleles;
+        this.alleles = parent.getAlleles();
         this.attributes = parent.getAttributes();
         this.attributesCanBeModified = false;
-        this.contig = parent.contig;
+        this.contig = parent.getContig();
         this.filters = parent.getFiltersMaybeNull();
-        this.genotypes = parent.genotypes;
+        this.genotypes = parent.getGenotypes();
         this.ID = parent.getID();
         this.log10PError = parent.getLog10PError();
         this.source = parent.getSource();
@@ -126,7 +126,7 @@ public class VariantContextBuilder {
         this.fullyDecoded = parent.isFullyDecoded();
     }
 
-    public VariantContextBuilder(VariantContextBuilder parent) {
+    public VariantContextBuilder(final VariantContextBuilder parent) {
         if ( parent == null ) throw new IllegalArgumentException("BUG: VariantContext parent argument cannot be null in VariantContextBuilder");
         this.alleles = parent.alleles;
         this.attributesCanBeModified = false;
@@ -160,7 +160,7 @@ public class VariantContextBuilder {
     }
 
     public VariantContextBuilder alleles(final List<String> alleleStrings) {
-        List<Allele> alleles = new ArrayList<Allele>(alleleStrings.size());
+        final List<Allele> alleles = new ArrayList<Allele>(alleleStrings.size());
 
         for ( int i = 0; i < alleleStrings.size(); i++ ) {
             alleles.add(Allele.create(alleleStrings.get(i), i == 0));
