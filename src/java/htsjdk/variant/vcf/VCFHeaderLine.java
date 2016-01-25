@@ -158,9 +158,17 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append("=");
             builder.append(entry.getValue().toString().contains(",") ||
                            entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ? "\""+ entry.getValue() + "\"" : entry.getValue());
+                           entry.getKey().equals("Description") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
         builder.append(">");
         return builder.toString();
+    }
+
+    private static String escapeQuotes(final String value) {
+        // java escaping in a string literal makes this harder to read than it should be
+        // without string literal escaping and quoting the regex would be: replaceAll( ([^\])" , $1\" )
+        // ie replace: something that's not a backslash ([^\]) followed by a double quote
+        // with: the thing that wasn't a backslash ($1), followed by a backslash, followed by a double quote
+        return value.replaceAll("([^\\\\])\"", "$1\\\\\"");
     }
 }
