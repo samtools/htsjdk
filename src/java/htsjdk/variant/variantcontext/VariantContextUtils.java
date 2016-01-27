@@ -366,11 +366,11 @@ public class VariantContextUtils {
         final byte refAllele = vc.getReference().getBases()[0];
         final Collection<Allele> altAlleles = vc.getAlternateAlleles();
 
-        if(vc.type == VariantContext.Type.NO_VARIATION) {
+        if(vc.getType() == VariantContext.Type.NO_VARIATION) {
             throw new IllegalArgumentException("Variant context is monomorphic: " + vc.toString());
         }
 
-        if(vc.type != VariantContext.Type.SNP) {
+        if(vc.getType() != VariantContext.Type.SNP) {
             throw new IllegalArgumentException("Variant context is not a SNP: " + vc.toString());
         }
 
