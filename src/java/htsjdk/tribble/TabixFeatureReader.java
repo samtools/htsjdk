@@ -23,20 +23,15 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.readers.LineReader;
-import htsjdk.tribble.readers.LineReaderUtil;
-import htsjdk.tribble.readers.PositionalBufferedStream;
-import htsjdk.tribble.readers.TabixIteratorLineReader;
-import htsjdk.tribble.readers.TabixReader;
-import htsjdk.tribble.util.ParsingUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+
+import htsjdk.samtools.seekablestream.*;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.readers.*;
+import htsjdk.tribble.util.ParsingUtils;
 
 /**
  * @author Jim Robinson
@@ -54,10 +49,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @throws IOException
      */
     public TabixFeatureReader(final String featureFile, final AsciiFeatureCodec codec) throws IOException {
-        super(featureFile, codec);
-        tabixReader = new TabixReader(featureFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
-        readHeader();
+        this(featureFile, null, codec);
     }
 
     /**
@@ -68,10 +60,14 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @throws IOException
      */
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec) throws IOException {
+        this(featureFile, indexFile, codec, SeekableStreamFactory.getInstance());
+    }
+
+    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec, ISeekableStreamFactory ssf) throws IOException {
         super(featureFile, codec);
-        tabixReader = new TabixReader(featureFile, indexFile);
+        tabixReader = new TabixReader(featureFile, indexFile, ssf);
         sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
-        readHeader();
+        readHeader(ssf);
     }
 
 
@@ -81,10 +77,10 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @return a Object, representing the file header, if available
      * @throws IOException throws an IOException if we can't open the file
      */
-    private void readHeader() throws IOException {
+    private void readHeader(ISeekableStreamFactory ssf) throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ssf.getInputStreamFor(path))));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);

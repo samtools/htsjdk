@@ -23,22 +23,16 @@
  */
 package htsjdk.tribble.readers;
 
-import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
-import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.tribble.util.ParsingUtils;
-import htsjdk.tribble.util.TabixUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import htsjdk.samtools.seekablestream.*;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
 
 /**
  * @author Heng Li <hengli@broadinstitute.org>
@@ -99,7 +93,7 @@ public class TabixReader {
      * @param fn File name of the data file
      */
     public TabixReader(final String fn) throws IOException {
-        this(fn, null, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
+        this(fn, null, SeekableStreamFactory.getInstance());
     }
 
     /**
@@ -107,31 +101,14 @@ public class TabixReader {
      * @param idxFn Full path to the index file. Auto-generated if null
      */
     public TabixReader(final String fn, final String idxFn) throws IOException {
-        this(fn, idxFn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
+        this(fn, idxFn, SeekableStreamFactory.getInstance());
     }
 
-    /**
-     * @param fn File name of the data file  (used for error messages only)
-     * @param stream Seekable stream from which the data is read
-     */
-    public TabixReader(final String fn, SeekableStream stream) throws IOException {
-        this(fn, null, stream);
-    }
-
-    /**
-     * @param fn File name of the data file  (used for error messages only)
-     * @param idxFn Full path to the index file. Auto-generated if null
-     * @param stream Seekable stream from which the data is read
-     */
-    public TabixReader(final String fn, final String idxFn, SeekableStream stream) throws IOException {
+    public TabixReader(final String fn, final String idxFn, ISeekableStreamFactory factory) throws IOException {
         mFn = fn;
-        mFp = new BlockCompressedInputStream(stream);
-        if(idxFn == null){
-            mIdxFn = ParsingUtils.appendToPath(fn, TabixUtils.STANDARD_INDEX_EXTENSION);
-        } else {
-            mIdxFn = idxFn;
-        }
-        readIndex();
+        mFp = new BlockCompressedInputStream(factory.getBufferedStream(factory.getStreamFor(fn)));
+        mIdxFn = idxFn == null ? ParsingUtils.appendToPath(fn, TabixUtils.STANDARD_INDEX_EXTENSION) : idxFn;
+        readIndex(factory);
     }
 
     /** return the source (filename/URL) of that reader */
@@ -237,8 +214,7 @@ public class TabixReader {
     /**
      * Read the Tabix index from the default file.
      */
-    private void readIndex() throws IOException {
-        ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
+    private void readIndex(ISeekableStreamFactory ssf) throws IOException {
         readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIdxFn), 128000));
     }
 
