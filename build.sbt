@@ -4,9 +4,11 @@ import sbt.Package.ManifestAttributes
 
 name := "htsjdk"
 
+isSnapshot := true
+
 val buildVersion = "1.141"
 
-organization := "com.github.samtools"
+organization := "com.genestack"
 
 libraryDependencies += "org.apache.commons" % "commons-jexl" % "2.1.1"
 
@@ -17,10 +19,8 @@ libraryDependencies += "org.xerial.snappy" % "snappy-java" % "1.0.3-rc3"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.4.1"
 
 libraryDependencies += "org.tukaani" % "xz" % "1.5"
- 
-libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 
-libraryDependencies += "org.testng" % "testng" % "6.8.8"
+libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 
 unmanagedBase := baseDirectory.value
 
@@ -87,9 +87,9 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 crossPaths := false
 
-javacOptions in Compile ++= Seq("-source", "1.6")
+javacOptions in Compile ++= Seq("-source", "1.7")
 
-javacOptions in(Compile, compile) ++= Seq("-target", "1.6")
+javacOptions in(Compile, compile) ++= Seq("-target", "1.7")
 
 packageOptions := Seq(ManifestAttributes(
   ("Implementation-Version", s"${implementationVersion.value}"),
