@@ -865,4 +865,144 @@ public class SAMRecordUnitTest {
 
         testNullHeaderCigar(bamRec);
     }
+
+    @Test
+    public void testSetHeaderStrictValid() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        Integer originalRefIndex = sam.getReferenceIndex();
+        Assert.assertTrue(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX != originalRefIndex);
+
+        // force re-resolution of the reference name
+        sam.setHeaderStrict(samHeader);
+        Assert.assertEquals(sam.getReferenceIndex(), originalRefIndex);
+    }
+
+    @Test
+    public void testSetHeaderStrictValidHeaderless() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        Integer originalRefIndex = sam.getReferenceIndex();
+        Assert.assertTrue(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX != originalRefIndex);
+
+        sam.setHeader(null);
+        // force re-resolution of the reference name
+        sam.setHeaderStrict(samHeader);
+        Assert.assertEquals(sam.getReferenceIndex(), originalRefIndex);
+    }
+
+    @Test
+    public void testSetHeaderStrictValidNewHeader() {
+        final SAMRecord sam = createTestRecordHelper();
+        final String origSequenceName = sam.getContig();
+
+        final SAMFileHeader origSamHeader = sam.getHeader();
+        final int origSequenceLength = origSamHeader.getSequence(origSequenceName).getSequenceLength();
+        final SAMFileHeader newHeader = new SAMFileHeader();
+        newHeader.addSequence(new SAMSequenceRecord(origSequenceName, origSequenceLength));
+
+        // force re-resolution of the reference name against the new header
+        sam.setHeaderStrict(newHeader);
+        Assert.assertEquals(sam.getReferenceIndex(), new Integer(0));
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testSetHeaderStrictInvalidReference() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+
+        sam.setReferenceName("unresolvable");
+        Assert.assertEquals(new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX), sam.getReferenceIndex());
+
+        // throw on force re-resolution of the unresolvable reference name
+        sam.setHeaderStrict(samHeader);
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testSetHeaderStrictInvalidMateReference() {
+        SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+
+        sam.setMateReferenceName("unresolvable");
+        Assert.assertEquals(new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX), sam.getMateReferenceIndex());
+
+        // throw on force re-resolution of the unresolvable mate reference name
+        sam.setHeaderStrict(samHeader);
+    }
+
+    @Test
+    public void testSetHeaderStrictNull() {
+        SAMRecord sam = createTestRecordHelper();
+        sam.setHeaderStrict(null);
+        Assert.assertEquals(sam.mReferenceIndex, null);
+    }
+
+    // resolveIndexFromName
+
+    @Test
+    public void testResolveIndexResolvable() {
+        final SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        final String contigName = sam.getContig();
+        Assert.assertEquals(SAMRecord.resolveIndexFromName(contigName, samHeader, true), new Integer(samHeader.getSequenceIndex(contigName)));
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testResolveIndexUnresolvableNullHeader() {
+        SAMRecord.resolveIndexFromName("unresolvable", null, false);
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testResolveIndexUnresolvableStrict() {
+        final SAMFileHeader samHeader = new SAMFileHeader();
+        SAMRecord.resolveIndexFromName("unresolvable", samHeader, true);
+    }
+
+    @Test
+    public void testResolveIndexUnresolvableNotStrict() {
+        final SAMFileHeader samHeader = new SAMFileHeader();
+        Assert.assertEquals(SAMRecord.resolveIndexFromName("unresolvable", samHeader, false), null);
+    }
+
+    @Test
+    public void testResolveIndexNoAlignment() {
+        final SAMFileHeader samHeader = new SAMFileHeader();
+        Assert.assertEquals(SAMRecord.resolveIndexFromName(
+                SAMRecord.NO_ALIGNMENT_REFERENCE_NAME, samHeader, true), new Integer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX));
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testResolveIndexNullHeader() {
+        SAMRecord.resolveIndexFromName("unresolvable", null, true);
+    }
+
+    // resolveNameFromIndex
+
+    @Test
+    public void testResolveNameResolvable() {
+        final SAMRecord sam = createTestRecordHelper();
+        final SAMFileHeader samHeader = sam.getHeader();
+        final String contigName = sam.getContig();
+        final Integer contigIndex = samHeader.getSequenceIndex(contigName);
+        Assert.assertEquals(SAMRecord.resolveNameFromIndex(contigIndex, samHeader), contigName);
+    }
+
+    @Test(expectedExceptions=IllegalArgumentException.class)
+    public void testResolveNameUnresolvable() {
+        final SAMFileHeader samHeader = new SAMFileHeader();
+        SAMRecord.resolveNameFromIndex(99, samHeader);
+    }
+
+    @Test
+    public void testResolveNameNoAlignment() {
+        final SAMFileHeader samHeader = new SAMFileHeader();
+        Assert.assertEquals(SAMRecord.resolveNameFromIndex(
+                SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, samHeader), SAMRecord.NO_ALIGNMENT_REFERENCE_NAME);
+    }
+
+    @Test(expectedExceptions=IllegalStateException.class)
+    public void testResolveNameNullHeader() {
+        SAMRecord.resolveNameFromIndex(1, null);
+    }
+
 }

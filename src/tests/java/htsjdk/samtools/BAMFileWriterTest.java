@@ -142,7 +142,7 @@ public class BAMFileWriterTest {
         }
     }
 
-    @Test
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNullRecordsMismatchedHeader() throws Exception {
 
         final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
@@ -150,35 +150,37 @@ public class BAMFileWriterTest {
             rec.setHeader(null);
         }
 
-        // create a fake header to make sure the records can still be written using an invalid
+        // create a fake header to make sure the records cannot  be written using an invalid
         // sequence dictionary and unresolvable references
         final SAMFileHeader fakeHeader = new SAMFileHeader();
         fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
         final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
         bamFile.deleteOnExit();
 
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(fakeHeader, false, bamFile);
-        for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
-            bamWriter.addAlignment(rec);
+        try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(fakeHeader, false, bamFile);) {
+            for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
+                bamWriter.addAlignment(rec);
+            }
         }
-        bamWriter.close();
+    }
 
-        final SamReader bamReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(bamFile);
-        final SamReader samReader = samRecordSetBuilder.getSamReader();
-        samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
-        final CloseableIterator<SAMRecord> it = samReader.iterator();
-        final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
-        while (it.hasNext()) {
-            Assert.assertTrue(bamIt.hasNext());
-            final SAMRecord samRecord = it.next();
-            final SAMRecord bamRecord = bamIt.next();
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRecordsMismatchedHeader() throws Exception {
 
-            // test only reference names since we'll have lost reference indices due to the fake  null header
-            Assert.assertEquals(bamRecord.getReferenceName(), samRecord.getReferenceName());
-            Assert.assertEquals(bamRecord.getAlignmentStart(), samRecord.getAlignmentStart());
+        final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
+
+        // create a fake header to make sure the records cannot  be written using an invalid
+        // sequence dictionary and unresolvable references
+        final SAMFileHeader fakeHeader = new SAMFileHeader();
+        fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        bamFile.deleteOnExit();
+
+        try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(fakeHeader, false, bamFile);) {
+            for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
+                bamWriter.addAlignment(rec);
+            }
         }
-        Assert.assertFalse(bamIt.hasNext());
-        CloserUtil.close(samReader);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
