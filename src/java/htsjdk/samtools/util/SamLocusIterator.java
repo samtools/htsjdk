@@ -142,6 +142,19 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      */
     private boolean emitUncoveredLoci = true;
 
+    /**
+     * If set, this will cap the number of reads we accumulate for any given position.
+     * Note that if we hit the maximum threshold at the first position in the accumulation queue,
+     * then we throw further reads overlapping that position completely away (including for subsequent positions).
+     * This is a useful feature if one wants to minimize the memory footprint in files with a few massively large pileups,
+     * but it must be pointed out that it could cause major bias because of the non-random nature with which the cap is
+     * applied (the first maxReadsToAccumulatePerLocus reads are kept and all subsequent ones are dropped).
+     */
+    private int maxReadsToAccumulatePerLocus = Integer.MAX_VALUE;
+
+    // Set to true when we have enforced the accumulation limit for the first time
+    private boolean enforcedAccumulationLimit = false;
+
     // When there is a target mask, these members remember the last locus for which a LocusInfo has been
     // returned, so that any uncovered locus in the target mask can be covered by a 0-coverage LocusInfo
     private int lastReferenceSequence = 0;
@@ -312,7 +325,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             }
 
             // Store the loci for the read in the accumulator
-            accumulateSamRecord(rec);
+            if (!surpassedAccumulationThreshold()) accumulateSamRecord(rec);
 
             samIterator.next();
         }
@@ -341,6 +354,18 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         } else {
             return null;
         }
+    }
+
+    /**
+     * @return true if we have surpassed the maximum accumulation threshold for the first locus in the accumulator, false otherwise
+     */
+    private boolean surpassedAccumulationThreshold() {
+        final boolean surpassesThreshold = !accumulator.isEmpty() && accumulator.get(0).recordAndOffsets.size() >= maxReadsToAccumulatePerLocus;
+        if (surpassesThreshold && !enforcedAccumulationLimit) {
+            LOG.warn("We have encountered greater than " + maxReadsToAccumulatePerLocus + " reads at position " + accumulator.get(0).toString() + " and will ignore the remaining reads at this position.  Note that further warnings will be suppressed.");
+            enforcedAccumulationLimit = true;
+        }
+        return surpassesThreshold;
     }
 
     /**
@@ -512,5 +537,16 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     public void setEmitUncoveredLoci(final boolean emitUncoveredLoci) {
         this.emitUncoveredLoci = emitUncoveredLoci;
     }
+
+    public int getMaxReadsToAccumulatePerLocus() {
+        return maxReadsToAccumulatePerLocus;
+    }
+
+    /**
+     * If set, this will cap the number of reads we accumulate for any given position.
+     * As is pointed out above, setting this could cause major bias because of the non-random nature with which the
+     * cap is applied (the first maxReadsToAccumulatePerLocus reads are kept and all subsequent ones are dropped).
+     */
+    public void setMaxReadsToAccumulatePerLocus(final int maxReadsToAccumulatePerLocus) { this.maxReadsToAccumulatePerLocus = maxReadsToAccumulatePerLocus; }
 }
 
