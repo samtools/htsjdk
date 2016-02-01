@@ -144,7 +144,7 @@ public class CRAIIndex {
             slice.index = entry.sliceIndex;
             slice.offset = entry.sliceOffset;
 
-            indexer.processAlignment(slice);
+            indexer.processSingleReferenceSlice(slice);
         }
         indexer.finish();
 

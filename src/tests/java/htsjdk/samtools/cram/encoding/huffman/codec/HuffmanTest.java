@@ -1,6 +1,5 @@
 package htsjdk.samtools.cram.encoding.huffman.codec;
 
-import htsjdk.samtools.cram.build.CompressionHeaderFactory;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.ReadTag;
@@ -19,7 +18,7 @@ public class HuffmanTest {
     public void testHuffmanIntHelper() throws IOException {
         int size = 1000000;
 
-        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
+        HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
         cal.add(ReadTag.nameType3BytesToInt("OQ", 'Z'), size);
         cal.add(ReadTag.nameType3BytesToInt("X0", 'C'), size);
         cal.add(ReadTag.nameType3BytesToInt("X0", 'c'), size);
@@ -56,8 +55,9 @@ public class HuffmanTest {
         for (int i = 0; i < size; i++) {
             for (int b : cal.values()) {
                 int v = helper.read(bis);
-                if (v != b)
+                if (v != b) {
                     Assert.fail("Mismatch: " + v + " vs " + b + " at " + counter);
+                }
 
                 counter++;
             }
@@ -65,13 +65,14 @@ public class HuffmanTest {
     }
 
     @Test
-    public void testHuffmanByteHelper () throws IOException {
-                int size = 1000000;
+    public void testHuffmanByteHelper() throws IOException {
+        int size = 1000000;
 
         long time5 = System.nanoTime();
-        CompressionHeaderFactory.HuffmanParamsCalculator cal = new CompressionHeaderFactory.HuffmanParamsCalculator();
-        for (byte i = 33; i < 33 + 15; i++)
+        HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
+        for (byte i = 33; i < 33 + 15; i++) {
             cal.add(i);
+        }
         cal.calculate();
 
         HuffmanByteHelper helper = new HuffmanByteHelper(cal.valuesAsBytes(), cal.bitLens());
@@ -94,8 +95,9 @@ public class HuffmanTest {
         for (int i = 0; i < size; i++) {
             for (int b : cal.values()) {
                 int v = helper.read(bis);
-                if (v != b)
+                if (v != b) {
                     Assert.fail("Mismatch: " + v + " vs " + b + " at " + counter);
+                }
 
                 counter++;
             }

@@ -64,11 +64,10 @@ public class ContainerFactory {
         final long time1 = System.nanoTime();
         final CompressionHeader header = new CompressionHeaderFactory().build(records,
                 substitutionMatrix, samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
-        header.APDelta = true;
+        header.APDelta = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
         final long time2 = System.nanoTime();
 
         header.readNamesIncluded = preserveReadNames;
-        header.APDelta = true;
 
         final List<Slice> slices = new ArrayList<Slice>();
 
@@ -149,28 +148,16 @@ public class ContainerFactory {
 			 * 3) Detect alignment boundaries for the slice if not multi reference.
 			 */
             // @formatter:on
-            slice.sequenceId = Slice.UNMAPPED_OR_NO_REFERENCE;
+            slice.sequenceId = records.get(0).sequenceId;
             final ContentDigests hasher = ContentDigests.create(ContentDigests.ALL);
             for (final CramCompressionRecord record : records) {
                 slice.bases += record.readLength;
                 hasher.add(record);
+                if (slice.sequenceId == Slice.MULTI_REFERENCE) continue;
 
-                if (slice.sequenceId != Slice.MULTI_REFERENCE
-                        && record.alignmentStart != SAMRecord.NO_ALIGNMENT_START
-                        && record.sequenceId != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                    switch (slice.sequenceId) {
-                        case Slice.UNMAPPED_OR_NO_REFERENCE:
-                            slice.sequenceId = record.sequenceId;
-                            break;
-                        case Slice.MULTI_REFERENCE:
-                            break;
-
-                        default:
-                            if (slice.sequenceId != record.sequenceId)
-                                slice.sequenceId = Slice.UNMAPPED_OR_NO_REFERENCE;
-                            break;
-                    }
-
+                if (slice.sequenceId != record.sequenceId) {
+                    slice.sequenceId = Slice.MULTI_REFERENCE;
+                } else if (record.alignmentStart != SAMRecord.NO_ALIGNMENT_START) {
                     minAlStart = Math.min(record.alignmentStart, minAlStart);
                     maxAlEnd = Math.max(record.getAlignmentEnd(), maxAlEnd);
                 }
@@ -181,8 +168,8 @@ public class ContainerFactory {
 
         if (slice.sequenceId == Slice.MULTI_REFERENCE
                 || minAlStart == Integer.MAX_VALUE) {
-            slice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-            slice.alignmentSpan = 0;
+            slice.alignmentStart = Slice.NO_ALIGNMENT_START;
+            slice.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
         } else {
             slice.alignmentStart = minAlStart;
             slice.alignmentSpan = maxAlEnd - minAlStart + 1;

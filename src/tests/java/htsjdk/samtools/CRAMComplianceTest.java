@@ -84,7 +84,6 @@ public class CRAMComplianceTest {
     @Test(dataProvider = "test1")
     public void test(String name) throws IOException {
         TestCase t = new TestCase(new File("testdata/htsjdk/samtools/cram/"), name);
-//        TestCase t = new TestCase(new File("C:\\temp\\htslib\\test"), name);
 
         ReferenceSource source = null;
         if (t.refFile.exists())
@@ -101,8 +100,9 @@ public class CRAMComplianceTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);
-        for (SAMRecord samRecord : samRecords)
+        for (SAMRecord samRecord : samRecords) {
             cramFileWriter.addAlignment(samRecord);
+        }
         cramFileWriter.close();
 
 
