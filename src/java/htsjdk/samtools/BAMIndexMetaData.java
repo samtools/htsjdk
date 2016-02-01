@@ -153,7 +153,7 @@ public class BAMIndexMetaData {
 
         final int alignmentStart = slice.alignmentStart;
         if (alignmentStart == SAMRecord.NO_ALIGNMENT_START) {
-            incrementNoCoordinateRecordCount();
+            noCoordinateRecords+=slice.nofRecords;
             return;
         }
 

@@ -21,12 +21,14 @@ import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
+import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -319,26 +321,19 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             final long containerOffset = filePointers[i] >>> 16;
 
             try {
-                if (seekableStream.position() != containerOffset || iterator.container == null) {
-                    seekableStream.seek(containerOffset);
-                    container = ContainerIO.readContainerHeader(iterator.getCramHeader().getVersion().major, seekableStream);
-                    if (container.alignmentStart + container.alignmentSpan > start) {
-                        seekableStream.seek(containerOffset);
-                        iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
-                        return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
-                    }
-                } else {
-                    container = iterator.container;
-                    if (container.alignmentStart + container.alignmentSpan > start) {
-                        iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start);
-                        return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
-                    }
+                seekableStream.seek(containerOffset);
+                iterator.nextContainer();
+
+                if (iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start)) {
+                    return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
                 }
             } catch (final IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
+            } catch (IllegalAccessException e) {
+                throw new SAMException(e);
             }
         }
-        return iterator;
+        throw new SAMException("Failed to query alignment start: " + sequence + " at " + start);
     }
 
     CloseableIterator<SAMRecord> query(final int referenceIndex,
@@ -390,8 +385,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             } catch (final FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
-        } else if (inputStream instanceof SeekableStream)
+        } else if (inputStream instanceof SeekableStream) {
             seekableStream = (SeekableStream) inputStream;
+        }
         return seekableStream;
     }
 
@@ -527,6 +523,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         boolean isWithinTheInterval(final SAMRecord record) {
             final boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
             if (interval.start == -1) return refMatch;
+            if (!refMatch) return false;
 
             final int start = record.getAlignmentStart();
             final int end = record.getAlignmentEnd();
@@ -541,8 +538,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         boolean isBeyondTheInterval(final SAMRecord record) {
             if (record.getReadUnmappedFlag()) return false;
-            final boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
-            return !refMatch || interval.end != -1 && record.getAlignmentStart() > interval.end;
+            if (record.getReferenceIndex() > interval.referenceIndex) return true;
+            if (record.getReferenceIndex() != interval.referenceIndex) return false;
+
+            return interval.end != -1 && record.getAlignmentStart() > interval.end;
 
         }
 

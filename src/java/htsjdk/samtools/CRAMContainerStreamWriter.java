@@ -35,10 +35,11 @@ public class CRAMContainerStreamWriter {
     private static final Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
 
     static int DEFAULT_RECORDS_PER_SLICE = 10000;
+    static int MIN_SINGLE_REF_RECORDS = 1000;
     protected final int recordsPerSlice = DEFAULT_RECORDS_PER_SLICE;
     private static final int DEFAULT_SLICES_PER_CONTAINER = 1;
     protected final int containerSize = recordsPerSlice * DEFAULT_SLICES_PER_CONTAINER;
-    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -2;
+    private static final int REF_SEQ_INDEX_NOT_INITIALIZED = -3;
 
     private final SAMFileHeader samFileHeader;
     private final String cramID;
@@ -180,6 +181,7 @@ public class CRAMContainerStreamWriter {
     public void setIgnoreTags(final Set<String> ignoreTags) {
         this.ignoreTags = ignoreTags;
     }
+
     /**
      * Decide if the current container should be completed and flushed. The decision is based on a) number of records and b) if the
      * reference sequence id has changed.
@@ -187,8 +189,43 @@ public class CRAMContainerStreamWriter {
      * @param nextRecord the record to be added into the current or next container
      * @return true if the current container should be flushed and the following records should go into a new container; false otherwise.
      */
-    private boolean shouldFlushContainer(final SAMRecord nextRecord) {
-        return samRecords.size() >= containerSize || refSeqIndex != REF_SEQ_INDEX_NOT_INITIALIZED && refSeqIndex != nextRecord.getReferenceIndex();
+    protected boolean shouldFlushContainer(final SAMRecord nextRecord) {
+        if (samRecords.isEmpty()) {
+            refSeqIndex = nextRecord.getReferenceIndex();
+            return false;
+        }
+
+        if (samRecords.size() >= containerSize) {
+            return true;
+        }
+
+        if (samFileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            return false;
+        }
+
+        // make unmapped reads don't get into multiref containers:
+        if (refSeqIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && nextRecord.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+            return true;
+        }
+
+        if (refSeqIndex == Slice.MULTI_REFERENCE) {
+            return false;
+        }
+
+        final boolean sameRef = (refSeqIndex == nextRecord.getReferenceIndex());
+        if (sameRef) {
+            return false;
+        }
+
+        /**
+         * Protection against too small containers: flush at least X single refs, switch to multiref otherwise.
+         */
+        if (samRecords.size() > MIN_SINGLE_REF_RECORDS) {
+            return true;
+        } else {
+            refSeqIndex = Slice.MULTI_REFERENCE;
+            return false;
+        }
     }
 
     private static void updateTracks(final List<SAMRecord> samRecords, final ReferenceTracks tracks) {
@@ -230,29 +267,33 @@ public class CRAMContainerStreamWriter {
      * @throws IllegalAccessException
      * @throws IOException
      */
-    private void flushContainer() throws IllegalArgumentException, IllegalAccessException, IOException {
+    protected void flushContainer() throws IllegalArgumentException, IllegalAccessException, IOException {
 
         final byte[] refs;
         String refSeqName = null;
-        if (refSeqIndex == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        switch (refSeqIndex) {
+            case Slice.MULTI_REFERENCE:
+                if (preservation != null && preservation.areReferenceTracksRequired()) {
+                    throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
+                }
             refs = new byte[0];
-        }
-        else {
+                break;
+            case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
+                refs = new byte[0];
+                break;
+            default:
             final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
             refs = source.getReferenceBases(sequence, true);
             refSeqName = sequence.getSequenceName();
+                break;
         }
 
         int start = SAMRecord.NO_ALIGNMENT_START;
         int stop = SAMRecord.NO_ALIGNMENT_START;
         for (final SAMRecord r : samRecords) {
-            if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
-                continue;
-            }
+            if (r.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) continue;
 
-            if (start == SAMRecord.NO_ALIGNMENT_START) {
-                start = r.getAlignmentStart();
-            }
+            if (start == SAMRecord.NO_ALIGNMENT_START) start = r.getAlignmentStart();
 
             start = Math.min(r.getAlignmentStart(), start);
             stop = Math.max(r.getAlignmentEnd(), stop);
@@ -278,6 +319,10 @@ public class CRAMContainerStreamWriter {
         int index = 0;
         int prevAlStart = start;
         for (final SAMRecord samRecord : samRecords) {
+            if (samRecord.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && refSeqIndex != samRecord.getReferenceIndex()) {
+                // this may load all ref sequences into memory:
+                sam2CramRecordFactory.setRefBases(source.getReferenceBases(samFileHeader.getSequence(samRecord.getReferenceIndex()), true));
+            }
             final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(samRecord);
             cramRecord.index = ++index;
             cramRecord.alignmentDelta = samRecord.getAlignmentStart() - prevAlStart;
@@ -286,13 +331,10 @@ public class CRAMContainerStreamWriter {
 
             cramRecords.add(cramRecord);
 
-            if (preservation != null) {
-                preservation.addQualityScores(samRecord, cramRecord, tracks);
+            if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
+            else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) cramRecord.setForcePreserveQualityScores(true);
             }
-            else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) {
-                cramRecord.setForcePreserveQualityScores(true);
-            }
-        }
+
 
         if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
             log.warn("Abnormally high number of mismatches, possibly wrong reference.");
@@ -332,13 +374,9 @@ public class CRAMContainerStreamWriter {
 
                 // mark unpredictable reads as detached:
                 for (final CramCompressionRecord cramRecord : cramRecords) {
-                    if (cramRecord.next == null || cramRecord.previous != null) {
-                        continue;
-                    }
+                    if (cramRecord.next == null || cramRecord.previous != null) continue;
                     CramCompressionRecord last = cramRecord;
-                    while (last.next != null) {
-                        last = last.next;
-                    }
+                    while (last.next != null) last = last.next;
 
                     if (cramRecord.isFirstSegment() && last.isLastSegment()) {
 
@@ -352,23 +390,13 @@ public class CRAMContainerStreamWriter {
 
                                 last = last.next;
                             }
-                            if (last.templateSize != -templateLength) {
-                                detach(cramRecord);
-                            }
-                        }
-                        else {
-                            detach(cramRecord);
-                        }
-                    }
-                    else {
-                        detach(cramRecord);
-                    }
+                            if (last.templateSize != -templateLength) detach(cramRecord);
+                        }else detach(cramRecord);
+                    } else detach(cramRecord);
                 }
 
                 for (final CramCompressionRecord cramRecord : primaryMateMap.values()) {
-                    if (cramRecord.next != null) {
-                        continue;
-                    }
+                    if (cramRecord.next != null) continue;
                     cramRecord.setDetached(true);
 
                     cramRecord.setHasMateDownStream(false);
@@ -378,10 +406,9 @@ public class CRAMContainerStreamWriter {
                 }
 
                 for (final CramCompressionRecord cramRecord : secondaryMateMap.values()) {
-                    if (cramRecord.next != null) {
-                        continue;
-                    }
+                    if (cramRecord.next != null) continue;
                     cramRecord.setDetached(true);
+
                     cramRecord.setHasMateDownStream(false);
                     cramRecord.recordsToNextFragment = -1;
                     cramRecord.next = null;
@@ -424,11 +451,14 @@ public class CRAMContainerStreamWriter {
         container.offset = offset;
         offset += ContainerIO.writeContainer(cramVersion, container, outputStream);
         if (indexer != null) {
-            for (final Slice slice : container.slices) {
-                indexer.processAlignment(slice);
-            }
+            /**
+             * Using silent validation here because the reads have been through validation already or
+             * they have been generated somehow through the htsjdk.
+             */
+            indexer.processContainer(container, ValidationStringency.SILENT);
         }
         samRecords.clear();
+        refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
     }
 
     /**
@@ -439,6 +469,7 @@ public class CRAMContainerStreamWriter {
     private static void detach(CramCompressionRecord cramRecord) {
         do {
             cramRecord.setDetached(true);
+
             cramRecord.setHasMateDownStream(false);
             cramRecord.recordsToNextFragment = -1;
         }
@@ -451,9 +482,15 @@ public class CRAMContainerStreamWriter {
      * @param samRecordReferenceIndex index of the new reference sequence
      */
     private void updateReferenceContext(final int samRecordReferenceIndex) {
+        if (refSeqIndex == Slice.MULTI_REFERENCE) {
+            return;
+        }
+
         if (refSeqIndex == REF_SEQ_INDEX_NOT_INITIALIZED) {
             refSeqIndex = samRecordReferenceIndex;
-        } else
-        if (refSeqIndex != samRecordReferenceIndex) refSeqIndex = samRecordReferenceIndex;
+        } else if (refSeqIndex != samRecordReferenceIndex) {
+            refSeqIndex = Slice.MULTI_REFERENCE;
     }
+    }
+
 }

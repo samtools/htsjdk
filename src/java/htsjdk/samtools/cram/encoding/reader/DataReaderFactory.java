@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.common.IntHashMap;
 import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.encoding.DataSeries;
@@ -30,6 +31,7 @@ import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.EncodingParams;
 import htsjdk.samtools.cram.structure.ReadTag;
+import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,15 +39,14 @@ import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.TreeMap;
 
-@SuppressWarnings("unchecked")
 public class DataReaderFactory {
+    private static Log log = Log.getInstance(DataReaderFactory.class);
 
     private final static boolean collectStats = false;
 
     public AbstractReader buildReader(final AbstractReader reader,
                                       final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap,
-                                      final CompressionHeader header, final int refId) throws IllegalArgumentException,
-            IllegalAccessException {
+                                      final CompressionHeader header, final int refId) throws IllegalArgumentException {
         reader.captureReadNames = header.readNamesIncluded;
         reader.refId = refId;
         reader.APDelta = header.APDelta;
@@ -56,10 +57,15 @@ public class DataReaderFactory {
                 final EncodingKey key = dataSeries.key();
                 final DataSeriesType type = dataSeries.type();
                 if (header.encodingMap.get(key) == null) {
-                    System.err.println("Encoding not found for key: " + key);
+                    log.debug("Encoding not found for key: " + key);
+                } else {
+                    try {
+                        field.set(reader,
+                                createReader(type, header.encodingMap.get(key), bitInputStream, inputMap));
+                    } catch (IllegalAccessException e) {
+                        throw new CRAMException(e);
+                    }
                 }
-                field.set(reader,
-                        createReader(type, header.encodingMap.get(key), bitInputStream, inputMap));
             }
 
             if (field.isAnnotationPresent(DataSeriesMap.class)) {
@@ -74,7 +80,11 @@ public class DataReaderFactory {
                                 inputMap);
                         map.put(key, tagReader);
                     }
-                    field.set(reader, map);
+                    try {
+                        field.set(reader, map);
+                    } catch (IllegalAccessException e) {
+                        throw new CRAMException(e);
+                    }
                 }
             }
         }

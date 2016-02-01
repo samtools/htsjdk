@@ -255,8 +255,8 @@ public class CramIO {
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];
         container.slices = new Slice[0];
-        container.alignmentSpan = 0;
-        container.alignmentStart = 0;
+        container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        container.alignmentStart = Slice.NO_ALIGNMENT_START;
         container.bases = 0;
         container.globalRecordCounter = 0;
         container.nofRecords = 0;

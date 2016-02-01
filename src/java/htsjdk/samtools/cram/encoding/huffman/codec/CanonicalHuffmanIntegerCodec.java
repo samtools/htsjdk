@@ -48,12 +48,8 @@ class CanonicalHuffmanIntegerCodec extends AbstractBitCodec<Integer> {
     @Override
     public long numberOfBits(final Integer object) {
         final HuffmanBitCode bitCode;
-        try {
-            bitCode = helper.codes.get(object);
-            return bitCode.bitLength;
-        } catch (final NullPointerException e) {
-            throw new RuntimeException("Value " + object + " not found.", e);
-        }
+        bitCode = helper.codes.get(object);
+        return bitCode.bitLength;
     }
 
     @Override

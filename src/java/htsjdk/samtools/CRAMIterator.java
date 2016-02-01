@@ -30,7 +30,6 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.IOException;
@@ -128,7 +127,7 @@ public class CRAMIterator implements SAMRecordIterator {
         return cramHeader;
     }
 
-    private void nextContainer() throws IOException, IllegalArgumentException,
+    void nextContainer() throws IOException, IllegalArgumentException,
             IllegalAccessException, CRAMException {
 
         if (containerIterator != null) {
@@ -165,9 +164,10 @@ public class CRAMIterator implements SAMRecordIterator {
 
         if (container.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             refs = new byte[]{};
-        } else if (container.sequenceId == -2) {
+            prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+        } else if (container.sequenceId == Slice.MULTI_REFERENCE) {
             refs = null;
-            prevSeqId = -2;
+            prevSeqId = Slice.MULTI_REFERENCE;
         } else if (prevSeqId < 0 || prevSeqId != container.sequenceId) {
             final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                     .getSequence(container.sequenceId);
@@ -233,8 +233,8 @@ public class CRAMIterator implements SAMRecordIterator {
      * @param refIndex reference sequence index
      * @param pos      alignment start to skip to
      */
-    public void jumpWithinContainerToPos(final int refIndex, final int pos) {
-        if (!hasNext()) return;
+    public boolean jumpWithinContainerToPos(final int refIndex, final int pos) {
+        if (!hasNext()) return false;
         int i = 0;
         for (final SAMRecord record : records) {
             if (refIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && record.getReferenceIndex() != refIndex) continue;
@@ -242,17 +242,18 @@ public class CRAMIterator implements SAMRecordIterator {
             if (pos <= 0) {
                 if (record.getAlignmentStart() == SAMRecord.NO_ALIGNMENT_START) {
                     iterator = records.listIterator(i);
-                    return;
+                    return true;
                 }
             } else {
                 if (record.getAlignmentStart() >= pos) {
                     iterator = records.listIterator(i);
-                    return;
+                    return true;
                 }
             }
             i++;
         }
         iterator = Collections.<SAMRecord>emptyList().iterator();
+        return false;
     }
 
     @Override
@@ -261,13 +262,10 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!iterator.hasNext()) {
             try {
                 nextContainer();
-            } catch (CRAMException ce) {
-                throw ce;
-            } catch (SAMFormatException se) {
-                throw se;
-            }
-            catch (final Exception e) {
-                throw new RuntimeEOFException(e);
+            } catch (IOException e) {
+                throw new SAMException(e);
+            } catch (IllegalAccessException e) {
+                throw new SAMException(e);
             }
         }
 
