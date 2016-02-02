@@ -48,10 +48,14 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -499,7 +503,7 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openFileForReading(final File file) {
-        return openFileForReading(file.toPath());
+        return openFileForReading(getPath(file));
     }
 
     /**
@@ -943,6 +947,58 @@ public class IOUtil {
 
         return output;
     }
+    
+	/**
+	 * For NIO hdfs usage, one can set local file just like
+	 * <br><b>/home/htsjdk/myfile.txt</b>
+	 * <br> or hdfs uri like
+	 * <br><b>hdfs://cluster1:8443/mypath/path</b>
+	 *  <br>or <b>hdfs:/mypath/path</b> If the hdfs-site.xml and core-site.xml file sets correctly.
+	 * 
+	 * @author zong0jie@novelbio.com
+	 * @param fileName
+	 * @return
+	 */
+	public static Path getPath(String fileName) {
+		if (fileName==null || fileName.trim().equals("")) return null;
+		try {
+			if (fileName.startsWith("hdfs:/")) {
+				URI uri = new URI(fileName);
+				return Paths.get(uri);
+			} else {
+				File file = new File(fileName);
+				return file.toPath();
+			}
+		} catch (URISyntaxException e) {
+			//TODO I don't know which exception should throw
+			throw new RuntimeException("cannot get path from " + fileName, e);
+        }
+	}
+
+	/**
+	 * To simplify the usage of hdfs nio, one can read hdfs files just set a
+	 * file object just like <br>
+	 * <b>new File("hdfs:/mypath/path").</b><br>
+	 * make sure the configure file(like hdfs-site.xml) has already fixed in
+	 * package jsr203-hadoop (https://github.com/damiencarol/jsr203-hadoop). <br>
+	 * <br>
+	 * The reason I use this method instead of {@link File#toPath()} is because
+	 * {@link File#toPath()} use {@link FileSystems#getDefault()} to generate
+	 * Path, and can only generate local path. <br>
+	 * <br>
+	 * <b>Notice</b> one can <b>not</b> instantiation File like <b>new
+	 * File("hdfs://cluster1:8443/mypath/path").</b> If you need to set the host
+	 * and port, use {@link #getPath(String)} instead.
+	 * 
+	 * @author zong0jie@novelbio.com
+	 * @param file
+	 * @return
+	 */
+	public static Path getPath(File file) {
+		if (file == null) return null;
+		return getPath(file.getPath());
+	}
+
 }
 
 

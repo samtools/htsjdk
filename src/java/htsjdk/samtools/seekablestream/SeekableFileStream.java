@@ -17,10 +17,15 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,37 +42,45 @@ public class SeekableFileStream extends SeekableStream {
      */
     static Collection<SeekableFileStream> allInstances =
             Collections.synchronizedCollection(new HashSet<SeekableFileStream>());
-
-
-    File file;
-    RandomAccessFile fis;
-
+	
+    private Path path;
+    private SeekableByteChannel seekableByteChannel;
+    private long fileLength;
+	
     public SeekableFileStream(final File file) throws FileNotFoundException {
-        this.file = file;
-        fis = new RandomAccessFile(file, "r");
-        allInstances.add(this);
+        this.path = IOUtil.getPath(file);
+        try {
+	        this.seekableByteChannel= Files.newByteChannel(path);
+        } catch (IOException e) {
+	        throw new FileNotFoundException("cannot open file " + path);
+        }
+        try {
+	        this.fileLength = seekableByteChannel.size();
+        } catch (IOException e) {
+        	throw new FileNotFoundException("cannot get file sie " + path);
+        }
     }
 
     public long length() {
-        return file.length();
+        return fileLength;
     }
 
     public boolean eof() throws IOException {
-        return fis.length() == fis.getFilePointer();
+        return fileLength == seekableByteChannel.position();
     }
 
     public void seek(final long position) throws IOException {
-        fis.seek(position);
+    	seekableByteChannel.position(position);
     }
 
     public long position() throws IOException {
-        return fis.getChannel().position();
+        return seekableByteChannel.position();
     }
 
     @Override
     public long skip(long n) throws IOException {
         long initPos = position();
-        fis.getChannel().position(initPos + n);
+        seekableByteChannel.position(initPos + n);
         return position() - initPos;
     }
     
@@ -75,9 +88,10 @@ public class SeekableFileStream extends SeekableStream {
         if (length < 0) {
             throw new IndexOutOfBoundsException();
         }
+		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, offset, length);
         int n = 0;
         while (n < length) {
-            final int count = fis.read(buffer, offset + n, length - n);
+            final int count = seekableByteChannel.read(byteBuffer);
             if (count < 0) {
               if (n > 0) {
                 return n;
@@ -92,23 +106,26 @@ public class SeekableFileStream extends SeekableStream {
     }
 
     public int read() throws IOException {
-        return fis.read();  
+    	if (seekableByteChannel.position() >= fileLength) {
+			return -1;
+		}
+		ByteBuffer buffer = ByteBuffer.allocate(1);
+		seekableByteChannel.read(buffer);
+		return buffer.array()[0]&0xff;
     }
 
     @Override
     public int read(byte[] b) throws IOException {
-        return fis.read(b);
+        return read(b, 0, b.length);
     }
 
     @Override
     public String getSource() {
-        return file.getAbsolutePath();
+        return path.toAbsolutePath().toString();
     }
-
-
     public void close() throws IOException {
-        allInstances.remove(this);
-        fis.close();
+    	allInstances.remove(this);
+    	seekableByteChannel.close();
 
     }
 
