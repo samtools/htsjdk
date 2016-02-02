@@ -27,6 +27,8 @@ Java SE Major Release | End of Java SE Oracle Public Updates | Proposed End of S
 
 * to be finalized
 
+HTSJDK is migrating to semantic versioning (http://semver.org/). We will eventually adhere to it strictly and bump our major version whenever there are breaking changes to our API, but until we more clearly define what constitutes our official API, clients should assume that every release potentially contains at least minor changes to public methods.
+
 [1]: http://samtools.sourceforge.net
 [2]: http://vcftools.sourceforge.net/specs.html
 
