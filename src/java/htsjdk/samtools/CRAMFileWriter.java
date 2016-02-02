@@ -28,7 +28,6 @@ import java.util.Set;
 public class CRAMFileWriter extends SAMFileWriterImpl {
     private CRAMContainerStreamWriter cramContainerStream;
     private final SAMFileHeader samFileHeader;
-    private ReferenceSource source;
     private final String fileName;
 
     private static final Log log = Log.getInstance(CRAMFileWriter.class);
@@ -37,59 +36,71 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      * Create a CRAMFileWriter on an output stream. Requires input records to be presorted to match the
      * sort order defined by the input {@code samFileHeader}.
      *
-     * @param outputStream where to write the output.
-     * @param source reference source
-     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param outputStream where to write the output. Can not be null.
+     * @param referenceSource reference source. Can not be null.
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
      * @param fileName used for display in error messages
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */
     public CRAMFileWriter(
             final OutputStream outputStream,
-            final ReferenceSource source,
+            final ReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
             final String fileName)
     {
-        this(outputStream, null, source, samFileHeader, fileName); // defaults to presorted == true
+        this(outputStream, null, referenceSource, samFileHeader, fileName); // defaults to presorted == true
     }
 
     /**
-     * Create a CRAMFileWriter and index on output streams. Requires input records to be presorted to match the
+     * Create a CRAMFileWriter and optional index on output streams. Requires input records to be presorted to match the
      * sort order defined by the input {@code samFileHeader}.
      *
-     * @param outputStream where to write the output.
+     * @param outputStream where to write the output. Can not be null.
      * @param indexOS where to write the output index. Can be null if no index is required.
-     * @param source reference source
-     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
      * @param fileName used for display in error messages
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */
     public CRAMFileWriter(
             final OutputStream outputStream,
             final OutputStream indexOS,
-            final ReferenceSource source,
+            final ReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
             final String fileName)
     {
-        this(outputStream, indexOS, true, source, samFileHeader, fileName); // defaults to presorted==true
+        this(outputStream, indexOS, true, referenceSource, samFileHeader, fileName); // defaults to presorted==true
     }
 
     /**
-     * Create a CRAMFileWriter and index on output streams.
+     * Create a CRAMFileWriter and optional index on output streams.
      *
-     * @param outputStream where to write the output.
+     * @param outputStream where to write the output. Can not be null.
      * @param indexOS where to write the output index. Can be null if no index is required.
      * @param presorted if true records written to this writer must already be sorted in the order specified by the header
-     * @param source reference source
-     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
      * @param fileName used for display in error message display
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */
     public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
-                          final ReferenceSource source, final SAMFileHeader samFileHeader, final String fileName) {
+                          final ReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
+        if (outputStream == null) {
+            throw new IllegalArgumentException("CRAMWriter output stream can not be null.");
+        }
+        if (referenceSource == null) {
+            throw new IllegalArgumentException("A reference is required for CRAM writers");
+        }
+        if (samFileHeader == null) {
+            throw new IllegalArgumentException("A valid SAMFileHeader is required for CRAM writers");
+        }
         this.samFileHeader = samFileHeader;
         this.fileName = fileName;
-        if (this.source == null) {
-            this.source = new ReferenceSource(Defaults.REFERENCE_FASTA);
-        }
         setSortOrder(samFileHeader.getSortOrder(), presorted);
-        cramContainerStream = new CRAMContainerStreamWriter(outputStream, indexOS, source, samFileHeader, fileName);
+        cramContainerStream = new CRAMContainerStreamWriter(outputStream, indexOS, referenceSource, samFileHeader, fileName);
         setHeader(samFileHeader);
     }
 

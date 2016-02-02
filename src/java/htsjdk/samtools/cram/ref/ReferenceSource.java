@@ -63,6 +63,43 @@ public class ReferenceSource {
         this.rsFile = rsFile;
     }
 
+    /**
+     * Attempts to construct a default ReferenceSource for use with CRAM files when
+     * one has not been explicitly provided.
+     *
+     * @return ReferenceSource if one can be acquired. Guaranteed to no be null if none
+     * of the listed exceptions is thrown.
+     * @throws IllegalStateException if no default reference source can be acquired
+     * @throws IllegalArgumentException if the reference_fasta environment variable refers to a
+     * a file that doesn't exist
+     *<p>
+     * Construct a default reference source to use when an explicit reference has not been
+     * provided by checking for fallback sources in this order:
+     *<p><ul>
+     * <li>Defaults.REFERENCE_FASTA - the value of the system property "reference_fasta". If set,
+     * must refer to a valid reference file.</li>
+     * <li>ENA Reference Service if it is enabled</li>
+     * </ul>
+     */
+     public static ReferenceSource getDefaultCRAMReferenceSource() {
+        if (null != Defaults.REFERENCE_FASTA) {
+            if (Defaults.REFERENCE_FASTA.exists()) {
+                return new ReferenceSource(Defaults.REFERENCE_FASTA);
+            }
+            else {
+                throw new IllegalArgumentException(
+                        "The file specified by the reference_fasta property does not exist: " + Defaults.REFERENCE_FASTA.getName());
+            }
+        }
+        else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
+            return new ReferenceSource();
+        }
+        else {
+            throw new IllegalStateException(
+                    "A valid CRAM reference was not supplied and one cannot be acquired via the property settings reference_fasta or use_cram_ref_download");
+        }
+    }
+
     public void clearCache() {
         cacheW.clear();
     }
