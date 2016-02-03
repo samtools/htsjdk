@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -42,6 +43,7 @@ public class SamFilesTest {
         final File dataFile = File.createTempFile("test", dataFileSuffix);
         dataFile.deleteOnExit();
         Assert.assertNull(SamFiles.findIndex(dataFile));
+        Assert.assertNull(SamFiles.findIndex(dataFile.toPath()));
 
         File indexFile = null;
         if (indexFileSuffix != null) {
@@ -53,11 +55,18 @@ public class SamFilesTest {
         final File foundIndexFile = SamFiles.findIndex(dataFile);
         if (expectIndexSuffix == null) {
             Assert.assertNull(foundIndexFile);
-            return;
+        } else {
+            Assert.assertNotNull(foundIndexFile);
+            Assert.assertTrue(foundIndexFile.getName().endsWith(expectIndexSuffix));
         }
 
-        Assert.assertNotNull(foundIndexFile);
-        Assert.assertTrue(foundIndexFile.getName().endsWith(expectIndexSuffix));
+        final Path foundIndexPath = SamFiles.findIndex(dataFile.toPath());
+        if (expectIndexSuffix == null) {
+            Assert.assertNull(foundIndexPath);
+        } else {
+            Assert.assertNotNull(foundIndexPath);
+            Assert.assertTrue(foundIndexPath.getFileName().toString().endsWith(expectIndexSuffix));
+        }
     }
 
     @DataProvider(name = "filesAndIndicies")
@@ -77,5 +86,6 @@ public class SamFilesTest {
     @Test(dataProvider ="filesAndIndicies")
     public void testIndexSymlinking(File bam, File expected_index) {
         Assert.assertEquals(SamFiles.findIndex(bam), expected_index);
+        Assert.assertEquals(SamFiles.findIndex(bam.toPath()), expected_index == null ? null : expected_index.toPath());
     }
 }

@@ -6,6 +6,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StopWatch;
 
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -179,6 +180,8 @@ public class SamReaderFactoryTest {
         switch (type) {
             case FILE:
                 return new FileInputResource(f);
+            case PATH:
+                return new PathInputResource(f.toPath());
             case URL:
                 return new UrlInputResource(url);
             case SEEKABLE_STREAM:
@@ -212,6 +215,26 @@ public class SamReaderFactoryTest {
         observedRecordOrdering.add(slurped);
         Assert.assertEquals(observedHeaders.size(), 1, "read different headers than other testcases");
         Assert.assertEquals(observedRecordOrdering.size(), 1, "read different records than other testcases");
+    }
+
+    @Test
+    public void openPath() throws IOException {
+        final Path path = localBam.toPath();
+        final List<SAMRecord> records;
+        final SAMFileHeader fileHeader;
+        try (final SamReader reader = SamReaderFactory.makeDefault().open(path)) {
+            LOG.info(String.format("Reading from %s ...", path));
+            records = Iterables.slurp(reader);
+            fileHeader = reader.getFileHeader();
+            reader.close();
+        }
+
+        try (final SamReader fileReader = SamReaderFactory.makeDefault().open(localBam)) {
+            final List<SAMRecord> expectedRecords = Iterables.slurp(fileReader);
+            final SAMFileHeader expectedFileHeader = fileReader.getFileHeader();
+            Assert.assertEquals(records, expectedRecords);
+            Assert.assertEquals(fileHeader, expectedFileHeader);
+        }
     }
 
 
