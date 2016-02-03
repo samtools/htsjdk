@@ -69,13 +69,10 @@ implementationVersion := {
     s"$buildVersion(${gitVersion.value})"
 }
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  else
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+publishTo := Some({
+  val keyFile = new File(Path.userHome.absolutePath + "/.ssh/id_rsa")
+  Resolver.ssh("Genestack Maven Repo", "23.21.237.241", "/var/lib/genestack-repo/trunk") as ("maven", keyFile)
+})
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
   val classifierStr = artifact.classifier match {
