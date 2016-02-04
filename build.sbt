@@ -71,7 +71,7 @@ implementationVersion := {
 
 publishTo := Some({
   val keyFile = new File(Path.userHome.absolutePath + "/.ssh/id_rsa")
-  Resolver.ssh("Genestack Maven Repo", "23.21.237.241", "/var/lib/genestack-repo/trunk") as ("maven", keyFile)
+  Resolver.ssh("Genestack Maven Repo", "23.21.237.241", "/var/lib/genestack-repo/trunk") as ("maven", keyFile) withPermissions "0644"
 })
 
 artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
