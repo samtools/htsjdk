@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -215,9 +216,9 @@ public class SAMSequenceDictionary implements Serializable {
         mSequenceMap.put(altName, originalSeqRecord);
         return originalSeqRecord;
     }
-
+    
     /**
-     * return a MD5 sum for ths dictionary, the checksum is re-computed each
+     * return a MD5 sum for this dictionary, the checksum is re-computed each
      * time this method is called.
      * 
      * <pre>

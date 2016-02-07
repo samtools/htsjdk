@@ -27,7 +27,11 @@
 package htsjdk.samtools;
 
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import htsjdk.samtools.util.Interval;
+import htsjdk.samtools.util.IntervalUtil;
 
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -39,6 +43,65 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
 public class SAMSequenceDictionaryTest {
+    private static final int CONTIG_LENGTH=100;
+    
+    @DataProvider(name = "good-intervals")
+    public Object[][] goodIntervals() {
+        return new Object[][]{
+                {"1"     , new Interval("1",1,CONTIG_LENGTH)},
+                {"1:10" , new Interval("1", 10, 10)},
+                {"1:10bp" , new Interval("1", 10, 10)},
+                {"1:10bp-" , new Interval("1", 10, CONTIG_LENGTH)},
+                {"1:10-10kb" , new Interval("1", 10, CONTIG_LENGTH)},
+                {"1:"+(CONTIG_LENGTH-5)+"+20" , new Interval("1", CONTIG_LENGTH-25, CONTIG_LENGTH)},
+                {"1:10+2" , new Interval("1", 8, 12)},
+                {"1:0-1" , new Interval("1",1,1)},
+                {"1:4 + 50" , new Interval("1", 1, 54)},
+                {"1: 10-20" , new Interval("1",10,20)},
+                {"1 : 10 - 20  " , new Interval("1",10,20)},
+                {"1 : 1,0 - 2,0  " , new Interval("1",10,20)},
+                {"1 :10-" , new Interval("1",10,CONTIG_LENGTH)},
+                {"1:10-"+(CONTIG_LENGTH+100) , new Interval("1", 10, CONTIG_LENGTH)}
+        };
+    }
+
+    @Test(dataProvider = "good-intervals")
+    void testIntervalParser(final String intervalStr,final Interval interval) {
+        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", CONTIG_LENGTH);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(
+                Arrays.asList(ssr1));
+        Assert.assertEquals(dict.size(), 1);
+        Assert.assertEquals(
+                IntervalUtil.parseInterval(dict,intervalStr),
+                interval
+               );
+    }
+
+    @DataProvider(name = "bad-intervals")
+    public Object[][] badIntervals() {
+        return new Object[][]{
+                {null},
+                {"X"},
+                {"1:0-0"},
+                {"1:"+(CONTIG_LENGTH+10)},
+                {"1:"+(CONTIG_LENGTH+10) + "-"},
+                {"1:"+(CONTIG_LENGTH+10)+"-"+(CONTIG_LENGTH+11)},
+                {"1:10zz"},
+                {"1:1--10"},
+                {"1:20-10"},
+                {"1:1gp"}
+        };
+    }
+
+    @Test(dataProvider = "bad-intervals",expectedExceptions= IllegalArgumentException.class)
+    void testBadIntervalParser(final String intervalStr)  {
+        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", CONTIG_LENGTH);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(
+                Arrays.asList(ssr1));
+        Assert.assertEquals(dict.size(), 1);
+        IntervalUtil.parseInterval(dict,intervalStr);   
+    }
+    
     @Test
     public void testAliases() {
         final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);
