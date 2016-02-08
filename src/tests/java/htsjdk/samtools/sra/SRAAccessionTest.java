@@ -1,7 +1,5 @@
 package htsjdk.samtools.sra;
 
-import htsjdk.samtools.sra.SRAAccession;
-
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -9,10 +7,10 @@ import org.testng.annotations.Test;
 /**
  * Tests for SRAAccession logic
  */
-public class SRAAccessionTest {
+public class SRAAccessionTest extends AbstractSRATest {
 
     @DataProvider(name = "isValidAccData")
-    public Object[][] getIsValidAccData() {
+    private Object[][] getIsValidAccData() {
         return new Object[][] {
             { "SRR000123", true },
             { "DRR000001", true },
@@ -25,8 +23,6 @@ public class SRAAccessionTest {
 
     @Test(dataProvider = "isValidAccData")
     public void testIsValidAcc(String accession, boolean isValid) {
-        if (!SRAAccession.isSupported()) return;
-
         Assert.assertEquals(isValid, SRAAccession.isValid(accession));
     }
 

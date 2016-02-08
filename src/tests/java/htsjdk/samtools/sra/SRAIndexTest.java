@@ -35,11 +35,9 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -47,16 +45,14 @@ import java.util.Set;
  *
  * Created by andrii.nikitiuk on 10/28/15.
  */
-public class SRAIndexTest {
+public class SRAIndexTest extends AbstractSRATest {
     private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR1298981");
     private static final int LAST_BIN_LEVEL = GenomicIndexUtil.LEVEL_STARTS.length - 1;
     private static final int SRA_BIN_OFFSET = GenomicIndexUtil.LEVEL_STARTS[LAST_BIN_LEVEL];
 
     @Test
     public void testLevelSize() {
-        if (!SRAAccession.isSupported()) return;
-
-        SRAIndex index = getIndex(DEFAULT_ACCESSION);
+        final SRAIndex index = getIndex(DEFAULT_ACCESSION);
         Assert.assertEquals(index.getLevelSize(0), GenomicIndexUtil.LEVEL_STARTS[1] - GenomicIndexUtil.LEVEL_STARTS[0]);
 
         Assert.assertEquals(index.getLevelSize(LAST_BIN_LEVEL), GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[LAST_BIN_LEVEL] - 1);
@@ -64,15 +60,13 @@ public class SRAIndexTest {
 
     @Test
     public void testLevelForBin() {
-        if (!SRAAccession.isSupported()) return;
-
-        SRAIndex index = getIndex(DEFAULT_ACCESSION);
-        Bin bin = new Bin(0, SRA_BIN_OFFSET);
+        final SRAIndex index = getIndex(DEFAULT_ACCESSION);
+        final Bin bin = new Bin(0, SRA_BIN_OFFSET);
         Assert.assertEquals(index.getLevelForBin(bin), LAST_BIN_LEVEL);
     }
 
     @DataProvider(name = "testBinLocuses")
-    public Object[][] createDataForBinLocuses() {
+    private Object[][] createDataForBinLocuses() {
         return new Object[][] {
                 {DEFAULT_ACCESSION, 0, 0, 1, SRAIndex.SRA_BIN_SIZE},
                 {DEFAULT_ACCESSION, 0, 1, SRAIndex.SRA_BIN_SIZE + 1, SRAIndex.SRA_BIN_SIZE * 2}
@@ -81,35 +75,31 @@ public class SRAIndexTest {
 
     @Test(dataProvider = "testBinLocuses")
     public void testBinLocuses(SRAAccession acc, int reference, int binIndex, int firstLocus, int lastLocus) {
-        if (!SRAAccession.isSupported()) return;
-
-        SRAIndex index = getIndex(acc);
-        Bin bin = new Bin(reference, SRA_BIN_OFFSET + binIndex);
+        final SRAIndex index = getIndex(acc);
+        final Bin bin = new Bin(reference, SRA_BIN_OFFSET + binIndex);
 
         Assert.assertEquals(index.getFirstLocusInBin(bin), firstLocus);
         Assert.assertEquals(index.getLastLocusInBin(bin), lastLocus);
     }
 
     @DataProvider(name = "testBinOverlappings")
-    public Object[][] createDataForBinOverlappings() {
+    private Object[][] createDataForBinOverlappings() {
         return new Object[][] {
-                {DEFAULT_ACCESSION, 0, 1, SRAIndex.SRA_BIN_SIZE, new HashSet<Integer>(Arrays.asList(0))},
-                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE + 1, SRAIndex.SRA_BIN_SIZE * 2, new HashSet<Integer>(Arrays.asList(1))},
-                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE + 1, SRAIndex.SRA_BIN_SIZE * 3, new HashSet<Integer>(Arrays.asList(1, 2))},
-                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE * 2, SRAIndex.SRA_BIN_SIZE * 2 + 1, new HashSet<Integer>(Arrays.asList(1, 2))}
+                {DEFAULT_ACCESSION, 0, 1, SRAIndex.SRA_BIN_SIZE, new HashSet<>(Arrays.asList(0))},
+                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE + 1, SRAIndex.SRA_BIN_SIZE * 2, new HashSet<>(Arrays.asList(1))},
+                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE + 1, SRAIndex.SRA_BIN_SIZE * 3, new HashSet<>(Arrays.asList(1, 2))},
+                {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE * 2, SRAIndex.SRA_BIN_SIZE * 2 + 1, new HashSet<>(Arrays.asList(1, 2))}
         };
     }
 
 
     @Test(dataProvider = "testBinOverlappings")
     public void testBinOverlappings(SRAAccession acc, int reference, int firstLocus, int lastLocus, Set<Integer> binNumbers) {
-        if (!SRAAccession.isSupported()) return;
-
-        SRAIndex index = getIndex(acc);
-        Iterator<Bin> binIterator = index.getBinsOverlapping(reference, firstLocus, lastLocus).iterator();
-        Set<Integer> binNumbersFromIndex = new HashSet<Integer>();
+        final SRAIndex index = getIndex(acc);
+        final Iterator<Bin> binIterator = index.getBinsOverlapping(reference, firstLocus, lastLocus).iterator();
+        final Set<Integer> binNumbersFromIndex = new HashSet<>();
         while (binIterator.hasNext()) {
-            Bin bin = binIterator.next();
+            final Bin bin = binIterator.next();
             binNumbersFromIndex.add(bin.getBinNumber() - SRA_BIN_OFFSET);
         }
 
@@ -117,7 +107,7 @@ public class SRAIndexTest {
     }
 
     @DataProvider(name = "testSpanOverlappings")
-    public Object[][] createDataForSpanOverlappings() {
+    private Object[][] createDataForSpanOverlappings() {
         return new Object[][] {
                 {DEFAULT_ACCESSION, 0, 1, SRAIndex.SRA_BIN_SIZE, new long[] {0, SRAIndex.SRA_CHUNK_SIZE} },
                 {DEFAULT_ACCESSION, 0, SRAIndex.SRA_BIN_SIZE * 2, SRAIndex.SRA_BIN_SIZE * 2 + 1, new long[]{0, SRAIndex.SRA_CHUNK_SIZE} },
@@ -127,16 +117,10 @@ public class SRAIndexTest {
 
     @Test(dataProvider = "testSpanOverlappings")
     public void testSpanOverlappings(SRAAccession acc, int reference, int firstLocus, int lastLocus, long[] spanCoordinates) {
-        if (!SRAAccession.isSupported()) return;
-
-        SRAIndex index = getIndex(acc);
-        BAMFileSpan span = index.getSpanOverlapping(reference, firstLocus, lastLocus);
+        final SRAIndex index = getIndex(acc);
+        final BAMFileSpan span = index.getSpanOverlapping(reference, firstLocus, lastLocus);
 
         long[] coordinatesFromIndex = span.toCoordinateArray();
-        List<Long> coordinatesListFromIndex = new ArrayList<Long>();
-        for (long coordinate : coordinatesFromIndex) {
-            coordinatesListFromIndex.add(coordinate);
-        }
 
         Assert.assertTrue(Arrays.equals(coordinatesFromIndex, spanCoordinates),
                 "Coordinates mismatch. Expected: " + Arrays.toString(spanCoordinates) +
@@ -144,7 +128,7 @@ public class SRAIndexTest {
     }
 
     private SRAIndex getIndex(SRAAccession acc) {
-        SRAFileReader reader = new SRAFileReader(acc);
+        final SRAFileReader reader = new SRAFileReader(acc);
         return (SRAIndex) reader.getIndex();
     }
 }

@@ -11,21 +11,19 @@ import org.testng.annotations.Test;
 /**
  * Tests for SRA extension of SAMRecord objects which load fields on demand
  */
-public class SRALazyRecordTest {
+public class SRALazyRecordTest extends AbstractSRATest {
     private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR1298981");
 
     @DataProvider(name = "serializationTestData")
-    public Object[][] getSerializationTestData() {
+    private Object[][] getSerializationTestData() {
         return new Object[][] {
                 { DEFAULT_ACCESSION }
         };
     }
 
     @Test(dataProvider = "serializationTestData")
-    public void testSerialization(SRAAccession accession) throws Exception {
-        if (!SRAAccession.isSupported()) return;
-        
-        SRAFileReader reader = new SRAFileReader(accession);
+    public void testSerialization(final SRAAccession accession) throws Exception {
+        final SRAFileReader reader = new SRAFileReader(accession);
         final SAMRecord initialSAMRecord = reader.getIterator().next();
         reader.close();
 
@@ -36,13 +34,11 @@ public class SRALazyRecordTest {
 
     @Test
     public void testCloneAndEquals() throws Exception {
-        if (!SRAAccession.isSupported()) return;
-        
-        SRAFileReader reader = new SRAFileReader(DEFAULT_ACCESSION);
+        final SRAFileReader reader = new SRAFileReader(DEFAULT_ACCESSION);
         final SAMRecord record = reader.getIterator().next();
         reader.close();
 
-        SAMRecord newRecord = (SAMRecord)record.clone();
+        final SAMRecord newRecord = (SAMRecord)record.clone();
         Assert.assertFalse(record == newRecord);
         Assert.assertNotSame(record, newRecord);
         Assert.assertEquals(record, newRecord);

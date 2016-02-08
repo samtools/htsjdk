@@ -26,45 +26,57 @@
 
 package htsjdk.samtools.sra;
 
-import htsjdk.samtools.*;
-
-import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.BAMFileSpan;
+import htsjdk.samtools.BrowseableBAMIndex;
+import htsjdk.samtools.Chunk;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.SAMValidationError;
+import htsjdk.samtools.SamInputResource;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Integration tests for SRA functionality
  *
  * Created by andrii.nikitiuk on 8/24/15.
  */
-public class SRATest {
+public class SRATest extends AbstractSRATest {
 
     @DataProvider(name = "testCounts")
-    public Object[][] createDataForCounts() {
+    private Object[][] createDataForCounts() {
         return new Object[][] {
             {"SRR2096940", 10591, 498}
         };
     }
 
     @Test(dataProvider = "testCounts")
-    public void testCounts(String acc, int numberAlignments, int numberUnalignments) {
-        if (!SRAAccession.isSupported()) return;
-
+    public void testCounts(String acc, int expectedNumMapped, int expectedNumUnmapped) {
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
 
         final SAMRecordIterator samRecordIterator = reader.iterator();
 
-        checkAlignedUnalignedCountsByIterator(samRecordIterator, numberAlignments, numberUnalignments);
+        assertCorrectCountsOfMappedAndUnmappedRecords(samRecordIterator, expectedNumMapped, expectedNumUnmapped);
     }
 
     @DataProvider(name = "testCountsBySpan")
-    public Object[][] createDataForCountsBySpan() {
+    private Object[][] createDataForCountsBySpan() {
         return new Object[][] {
             {"SRR2096940", Arrays.asList(new Chunk(0, 59128983), new Chunk(59128983, 59141089)), 10591, 498},
             {"SRR2096940", Arrays.asList(new Chunk(0, 29128983), new Chunk(29128983, 59141089)), 10591, 498},
@@ -75,35 +87,31 @@ public class SRATest {
     }
 
     @Test(dataProvider = "testCountsBySpan")
-    public void testCountsBySpan(String acc, List<Chunk> chunks, int numberAlignments, int numberUnalignments) {
-        if (!SRAAccession.isSupported()) return;
-
+    public void testCountsBySpan(String acc, List<Chunk> chunks, int expectedNumMapped, int expectedNumUnmapped) {
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
 
         final SAMRecordIterator samRecordIterator = ((SamReader.Indexing) reader).iterator(new BAMFileSpan(chunks));
 
-        checkAlignedUnalignedCountsByIterator(samRecordIterator, numberAlignments, numberUnalignments);
+        assertCorrectCountsOfMappedAndUnmappedRecords(samRecordIterator, expectedNumMapped, expectedNumUnmapped);
     }
 
     @DataProvider(name = "testGroups")
-    public Object[][] createDataForGroups() {
+    private Object[][] createDataForGroups() {
         return new Object[][] {
-            {"SRR822962", new TreeSet<String>(Arrays.asList(
-                "GS54389-FS3-L08", "GS57511-FS3-L08", "GS54387-FS3-L02", "GS54387-FS3-L01",
-                "GS57510-FS3-L01", "GS57510-FS3-L03", "GS54389-FS3-L07", "GS54389-FS3-L05",
-                "GS54389-FS3-L06", "GS57510-FS3-L02", "GS57510-FS3-L04", "GS54387-FS3-L03",
-                "GS46253-FS3-L03"))
+            {"SRR822962", new TreeSet<>(Arrays.asList(
+                    "GS54389-FS3-L08", "GS57511-FS3-L08", "GS54387-FS3-L02", "GS54387-FS3-L01",
+                    "GS57510-FS3-L01", "GS57510-FS3-L03", "GS54389-FS3-L07", "GS54389-FS3-L05",
+                    "GS54389-FS3-L06", "GS57510-FS3-L02", "GS57510-FS3-L04", "GS54387-FS3-L03",
+                    "GS46253-FS3-L03"))
             },
-            {"SRR2096940", new HashSet<String>(Arrays.asList("SRR2096940"))}
+            {"SRR2096940", new HashSet<>(Arrays.asList("SRR2096940"))}
         };
     }
 
     @Test(dataProvider = "testGroups")
     public void testGroups(String acc, Set<String> groups) {
-        if (!SRAAccession.isSupported()) return;
-
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -111,7 +119,7 @@ public class SRATest {
         final SAMRecordIterator samRecordIterator = reader.iterator();
 
         SAMFileHeader header = reader.getFileHeader();
-        Set<String> headerGroups = new TreeSet<String>();
+        Set<String> headerGroups = new TreeSet<>();
         for (SAMReadGroupRecord group : header.getReadGroups()) {
             Assert.assertEquals(group.getReadGroupId(), group.getId());
             headerGroups.add(group.getReadGroupId());
@@ -119,7 +127,7 @@ public class SRATest {
 
         Assert.assertEquals(groups, headerGroups);
 
-        Set<String> foundGroups = new TreeSet<String>();
+        Set<String> foundGroups = new TreeSet<>();
 
         for (int i = 0; i < 10000; i++) {
             if (!samRecordIterator.hasNext()) {
@@ -136,7 +144,7 @@ public class SRATest {
     }
 
     @DataProvider(name = "testReferences")
-    public Object[][] createDataForReferences() {
+    private Object[][] createDataForReferences() {
         return new Object[][] {
             // primary alignment only
             {"SRR1063272", 1,
@@ -153,8 +161,6 @@ public class SRATest {
 
     @Test(dataProvider = "testReferences")
     public void testReferences(String acc, int numberFirstReferenceFound, List<String> references, List<Integer> refLengths) {
-        if (!SRAAccession.isSupported()) return;
-
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -162,7 +168,7 @@ public class SRATest {
         final SAMRecordIterator samRecordIterator = reader.iterator();
 
         SAMFileHeader header = reader.getFileHeader();
-        Set<String> headerRefNames = new TreeSet<String>();
+        Set<String> headerRefNames = new TreeSet<>();
 
         for (SAMSequenceRecord ref : header.getSequenceDictionary().getSequences()) {
             String refName = ref.getSequenceName();
@@ -175,9 +181,9 @@ public class SRATest {
             headerRefNames.add(refName);
         }
 
-        Assert.assertEquals(new TreeSet<String>(references), headerRefNames);
+        Assert.assertEquals(new TreeSet<>(references), headerRefNames);
 
-        Set<String> foundRefNames = new TreeSet<String>();
+        Set<String> foundRefNames = new TreeSet<>();
         for (int i = 0; i < 10000; i++) {
             if (!samRecordIterator.hasNext()) {
                 break;
@@ -194,11 +200,11 @@ public class SRATest {
             foundRefNames.add(refName);
         }
 
-        Assert.assertEquals(new TreeSet<String>(references.subList(0, numberFirstReferenceFound)), foundRefNames);
+        Assert.assertEquals(new TreeSet<>(references.subList(0, numberFirstReferenceFound)), foundRefNames);
     }
 
     @DataProvider(name = "testRows")
-    public Object[][] createDataForRowsTest() {
+    private Object[][] createDataForRowsTest() {
         return new Object[][] {
             // primary alignment only
             {"SRR1063272", 0, 99, "SRR1063272.R.1",
@@ -234,8 +240,6 @@ public class SRATest {
     @Test(dataProvider = "testRows")
     public void testRows(String acc, int recordIndex, int flags, String readName, String bases, String quals, int refStart, String cigar,
                          String refName, int mapQ, boolean hasMate, boolean isSecondaryAlignment) {
-        if (!SRAAccession.isSupported()) return;
-
         SAMRecord record = getRecordByIndex(acc, recordIndex, false);
 
         checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
@@ -245,8 +249,6 @@ public class SRATest {
     public void testRowsAfterIteratorDetach(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                             int refStart, String cigar, String refName, int mapQ, boolean hasMate,
                                             boolean isSecondaryAlignment) {
-        if (!SRAAccession.isSupported()) return;
-
         SAMRecord record = getRecordByIndex(acc, recordIndex, true);
 
         checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
@@ -256,8 +258,6 @@ public class SRATest {
     public void testRowsOverrideValues(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                        int refStart, String cigar, String refName, int mapQ, boolean hasMate,
                                        boolean isSecondaryAlignment) {
-        if (!SRAAccession.isSupported()) return;
-
         SAMRecord record = getRecordByIndex(acc, recordIndex, true);
         SAMFileHeader header = record.getHeader();
 
@@ -295,8 +295,6 @@ public class SRATest {
     public void testRowsBySpan(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                             int refStart, String cigar, String refName, int mapQ, boolean hasMate,
                                             boolean isSecondaryAlignment) {
-        if (!SRAAccession.isSupported()) return;
-
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -338,8 +336,6 @@ public class SRATest {
     public void testRowsByIndex(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                 int refStart, String cigar, String refName, int mapQ, boolean hasMate,
                                 boolean isSecondaryAlignment) {
-        if (!SRAAccession.isSupported()) return;
-
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -432,33 +428,4 @@ public class SRATest {
         }
     }
 
-    private void checkAlignedUnalignedCountsByIterator(SAMRecordIterator samRecordIterator,
-                                                       int numberAlignments, int numberUnalignments) {
-        int countAlignments = 0, countUnalignments = 0;
-        while (true) {
-            boolean hasRecord = samRecordIterator.hasNext();
-            SAMRecord record = null;
-            try {
-                record = samRecordIterator.next();
-                Assert.assertTrue(hasRecord); // exception is not thrown if we came to this point
-            } catch (NoSuchElementException e) {
-                Assert.assertFalse(hasRecord);
-            }
-
-            Assert.assertEquals(hasRecord, record != null);
-
-            if (record == null) {
-                break;
-            }
-
-            if (record.getReadUnmappedFlag()) {
-                countUnalignments++;
-            } else {
-                countAlignments++;
-            }
-        }
-
-        Assert.assertEquals(numberAlignments, countAlignments);
-        Assert.assertEquals(numberUnalignments, countUnalignments);
-    }
 }

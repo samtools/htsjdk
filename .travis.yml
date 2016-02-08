@@ -3,7 +3,7 @@ sudo: true
 jdk:
   - oraclejdk8
 install: ant
-script: ant all test
+script: ant all test sra-test
 after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
