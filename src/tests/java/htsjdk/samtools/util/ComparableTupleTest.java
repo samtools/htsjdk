@@ -40,7 +40,7 @@ public class ComparableTupleTest {
     }
 
     @Test(dataProvider = "testComparableTupleData")
-    public void testComparableTuple(final ComparableTuple lhs, final ComparableTuple rhs, final int result) {
+    public <T extends Comparable<T>, R extends Comparable<R>> void testComparableTuple(final ComparableTuple<T,R> lhs, final ComparableTuple<T,R> rhs, final int result) {
         Assert.assertEquals(lhs.compareTo(rhs), result);
     }
 
@@ -48,17 +48,14 @@ public class ComparableTupleTest {
     @DataProvider(name = "testComparableTupleNullData")
     public Object[][] testComparableTupleNullData() {
         return new Object[][]{
-                new Object[]{new ComparableTuple<>(null, 2), new ComparableTuple<>(1, 1)},
-                new Object[]{new ComparableTuple<>(1, null), new ComparableTuple<>(1, 1)},
-                new Object[]{new ComparableTuple<>(null, null), new ComparableTuple<>(1, 1)},
-                new Object[]{new ComparableTuple<>(1, 2), new ComparableTuple<>(null, 1)},
-                new Object[]{new ComparableTuple<>(1, 2), new ComparableTuple<>(2, null)},
-                new Object[]{new ComparableTuple<>(1, 2), new ComparableTuple<>(null, null)},
+                new Object[]{null, 2},
+                new Object[]{null, null},
+                new Object[]{"string", null}
         };
     }
 
     @Test(dataProvider = "testComparableTupleNullData", expectedExceptions = IllegalArgumentException.class)
-    public void testComparableTuple(final ComparableTuple lhs, final ComparableTuple rhs) {
-        lhs.compareTo(rhs);
+    public void testComparableTupleNullData(String left, Integer right) {
+        new ComparableTuple<>(left, right);
     }
 }
