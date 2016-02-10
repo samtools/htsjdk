@@ -67,7 +67,7 @@ public class IupacTest {
         reader.close();
     }
 
-    @DataProvider(name = "basidDataProvider")
+    @DataProvider(name = "basicDataProvider")
     public Object[][] basicDataProvider() {
         return new Object[][]{
                 {BamFileIoUtils.BAM_FILE_EXTENSION},
