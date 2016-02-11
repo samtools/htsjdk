@@ -119,31 +119,45 @@
     </target>
 
     <!-- TEST -->
+    <macrodef name="run-test">
+        <attribute name="excludedTestGroups" default=""/>
+        <attribute name="includedTestGroups" default=""/>
+        <sequential>
+                <taskdef resource="testngtasks" classpathref="classpath"/>
+                <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
+                        failureproperty="tests.failed" excludedgroups="@{excludedTestGroups}" groups="@{includedTestGroups}"
+                        workingDir="${basedir}"
+                        verbose="${testng.verbosity}">
+                    <classpath>
+                        <pathelement path="${classes}"/>
+                        <pathelement path="${classes.test}"/>
+                        <pathelement path="${scripts}"/>
+                    </classpath>
+                    <classfileset dir="${classes.test}">
+                        <include name="**/Test*.class"/>
+                        <include name="**/*Test.class"/>
+                    </classfileset>
+                    <jvmarg value="-Xmx2G"/>
+                </testng>
+                <junitreport todir="${dist}/test" >
+                    <fileset dir="${test.output}">
+                        <include name="*.xml"/>
+                    </fileset>
+                    <report format="noframes" todir="${dist}/test" styledir="etc/test"/>
+                </junitreport>
+                <copy file="etc/test/testng.css" todir="${dist}/test" overwrite="true"/>
+                <fail if="tests.failed" message="There were failed unit tests"/>
+        </sequential>
+    </macrodef>
+
     <target name="test" depends="compile, set_excluded_test_groups" description="Run unit tests">
-        <taskdef resource="testngtasks" classpathref="classpath"/>
-        <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
-                failureproperty="tests.failed" excludedgroups="${excludedTestGroups}" workingDir="${basedir}"
-                verbose="${testng.verbosity}">
-            <classpath>
-                <pathelement path="${classes}"/>
-                <pathelement path="${classes.test}"/>
-                <pathelement path="${scripts}"/>
-            </classpath>
-            <classfileset dir="${classes.test}">
-                <include name="**/Test*.class"/>
-                <include name="**/*Test.class"/>
-            </classfileset>
-            <jvmarg value="-Xmx2G"/>
-        </testng>
-        <junitreport todir="${dist}/test" >
-            <fileset dir="${test.output}">
-                <include name="*.xml"/>
-            </fileset>
-            <report format="noframes" todir="${dist}/test" styledir="etc/test"/>
-        </junitreport>
-        <copy file="etc/test/testng.css" todir="${dist}/test" overwrite="true"/>
-        <fail if="tests.failed" message="There were failed unit tests"/>
+            <run-test excludedTestGroups="${excludedTestGroups}, sra"/>
     </target>
+
+    <target name="sra-test" depends="compile, set_excluded_test_groups" description="Run SRA unit tests">
+        <run-test includedTestGroups="sra" excludedTestGroups="${excludedTestGroups}"/>
+    </target>
+
 
     <target name="single-test"
             depends="compile, compile-tests"
