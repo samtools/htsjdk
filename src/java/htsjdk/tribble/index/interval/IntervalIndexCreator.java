@@ -64,9 +64,9 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
 
     public void addFeature(final Feature feature, final long filePosition) {
         // if we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
-        if (chrList.size() == 0 || !chrList.getLast().getName().equals(feature.getChr())) {
+        if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getChr())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the intervals to the old chrIndex
-            if (chrList.size() != 0)
+            if (!chrList.isEmpty())
                 addIntervalsToLastChr(filePosition);
 
             // create a new chr index for the current contig
@@ -75,11 +75,11 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
         }
 
         // if we're about to overflow the current bin, make a new one
-        if (featureCount >= featuresPerInterval || intervals.size() == 0) {
+        if (featureCount >= featuresPerInterval || intervals.isEmpty()) {
             final MutableInterval i = new MutableInterval();
             i.setStart(feature.getStart());
             i.setStartFilePosition(filePosition);
-            if( intervals.size() > 0) intervals.get(intervals.size()-1).setEndFilePosition(filePosition);
+            if(!intervals.isEmpty()) intervals.get(intervals.size()-1).setEndFilePosition(filePosition);
             featureCount = 0; // reset the feature count
             intervals.add(i);
         }

@@ -240,7 +240,7 @@ public class IntervalList implements Iterable<Interval> {
             }
         }
 
-        if (toBeMerged.size() > 0) unique.add(merge(toBeMerged, concatenateNames));
+        if (!toBeMerged.isEmpty()) unique.add(merge(toBeMerged, concatenateNames));
         return unique;
     }
 
@@ -447,7 +447,7 @@ public class IntervalList implements Iterable<Interval> {
             // Then read in the intervals
             final FormatUtil format = new FormatUtil();
             do {
-                if (line.trim().length() == 0) continue; // skip over blank lines
+                if (line.trim().isEmpty()) continue; // skip over blank lines
 
                 // Make sure we have the right number of fields
                 final String[] fields = line.split("\t");

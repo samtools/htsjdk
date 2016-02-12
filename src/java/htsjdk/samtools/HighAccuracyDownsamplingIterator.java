@@ -163,7 +163,7 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
         this.bufferedRecords = recs.iterator();
         this.totalTemplates += templatesRead;
         this.keptTemplates  += names.size();
-        return recs.size() > 0;
+        return !recs.isEmpty();
     }
 
     /**

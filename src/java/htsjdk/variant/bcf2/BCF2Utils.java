@@ -169,7 +169,7 @@ public final class BCF2Utils {
     }
 
     public static boolean isCollapsedString(final String s) {
-        return s.length() > 0 && s.charAt(0) == ',';
+        return !s.isEmpty() && s.charAt(0) == ',';
     }
 
     /**

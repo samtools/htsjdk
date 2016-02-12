@@ -84,10 +84,10 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
     }
 
     /** Returns true if we are tracking no records, false otherwise */
-    public boolean isEmpty() { return (blocks.size() == 0  || this.blocks.getFirst().isEmpty()); }
+    public boolean isEmpty() { return (blocks.isEmpty() || this.blocks.getFirst().isEmpty()); }
 
     /** Returns true if we can return the next record (it has been examined). */
-    public boolean canEmit() { return (this.blocks.size() != 0 && this.blocks.getFirst().canEmit()); }
+    public boolean canEmit() { return (!this.blocks.isEmpty() && this.blocks.getFirst().canEmit()); }
 
     /**
      * Add the given SAMRecordIndex to the buffer.  The records must be added in order.
@@ -103,7 +103,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
             throw new SAMException("The records were added out of order");
         }
         // If necessary, create a new block, using as much ram as available up to its total size
-        if (this.blocks.size() == 0 || !this.blocks.getLast().canAdd()) {
+        if (this.blocks.isEmpty() || !this.blocks.getLast().canAdd()) {
             // once ram is given to a block, we can't give it to another block (until some is recovered from the head of the queue)
             final int blockRam = Math.min(this.blockSize, this.availableRecordsInMemory);
             this.availableRecordsInMemory = this.availableRecordsInMemory - blockRam;

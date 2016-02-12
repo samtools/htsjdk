@@ -354,7 +354,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
         builder.alleles(alleles);
 
-        assert ref.length() > 0;
+        assert !ref.isEmpty();
 
         return alleles;
     }

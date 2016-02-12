@@ -179,7 +179,7 @@ public class SAMLineParser {
             reportErrorParsingLine("= is not a valid value for "
                     + fieldName + " field.");
         }
-        if (this.mFileHeader.getSequenceDictionary().size() != 0) {
+        if (!this.mFileHeader.getSequenceDictionary().isEmpty()) {
             if (this.mFileHeader.getSequence(rname) == null) {
                 reportErrorParsingLine(fieldName
                         + " '" + rname + "' not found in any SQ record");
@@ -220,7 +220,7 @@ public class SAMLineParser {
             reportErrorParsingLine("Too many fields in SAM text record.");
         }
         for (int i = 0; i < numFields; ++i) {
-            if (mFields[i].length() == 0) {
+            if (mFields[i].isEmpty()) {
                 reportErrorParsingLine("Empty field at position " + i + " (zero-based)");
             }
         }

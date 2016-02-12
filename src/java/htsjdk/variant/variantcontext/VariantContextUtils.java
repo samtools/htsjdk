@@ -127,7 +127,7 @@ public class VariantContextUtils {
             attributes.put(VCFConstants.ALLELE_NUMBER_KEY, AN);
 
             // if there are alternate alleles, record the relevant tags
-            if ( vc.getAlternateAlleles().size() > 0 ) {
+            if (!vc.getAlternateAlleles().isEmpty()) {
                 ArrayList<Double> alleleFreqs = new ArrayList<Double>();
                 ArrayList<Integer> alleleCounts = new ArrayList<Integer>();
                 ArrayList<Integer> foundersAlleleCounts = new ArrayList<Integer>();

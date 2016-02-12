@@ -64,7 +64,7 @@ public class BAMIndexMetaData {
     BAMIndexMetaData(List<Chunk> chunkList) {
         noCoordinateRecords = 0;
 
-        if (chunkList == null || chunkList.size() == 0) {
+        if (chunkList == null || chunkList.isEmpty()) {
             // System.out.println("No metadata chunks");
         } else if (chunkList.size() != 2) {
             throw new SAMException("Unexpected number of metadata chunks " + (chunkList.size()));

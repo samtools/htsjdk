@@ -848,7 +848,7 @@ public class SequenceUtil {
                     boolean matched = match.find();
                     if (matched) {
                         String mg;
-                        if (((mg = match.group(1)) != null) && (mg.length() > 0)) {
+                        if (((mg = match.group(1)) != null) && (!mg.isEmpty())) {
                             // It's a number , meaning a series of matches
                             final int num = Integer.parseInt(mg);
                             for (int i = 0; i < num; i++) {
@@ -859,7 +859,7 @@ public class SequenceUtil {
                                 }
                                 basesMatched++;
                             }
-                        } else if (((mg = match.group(2)) != null) && (mg.length() > 0)) {
+                        } else if (((mg = match.group(2)) != null) && (!mg.isEmpty())) {
                             // It's a single nucleotide, meaning a mismatch
                             if (basesMatched < cigElLen) {
                                 ret[outIndex++] = StringUtil.charToByte(mg.charAt(0));
@@ -868,7 +868,7 @@ public class SequenceUtil {
                                 throw new IllegalStateException("Should never happen.");
                             }
                             basesMatched++;
-                        } else if (((mg = match.group(3)) != null) && (mg.length() > 0)) {
+                        } else if (((mg = match.group(3)) != null) && (!mg.isEmpty())) {
                             // It's a deletion, starting with a caret
                             // don't include caret
                             if (includeReferenceBasesForDeletions) {
@@ -1061,7 +1061,7 @@ public class SequenceUtil {
     public static List<byte[]> generateAllKmers(final int length) {
         final List<byte[]> sofar = new LinkedList<byte[]>();
 
-        if (sofar.size() == 0) {
+        if (sofar.isEmpty()) {
             sofar.add(new byte[length]);
         }
 

@@ -138,7 +138,7 @@ public class IntervalTreeIndex extends AbstractIndex {
             final List<Interval> intervals = tree.findOverlapping(new Interval(start, end));
 
             // save time (and save throwing an exception) if the blocks are empty, return now
-            if (intervals == null || intervals.size() == 0) return new ArrayList<Block>();
+            if (intervals == null || intervals.isEmpty()) return new ArrayList<Block>();
 
             final Block[] blocks = new Block[intervals.size()];
             int idx = 0;

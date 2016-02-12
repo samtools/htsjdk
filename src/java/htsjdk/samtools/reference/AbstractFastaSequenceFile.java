@@ -67,7 +67,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
                 final BufferedLineReader reader = new BufferedLineReader(Files.newInputStream(dictionary));
                 final SAMFileHeader header = codec.decode(reader,
                         dictionary.toString());
-                if (header.getSequenceDictionary() != null && header.getSequenceDictionary().size() > 0) {
+                if (header.getSequenceDictionary() != null && !header.getSequenceDictionary().isEmpty()) {
                     this.sequenceDictionary = header.getSequenceDictionary();
                 }
                 reader.close();
