@@ -504,7 +504,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                 source);
 
         final int sequenceCount = stream.readInt();
-        if (samFileHeader.getSequenceDictionary().size() > 0) {
+        if (!samFileHeader.getSequenceDictionary().isEmpty()) {
             // It is allowed to have binary sequences but no text sequences, so only validate if both are present
             if (sequenceCount != samFileHeader.getSequenceDictionary().size()) {
                 throw new SAMFormatException("Number of sequences in text header (" +

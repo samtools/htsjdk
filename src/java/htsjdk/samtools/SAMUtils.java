@@ -433,7 +433,7 @@ public final class SAMUtils {
     public static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                                final long samRecordIndex,
                                                final ValidationStringency validationStringency) {
-        if (validationErrors != null && validationErrors.size() > 0) {
+        if (validationErrors != null && !validationErrors.isEmpty()) {
             for (final SAMValidationError validationError : validationErrors) {
                 validationError.setRecordNumber(samRecordIndex);
             }
@@ -528,7 +528,7 @@ public final class SAMUtils {
     public static void chainSAMProgramRecord(final SAMFileHeader header, final SAMProgramRecord program) {
 
         final List<SAMProgramRecord> pgs = header.getProgramRecords();
-        if (pgs.size() > 0) {
+        if (!pgs.isEmpty()) {
             final List<String> referencedIds = new ArrayList<String>();
             for (final SAMProgramRecord pg : pgs) {
                 if (pg.getPreviousProgramGroupId() != null) {

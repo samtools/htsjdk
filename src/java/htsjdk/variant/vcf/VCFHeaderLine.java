@@ -136,7 +136,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @return true if the line is a VCF meta data line, or false if it is not
      */
     public static boolean isHeaderLine(String line) {
-        return line != null && line.length() > 0 && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
+        return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
     }
 
     /**

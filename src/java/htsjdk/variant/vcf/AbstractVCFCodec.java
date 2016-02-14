@@ -177,7 +177,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 while ( arrayIndex < strings.length )
                     sampleNames.add(strings[arrayIndex++]);
 
-                if ( sawFormatTag && sampleNames.size() == 0 )
+                if ( sawFormatTag && sampleNames.isEmpty())
                     throw new TribbleException.InvalidHeader("The FORMAT field was provided but there is no genotype/sample data");
 
                 // If we're performing sample name remapping and there is exactly one sample specified in the header, replace

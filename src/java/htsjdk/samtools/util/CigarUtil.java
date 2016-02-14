@@ -167,7 +167,7 @@ public class CigarUtil {
     }
 
     private static boolean isValidCigar(SAMRecord rec, Cigar cigar, boolean isOldCigar) {
-        if (cigar == null || cigar.getCigarElements() == null || cigar.getCigarElements().size() == 0) {
+        if (cigar == null || cigar.getCigarElements() == null || cigar.getCigarElements().isEmpty()) {
             if (isOldCigar) {
                 if (rec.getReadUnmappedFlag()) {
                     // don't bother to warn since this does occur for PE reads
@@ -185,7 +185,7 @@ public class CigarUtil {
 
         }
         final List<SAMValidationError> validationErrors = cigar.isValid(rec.getReadName(), -1);
-        if (validationErrors != null && validationErrors.size() != 0) {
+        if (validationErrors != null && !validationErrors.isEmpty()) {
             log.error("Invalid cigar for read " + rec +
                 (isOldCigar ? " " : " for new cigar with clipped adapter ") +
                  " (" + rec.getCigarString() + "/" + cigar.toString()  + ") " +

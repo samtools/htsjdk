@@ -114,7 +114,7 @@ public final class BCF2Encoder {
     }
 
     public final void encodeTyped(List<? extends Object> v, final BCF2Type type) throws IOException {
-        if ( type == BCF2Type.CHAR && v.size() != 0 ) {
+        if ( type == BCF2Type.CHAR && !v.isEmpty()) {
             final String s = BCF2Utils.collapseStringList((List<String>) v);
             v = stringToBytes(s);
         }

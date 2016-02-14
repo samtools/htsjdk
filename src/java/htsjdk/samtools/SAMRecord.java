@@ -297,7 +297,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     public byte[] getOriginalBaseQualities() {
         final String oqString = (String) getAttribute("OQ");
-        if (oqString != null && oqString.length() > 0) {
+        if (oqString != null && !oqString.isEmpty()) {
             return SAMUtils.fastqToPhred(oqString);
         }
         else {
@@ -1975,7 +1975,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             */
                 if (firstOnly) return ret;
             }
-            if (getHeader() != null && getHeader().getSequenceDictionary().size() == 0) {
+            if (getHeader() != null && getHeader().getSequenceDictionary().isEmpty()) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_SEQUENCE_DICTIONARY, "Empty sequence dictionary.", getReadName()));
                 if (firstOnly) return ret;
@@ -2016,7 +2016,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (fz == null) {
                 final String cq = (String)getAttribute(SAMTagUtil.getSingleton().CQ);
                 final String cs = (String)getAttribute(SAMTagUtil.getSingleton().CS);
-                if (cq == null || cq.length() == 0 || cs == null || cs.length() == 0) {
+                if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
                     if (ret == null) ret = new ArrayList<SAMValidationError>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
                             "Zero-length read without FZ, CS or CQ tag", getReadName()));
@@ -2055,7 +2055,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (ret == null || ret.size() == 0) {
+        if (ret == null || ret.isEmpty()) {
             return null;
         }
         return ret;
@@ -2102,7 +2102,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start should != 0 because reference name != *.", isMate), getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getHeader() != null && getHeader().getSequenceDictionary().size() > 0) {
+            if (getHeader() != null && !getHeader().getSequenceDictionary().isEmpty()) {
                 final SAMSequenceRecord sequence =
                         (referenceIndex != null? getHeader().getSequence(referenceIndex): getHeader().getSequence(referenceName));
                 if (sequence == null) {

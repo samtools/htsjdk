@@ -1259,7 +1259,7 @@ public class VariantContext implements Feature, Serializable {
             ArrayList<Integer> observedACs = new ArrayList<Integer>();
 
             // if there are alternate alleles, record the relevant tags
-            if ( getAlternateAlleles().size() > 0 ) {
+            if (!getAlternateAlleles().isEmpty()) {
                 for ( Allele allele : getAlternateAlleles() ) {
                     observedACs.add(getCalledChrCount(allele));
                 }

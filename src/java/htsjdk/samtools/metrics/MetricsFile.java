@@ -81,7 +81,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
     /** Returns the histogram contained in the metrics file if any. */
     public Histogram<HKEY> getHistogram() {
-        if (histograms.size() > 0) return this.histograms.get(0);
+        if (!histograms.isEmpty()) return this.histograms.get(0);
         else return null;
     }
 
@@ -382,7 +382,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
                             for (int i=0; i<fields.length; ++i) {
                                 Object value = null;
-                                if (values[i] != null && values[i].length() > 0) {
+                                if (values[i] != null && !values[i].isEmpty()) {
                                     value = formatter.parseObject(values[i], fields[i].getType());
                                 }
 

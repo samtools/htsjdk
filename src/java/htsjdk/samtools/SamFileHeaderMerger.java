@@ -592,7 +592,7 @@ public class SamFileHeaderMerger {
             }
         }
         // Append anything left in holder.
-        if (holder.size() != 0) {
+        if (!holder.isEmpty()) {
             resultingDict.addAll(holder);
         }
         return new SAMSequenceDictionary(resultingDict);

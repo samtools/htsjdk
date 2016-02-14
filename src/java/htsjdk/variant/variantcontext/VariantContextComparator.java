@@ -32,7 +32,7 @@ public class VariantContextComparator implements Comparator<VariantContext> {
 	private final Map<String, Integer> contigIndexLookup;
 
 	public VariantContextComparator(final List<String> contigs) {
-		if (contigs.size() == 0) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
+		if (contigs.isEmpty()) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
 
 		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
 		int index = 0;
@@ -53,7 +53,7 @@ public class VariantContextComparator implements Comparator<VariantContext> {
 	 *
 	 */
 	public VariantContextComparator(final Collection<VCFContigHeaderLine> headerLines) {
-		if (headerLines.size() == 0) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
+		if (headerLines.isEmpty()) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
 
 		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
 		for (final VCFContigHeaderLine headerLine : headerLines) {

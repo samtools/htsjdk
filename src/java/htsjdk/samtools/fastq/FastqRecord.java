@@ -36,9 +36,9 @@ public class FastqRecord implements Serializable {
     private final String qualLine;
 
     public FastqRecord(final String seqHeaderPrefix, final String seqLine, final String qualHeaderPrefix, final String qualLine) {
-        if (seqHeaderPrefix != null && seqHeaderPrefix.length() > 0) this.seqHeaderPrefix = seqHeaderPrefix;
+        if (seqHeaderPrefix != null && !seqHeaderPrefix.isEmpty()) this.seqHeaderPrefix = seqHeaderPrefix;
         else this.seqHeaderPrefix = null;
-        if (qualHeaderPrefix != null && qualHeaderPrefix.length() > 0) this.qualHeaderPrefix = qualHeaderPrefix;
+        if (qualHeaderPrefix != null && !qualHeaderPrefix.isEmpty()) this.qualHeaderPrefix = qualHeaderPrefix;
         else this.qualHeaderPrefix = null;
         this.seqLine = seqLine ;
         this.qualLine = qualLine ;

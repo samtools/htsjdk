@@ -87,7 +87,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         if (maxRecordsInRam < 0) {
             throw new IllegalArgumentException("maxRecordsInRamQueue must be >= 0");
         }
-        if (tmpDirs == null || tmpDirs.size() == 0) {
+        if (tmpDirs == null || tmpDirs.isEmpty()) {
             throw new IllegalArgumentException("At least one temp directory must be provided.");
         }
         for (final File tmpDir : tmpDirs) IOUtil.assertDirectoryIsWritable(tmpDir);
