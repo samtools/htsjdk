@@ -2207,9 +2207,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             }
         }
 
-        builder.append(" ");
-        builder.append(String.valueOf(getReadLength()));
-        builder.append("b");
+        builder.append(" ")
+                .append(String.valueOf(getReadLength()))
+                .append("b");
 
         if (getReadUnmappedFlag()) {
             builder.append(" unmapped read.");

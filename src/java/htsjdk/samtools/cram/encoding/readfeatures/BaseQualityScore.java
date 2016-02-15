@@ -69,10 +69,8 @@ public class BaseQualityScore implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        final StringBuilder stringBuilder = new StringBuilder().append((char) operator).append('@');
-        stringBuilder.append(position);
-        stringBuilder.append('#').appendCodePoint(qualityScore);
-        return stringBuilder.toString();
+        return new StringBuilder().append((char) operator).append('@')
+                .append(position).append('#').appendCodePoint(qualityScore).toString();
     }
 
 }

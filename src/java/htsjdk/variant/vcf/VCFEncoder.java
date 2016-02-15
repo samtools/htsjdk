@@ -72,16 +72,13 @@ public class VCFEncoder {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		// CHROM
-		stringBuilder.append(context.getChr()).append(VCFConstants.FIELD_SEPARATOR);
-
-		// POS
-		stringBuilder.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR);
-
-		// ID
-		stringBuilder.append(context.getID()).append(VCFConstants.FIELD_SEPARATOR);
-
-		// REF
-		stringBuilder.append(context.getReference().getDisplayString()).append(VCFConstants.FIELD_SEPARATOR);
+		stringBuilder.append(context.getChr()).append(VCFConstants.FIELD_SEPARATOR)
+				// POS
+				.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR)
+				// ID
+				.append(context.getID()).append(VCFConstants.FIELD_SEPARATOR)
+				// REF
+				.append(context.getReference().getDisplayString()).append(VCFConstants.FIELD_SEPARATOR);
 
 		// ALT
 		if ( context.isVariant() ) {
@@ -104,10 +101,9 @@ public class VCFEncoder {
 		// QUAL
 		if ( ! context.hasLog10PError()) stringBuilder.append(VCFConstants.MISSING_VALUE_v4);
 		else stringBuilder.append(formatQualValue(context.getPhredScaledQual()));
-		stringBuilder.append(VCFConstants.FIELD_SEPARATOR);
-
-		// FILTER
-		stringBuilder.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
+		stringBuilder.append(VCFConstants.FIELD_SEPARATOR)
+				// FILTER
+				.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
 
 		// INFO
 		final Map<String, String> infoFields = new TreeMap<String, String>();

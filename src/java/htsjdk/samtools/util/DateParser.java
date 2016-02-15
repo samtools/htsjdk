@@ -261,22 +261,20 @@ public class DateParser {
     public static String getIsoDate(Date date) {
         Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         calendar.setTime(date);
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(calendar.get(Calendar.YEAR));
-        buffer.append("-");
-        buffer.append(twoDigit(calendar.get(Calendar.MONTH) + 1));
-        buffer.append("-");
-        buffer.append(twoDigit(calendar.get(Calendar.DAY_OF_MONTH)));
-        buffer.append("T");
-        buffer.append(twoDigit(calendar.get(Calendar.HOUR_OF_DAY)));
-        buffer.append(":");
-        buffer.append(twoDigit(calendar.get(Calendar.MINUTE)));
-        buffer.append(":");
-        buffer.append(twoDigit(calendar.get(Calendar.SECOND)));
-        buffer.append(".");
-        buffer.append(twoDigit(calendar.get(Calendar.MILLISECOND) / 10));
-        buffer.append("Z");
-        return buffer.toString();
+        return new StringBuffer().append(calendar.get(Calendar.YEAR))
+                .append("-")
+                .append(twoDigit(calendar.get(Calendar.MONTH) + 1))
+                .append("-")
+                .append(twoDigit(calendar.get(Calendar.DAY_OF_MONTH)))
+                .append("T")
+                .append(twoDigit(calendar.get(Calendar.HOUR_OF_DAY)))
+                .append(":")
+                .append(twoDigit(calendar.get(Calendar.MINUTE)))
+                .append(":")
+                .append(twoDigit(calendar.get(Calendar.SECOND)))
+                .append(".")
+                .append(twoDigit(calendar.get(Calendar.MILLISECOND) / 10))
+                .append("Z").toString();
     }
 
     public static void test(String isodate) {
