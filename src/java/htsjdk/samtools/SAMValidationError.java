@@ -257,8 +257,7 @@ public class SAMValidationError implements Serializable {
 
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        builder.append(type.severity.toString());
-        builder.append(": ");
+        builder.append(type.severity.toString()).append(": ");
         if (source != null) {
             builder.append("File ").append(source.toString()).append(", ");
         }

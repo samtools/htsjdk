@@ -87,12 +87,12 @@ public final class Log {
     private void emit(final LogLevel level, final Throwable throwable, final Object... parts) {
         if (isEnabled(level)) {
         	StringBuffer tmp = new StringBuffer();
-            tmp.append(level.name());
-            tmp.append('\t');
-            tmp.append(getTimestamp());
-            tmp.append('\t');
-            tmp.append(this.className);
-            tmp.append('\t');
+            tmp.append(level.name())
+                    .append('\t')
+                    .append(getTimestamp())
+                    .append('\t')
+                    .append(this.className)
+                    .append('\t');
 
             for (final Object part : parts) {
                 if (part != null && part.getClass().isArray()) {

@@ -137,10 +137,10 @@ public class CramCompressionRecord {
     public String toString() {
         final StringBuilder stringBuilder = new StringBuilder("[");
         if (readName != null) stringBuilder.append(readName).append("; ");
-        stringBuilder.append("flags=").append(flags);
-        stringBuilder.append("; alignmentOffset=").append(alignmentDelta);
-        stringBuilder.append("; mateOffset=").append(recordsToNextFragment);
-        stringBuilder.append("; mappingQuality=").append(mappingQuality);
+        stringBuilder.append("flags=").append(flags)
+                .append("; alignmentOffset=").append(alignmentDelta)
+                .append("; mateOffset=").append(recordsToNextFragment)
+                .append("; mappingQuality=").append(mappingQuality);
 
         if (readFeatures != null) for (final ReadFeature feature : readFeatures)
             stringBuilder.append("; ").append(feature.toString());
