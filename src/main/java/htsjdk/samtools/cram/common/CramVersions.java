@@ -7,5 +7,5 @@ public class CramVersions {
     /**
      * The default CRAM version when creating a new CRAM output file or stream.
      */
-    public static final Version DEFAULT_CRAM_VERSION = CRAM_v2_1;
+    public static final Version DEFAULT_CRAM_VERSION = CRAM_v3;
 }
