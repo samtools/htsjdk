@@ -77,8 +77,7 @@ public class Bin implements Comparable<Bin> {
     @Override
     public boolean equals(final Object other) {
         if(other == null) return false;
-        if(!(other instanceof Bin)) return false;
-
+        if(this.getClass() != other.getClass()) return false;
         final Bin otherBin = (Bin)other;
         return this.referenceSequence == otherBin.referenceSequence && this.binNumber == otherBin.binNumber;
     }

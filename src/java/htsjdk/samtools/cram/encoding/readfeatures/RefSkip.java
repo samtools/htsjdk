@@ -60,8 +60,8 @@ public class RefSkip implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof RefSkip))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final RefSkip refSkip = (RefSkip) obj;
 

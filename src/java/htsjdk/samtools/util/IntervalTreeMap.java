@@ -85,9 +85,9 @@ public class IntervalTreeMap<T>
 
     @SuppressWarnings("rawtypes")
 	public boolean equals(final Object o) {
-        if (!(o instanceof IntervalTreeMap)) {
-            return false;
-        }
+        if (o == null) return false;
+        if (this.getClass() != o.getClass()) return false;
+
         return mSequenceMap.equals(((IntervalTreeMap)o).mSequenceMap);
     }
 

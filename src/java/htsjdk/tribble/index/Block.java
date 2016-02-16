@@ -75,7 +75,9 @@ public class Block {
 
     public boolean equals(final Object obj) {
         if ( this == obj ) return true;
-        if ( ! (obj instanceof Block) ) return false;
+        if (obj == null) return false;
+        if ( this.getClass() != obj.getClass() ) return false;
+
         final Block otherBlock = (Block)obj;
         return this.startPosition == otherBlock.startPosition && this.size == otherBlock.size;
     }

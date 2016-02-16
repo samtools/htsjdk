@@ -154,8 +154,8 @@ public class ReadTag implements Comparable<ReadTag> {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof ReadTag))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final ReadTag foe = (ReadTag) obj;
         return key.equals(foe.key) && (value == null && foe.value == null || value != null && value.equals(foe.value));

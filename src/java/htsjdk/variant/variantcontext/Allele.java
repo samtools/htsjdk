@@ -451,7 +451,9 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if these alleles are equal
      */
     public boolean equals(Object other) {
-        return ( ! (other instanceof Allele) ? false : equals((Allele)other, false) );
+        if (other == null) return false;
+        if (this.getClass() != other.getClass()) return false;
+        else return equals((Allele)other, false);
     }
 
     /**

@@ -155,7 +155,7 @@ public class Histogram<K extends Comparable> extends TreeMap<K, Bin> {
     /** Checks that the labels and values in the two histograms are identical. */
     public boolean equals(final Object o) {
         return o != null &&
-                (o instanceof Histogram) &&
+                (this.getClass() == o.getClass()) &&
                 ((Histogram) o).binLabel.equals(this.binLabel) &&
                 ((Histogram) o).valueLabel.equals(this.valueLabel) &&
                 super.equals(o);

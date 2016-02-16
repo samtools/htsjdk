@@ -58,8 +58,8 @@ public class BaseQualityScore implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof BaseQualityScore))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final BaseQualityScore v = (BaseQualityScore) obj;
 

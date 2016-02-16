@@ -99,14 +99,12 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * @return True if index has the same entries as other instance, in the same order
      */
     public boolean equals(Object other) {
-        if(!(other instanceof FastaSequenceIndex))
-            return false;
-
         if (this == other) return true;
+        if (other == null) return false;
+        if(this.getClass() != other.getClass()) return false;
 
         FastaSequenceIndex otherIndex = (FastaSequenceIndex)other;
-        if(this.size() != otherIndex.size())
-            return false;
+        if(this.size() != otherIndex.size()) return false;
 
         Iterator<FastaSequenceIndexEntry> iter = this.iterator();
         Iterator<FastaSequenceIndexEntry> otherIter = otherIndex.iterator();
@@ -303,11 +301,16 @@ class FastaSequenceIndexEntry {
      * @return True if each has the same name, location, size, basesPerLine and bytesPerLine
      */
     public boolean equals(Object other) {
-        if(!(other instanceof FastaSequenceIndexEntry))
+        if (this == other) {
+            return true;
+        }
+        if (other == null) {
             return false;
-
-        if (this == other) return true;
-
+        }
+        if (this.getClass() != other.getClass()) {
+            return false;
+        }
+        
         FastaSequenceIndexEntry otherEntry = (FastaSequenceIndexEntry)other;
         return (contig.equals(otherEntry.contig) && size == otherEntry.size && location == otherEntry.location
         && basesPerLine == otherEntry.basesPerLine && bytesPerLine == otherEntry.bytesPerLine);
