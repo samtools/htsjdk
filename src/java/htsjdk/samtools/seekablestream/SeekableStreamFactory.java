@@ -23,10 +23,9 @@
  */
 package htsjdk.samtools.seekablestream;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-
-import htsjdk.tribble.util.ParsingUtils;
 
 /**
  * Singleton class for getting {@link SeekableStream}s from URL/paths
@@ -89,11 +88,6 @@ public class SeekableStreamFactory{
         public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize){
             if (bufferSize == 0) return stream;
             else return new SeekableBufferedStream(stream, bufferSize);
-        }
-
-        @Override
-        public InputStream getInputStreamFor(String path) throws IOException {
-            return ParsingUtils.openInputStream(path);
         }
     }
 

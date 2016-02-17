@@ -1,7 +1,6 @@
 package htsjdk.samtools.seekablestream;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 
 /**
@@ -31,6 +30,4 @@ public interface ISeekableStreamFactory {
      * @return
      */
     public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize);
-
-    public InputStream getInputStreamFor(String path) throws IOException;
 }

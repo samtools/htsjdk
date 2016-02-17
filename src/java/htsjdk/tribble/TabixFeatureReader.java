@@ -23,15 +23,22 @@
  */
 package htsjdk.tribble;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-
-import htsjdk.samtools.seekablestream.*;
+import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.readers.*;
+import htsjdk.tribble.readers.LineReader;
+import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.TabixIteratorLineReader;
+import htsjdk.tribble.readers.TabixReader;
 import htsjdk.tribble.util.ParsingUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author Jim Robinson
@@ -80,7 +87,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader(ISeekableStreamFactory ssf) throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ssf.getInputStreamFor(path))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ssf.getStreamFor(path))));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
