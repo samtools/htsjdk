@@ -158,7 +158,7 @@
         </sequential>
     </macrodef>
 
-    <target name="test-coverage-report" depends="test" description="Runs tests and creates an HTML code coverage report">
+    <target name="test-coverage-report" depends="test, sra-test" description="Runs tests and creates an HTML code coverage report">
         <jacoco:report xmlns:jacoco="antlib:org.jacoco.ant">
             <executiondata>
                 <file file="jacoco.data"/>
