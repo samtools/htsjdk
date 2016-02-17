@@ -83,13 +83,35 @@ class VCF4Parser implements VCFLineParser {
         // are we inside a quotation? we don't special case ',' then
         boolean inQuote = false;
 
+        // if we are in a quote and we see a backslash followed by quote, treat it as an escaped quote
+        boolean escape = false;
+
         // a little switch machine to parse out the tags. Regex ended up being really complicated and ugly [yes, but this machine is getting ugly now... MAD]
         for (char c: valueLine.toCharArray()) {
-            if ( c == '\"' ) {
-                inQuote = ! inQuote;
+            if ( c == '\"') {
+                if (escape) {
+                    builder.append(c);
+                    escape = false;
+                } else {
+                    inQuote = !inQuote;
+                }
             } else if ( inQuote ) {
-                builder.append(c);
+                if (escape) {
+                    // in VCF 4.2 spec the only valid characters to escape are double quote and backslash; otherwise copy the backslash through
+                    if (c == '\\') {
+                        builder.append(c);
+                    } else {
+                        builder.append('\\');
+                        builder.append(c);
+                    }
+                    escape = false;
+                } else if (c != '\\') {
+                    builder.append(c);
+                } else {
+                    escape = true;
+                }
             } else {
+                escape = false;
                 switch (c) {
                     case ('<') : if (index == 0) break; // if we see a open bracket at the beginning, ignore it
                     case ('>') : if (index == valueLine.length()-1) ret.put(key,builder.toString().trim()); break; // if we see a close bracket, and we're at the end, add an entry to our list
@@ -100,6 +122,10 @@ class VCF4Parser implements VCFLineParser {
             }
             
             index++;
+        }
+
+        if (inQuote) {
+            throw new TribbleException.InvalidHeader("Unclosed quote in header line value " + valueLine);
         }
 
         // validate the tags against the expected list
