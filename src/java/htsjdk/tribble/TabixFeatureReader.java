@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * @author Jim Robinson
@@ -193,6 +194,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         }
 
         public T next() {
+            if(!hasNext()) { throw new NoSuchElementException(); }
             T ret = currentRecord;
             try {
                 readNextRecord();

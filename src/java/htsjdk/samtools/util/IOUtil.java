@@ -58,6 +58,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
@@ -847,6 +848,7 @@ public class IOUtil {
 
                 /** Returns the next line in the file or null if there are no more lines. */
                 @Override public String next() {
+                    if(!hasNext()) { throw new NoSuchElementException(); }
                     try {
                         final String tmp = next;
                         next = in.readLine();

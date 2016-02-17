@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
  * An iterator of CRAM containers read from locations in {@link htsjdk.samtools.seekablestream.SeekableStream}. The locations are specified with
@@ -54,6 +55,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
 
     @Override
     public Container next() {
+        if(!hasNext()) { throw new NoSuchElementException(); }
         try {
             return currentBoundary.next();
         } catch (final IOException e) {

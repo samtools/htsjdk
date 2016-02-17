@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * An iterator of CRAM containers read from an {@link java.io.InputStream}.
@@ -51,6 +52,7 @@ public class CramContainerIterator implements Iterator<Container> {
 
     @Override
     public Container next() {
+        if(!hasNext()) { throw new NoSuchElementException(); }
         final Container result = nextContainer;
         nextContainer = null;
         return result;

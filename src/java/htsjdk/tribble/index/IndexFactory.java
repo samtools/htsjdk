@@ -57,6 +57,7 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -460,6 +461,7 @@ public class IndexFactory {
         }
 
         public Feature next() {
+            if(!hasNext()) { throw new NoSuchElementException(); }
             final Feature ret = nextFeature;
             readNextFeature();
             return ret;
