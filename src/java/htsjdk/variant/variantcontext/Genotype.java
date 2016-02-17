@@ -68,7 +68,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
 
     protected Genotype(final String sampleName, final String filters) {
         this.sampleName = sampleName;
-        this.filters = filters;
+        this.filters = filters == null || filters.isEmpty() ? null : filters;
     }
 
     /**

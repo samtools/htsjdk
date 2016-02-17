@@ -63,6 +63,8 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertEquals(makeGB().filters("x", "y", "z").make().getFilters(), "x;y;z", "Multiple filter field values should be joined with ;");
         Assert.assertTrue(makeGB().filters("x", "y", "z").make().isFiltered(), "Multiple filter values should be filtered");
         Assert.assertEquals(makeGB().filter("x;y;z").make().getFilters(), "x;y;z", "Multiple filter field values should be joined with ;");
+        Assert.assertFalse(makeGB().filter("").make().isFiltered(), "empty filters should count as unfiltered");
+        Assert.assertEquals(makeGB().filter("").make().getFilters(), null, "empty filter string should result in null filters");
     }
 
 //    public Genotype(String sampleName, List<Allele> alleles, double negLog10PError, Set<String> filters, Map<String, ?> attributes, boolean isPhased) {
