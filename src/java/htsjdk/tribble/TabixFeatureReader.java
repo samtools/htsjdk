@@ -84,7 +84,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader() throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path), false)));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);

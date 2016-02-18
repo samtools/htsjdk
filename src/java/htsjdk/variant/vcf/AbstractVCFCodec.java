@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -614,14 +615,24 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     public final static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
+    	FileInputStream fis = null;
+    	GZIPInputStream giz = null;
+    	BlockCompressedInputStream bcis = null;
         try {
-            return isVCFStream(new FileInputStream(potentialInput), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new GZIPInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new BlockCompressedInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE);
+        	fis = new FileInputStream(potentialInput);
+        	giz = new GZIPInputStream(new FileInputStream(potentialInput));
+        	bcis = new BlockCompressedInputStream(new FileInputStream(potentialInput), false);
+            return isVCFStream(fis, MAGIC_HEADER_LINE) ||
+                    isVCFStream(giz, MAGIC_HEADER_LINE) ||
+                    isVCFStream(bcis, MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;
         } catch ( IOException e ) {
             return false;
+        } finally {
+        	CloserUtil.close(fis);
+        	CloserUtil.close(giz);
+        	CloserUtil.close(bcis);
         }
     }
 

@@ -52,7 +52,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     private BinaryCodec mStream = null;
 
     // Underlying compressed data stream.
-    private final BlockCompressedInputStream mCompressedInputStream;
+    private BlockCompressedInputStream mCompressedInputStream;
     private SAMFileHeader mFileHeader = null;
 
     // One of these is populated if the file is seekable and an index exists
@@ -262,12 +262,20 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
     
     public void close() {
+    	if (mCompressedInputStream != null) {
+    		try {
+				mCompressedInputStream.close();
+			} catch (IOException e) {
+				throw new SAMException("Exception closing compressed input stream.", e);
+			}
+    	}
         if (mStream != null) {
             mStream.close();
         }
         if (mIndex != null) {
             mIndex.close();
         }
+        mCompressedInputStream = null;
         mStream = null;
         mFileHeader = null;
         mIndex = null;
