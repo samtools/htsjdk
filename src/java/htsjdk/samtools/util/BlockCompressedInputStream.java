@@ -53,6 +53,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for details of BGZF format
  */
 public class BlockCompressedInputStream extends InputStream implements LocationAware {
+    private static final int READ_AHEAD_BUFFERS = (int)Math.ceil(Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE) + 1;
     private InputStream mStream = null;
     private SeekableStream mFile = null;
     private byte[] mFileBuffer = null;
@@ -63,7 +64,6 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     private DecompressionRunnable mDecompressionRunnable = null;
     private final BlockGunzipper blockGunzipper = new BlockGunzipper();
     private final boolean mAllowBuffering;
-
 
     /**
      * Note that seek() is not supported if this ctor is used.
@@ -146,7 +146,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      */
     public void close()
         throws IOException {
-    	terminateDecompressionThread();
+        terminateDecompressionThread();
         if (mFile != null) {
             mFile.close();
             mFile = null;
@@ -202,45 +202,45 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @
      */
     public String readLine() throws IOException {
-    	int available = available();
+        int available = available();
         if (available == 0) {
             return null;
         }
         if(null == buf){ // lazy initialisation 
-        	buf = new ByteArrayOutputStream(8192);
+            buf = new ByteArrayOutputStream(8192);
         }
         buf.reset();
-    	boolean done = false;
-    	boolean foundCr = false; // \r found flag
+        boolean done = false;
+        boolean foundCr = false; // \r found flag
         while (!done) {
-        	int linetmpPos = mCurrentOffset;
-        	int bCnt = 0;
-        	while((available-- > 0)){
-        		final byte c = mCurrentBlock.mBlock[linetmpPos++];
-        		if(c == eol){ // found \n
-        			done = true;
-        			break;
-        		} else if(foundCr){  // previous char was \r
-        			--linetmpPos; // current char is not \n so put it back
-        			done = true;
-        			break;
-        		} else if(c == eolCr){ // found \r
-					foundCr = true;
-        			continue; // no ++bCnt
-        		}
-				++bCnt;
-        	}
-        	if(mCurrentOffset < linetmpPos){
-				buf.write(mCurrentBlock.mBlock, mCurrentOffset, bCnt);
-	        	mCurrentOffset = linetmpPos;
-        	}
-        	available = available();    
-        	if(available == 0){
-        		// EOF
-        		done = true;
-        	}
+            int linetmpPos = mCurrentOffset;
+            int bCnt = 0;
+            while((available-- > 0)){
+                final byte c = mCurrentBlock.mBlock[linetmpPos++];
+                if(c == eol){ // found \n
+                    done = true;
+                    break;
+                } else if(foundCr){  // previous char was \r
+                    --linetmpPos; // current char is not \n so put it back
+                    done = true;
+                    break;
+                } else if(c == eolCr){ // found \r
+                    foundCr = true;
+                    continue; // no ++bCnt
+                }
+                ++bCnt;
+            }
+            if(mCurrentOffset < linetmpPos){
+                buf.write(mCurrentBlock.mBlock, mCurrentOffset, bCnt);
+                mCurrentOffset = linetmpPos;
+            }
+            available = available();    
+            if(available == 0){
+                // EOF
+                done = true;
+            }
         }
-    	return buf.toString();
+        return buf.toString();
     }
 
     /**
@@ -296,7 +296,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         if (mCurrentBlock.mBlockAddress == compressedOffset && mCurrentBlock != null) {
             available = mCurrentBlock.mBlock.length;
         } else {
-        	flushDecompressionThread();
+            flushDecompressionThread();
             mFile.seek(compressedOffset);
             mStreamOffset = compressedOffset;
             mCurrentBlock = nextBlock();
@@ -367,28 +367,28 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
     
     private void readBlock()
-    		throws IOException {
-    	if (mAllowBuffering && Defaults.USE_ASYNC_IO) {
-    		startDecompressionThread();
-    		try {
-				mCurrentBlock = mDecompressionRunnable.mResult.take();
-				mDecompressionRunnable.mOperations.add(this);
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Interrupted waiting for decompression thread", e);
-			}
+            throws IOException {
+        if (mAllowBuffering && Defaults.USE_ASYNC_IO) {
+            startDecompressionThread();
+            try {
+                mCurrentBlock = mDecompressionRunnable.mResult.take();
+                mDecompressionRunnable.mOperations.add(this);
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Interrupted waiting for decompression thread", e);
+            }
         } else {
-        	mCurrentBlock = nextBlock();
+            mCurrentBlock = nextBlock();
         }
-    	mCurrentOffset = 0;
-    	if (mCurrentBlock.mException != null) {
-    		if (mCurrentBlock.mException instanceof IOException) {
-    			throw (IOException)mCurrentBlock.mException;
-    		} else if (mCurrentBlock.mException instanceof RuntimeException) {
-    			throw (RuntimeException)mCurrentBlock.mException;
-    		} else {
-    			throw new RuntimeException(mCurrentBlock.mException);
-    		}
-    	}
+        mCurrentOffset = 0;
+        if (mCurrentBlock.mException != null) {
+            if (mCurrentBlock.mException instanceof IOException) {
+                throw (IOException)mCurrentBlock.mException;
+            } else if (mCurrentBlock.mException instanceof RuntimeException) {
+                throw (RuntimeException)mCurrentBlock.mException;
+            } else {
+                throw new RuntimeException(mCurrentBlock.mException);
+            }
+        }
     }
     
     private DecompressedBlock nextBlock() {
@@ -397,41 +397,41 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
         long blockAddress = mStreamOffset;
         try {
-	        final int headerByteCount = readBytes(mFileBuffer, 0, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH);
-	        mStreamOffset += headerByteCount;
-	        if (headerByteCount == 0) {
-	            // Handle case where there is no empty gzip block at end.
-	        	return new DecompressedBlock(blockAddress, new byte[0], 0);
-	        }
-	        if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
-	        	return new DecompressedBlock(blockAddress, headerByteCount, new IOException("Premature end of file"));
-	        }
-	        final int blockLength = unpackInt16(mFileBuffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
-	        if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > mFileBuffer.length) {
-	        	return new DecompressedBlock(blockAddress, blockLength, new IOException("Unexpected compressed block length: " + blockLength));
-	        }
-	        final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
-        	final int dataByteCount = readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, remaining);
-        	mStreamOffset += dataByteCount;
+            final int headerByteCount = readBytes(mFileBuffer, 0, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH);
+            mStreamOffset += headerByteCount;
+            if (headerByteCount == 0) {
+                // Handle case where there is no empty gzip block at end.
+                return new DecompressedBlock(blockAddress, new byte[0], 0);
+            }
+            if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
+                return new DecompressedBlock(blockAddress, headerByteCount, new IOException("Premature end of file"));
+            }
+            final int blockLength = unpackInt16(mFileBuffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
+            if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > mFileBuffer.length) {
+                return new DecompressedBlock(blockAddress, blockLength, new IOException("Unexpected compressed block length: " + blockLength));
+            }
+            final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
+            final int dataByteCount = readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, remaining);
+            mStreamOffset += dataByteCount;
             if (dataByteCount != remaining) {
-            	return new DecompressedBlock(blockAddress, blockLength, new IOException("Premature end of file"));
+                return new DecompressedBlock(blockAddress, blockLength, new IOException("Premature end of file"));
             }
             final byte[] decompressed = inflateBlock(mFileBuffer, blockLength, !Defaults.USE_ASYNC_IO && mCurrentBlock != null ? mCurrentBlock.mBlock : null);
             return new DecompressedBlock(blockAddress, decompressed, blockLength);
-		} catch (IOException e) {
-			return new DecompressedBlock(blockAddress, 0, e);
-		}
+        } catch (IOException e) {
+            return new DecompressedBlock(blockAddress, 0, e);
+        }
     }
 
     private byte[] inflateBlock(final byte[] compressedBlock, final int compressedLength, final byte[] bufferAvailableForReuse)
         throws IOException {
         final int uncompressedLength = unpackInt32(compressedBlock, compressedLength-4);
         if (uncompressedLength < 0) {
-        	throw new RuntimeIOException("BGZF file has invalid uncompressedLength: " + uncompressedLength);
+            throw new RuntimeIOException("BGZF file has invalid uncompressedLength: " + uncompressedLength);
         }
         byte[] buffer = bufferAvailableForReuse;
         if (buffer == null || uncompressedLength != buffer.length) {
-        	buffer = new byte[uncompressedLength]; 
+            buffer = new byte[uncompressedLength]; 
         }
         blockGunzipper.unzipBlock(buffer, compressedBlock, compressedLength);
         return buffer;
@@ -543,117 +543,115 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
     
     private static class DecompressedBlock {
-    	/**
-    	 * Decompressed block
-    	 */
-    	private final byte[] mBlock;
-    	/**
-    	 * Compressed size of block (the uncompressed size can be found using mBlock.length)
-    	 */
-    	private final int mBlockCompressedSize;
-    	/**
-    	 * Stream offset of start of block
-    	 */
-    	private final long mBlockAddress;
-    	/**
-    	 * Exception thrown (if any) when attempting to decompress block
-    	 */
-    	private final Exception mException;
-    	public DecompressedBlock(long blockAddress, byte[] block, int compressedSize) {
-    		mBlock = block;
-    		mBlockAddress = blockAddress;
-    		mBlockCompressedSize = compressedSize;
-    		mException = null;
-    	}
-    	public DecompressedBlock(long blockAddress, int compressedSize, Exception exception) {
-    		mBlock = new byte[0];
-    		mBlockAddress = blockAddress;
-    		mBlockCompressedSize = compressedSize;
-    		mException = exception;
-    	}
+        /**
+         * Decompressed block
+         */
+        private final byte[] mBlock;
+        /**
+         * Compressed size of block (the uncompressed size can be found using mBlock.length)
+         */
+        private final int mBlockCompressedSize;
+        /**
+         * Stream offset of start of block
+         */
+        private final long mBlockAddress;
+        /**
+         * Exception thrown (if any) when attempting to decompress block
+         */
+        private final Exception mException;
+        public DecompressedBlock(long blockAddress, byte[] block, int compressedSize) {
+            mBlock = block;
+            mBlockAddress = blockAddress;
+            mBlockCompressedSize = compressedSize;
+            mException = null;
+        }
+        public DecompressedBlock(long blockAddress, int compressedSize, Exception exception) {
+            mBlock = new byte[0];
+            mBlockAddress = blockAddress;
+            mBlockCompressedSize = compressedSize;
+            mException = exception;
+        }
     }
     
     private void startDecompressionThread() {
-    	if (mDecompressionThread == null) {
-    		mDecompressionRunnable = new DecompressionRunnable();
-    		mDecompressionThread = new Thread(mDecompressionRunnable, "DecompressBGZF");
-    		mDecompressionThread.setDaemon(true);
-    		mDecompressionThread.start();
-    	}
-    	if (mDecompressionRunnable.mResult == null) {
-    		mDecompressionRunnable.mResult = new ArrayBlockingQueue<DecompressedBlock>(1 + DecompressionRunnable.READ_AHEAD_DEPTH);
-    		assert(mDecompressionRunnable.mOperations.isEmpty());
-    		mDecompressionRunnable.mOperations.add(this);
-    		for (int i = 0; i < DecompressionRunnable.READ_AHEAD_DEPTH; i++) {
-    			mDecompressionRunnable.mOperations.add(this);
-    		}
-    	}
+        if (mDecompressionThread == null) {
+            mDecompressionRunnable = new DecompressionRunnable();
+            mDecompressionThread = new Thread(mDecompressionRunnable, "DecompressBGZF");
+            mDecompressionThread.setDaemon(true);
+            mDecompressionThread.start();
+        }
+        if (mDecompressionRunnable.mResult == null) {
+            mDecompressionRunnable.mResult = new ArrayBlockingQueue<DecompressedBlock>(READ_AHEAD_BUFFERS);
+            assert(mDecompressionRunnable.mOperations.isEmpty());
+            for (int i = 0; i < READ_AHEAD_BUFFERS; i++) {
+                mDecompressionRunnable.mOperations.add(this);
+            }
+        }
     }
     
     private void terminateDecompressionThread() {
-    	if (mDecompressionThread != null) {
-	    	try {
-    			mDecompressionRunnable.mTerminate.set(true);
-    			mDecompressionRunnable.mOperations.clear();
-    			mDecompressionThread.interrupt();
-    			try {
-					mDecompressionThread.join();
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}	    		
-	    	} finally {
-	    		mDecompressionThread = null;
-	    		mDecompressionRunnable = null;
-	    	}
-    	}
+        if (mDecompressionThread != null) {
+            try {
+                mDecompressionRunnable.mTerminate.set(true);
+                mDecompressionRunnable.mOperations.clear();
+                mDecompressionThread.interrupt();
+                try {
+                    mDecompressionThread.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }                
+            } finally {
+                mDecompressionThread = null;
+                mDecompressionRunnable = null;
+            }
+        }
     }
     
     private void flushDecompressionThread() {
-    	if (mDecompressionThread != null) {
-    		mDecompressionRunnable.mResult = null;
-			mDecompressionRunnable.mOperations.clear();
-			mDecompressionThread.interrupt();
-    	}
+        if (mDecompressionThread != null) {
+            mDecompressionRunnable.mResult = null;
+            mDecompressionRunnable.mOperations.clear();
+            mDecompressionThread.interrupt();
+        }
     }
     
-	/**
-	 * Performs block decompression
-	 */
-	private class DecompressionRunnable implements Runnable {
-		/**
-		 * Number of block to eagerly decompress
-		 */
-		public static final int READ_AHEAD_DEPTH = 1;
-		/**
-		 * Each entry in this queue indicates a block to be decompressed. 
-		 */
-		private BlockingQueue<Object> mOperations = new ArrayBlockingQueue<Object>(1 + READ_AHEAD_DEPTH);
-		/**
-		 * Results of block decompression.
-		 */
-	    private volatile BlockingQueue<DecompressedBlock> mResult = null;
-	    private AtomicBoolean mTerminate = new AtomicBoolean(false);
-		public void decompressBlocks() {
-			try {
-				while (true) {
-					mOperations.take();
-					BlockingQueue<DecompressedBlock> result = mResult;
-					if (result != null) {
-						DecompressedBlock decompressed = nextBlock();
-						result.put(decompressed);
-					}
-				}
-			} catch (InterruptedException e) {
-				// Reset interrupt status
-				Thread.interrupted();
-			}
-		}
-		public void run() {
-			while (!mTerminate.get()) {
-				decompressBlocks();
-			}
-		}
-	}
+    /**
+     * Performs block decompression
+     */
+    private class DecompressionRunnable implements Runnable {
+        /**
+         * Number of block to eagerly decompress
+         */
+        /**
+         * Each entry in this queue indicates a block to be decompressed. 
+         */
+        private BlockingQueue<Object> mOperations = new ArrayBlockingQueue<Object>(READ_AHEAD_BUFFERS);
+        /**
+         * Results of block decompression.
+         */
+        private volatile BlockingQueue<DecompressedBlock> mResult = null;
+        private AtomicBoolean mTerminate = new AtomicBoolean(false);
+        public void decompressBlocks() {
+            try {
+                while (true) {
+                    mOperations.take();
+                    BlockingQueue<DecompressedBlock> result = mResult;
+                    if (result != null) {
+                        DecompressedBlock decompressed = nextBlock();
+                        result.put(decompressed);
+                    }
+                }
+            } catch (InterruptedException e) {
+                // Reset interrupt status
+                Thread.interrupted();
+            }
+        }
+        public void run() {
+            while (!mTerminate.get()) {
+                decompressBlocks();
+            }
+        }
+    }
 }
 
 

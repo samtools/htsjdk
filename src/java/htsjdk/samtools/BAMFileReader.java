@@ -262,13 +262,13 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
     
     public void close() {
-    	if (mCompressedInputStream != null) {
-    		try {
-				mCompressedInputStream.close();
-			} catch (IOException e) {
-				throw new SAMException("Exception closing compressed input stream.", e);
-			}
-    	}
+        if (mCompressedInputStream != null) {
+            try {
+                mCompressedInputStream.close();
+            } catch (IOException e) {
+                throw new SAMException("Exception closing compressed input stream.", e);
+            }
+        }
         if (mStream != null) {
             mStream.close();
         }

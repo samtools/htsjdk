@@ -44,175 +44,166 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  */
 public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
-	private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
-	/**
-	 * Count of threads created
-	 */
-	private static AtomicInteger threadsCreated = new AtomicInteger(0);
-	private final Thread reader;
-	private final ReaderRunnable readerRunnable;
-	private final AtomicReference<Throwable> ex = new AtomicReference<Throwable>(null);
-	private final Iterator<T> underlying;
-	private final BlockingQueue<List<T>> buffer;
-	private final int batchSize;
-	private boolean closeCalled = false;
-	/**
-	 * Current batch of records returned from the background thread. An empty
-	 * list indicates the background thread has encountered the end of the
-	 * underlying stream.
-	 */
-	private List<T> currentList = null;
-	private Iterator<T> currentBuffer = null;
+    private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
+    /** Count of threads created */
+    private static AtomicInteger threadsCreated = new AtomicInteger(0);
+    private final Thread reader;
+    private final ReaderRunnable readerRunnable;
+    private final AtomicReference<Throwable> ex = new AtomicReference<Throwable>(null);
+    private final Iterator<T> underlying;
+    private final BlockingQueue<List<T>> buffer;
+    private final int bufferSize;
+    private boolean closeCalled = false;
+    /**
+     * Current buffer of records returned from the background thread. An empty
+     * list indicates the background thread has encountered the end of the
+     * underlying stream.
+     */
+    private List<T> currentList = null;
+    private Iterator<T> currentBuffer = null;
 
-	/**
-	 * Creates a new iterator that traverses the given iterator on a background
-	 * thread
-	 * 
-	 * @param iterator
-	 *            iterator to traverse
-	 * @param bufferCount
-	 *            number of read-ahead buffers
-	 * @param batchSize
-	 *            ize of each read-ahead buffer. A larger batch size will
-	 *            increase both throughput and latency.
-	 */
-	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize) {
-		this(iterator, null, bufferCount, batchSize);
-	}
+    /**
+     * Creates a new iterator that traverses the given iterator on a background
+     * thread
+     * 
+     * @param iterator iterator to traverse
+     * @param bufferCount number of read-ahead buffers
+     * @param bufferSize size of each read-ahead buffer. A larger size will increase both throughput and latency.
+     */
+    public AsyncBufferedIterator(final Iterator<T> iterator, final int bufferCount, final int bufferSize) {
+        this(iterator, null, bufferCount, bufferSize);
+    }
 
-	/**
-	 * Creates a new iterator that traverses the given iterator on a background
-	 * thread
-	 * 
-	 * @param iterator
-	 *            iterator to traverse
-	 * @param threadName
-	 *            background thread name
-	 * @param bufferCount
-	 *            number of read-ahead buffers
-	 * @param batchSize
-	 *            size of each read-ahead buffer. A larger batch size will
-	 *            increase both throughput and latency.
-	 */
-	public AsyncBufferedIterator(Iterator<T> iterator, String threadName, int bufferCount, int batchSize) {
-		if (iterator == null)
-			throw new IllegalArgumentException();
-		if (bufferCount <= 0 || batchSize <= 0)
-			throw new IllegalArgumentException("Buffer size must be at least 1.");
-		this.underlying = iterator;
-		this.buffer = new ArrayBlockingQueue<List<T>>(bufferCount);
-		this.batchSize = batchSize;
-		this.readerRunnable = new ReaderRunnable();
-		this.reader = new Thread(readerRunnable,
-				threadName == null ? getThreadNamePrefix() + threadsCreated.incrementAndGet() : threadName);
-		this.reader.setDaemon(true);
-		log.debug("Starting thread " + this.reader.getName());
-		this.reader.start();
-	}
+    /**
+     * Creates a new iterator that traverses the given iterator on a background
+     * thread
+     * 
+     * @param iterator iterator to traverse
+     * @param threadName background thread name
+     * @param bufferCount number of read-ahead buffers
+     * @param bufferSize size of each read-ahead buffer. A larger size will increase both throughput and latency.
+     */
+    public AsyncBufferedIterator(final Iterator<T> iterator, final String threadName, final int bufferCount, final int bufferSize) {
+        if (iterator == null) throw new IllegalArgumentException();
+        if (bufferCount <= 0) throw new IllegalArgumentException("Must use at least 1 buffer.");
+        if (bufferSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1 record.");
+        this.underlying = iterator;
+        this.buffer = new ArrayBlockingQueue<List<T>>(bufferCount);
+        this.bufferSize = bufferSize;
+        this.readerRunnable = new ReaderRunnable();
+        this.reader = new Thread(readerRunnable, threadName == null ? getThreadNamePrefix() + threadsCreated.incrementAndGet() : threadName);
+        this.reader.setDaemon(true);
+        log.debug("Starting thread " + this.reader.getName());
+        this.reader.start();
+    }
 
-	protected String getThreadNamePrefix() {
-		return "AsyncBufferedIterator";
-	}
+    protected String getThreadNamePrefix() {
+        return "AsyncBufferedIterator";
+    }
 
-	@Override
-	public void close() {
-		closeCalled = true;
-		try {
-			reader.interrupt();
-			buffer.clear(); // flush buffer so EOS indicator can be written if
-							// writer is blocking
-			reader.join();
-		} catch (InterruptedException ie) {
-			throw new RuntimeException("Interrupted waiting for background thread to complete", ie);
-		} finally {
-			CloserUtil.close(underlying);
-		}
-	}
+    @Override
+    public void close() {
+        closeCalled = true;
+        try {
+            reader.interrupt();
+            // flush buffer so EOS indicator can be written if writer is blocking
+            buffer.clear();
+            reader.join();
+        } catch (InterruptedException ie) {
+            throw new RuntimeException("Interrupted waiting for background thread to complete", ie);
+        } finally {
+            CloserUtil.close(underlying);
+        }
+    }
 
-	@Override
-	public boolean hasNext() {
-		throwOnCallingThread();
-		if (closeCalled)
-			return false;
-		if (currentList == null || (currentList.size() > 0 && !currentBuffer.hasNext())) {
-			try {
-				currentList = buffer.take();
-				currentBuffer = currentList.iterator();
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Error reading from background thread", e);
-			}
-			// rethrow any exceptions raised on the background thread while we
-			// were blocking on the next record
-			throwOnCallingThread();
-		}
-		return currentBuffer.hasNext();
-	}
+    @Override
+    public boolean hasNext() {
+        throwOnCallingThread();
+        if (closeCalled) return false;
+        if (currentList != null && currentList.isEmpty()) {
+            // encountered end of stream
+            return false;
+        }
+        if (currentList == null || !currentBuffer.hasNext()) {
+            try {
+                currentList = buffer.take();
+                currentBuffer = currentList.iterator();
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Error reading from background thread", e);
+            }
+            // rethrow any exceptions raised on the background thread while we
+            // were blocking on the next record
+            throwOnCallingThread();
+        }
+        return currentBuffer.hasNext();
+    }
 
-	@Override
-	public T next() {
-		if (hasNext())
-			return (T) currentBuffer.next();
-		throw new NoSuchElementException("next");
-	}
+    @Override
+    public T next() {
+        if (hasNext()) {
+            return (T) currentBuffer.next();
+        }
+        throw new NoSuchElementException("next");
+    }
 
-	/**
-	 * Rethrows any exception encountered on the background
-	 * thread to the caller 
-	 */
-	private final void throwOnCallingThread() {
-		final Throwable t = this.ex.get();
-		if (t != null) {
-			if (t instanceof Error) {
-				throw (Error) t;
-			} else if (t instanceof RuntimeException) {
-				throw (RuntimeException) t;
-			} else {
-				throw new RuntimeException(t);
-			}
-		}
-	}
+    /**
+     * Rethrows any exception encountered on the background
+     * thread to the caller 
+     */
+    private final void throwOnCallingThread() {
+        final Throwable t = this.ex.get();
+        if (t != null) {
+            if (t instanceof Error) {
+                throw (Error) t;
+            } else if (t instanceof RuntimeException) {
+                throw (RuntimeException) t;
+            } else {
+                throw new RuntimeException(t);
+            }
+        }
+    }
 
-	/**
-	 * Reads the given iterator, passing back records to the calling thread in batches
-	 */
-	private class ReaderRunnable implements Runnable {
-		public void run() {
-			boolean eosWritten = false;
-			try {
-				while (underlying.hasNext()) {
-					List<T> readAhead = new ArrayList<T>(batchSize + 1);
-					for (int i = 0; i < batchSize && underlying.hasNext(); i++) {
-						readAhead.add(underlying.next());
-					}
-					buffer.put(readAhead);
-					if (readAhead.size() == 0) {
-						eosWritten = true;
-					}
-				}
-			} catch (InterruptedException ie) {
-				// log.debug("Thread interrupt received - closing on background thread.");
-			} catch (Throwable t) {
-				ex.set(t);
-				throw new RuntimeException(t);
-			} finally {
-				Thread.interrupted();
-				try {
-					if (!eosWritten) {
-						buffer.put(new ArrayList<T>());
-					}
-				} catch (InterruptedException e2) {
-					log.warn("Thread interrupt received whilst writing end of stream indicator");
-				}
-			}
-		}
-	}
+    /**
+     * Reads the given iterator, passing back records to the calling thread in batches
+     */
+    private class ReaderRunnable implements Runnable {
+        public void run() {
+            boolean eosWritten = false;
+            try {
+                while (underlying.hasNext()) {
+                    final List<T> readAhead = new ArrayList<T>(bufferSize);
+                    for (int i = 0; i < bufferSize && underlying.hasNext(); i++) {
+                        readAhead.add(underlying.next());
+                    }
+                    buffer.put(readAhead);
+                    if (readAhead.isEmpty()) {
+                        eosWritten = true;
+                    }
+                }
+            } catch (InterruptedException ie) {
+                // log.debug("Thread interrupt received - closing on background thread.");
+            } catch (Throwable t) {
+                ex.set(t);
+                throw new RuntimeException(t);
+            } finally {
+                Thread.interrupted();
+                try {
+                    if (!eosWritten) {
+                        buffer.put(new ArrayList<T>());
+                    }
+                } catch (InterruptedException e2) {
+                    log.warn("Thread interrupt received whilst writing end of stream indicator");
+                }
+            }
+        }
+    }
 
-	@Override
-	public void remove() {
-		throw new UnsupportedOperationException();
-	}
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
+    }
 
-	protected String getBackgroundThreadName() {
-		return this.reader.getName();
-	}
+    protected String getBackgroundThreadName() {
+        return this.reader.getName();
+    }
 }

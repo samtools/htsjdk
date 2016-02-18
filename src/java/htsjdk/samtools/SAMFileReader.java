@@ -709,7 +709,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
         final byte[] magicBuf = new byte[4];
-        BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer), false);
+        final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer), false);
         final int magicLength = readBytes(bcis, magicBuf, 0, 4);
         bcis.close();
         return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
