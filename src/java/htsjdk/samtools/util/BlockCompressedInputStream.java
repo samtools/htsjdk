@@ -38,6 +38,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import htsjdk.samtools.Defaults;
+import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -414,7 +415,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             final int dataByteCount = readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, remaining);
             mStreamOffset += dataByteCount;
             if (dataByteCount != remaining) {
-                return new DecompressedBlock(blockAddress, blockLength, new IOException("Premature end of file"));
+                return new DecompressedBlock(blockAddress, blockLength, new FileTruncatedException("Premature end of file"));
             }
             final byte[] decompressed = inflateBlock(mFileBuffer, blockLength, !Defaults.USE_ASYNC_IO && mCurrentBlock != null ? mCurrentBlock.mBlock : null);
             return new DecompressedBlock(blockAddress, decompressed, blockLength);
