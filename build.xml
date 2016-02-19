@@ -49,12 +49,6 @@
     <condition  property="isUnix">
         <os family="unix"/>
     </condition>
-
-    <!-- Import JaCoCo Ant tasks -->
-    <taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
-        <classpath path="lib/jacocoant.jar" />
-    </taskdef>
-
     <target name="set_excluded_test_groups_unix" if="isUnix">
         <property name="excludedTestGroups" value="slow, broken"/>
     </target>
@@ -130,23 +124,21 @@
         <attribute name="includedTestGroups" default=""/>
         <sequential>
                 <taskdef resource="testngtasks" classpathref="classpath"/>
-                <jacoco:coverage destfile="jacoco.data" xmlns:jacoco="antlib:org.jacoco.ant">
-                  <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
-                          failureproperty="tests.failed" excludedgroups="@{excludedTestGroups}" groups="@{includedTestGroups}"
-                          workingDir="${basedir}"
-                          verbose="${testng.verbosity}">
-                      <classpath>
-                          <pathelement path="${classes}"/>
-                          <pathelement path="${classes.test}"/>
-                          <pathelement path="${scripts}"/>
-                      </classpath>
-                      <classfileset dir="${classes.test}">
-                          <include name="**/Test*.class"/>
-                          <include name="**/*Test.class"/>
-                      </classfileset>
-                      <jvmarg value="-Xmx2G"/>
-                  </testng>
-                </jacoco:coverage>
+                <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
+                        failureproperty="tests.failed" excludedgroups="@{excludedTestGroups}" groups="@{includedTestGroups}"
+                        workingDir="${basedir}"
+                        verbose="${testng.verbosity}">
+                    <classpath>
+                        <pathelement path="${classes}"/>
+                        <pathelement path="${classes.test}"/>
+                        <pathelement path="${scripts}"/>
+                    </classpath>
+                    <classfileset dir="${classes.test}">
+                        <include name="**/Test*.class"/>
+                        <include name="**/*Test.class"/>
+                    </classfileset>
+                    <jvmarg value="-Xmx2G"/>
+                </testng>
                 <junitreport todir="${dist}/test" >
                     <fileset dir="${test.output}">
                         <include name="*.xml"/>
@@ -157,23 +149,6 @@
                 <fail if="tests.failed" message="There were failed unit tests"/>
         </sequential>
     </macrodef>
-
-    <target name="test-coverage-report" depends="test, sra-test" description="Runs tests and creates an HTML code coverage report">
-        <jacoco:report xmlns:jacoco="antlib:org.jacoco.ant">
-            <executiondata>
-                <file file="jacoco.data"/>
-            </executiondata>
-            <structure name="HTSJDK">
-                <classfiles>
-                    <fileset dir="classes"/>
-                </classfiles>
-                <sourcefiles encoding="UTF-8">
-                    <fileset dir="src"/>
-                </sourcefiles>
-            </structure>
-            <html destdir="report"/>
-        </jacoco:report>
-    </target>
 
     <target name="test" depends="compile, set_excluded_test_groups" description="Run unit tests">
             <run-test excludedTestGroups="${excludedTestGroups}, sra"/>
@@ -221,10 +196,7 @@
             </manifest>
         </jar>
         <copy todir="${dist}">
-            <fileset dir="lib">
-                <include name="*.jar"/>
-                <exclude name="jacocoant.jar"/> <!-- must exclude this jar from packing into the jar - this is only used for testing -->
-            </fileset>
+            <fileset dir="lib" includes="*.jar"/>
         </copy>
     </target>
 
