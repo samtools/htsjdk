@@ -293,7 +293,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         final long compressedOffset = BlockCompressedFilePointerUtil.getBlockAddress(pos);
         final int uncompressedOffset = BlockCompressedFilePointerUtil.getBlockOffset(pos);
         final int available;
-        if (mCurrentBlock.mBlockAddress == compressedOffset && mCurrentBlock != null) {
+        if (mCurrentBlock != null && mCurrentBlock.mBlockAddress == compressedOffset) {
             available = mCurrentBlock.mBlock.length;
         } else {
             flushDecompressionThread();
