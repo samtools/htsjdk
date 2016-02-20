@@ -211,7 +211,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     final VCFSimpleHeaderLine alt = new VCFSimpleHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"));
                     metaData.add(alt);
                 } else {
-                    int equals = str.indexOf("=");
+                    int equals = str.indexOf('=');
                     if ( equals != -1 )
                         metaData.add(new VCFHeaderLine(str.substring(2, equals), str.substring(equals+1)));
                 }
@@ -402,7 +402,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             generateException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
-            if ( infoField.indexOf("\t") != -1 || infoField.indexOf(" ") != -1 )
+            if ( infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1 )
                 generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
 
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
@@ -532,7 +532,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         Allele refAllele = Allele.create(ref, true);
         alleles.add(refAllele);
 
-        if ( alts.indexOf(",") == -1 ) // only 1 alternatives, don't call string split
+        if ( alts.indexOf(',') == -1 ) // only 1 alternatives, don't call string split
             parseSingleAltAllele(alleles, alts, lineNo);
         else
             for ( String alt : alts.split(",") )

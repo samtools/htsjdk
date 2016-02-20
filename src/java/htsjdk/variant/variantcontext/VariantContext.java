@@ -1589,7 +1589,7 @@ public class VariantContext implements Feature, Serializable {
                 return GenotypeLikelihoods.fromPLField((String)value);
 
             final String string = (String)value;
-            if ( string.indexOf(",") != -1 ) {
+            if ( string.indexOf(',') != -1 ) {
                 final String[] splits = string.split(",");
                 final List<Object> values = new ArrayList<Object>(splits.length);
                 for ( int i = 0; i < splits.length; i++ )

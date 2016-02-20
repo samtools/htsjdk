@@ -325,7 +325,7 @@ public class TabixReader {
                             if (i >= 0) e_off = i + 5;
                         }
                         if (e_off > 0) {
-                            i = alt.indexOf(";", e_off);
+                            i = alt.indexOf(';', e_off);
                             intv.end = Integer.parseInt(i > e_off ? alt.substring(e_off, i) : alt.substring(e_off));
                         }
                     }
