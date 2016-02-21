@@ -277,7 +277,7 @@ public class IOUtil {
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */
     public static String basename(final File f) {
         final String full = f.getName();
-        final int index = full.lastIndexOf(".");
+        final int index = full.lastIndexOf('.');
         if (index > 0  && index > full.lastIndexOf(File.separator)) {
             return full.substring(0, index);
         }
@@ -782,7 +782,7 @@ public class IOUtil {
     /** Returns the name of the file extension (i.e. text after the last "." in the filename) including the . */
     public static String fileSuffix(final File f) {
         final String full = f.getName();
-        final int index = full.lastIndexOf(".");
+        final int index = full.lastIndexOf('.');
         if (index > 0 && index > full.lastIndexOf(File.separator)) {
             return full.substring(index);
         } else {
