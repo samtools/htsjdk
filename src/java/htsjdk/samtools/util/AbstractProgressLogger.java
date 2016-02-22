@@ -18,7 +18,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private final long startTime = System.currentTimeMillis();
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
-    private long processed = 0;
+    private volatile long processed = 0;
     // Set to -1 until the first record is added
     private long lastStartTime = -1;
 
