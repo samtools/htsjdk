@@ -1,12 +1,5 @@
 package htsjdk.samtools;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.zip.GZIPInputStream;
-
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.sra.SRAAccession;
@@ -16,6 +9,13 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.zip.GZIPInputStream;
 
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
@@ -274,7 +274,7 @@ public abstract class SamReaderFactory {
                             bufferedStream.close();
                             primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
                         }
-                    } else if (sourceFile != null && SRAAccession.isValid(sourceFile.getPath())) {
+                    } else if (sourceFile != null && isSra(sourceFile)) {
                         if (bufferedStream != null) {
                             bufferedStream.close();
                         }
@@ -299,6 +299,15 @@ public abstract class SamReaderFactory {
                 return reader;
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
+            }
+        }
+
+        /** Attempts to detect whether the file is an SRA accessioned file. If SRA support is not available, returns false. */
+        private boolean isSra(final File sourceFile) {
+            try {
+                return SRAAccession.isValid(sourceFile.getPath());
+            } catch (final Exception e) {
+                return false;
             }
         }
 
