@@ -452,4 +452,20 @@ public class ValidateSamFileTest {
         // Test an unacceptable version
         testHeaderVersion("1.6", false);
     }
+
+    @Test(enabled = false)
+    public void duplicateReads() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "duplicated_reads.sam"));
+        final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertFalse(results.isEmpty());
+        Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
+    }
+
+    @Test
+    public void duplicateReadsOutOfOrder() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "duplicated_reads_out_of_order.sam"));
+        final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertFalse(results.isEmpty());
+        Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
+    }
 }
