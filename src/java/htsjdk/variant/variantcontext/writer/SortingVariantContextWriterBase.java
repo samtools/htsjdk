@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 
+import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Queue;
 import java.util.Set;
@@ -182,7 +183,9 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
         }
     }
 
-    private static class VariantContextComparator implements Comparator<VCFRecord> {
+    private static class VariantContextComparator implements Comparator<VCFRecord>, Serializable {
+        private static final long serialVersionUID = 1L;
+
         public int compare(VCFRecord r1, VCFRecord r2) {
             return r1.vc.getStart() - r2.vc.getStart();
         }

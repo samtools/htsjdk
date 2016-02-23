@@ -33,6 +33,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -733,7 +734,9 @@ public class IntervalList implements Iterable<Interval> {
  * Comparator that orders intervals based on their sequence index, by coordinate
  * then by strand and finally by name.
  */
-class IntervalCoordinateComparator implements Comparator<Interval> {
+class IntervalCoordinateComparator implements Comparator<Interval>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final SAMFileHeader header;
 
     /** Constructs a comparator using the supplied sequence header. */

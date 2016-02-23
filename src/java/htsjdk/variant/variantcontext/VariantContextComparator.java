@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,7 +19,8 @@ import java.util.Set;
  * A Comparator that orders VariantContexts by the ordering of the contigs/chromosomes in the List
  * provided at construction time, then by start position with each contig/chromosome.
  */
-public class VariantContextComparator implements Comparator<VariantContext> {
+public class VariantContextComparator implements Comparator<VariantContext>, Serializable {
+	private static final long serialVersionUID = 1L;
 
 	public static List<String> getSequenceNameList(final SAMSequenceDictionary dictionary) {
 		final List<String> list = new ArrayList<String>();

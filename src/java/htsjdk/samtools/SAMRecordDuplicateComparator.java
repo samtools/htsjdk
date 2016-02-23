@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,9 @@ import java.util.Map;
  *
  * @author nhomer
  */
-public class SAMRecordDuplicateComparator implements SAMRecordComparator {
+public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serializable {
+    private static final long serialVersionUID = 1L;
+
     /** An enum to provide type-safe keys for transient attributes the comparator puts on SAMRecords. */
     private static enum Attr {
         LibraryId, ReadCoordinate, MateCoordinate

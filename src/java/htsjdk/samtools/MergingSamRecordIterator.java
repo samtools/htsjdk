@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -201,7 +202,8 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
      * sequence dictionary.  I hate the fact that this extends SAMRecordCoordinateComparator, but it avoids
      * more copy & paste.
      */
-    private class MergedSequenceDictionaryCoordinateOrderComparator extends SAMRecordCoordinateComparator {
+    private class MergedSequenceDictionaryCoordinateOrderComparator extends SAMRecordCoordinateComparator implements Serializable {
+        private static final long serialVersionUID = 1L;
 
         public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
             final int referenceIndex1 = getReferenceIndex(samRecord1);

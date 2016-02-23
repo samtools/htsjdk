@@ -24,6 +24,7 @@ package htsjdk.samtools;
  * THE SOFTWARE.
  */
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -31,7 +32,8 @@ import java.util.Comparator;
  * in the comparison to the constructor. Null attribute values (i.e., those attributes not present in the
  * record) sort behind those that have values.
  */
-public class SAMHeaderRecordComparator<T extends AbstractSAMHeaderRecord> implements Comparator<T> {
+public class SAMHeaderRecordComparator<T extends AbstractSAMHeaderRecord> implements Comparator<T>, Serializable {
+	private static final long serialVersionUID = 1L;
 
 	private final String[] attributes;
 
