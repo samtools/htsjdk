@@ -178,6 +178,8 @@ public class QualityScorePreservation {
                 return -1;
             case PRESERVE:
                 return score;
+            default:
+                break;
 
         }
         throw new RuntimeException("Unknown quality score treatment type: "

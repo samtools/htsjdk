@@ -927,6 +927,8 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                     // Either found a good record, or else keep scanning SAMRecords
                     case OVERLAPPING: return
                             (contained ? FilteringIteratorState.CONTINUE_ITERATION : FilteringIteratorState.MATCHES_FILTER);
+                    default:
+                        break;
                 }
             }
             // Went past the last interval

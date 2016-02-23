@@ -167,6 +167,8 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
                 return new SAMRecordDuplicateComparator();
             case unsorted:
                 return null;
+            default:
+                break;
         }
         throw new IllegalStateException("sortOrder should not be null");
     }

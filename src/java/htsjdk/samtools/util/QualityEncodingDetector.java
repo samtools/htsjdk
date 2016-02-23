@@ -389,6 +389,8 @@ public class QualityEncodingDetector {
                                 return FastqQualityFormat.Illumina;
                             case SAM:
                                 return FastqQualityFormat.Standard;
+                            default:
+                                break;
                         }
                     } else if (possibleFormats.equals(EnumSet.of(FastqQualityFormat.Standard, FastqQualityFormat.Solexa))) {
                         return FastqQualityFormat.Standard;

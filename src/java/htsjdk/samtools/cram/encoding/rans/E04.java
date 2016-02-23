@@ -31,6 +31,8 @@ class E04 {
                         syms[0xFF & in.get(in_size - (i))]);
             case 0:
                 break;
+            default:
+                break;
         }
         for (i = (in_size & ~3); i > 0; i -= 4) {
             final int c3 = 0xFF & in.get(i - 1);

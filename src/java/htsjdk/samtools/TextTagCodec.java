@@ -65,6 +65,8 @@ public class TextTagCodec {
             case 'S':
             case 'I':
                 tagType = 'i';
+            default:
+                break;
         }
         if (tagType == 'H') {
             // H should never happen anymore.
