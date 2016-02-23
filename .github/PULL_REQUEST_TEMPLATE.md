@@ -6,7 +6,6 @@ Explain the **motivation** for making this change. What existing problem does th
 ### Checklist
 
 - [ ] Code compiles correctly
+- [ ] New tests covering changes and new functionality
 - [ ] All tests passing
 - [ ] Extended the README / documentation, if necessary
-- [ ] code formatting
-
