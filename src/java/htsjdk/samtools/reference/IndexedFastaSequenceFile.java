@@ -230,7 +230,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
 
         long startOffset = ((start-1)/basesPerLine)*bytesPerLine + (start-1)%basesPerLine;
         // Cast to long so the second argument cannot overflow a signed integer.
-        final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length % basesPerLine + 2) * (long)bytesPerLine);
+        final long minBufferSize = Math.min((long) Defaults.NON_ZERO_BUFFER_SIZE, (long)(length / basesPerLine + 2) * (long)bytesPerLine);
         if (minBufferSize > Integer.MAX_VALUE) throw new SAMException("Buffer is too large: " +  minBufferSize);
 
         // Allocate a buffer for reading in sequence data.
