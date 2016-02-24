@@ -206,12 +206,12 @@ public class StringUtil {
         final StringBuilder sb = new StringBuilder();
         for (final String line: lines) {
             if (sb.length() > 0) {
-                sb.append("\n");
+                sb.append('\n');
             }
             sb.append(wordWrapSingleLine(line, maxLineLength));
         }
         if (s.endsWith("\n")) {
-            sb.append("\n");
+            sb.append('\n');
         }
         return sb.toString();
     }
@@ -237,7 +237,7 @@ public class StringUtil {
             // Include any trailing whitespace
             for (; lastSpaceIndex < s.length() && Character.isWhitespace(s.charAt(lastSpaceIndex)); ++lastSpaceIndex) {}
             if (sb.length() > 0) {
-                sb.append("\n");
+                sb.append('\n');
             }
             // Handle situation in which there is no word break.  Just break the word in the middle.
             if (lastSpaceIndex == startCopyFrom) {

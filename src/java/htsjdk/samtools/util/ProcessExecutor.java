@@ -236,7 +236,7 @@ public class ProcessExecutor {
     private static class StringBuilderProcessOutputReader extends ProcessOutputReader {
         private final StringBuilder sb = new StringBuilder();
         public StringBuilderProcessOutputReader(final InputStream stream) { super(stream); }
-        @Override protected void write(final String message) { sb.append(message).append("\n"); }
+        @Override protected void write(final String message) { sb.append(message).append('\n'); }
         public String getOutput() { return sb.toString(); }
     }
 

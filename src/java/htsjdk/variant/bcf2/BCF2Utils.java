@@ -146,7 +146,7 @@ public final class BCF2Utils {
             for ( final String s : strings ) {
                 if ( s != null ) {
                     assert s.indexOf(",") == -1; // no commas in individual strings
-                    b.append(",").append(s);
+                    b.append(',').append(s);
                 }
             }
             return b.toString();

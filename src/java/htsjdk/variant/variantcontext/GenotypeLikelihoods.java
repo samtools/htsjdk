@@ -264,7 +264,7 @@ public class GenotypeLikelihoods {
         boolean first = true;
         for ( final int pl : GLsToPLs(GLs) ) {
             if ( ! first )
-                s.append(",");
+                s.append(',');
             else
                 first = false;
 

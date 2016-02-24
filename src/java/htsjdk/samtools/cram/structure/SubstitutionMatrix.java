@@ -61,11 +61,11 @@ public class SubstitutionMatrix {
         final StringBuilder stringBuilder = new StringBuilder();
         for (final byte r : "ACGTN".getBytes()) {
             stringBuilder.append((char) r);
-            stringBuilder.append(":");
+            stringBuilder.append(':');
             for (int i = 0; i < 4; i++) {
                 stringBuilder.append((char) bases[r][i]);
             }
-            stringBuilder.append("\t");
+            stringBuilder.append('\t');
         }
         return stringBuilder.toString();
     }
