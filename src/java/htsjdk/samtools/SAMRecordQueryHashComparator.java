@@ -63,6 +63,6 @@ public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator {
 
     /** Compares the hash values for two records. */
     private int compareHashes(final SAMRecord lhs, final SAMRecord rhs) {
-        return new Integer(this.hasher.hashUnencodedChars(lhs.getReadName())).compareTo(this.hasher.hashUnencodedChars(rhs.getReadName()));
+        return Integer.compare(this.hasher.hashUnencodedChars(lhs.getReadName()), this.hasher.hashUnencodedChars(rhs.getReadName()));
     }
 }
