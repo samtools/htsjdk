@@ -3,13 +3,18 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,6 +25,24 @@ import java.util.Map;
  * Created by vadim on 11/01/2016.
  */
 public class ContainerParserTest {
+
+    @Test
+    public void testEOF() throws IOException, IllegalAccessException {
+        ContainerParser parser = new ContainerParser(new SAMFileHeader());
+        ByteArrayOutputStream v2_baos = new ByteArrayOutputStream();
+        Version version = CramVersions.CRAM_v2_1;
+        CramIO.issueEOF(version, v2_baos);
+        Container container = ContainerIO.readContainer(version, new ByteArrayInputStream(v2_baos.toByteArray()));
+        Assert.assertTrue(container.isEOF());
+        Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
+
+        ByteArrayOutputStream v3_baos = new ByteArrayOutputStream();
+        version = CramVersions.CRAM_v3;
+        CramIO.issueEOF(version, v3_baos);
+        container = ContainerIO.readContainer(version, new ByteArrayInputStream(v3_baos.toByteArray()));
+        Assert.assertTrue(container.isEOF());
+        Assert.assertTrue(parser.getRecords(container, null, ValidationStringency.STRICT).isEmpty());
+    }
 
     @Test
     public void testSingleRefContainer() throws IOException, IllegalAccessException {
