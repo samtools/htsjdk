@@ -92,13 +92,13 @@ public class Defaults {
 
     /** Gets a boolean system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static boolean getBooleanProperty(final String name, final boolean def) {
-        final String value = getStringProperty(name, new Boolean(def).toString());
+        final String value = getStringProperty(name, Boolean.toString(def));
         return Boolean.parseBoolean(value);
     }
 
     /** Gets an int system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static int getIntProperty(final String name, final int def) {
-        final String value = getStringProperty(name, new Integer(def).toString());
+        final String value = getStringProperty(name, Integer.toString(def));
         return Integer.parseInt(value);
     }
 
