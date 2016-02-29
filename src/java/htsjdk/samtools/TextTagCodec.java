@@ -100,7 +100,7 @@ public class TextTagCodec {
         final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
         final int length = Array.getLength(value);
         for (int i = 1; i < length; ++i) {
-            ret.append(",");
+            ret.append(',');
             ret.append(Array.get(value, i).toString());
         }
         return ret.toString();

@@ -508,10 +508,10 @@ public class IntervalTree {
             StringBuffer buf = new StringBuffer();
             _toString(buf, keys);
 
-            buf.append("\n");
+            buf.append('\n');
             for (Map.Entry<Interval, Integer> entry : keys.entrySet()) {
                 buf.append(entry.getValue() + " = " + entry.getKey());
-                buf.append("\n");
+                buf.append('\n');
             }
 
             return buf.toString();
@@ -520,7 +520,7 @@ public class IntervalTree {
         public void _toString(StringBuffer buf, Map<Interval, Integer> keys) {
             if (this == NIL) {
                 buf.append("nil");
-                buf.append("\n");
+                buf.append('\n');
                 return;
             }
 
@@ -542,7 +542,7 @@ public class IntervalTree {
 
 
             buf.append(selfKey + " -> " + leftKey + " , " + rightKey);
-            buf.append("\n");
+            buf.append('\n');
             this.left._toString(buf, keys);
             this.right._toString(buf, keys);
         }

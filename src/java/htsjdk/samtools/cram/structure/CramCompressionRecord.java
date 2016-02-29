@@ -148,7 +148,7 @@ public class CramCompressionRecord {
         if (readBases != null) stringBuilder.append("; ").append("bases: ").append(new String(readBases));
         if (qualityScores != null) stringBuilder.append("; ").append("scores: ").append(new String(qualityScores));
 
-        stringBuilder.append("]");
+        stringBuilder.append(']');
         return stringBuilder.toString();
     }
 

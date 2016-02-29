@@ -146,21 +146,21 @@ public class VCFHeaderLine implements Comparable, Serializable {
      */
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
         StringBuilder builder = new StringBuilder();
-        builder.append("<");
+        builder.append('<');
         boolean start = true;
         for (Map.Entry<String,?> entry : keyValues.entrySet()) {
             if (start) start = false;
-            else builder.append(",");
+            else builder.append(',');
 
             if ( entry.getValue() == null ) throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
 
             builder.append(entry.getKey());
-            builder.append("=");
+            builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
                            entry.getValue().toString().contains(" ") ||
                            entry.getKey().equals("Description") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
-        builder.append(">");
+        builder.append('>');
         return builder.toString();
     }
 

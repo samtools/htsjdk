@@ -89,7 +89,7 @@ public class VCFEncoder {
 			for (int i = 1; i < context.getAlternateAlleles().size(); i++) {
 				altAllele = context.getAlternateAllele(i);
 				alt = altAllele.getDisplayString();
-				stringBuilder.append(",");
+				stringBuilder.append(',');
 				stringBuilder.append(alt);
 			}
 		} else {
@@ -191,7 +191,7 @@ public class VCFEncoder {
 				return formatVCFField(null);
 			final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
 			for ( int i = 1; i < length; i++) {
-				sb.append(",");
+				sb.append(',');
 				sb.append(formatVCFField(Array.get(val, i)));
 			}
 			result = sb.toString();
@@ -285,7 +285,7 @@ public class VCFEncoder {
 								final StringBuilder sb = new StringBuilder();
 								sb.append(intValues[0]);
 								for ( int i = 1; i < intValues.length; i++) {
-									sb.append(",");
+									sb.append(',');
 									sb.append(intValues[i]);
 								}
 								outputValue = sb.toString();
@@ -301,7 +301,7 @@ public class VCFEncoder {
 									// For example, if Number=2, the string has to be ".,."
 									final StringBuilder sb = new StringBuilder(VCFConstants.MISSING_VALUE_v4);
 									for ( int i = 1; i < numInFormatField; i++ ) {
-										sb.append(",");
+										sb.append(',');
 										sb.append(VCFConstants.MISSING_VALUE_v4);
 									}
 									val = sb.toString();
@@ -354,7 +354,7 @@ public class VCFEncoder {
 			if ( ! entry.getValue().equals("")) {
 				final VCFInfoHeaderLine metaData = this.header.getInfoHeaderLine(entry.getKey());
 				if ( metaData == null || metaData.getCountType() != VCFHeaderLineCount.INTEGER || metaData.getCount() != 0 ) {
-					builder.append("=");
+					builder.append('=');
 					builder.append(entry.getValue());
 				}
 			}

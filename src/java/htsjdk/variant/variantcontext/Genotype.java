@@ -637,9 +637,9 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return "";
         else {
             StringBuilder b = new StringBuilder();
-            b.append(" ").append(name).append(" ");
+            b.append(' ').append(name).append(' ');
             for ( int i = 0; i < vs.length; i++ ) {
-                if ( i != 0 ) b.append(",");
+                if ( i != 0 ) b.append(',');
                 b.append(vs[i]);
             }
             return b.toString();

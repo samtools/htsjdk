@@ -110,9 +110,9 @@ public class MetricBase {
         for (final Field f : getClass().getFields()) {
             try {
                 buffer.append(f.getName());
-                buffer.append("\t");
+                buffer.append('\t');
                 buffer.append(formatter.format(f.get(this)));
-                buffer.append("\n");
+                buffer.append('\n');
             }
             catch (IllegalAccessException iae) {
                 throw new SAMException("Could not read field " + f.getName() + " from a " + getClass().getSimpleName());
