@@ -12,13 +12,13 @@ import java.text.NumberFormat;
  * Concrete subclasses must provide the logger
  */
 abstract public class AbstractProgressLogger implements ProgressLoggerInterface {
-    protected final int n;
-    protected final String verb;
-    protected final String noun;
+    private final int n;
+    private final String verb;
+    private final String noun;
     private final long startTime = System.currentTimeMillis();
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
-    private volatile long processed = 0;
+    private long processed = 0;
     // Set to -1 until the first record is added
     private long lastStartTime = -1;
 
@@ -93,7 +93,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     /** Returns the count of records processed. */
-    public long getCount() { return this.processed; }
+    public synchronized long getCount() { return this.processed; }
 
     /** Returns the number of seconds since progress tracking began. */
     public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }
