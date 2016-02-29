@@ -32,6 +32,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -501,7 +502,8 @@ public class SortingCollection<T> implements Iterable<T> {
         }
     }
 
-    class PeekFileRecordIteratorComparator implements Comparator<PeekFileRecordIterator> {
+    class PeekFileRecordIteratorComparator implements Comparator<PeekFileRecordIterator>, Serializable {
+        private static final long serialVersionUID = 1L;
 
         public int compare(final PeekFileRecordIterator lhs, final PeekFileRecordIterator rhs) {
             final int result = comparator.compare(lhs.peek(), rhs.peek());

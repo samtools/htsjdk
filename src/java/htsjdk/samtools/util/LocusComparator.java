@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 /**
@@ -30,7 +31,8 @@ import java.util.Comparator;
  *
  * @author Doug Voet (dvoet at broadinstitute dot org)
  */
-public class LocusComparator<T extends Locus> implements Comparator<T> {
+public class LocusComparator<T extends Locus> implements Comparator<T>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     public int compare(T thing1, T thing2) {
         int refCompare = thing1.getSequenceIndex() - thing2.getSequenceIndex();

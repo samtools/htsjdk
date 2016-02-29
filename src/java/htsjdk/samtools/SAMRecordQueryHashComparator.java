@@ -25,6 +25,8 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.Murmur3;
 
+import java.io.Serializable;
+
 /**
  * SAMRecord comparator that provides an ordering based on a hash of the queryname. Has
  * the useful property that reads with the same name will be grouped together, but that
@@ -34,7 +36,9 @@ import htsjdk.samtools.util.Murmur3;
  *
  * @author Tim Fennell
  */
-public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator {
+public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final Murmur3 hasher = new Murmur3(42);
 
     /**

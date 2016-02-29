@@ -31,6 +31,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -332,7 +333,8 @@ public class SortingLongCollection {
         }
     }
 
-    private static class PeekFileValueIteratorComparator implements Comparator<PeekFileValueIterator> {
+    private static class PeekFileValueIteratorComparator implements Comparator<PeekFileValueIterator>, Serializable {
+        private static final long serialVersionUID = 1L;
 
         public int compare(final PeekFileValueIterator it1, final PeekFileValueIterator it2) {
             if (it1.peek() < it2.peek()) {
