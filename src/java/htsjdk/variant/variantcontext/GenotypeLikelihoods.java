@@ -364,7 +364,7 @@ public class GenotypeLikelihoods {
      * for aP = 0...N
      *  for aP-1 = 0...aP
      *      ...
-     *      for a1 = 0..…a2
+     *      for a1 = 0...a2
      *          a1,a2..aP
      *
      * This is implemented recursively:
