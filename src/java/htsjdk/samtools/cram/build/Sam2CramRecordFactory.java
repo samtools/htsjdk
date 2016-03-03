@@ -77,8 +77,6 @@ public class Sam2CramRecordFactory {
     public final Set<String> ignoreTags = new TreeSet<String>();
 
     {
-        ignoreTags.add(SAMTag.NM.name());
-        ignoreTags.add(SAMTag.MD.name());
         ignoreTags.add(SAMTag.RG.name());
     }
 

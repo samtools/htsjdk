@@ -48,10 +48,6 @@ public class CRAMIterator implements SAMRecordIterator {
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
     private SAMRecord nextRecord = null;
-    @SuppressWarnings({"CanBeFinal", "FieldCanBeLocal"})
-    private boolean restoreNMTag = true;
-    @SuppressWarnings({"CanBeFinal", "FieldCanBeLocal"})
-    private boolean restoreMDTag = false;
     private CramNormalizer normalizer;
     private byte[] refs;
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
@@ -201,8 +197,6 @@ public class CRAMIterator implements SAMRecordIterator {
                 final SAMSequenceRecord sequence = cramHeader.getSamFileHeader()
                         .getSequence(cramRecord.sequenceId);
                 refs = referenceSource.getReferenceBases(sequence, true);
-                if (samRecord.getReadBases() != SAMRecord.NULL_SEQUENCE)
-                    SequenceUtil.calculateMdAndNmTags(samRecord, refs, restoreMDTag, restoreNMTag);
             }
 
             samRecord.setValidationStringency(validationStringency);
