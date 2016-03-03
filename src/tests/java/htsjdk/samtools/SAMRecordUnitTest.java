@@ -933,8 +933,10 @@ public class SAMRecordUnitTest {
     @Test
     public void testSetHeaderStrictNull() {
         SAMRecord sam = createTestRecordHelper();
+        Assert.assertNotNull(sam.getHeader());
         sam.setHeaderStrict(null);
-        Assert.assertEquals(sam.mReferenceIndex, null);
+        Assert.assertNull(sam.getHeader());
+        Assert.assertNull(sam.mReferenceIndex);
     }
 
     // resolveIndexFromName

@@ -1621,7 +1621,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * names against the header using the sequence dictionary in the new header. If either the reference or mate
      * reference name does not appear in the new header's sequence dictionary, an IllegalArgumentException is thrown.
      *
-     * @param header new header for this record. Can not be null.
+     * @param header new header for this record. May be null.
      * @throws IllegalArgumentException if the record has reference or mate reference names that cannot be resolved
      * to indices using the new header.
      */
@@ -1640,8 +1640,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             // Mutate the record once we know the values are valid
             mReferenceIndex = referenceIndex;
             mMateReferenceIndex = mateReferenceIndex;
-            this.mHeader = header;
         }
+        this.mHeader = header;
     }
 
     /**
