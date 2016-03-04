@@ -22,8 +22,8 @@ public class Tuple<A, B> {
         final Tuple<?, ?> tuple = (Tuple<?, ?>) o;
 
         if (a != null ? !a.equals(tuple.a) : tuple.a != null) return false;
-        return !(b != null ? !b.equals(tuple.b) : tuple.b != null);
 
+        return !(b != null ? !b.equals(tuple.b) : tuple.b != null);
     }
 
     @Override
@@ -38,5 +38,4 @@ public class Tuple<A, B> {
     public String toString() {
         return "[" + a + ", " + b + "]";
     }
-
 }

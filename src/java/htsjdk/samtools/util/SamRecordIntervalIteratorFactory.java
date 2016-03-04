@@ -79,10 +79,10 @@ public class SamRecordIntervalIteratorFactory {
 
     /**
      * Halt iteration after a read is encountered that starts after the given sequence and position.
-     * Note that most of this code is copied from FilteringIterator.  It would be nice just to override getNextRecord,
-     * but that method is called FilteringIterator ctor, so the stopAfter members can't be initialized before
+     * Note that most of this code is copied from FilteringSamIterator.  It would be nice just to override getNextRecord,
+     * but that method is called FilteringSamIterator ctor, so the stopAfter members can't be initialized before
      * it is called.
-     * FilteringIterator ctor could take a boolean "advance" that would tell it whether or not to call getNextRecord
+     * FilteringSamIterator ctor could take a boolean "advance" that would tell it whether or not to call getNextRecord
      * in the ctor, so that it could be delayed in the subclass.  If this pattern happens again, we should do that.
      */
     private class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
@@ -132,7 +132,7 @@ public class SamRecordIntervalIteratorFactory {
          * @throws UnsupportedOperationException
          */
         public void remove() {
-            throw new UnsupportedOperationException("Remove() not supported by FilteringIterator");
+            throw new UnsupportedOperationException("Remove() not supported by FilteringSamIterator");
         }
 
         public void close() {

@@ -31,7 +31,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
-import htsjdk.samtools.filter.FilteringIterator;
+import htsjdk.samtools.filter.FilteringSamIterator;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
 
@@ -224,7 +224,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             tempIterator = samReader.iterator();
         }
         if (samFilters != null) {
-            tempIterator = new FilteringIterator(tempIterator, new AggregateFilter(samFilters));
+            tempIterator = new FilteringSamIterator(tempIterator, new AggregateFilter(samFilters));
         }
         samIterator = new PeekableIterator<SAMRecord>(tempIterator);
         return this;

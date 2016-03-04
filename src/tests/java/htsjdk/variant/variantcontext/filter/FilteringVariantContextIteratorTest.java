@@ -33,10 +33,10 @@ import org.testng.annotations.Test;
 import java.io.File;
 
 /**
- * Tests for testing the (VariantContext)FilteringIterator, and the HeterozygosityFilter
+ * Tests for testing the (VariantContext)FilteringVariantContextIterator, and the HeterozygosityFilter
  */
 
-public class FilteringIteratorTest {
+public class FilteringVariantContextIteratorTest {
     final File testDir = new File("testdata/htsjdk/variant");
 
     @DataProvider
@@ -57,7 +57,7 @@ public class FilteringIteratorTest {
 
         final File vcf = new File(testDir,"ex2.vcf");
         final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
-        final FilteringIterator filteringIterator = new FilteringIterator(vcfReader.iterator(), filter);
+        final FilteringVariantContextIterator filteringIterator = new FilteringVariantContextIterator(vcfReader.iterator(), filter);
         int count = 0;
 
         for(final VariantContext vc : filteringIterator) {
@@ -82,7 +82,7 @@ public class FilteringIteratorTest {
         final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
         final HeterozygosityFilter heterozygosityFilter = new HeterozygosityFilter(true, sample);
 
-        new FilteringIterator(vcfReader.iterator(), heterozygosityFilter).next();
+        new FilteringVariantContextIterator(vcfReader.iterator(), heterozygosityFilter).next();
     }
 }
 
