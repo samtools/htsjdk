@@ -23,14 +23,17 @@
 # THE SOFTWARE.
 #
 
-# Build libIntelDeflater.so, the JNI library that wraps Intel IPP compression library.
+# Build libIntelDeflater.so, the JNI library that wraps Intel IPP compression library and igzip.
 # Note that this is not built as part of standard release process.  Rather, it is built manually and then
-# copied to Picard-public/lib/jni.
+# copied to htsjdk/lib/jni.
 
 # Assumes OpenJDK exists at $OPENJDK.  I used openjdk-7-fcs-src-b147-27_jun_2011.zip
 # Assumes that Picard-public java sources have been compiled
 # Assumes IPP8_CODE_SAMPLES_DIR points to Intel IPP sample code built with -fPIC
-# Assumes IPP8_COMPOSER_XE_DIR points to Intel composer xe directory 
+# Assumes IPP8_INSTALL_DIR points to composer_xe_2013_sp1 installation
+# Assumes IGZIP_LIB points to the directory containing libigzip0c.a
+source ${IPP8_INSTALL_DIR}/bin/ippvars.sh intel64
+
 set -e
 
 if [ "$OPENJDK" = "" ]
@@ -43,8 +46,12 @@ then echo "ERROR: IPP8_CODE_SAMPLES_DIR environment variable not defined." >&2
      exit 1
 fi
 
-if [ "$IPP8_COMPOSER_XE_DIR" = "" ]
-then echo "ERROR: IPP8_COMPOSER_XE_DIR environment variable not defined." >&2
+if [ "$IPP8_INSTALL_DIR" = "" ]
+then echo "ERROR: IPP8_INSTALL_DIR environment variable not defined." >&2
+     exit 1
+fi
+if [ "$IGZIP_LIB" = "" ]
+then echo "ERROR: IGZIP_LIB environment variable not defined." >&2
      exit 1
 fi
 
@@ -59,13 +66,10 @@ mkdir -p $builddir
 javah -jni -classpath $rootdir/classes -d $builddir htsjdk.samtools.util.zip.IntelDeflater
 
 # Compile source and create library.
-gcc -o src/c/inteldeflater/IntelDeflater.o -I$builddir -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \
--I$OPENJDK/jdk/src/solaris/native/common/ -c -O3 -fPIC src/c/inteldeflater/IntelDeflater.c
-gcc  -shared -o $builddir/libIntelDeflater.so src/c/inteldeflater/IntelDeflater.o  \
--L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
--L${IPP8_COMPOSER_XE_DIR}/lib/intel64 \
--L${IPP8_COMPOSER_XE_DIR}/ipp/lib/intel64 \
--lzlib  -lstdc++ -Wl,-Bstatic  -lbfp754  -ldecimal  -liomp5  -liompstubs5  -lipgo  -lippac  -lippcc  -lippch  -lippcv  \
+gcc -I$builddir -I$rootdir/src/c/inteldeflater/ -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \
+-I$OPENJDK/jdk/src/solaris/native/common/ -c -O3 -fPIC $rootdir/src/c/inteldeflater/IntelDeflater.c
+gcc  -shared -o $builddir/libIntelDeflater.so IntelDeflater.o  -L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
+-lzlib  -lstdc++ -Wl,-Bstatic  -L$IGZIP_LIB -ligzip0c -lbfp754  -ldecimal  -liomp5  -liompstubs5  -lipgo  -lippac  -lippcc  -lippch  -lippcv  \
 -lippdc  -lippdi  -lippgen  -lippi  -lippj  -lippm  -lippr  -lippsc  -lippvc  -lippvm  -lirng  -lmatmul  -lpdbx  \
 -lpdbxinst  -lsvml  -lipps  -limf  -lirc  -lirc_s  -lippcore -Wl,-Bdynamic
 
