@@ -72,7 +72,7 @@ public final class Log {
     }
 
     /** Returns true if the specified log level is enabled otherwise false. */
-    public final boolean isEnabled(final LogLevel level) {
+    public static final boolean isEnabled(final LogLevel level) {
         return level.ordinal() <= globalLogLevel.ordinal();
     }
 
