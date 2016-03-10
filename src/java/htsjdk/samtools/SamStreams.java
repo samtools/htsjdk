@@ -55,7 +55,9 @@ public class SamStreams {
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
         final byte[] magicBuf = new byte[4];
-        final int magicLength = readBytes(new BlockCompressedInputStream(new ByteArrayInputStream(buffer)), magicBuf, 0, 4);
+        final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer), false);
+        final int magicLength = readBytes(bcis, magicBuf, 0, 4);
+        bcis.close();
         return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
     }
 

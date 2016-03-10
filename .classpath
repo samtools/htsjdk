@@ -3,8 +3,12 @@
 	<classpathentry kind="src" path="src/java"/>
 	<classpathentry kind="src" path="src/tests/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="lib/testng/testng-5.5-jdk15.jar"/>
 	<classpathentry kind="lib" path="lib/commons-jexl-2.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/snappy-java-1.0.3-rc3.jar"/>
+	<classpathentry kind="lib" path="lib/testng/testng-6.9.10.jar"/>
+	<classpathentry kind="lib" path="lib/testng/jcommander-1.48.jar"/>
+	<classpathentry kind="lib" path="lib/ngs-java-1.2.2.jar"/>
+	<classpathentry kind="lib" path="lib/commons-compress-1.4.1.jar"/>
+	<classpathentry kind="lib" path="lib/apache-ant-1.8.2-bzip2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

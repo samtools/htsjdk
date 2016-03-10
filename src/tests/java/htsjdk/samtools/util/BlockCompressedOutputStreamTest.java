@@ -63,6 +63,7 @@ public class BlockCompressedOutputStreamTest {
         for(int i = 0; (line = reader.readLine()) != null; ++i) {
             Assert.assertEquals(line + "\n", linesWritten.get(i));
         }
+        bcis.close();
     }
 
     @Test
@@ -89,6 +90,7 @@ public class BlockCompressedOutputStreamTest {
             }
         }
         Assert.assertEquals(i, INPUT_SIZE);
+        bcis.close();
     }
 
     // PIC-393 exception closing BGZF stream opened to /dev/null

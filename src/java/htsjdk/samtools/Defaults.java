@@ -15,7 +15,9 @@ public class Defaults {
     /** Should MD5 files be created when writing out SAM and BAM files?  Default = false. */
     public static final boolean CREATE_MD5;
 
-    /** Should asynchronous I/O be used when writing out SAM and BAM files (one thread per file).  Default = false. */
+    /**
+     * Should asynchronous I/O be used when writing out SAM and BAM files or reading BAM files
+     * (one thread per file). Default = false. */
     public static final boolean USE_ASYNC_IO;
 
     /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
