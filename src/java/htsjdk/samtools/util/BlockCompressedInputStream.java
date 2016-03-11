@@ -133,6 +133,14 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     }
 
     /**
+     * @return <code>true</code> if the stream is at the end of a BGZF block,
+     * <code>false</code> otherwise.
+     */
+    public boolean endOfBlock() {
+        return (mCurrentBlock != null && mCurrentOffset == mCurrentBlock.length);
+    }
+
+    /**
      * Closes the underlying InputStream or RandomAccessFile
      */
     public void close()
