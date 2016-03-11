@@ -85,9 +85,15 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
     }
 
-    /** Gets a string system property, prefixed with "samjdk." using the default if the property does not exist. */
+    /** Gets a string system property, prefixed with "samjdk." using the default 
+     * if the property does not exist or if the java.security manager raises an exception for
+     * applications started with  -Djava.security.manager  . */
     private static String getStringProperty(final String name, final String def) {
-        return System.getProperty("samjdk." + name, def);
+        try {
+            return System.getProperty("samjdk." + name, def);
+        } catch (final java.security.AccessControlException error) {
+            return def;
+        }
     }
 
     /** Gets a boolean system property, prefixed with "samjdk." using the default if the property does not exist. */
