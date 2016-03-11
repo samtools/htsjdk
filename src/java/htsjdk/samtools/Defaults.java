@@ -2,6 +2,8 @@ package htsjdk.samtools;
 
 import java.io.File;
 
+import htsjdk.samtools.util.Log;
+
 /**
  * Embodies defaults for global values that affect how the SAM JDK operates. Defaults are encoded in the class
  * and are also overridable using system properties.
@@ -9,6 +11,8 @@ import java.io.File;
  * @author Tim Fennell
  */
 public class Defaults {
+    private static Log log = Log.getInstance(Defaults.class);
+    
     /** Should BAM index files be created when writing out coordinate sorted BAM files?  Default = false. */
     public static final boolean CREATE_INDEX;
 
@@ -92,6 +96,7 @@ public class Defaults {
         try {
             return System.getProperty("samjdk." + name, def);
         } catch (final java.security.AccessControlException error) {
+            log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
             return def;
         }
     }
