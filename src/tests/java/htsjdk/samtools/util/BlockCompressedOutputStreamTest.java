@@ -63,6 +63,14 @@ public class BlockCompressedOutputStreamTest {
         for(int i = 0; (line = reader.readLine()) != null; ++i) {
             Assert.assertEquals(line + "\n", linesWritten.get(i));
         }
+
+        final BlockCompressedInputStream bcis2 = new BlockCompressedInputStream(f);
+        int available = bcis2.available();
+        Assert.assertFalse(bcis2.endOfBlock(), "Should not be at end of block");
+        Assert.assertTrue(available > 0);
+        byte[] buffer = new byte[available];
+        Assert.assertEquals(bcis2.read(buffer), available, "Should read to end of block");
+        Assert.assertTrue(bcis2.endOfBlock(), "Should be at end of block");
     }
 
     @Test
