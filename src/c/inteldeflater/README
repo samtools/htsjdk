@@ -1,0 +1,2 @@
+- IntelDeflater.c implements JNI for the IntelDeflater in htsjdk.samtools.util.zip.IntelDeflater
+- IntelDeflater uses Intel(R) Integrated  Performance Primitives (Intel(R) IPP) Samples and igzip to accelerate BAM compression.
