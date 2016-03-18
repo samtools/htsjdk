@@ -54,9 +54,11 @@ public class SamStreams {
         final byte[] buffer = new byte[buffSize];
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
-        final byte[] magicBuf = new byte[4];
-        final int magicLength = readBytes(new BlockCompressedInputStream(new ByteArrayInputStream(buffer)), magicBuf, 0, 4);
-        return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
+        try(final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))){
+            final byte[] magicBuf = new byte[4];
+            final int magicLength = readBytes(bcis, magicBuf, 0, 4);
+            return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
+        }
     }
 
     // Its too expensive to examine the remote file to determine type.

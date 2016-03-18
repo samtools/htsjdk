@@ -52,7 +52,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     private BinaryCodec mStream = null;
 
     // Underlying compressed data stream.
-    private final BlockCompressedInputStream mCompressedInputStream;
+    private BlockCompressedInputStream mCompressedInputStream;
     private SAMFileHeader mFileHeader = null;
 
     // One of these is populated if the file is seekable and an index exists
@@ -224,6 +224,9 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     @Override void enableCrcChecking(final boolean enabled) {
+        if (mCompressedInputStream == null) {
+            throw new IllegalStateException("File reader is closed");
+        }
         this.mCompressedInputStream.setCheckCrcs(enabled);
     }
 
@@ -262,12 +265,20 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
     
     public void close() {
+        if (mCompressedInputStream != null) {
+            try {
+                mCompressedInputStream.close();
+            } catch (IOException e) {
+                throw new SAMException("Exception closing compressed input stream.", e);
+            }
+        }
         if (mStream != null) {
             mStream.close();
         }
         if (mIndex != null) {
             mIndex.close();
         }
+        mCompressedInputStream = null;
         mStream = null;
         mFileHeader = null;
         mIndex = null;
@@ -300,6 +311,9 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
+        if (mCompressedInputStream == null) {
+            throw new IllegalStateException("File reader is closed");
+        }
         if (mCurrentIterator != null) {
             throw new IllegalStateException("Iteration in progress");
         }
@@ -317,6 +331,9 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     @Override
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan chunks) {
         if (mStream == null) {
+            throw new IllegalStateException("File reader is closed");
+        }
+        if (mCompressedInputStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
         if (mCurrentIterator != null) {
@@ -458,6 +475,9 @@ class BAMFileReader extends SamReader.ReaderImplementation {
      */
     public CloseableIterator<SAMRecord> queryUnmapped() {
         if (mStream == null) {
+            throw new IllegalStateException("File reader is closed");
+        }
+        if (mCompressedInputStream == null) {
             throw new IllegalStateException("File reader is closed");
         }
         if (mCurrentIterator != null) {

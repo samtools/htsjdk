@@ -614,10 +614,13 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     public final static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
-        try {
-            return isVCFStream(new FileInputStream(potentialInput), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new GZIPInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new BlockCompressedInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE);
+        try(
+            final FileInputStream fis = new FileInputStream(potentialInput);
+            final GZIPInputStream gis = new GZIPInputStream(new FileInputStream(potentialInput));
+            final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new FileInputStream(potentialInput))){
+            return isVCFStream(fis, MAGIC_HEADER_LINE) ||
+                   isVCFStream(gis, MAGIC_HEADER_LINE) ||
+                   isVCFStream(bcis, MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;
         } catch ( IOException e ) {

@@ -166,10 +166,11 @@ public class IndexFactory {
      */
     public static Index loadIndex(final String indexFile) {
         final Index idx = null;
+        InputStream inputStream = null;
         BufferedInputStream bufferedInputStream = null;
         final LittleEndianInputStream dis = null;
         try {
-            InputStream  inputStream = ParsingUtils.openInputStream(indexFile);
+            inputStream = ParsingUtils.openInputStream(indexFile);
             if (indexFile.endsWith(".gz")) {
                 inputStream = new GZIPInputStream(inputStream);
             }
@@ -189,6 +190,7 @@ public class IndexFactory {
             throw new RuntimeException(ex);
         } finally {
             try {
+                if (inputStream != null) inputStream.close();
                 if (bufferedInputStream != null) bufferedInputStream.close();
                 if (dis != null) dis.close();
                 //log.info(String.format("Closed %s and %s", is, dis));
