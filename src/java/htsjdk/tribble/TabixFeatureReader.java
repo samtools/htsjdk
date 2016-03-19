@@ -128,7 +128,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public CloseableTribbleIterator<T> iterator() throws IOException {
         final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
-        final LineReader reader = LineReaderUtil.fromBufferedStream(stream, LineReaderUtil.LineReaderOption.SYNCHRONOUS);
+        final LineReader reader = LineReaderUtil.fromBufferedStream(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
     }
 

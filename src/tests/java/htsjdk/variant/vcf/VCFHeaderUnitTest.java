@@ -64,7 +64,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     private VCFHeader createHeader(String headerStr) {
         VCFCodec codec = new VCFCodec();
         VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(LineReaderUtil.fromStringReader(
-                new StringReader(headerStr), LineReaderUtil.LineReaderOption.SYNCHRONOUS)));
+                new StringReader(headerStr))));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF4headerStringCount);
         return header;
     }
