@@ -22,104 +22,110 @@
  */
 package htsjdk.samtools.util.zip;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.zip.DeflaterFactory;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.zip.DataFormatException;
-
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
- * This is a test for IntelDeflater. 
- * Invoke using:
- * java -Dsamjdk.intel_deflater_so_path=$PWD/lib/jni/libIntelDeflater.so -cp dist/htsjdk-2.1.1.jar:testclasses/ htsjdk.samtools.util.zip.IntelDeflaterTest in.bam false a.bam 1
- * <p>
- * Arguments:
- * - the first argument is the input file (SAM or BAM)
- * - the second argument is a boolean (true or false) that indicates whether reads are to be eagerly decoded (useful for benchmarking)
- * - the third argument is the name of the output BAM file 
- * - the forth argument is compression level
+ * This is a test for IntelDeflater.
  */
-public final class IntelDeflaterTest {
-    private IntelDeflaterTest() {
+
+public class IntelDeflaterTest {
+    static final File TEST_DIR = new File("testdata/htsjdk/samtools");
+
+    @DataProvider(name="TestIntelDeflaterIsLoadedData")
+    Iterator<Object[]> TestIntelDeflaterIsLoadedData(){
+
+        List<File> files = CollectionUtil.makeList(
+                new File(TEST_DIR, "coordinate_sorted.sam"),
+                new File(TEST_DIR, "queryname_sorted.sam"),
+                new File(TEST_DIR, "compressed.bam"),
+                new File(TEST_DIR, "empty.bam"),
+                new File(TEST_DIR, "cram_with_bai_index.cram"),
+                new File(TEST_DIR, "uncompressed.sam"),
+                new File(TEST_DIR, "cram_with_crai_index.cram"));
+
+        List<Boolean> eagerlyDecodes = CollectionUtil.makeList(Boolean.TRUE, Boolean.FALSE);
+        List<Integer> compressionLevels = CollectionUtil.makeList(1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        List<Object[]> retVal = new ArrayList<>();
+        files.stream()
+                .forEach(file ->
+                        eagerlyDecodes.stream()
+                                .forEach(eagerlyDecode -> compressionLevels.stream()
+                                        .forEach(compressionLevel ->
+                                                retVal.add(new Object[]{file, eagerlyDecode, compressionLevel}))));
+        return retVal.iterator();
     }
 
-    private static final Log log = Log.getInstance(IntelDeflaterTest.class);
+    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups="intel",expectedExceptions = IllegalAccessError.class)
+    public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException,IllegalAccessError {
 
-    public static void main(String[] args) throws IOException {
-        if (args.length < 4) {
-            System.out.println("Usage: " + IntelDeflaterTest.class.getCanonicalName() + " inFile eagerDecode [outFile]");
-            System.exit(1);
-        }
-        final File inputFile = new File(args[0]);
-        final boolean eagerDecode = Boolean.parseBoolean(args[1]); //useful to test (realistic) scenarios in which every record is always fully decoded.
-        final File outputFile = new File(args[2]);
+        Log log = Log.getInstance(IntelDeflaterTest.class);
+        Log.setGlobalLogLevel(Log.LogLevel.INFO);
 
-	final int compressionLevel = Integer.parseInt(args[3]);
+        log.info("In TestIntelDeflatorIsLoaded. testing: " + inputFile);
+        IOUtil.assertFileIsReadable(inputFile);
+
+        final File outputFile = File.createTempFile("IntelDeflater", "bam");
+        outputFile.deleteOnExit();
 
 
-        final long start = System.currentTimeMillis();
+        Assert.assertTrue(DeflaterFactory.usingIntelDeflater(), "IntelDeflater is not loaded.");
+        log.info("IntelDeflater is loaded");
 
-	if (!DeflaterFactory.usingIntelDeflater()) {
-	    System.out.println("Running without IntelDeflater. Please specify the path to enable IntelDeflater, exiting");
-	    System.exit(1);
-	}
-
-        log.info("Start with args:" + Arrays.toString(args));
-        printConfigurationInfo();
 
         SamReaderFactory readerFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
-        if (eagerDecode) {
+        if (eagerlyDecode) {
             readerFactory = readerFactory.enable(SamReaderFactory.Option.EAGERLY_DECODE);
         }
 
-
-        try (final SamReader reader = readerFactory.open(inputFile)) {
-            final SAMFileHeader header = reader.getFileHeader();
-            final SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile, compressionLevel);
-	    final ProgressLogger pl = new ProgressLogger(log, 1000000);
-	    for (final SAMRecord record : reader) {
-		if (writer != null) {
-		    writer.addAlignment(record);
-		}
-		pl.record(record);
-	    }
-	    writer.close();
-	    log.info("BAM File Written using IntelDeflater");
-	    log.info("Read the outputted BAM now to ensure correctness");
-
-	    try (final SamReader outputReader = readerFactory.open(outputFile)) {
-		    for (final SAMRecord record : outputReader) {
-			pl.record(record);
-		    }
-		} catch (Exception e) {
-		log.error("Error reading record written with the IntelDeflater library");
-		System.exit(1);
-	    }
+        if(inputFile.getName().endsWith(".cram")) {
+            readerFactory.referenceSequence(new File(TEST_DIR, "hg19mini.fasta"));
         }
-	
-        final long end = System.currentTimeMillis();
-        log.info(String.format("Done. Elapsed time %.3f seconds", (end - start) / 1000.0));
-    }
 
-    private static void printConfigurationInfo() throws IOException {
-        log.info("Executing as " +
-                System.getProperty("user.name") + '@' + InetAddress.getLocalHost().getHostName() +
-                " on " + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
-                ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
-                ' ' + System.getProperty("java.runtime.version") +
-                ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater" : "JdkDeflater"));
-        log.info("CREATE_INDEX:" + Defaults.CREATE_INDEX +
-                ' ' + "CREATE_MD5:" + Defaults.CREATE_MD5 +
-                ' ' + "USE_ASYNC_IO:" + Defaults.USE_ASYNC_IO +
-                ' ' + "BUFFER_SIZE:" + Defaults.BUFFER_SIZE +
-                ' ' + "COMPRESSION_LEVEL:" + Defaults.COMPRESSION_LEVEL +
-                ' ' + "NON_ZERO_BUFFER_SIZE:" + Defaults.NON_ZERO_BUFFER_SIZE +
-                ' ' + "CUSTOM_READER_FACTORY:" + Defaults.CUSTOM_READER_FACTORY);
+        final SamReader reader = readerFactory.open(inputFile);
+        final SAMFileHeader header = reader.getFileHeader();
+        int nRecords = 0;
+        try (final SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile, compressionLevel)) {
+            for (final SAMRecord record : reader) {
+                writer.addAlignment(record);
+                nRecords++;
+            }
+        } catch (Exception e) {
+            Assert.fail("Error reading record no. " + nRecords);
+        }
+
+        log.info("wrote " + nRecords + " Records");
+
+        int nReadRecords = 0;
+        try (final SamReader outputReader = readerFactory.open(outputFile)) {
+            for (final SAMRecord ignored : outputReader) {
+                nReadRecords++;
+            }
+        } catch (Exception e) {
+            Assert.fail("Error reading record written with the IntelDeflater library");
+        }
+        log.info("read " + nReadRecords + " Records");
+
+        Assert.assertEquals(nReadRecords, nRecords, "Number of read records mismatches number of written records.");
+
+        throw new IllegalAccessError("Got to the end successfully! (i.e. no segmentation fault");
     }
 }
