@@ -652,7 +652,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
             if (file != null) bufferedStream = new BufferedInputStream(new FileInputStream(file), bufferSize);
             else bufferedStream = IOUtil.toBufferedStream(stream);
-            if (isBAMFile(bufferedStream)) {
+            if (SamStreams.isBAMFile(bufferedStream)) {
                 mIsBinary = true;
                 if (file == null || !file.isFile()) {
                     // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
@@ -691,27 +691,6 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             mReader.setSAMRecordFactory(this.samRecordFactory);
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
-        }
-    }
-
-    /**
-     * @param stream stream.markSupported() must be true
-     * @return true if this looks like a BAM file.
-     */
-    private boolean isBAMFile(final InputStream stream)
-            throws IOException {
-        if (!BlockCompressedInputStream.isValidFile(stream)) {
-            return false;
-        }
-        final int buffSize = BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE;
-        stream.mark(buffSize);
-        final byte[] buffer = new byte[buffSize];
-        readBytes(stream, buffer, 0, buffSize);
-        stream.reset();
-        try(final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))){
-            final byte[] magicBuf = new byte[4];
-            final int magicLength = readBytes(bcis, magicBuf, 0, 4);
-            return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
         }
     }
 

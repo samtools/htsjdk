@@ -165,17 +165,19 @@ public class IndexFactory {
      * @param indexFile from which to load the index
      */
     public static Index loadIndex(final String indexFile) {
-        final Index idx = null;
+        InputStream inputStreamInitial = null;
         InputStream inputStream = null;
         BufferedInputStream bufferedInputStream = null;
-        final LittleEndianInputStream dis = null;
         try {
-            inputStream = ParsingUtils.openInputStream(indexFile);
+            inputStreamInitial = ParsingUtils.openInputStream(indexFile);
             if (indexFile.endsWith(".gz")) {
-                inputStream = new GZIPInputStream(inputStream);
+                inputStream = new GZIPInputStream(inputStreamInitial);
             }
             else if (indexFile.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
-                inputStream = new BlockCompressedInputStream(inputStream);
+                inputStream = new BlockCompressedInputStream(inputStreamInitial);
+            }
+            else {
+                inputStream = inputStreamInitial;
             }
             // Must be buffered, because getIndexType uses mark and reset
             bufferedInputStream = new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE);
@@ -190,9 +192,16 @@ public class IndexFactory {
             throw new RuntimeException(ex);
         } finally {
             try {
-                if (inputStream != null) inputStream.close();
+                /*
+                 * Note: on all paths in the main body of the try block,
+                 * inputStream always ends up wrapped inside bufferedInputStream
+                 * and that gets a close() call in the finally block, and the close() call delegates
+                 * to the wrapped inputStream (and that would close any other stream wrapped inside of
+                 * inputStream - both BlockCompressedInputStream and GZIPInputStream do that).
+                 * So the call to inputStream.close() is not needed.
+                 * Same for inputStreamInitial - it's always wrapped.
+                 */
                 if (bufferedInputStream != null) bufferedInputStream.close();
-                if (dis != null) dis.close();
                 //log.info(String.format("Closed %s and %s", is, dis));
             } catch (final IOException e) {
                 //log.error("Error closing indexFile: " + indexFile, e);
