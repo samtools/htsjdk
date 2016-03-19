@@ -171,7 +171,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
                 error("Couldn't read all of the bytes specified in the header length = " + headerSizeInBytes);
 
             final PositionalBufferedStream bps = new PositionalBufferedStream(new ByteArrayInputStream(headerBytes));
-            final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(bps, LineReaderUtil.LineReaderOption.SYNCHRONOUS));
+            final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(bps));
             final VCFCodec headerParser = new VCFCodec();
             this.header = (VCFHeader) headerParser.readActualHeader(lineIterator);
             bps.close();
