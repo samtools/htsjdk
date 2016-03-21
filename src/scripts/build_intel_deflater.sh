@@ -62,6 +62,7 @@ builddir=$rootdir/lib_build
 rm -rf $builddir
 mkdir -p $builddir
 
+echo $rootdir
 # Create JNI C header file
 javah -jni -classpath $rootdir/classes -d $builddir htsjdk.samtools.util.zip.IntelDeflater
 
