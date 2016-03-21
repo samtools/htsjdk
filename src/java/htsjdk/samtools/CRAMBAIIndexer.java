@@ -67,7 +67,7 @@ import java.util.TreeSet;
  * In both cases, processAlignment is called for each cram slice and
  * finish() is called at the end.
  */
-public class CRAMIndexer {
+public class CRAMBAIIndexer {
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
@@ -86,7 +86,7 @@ public class CRAMIndexer {
      * @param output     binary BAM Index (.bai) file
      * @param fileHeader header for the corresponding bam file
      */
-    public CRAMIndexer(final File output, final SAMFileHeader fileHeader) {
+    public CRAMBAIIndexer(final File output, final SAMFileHeader fileHeader) {
 
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new BAMIndexBuilder(fileHeader);
@@ -99,7 +99,7 @@ public class CRAMIndexer {
      * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
      */
-    public CRAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
+    public CRAMBAIIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
 
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new BAMIndexBuilder(fileHeader);
@@ -430,7 +430,7 @@ public class CRAMIndexer {
         if (cramHeader.getSamFileHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             throw new SAMException("Expecting a coordinate sorted file.");
         }
-        final CRAMIndexer indexer = new CRAMIndexer(output, cramHeader.getSamFileHeader());
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
 
         int totalRecords = 0;
         Container container = null;

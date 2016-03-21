@@ -2,7 +2,10 @@ package htsjdk.samtools.cram;
 
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -20,35 +23,23 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
     public int sliceSize;
     public int sliceIndex;
 
+    private static int CRAI_INDEX_COLUMNS = 6;
+    private static String entryFormat = "%d\t%d\t%d\t%d\t%d\t%d";
+
     public CRAIEntry() {
     }
 
-    public static List<CRAIEntry> fromContainer(final Container container) {
-        final List<CRAIEntry> entries = new ArrayList<CRAIEntry>(container.slices.length);
-        for (int i = 0; i < container.slices.length; i++) {
-            final Slice s = container.slices[i];
-            final CRAIEntry e = new CRAIEntry();
-            e.sequenceId = s.sequenceId;
-            e.alignmentStart = s.alignmentStart;
-            e.alignmentSpan = s.alignmentSpan;
-            e.containerStartOffset = s.containerOffset;
-            e.sliceOffset = container.landmarks[i];
-            e.sliceSize = s.size;
-
-            e.sliceIndex = i;
-            entries.add(e);
-        }
-        return entries;
-    }
-
-    public static CRAIEntry fromCraiLine(final String line) {
-        return new CRAIEntry(line);
-    }
-
+    /**
+     * Create a CRAI Entry from a serialized CRAI index line.
+     *
+     * @param line string formatted as a CRAI index entry
+     * @throws CRAIIndex.CRAIIndexException
+     */
     public CRAIEntry(final String line) throws CRAIIndex.CRAIIndexException {
         final String[] chunks = line.split("\t");
-        if (chunks.length != 6) {
-            throw new CRAIIndex.CRAIIndexException("Expecting 6 columns but got " + chunks.length);
+        if (chunks.length != CRAI_INDEX_COLUMNS) {
+            throw new CRAIIndex.CRAIIndexException(
+                    "Malformed CRAI index entry: expecting " + CRAI_INDEX_COLUMNS + " columns but got " + chunks.length);
         }
 
         try {
@@ -63,10 +54,48 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
         }
     }
 
-    @Override
-    public String toString() {
-        return String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan,
+    /**
+     * Serialize the entry to a CRAI index stream.
+     * @param os stream to write to
+     */
+    public void writeToStream(OutputStream os) {
+        try {
+            os.write(serializeToString().getBytes());
+            os.write('\n');
+        }
+        catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /**
+     * Format the entry as a string suitable for serialization in the CRAI index
+     */
+    private String serializeToString() {
+        return String.format(entryFormat,
+                sequenceId, alignmentStart, alignmentSpan,
                 containerStartOffset, sliceOffset, sliceSize);
+    }
+
+    @Override
+    public String toString() { return serializeToString(); }
+
+    public static List<CRAIEntry> fromContainer(final Container container) {
+        final List<CRAIEntry> entries = new ArrayList<>(container.slices.length);
+        for (int i = 0; i < container.slices.length; i++) {
+            final Slice s = container.slices[i];
+            final CRAIEntry e = new CRAIEntry();
+            e.sequenceId = s.sequenceId;
+            e.alignmentStart = s.alignmentStart;
+            e.alignmentSpan = s.alignmentSpan;
+            e.containerStartOffset = s.containerOffset;
+            e.sliceOffset = container.landmarks[i];
+            e.sliceSize = s.size;
+
+            e.sliceIndex = i;
+            entries.add(e);
+        }
+        return entries;
     }
 
     @Override

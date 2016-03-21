@@ -1,11 +1,28 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.samtools.BAMFileSpan;
+import htsjdk.samtools.DiskBasedBAMFileIndex;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.seekablestream.SeekableBufferedStream;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekableMemoryStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Created by vadim on 25/08/2015.
@@ -27,21 +44,13 @@ public class CRAIIndexTest {
         index.add(e);
 
         e = e.clone();
-        e.sequenceId = sequenceId;
         e.alignmentStart = 2;
-        e.alignmentSpan = 1;
         e.containerStartOffset = 2;
-        e.sliceOffset = 1;
-        e.sliceSize = 0;
         index.add(e);
 
         e = e.clone();
-        e.sequenceId = sequenceId;
         e.alignmentStart = 3;
-        e.alignmentSpan = 1;
         e.containerStartOffset = 3;
-        e.sliceOffset = 1;
-        e.sliceSize = 0;
         index.add(e);
 
         Assert.assertFalse(allFoundEntriesIntersectQueryInFind(index, sequenceId, 1, 0));
@@ -77,8 +86,84 @@ public class CRAIIndexTest {
         return foundCount > 0;
     }
 
+    @Test(expectedExceptions = NullPointerException.class)
+    public void testCraiRequiresDictionary() throws IOException {
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             final GZIPOutputStream gos = new GZIPOutputStream(baos);
+             final BufferedInputStream bis = new BufferedInputStream(new ByteArrayInputStream(baos.toByteArray()))) {
+            CRAIIndex.openCraiFileAsBaiStream(bis, null);
+        }
+    }
+
     @Test
-    public void testGetLeftmost() {
+    public void testCraiInMemory() throws IOException {
+        doCRAITest(this::getBaiStreamFromMemory);
+    }
+
+    @Test
+    public void testCraiFromFile() throws IOException {
+        doCRAITest(this::getBaiStreamFromFile);
+    }
+
+    private void doCRAITest(BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) throws IOException {
+        final ArrayList<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final CRAIEntry entry = new CRAIEntry();
+        entry.sequenceId = 0;
+        entry.alignmentStart = 1;
+        entry.alignmentSpan = 2;
+        entry.sliceOffset = 3;
+        entry.sliceSize = 4;
+        entry.containerStartOffset = 5;
+        index.add(entry);
+
+        final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
+        dictionary.addSequence(new SAMSequenceRecord("1", 100));
+
+        final SeekableStream baiStream = getBaiStreamForIndex.apply(dictionary, index);
+
+        final DiskBasedBAMFileIndex bamIndex = new DiskBasedBAMFileIndex(baiStream, dictionary);
+        final BAMFileSpan span = bamIndex.getSpanOverlapping(entry.sequenceId, entry.alignmentStart, entry.alignmentStart);
+        Assert.assertNotNull(span);
+        final long[] coordinateArray = span.toCoordinateArray();
+        Assert.assertEquals(coordinateArray.length, 2);
+        Assert.assertEquals(coordinateArray[0] >> 16, entry.containerStartOffset);
+        Assert.assertEquals(coordinateArray[1] & 0xFFFF, 1);
+    }
+
+    public SeekableStream getBaiStreamFromMemory(SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final GZIPOutputStream gos = new GZIPOutputStream(baos);
+            CRAIIndex.writeIndex(gos, index);
+            gos.close();
+            final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new ByteArrayInputStream(baos.toByteArray()), dictionary);
+            Assert.assertNotNull(baiStream);
+            return baiStream;
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private SeekableStream getBaiStreamFromFile(SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
+        try {
+            final File file = File.createTempFile("test", ".crai");
+            file.deleteOnExit();
+            final FileOutputStream fos = new FileOutputStream(file);
+            final GZIPOutputStream gos = new GZIPOutputStream(fos);
+            CRAIIndex.writeIndex(gos, index);
+            gos.close();
+            final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new SeekableBufferedStream(new SeekableFileStream(file)), dictionary);
+            Assert.assertNotNull(baiStream);
+            return baiStream;
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testGetLeftmost() throws CloneNotSupportedException {
         final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
         Assert.assertNull(CRAIIndex.getLeftmost(index));
 
@@ -93,13 +178,8 @@ public class CRAIIndexTest {
         // trivial case of single entry in index:
         Assert.assertEquals(e1, CRAIIndex.getLeftmost(index));
 
-        final CRAIEntry e2 = new CRAIEntry();
-        e2.sequenceId = 1;
+        final CRAIEntry e2 = e1.clone();
         e2.alignmentStart = e1.alignmentStart + 1;
-        e2.alignmentSpan = 3;
-        e2.containerStartOffset = 4;
-        e2.sliceOffset = 5;
-        e2.sliceSize = 6;
         index.add(e2);
         Assert.assertEquals(e1, CRAIIndex.getLeftmost(index));
     }
