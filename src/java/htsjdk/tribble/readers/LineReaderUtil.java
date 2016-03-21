@@ -26,11 +26,11 @@ public class LineReaderUtil {
      * returned.
      */
     public static LineReader fromBufferedStream(final InputStream stream) {
-        return fromBufferedStream(stream, Defaults.USE_ASYNC_IO ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+        return fromBufferedStream(stream, Defaults.USE_ASYNC_IO_FOR_TRIBBLE ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
     }
 
     public static LineReader fromStringReader(final StringReader reader) {
-        return fromStringReader(reader, Defaults.USE_ASYNC_IO ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+        return fromStringReader(reader, Defaults.USE_ASYNC_IO_FOR_TRIBBLE ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
     }
 
     public static LineReader fromStringReader(final StringReader stringReader, final LineReaderOption lineReaderOption) {

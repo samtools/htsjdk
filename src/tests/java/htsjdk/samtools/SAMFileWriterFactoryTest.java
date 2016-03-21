@@ -26,6 +26,10 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.variant.variantcontext.writer.AsyncVariantContextWriter;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -292,4 +296,22 @@ public class SAMFileWriterFactoryTest {
         verifyWriterOutput(outputFile, new ReferenceSource(referenceFile), nRecs, true);
     }
 
+    @Test
+    public void testAsync() throws IOException {
+        final SAMFileWriterFactory builder = new SAMFileWriterFactory();
+
+        final File outputFile = prepareOutputFile(BamFileIoUtils.BAM_FILE_EXTENSION);
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
+        final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
+
+        SAMFileWriter writer = builder.makeWriter(header, false, outputFile, referenceFile);
+        Assert.assertEquals(writer instanceof AsyncSAMFileWriter, Defaults.USE_ASYNC_IO_FOR_SAMTOOLS, "testAsync default");
+
+        writer = builder.setUseAsyncIo(true).makeWriter(header, false, outputFile, referenceFile);
+        Assert.assertTrue(writer instanceof AsyncSAMFileWriter, "testAsync option=set");
+
+        writer = builder.setUseAsyncIo(false).makeWriter(header, false, outputFile, referenceFile);
+        Assert.assertFalse(writer instanceof AsyncSAMFileWriter, "testAsync option=unset");
+    }
 }

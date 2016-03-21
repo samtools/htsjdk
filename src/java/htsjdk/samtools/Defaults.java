@@ -1,8 +1,11 @@
 package htsjdk.samtools;
 
-import java.io.File;
-
 import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Embodies defaults for global values that affect how the SAM JDK operates. Defaults are encoded in the class
@@ -19,8 +22,25 @@ public class Defaults {
     /** Should MD5 files be created when writing out SAM and BAM files?  Default = false. */
     public static final boolean CREATE_MD5;
 
-    /** Should asynchronous I/O be used when writing out SAM and BAM files (one thread per file).  Default = false. */
+    /** Should asynchronous I/O be used where supported throughout all of htsjdk (one thread per file).
+     *  Note: this option takes precedence over {@link #USE_ASYNC_IO_FOR_SAMTOOLS} and {@link #USE_ASYNC_IO_FOR_TRIBBLE}.
+     *  Default = false.
+     */
     public static final boolean USE_ASYNC_IO;
+
+    /** Should asynchronous I/O be used where supported by the samtools package (one thread per file).
+     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+     *  Default = false.
+     */
+    public static final boolean USE_ASYNC_IO_FOR_SAMTOOLS;
+
+    /** Should asynchronous I/O be used where supported by the tribble package (one thread per file).
+     *  Note: performance may depend on the characteristics of the input file (eg number of samples in the VCF) and should be tested on a case-by-case basis.
+     *  In particular, asynchronous reading of VCF files with few samples is known to perform worse than synchronous reading.
+     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+     *  Default = false.
+     */
+    public static final boolean USE_ASYNC_IO_FOR_TRIBBLE;
 
     /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
@@ -73,7 +93,15 @@ public class Defaults {
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
-        USE_ASYNC_IO = getBooleanProperty("use_async_io", false);
+        if (hasProperty("use_async_io")){
+            USE_ASYNC_IO = getBooleanProperty("use_async_io", false);
+            USE_ASYNC_IO_FOR_SAMTOOLS = USE_ASYNC_IO;
+            USE_ASYNC_IO_FOR_TRIBBLE = USE_ASYNC_IO;
+        } else {
+            USE_ASYNC_IO = false;
+            USE_ASYNC_IO_FOR_SAMTOOLS = getBooleanProperty("use_async_io_samtools", false);
+            USE_ASYNC_IO_FOR_TRIBBLE = getBooleanProperty("use_async_io_tribble", false);
+        }
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
         TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", true);
@@ -89,6 +117,30 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
     }
 
+    /**
+     * Returns a map of all default values (keys are names), lexicographically sorted by keys.
+     * The returned map is unmodifiable.
+     * This function is useful for example when logging all defaults.
+     */
+    public static SortedMap<String, Object> allDefaults(){
+        final SortedMap<String, Object> result = new TreeMap<>();
+        result.put("CREATE_INDEX", CREATE_INDEX);
+        result.put("CREATE_MD5", CREATE_MD5);
+        result.put("USE_ASYNC_IO", USE_ASYNC_IO);
+        result.put("USE_ASYNC_IO_FOR_SAMTOOLS", USE_ASYNC_IO_FOR_SAMTOOLS);
+        result.put("USE_ASYNC_IO_FOR_TRIBBLE", USE_ASYNC_IO_FOR_TRIBBLE);
+        result.put("COMPRESSION_LEVEL", COMPRESSION_LEVEL);
+        result.put("BUFFER_SIZE", BUFFER_SIZE);
+        result.put("TRY_USE_INTEL_DEFLATER", TRY_USE_INTEL_DEFLATER);
+        result.put("INTEL_DEFLATER_SHARED_LIBRARY_PATH", INTEL_DEFLATER_SHARED_LIBRARY_PATH);
+        result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
+        result.put("REFERENCE_FASTA", REFERENCE_FASTA);
+        result.put("USE_CRAM_REF_DOWNLOAD", USE_CRAM_REF_DOWNLOAD);
+        result.put("EBI_REFERENCE_SEVICE_URL_MASK", EBI_REFERENCE_SEVICE_URL_MASK);
+        result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
+        return Collections.unmodifiableSortedMap(result);
+    }
+
     /** Gets a string system property, prefixed with "samjdk." using the default 
      * if the property does not exist or if the java.security manager raises an exception for
      * applications started with  -Djava.security.manager  . */
@@ -98,6 +150,18 @@ public class Defaults {
         } catch (final java.security.AccessControlException error) {
             log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning default value: " + def );
             return def;
+        }
+    }
+
+    /** Checks whether a string system property, prefixed with "samjdk.", exists.
+     * If the property does not exist or if the java.security manager raises an exception for
+     * applications started with  -Djava.security.manager  this method returns false. */
+    private static boolean hasProperty(final String name){
+        try {
+            return null != System.getProperty("samjdk." + name);
+        } catch (final java.security.AccessControlException error) {
+            log.warn(error,"java Security Manager forbids 'System.getProperty(\"" + name + "\")' , returning false");
+            return false;
         }
     }
 
