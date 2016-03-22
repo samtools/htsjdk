@@ -22,7 +22,6 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -32,8 +31,6 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -50,8 +47,8 @@ import java.util.List;
 public class IntelDeflaterTest {
     static final File TEST_DIR = new File("testdata/htsjdk/samtools");
 
-    @DataProvider(name="TestIntelDeflatorIsLoadedData")
-    Iterator<Object[]> TestIntelDeflatorIsLoadedData(){
+    @DataProvider(name="TestIntelDeflaterIsLoadedData")
+    Iterator<Object[]> TestIntelDeflaterIsLoadedData(){
 
         List<File> files = CollectionUtil.makeList(
                 new File(TEST_DIR, "coordinate_sorted.sam"),
@@ -75,20 +72,20 @@ public class IntelDeflaterTest {
         return retVal.iterator();
     }
 
-    @Test(dataProvider = "TestIntelDeflatorIsLoadedData", groups="intel")
+    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups="intel")
     public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException {
 
-        System.err.print("In TestIntelDeflatorIsLoaded");
-        IOUtil.assertFileIsReadable(inputFile);
-        System.err.flush();//make sure that this is visible if any error occurs after this point.
+        Log log = Log.getInstance(IntelDeflaterTest.class);
+        Log.setGlobalLogLevel(Log.LogLevel.INFO);
 
-        final File outputFile = File.createTempFile("IndelDeflator", "bam");
+        IOUtil.assertFileIsReadable(inputFile);
+
+        final File outputFile = File.createTempFile("IntelDeflater", "bam");
         outputFile.deleteOnExit();
 
 
-        Assert.assertTrue(DeflaterFactory.usingIntelDeflater(), "IntelDeflator is not loaded.");
-        System.err.print("IntelDeflator is loaded");
-        System.err.flush();//make sure that this is visible if any error occurs after this point.
+        Assert.assertTrue(DeflaterFactory.usingIntelDeflater(), "IntelDeflater is not loaded.");
+        log.info("IntelDeflater is loaded");
 
 
         SamReaderFactory readerFactory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
@@ -109,6 +106,7 @@ public class IntelDeflaterTest {
             nRecords++;
         }
         writer.close();
+        log.info("wrote " + nRecords + "Records");
 
         int nReadRecords = 0;
         try (final SamReader outputReader = readerFactory.open(outputFile)) {
