@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * This is a test for IntelDeflater.
@@ -72,8 +73,8 @@ public class IntelDeflaterTest {
         return retVal.iterator();
     }
 
-    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups="intel")
-    public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException {
+    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups="intel",expectedExceptions = IllegalAccessError.class)
+    public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException,IllegalAccessError {
 
         Log log = Log.getInstance(IntelDeflaterTest.class);
         Log.setGlobalLogLevel(Log.LogLevel.INFO);
@@ -123,5 +124,7 @@ public class IntelDeflaterTest {
         log.info("read " + nReadRecords + " Records");
 
         Assert.assertEquals(nReadRecords, nRecords, "Number of read records mismatches number of written records.");
+
+        throw new IllegalAccessError("Got to the end successfully! (i.e. no segmentation fault");
     }
 }
