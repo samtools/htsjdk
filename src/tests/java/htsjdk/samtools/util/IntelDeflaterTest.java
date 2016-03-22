@@ -100,13 +100,16 @@ public class IntelDeflaterTest {
 
         final SamReader reader = readerFactory.open(inputFile);
         final SAMFileHeader header = reader.getFileHeader();
-        final SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile, compressionLevel);
         int nRecords = 0;
-        for (final SAMRecord record : reader) {
-            writer.addAlignment(record);
-            nRecords++;
+        try (final SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile, compressionLevel)) {
+            for (final SAMRecord record : reader) {
+                writer.addAlignment(record);
+                nRecords++;
+            }
+        } catch (Exception e) {
+            Assert.fail("Error reading record no. " + nRecords);
         }
-        writer.close();
+
         log.info("wrote " + nRecords + " Records");
 
         int nReadRecords = 0;
@@ -117,6 +120,8 @@ public class IntelDeflaterTest {
         } catch (Exception e) {
             Assert.fail("Error reading record written with the IntelDeflater library");
         }
+        log.info("read " + nReadRecords + " Records");
+
         Assert.assertEquals(nReadRecords, nRecords, "Number of read records mismatches number of written records.");
     }
 }
