@@ -54,22 +54,17 @@ public class SamStreams {
         final byte[] buffer = new byte[buffSize];
         readBytes(stream, buffer, 0, buffSize);
         stream.reset();
-        final byte[] magicBuf = new byte[4];
-        final int magicLength = readBytes(new BlockCompressedInputStream(new ByteArrayInputStream(buffer)), magicBuf, 0, 4);
-        return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
+        try(final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new ByteArrayInputStream(buffer))){
+            final byte[] magicBuf = new byte[4];
+            final int magicLength = readBytes(bcis, magicBuf, 0, 4);
+            return magicLength == BAMFileConstants.BAM_MAGIC.length && Arrays.equals(BAMFileConstants.BAM_MAGIC, magicBuf);
+        }
     }
 
-    // Its too expensive to examine the remote file to determine type.
-    // Rely on file extension.
-    public static boolean sourceLikeBam(final SeekableStream strm) {
-        String source = strm.getSource();
-        if (source == null) return true;
-        source = source.toLowerCase();
-        //Source will typically be a file path or URL
-        //If it's a URL we require one of the query parameters to be bam file
-        return source.endsWith(".bam") || source.contains(".bam?") || source.contains(".bam&") || source.contains(".bam%26");
-    }
-
+    /**
+     * Checks whether the file is a gzipped sam file.  Returns true if it
+     * is and false otherwise.
+     */
     public static boolean isGzippedSAMFile(final InputStream stream) {
         if (!stream.markSupported()) {
             throw new IllegalArgumentException("Cannot test a stream that doesn't support marking.");
@@ -89,5 +84,16 @@ public class SamStreams {
                 throw new IllegalStateException("Could not reset stream.");
             }
         }
+    }
+
+    // Its too expensive to examine the remote file to determine type.
+    // Rely on file extension.
+    public static boolean sourceLikeBam(final SeekableStream strm) {
+        String source = strm.getSource();
+        if (source == null) return true;
+        source = source.toLowerCase();
+        //Source will typically be a file path or URL
+        //If it's a URL we require one of the query parameters to be bam file
+        return source.endsWith(".bam") || source.contains(".bam?") || source.contains(".bam&") || source.contains(".bam%26");
     }
 }
