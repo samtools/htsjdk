@@ -27,21 +27,10 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.*;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
@@ -664,7 +653,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                 mIsBinary = false;
                 mReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-            } else if (isGzippedSAMFile(bufferedStream)) {
+            } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
                 mIsBinary = false;
                 mReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
             } else if (SamStreams.isCRAMFile(bufferedStream)) {
@@ -705,31 +694,6 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
             bytesRead += count;
         }
         return bytesRead;
-    }
-
-    /**
-     * Attempts to check whether the file is a gzipped sam file.  Returns true if it
-     * is and false otherwise.
-     */
-    private boolean isGzippedSAMFile(final BufferedInputStream stream) {
-        if (!stream.markSupported()) {
-            throw new IllegalArgumentException("Cannot test a stream that doesn't support marking.");
-        }
-        stream.mark(8000);
-
-        try {
-            final GZIPInputStream gunzip = new GZIPInputStream(stream);
-            final int ch = gunzip.read();
-            return true;
-        } catch (final IOException ioe) {
-            return false;
-        } finally {
-            try {
-                stream.reset();
-            } catch (final IOException ioe) {
-                throw new IllegalStateException("Could not reset stream.");
-            }
-        }
     }
 
     private boolean isSAMFile(final InputStream stream) {

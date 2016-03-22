@@ -116,7 +116,7 @@ public class IndexFactory {
             return tribbleIndexType;
         }
 
-        public Class getIndexType() {
+        public Class<Index> getIndexType() {
             return indexType;
         }
 
@@ -165,50 +165,30 @@ public class IndexFactory {
      * @param indexFile from which to load the index
      */
     public static Index loadIndex(final String indexFile) {
-        InputStream inputStreamInitial = null;
-        InputStream inputStream = null;
-        BufferedInputStream bufferedInputStream = null;
-        try {
-            inputStreamInitial = ParsingUtils.openInputStream(indexFile);
-            if (indexFile.endsWith(".gz")) {
-                inputStream = new GZIPInputStream(inputStreamInitial);
-            }
-            else if (indexFile.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
-                inputStream = new BlockCompressedInputStream(inputStreamInitial);
-            }
-            else {
-                inputStream = inputStreamInitial;
-            }
-            // Must be buffered, because getIndexType uses mark and reset
-            bufferedInputStream = new BufferedInputStream(inputStream, Defaults.NON_ZERO_BUFFER_SIZE);
-            final Class indexClass = IndexType.getIndexType(bufferedInputStream).getIndexType();
-
-            final Constructor ctor = indexClass.getConstructor(InputStream.class);
-
-            return (Index) ctor.newInstance(bufferedInputStream);
+        // Must be buffered, because getIndexType uses mark and reset
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(indexFileInputStream(indexFile), Defaults.NON_ZERO_BUFFER_SIZE)){
+            final Class<Index> indexClass = IndexType.getIndexType(bufferedInputStream).getIndexType();
+            final Constructor<Index> ctor = indexClass.getConstructor(InputStream.class);
+            return ctor.newInstance(bufferedInputStream);
         } catch (final IOException ex) {
             throw new TribbleException.UnableToReadIndexFile("Unable to read index file", indexFile, ex);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
-        } finally {
-            try {
-                /*
-                 * Note: on all paths in the main body of the try block,
-                 * inputStream always ends up wrapped inside bufferedInputStream
-                 * and that gets a close() call in the finally block, and the close() call delegates
-                 * to the wrapped inputStream (and that would close any other stream wrapped inside of
-                 * inputStream - both BlockCompressedInputStream and GZIPInputStream do that).
-                 * So the call to inputStream.close() is not needed.
-                 * Same for inputStreamInitial - it's always wrapped.
-                 */
-                if (bufferedInputStream != null) bufferedInputStream.close();
-                //log.info(String.format("Closed %s and %s", is, dis));
-            } catch (final IOException e) {
-                //log.error("Error closing indexFile: " + indexFile, e);
-            }
         }
     }
 
+    private static InputStream indexFileInputStream(final String indexFile) throws IOException {
+        final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile);
+        if (indexFile.endsWith(".gz")) {
+            return new GZIPInputStream(inputStreamInitial);
+        }
+        else if (indexFile.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
+            return new BlockCompressedInputStream(inputStreamInitial);
+        }
+        else {
+            return inputStreamInitial;
+        }
+    }
 
     /**
      * a helper method for creating a linear binned index with default bin size

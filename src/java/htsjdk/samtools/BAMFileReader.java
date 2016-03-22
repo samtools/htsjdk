@@ -267,7 +267,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
             try {
                 mCompressedInputStream.close();
             } catch (IOException e) {
-                throw new SAMException("Exception closing compressed input stream.", e);
+                throw new RuntimeIOException("Exception closing compressed input stream.", e);
             }
         }
         if (mStream != null) {
