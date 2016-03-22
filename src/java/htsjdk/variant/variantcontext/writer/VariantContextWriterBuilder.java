@@ -131,8 +131,9 @@ public class VariantContextWriterBuilder {
      * Default constructor.  Adds <code>USE_ASYNC_IO</code> to the Options if it is present in Defaults.
      */
     public VariantContextWriterBuilder() {
-        if (Defaults.USE_ASYNC_IO)
+        if (Defaults.USE_ASYNC_IO_FOR_TRIBBLE) {
             options.add(Options.USE_ASYNC_IO);
+        }
     }
 
     /**
