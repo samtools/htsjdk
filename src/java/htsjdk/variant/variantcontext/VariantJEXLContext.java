@@ -37,12 +37,11 @@ import java.util.Map;
  *
  * Class VariantJEXLContext
  *
- * implements the JEXML context for VariantContext; this saves us from
- * having to generate a JEXML context lookup map everytime we want to evaluate an expression.
+ * implements the JEXL context for VariantContext; this saves us from
+ * having to generate a JEXL context lookup map everytime we want to evaluate an expression.
  *
  * This is package protected, only classes in variantcontext should have access to it.
  *
- * // todo -- clean up to remove or better support genotype filtering 
  */
 
 class VariantJEXLContext implements JexlContext {

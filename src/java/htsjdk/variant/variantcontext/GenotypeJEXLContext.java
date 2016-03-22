@@ -6,7 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by bimber on 3/21/2016.
+ *
+ * @author bbimber
+ *
+ * implements the JEXL context for Genotype; this saves us from
+ * having to generate a JEXL context lookup map everytime we want to evaluate an expression.
+ *
  */
 public class GenotypeJEXLContext extends VariantJEXLContext {
     private Genotype g;
