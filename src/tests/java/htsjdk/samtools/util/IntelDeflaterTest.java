@@ -78,6 +78,7 @@ public class IntelDeflaterTest {
         Log log = Log.getInstance(IntelDeflaterTest.class);
         Log.setGlobalLogLevel(Log.LogLevel.INFO);
 
+        log.info("In TestIntelDeflatorIsLoaded. testing: " + inputFile);
         IOUtil.assertFileIsReadable(inputFile);
 
         final File outputFile = File.createTempFile("IntelDeflater", "bam");
@@ -106,7 +107,7 @@ public class IntelDeflaterTest {
             nRecords++;
         }
         writer.close();
-        log.info("wrote " + nRecords + "Records");
+        log.info("wrote " + nRecords + " Records");
 
         int nReadRecords = 0;
         try (final SamReader outputReader = readerFactory.open(outputFile)) {
