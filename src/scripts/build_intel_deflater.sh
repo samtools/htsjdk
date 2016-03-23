@@ -69,7 +69,7 @@ javah -jni -classpath $rootdir/classes -d $builddir htsjdk.samtools.util.zip.Int
 # Compile source and create library.
 gcc -I$builddir -I$rootdir/src/c/inteldeflater/ -I$JAVA_HOME/include/ -I$JAVA_HOME/include/linux/ -I$OPENJDK/jdk/src/share/native/common/ \
 -I$OPENJDK/jdk/src/solaris/native/common/ -c -O3 -fPIC $rootdir/src/c/inteldeflater/IntelDeflater.c
-gcc  -shared -o $builddir/libIntelDeflater.so IntelDeflater.o  -L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
+gcc  -z noexecstack -shared -o $builddir/libIntelDeflater.so IntelDeflater.o  -L${IPP8_CODE_SAMPLES_DIR}/__cmake/data-compression.intel64.make.static.release/__lib/release \
 -lzlib  -lstdc++ -Wl,-Bstatic  -L$IGZIP_LIB -ligzip0c -lbfp754  -ldecimal  -liomp5  -liompstubs5  -lipgo  -lippac  -lippcc  -lippch  -lippcv  \
 -lippdc  -lippdi  -lippgen  -lippi  -lippj  -lippm  -lippr  -lippsc  -lippvc  -lippvm  -lirng  -lmatmul  -lpdbx  \
 -lpdbxinst  -lsvml  -lipps  -limf  -lirc  -lirc_s  -lippcore -Wl,-Bdynamic
