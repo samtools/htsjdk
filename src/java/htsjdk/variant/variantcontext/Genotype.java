@@ -181,6 +181,10 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     // ---------------------------------------------------------------------------------------------------------
 
     /**
+     * if {@link #getAlleles()} is empty, the type is {@link GenotypeType#UNAVAILABLE}.
+     * if all the  alleles are NoCall,  the type is {@link GenotypeType#NO_CALL}.
+     * if some, but not all, alleles are NoCall,  the type is {@link GenotypeType#MIXED}.
+     *
      * @return the high-level type of this sample's genotype
      */
     public GenotypeType getType() {
@@ -255,16 +259,19 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     public boolean isNoCall() { return getType() == GenotypeType.NO_CALL; }
 
     /**
+     * shortcut of ( {@link #getType()} != NO_CALL AND {@link #getType()} != UNAVAILABLE )
      * @return true if this genotype is comprised of any alleles that are not no-calls (even if some are).
      */
     public boolean isCalled() { return getType() != GenotypeType.NO_CALL && getType() != GenotypeType.UNAVAILABLE; }
 
     /**
+     * shortcut of ( {@link #getType()} == MIXED )
      * @return true if this genotype is comprised of both calls and no-calls.
      */
     public boolean isMixed() { return getType() == GenotypeType.MIXED; }
 
     /**
+     * shortcut of ( {@link #getType()} != UNAVAILABLE )
      * @return true if the type of this genotype is set.
      */
     public boolean isAvailable() { return getType() != GenotypeType.UNAVAILABLE; }
@@ -276,6 +283,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     // ------------------------------------------------------------------------------
 
     /**
+     * shortcut of ( {@link #getPL()} != null )
      * @return Returns true if this Genotype has PL field values
      */
     public boolean hasLikelihoods() {
@@ -375,7 +383,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      */
     protected List<String> getAlleleStrings() {
         final List<String> al = new ArrayList<String>(getPloidy());
-        for ( Allele a : getAlleles() )
+        for ( final Allele a : getAlleles() )
             al.add(a.getBaseString());
 
         return al;

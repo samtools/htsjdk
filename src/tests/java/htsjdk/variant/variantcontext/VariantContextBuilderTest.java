@@ -62,4 +62,25 @@ public class VariantContextBuilderTest extends VariantBaseTest {
        Assert.assertEquals(result1.getAttribute("AC"), result2.getAttribute("AC"));
 
     }
+    
+    private VariantContextBuilder createVariantContextBuilder() {
+        return new VariantContextBuilder(snpSource, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
+    }
+    
+    @Test()
+    public void testCommonInfo() {
+        final VariantContextBuilder root1 = new VariantContextBuilder(snpSource, snpLoc, snpLocStart, snpLocStop, Arrays.asList(Aref, C));
+        Assert.assertTrue(createVariantContextBuilder().make().getCommonInfo().isNotFiltered());
+        Assert.assertEquals(createVariantContextBuilder().attribute("x","12345").make().getCommonInfo().getAttributeAsString("x",null),"12345");
+        Assert.assertEquals(createVariantContextBuilder().attribute("x",12345).make().getCommonInfo().getAttributeAsString("x",null),"12345");
+        Assert.assertEquals(createVariantContextBuilder().attribute("x","12345").make().getCommonInfo().getAttributeAsInt("x",-1),12345);
+        Assert.assertEquals(createVariantContextBuilder().attribute("x",12345).make().getCommonInfo().getAttributeAsInt("x",-1),12345);
+        Assert.assertTrue(createVariantContextBuilder().filter("x").make().getCommonInfo().isFiltered());
+        Assert.assertTrue(createVariantContextBuilder().filter("x").make().getCommonInfo().hasFilter("x"));
+        Assert.assertTrue(createVariantContextBuilder().filter("x").make().hasFilter("x"));
+        Assert.assertEquals(createVariantContextBuilder().attribute("x",new String[]{"1","2"}).make().getCommonInfo().getAttributeAsList("x").size(),2);
+        Assert.assertEquals(createVariantContextBuilder().attribute("x",new int[]{1,2}).make().getCommonInfo().getAttributeAsList("x").size(),2);
+        Assert.assertEquals(createVariantContextBuilder().attribute("x",new double[]{1,2}).make().getCommonInfo().getAttributeAsList("x").size(),2);
+    }
+
 }

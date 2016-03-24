@@ -721,33 +721,50 @@ public class VariantContext implements Feature, Serializable {
     // get routines to access context info fields
     //
     // ---------------------------------------------------------------------------------------------------------
+    /** shortcut to {@link CommonInfo#getName()} */
     public String getSource()                   { return commonInfo.getName(); }
+    /** shortcut to {@link CommonInfo#getFiltersMaybeNull()} */
     public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
+    /** shortcut to {@link CommonInfo#getFilters()} */
     public Set<String> getFilters()             { return commonInfo.getFilters(); }
+    /** shortcut to {@link CommonInfo#isFiltered()} */
     public boolean isFiltered()                 { return commonInfo.isFiltered(); }
+    /** shortcut to {@link CommonInfo#isNotFiltered()} */
     public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
+    /** shortcut to {@link CommonInfo#filtersWereApplied()} */
     public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
+    /** shortcut to {@link CommonInfo#hasLog10PError()} */
     public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
+    /** shortcut to {@link CommonInfo#getLog10PError()} */
     public double getLog10PError()              { return commonInfo.getLog10PError(); }
+    /** shortcut to {@link CommonInfo#getPhredScaledQual} */
     public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
-
+    /** shortcut to {@link CommonInfo#getAttributes()} */
     public Map<String, Object>  getAttributes() { return commonInfo.getAttributes(); }
+    /** shortcut to {@link CommonInfo#hasAttribute(String)} */
     public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
+    /** shortcut to {@link CommonInfo#getAttribute(String)} */
     public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
-
+    /** shortcut to {@link CommonInfo#getAttribute(String, Object)} */
     public Object getAttribute(String key, Object defaultValue) {
         return commonInfo.getAttribute(key, defaultValue);
     }
-
+    /** shortcut to {@link CommonInfo#getAttributeAsString(String, String)} */
     public String getAttributeAsString(String key, String defaultValue)   { return commonInfo.getAttributeAsString(key, defaultValue); }
+    /** shortcut to {@link CommonInfo#getAttributeAsInt(String, int)} */
     public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
+    /** shortcut to {@link CommonInfo#getAttributeAsDouble(String, double)} */
     public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
+    /** shortcut to {@link CommonInfo#getAttributeAsBoolean(String, boolean)} */
     public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
     /** returns the value as an empty list if the key was not found,
         as a java.util.List if the value is a List or an Array,
         as a Collections.singletonList if there is only one value */
     public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-
+    /** shortcut to {@link CommonInfo#hasFilter(String)} */
+    public boolean hasFilter(final String filter) { return commonInfo.hasFilter(filter); }
+    
+    /** returns the internal {@link CommonInfo} */
     public CommonInfo getCommonInfo() {
         return commonInfo;
     }
@@ -759,10 +776,10 @@ public class VariantContext implements Feature, Serializable {
     // ---------------------------------------------------------------------------------------------------------
 
     /**
-     * @return the reference allele for this context
+     * @return the reference allele for this context. Never null.
      */
     public Allele getReference() {
-        Allele ref = REF;
+        final Allele ref = REF;
         if ( ref == null )
             throw new IllegalStateException("BUG: no reference allele found at " + this);
         return ref;
@@ -770,6 +787,7 @@ public class VariantContext implements Feature, Serializable {
 
 
     /**
+     * shortcut to <code>{@link #getNAlleles()} == 2</code<
      * @return true if the context is strictly bi-allelic
      */
     public boolean isBiallelic() {
@@ -790,6 +808,7 @@ public class VariantContext implements Feature, Serializable {
      *
      * @param defaultPloidy the default ploidy, if all samples are no-called
      * @return default, or the max ploidy
+     * @see {@link GenotypesContext#getMaxPloidy(int)}
      */
     public int getMaxPloidy(final int defaultPloidy) {
         return genotypes.getMaxPloidy(defaultPloidy);
@@ -797,8 +816,9 @@ public class VariantContext implements Feature, Serializable {
 
     /**
      * @return The allele sharing the same bases as this String.  A convenience method; better to use byte[]
+     * @see {@link #getAllele(byte[])}
      */
-    public Allele getAllele(String allele) {
+    public Allele getAllele(final String allele) {
         return getAllele(allele.getBytes());
     }
 
@@ -940,7 +960,7 @@ public class VariantContext implements Feature, Serializable {
         return ! genotypes.isEmpty();
     }
 
-    public boolean hasGenotypes(Collection<String> sampleNames) {
+    public boolean hasGenotypes(final Collection<String> sampleNames) {
         return genotypes.containsSamples(sampleNames);
     }
 
@@ -981,11 +1001,11 @@ public class VariantContext implements Feature, Serializable {
      * @return subsetting genotypes context
      * @throws IllegalArgumentException if sampleName isn't bound to a genotype
      */
-    protected GenotypesContext getGenotypes(Collection<String> sampleNames) {
+    protected GenotypesContext getGenotypes(final Collection<String> sampleNames) {
         return getGenotypes().subsetToSamples(new HashSet<String>(sampleNames));
     }
 
-    public GenotypesContext getGenotypes(Set<String> sampleNames) {
+    public GenotypesContext getGenotypes(final Set<String> sampleNames) {
         return getGenotypes().subsetToSamples(sampleNames);
     }
 
@@ -997,6 +1017,9 @@ public class VariantContext implements Feature, Serializable {
         return getGenotypes().getSampleNames();
     }
 
+    /**
+     * @return the list of all sample names in this context, ordered
+     */
     public List<String> getSampleNamesOrderedByName() {
         return getGenotypes().getSampleNamesOrderedByName();
     }
@@ -1006,11 +1029,11 @@ public class VariantContext implements Feature, Serializable {
      *
      * @return the Genotype associated with the given sample in this context or null if the sample is not in this context
      */
-    public Genotype getGenotype(String sample) {
+    public Genotype getGenotype(final String sample) {
         return getGenotypes().get(sample);
     }
 
-    public boolean hasGenotype(String sample) {
+    public boolean hasGenotype(final String sample) {
         return getGenotypes().containsSample(sample);
     }
 
