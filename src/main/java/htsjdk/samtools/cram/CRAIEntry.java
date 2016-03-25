@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -156,6 +157,23 @@ public class CRAIEntry implements Comparable<CRAIEntry>, Cloneable {
         }
     };
 
+    public static Comparator<CRAIEntry> byStartDesc = new Comparator<CRAIEntry>() {
+
+        @Override
+        public int compare(CRAIEntry o1, CRAIEntry o2) {
+            if (o1.sequenceId != o2.sequenceId) {
+                if (o1.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                    return 1;
+                if (o2.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX)
+                    return -1;
+                return -o2.sequenceId + o1.sequenceId;
+            }
+            if (o1.alignmentStart != o2.alignmentStart)
+                return o1.alignmentStart - o2.alignmentStart;
+
+            return (int) (o1.containerStartOffset - o2.containerStartOffset);
+        }
+    };
 
     public static boolean intersect(final CRAIEntry e0, final CRAIEntry e1) {
         if (e0.sequenceId != e1.sequenceId) {
