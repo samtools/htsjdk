@@ -40,7 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class CramFileWriterTest {
+public class CRAMFileWriterTest {
 
     @BeforeClass
     public void initClass() {
@@ -261,7 +261,7 @@ public class CramFileWriterTest {
         try (final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
              final SAMFileWriter writer = new SAMFileWriterFactory().makeWriter(reader.getFileHeader().clone(), false, outputFile, reference)) {
             for (SAMRecord rec : reader) {
-                    writer.addAlignment(rec);
+                writer.addAlignment(rec);
             }
         }
 

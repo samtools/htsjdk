@@ -17,7 +17,6 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.StringLineReader;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -58,7 +57,7 @@ public class CRAMContainerStreamWriter {
     private Set<String> captureTags = new TreeSet<String>();
     private Set<String> ignoreTags = new TreeSet<String>();
 
-    private CRAMIndexer indexer;
+    private CRAMBAIIndexer indexer;
     private long offset;
 
     /**
@@ -83,7 +82,7 @@ public class CRAMContainerStreamWriter {
         this.source = source;
         containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
         if (indexStream != null) {
-            indexer = new CRAMIndexer(indexStream, samFileHeader);
+            indexer = new CRAMBAIIndexer(indexStream, samFileHeader);
         }
     }
 

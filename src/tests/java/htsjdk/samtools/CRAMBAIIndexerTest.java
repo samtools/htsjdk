@@ -42,7 +42,7 @@ public class CRAMBAIIndexerTest {
         samFileHeader.addSequence(new SAMSequenceRecord("2", 10));
         samFileHeader.addSequence(new SAMSequenceRecord("3", 10));
         ByteArrayOutputStream indexBAOS = new ByteArrayOutputStream();
-        CRAMIndexer indexer = new CRAMIndexer(indexBAOS, samFileHeader);
+        CRAMBAIIndexer indexer = new CRAMBAIIndexer(indexBAOS, samFileHeader);
         int recordsPerContainer = 3;
         ContainerFactory containerFactory = new ContainerFactory(samFileHeader, recordsPerContainer);
         List<CramCompressionRecord> records = new ArrayList<>();
