@@ -1089,4 +1089,27 @@ public class SequenceUtil {
 
         return sofar;
     }
+
+    /**
+     * Returns a read name from a FASTQ header string suitable for use in a SAM/BAM file.  Any letters after the first space are ignored.
+     * Ths method also strips trailing "/1" or "/2" so that paired end reads have the same name.
+     *
+     * @param fastqHeader the header from a {@link htsjdk.samtools.fastq.FastqRecord}.
+     * @return a read name appropriate for output in a SAM/BAM file.
+     */
+    // Read names cannot contain blanks
+    public static String getSamReadNameFromFastqHeader(final String fastqHeader) {
+        final int idx = fastqHeader.indexOf(" ");
+        String readName = (idx == -1) ? fastqHeader : fastqHeader.substring(0,idx);
+
+        // NOTE: the while loop isn't necessarily the most efficient way to handle this but we don't
+        // expect this to ever happen more than once, just trapping pathological cases
+        while ((readName.endsWith("/1") || readName.endsWith("/2"))) {
+            // If this is an unpaired run we want to make sure that "/1" isn't tacked on the end of the read name,
+            // as this can cause problems down the road (ex. in Picard's MergeBamAlignment).
+            readName = readName.substring(0, readName.length() - 2);
+        }
+
+        return readName;
+    }
 }
