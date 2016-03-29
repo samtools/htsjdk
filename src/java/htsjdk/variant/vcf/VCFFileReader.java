@@ -144,6 +144,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
+    /** Queries for records within the region specified using a {@link Locatable} */
+    public CloseableIterator<VariantContext> query(final Locatable locatable) {
+        return this.query(locatable.getContig(), locatable.getStart(), locatable.getEnd());
+    }
+    
 	public void close() {
 		try { this.reader.close(); }
         catch (final IOException ioe) {
