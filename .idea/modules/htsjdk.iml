@@ -17,7 +17,7 @@
       <sourceFolder url="file://$MODULE_DIR$/../../target/resource_managed/test" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/../../target" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="SBT: com.beust:jcommander:1.27:jar" level="project" />
     <orderEntry type="library" name="SBT: commons-logging:commons-logging:1.2:jar" level="project" />

@@ -2,10 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -142,6 +139,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         catch (final IOException ioe) {
             throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
         }
+    }
+
+    /** Queries for records within the region specified using a {@link Locatable} */
+    public CloseableIterator<VariantContext> query(final Locatable locatable) {
+        return this.query(locatable.getContig(), locatable.getStart(), locatable.getEnd());
     }
 
 	public void close() {
