@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Holds a SAMRecord attribute and the tagname (in binary form) for that attribute.
@@ -31,7 +32,12 @@ import java.io.Serializable;
  * See SAMTagUtil to convert the tag to String form.
  *
  * Values associated with attribute tags must be of a type that implements {@link Serializable} or else
- * serialization will fail.
+ * serialization will fail. Accepted types are String, scalar types Short, Integer, Character, Float,
+ * and Long (see below); array types byte[], short[], int[] and float[]. Cannot be null.
+ *
+ * Long valued attributes are constrained to the range [Integer.MIN_VALUE, BinaryCodec.MAX_UINT],
+ * which includes the entire range of signed ints [Integer.MIN_VALUE, Integer.MAX_VALUE] and
+ * the entire range of unsigned ints that can be stored per the BAM spec [0, (Integer.MAX_VALUE * 2) + 1].
  *
  * @author alecw@broadinstitute.org
  */
@@ -44,15 +50,44 @@ public class SAMBinaryTagAndValue implements Serializable {
 
     /**
      * @param tag tagname (in binary form) for this attribute
-     * @param value value for this attribute (must be of a type that implements {@link Serializable} or else serialization will fail)
-     *              Cannot be null.
+     * @param value value for this attribute (must be of a type that implements {@link Serializable}
+     *              or else serialization will fail). Cannot be null.
      */
     public SAMBinaryTagAndValue(final short tag, final Object value) {
         if (null == value) {
             throw new IllegalArgumentException("SAMBinaryTagAndValue value may not be null");
         }
+        if (!isAllowedAttributeValue(value)) {
+            throw new IllegalArgumentException("Attribute type " + value.getClass() + " not supported. Tag: " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
+        }
         this.tag = tag;
         this.value = value;
+    }
+
+    // Inspect the proposed value to determine if it is an allowed value type,
+    // and if the value is in range.
+    protected static boolean isAllowedAttributeValue(final Object value) {
+            if (value instanceof Byte ||
+                value instanceof Short ||
+                value instanceof Integer ||
+                value instanceof String ||
+                value instanceof Character ||
+                value instanceof Float ||
+                value instanceof byte[] ||
+                value instanceof short[] ||
+                value instanceof int[] ||
+                value instanceof float[]) {
+            return true;
+        }
+
+        // A special case for Longs: we require Long values to fit into either a uint32_t or an int32_t,
+        // as that is what the BAM spec allows.
+        if (value instanceof Long) {
+            return SAMUtils.isValidUnsignedIntegerAttribute((Long) value)
+                    || ((Long) value >= Integer.MIN_VALUE && (Long) value <= Integer.MAX_VALUE);
+        }
+        return false;
     }
 
     @Override public boolean equals(final Object o) {
@@ -64,7 +99,7 @@ public class SAMBinaryTagAndValue implements Serializable {
     /** Type safe equals method that recurses down the list looking for equality. */
     private boolean typeSafeEquals(final SAMBinaryTagAndValue that) {
         if (this.tag != that.tag) return false;
-        if ((this.value == null) ? that.value == null : this.value.equals(that.value)) {
+        if (this.valueEquals(that)) {
             if (this.next == null) return that.next == null;
             else return this.next.equals(that.next);
         }
@@ -73,11 +108,52 @@ public class SAMBinaryTagAndValue implements Serializable {
         }
     }
 
+    private boolean valueEquals(SAMBinaryTagAndValue that) {
+        if (this.value instanceof byte[]) {
+            return that.value instanceof byte[] ?
+                Arrays.equals((byte[])this.value, (byte[])that.value) : false;
+        }
+        else if (this.value instanceof short[]) {
+            return that.value instanceof short[] ?
+                    Arrays.equals((short[])this.value, (short[])that.value) : false;
+        }
+        else if (this.value instanceof int[]) {
+            return that.value instanceof int[] ?
+                    Arrays.equals((int[])this.value, (int[])that.value) : false;
+        }
+        else if (this.value instanceof float[]) {
+            return that.value instanceof float[] ?
+                    Arrays.equals((float[])this.value, (float[])that.value) : false;
+        }
+        else {
+            // otherwise, the api limits the remaining possible value types to
+            // immutable (String or boxed primitive) types
+            return this.value.equals(that.value);
+        }
+    }
+
     @Override
     public int hashCode() {
-        int result = (int) tag;
-        result = 31 * result + value.hashCode();
-        return result;
+        int valueHash;
+        if (this.value instanceof byte[]) {
+            valueHash = Arrays.hashCode((byte[])this.value);
+        }
+        else if (this.value instanceof short[]) {
+            valueHash = Arrays.hashCode((short[])this.value);
+        }
+        else if (this.value instanceof int[]) {
+            valueHash = Arrays.hashCode((int[])this.value);
+        }
+        else if (this.value instanceof float[]) {
+            valueHash = Arrays.hashCode((float[])this.value);
+        }
+        else {
+            // otherwise, the api limits the remaining possible value types to
+            // immutable (String or boxed primitive) types
+            valueHash = value.hashCode();
+        }
+
+        return 31 * tag + valueHash;
     }
 
     /** Creates and returns a shallow copy of the list of tag/values. */

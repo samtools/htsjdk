@@ -27,6 +27,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.util.function.Function;
 
 /**
  * Class for both constructing BAM index content and writing it out.
@@ -49,15 +50,14 @@ public class BAMIndexer {
     // content is built up from the input bam file using this
     private final BAMIndexBuilder indexBuilder;
 
+    private static final Log log = Log.getInstance(BAMIndexer.class);
+
     /**
      * @param output     binary BAM Index (.bai) file
      * @param fileHeader header for the corresponding bam file
      */
     public BAMIndexer(final File output, final SAMFileHeader fileHeader) {
-
-        numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary());
-        outputWriter = new BinaryBAMIndexWriter(numReferences, output);
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
     }
 
     /**
@@ -67,10 +67,28 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file.
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
+    }
 
+    /*
+     * Prepare to index a BAM.
+     *
+     * @param fileHeader header for the corresponding bam file.
+     * @param  createWrite a lambda that, given an Integer numReferences value, will create a BinaryBAMIndexWriter
+     *                     with that value and an appropriate output.
+      */
+    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter) {
+        if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            if (fileHeader.getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
+                log.warn("For indexing, the BAM file is required to be coordinate sorted. Attempting to index \"unsorted\" BAM file.");
+            }
+            else {
+                throw new SAMException("Indexing requires a coordinate-sorted input BAM.");
+            }
+        }
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary());
-        outputWriter = new BinaryBAMIndexWriter(numReferences, output);
+        outputWriter = createWriter.apply(numReferences);
     }
 
     /**

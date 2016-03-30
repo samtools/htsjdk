@@ -28,6 +28,7 @@ import htsjdk.samtools.util.IOUtil;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
@@ -198,6 +199,14 @@ public class BAMIndexWriterTest {
         return new Object[][]{
                 new Object[]{"index_test", BAM_FILE_LOCATION, BAI_FILE_LOCATION},
         };
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testRequireCoordinateSortOrder() {
+        SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.queryname);
+
+        new BAMIndexer(new ByteArrayOutputStream(), header);
     }
 
     /** generates the index file using the latest java index generating code */

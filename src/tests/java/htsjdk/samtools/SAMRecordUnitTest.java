@@ -31,7 +31,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -108,7 +107,30 @@ public class SAMRecordUnitTest {
     }
 
     @Test(dataProvider = "deepCopyTestData")
-    public void testDeepCopyRef(final SAMRecord sam) {
+    public void testDeepCopyBasic(final SAMRecord sam) {
+        testDeepCopy(sam);
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepCopyCigar(SAMRecord sam) {
+        sam.setCigar(sam.getCigar());
+        final SAMRecord deepCopy = sam.deepCopy();
+        Assert.assertTrue(sam.equals(deepCopy));
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepCopyGetCigarString(SAMRecord sam) {
+        sam.setCigarString(sam.getCigarString());
+        final SAMRecord deepCopy = sam.deepCopy();
+        Assert.assertTrue(sam.equals(deepCopy));
+    }
+
+    @Test(dataProvider = "deepCopyTestData")
+    public void testDeepCopyGetCigar(final SAMRecord sam)
+    {
+        testDeepCopy(sam);
+        sam.setCigarString(sam.getCigarString());
+        sam.getCigar(); // force cigar elements to be resolved for equals
         testDeepCopy(sam);
     }
 
@@ -134,14 +156,12 @@ public class SAMRecordUnitTest {
 
     @Test(dataProvider = "deepCopyTestData")
     public void testDeepByteAttributes( final SAMRecord sam ) throws Exception {
-        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
-        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
         SAMRecord deepCopy = testDeepCopy(sam);
-        Assert.assertTrue(sam.equals(deepCopy));
 
         final byte bytes[] = { -2, -1, 0, 1, 2 };
         sam.setAttribute("BY", bytes);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         // validate reference inequality and content equality
         final byte samBytes[] = sam.getByteArrayAttribute("BY");
@@ -162,6 +182,7 @@ public class SAMRecordUnitTest {
         // now unsigned...
         sam.setUnsignedArrayAttribute("BY", bytes);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
         final byte samUBytes[] = sam.getUnsignedByteArrayAttribute("BY");
         final byte copyUBytes[] = deepCopy.getUnsignedByteArrayAttribute("BY");
         Assert.assertFalse(copyUBytes == bytes);
@@ -180,14 +201,12 @@ public class SAMRecordUnitTest {
 
     @Test(dataProvider = "deepCopyTestData")
     public void testDeepShortAttributes( final SAMRecord sam ) throws Exception {
-        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
-        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
         SAMRecord deepCopy = testDeepCopy(sam);
-        Assert.assertTrue(sam.equals(deepCopy));
 
         final short shorts[] = { -20, -10, 0, 10, 20 };
         sam.setAttribute("SH", shorts);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         // validate reference inequality, content equality
         final short samShorts[] = sam.getSignedShortArrayAttribute("SH");
@@ -208,6 +227,7 @@ public class SAMRecordUnitTest {
         // now unsigned...
         sam.setUnsignedArrayAttribute("SH", shorts);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         final short samUShorts[] = sam.getUnsignedShortArrayAttribute("SH");
         final short copyUShorts[] = deepCopy.getUnsignedShortArrayAttribute("SH");
@@ -227,14 +247,12 @@ public class SAMRecordUnitTest {
 
     @Test(dataProvider = "deepCopyTestData")
     public void testDeepIntAttributes( final SAMRecord sam ) throws Exception {
-        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
-        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
         SAMRecord deepCopy = testDeepCopy(sam);
-        Assert.assertTrue(sam.equals(deepCopy));
 
         final int ints[] = { -200, -100, 0, 100, 200 };
         sam.setAttribute("IN", ints);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         // validate reference inequality and content equality
         final  int samInts[] = sam.getSignedIntArrayAttribute("IN");
@@ -255,6 +273,7 @@ public class SAMRecordUnitTest {
         // now unsigned...
         sam.setUnsignedArrayAttribute("IN", ints);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         final int samUInts[] = sam.getUnsignedIntArrayAttribute("IN");
         final int copyUInts[] = deepCopy.getUnsignedIntArrayAttribute("IN");
@@ -274,14 +293,12 @@ public class SAMRecordUnitTest {
 
     @Test(dataProvider = "deepCopyTestData")
     public void testDeepFloatAttributes( final SAMRecord sam ) throws Exception {
-        // Note that "samRecord.deepCopy().equals(samRecord)" fails with attributes due to
-        // SAMBinaryTagAndValue.equals using reference equality on attribute values.
         SAMRecord deepCopy = testDeepCopy(sam);
-        Assert.assertTrue(sam.equals(deepCopy));
 
         final float floats[] = { -2.4f, -1.2f, 0, 2.3f, 4.6f };
         sam.setAttribute("FL", floats);
         deepCopy = sam.deepCopy();
+        Assert.assertEquals(sam, deepCopy);
 
         // validate reference inequality and content equality
         final float samFloats[] = sam.getFloatArrayAttribute("FL");
@@ -303,12 +320,7 @@ public class SAMRecordUnitTest {
 
     private SAMRecord testDeepCopy(SAMRecord sam) {
         final SAMRecord deepCopy = sam.deepCopy();
-
-        // force the indexing bins to be computed in order to satisfy equality test
-        sam.setIndexingBin(sam.computeIndexingBin());
-        deepCopy.setIndexingBin(deepCopy.computeIndexingBin());
         Assert.assertTrue(sam.equals(deepCopy));
-
         return deepCopy;
     }
 
@@ -321,7 +333,7 @@ public class SAMRecordUnitTest {
         Assert.assertNull(record.getUnsignedIntegerAttribute(stringTag));
         Assert.assertNull(record.getUnsignedIntegerAttribute(binaryTag));
 
-        record.setAttribute("UI", 0L);
+        record.setAttribute("UI", (long) 0L);
         Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
         Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
 
@@ -329,7 +341,7 @@ public class SAMRecordUnitTest {
         Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(stringTag));
         Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(binaryTag));
 
-        final SAMBinaryTagAndValue tv_zero = new SAMBinaryTagAndUnsignedArrayValue(binaryTag, 0L);
+        final SAMBinaryTagAndValue tv_zero = new SAMBinaryTagAndValue(binaryTag, 0L);
         record = new SAMRecord(header){
             {
                 setAttributes(tv_zero);
@@ -338,7 +350,7 @@ public class SAMRecordUnitTest {
         Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(stringTag));
         Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(binaryTag));
 
-        final SAMBinaryTagAndValue tv_max = new SAMBinaryTagAndUnsignedArrayValue(binaryTag, BinaryCodec.MAX_UINT);
+        final SAMBinaryTagAndValue tv_max = new SAMBinaryTagAndValue(binaryTag, BinaryCodec.MAX_UINT);
         record = new SAMRecord(header){
             {
                 setAttributes(tv_max);
@@ -350,7 +362,6 @@ public class SAMRecordUnitTest {
 
     /**
      * This is an alternative to test_getUnsignedIntegerAttribute_valid().
-     * The purpose is to ensure that the hacky way of setting arbitrary tag values works ok.
      * This is required for testing invalid (out of range) unsigned integer value.
      */
     @Test
@@ -359,69 +370,32 @@ public class SAMRecordUnitTest {
         SAMFileHeader header = new SAMFileHeader();
         SAMRecord record;
 
-        record = new SAMRecord(header) {
-            {
-                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, 0L));
-            }
-        };
+        record = new SAMRecord(header);
+        record.setAttribute("UI", 0L);
         Assert.assertEquals(new Long(0L), record.getUnsignedIntegerAttribute(tag));
 
-        record = new SAMRecord(header) {
-            {
-                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT));
-            }
-        };
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute(tag));
-
-        // the following works because we bypass value checks implemented in SAMRecord:
-        record = new SAMRecord(header) {
-            {
-                setAttributes(new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT+1L));
-            }
-        };
-        // check that the invalid value is still there:
-        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT+1L), (Long)record.getBinaryAttributes().value);
+        record = new SAMRecord(header);
+        record.setAttribute("UI", BinaryCodec.MAX_UINT);
+        Assert.assertEquals(new Long(BinaryCodec.MAX_UINT), record.getUnsignedIntegerAttribute("UI"));
     }
 
     @Test(expectedExceptions = SAMException.class)
     public void test_getUnsignedIntegerAttribute_negative() {
-        short tag = 0;
-        SAMRecord record = null;
-        try {
-            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
-            SAMFileHeader header = new SAMFileHeader();
-            final SAMBinaryTagAndValue tv = new SAMBinaryTagAndUnsignedArrayValue(tag, -1L);
-            record = new SAMRecord(header) {
-                {
-                    setAttributes(tv);
-                }
-            };
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception", e);
-        }
-        record.getUnsignedIntegerAttribute(tag);
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record = new SAMRecord(header);
+        record.setAttribute("UI", -1L);
+        record.getUnsignedIntegerAttribute("UI");
     }
 
-    @Test(expectedExceptions = SAMException.class)
-    public void test_getUnsignedIntegerAttribute_tooLarge() {
-        short tag = 0;
-        SAMRecord record = null;
-        try {
-            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
-            SAMFileHeader header = new SAMFileHeader();
-            final SAMBinaryTagAndValue tv = new SAMBinaryTagAndUnsignedArrayValue(tag, BinaryCodec.MAX_UINT + 1);
-            record = new SAMRecord(header) {
-                {
-                    setAttributes(tv);
-                }
-            };
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception", e);
-        }
-
-        record.getUnsignedIntegerAttribute(tag);
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void test_setUnsignedIntegerAttributeTooLarge() {
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record = new SAMRecord(header);
+        record.setAttribute("UI", BinaryCodec.MAX_UINT + 1);
     }
 
+    // NOTE: SAMRecord.asAllowedAttribute is deprecated, as it has been moved into
+    // SAMBinaryTagAndValue, but we'll leave this test here until the code is removed.
     @Test
     public void test_isAllowedAttributeDataType() {
         Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Byte((byte) 0)));
@@ -441,39 +415,23 @@ public class SAMRecordUnitTest {
         Assert.assertTrue(SAMRecord.isAllowedAttributeValue(new Long(-1L)));
         Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(BinaryCodec.MAX_UINT + 1L)));
         Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(Integer.MIN_VALUE - 1L)));
-
     }
 
-    @Test(expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_setAttribute_unsigned_int_negative() {
-        short tag = 0;
+        SAMFileHeader header = new SAMFileHeader();
         SAMRecord record = null;
-        try {
-            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
-            SAMFileHeader header = new SAMFileHeader();
-            record = new SAMRecord(header);
-            Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
-        } catch (SAMException e) {
-            Assert.fail("Unexpected exception", e);
-        }
-
-        record.setAttribute(tag, (long) Integer.MIN_VALUE - 1L);
+        record = new SAMRecord(header);
+        Assert.assertNull(record.getUnsignedIntegerAttribute("UI"));
+        record.setAttribute("UI", (long) Integer.MIN_VALUE - 1L);
     }
 
-    @Test(expectedExceptions = SAMException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_setAttribute_unsigned_int_tooLarge() {
-        short tag = 0;
-        SAMRecord record = null;
-        try {
-            tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
-            SAMFileHeader header = new SAMFileHeader();
-            record = new SAMRecord(header);
-            Assert.assertNull(record.getUnsignedIntegerAttribute(tag));
-        } catch (SAMException e) {
-            Assert.fail("Unexpected exception", e);
-        }
-
-        record.setAttribute(tag, BinaryCodec.MAX_UINT + 1L);
+        SAMFileHeader header = new SAMFileHeader();
+        SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getUnsignedIntegerAttribute("UI"));
+        record.setAttribute("UI", (long) BinaryCodec.MAX_UINT + 1L);
     }
 
     @Test
@@ -809,11 +767,7 @@ public class SAMRecordUnitTest {
         sam.setHeader(null);
         final SAMRecord deepCopy = sam.deepCopy();
 
-        // force the indexing bins to be computed in order to satisfy equality test
-        sam.setIndexingBin(sam.computeIndexingBin());
-        deepCopy.setIndexingBin(deepCopy.computeIndexingBin());
         Assert.assertTrue(sam.equals(deepCopy));
-
     }
 
     private void testNullHeaderCigar(SAMRecord rec) {

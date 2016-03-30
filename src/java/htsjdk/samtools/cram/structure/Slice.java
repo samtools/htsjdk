@@ -221,12 +221,6 @@ public class Slice {
     }
 
     void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
-        if (value != null && !(value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof String ||
-                value instanceof Character || value instanceof Float || value instanceof byte[] || value instanceof short[] || value
-                instanceof int[] || value instanceof float[])) {
-            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " + SAMTagUtil.getSingleton()
-                    .makeStringTag(tag));
-        }
         if (value == null) {
             if (this.sliceTags != null) this.sliceTags = this.sliceTags.remove(tag);
         } else {
@@ -234,10 +228,6 @@ public class Slice {
             if (!isUnsignedArray) {
                 tmp = new SAMBinaryTagAndValue(tag, value);
             } else {
-                if (!value.getClass().isArray() || value instanceof float[]) {
-                    throw new SAMException("Attribute type " + value.getClass() + " cannot be encoded as an unsigned array. Tag: " +
-                            SAMTagUtil.getSingleton().makeStringTag(tag));
-                }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
             if (this.sliceTags == null) this.sliceTags = tmp;
