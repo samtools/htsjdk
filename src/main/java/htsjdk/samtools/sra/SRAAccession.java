@@ -26,6 +26,8 @@
 
 package htsjdk.samtools.sra;
 
+import gov.nih.nlm.ncbi.ngs.error.LibraryLoadError;
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.Log;
 import gov.nih.nlm.ncbi.ngs.NGS;
 
@@ -46,12 +48,21 @@ import java.util.Arrays;
 public class SRAAccession implements Serializable {
     private static final Log log = Log.getInstance(SRAAccession.class);
 
-    private static Boolean isSupportedCached = null;
+    private static boolean noLibraryDownload;
+    private static boolean initTried = false;
+    private static ExceptionInInitializerError ngsInitError;
     private static String appVersionString = null;
     private final static String defaultAppVersionString = "[unknown software]";
     private final static String htsJdkVersionString = "HTSJDK-NGS";
 
     private String acc;
+
+    static {
+        noLibraryDownload = !Defaults.SRA_LIBRARIES_DOWNLOAD;
+        if (noLibraryDownload) {
+            System.setProperty("vdb.System.noLibraryDownload", "1");
+        }
+    }
 
     /**
      * Sets an app version string which will let SRA know which software uses it.
@@ -62,20 +73,32 @@ public class SRAAccession implements Serializable {
     }
 
     /**
-     * Returns true if SRA is supported on the running platform
-     * @return true if SRA engine was successfully loaded and operational, false otherwise
+     * @deprecated
+     * @return true if SRA successfully loaded native libraries and fully initialized,
+     * false otherwise
      */
     public static boolean isSupported() {
-        if (isSupportedCached == null) {
-            log.debug("Checking if SRA module is supported in that environment");
-            isSupportedCached = NGS.isSupported();
-            if (!isSupportedCached) {
-                log.info("SRA is not supported. Will not be able to read from SRA");
+        return checkIfInitialized() == null;
+    }
+
+    /**
+     * Tries to initialize SRA. Initialization error is saved during first call,
+     * all subsequent calls will return the same saved error or null.
+     *
+     * @return ExceptionInInitializerError if initialization failed, null if initialization was successful
+     */
+    public static ExceptionInInitializerError checkIfInitialized() {
+        if (!initTried) {
+            log.debug("Initializing SRA module");
+            ngsInitError = NGS.getInitializationError();
+            if (ngsInitError != null) {
+                log.info("SRA initialization failed. Will not be able to read from SRA");
             } else {
                 NGS.setAppVersionString(getFullVersionString());
             }
+            initTried = true;
         }
-        return isSupportedCached;
+        return ngsInitError;
     }
 
     /**
@@ -107,7 +130,20 @@ public class SRAAccession implements Serializable {
 
         if (!looksLikeSRA) return false;
 
-        return isSupported() && NGS.isValid(acc);
+        ExceptionInInitializerError initError = checkIfInitialized();
+        if (initError != null) {
+            if (noLibraryDownload && initError instanceof LibraryLoadError) {
+                throw new LinkageError(
+                        "Failed to load SRA native libraries and auto-download is disabled. " +
+                        "Please set property samjdk.sra_libraries_download=true to enable auto-download of native libraries",
+                        initError
+                );
+            } else {
+                throw initError;
+            }
+        }
+
+        return NGS.isValid(acc);
     }
 
     /**

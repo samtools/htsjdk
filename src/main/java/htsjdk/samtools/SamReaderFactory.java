@@ -337,6 +337,10 @@ public abstract class SamReaderFactory {
         /** Attempts to detect whether the file is an SRA accessioned file. If SRA support is not available, returns false. */
         private boolean isSra(final File sourceFile) {
             try {
+                // if SRA fails to initialize (the most common reason is a failure to find/load native libraries),
+                // it will throw a subclass of java.lang.Error and here we only catch subclasses of java.lang.Exception
+                //
+                // Note: SRA initialization errors should not be ignored, but rather shown to user
                 return SRAAccession.isValid(sourceFile.getPath());
             } catch (final Exception e) {
                 return false;

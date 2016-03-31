@@ -40,7 +40,7 @@ dependencies {
     compile "org.xerial.snappy:snappy-java:1.0.3-rc3"
     compile "org.apache.commons:commons-compress:1.4.1"
     compile "org.tukaani:xz:1.5"
-    compile "gov.nih.nlm.ncbi:ngs-java:1.2.2"
+    compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
 
     testCompile "org.testng:testng:6.9.9"
 }
@@ -125,6 +125,8 @@ test {
 }
 
 task testSRA(type: Test){
+    jvmArgs '-Dsamjdk.sra_libraries_download=true'
+
     description "Run the SRA tests"
     useTestNG{
         includeGroups "sra"
