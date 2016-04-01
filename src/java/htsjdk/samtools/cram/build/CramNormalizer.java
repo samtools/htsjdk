@@ -284,6 +284,8 @@ public class CramNormalizer {
                 case RefSkip.operator:
                     posInSeq += ((RefSkip) variation).getLength();
                     break;
+                default:
+                    break;
             }
         }
         for (; posInRead <= readLength

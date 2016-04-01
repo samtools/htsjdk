@@ -80,6 +80,8 @@ public class DuplicateScoringStrategy {
                         score += SAMUtils.getMateCigar(record).getReferenceLength();
                     }
                     break;
+                default:
+                    break;
             }
 
             storedScore = score;

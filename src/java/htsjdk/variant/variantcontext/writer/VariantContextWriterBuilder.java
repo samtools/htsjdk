@@ -438,6 +438,8 @@ public class VariantContextWriterBuilder {
 
                 writer = createBCFWriter(null, outStream);
                 break;
+            default:
+                break;
         }
 
         if (this.options.contains(Options.USE_ASYNC_IO))

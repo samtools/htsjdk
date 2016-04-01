@@ -79,6 +79,8 @@ class D04 {
                         Constants.TF_SHIFT);
                 out.put(c);
                 break;
+            default:
+                break;
         }
 
         out.position(0);

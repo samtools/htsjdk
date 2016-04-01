@@ -265,6 +265,8 @@ public class IndexFactory {
             case LINEAR:        return createLinearIndex(inputFile, codec);
             // Tabix index initialization requires additional information, so this construction method won't work.
             case TABIX:         throw new UnsupportedOperationException("Tabix indices cannot be created through a generic interface");
+            default:
+                break;
         }
         throw new IllegalArgumentException("Unrecognized IndexType " + type);
     }
