@@ -409,4 +409,24 @@ public class SequenceUtilTest {
     private char toLowerCase(final char base) {
         return (char) (toUpperCase(base) + 32);
     }
+
+    @Test(dataProvider = "testGetSamReadNameFromFastqHeader")
+    public void testGetSamReadNameFromFastqHeader(final String fastqHeader,
+                                                  final String expectedSamReadName) {
+        Assert.assertEquals(SequenceUtil.getSamReadNameFromFastqHeader(fastqHeader), expectedSamReadName);
+    }
+
+    @DataProvider(name = "testGetSamReadNameFromFastqHeader")
+    public Object[][] testGetSamReadNameFromFastqHeaderTestCases() {
+        return new Object[][] {
+                {"Simple:Name",          "Simple:Name"},
+                {"Simple:Name",          "Simple:Name"},
+                {"Name/1",               "Name"},
+                {"Name/2",               "Name"},
+                {"Name/3",               "Name/3"},
+                {"Simple:Name Blank",    "Simple:Name"},
+                {"Simple:Name Blank /1", "Simple:Name"},
+                {"Name/1/2",             "Name"}
+        };
+    }
 }
