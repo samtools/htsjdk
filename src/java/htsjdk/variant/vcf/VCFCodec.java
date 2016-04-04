@@ -123,7 +123,7 @@ public class VCFCodec extends AbstractVCFCodec {
      * parse the filter string, first checking to see if we already have parsed it in a previous attempt
      *
      * @param filterString the string to parse
-     * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
+     * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value ('.') in a VCF)
      */
     protected List<String> parseFilters(final String filterString) {
         // null for unfiltered
