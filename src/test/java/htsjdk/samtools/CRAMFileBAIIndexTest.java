@@ -291,4 +291,6 @@ public class CRAMFileBAIIndexTest {
         CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
         return baos.toByteArray();
     }
+
+
 }

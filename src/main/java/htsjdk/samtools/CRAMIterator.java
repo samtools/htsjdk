@@ -226,7 +226,7 @@ public class CRAMIterator implements SAMRecordIterator {
      * @param refIndex reference sequence index
      * @param pos      alignment start to skip to
      */
-    public boolean jumpWithinContainerToPos(final int refIndex, final int pos) {
+    public boolean advanceToAlignmentInContainer(final int refIndex, final int pos) {
         if (!hasNext()) return false;
         int i = 0;
         for (final SAMRecord record : records) {
