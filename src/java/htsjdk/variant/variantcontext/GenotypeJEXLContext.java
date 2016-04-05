@@ -20,23 +20,23 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         public Object get(Genotype g);
     }
 
-    private static Map<String, AttributeGetter> attrs = new HashMap<String, AttributeGetter>();
+    private static Map<String, AttributeGetter> attributes = new HashMap<String, AttributeGetter>();
 
     static {
-        attrs.put("g", new AttributeGetter() { public Object get(Genotype g) { return g; }});
-        attrs.put(VCFConstants.GENOTYPE_KEY, new AttributeGetter() { public Object get(Genotype g) { return g.getGenotypeString(); }});
+        attributes.put("g", (Genotype g) -> g);
+        attributes.put(VCFConstants.GENOTYPE_KEY, Genotype::getGenotypeString);
 
-        attrs.put("isHom", new AttributeGetter() { public Object get(Genotype g) { return g.isHom() ? "1" : "0"; }});
-        attrs.put("isHomRef", new AttributeGetter() { public Object get(Genotype g) { return g.isHomRef() ? "1" : "0"; }});
-        attrs.put("isHet", new AttributeGetter() { public Object get(Genotype g) { return g.isHet() ? "1" : "0"; }});
-        attrs.put("isHomVar", new AttributeGetter() { public Object get(Genotype g) { return g.isHomVar() ? "1" : "0"; }});
-        attrs.put("isCalled", new AttributeGetter() { public Object get(Genotype g) { return g.isCalled() ? "1" : "0"; }});
-        attrs.put("isNoCall", new AttributeGetter() { public Object get(Genotype g) { return g.isNoCall() ? "1" : "0"; }});
-        attrs.put("isMixed", new AttributeGetter() { public Object get(Genotype g) { return g.isMixed() ? "1" : "0"; }});
-        attrs.put("isAvailable", new AttributeGetter() { public Object get(Genotype g) { return g.isAvailable() ? "1" : "0"; }});
-        attrs.put("isPassFT", new AttributeGetter() { public Object get(Genotype g) { return g.isFiltered() ? "0" : "1"; }});
-        attrs.put(VCFConstants.GENOTYPE_FILTER_KEY, new AttributeGetter() { public Object get(Genotype g) { return g.isFiltered()?  g.getFilters() : "PASS"; }});
-        attrs.put(VCFConstants.GENOTYPE_QUALITY_KEY, new AttributeGetter() { public Object get(Genotype g) { return g.getGQ(); }});
+        attributes.put("isHom", (Genotype g) -> g.isHom() ? "1" : "0");
+        attributes.put("isHomRef", (Genotype g) -> g.isHomRef() ? "1" : "0");
+        attributes.put("isHet", (Genotype g) -> g.isHet() ? "1" : "0");
+        attributes.put("isHomVar", (Genotype g) -> g.isHomVar() ? "1" : "0");
+        attributes.put("isCalled", (Genotype g) -> g.isCalled() ? "1" : "0");
+        attributes.put("isNoCall", (Genotype g) -> g.isNoCall() ? "1" : "0");
+        attributes.put("isMixed", (Genotype g) -> g.isMixed() ? "1" : "0");
+        attributes.put("isAvailable", (Genotype g) -> g.isAvailable() ? "1" : "0");
+        attributes.put("isPassFT", (Genotype g) -> g.isFiltered() ? "0" : "1");
+        attributes.put(VCFConstants.GENOTYPE_FILTER_KEY, (Genotype g) -> g.isFiltered()?  g.getFilters() : "PASS");
+        attributes.put(VCFConstants.GENOTYPE_QUALITY_KEY, Genotype::getGQ);
     }
 
     public GenotypeJEXLContext(VariantContext vc, Genotype g) {
@@ -46,8 +46,8 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
 
     public Object get(String name) {
         //should matching genotype attributes always supersede vc?
-        if ( attrs.containsKey(name) ) { // dynamic resolution of name -> value via map
-            return attrs.get(name).get(g);
+        if ( attributes.containsKey(name) ) { // dynamic resolution of name -> value via map
+            return attributes.get(name).get(g);
         } else if ( g.hasAnyAttribute(name) ) {
             return g.getAnyAttribute(name);
         } else if ( g.getFilters().contains(name) ) {

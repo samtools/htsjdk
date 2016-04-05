@@ -1,12 +1,11 @@
 package htsjdk.variant.variantcontext;
 
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.jexl2.JexlContext;
 import org.apache.commons.jexl2.MapContext;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,17 +54,14 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      *
      */
     private void createContext() {
-        // QUESTION: the original code could have created a new VariantJEXLContext with a null vc.
-        // i dont think this is right, though i have no idea if vc could actually be null
-        if ( vc != null ) {
-            if (g == null) {
-                jContext = new VariantJEXLContext(vc);
-            } else {
-                jContext = new GenotypeJEXLContext(vc, g);
-            }
+        if ( vc == null ) {
+            jContext = new MapContext(Collections.emptyMap());
+        }
+        else if (g == null) {
+            jContext = new VariantJEXLContext(vc);
         }
         else {
-            jContext = new MapContext(new HashMap<String, Object>());
+            jContext = new GenotypeJEXLContext(vc, g);
         }
     }
 
