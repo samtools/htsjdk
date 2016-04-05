@@ -613,14 +613,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             alleles.add(allele);
     }
 
-    public final static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
-        try(
-            final FileInputStream fis = new FileInputStream(potentialInput);
-            final GZIPInputStream gis = new GZIPInputStream(new FileInputStream(potentialInput));
-            final BlockCompressedInputStream bcis = new BlockCompressedInputStream(new FileInputStream(potentialInput))){
-            return isVCFStream(fis, MAGIC_HEADER_LINE) ||
-                   isVCFStream(gis, MAGIC_HEADER_LINE) ||
-                   isVCFStream(bcis, MAGIC_HEADER_LINE);
+    public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
+        try {
+            //isVCFStream closes the stream that's passed in
+            return isVCFStream(new FileInputStream(potentialInput), MAGIC_HEADER_LINE) ||
+                    isVCFStream(new GZIPInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE) ||
+                    isVCFStream(new BlockCompressedInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;
         } catch ( IOException e ) {
@@ -628,14 +626,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
     }
 
-    private final static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
+    private static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
         try {
             byte[] buff = new byte[MAGIC_HEADER_LINE.length()];
             int nread = stream.read(buff, 0, MAGIC_HEADER_LINE.length());
             boolean eq = Arrays.equals(buff, MAGIC_HEADER_LINE.getBytes());
             return eq;
-//            String firstLine = new String(buff);
-//            return firstLine.startsWith(MAGIC_HEADER_LINE);
         } catch ( IOException e ) {
             return false;
         } catch ( RuntimeException e ) {

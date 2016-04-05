@@ -1,15 +1,15 @@
 package htsjdk.variant.vcf;
 
-import java.io.File;
-import java.util.List;
-
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
-
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.io.File;
+import java.util.List;
 
 
 
@@ -34,4 +34,20 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 	public void TestSpanDelParseAllelesException(){
 		List<Allele> list1 = VCF3Codec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
 	}
+
+	@DataProvider(name="thingsToTryToDecode")
+	public Object[][] getThingsToTryToDecode(){
+		return new Object[][] {
+				{"testdata/htsjdk/tribble/tabix/testTabixIndex.vcf", true},
+				{"testdata/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", true},
+				{"testdata/htsjdk/tribble/nonexistant.garbage", false},
+				{"testdata/htsjdk/tribble/testIntervalList.list", false}
+		};
+	}
+
+	@Test(dataProvider = "thingsToTryToDecode")
+	public void testCanDecodeFile(String potentialInput, boolean canDecode) {
+		Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
+	}
+
 }
