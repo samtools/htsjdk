@@ -37,6 +37,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Tests for the various classes in the metrics package.  Constructs a MetricsFile,
@@ -155,6 +156,45 @@ public class MetricsFileTest {
         histo.increment(5, 123981);
         histo.increment(1000, 10981982);
         file.setHistogram(histo);
+
+        //Get same histogram from file using two different methods
+        Histogram<Integer> histoTest1 = file.getHistogram();
+        Histogram<Integer> histoTest2 = file.getHistogram(0);
+
+        //Test that the histogram set is the same that is returned from getHistogram()
+        Assert.assertEquals(histo, histoTest1);
+
+        //Test that the two getHistogram functions return the same histogram
+        Assert.assertEquals(histoTest1, histoTest2);
+
+        //Add second histogram that is different
+        Histogram<Integer> histo2 = new Histogram<Integer>();
+        histo2.setBinLabel("small_number");
+        histo2.setValueLabel("big_number");
+        histo2.increment(1, 101);
+        file.addHistogram(histo2);
+
+        //Get second histogram which should not be the same as the first
+        histoTest2 = file.getHistogram(1);
+        Assert.assertNotSame(histoTest1, histoTest2);
+
+        //Test getAllHistograms()
+        List<Histogram<Integer>> histogramList = file.getAllHistograms();
+        Assert.assertEquals(histogramList.size(), 2);
+        Assert.assertNotSame(histogramList.get(0), histogramList.get(1));
+
+        file2 = writeThenReadBack(file);
+        Assert.assertEquals(file, file2);
+
+        //Test that multiple differently sized histograms can be written and read back correctly
+        Histogram<Integer> histo3 = new Histogram<Integer>();
+        histo3.setBinLabel("small_number");
+        histo3.setValueLabel("big_number");
+        histo3.increment(1, 101);
+        histo3.increment(2, 202);
+        histo3.increment(3, 4000);
+        histo3.increment(5, 123981);
+        file.addHistogram(histo3);
 
         file2 = writeThenReadBack(file);
         Assert.assertEquals(file, file2);
