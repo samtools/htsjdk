@@ -130,10 +130,10 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
         } catch (Exception e) {
             // if exception happens because variable is undefined (i.e. field in expression is not present), evaluate to FALSE
             // todo - might be safer if we explicitly checked for an exception type, but Apache's API doesn't seem to have that ability
-            if (e.getMessage().contains("undefined variable"))
+            if (e.getMessage() != null && e.getMessage().contains("undefined variable"))
                 jexl.put(exp,false);
             else
-                throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s", exp.name, e.getMessage()));
+                throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s", exp.name, (e.getMessage() == null ? "no message" : e.getMessage())));
         }
     }
 
