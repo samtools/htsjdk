@@ -49,7 +49,6 @@ import java.util.Map;
  * Test out parts of the VariantJEXLContext and GenotypeJEXLContext
  */
 public class VariantJEXLContextUnitTest extends VariantBaseTest {
-    private static final Log LOG = Log.getInstance(VariantJEXLContextUnitTest.class);
 
     private static String expression = "QUAL > 500.0";
     private static VariantContextUtils.JexlVCMatchExp exp;
@@ -124,10 +123,6 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
         // Create the JEXL Maps using the combinations above of vc* and geno*
         map = new JEXLMap(jexlTests,vcPass, genoPass);
-        for (JexlVCMatchExp m : map.keySet()) {
-            LOG.info(m.exp);
-            LOG.info(String.valueOf(map.get(m)));
-        }
         // make sure the context has a value
         Assert.assertTrue(!map.isEmpty());
         Assert.assertEquals(map.size(), 5);
