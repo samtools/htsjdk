@@ -27,7 +27,7 @@ libraryDependencies += "org.testng" % "testng" % "6.8.8"
 unmanagedBase := baseDirectory.value
 
 mappings in (Compile, packageBin) ++= Seq(
-  (baseDirectory.value / "lib/jni/libIntelDeflater.so") -> "lib/jni/libIntelDeflator.so"
+  (baseDirectory.value / "lib/jni/libIntelDeflater.so") -> "lib/jni/libIntelDeflater.so"
 )
 
 javaSource in Compile := baseDirectory.value / "src/java"
