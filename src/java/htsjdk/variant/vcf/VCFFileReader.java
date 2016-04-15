@@ -6,6 +6,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -16,34 +17,35 @@ import htsjdk.variant.variantcontext.VariantContext;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
  */
 public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
-	private final FeatureReader<VariantContext> reader;
+    private final FeatureReader<VariantContext> reader;
 
-	/**
-	 * Returns true if the given file appears to be a BCF file.
-	 */
-	public static boolean isBCF(final File file) {
-		return file.getAbsolutePath().endsWith(".bcf");
-	}
+    /**
+     * Returns true if the given file appears to be a BCF file.
+     */
+    public static boolean isBCF(final File file) {
+        return file.getAbsolutePath().endsWith(".bcf");
+    }
 
-	/**
-	 * Returns the SAMSequenceDictionary from the provided VCF file.
-	 */
-	public static SAMSequenceDictionary getSequenceDictionary(final File file) {
-		final SAMSequenceDictionary dict = new VCFFileReader(file, false).getFileHeader().getSequenceDictionary();
-		CloserUtil.close(file);
-		return dict;
-	}
+    /**
+     * Returns the SAMSequenceDictionary from the provided VCF file.
+     */
+    public static SAMSequenceDictionary getSequenceDictionary(final File file) {
+        final SAMSequenceDictionary dict = new VCFFileReader(file, false).getFileHeader().getSequenceDictionary();
+        CloserUtil.close(file);
+        return dict;
+    }
 
     /** Constructs a VCFFileReader that requires the index to be present. */
-	public VCFFileReader(final File file) {
-		this(file, true);
-	}
+    public VCFFileReader(final File file) {
+        this(file, true);
+    }
 
     /** Constructs a VCFFileReader with a specified index. */
     public VCFFileReader(final File file, final File indexFile) {
@@ -51,15 +53,15 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     /** Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired. */
-	public VCFFileReader(final File file, final boolean requireIndex) {
-	  // Note how we deal with type safety here, just casting to (FeatureCodec)
-	  // in the call to getFeatureReader is not enough for Java 8.
+    public VCFFileReader(final File file, final boolean requireIndex) {
+      // Note how we deal with type safety here, just casting to (FeatureCodec)
+      // in the call to getFeatureReader is not enough for Java 8.
       FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
       this.reader = AbstractFeatureReader.getFeatureReader(
                       file.getAbsolutePath(),
                       codec,
                       requireIndex);
-	}
+    }
 
     /** Allows construction of a VCFFileReader with a specified index file. */
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
@@ -124,17 +126,17 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     /** Returns the VCFHeader associated with this VCF/BCF file. */
-	public VCFHeader getFileHeader() {
-		return (VCFHeader) reader.getHeader();
-	}
+    public VCFHeader getFileHeader() {
+        return (VCFHeader) reader.getHeader();
+    }
 
     /** Returns an iterator over all records in this VCF/BCF file. */
-	public CloseableIterator<VariantContext> iterator() {
-		try { return reader.iterator(); }
+    public CloseableIterator<VariantContext> iterator() {
+        try { return reader.iterator(); }
         catch (final IOException ioe) {
-			throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
-		}
-	}
+            throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
+        }
+    }
 
     /** Queries for records within the region specified. */
     public CloseableIterator<VariantContext> query(final String chrom, final int start, final int end) {
@@ -144,10 +146,26 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
-	public void close() {
-		try { this.reader.close(); }
+    /** Queries for records within the region specified. */
+    public CloseableIterator<VariantContext> query(final Locatable loc) {
+        try { return reader.query(loc); }
         catch (final IOException ioe) {
-			throw new TribbleException("Could not close a variant context feature reader.", ioe);
-		}
-	}
+            throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
+        }
+    }
+
+    /** Queries for records within the region specified. */
+    public CloseableIterator<VariantContext> query(final List<Locatable> locs) {
+        try { return reader.query(locs); }
+        catch (final IOException ioe) {
+            throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
+        }
+    }
+
+    public void close() {
+        try { this.reader.close(); }
+        catch (final IOException ioe) {
+            throw new TribbleException("Could not close a variant context feature reader.", ioe);
+        }
+    }
 }
