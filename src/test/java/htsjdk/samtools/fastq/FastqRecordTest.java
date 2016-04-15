@@ -15,7 +15,7 @@ public final class FastqRecordTest {
 
         Assert.assertNull(fastqRecord.getBaseQualityHeader());
 
-        Assert.assertEquals(fastqRecord.getReadHeader(), seqHeaderPrefix);
+        Assert.assertEquals(fastqRecord.getReadName(), seqHeaderPrefix);
         Assert.assertEquals(fastqRecord.getBaseQualityString(), qualLine);
         Assert.assertEquals(fastqRecord.getReadString(), seqLine);
         Assert.assertNotNull(fastqRecord.toString());//just check not nullness
@@ -25,9 +25,9 @@ public final class FastqRecordTest {
         Assert.assertEquals(fastqRecord, fastqRecord);
         Assert.assertNotEquals(fastqRecord, "fred");
         Assert.assertNotEquals("fred", fastqRecord);
-        Assert.assertEquals(fastqRecord.length(), seqLine.length());
+        Assert.assertEquals(fastqRecord.getReadLength(), seqLine.length());
         Assert.assertEquals(fastqRecord.getBaseQualityString().length(), fastqRecord.getReadString().length());
-        Assert.assertEquals(fastqRecord.getReadString().length(), fastqRecord.length());
+        Assert.assertEquals(fastqRecord.getReadString().length(), fastqRecord.getReadLength());
     }
 
     @Test
@@ -37,7 +37,7 @@ public final class FastqRecordTest {
         final String qualHeaderPrefix = "";
         final String qualLine = ";<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
         final FastqRecord fastqRecord = new FastqRecord(seqHeaderPrefix, seqLine, qualHeaderPrefix, qualLine);
-        Assert.assertNull(fastqRecord.getReadHeader());
+        Assert.assertNull(fastqRecord.getReadName());
         Assert.assertNull(fastqRecord.getBaseQualityHeader());
     }
 
@@ -55,6 +55,11 @@ public final class FastqRecordTest {
         Assert.assertSame(fastqRecord.getReadString(), fastqRecordCopy.getReadString());
         Assert.assertSame(fastqRecord.getBaseQualityString(), fastqRecordCopy.getBaseQualityString());
         Assert.assertSame(fastqRecord.getBaseQualityHeader(), fastqRecordCopy.getBaseQualityHeader());
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNullCopy() {
+        new FastqRecord(null);
     }
 
     @Test

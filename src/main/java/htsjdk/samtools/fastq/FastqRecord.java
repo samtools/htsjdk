@@ -23,62 +23,168 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.util.StringUtil;
+
 import java.io.Serializable;
 
 /**
- * Represents a fastq record, fairly literally, i.e. without any conversion.
+ * Simple representation of a FASTQ record, without any conversion
  */
 public class FastqRecord implements Serializable {
     private static final long serialVersionUID = 1L;
-    private final String seqHeaderPrefix;
-    private final String seqLine;
-    private final String qualHeaderPrefix;
-    private final String qualLine;
+    private final String readName;
+    private final String readString;
+    private final String qualityHeader;
+    private final String baseQualityString;
 
-    public FastqRecord(final String seqHeaderPrefix, final String seqLine, final String qualHeaderPrefix, final String qualLine) {
-        if (seqHeaderPrefix != null && !seqHeaderPrefix.isEmpty()) this.seqHeaderPrefix = seqHeaderPrefix;
-        else this.seqHeaderPrefix = null;
-        if (qualHeaderPrefix != null && !qualHeaderPrefix.isEmpty()) this.qualHeaderPrefix = qualHeaderPrefix;
-        else this.qualHeaderPrefix = null;
-        this.seqLine = seqLine ;
-        this.qualLine = qualLine ;
+    /**
+     * Default constructor
+     *
+     * @param readName      the read name (without {@link FastqConstants#SEQUENCE_HEADER})
+     * @param readBases     the read sequence bases
+     * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
+     * @param baseQualities the base quality scores
+     */
+    public FastqRecord(final String readName, final String readBases, final String qualityHeader, final String baseQualities) {
+        if (readName != null && !readName.isEmpty()) {
+            this.readName = readName;
+        } else {
+            this.readName = null;
+        }
+        if (qualityHeader != null && !qualityHeader.isEmpty()) {
+            this.qualityHeader = qualityHeader;
+        } else {
+            this.qualityHeader = null;
+        }
+        this.readString = readBases;
+        this.baseQualityString = baseQualities;
     }
-    
-    /** copy constructor */
+
+    /**
+     * Constructor for byte[] arrays
+     *
+     * @param readName      the read name (without {@link FastqConstants#SEQUENCE_HEADER})
+     * @param readBases     the read sequence bases as ASCII bytes ACGTN=.
+     * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
+     * @param baseQualities the base qualities as binary PHRED scores (not ASCII)
+     */
+    public FastqRecord(final String readName, final byte[] readBases, final String qualityHeader, final byte[] baseQualities) {
+        this(readName, StringUtil.bytesToString(readBases), qualityHeader, SAMUtils.phredToFastq(baseQualities));
+    }
+
+    /**
+     * Copy constructor
+     *
+     * @param other record to copy
+     */
     public FastqRecord(final FastqRecord other) {
-        if( other == null ) throw new IllegalArgumentException("new FastqRecord(null)");
-        this.seqHeaderPrefix = other.seqHeaderPrefix;
-        this.seqLine = other.seqLine;
-        this.qualHeaderPrefix = other.qualHeaderPrefix;
-        this.qualLine = other.qualLine;
+        if (other == null) {
+            throw new IllegalArgumentException("new FastqRecord(null)");
+        }
+        this.readName = other.readName;
+        this.readString = other.readString;
+        this.qualityHeader = other.qualityHeader;
+        this.baseQualityString = other.baseQualityString;
     }
 
-    /** @return the read name */
-    public String getReadHeader() { return seqHeaderPrefix; }
-    /** @return the read DNA sequence */
-    public String getReadString() { return seqLine; }
-    /** @return the quality header */
-    public String getBaseQualityHeader() { return qualHeaderPrefix; }
-    /** @return the quality string */
-    public String getBaseQualityString() { return qualLine; }
-    /** shortcut to getReadString().length() */
-    public int length() { return this.seqLine==null?0:this.seqLine.length();}
-    
+    /**
+     * @return the read name
+     * @deprecated use {@link #getReadName()} instead
+     */
+    @Deprecated
+    public String getReadHeader() {
+        return getReadName();
+    }
+
+    /**
+     * Get the read name
+     *
+     * @return the read name
+     */
+    public String getReadName() {
+        return readName;
+    }
+
+    /**
+     * Get the DNA sequence
+     *
+     * @return read sequence as a string of ACGTN=.
+     */
+    public String getReadString() {
+        return readString;
+    }
+
+    /**
+     * Get the DNA sequence.
+     *
+     * @return read sequence as ASCII bytes ACGTN=.
+     */
+    public byte[] getReadBases() {
+        return StringUtil.stringToBytes(readString);
+    }
+
+    /**
+     * Get the base qualities encoded as a FASTQ string
+     *
+     * @return the quality string
+     */
+    public String getBaseQualityString() {
+        return baseQualityString;
+    }
+
+    /**
+     * Get the base qualities as binary PHRED scores (not ASCII)
+     *
+     * @return the base quality
+     */
+    public byte[] getBaseQualities() {
+        return SAMUtils.fastqToPhred(baseQualityString);
+    }
+
+    /**
+     * Get the read length
+     *
+     * @return number of bases in the read
+     */
+    public int getReadLength() {
+        return (readString == null) ? 0 : readString.length();
+    }
+
+    /**
+     * Get the base quality header
+     *
+     * @return the base quality header
+     */
+    public String getBaseQualityHeader() {
+        return qualityHeader;
+    }
+
+    /**
+     * shortcut to getReadString().length()
+     *
+     * @deprecated use {@link #getReadLength()} instead
+     */
+    @Deprecated
+    public int length() {
+        return getReadLength();
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime
                 * result
-                + ((qualHeaderPrefix == null) ? 0 : qualHeaderPrefix.hashCode());
+                + ((qualityHeader == null) ? 0 : qualityHeader.hashCode());
         result = prime * result
-                + ((qualLine == null) ? 0 : qualLine.hashCode());
+                + ((baseQualityString == null) ? 0 : baseQualityString.hashCode());
         result = prime * result
-                + ((seqHeaderPrefix == null) ? 0 : seqHeaderPrefix.hashCode());
-        result = prime * result + ((seqLine == null) ? 0 : seqLine.hashCode());
+                + ((readName == null) ? 0 : readName.hashCode());
+        result = prime * result + ((readString == null) ? 0 : readString.hashCode());
         return result;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -88,37 +194,33 @@ public class FastqRecord implements Serializable {
         if (getClass() != obj.getClass())
             return false;
         FastqRecord other = (FastqRecord) obj;
-        if (seqLine == null) {
-            if (other.seqLine != null)
+        if (readString == null) {
+            if (other.readString != null)
                 return false;
-        } else if (!seqLine.equals(other.seqLine))
+        } else if (!readString.equals(other.readString))
             return false;
-        if (qualHeaderPrefix == null) {
-            if (other.qualHeaderPrefix != null)
+        if (qualityHeader == null) {
+            if (other.qualityHeader != null)
                 return false;
-        } else if (!qualHeaderPrefix.equals(other.qualHeaderPrefix))
+        } else if (!qualityHeader.equals(other.qualityHeader))
             return false;
-        if (qualLine == null) {
-            if (other.qualLine != null)
+        if (baseQualityString == null) {
+            if (other.baseQualityString != null)
                 return false;
-        } else if (!qualLine.equals(other.qualLine))
+        } else if (!baseQualityString.equals(other.baseQualityString))
             return false;
-        if (seqHeaderPrefix == null) {
-            if (other.seqHeaderPrefix != null)
+        if (readName == null) {
+            if (other.readName != null)
                 return false;
-        } else if (!seqHeaderPrefix.equals(other.seqHeaderPrefix))
+        } else if (!readName.equals(other.readName))
             return false;
-        
+
         return true;
     }
-    
+
+    /** Simple toString() that gives a read name and length */
     @Override
     public String toString() {
-        return new StringBuilder().
-                append(FastqConstants.SEQUENCE_HEADER).append(this.seqHeaderPrefix==null?"":this.seqHeaderPrefix).append('\n').
-                append(this.seqLine==null?"":this.seqLine).append('\n').
-                append(FastqConstants.QUALITY_HEADER).append(this.qualHeaderPrefix==null?"":this.qualHeaderPrefix).append('\n').
-                append(this.qualLine==null?"":this.qualLine).
-                toString();
-        }
+        return String.format("%s: %s bp", readName, getReadLength());
+    }
 }
