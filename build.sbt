@@ -2,6 +2,9 @@ import com.typesafe.sbt.SbtGit._
 import de.johoop.testngplugin.TestNGPlugin._
 import sbt.Package.ManifestAttributes
 
+//added as a workaround for #https://github.com/samtools/htsjdk/issues/573
+resolvers += Resolver.sbtPluginRepo("releases")
+
 name := "htsjdk"
 
 val buildVersion = "2.2.1"
