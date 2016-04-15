@@ -18,6 +18,9 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.IntervalUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
@@ -28,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -154,13 +158,19 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
         return hasBlockCompressedExtension(file.getName());
     }
 
-    /**
-     * get the header
-     *
-     * @return the header object we've read-in
-     */
+   @Override
     public Object getHeader() {
         return header.getHeaderValue();
+    }
+
+    @Override
+    public CloseableTribbleIterator<T> query(final Locatable loc) throws IOException {
+        return query(loc.getContig(), loc.getStart(), loc.getEnd());
+    }
+
+    @Override
+    public CloseableTribbleIterator<T> query(final List<Locatable> locs) throws IOException {
+        return new LocatableListIterator(locs);
     }
 
     static class EmptyIterator<T extends Feature> implements CloseableTribbleIterator<T> {
@@ -169,6 +179,58 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
         public T next() { return null; }
         public void remove() { }
         @Override public void close() { }
+    }
+
+    class LocatableListIterator implements CloseableTribbleIterator<T> {
+
+        final List<Locatable> locs;
+
+        CloseableTribbleIterator<T> currentIterator;
+
+        LocatableListIterator(final List<Locatable> locs) {
+            this.locs = locs;
+            nextIterator();
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return this;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return currentIterator != null && locs.isEmpty();
+        }
+
+        @Override
+        public T next() {
+            while(hasNext() && !currentIterator.hasNext()) {
+                currentIterator.close();
+                nextIterator();
+            }
+            return (currentIterator == null ) ? null : currentIterator.next();
+        }
+
+        private void nextIterator() {
+            final Locatable l = locs.remove(0);
+            try {
+                currentIterator = query(l);
+            } catch(IOException e) {
+                throw new TribbleException("Couldn't close query next interval", e);
+            }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Remove is not supported.");
+        }
+
+        @Override
+        public void close() {
+            currentIterator.close();
+            locs.clear();
+        }
+
     }
 
     public static class ComponentMethods{
