@@ -213,6 +213,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     private void readHeader() throws IOException {
         InputStream is = null;
         PositionalBufferedStream pbs = null;
+        SOURCE source = null;
         try {
             is = ParsingUtils.openInputStream(path);
             if (path.endsWith("gz")) {
@@ -220,11 +221,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
             pbs = new PositionalBufferedStream(is);
-            final SOURCE source = codec.makeSourceFromStream(pbs);
+            source = codec.makeSourceFromStream(pbs);
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
         } finally {
+            if (source != null) codec.close(source);
             if (pbs != null) pbs.close();
             else if (is != null) is.close();
         }

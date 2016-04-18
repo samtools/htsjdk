@@ -27,6 +27,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -80,11 +81,13 @@ public final class PrintVariantsExample {
             }
 
             final ProgressLogger pl = new ProgressLogger(log, 1000000);
-            for (final VariantContext vc : reader.iterator()) {
-                if (writer != null){
-                    writer.add(vc);
+            try(final CloseableTribbleIterator<VariantContext> iterator = reader.iterator()) {
+                for (final VariantContext vc : iterator) {
+                    if (writer != null) {
+                        writer.add(vc);
+                    }
+                    pl.record(vc.getContig(), vc.getStart());
                 }
-                pl.record(vc.getContig(), vc.getStart());
             }
         }
 
