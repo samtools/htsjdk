@@ -30,5 +30,6 @@ public class AsynchronousLineReaderTest {
                 Assert.assertEquals(nextLine, reader.readLine());
             }
             Assert.assertNull(reader.readLine());
+            reader.close();
         }
 }
