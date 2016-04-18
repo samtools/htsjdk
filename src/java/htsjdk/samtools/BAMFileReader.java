@@ -203,7 +203,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
 
     /**
      * If true, uses the caching version of the index reader.
-     * @param enabled true to write source information into each SAMRecord.
+     * @param enabled true to use the caching version of the reader.
      */
     protected void enableIndexCaching(final boolean enabled) {
         if(mIndex != null)

@@ -25,13 +25,18 @@ package htsjdk.samtools;
 
 /**
  * Simple extension to SAMBinaryTagAndValue in order to distinguish unsigned array values, because
- * signedness cannot be determined by introspection of value.
+ * signedness cannot be determined by introspection of value. Must be array of byte, short, or int.
  *
  * @author alecw@broadinstitute.org
  */
 public class SAMBinaryTagAndUnsignedArrayValue extends SAMBinaryTagAndValue {
     public SAMBinaryTagAndUnsignedArrayValue(final short tag, final Object value) {
         super(tag, value);
+        if (!value.getClass().isArray() || value instanceof float[]) {
+            throw new IllegalArgumentException("Attribute type " + value.getClass() +
+                    " cannot be encoded as an unsigned array. Tag: " +
+                    SAMTagUtil.getSingleton().makeStringTag(tag));
+        }
     }
 
     /** Creates and returns a shallow copy of the list of tag/values. */

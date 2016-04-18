@@ -1393,43 +1393,27 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @param value the value to be checked
      * @return true if the value is valid and false otherwise
-     */
-    protected static boolean isAllowedAttributeValue(final Object value) {
-        if (value instanceof Byte || value instanceof Short || value instanceof Integer ||
-                value instanceof String || value instanceof Character || value instanceof Float ||
-                value instanceof byte[] || value instanceof short[] || value instanceof int[] ||
-                value instanceof float[]) {
-            return true;
-        }
 
-        // A special case for Longs: we require Long values to fit into either a uint32_t or an int32_t,
-        // as that is what the BAM spec allows.
-        if (value instanceof Long) {
-            return SAMUtils.isValidUnsignedIntegerAttribute((Long) value)
-                    || ((Long) value >= Integer.MIN_VALUE && (Long) value <= Integer.MAX_VALUE);
-        }
-        return false;
+     * @deprecated
+     * The attribute type and value checks have been moved directly into
+     * {@code SAMBinaryTagAndValue}.
+     */
+    @Deprecated
+    protected static boolean isAllowedAttributeValue(final Object value) {
+        return SAMBinaryTagAndValue.isAllowedAttributeValue(value);
     }
 
     protected void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
         if (value == null) {
-            // setting a tag value to null removes the tag:
             if (this.mAttributes != null) {
+                // setting a tag value to null removes the tag:
                 this.mAttributes = this.mAttributes.remove(tag);
             }
-            return;
-        }
-
-        if (isAllowedAttributeValue(value)) {
+        } else {
             final SAMBinaryTagAndValue tmp;
             if (!isUnsignedArray) {
                 tmp = new SAMBinaryTagAndValue(tag, value);
             } else {
-                if (!value.getClass().isArray() || value instanceof float[]) {
-                    throw new SAMException("Attribute type " + value.getClass() +
-                            " cannot be encoded as an unsigned array. Tag: " +
-                            SAMTagUtil.getSingleton().makeStringTag(tag));
-                }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
 
@@ -1438,9 +1422,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             } else {
                 this.mAttributes = this.mAttributes.insert(tmp);
             }
-        } else {
-            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
         }
     }
 
@@ -2144,20 +2125,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Returns a deep copy of the SAM record, with the following exceptions:
      *
-     *  - The header field, which shares the reference with the original record
+     *  - The header field, which shares the header reference with the original record
      *  - The file source field, which will always always be set to null in the copy
-     *
-     *  Note that some fields, i.e. the cigar elements, alignment blocks, and
-     *  indexing bin, are not explicitly populated in the copy since they are lazily
-     *  generated on demand.
-     *
-     *  Also note that this fails:
-     *
-     *     original.deepCopy().equals(original)
-     *
-     *  due to the fact that SAMBinaryTagAndValue.equals winds up calling object.equals on the
-     *  value field, which uses reference equality.
-     *
      */
     public SAMRecord deepCopy() {
         final SAMRecord newSAM = new SAMRecord(getHeader());
@@ -2176,19 +2145,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         newSAM.setMateReferenceName(getMateReferenceName());
         newSAM.setMateAlignmentStart(getMateAlignmentStart());
         newSAM.setInferredInsertSize(getInferredInsertSize());
-        if (null != getHeader()) {
-            newSAM.setReferenceIndex(getReferenceIndex());
-            newSAM.setMateReferenceIndex(getMateReferenceIndex());
-        }
-        else {
-            newSAM.mReferenceIndex = null;
-            newSAM.mMateReferenceIndex = null;
-        }
+        // transfer the reference indices directly to avoid mutating
+        // the source record
+        newSAM.mReferenceIndex = this.mReferenceIndex;
+        newSAM.mMateReferenceIndex = this.mMateReferenceIndex;
         newSAM.setValidationStringency(getValidationStringency());
         SAMBinaryTagAndValue attributes = getBinaryAttributes();
         if (null != attributes) {
             newSAM.setAttributes(attributes.deepCopy());
         }
+        newSAM.setIndexingBin(getIndexingBin());
 
         return newSAM;
     }
