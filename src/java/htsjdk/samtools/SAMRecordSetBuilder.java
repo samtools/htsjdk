@@ -217,12 +217,11 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                                        final int defaultQuality) throws SAMException {
         final SAMRecord rec = new SAMRecord(this.header);
         rec.setReadName(name);
-        if (chroms.length <= contig) {
-            throw new SAMException("Contig too big [" + chroms.length + " < " + contig);
+        if (header.getSequenceDictionary().size() <= contig) {
+            throw new SAMException("Contig too big [" + header.getSequenceDictionary().size() + " < " + contig);
         }
         if (0 <= contig) {
             rec.setReferenceIndex(contig);
-            rec.setReferenceName(chroms[contig]);
             rec.setAlignmentStart(start);
         }
         if (!recordUnmapped) {
