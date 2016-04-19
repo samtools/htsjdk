@@ -60,8 +60,8 @@ public class Padding implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Padding))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final Padding padding = (Padding) obj;
 

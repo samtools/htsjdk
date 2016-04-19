@@ -277,7 +277,9 @@ public class LinearIndex extends AbstractIndex {
 
         public boolean equals(final Object obj) {
             if (this == obj) return true;
-            if (!(obj instanceof ChrIndex)) return false;
+            if (obj == null) return false;
+            if (this.getClass() != obj.getClass()) return false;
+
             final ChrIndex other = (ChrIndex) obj;
             return binWidth == other.binWidth
                     && longestFeature == other.longestFeature

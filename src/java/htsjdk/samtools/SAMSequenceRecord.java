@@ -176,7 +176,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
-        if (!(o instanceof SAMSequenceRecord)) return false;
+        if (o == null) return false;
+        if (this.getClass() != o.getClass()) return false;
 
         final SAMSequenceRecord that = (SAMSequenceRecord) o;
 

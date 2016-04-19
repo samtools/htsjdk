@@ -59,8 +59,8 @@ public class HardClip implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof HardClip))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final HardClip hardClip = (HardClip) obj;
 

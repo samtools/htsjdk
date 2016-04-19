@@ -51,7 +51,8 @@ public class StringHeader implements Header {
 
     /** Checks equality on the value of the header. */
     public boolean equals(Object o) {
-        if (o != null && o instanceof StringHeader) {
+        if (o == null) return false;
+        if (this.getClass() == o.getClass()) {
             StringHeader that = (StringHeader) o;
             if (this.value == null) {
                 return that.value == null;

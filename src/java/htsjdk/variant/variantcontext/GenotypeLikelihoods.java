@@ -150,7 +150,10 @@ public class GenotypeLikelihoods {
         //check for self-comparison
         if ( this == aThat ) return true;
 
-        if ( !(aThat instanceof GenotypeLikelihoods) ) return false;
+        if (aThat == null) return false;
+
+        if ( this.getClass() != aThat.getClass() ) return false;
+
         GenotypeLikelihoods that = (GenotypeLikelihoods)aThat;
 
         // now a proper field-by-field evaluation can be made.

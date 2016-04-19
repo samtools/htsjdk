@@ -159,12 +159,12 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
 
     /** Equals method that agrees with {@link #compareTo(Interval)}. */
     public boolean equals(final Object other) {
-        if (!(other instanceof Interval)) return false;
-        else if (this == other) return true;
-        else {
-            Interval that = (Interval)other;
-            return (this.compareTo(that) == 0);
-        }
+        if (this == other) return true;
+        if (other == null) return false;
+        if (this.getClass() != other.getClass()) return false;
+
+        Interval that = (Interval)other;
+        return (this.compareTo(that) == 0);
     }
 
     @Override

@@ -90,7 +90,8 @@ public class HuffmanIntegerEncoding implements Encoding<Integer> {
 
     @Override
     public boolean equals(final Object obj) {
-        if (obj instanceof HuffmanIntegerEncoding) {
+        if (obj == null) return false;
+        if (this.getClass() == obj.getClass()) {
             final HuffmanIntegerEncoding foe = (HuffmanIntegerEncoding) obj;
             return Arrays.equals(bitLengths, foe.bitLengths) && Arrays.equals(values, foe.values);
 

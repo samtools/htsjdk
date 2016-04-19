@@ -137,7 +137,8 @@ public class GeliTextFeature implements Feature {
 
     private static double Epsilon = 0.0001;
     public boolean equals(Object o) {
-        if (!(o instanceof GeliTextFeature)) return false;
+        if (o == null) return false;
+        if (this.getClass() != o.getClass()) return false;
         GeliTextFeature other = (GeliTextFeature)o;
         if (!Arrays.equals(likelihoods,other.likelihoods)) return false;
         if (!contig.equals(other.contig)) return false;

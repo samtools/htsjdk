@@ -104,7 +104,8 @@ public class CramCompressionRecord {
     @SuppressWarnings("SimplifiableIfStatement")
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof CramCompressionRecord)) return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final CramCompressionRecord cramRecord = (CramCompressionRecord) obj;
 

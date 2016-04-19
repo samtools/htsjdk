@@ -52,8 +52,8 @@ public class InsertBase implements Serializable, ReadFeature {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof InsertBase))
-            return false;
+        if (obj == null) return false;
+        if (this.getClass() != obj.getClass()) return false;
 
         final InsertBase insertBase = (InsertBase) obj;
 
