@@ -44,11 +44,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class represent a Tabix index that has been built in memory or read from a file.  It can be queried or
@@ -149,11 +145,15 @@ public class TabixIndex implements Index {
             return Collections.emptyList();
         }
         final List<Chunk> chunks = indices[sequenceIndex].getChunksOverlapping(start, end);
-        final List<Block> ret = new ArrayList<Block>(chunks.size());
-        for (final Chunk chunk : chunks) {
-            ret.add(new Block(chunk.getChunkStart(), chunk.getChunkEnd() - chunk.getChunkStart()));
+        if (chunks == null) {
+            return Collections.emptyList();
+        } else {
+            final List<Block> ret = new ArrayList<>(chunks.size());
+            chunks.stream()
+                  .map(chunk -> new Block(chunk.getChunkStart(), chunk.getChunkEnd() - chunk.getChunkStart()))
+                  .forEach(ret::add);
+            return ret;
         }
-        return ret;
     }
 
     @Override
