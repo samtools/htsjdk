@@ -28,10 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
-import htsjdk.tribble.readers.LineIterator;
-import htsjdk.tribble.readers.LineIteratorImpl;
-import htsjdk.tribble.readers.LineReaderUtil;
-import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.*;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.utils.GeneralUtils;
@@ -782,7 +779,7 @@ public class VariantContextTestProvider {
     }
 
     public static VariantContextContainer readAllVCs(final File input, final VCFCodec codec) throws FileNotFoundException {
-        final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(new BufferedInputStream(new FileInputStream(input))));
+        final LineIterator lineIterator = new LineIteratorImpl(new SynchronousLineReader(new BufferedInputStream(new FileInputStream(input))));
         final VCFHeader vcfHeader = (VCFHeader) codec.readActualHeader(lineIterator);
         return new VariantContextTestProvider.VariantContextContainer(vcfHeader, new VariantContextTestProvider.VCIterable<LineIterator>(codec, vcfHeader) {
             @Override

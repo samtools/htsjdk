@@ -1,94 +1,56 @@
 package htsjdk.tribble.readers;
 
-import htsjdk.samtools.Defaults;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.TribbleException;
-
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringReader;
 
 /**
  * A collection of factories for generating {@link LineReader}s.
  *
+ * @Deprecated use {@link SynchronousLineReader} directly.
  * @author mccowan
  */
+@Deprecated
 public class LineReaderUtil {
+    @Deprecated
     public enum LineReaderOption {
-        ASYNCHRONOUS, SYNCHRONOUS
+        ASYNCHRONOUS,   //Note: the asynchronous option has no effect - this class does not provide asynchronous reading anymore
+        SYNCHRONOUS
     }
 
     /**
-     * Like {@link #fromBufferedStream(java.io.InputStream, LineReaderUtil.LineReaderOption)}, but the synchronicity
-     * option is determined by {@link htsjdk.samtools.Defaults}: if asynchronous I/O is enabled, an asynchronous line reader will be
-     * returned.
+     * Creates a line reader from the given stream.
+     * @Deprecated use <code>new SynchronousLineReader(stream);</code>
      */
+    @Deprecated
     public static LineReader fromBufferedStream(final InputStream stream) {
-        return fromBufferedStream(stream, Defaults.USE_ASYNC_IO_FOR_TRIBBLE ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+        return new SynchronousLineReader(stream);
     }
 
-    public static LineReader fromStringReader(final StringReader reader) {
-        return fromStringReader(reader, Defaults.USE_ASYNC_IO_FOR_TRIBBLE ? LineReaderOption.ASYNCHRONOUS : LineReaderOption.SYNCHRONOUS);
+    /**
+     * Creates a line reader from the given string reader.
+     * @Deprecated use <code>new SynchronousLineReader(stringReader);</code>
+     */
+    @Deprecated
+    public static LineReader fromStringReader(final StringReader stringReader) {
+        return new SynchronousLineReader(stringReader);
     }
 
-    public static LineReader fromStringReader(final StringReader stringReader, final LineReaderOption lineReaderOption) {
-        switch (lineReaderOption) {
-            case ASYNCHRONOUS:
-                return new AsynchronousLineReader(stringReader);
-            case SYNCHRONOUS:
-                return new LineReader() {
-                    final LongLineBufferedReader reader = new LongLineBufferedReader(stringReader);
-
-                    @Override
-                    public String readLine() {
-                        try {
-                            return reader.readLine();
-                        } catch (IOException e) {
-                            throw new RuntimeIOException(e);
-                        }
-                    }
-
-                    @Override
-                    public void close() {
-                        CloserUtil.close(reader);
-                    }
-                };
-            default:
-                throw new TribbleException(String.format("Unrecognized LineReaderUtil option: %s.", lineReaderOption));
-        }
+    /**
+     * Creates a line reader from the given string reader.
+     * @Deprecated Asynchronous mode is not going to be supported. Use <code>new SynchronousLineReader(stringReader);</code>
+     */
+    @Deprecated
+    public static LineReader fromStringReader(final StringReader stringReader, final Object ignored) {
+        return new SynchronousLineReader(stringReader);
     }
 
     /**
      * Convenience factory for composing a LineReader from an InputStream.
+     * @Deprecated Asynchronous mode is not going to be supported. Use <code>new SynchronousLineReader(bufferedStream);</code>
      */
-    public static LineReader fromBufferedStream(final InputStream bufferedStream, final LineReaderOption option) {
-        final InputStreamReader bufferedInputStreamReader = new InputStreamReader(bufferedStream);
-        switch (option) {
-            case ASYNCHRONOUS:
-                return new AsynchronousLineReader(bufferedInputStreamReader);
-            case SYNCHRONOUS:
-                return new LineReader() {
-                    final LongLineBufferedReader reader = new LongLineBufferedReader(bufferedInputStreamReader);
-
-                    @Override
-                    public String readLine() {
-                        try {
-                            return reader.readLine();
-                        } catch (IOException e) {
-                            throw new RuntimeIOException(e);
-                        }
-                    }
-
-                    @Override
-                    public void close() {
-                        CloserUtil.close(reader);
-                    }
-                };
-            default:
-                throw new TribbleException(String.format("Unrecognized LineReaderUtil option: %s.", option));
-        }
+    @Deprecated
+    public static LineReader fromBufferedStream(final InputStream bufferedStream, final Object ignored) {
+        return new SynchronousLineReader(bufferedStream);
     }
 
 }
