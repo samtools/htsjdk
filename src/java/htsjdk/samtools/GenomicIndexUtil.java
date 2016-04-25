@@ -58,7 +58,7 @@ public class GenomicIndexUtil {
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      */
-    static int reg2bin(final int beg, int end)
+    public static int reg2bin(final int beg, int end)
     {
         --end;
 
