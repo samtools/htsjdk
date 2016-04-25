@@ -174,7 +174,7 @@ public class BinningIndexBuilder {
     }
 
     private int computeIndexingBin(final FeatureToBeIndexed feature) {
-        // reg2bin has zero-based, half-open API
+        // regionToBin has zero-based, half-open API
         final int start = feature.getStart()-1;
         int end = feature.getEnd();
         if (end <= 0) {
@@ -182,6 +182,6 @@ public class BinningIndexBuilder {
             // then treat this as a one base feature for indexing purposes.
             end = start + 1;
         }
-        return GenomicIndexUtil.reg2bin(start, end);
+        return GenomicIndexUtil.regionToBin(start, end);
     }
 }
