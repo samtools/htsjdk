@@ -32,6 +32,7 @@ import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
+import htsjdk.variant.variantcontext.writer.Options;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -358,5 +359,19 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         vcwb.clearOptions().setOption(Options.INDEX_ON_THE_FLY);
         final VariantContextWriterBuilder builder = new VariantContextWriterBuilder().clearOptions();
         Assert.assertTrue(builder.options.isEmpty());
+    }
+
+    @Test
+    public void testModifyOption() {
+        final VariantContextWriterBuilder builder = new VariantContextWriterBuilder().clearOptions();
+        for (final Options option : Options.values()) {
+            Assert.assertFalse(builder.isOptionSet(option)); // shouldn't be set
+            builder.modifyOption(option, false);
+            Assert.assertFalse(builder.isOptionSet(option)); // still shouldn't be set
+            builder.modifyOption(option, true);
+            Assert.assertTrue(builder.isOptionSet(option)); // now is set
+            builder.modifyOption(option, false);
+            Assert.assertFalse(builder.isOptionSet(option)); // has been unset
+        }
     }
 }
