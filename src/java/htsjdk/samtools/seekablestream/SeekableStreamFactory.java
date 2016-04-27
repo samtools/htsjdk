@@ -89,6 +89,7 @@ public class SeekableStreamFactory{
             if (bufferSize == 0) return stream;
             else return new SeekableBufferedStream(stream, bufferSize);
         }
+
     }
 
 }
