@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.NullEncoding;
 import htsjdk.samtools.cram.io.ITF8;
@@ -170,8 +171,7 @@ public class CompressionHeader {
                 final String key = new String(new byte[]{buffer.get(), buffer.get()});
                 final EncodingKey encodingKey = EncodingKey.byFirstTwoChars(key);
                 if (encodingKey == null) {
-                    log.debug("Unknown encoding key: " + key);
-                    continue;
+                    throw new CRAMException("Unknown encoding key: " + key);
                 }
 
                 final EncodingID id = EncodingID.values()[buffer.get()];
