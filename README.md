@@ -13,6 +13,8 @@ manipulating HTS data.
 
 Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
 
+> **NOTE: _HTSJDK does not currently support the latest Variant Call Format Specification (VCFv4.3 and BCFv2.2)._**
+
 #### Licensing Information
 
 Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
