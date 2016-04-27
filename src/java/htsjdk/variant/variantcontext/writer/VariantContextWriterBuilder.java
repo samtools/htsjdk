@@ -339,6 +339,16 @@ public class VariantContextWriterBuilder {
     }
 
     /**
+     * Set or unset option depending on the boolean given
+     * @param option the option to modify
+     * @param setIt true to set the option, false to unset it.
+     * @return this <code>VariantContextWriterBuilder</code>
+     */
+    public VariantContextWriterBuilder modifyOption(final Options option, final boolean setIt) {
+        return (setIt) ? this.setOption(option) : this.unsetOption(option);
+    }
+
+    /**
      * Add one option to the set of default <code>Options</code> that will be used as the initial set of options
      * for all VariantContextWriterBuilders created after this call.
      *
@@ -367,6 +377,15 @@ public class VariantContextWriterBuilder {
     public VariantContextWriterBuilder clearOptions() {
         this.options = NO_OPTIONS.clone();
         return this;
+    }
+
+    /**
+     * Used for testing; tests if the option is set
+     * @param option the option to test
+     * @return true if the option is set, false otherwise.
+     */
+    boolean isOptionSet(final Options option) {
+        return this.options.contains(option);
     }
 
     /**
