@@ -6,7 +6,7 @@ name := "htsjdk"
 
 isSnapshot := true
 
-val buildVersion = "1.141"
+val buildVersion = "1.142"
 
 organization := "com.genestack"
 
