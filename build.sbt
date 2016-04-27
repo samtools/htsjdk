@@ -7,7 +7,7 @@ resolvers += Resolver.sbtPluginRepo("releases")
 
 name := "htsjdk"
 
-val buildVersion = "2.2.2"
+val buildVersion = "2.2.3"
 
 organization := "com.github.samtools"
 
