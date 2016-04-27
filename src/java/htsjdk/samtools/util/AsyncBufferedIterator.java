@@ -54,8 +54,8 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
      */
     private Thread backgroundThread;
     private final Iterator<T> underlyingIterator;
-    private final BlockingQueue<RecordBlock> buffer;
-    private RecordBlock currentBlock = new RecordBlock(Collections.emptyList());
+    private final BlockingQueue<IteratorBuffer<T>> buffers;
+    private IteratorBuffer<T> currentBlock = new IteratorBuffer<>(Collections.emptyList());
 
     /**
      * Creates a new iterator that traverses the given iterator on a background
@@ -95,7 +95,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         if (bufferCount <= 0) throw new IllegalArgumentException("Must use at least 1 buffer.");
         if (bufferSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1 record.");
         this.underlyingIterator = iterator;
-        this.buffer = new ArrayBlockingQueue<>(bufferCount);
+        this.buffers = new ArrayBlockingQueue<>(bufferCount);
         this.bufferSize = bufferSize;
         int threadNumber = threadsCreated.incrementAndGet();
         this.backgroundThread = new Thread(new Runnable() {
@@ -118,7 +118,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         if (backgroundThread != null) {
             try {
                 backgroundThread.interrupt();
-                buffer.clear();
+                buffers.clear();
                 backgroundThread.join();
             } catch (InterruptedException ie) {
                 throw new RuntimeException("Interrupted waiting for background thread to complete", ie);
@@ -129,17 +129,43 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
             }
         }
     }
+    
+    private void ensureHasNext() {
+        if (!currentBlock.hasNext()) {
+            // Rethrow any exceptions raised on the background thread
+            // at the point the exception would have been encountered
+            // if we had performed synchronous iteration
+            raiseBackgroundThreadException();
+            if (!currentBlock.isEndOfStream()) {
+                try {
+                    // Load the next block
+                    // All exceptions on the background thread are swallowed (except InterruptedException)
+                    // so there's no risk of blocking forever except when the background thread is
+                    // interrupted as we aren't. This does not happen during normal operation as
+                    // interrupting the background thread should only happen during the close() method.
+                    currentBlock = buffers.take();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Error reading from background thread", e);
+                }
+            }
+        }
+    }
 
     @Override
     public boolean hasNext() {
         if (backgroundThread == null) {
             throw new IllegalStateException("iterator has been closed");
         }
-        if (currentBlock.hasNext()) return true;
-        
-        // rethrow any exceptions raised on the background thread
-        // at the point the exception would have been encountered
-        // if we had performed synchronous iteration
+        ensureHasNext();
+        return currentBlock.hasNext();
+    }
+
+    /**
+     * Raises any exception encountered when processing records on
+     * the background thread back to the foreground caller 
+     * @throws Error
+     */
+    private void raiseBackgroundThreadException() throws Error {
         Throwable t = currentBlock.getException();
         if (t != null) {
             if (t instanceof Error) {
@@ -150,14 +176,6 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
                 throw new RuntimeException(t);
             }
         }
-        if (currentBlock.isEndOfStream()) return false;
-        try {
-            // try loading next block
-            currentBlock = buffer.take();
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Error reading from background thread", e);
-        }
-        return hasNext();
     }
 
     @Override
@@ -172,20 +190,22 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
      * Performs 1 buffer worth of read-ahead on the underlying iterator
      * (background thread method) 
      */
-    private RecordBlock readAhead() {
-        if (!underlyingIterator.hasNext()) return new RecordBlock();
-        final List<T> readAhead = new ArrayList<>(bufferSize);
+    private IteratorBuffer<T> readAhead() {
+        List<T> readAhead = null;
         try {
+            if (!underlyingIterator.hasNext()) return new IteratorBuffer<>();
+            readAhead = new ArrayList<>(bufferSize);
             for (int i = 0; i < bufferSize && underlyingIterator.hasNext(); i++) {
                 if (Thread.currentThread().isInterrupted()) {
                     // eager abort if we've been told to stop
-                    return new RecordBlock(readAhead, new InterruptedException());
+                    return new IteratorBuffer<>(readAhead, new InterruptedException());
                 }
                 readAhead.add(underlyingIterator.next());
             }
-            return new RecordBlock(readAhead);
+            return new IteratorBuffer<>(readAhead);
         } catch (Throwable t) {
-            return new RecordBlock(readAhead, t);
+            // Catch absolutely everything so we can try to raise it on the foreground thread
+            return new IteratorBuffer<>(readAhead, t);
         }
     }
     /**
@@ -194,14 +214,14 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
      */
     private void backgroundRun() {
         try {
-            RecordBlock block;
+            IteratorBuffer<T> block;
             do {
                 block = readAhead();
                 if (block.getException() instanceof InterruptedException) {
                     // stop thread immediately if we've been told to stop
                     return;
                 }
-                buffer.put(block);
+                buffers.put(block);
             } while (!block.isEndOfStream());
         } catch (InterruptedException e) {
             // stop thread
@@ -210,11 +230,11 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
     /**
      * Block of records from the underlying iterator 
      */
-    private class RecordBlock implements Iterator<T> {
+    private static class IteratorBuffer<U> implements Iterator<U> {
         private final Throwable exception;
-        private final Iterator<T> it;
-        public RecordBlock(Iterable<T> it) {
-            this.it = it.iterator();
+        private final Iterator<U> it;
+        public IteratorBuffer(Iterable<U> it) {
+            this.it = it != null ? it.iterator() : null;;
             this.exception = null;
         }
 
@@ -223,15 +243,15 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
          * @param it records successfully iterated over
          * @param exception exception thrown when attempting to iterate over the next record
          */
-        public RecordBlock(Iterable<T> it, Throwable exception) {
-            this.it = it.iterator();
+        public IteratorBuffer(Iterable<U> it, Throwable exception) {
+            this.it = it != null ? it.iterator() : null;
             this.exception = exception;
         }
         
         /**
          * Record block indicating end of stream 
          */
-        public RecordBlock() {
+        public IteratorBuffer() {
             this.it = null;
             this.exception = null;
         }
@@ -242,7 +262,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         }
 
         @Override
-        public T next() {
+        public U next() {
             return it.next();
         }
         
