@@ -101,10 +101,10 @@ public class BinaryCodec implements Closeable {
         try {
             this.isWriting = writing;
             if (this.isWriting) {
-                this.outputStream = new FileOutputStream(file);
+                this.outputStream = IOUtil.maybeBufferOutputStream(new FileOutputStream(file));
                 this.outputFileName = file.getName();
             } else {
-                this.inputStream = new FileInputStream(file);
+                this.inputStream = IOUtil.maybeBufferInputStream(new FileInputStream(file));
                 this.inputFileName = file.getName();
             }
         } catch (FileNotFoundException e) {
@@ -613,13 +613,11 @@ public class BinaryCodec implements Closeable {
 
     private String constructErrorMessage(final String msg) {
         final StringBuilder sb = new StringBuilder(msg);
-        sb.append("; BinaryCodec in ");
-        sb.append(isWriting? "write": "read");
-        sb.append("mode; ");
+        sb.append("; BinaryCodec in ")
+                .append(isWriting? "write": "read").append("mode; ");
         final String filename = isWriting? outputFileName: inputFileName;
         if (filename != null) {
-            sb.append("file: ");
-            sb.append(filename);
+            sb.append("file: ").append(filename);
         } else  {
             sb.append("streamed file (filename not available)");
         }

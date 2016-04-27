@@ -134,7 +134,7 @@ public class VCFCodec extends AbstractVCFCodec {
             return Collections.emptyList();
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
             generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
-        if ( filterString.length() == 0 )
+        if (filterString.isEmpty())
             generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
 
         // do we have the filter string cached?

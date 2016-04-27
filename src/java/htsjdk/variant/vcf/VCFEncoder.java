@@ -72,16 +72,13 @@ public class VCFEncoder {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		// CHROM
-		stringBuilder.append(context.getChr()).append(VCFConstants.FIELD_SEPARATOR);
-
-		// POS
-		stringBuilder.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR);
-
-		// ID
-		stringBuilder.append(context.getID()).append(VCFConstants.FIELD_SEPARATOR);
-
-		// REF
-		stringBuilder.append(context.getReference().getDisplayString()).append(VCFConstants.FIELD_SEPARATOR);
+		stringBuilder.append(context.getChr()).append(VCFConstants.FIELD_SEPARATOR)
+				// POS
+				.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR)
+				// ID
+				.append(context.getID()).append(VCFConstants.FIELD_SEPARATOR)
+				// REF
+				.append(context.getReference().getDisplayString()).append(VCFConstants.FIELD_SEPARATOR);
 
 		// ALT
 		if ( context.isVariant() ) {
@@ -92,7 +89,7 @@ public class VCFEncoder {
 			for (int i = 1; i < context.getAlternateAlleles().size(); i++) {
 				altAllele = context.getAlternateAllele(i);
 				alt = altAllele.getDisplayString();
-				stringBuilder.append(",");
+				stringBuilder.append(',');
 				stringBuilder.append(alt);
 			}
 		} else {
@@ -104,10 +101,9 @@ public class VCFEncoder {
 		// QUAL
 		if ( ! context.hasLog10PError()) stringBuilder.append(VCFConstants.MISSING_VALUE_v4);
 		else stringBuilder.append(formatQualValue(context.getPhredScaledQual()));
-		stringBuilder.append(VCFConstants.FIELD_SEPARATOR);
-
-		// FILTER
-		stringBuilder.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
+		stringBuilder.append(VCFConstants.FIELD_SEPARATOR)
+				// FILTER
+				.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
 
 		// INFO
 		final Map<String, String> infoFields = new TreeMap<String, String>();
@@ -195,7 +191,7 @@ public class VCFEncoder {
 				return formatVCFField(null);
 			final StringBuilder sb = new StringBuilder(formatVCFField(Array.get(val, 0)));
 			for ( int i = 1; i < length; i++) {
-				sb.append(",");
+				sb.append(',');
 				sb.append(formatVCFField(Array.get(val, i)));
 			}
 			result = sb.toString();
@@ -289,7 +285,7 @@ public class VCFEncoder {
 								final StringBuilder sb = new StringBuilder();
 								sb.append(intValues[0]);
 								for ( int i = 1; i < intValues.length; i++) {
-									sb.append(",");
+									sb.append(',');
 									sb.append(intValues[i]);
 								}
 								outputValue = sb.toString();
@@ -305,7 +301,7 @@ public class VCFEncoder {
 									// For example, if Number=2, the string has to be ".,."
 									final StringBuilder sb = new StringBuilder(VCFConstants.MISSING_VALUE_v4);
 									for ( int i = 1; i < numInFormatField; i++ ) {
-										sb.append(",");
+										sb.append(',');
 										sb.append(VCFConstants.MISSING_VALUE_v4);
 									}
 									val = sb.toString();
@@ -358,7 +354,7 @@ public class VCFEncoder {
 			if ( ! entry.getValue().equals("")) {
 				final VCFInfoHeaderLine metaData = this.header.getInfoHeaderLine(entry.getKey());
 				if ( metaData == null || metaData.getCountType() != VCFHeaderLineCount.INTEGER || metaData.getCount() != 0 ) {
-					builder.append("=");
+					builder.append('=');
 					builder.append(entry.getValue());
 				}
 			}

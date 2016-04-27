@@ -12,9 +12,9 @@ import java.text.NumberFormat;
  * Concrete subclasses must provide the logger
  */
 abstract public class AbstractProgressLogger implements ProgressLoggerInterface {
-    protected final int n;
-    protected final String verb;
-    protected final String noun;
+    private final int n;
+    private final String verb;
+    private final String noun;
     private final long startTime = System.currentTimeMillis();
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
@@ -76,7 +76,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     @Override
     public synchronized boolean record(final SAMRecord rec) {
-        if (rec.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+        if (SAMRecord.NO_ALIGNMENT_REFERENCE_NAME.equals(rec.getReferenceName())) {
             return record(null, 0);
         }
         else {
@@ -93,7 +93,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     }
 
     /** Returns the count of records processed. */
-    public long getCount() { return this.processed; }
+    public synchronized long getCount() { return this.processed; }
 
     /** Returns the number of seconds since progress tracking began. */
     public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }

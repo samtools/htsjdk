@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,10 +36,13 @@ import java.util.Map;
  * There are three orderings provided by this comparator: compare, duplicateSetCompare, and fileOrderCompare.
  *  
  * Specify the headers when constructing this comparator if you would like to consider the library as the major sort key.
+ * The records being compared must also have non-null SAMFileHeaders.
  *
  * @author nhomer
  */
-public class SAMRecordDuplicateComparator implements SAMRecordComparator {
+public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serializable {
+    private static final long serialVersionUID = 1L;
+
     /** An enum to provide type-safe keys for transient attributes the comparator puts on SAMRecords. */
     private static enum Attr {
         LibraryId, ReadCoordinate, MateCoordinate
@@ -91,10 +95,13 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
         final String readGroupId = (String) rec.getAttribute("RG");
 
         if (readGroupId != null) {
-            final SAMReadGroupRecord rg = rec.getHeader().getReadGroup(readGroupId);
-            if (rg != null) {
-                final String libraryName = rg.getLibrary();
-                if (null != libraryName) return libraryName;
+            final SAMFileHeader samHeader = rec.getHeader();
+            if (null != samHeader) {
+                final SAMReadGroupRecord rg = samHeader.getReadGroup(readGroupId);
+                if (rg != null) {
+                    final String libraryName = rg.getLibrary();
+                    if (null != libraryName) return libraryName;
+                }
             }
         }
 
@@ -253,6 +260,10 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator {
     private int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, final boolean collapseOrientation, final boolean considerNumberOfEndsMappedAndPairing) {
         populateTransientAttributes(samRecord1, samRecord2);
         int cmp;
+
+        if (null == samRecord1.getHeader() || null == samRecord2.getHeader()) {
+            throw new IllegalArgumentException("Records must have non-null SAMFileHeaders to be compared");
+        }
 
         // temporary variables for comparisons
         int samRecord1Value, samRecord2Value;

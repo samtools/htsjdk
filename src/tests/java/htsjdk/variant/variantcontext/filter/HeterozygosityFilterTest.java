@@ -108,7 +108,7 @@ public class HeterozygosityFilterTest {
 
     @Test(dataProvider = "variantsProvider")
     public void testFilteringIterator(final Iterator<VariantContext> vcs, final int[] passingPositions) {
-        final Iterator<VariantContext> filteringIterator = new FilteringIterator(vcs, new HeterozygosityFilter(true, "test"));
+        final Iterator<VariantContext> filteringIterator = new FilteringVariantContextIterator(vcs, new HeterozygosityFilter(true, "test"));
 
         int i = 0;
         while (filteringIterator.hasNext()) {

@@ -11,6 +11,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Abstract class that is designed to be extended and specialized to provide an asynchronous
  * wrapper around any kind of Writer class that takes an object and writes it out somehow.
  *
+ * NOTE: Objects of subclasses of this class are not intended to be shared between threads.
+ * In particular there must be only one thread that calls {@link #write} and {@link #close}.
+ *
  * @author Tim Fennell
  */
 public abstract class AbstractAsyncWriter<T> implements Closeable {
@@ -56,7 +59,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     }
 
     /**
-     * Attempts to finishing draining the queue and then calls synchronoslyClose() to allow implementation
+     * Attempts to finish draining the queue and then calls synchronouslyClose() to allow implementation
      * to do any one time clean up.
      */
     public void close() {
@@ -70,9 +73,13 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
             	throw new RuntimeException("Interrupted waiting on writer thread.", ie);
         	}
 
-            // Assert that the queue is empty
-            if (!this.queue.isEmpty()) {
-                throw new RuntimeException("Queue should be empty but is size: " + this.queue.size());
+            //The queue should be empty but if it's not, we'll drain it here to protect against any lost data.
+            //There's no need to timeout on poll because poll is called only when queue is not empty and
+            // at this point the writer thread is definitely dead and noone is removing items from the queue.
+            //The item pulled will never be null (same reasoning).
+            while (!this.queue.isEmpty()) {
+                final T item = queue.poll();
+                synchronouslyWrite(item);
             }
 
             synchronouslyClose();
@@ -100,7 +107,11 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     private class WriterRunnable implements Runnable {
         public void run() {
             try {
-                while (!queue.isEmpty() || !isClosed.get()) {
+                //The order of the two conditions is important, see https://github.com/samtools/htsjdk/issues/564
+                //because we want to make sure that emptiness status of the queue does not change after we have evaluated isClosed
+                //as it is now (isClosed checked before queue.isEmpty),
+                //the two operations are effectively atomic if isClosed returns true
+                while (!isClosed.get() || !queue.isEmpty()) {
                     try {
                         final T item = queue.poll(2, TimeUnit.SECONDS);
                         if (item != null) synchronouslyWrite(item);

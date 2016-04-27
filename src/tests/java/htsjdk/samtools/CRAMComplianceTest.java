@@ -66,30 +66,20 @@ public class CRAMComplianceTest {
         File refFile;
         File cramFile_21;
         File cramFile_30;
-        File embedCramFile;
-        File norefCramFile;
-        File refCramFile;
 
         public TestCase(File root, String name) {
             bamFile = new File(root, name + ".sam");
             refFile = new File(root, name.split("#")[0] + ".fa");
             cramFile_21 = new File(root, name + ".2.1.cram");
             cramFile_30 = new File(root, name + ".3.0.cram");
-            embedCramFile = new File(root, name + ".embed.cram");
-            norefCramFile = new File(root, name + ".noref.cram");
-            refCramFile = new File(root, name + ".ref.cram");
         }
     }
 
     @Test(dataProvider = "test1")
     public void test(String name) throws IOException {
         TestCase t = new TestCase(new File("testdata/htsjdk/samtools/cram/"), name);
-//        TestCase t = new TestCase(new File("C:\\temp\\htslib\\test"), name);
 
-        ReferenceSource source = null;
-        if (t.refFile.exists())
-            source = new ReferenceSource(t.refFile);
-
+        ReferenceSource source = new ReferenceSource(t.refFile);
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(t.bamFile);
 
         final SAMRecordIterator samRecordIterator = reader.iterator();
@@ -101,8 +91,9 @@ public class CRAMComplianceTest {
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, samFileHeader, name);
-        for (SAMRecord samRecord : samRecords)
+        for (SAMRecord samRecord : samRecords) {
             cramFileWriter.addAlignment(samRecord);
+        }
         cramFileWriter.close();
 
 
@@ -112,33 +103,31 @@ public class CRAMComplianceTest {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
             SAMRecord restored = cramFileReaderIterator.next();
             Assert.assertNotNull(restored);
-            assertSameRecords(CramVersions.CRAM_v3.major, samRecord, restored);
+            assertSameRecords(CramVersions.DEFAULT_CRAM_VERSION.major, samRecord, restored);
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
 
-        if (t.cramFile_21.exists()) {
-            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream)null, source, ValidationStringency.SILENT);
-            cramFileReaderIterator = cramFileReader.getIterator();
-            for (SAMRecord samRecord : samRecords) {
-                Assert.assertTrue(cramFileReaderIterator.hasNext());
-                SAMRecord restored = cramFileReaderIterator.next();
-                Assert.assertNotNull(restored);
-                assertSameRecords(CramVersions.CRAM_v2_1.major, samRecord, restored);
-            }
-            Assert.assertFalse(cramFileReaderIterator.hasNext());
+        //v2.1 test
+        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream)null, source, ValidationStringency.SILENT);
+        cramFileReaderIterator = cramFileReader.getIterator();
+        for (SAMRecord samRecord : samRecords) {
+            Assert.assertTrue(cramFileReaderIterator.hasNext());
+            SAMRecord restored = cramFileReaderIterator.next();
+            Assert.assertNotNull(restored);
+            assertSameRecords(CramVersions.CRAM_v2_1.major, samRecord, restored);
         }
+        Assert.assertFalse(cramFileReaderIterator.hasNext());
 
-        if (t.cramFile_30.exists()) {
-            cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream)null, source, ValidationStringency.SILENT);
-            cramFileReaderIterator = cramFileReader.getIterator();
-            for (SAMRecord samRecord : samRecords) {
-                Assert.assertTrue(cramFileReaderIterator.hasNext());
-                SAMRecord restored = cramFileReaderIterator.next();
-                Assert.assertNotNull(restored);
-                assertSameRecords(CramVersions.CRAM_v3.major, samRecord, restored);
-            }
-            Assert.assertFalse(cramFileReaderIterator.hasNext());
+        //v3.0 test
+        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream)null, source, ValidationStringency.SILENT);
+        cramFileReaderIterator = cramFileReader.getIterator();
+        for (SAMRecord samRecord : samRecords) {
+            Assert.assertTrue(cramFileReaderIterator.hasNext());
+            SAMRecord restored = cramFileReaderIterator.next();
+            Assert.assertNotNull(restored);
+            assertSameRecords(CramVersions.CRAM_v3.major, samRecord, restored);
         }
+        Assert.assertFalse(cramFileReaderIterator.hasNext());
     }
 
     private void assertSameRecords(int majorVersion, SAMRecord record1, SAMRecord record2) {
@@ -147,16 +136,14 @@ public class CRAMComplianceTest {
         Assert.assertEquals(record2.getReferenceName(), record1.getReferenceName());
         Assert.assertEquals(record2.getAlignmentStart(), record1.getAlignmentStart());
 
-        {
-            /**
-             * Known issue: CRAM v2.1 doesn't handle reads with missing bases correctly. This causes '*' bases to arise when reading CRAM.
-             * Skipping the base comparison asserts.
-             */
-            if (record1.getReadBases() == SAMRecord.NULL_SEQUENCE && majorVersion < CramVersions.CRAM_v3.major)
-                ;
-            else
-                Assert.assertEquals(record2.getReadBases(), record1.getReadBases());
+        /**
+         * Known issue: CRAM v2.1 doesn't handle reads with missing bases correctly. This
+         * causes '*' bases to arise when reading CRAM. Skipping the base comparison asserts.
+         */
+        if (record1.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
+            Assert.assertEquals(record2.getReadBases(), record1.getReadBases());
         }
+
         Assert.assertEquals(record2.getBaseQualities(), record1.getBaseQualities());
     }
 

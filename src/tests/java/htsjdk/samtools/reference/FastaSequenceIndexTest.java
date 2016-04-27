@@ -42,13 +42,17 @@ public class FastaSequenceIndexTest {
     @DataProvider(name="homosapiens")
     public Object[][] provideHomoSapiens() throws FileNotFoundException {
         final File sequenceIndexFile = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.fasta.fai");
-        return new Object[][] { new Object[] { new FastaSequenceIndex(sequenceIndexFile) } };    
+        return new Object[][] { new Object[]
+            { new FastaSequenceIndex(sequenceIndexFile) },
+            { new FastaSequenceIndex(sequenceIndexFile.toPath()) } };
     }
 
     @DataProvider(name="specialcharacters")
     public Object[][] provideSpecialCharacters() throws FileNotFoundException {
         final File sequenceIndexFile = new File(TEST_DATA_DIR,"testing.fai");
-        return new Object[][] { new Object[] { new FastaSequenceIndex(sequenceIndexFile) } };
+        return new Object[][] { new Object[]
+            { new FastaSequenceIndex(sequenceIndexFile) },
+            { new FastaSequenceIndex(sequenceIndexFile.toPath()) } };
     }
 
     @Test(dataProvider="homosapiens")

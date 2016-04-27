@@ -433,7 +433,7 @@ public final class SAMUtils {
     public static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                                final long samRecordIndex,
                                                final ValidationStringency validationStringency) {
-        if (validationErrors != null && validationErrors.size() > 0) {
+        if (validationErrors != null && !validationErrors.isEmpty()) {
             for (final SAMValidationError validationError : validationErrors) {
                 validationError.setRecordNumber(samRecordIndex);
             }
@@ -528,7 +528,7 @@ public final class SAMUtils {
     public static void chainSAMProgramRecord(final SAMFileHeader header, final SAMProgramRecord program) {
 
         final List<SAMProgramRecord> pgs = header.getProgramRecords();
-        if (pgs.size() > 0) {
+        if (!pgs.isEmpty()) {
             final List<String> referencedIds = new ArrayList<String>();
             for (final SAMProgramRecord pg : pgs) {
                 if (pg.getPreviousProgramGroupId() != null) {
@@ -612,9 +612,15 @@ public final class SAMUtils {
     /**
      * Tests if the provided record is mapped entirely beyond the end of the reference (i.e., the alignment start is greater than the
      * length of the sequence to which the record is mapped).
+     * @param record must not have a null SamFileHeader
      */
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
-        return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        if (record.getHeader() == null) {
+            throw new SAMException("A non-null SAMHeader is required to resolve the mapping position: " + record.getReadName());
+        }
+        else {
+            return record.getHeader().getSequence(record.getReferenceIndex()).getSequenceLength() < record.getAlignmentStart();
+        }
     }
 
     /**
@@ -898,14 +904,22 @@ public final class SAMUtils {
         // Don't know line number, and don't want to force read name to be decoded.
         List<SAMValidationError> ret = cigar.isValid(rec.getReadName(), recordNumber);
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-            final SAMSequenceRecord sequence = rec.getHeader().getSequence(referenceIndex);
-            final int referenceSequenceLength = sequence.getSequenceLength();
-            for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
-                if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
-                    ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
-                            cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
-                    break;
+            SAMFileHeader samHeader = rec.getHeader();
+            if (null == samHeader) {
+                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
+                        cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
+            }
+            else {
+                final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
+                final int referenceSequenceLength = sequence.getSequenceLength();
+                for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
+                    if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
+                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
+                                cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
+                        break;
+                    }
                 }
             }
         }
@@ -931,14 +945,14 @@ public final class SAMUtils {
             } else {
                 if (getMateCigarString(rec) != null) {
                     ret = new ArrayList<SAMValidationError>();
-                    if (rec.getMateUnmappedFlag()) {
+                    if (!rec.getReadPairedFlag()) {
+                        // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error
+                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
+                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
+                    } else { // will hit here if rec.getMateUnmappedFlag() is true
                         // If the Mate is unmapped, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
                                 "Mate CIGAR String (MC Attribute) present for a read whose mate is unmapped", rec.getReadName(), recordNumber));
-                    } else {
-                        // If the Mate is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error.
-                        ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,
-                                "Mate CIGAR String (MC Attribute) present for a read that is not paired", rec.getReadName(), recordNumber));
                     }
                 }
             }
@@ -989,6 +1003,7 @@ public final class SAMUtils {
 
         // Only clip records that are left-most in genomic order and overlapping.
         if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
+        else if (rec.getMateAlignmentStart() == rec.getAlignmentStart() && rec.getFirstOfPairFlag()) return 0; // same start, so pick the first end
 
         // Find the number of read bases after the given mate's alignment start.
         int numBasesToClip = 0;

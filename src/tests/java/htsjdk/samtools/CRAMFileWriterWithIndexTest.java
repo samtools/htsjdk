@@ -132,7 +132,7 @@ public class CRAMFileWriterWithIndexTest {
         }
 
         // reading after the 1st container should be ok:
-        refID = 1;
+        refID = 2;
         final CloseableIterator<SAMRecord> iterator = reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
         Assert.assertNotNull(iterator);
         Assert.assertTrue(iterator.hasNext());
@@ -147,7 +147,7 @@ public class CRAMFileWriterWithIndexTest {
         SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord("1");
 
         rsf = new InMemoryReferenceSequenceFile();
-        int nofSequencesInDictionary = 30;
+        int nofSequencesInDictionary = 3;
         int sequenceLength = 1024 * 1024;
         for (int i = 0; i < nofSequencesInDictionary; i++)
             addRandomSequence(header, sequenceLength, rsf);
@@ -164,7 +164,7 @@ public class CRAMFileWriterWithIndexTest {
         CRAMFileWriter writer = new CRAMFileWriter(os, indexOS, source, header, null);
 
 
-        int readPairsPerSequence = 100;
+        int readPairsPerSequence = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
 
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
             int alignmentStart = 1;
@@ -180,7 +180,7 @@ public class CRAMFileWriterWithIndexTest {
         Collections.sort(list, new SAMRecordCoordinateComparator());
 
         for (SAMRecord record : list)
-            writer.writeAlignment(record);
+            writer.addAlignment(record);
 
         list.clear();
         writer.finish();

@@ -27,6 +27,7 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -90,5 +91,28 @@ public class CigarTest {
         final List<SAMValidationError> errors = TextCigarCodec.decode(cigar).isValid(null, -1);
         Assert.assertEquals(errors.size(), 1, String.format("Got %d error, expected exactly one error.", errors.size()));
         Assert.assertEquals(errors.get(0).getType(), type);
+    }
+    
+    @Test
+    public void testMakeCigarFromOperators() {
+        final List<CigarOperator> cigarOperators = Arrays.asList(
+                CigarOperator.S,
+                CigarOperator.M,
+                CigarOperator.M,
+                CigarOperator.M,
+                CigarOperator.I,
+                CigarOperator.M,
+                CigarOperator.D,
+                CigarOperator.M
+                );
+        final Cigar cigar = Cigar.fromCigarOperators(cigarOperators);
+        Assert.assertFalse(cigar.isEmpty());
+        Assert.assertEquals(cigar.numCigarElements(), 6);
+        Assert.assertEquals(cigar.toString(),"1S3M1I1M1D1M");
+        Assert.assertFalse(cigar.containsOperator(CigarOperator.N));
+        Assert.assertTrue(cigar.containsOperator(CigarOperator.D));
+        Assert.assertTrue(cigar.isLeftClipped());
+        Assert.assertFalse(cigar.isRightClipped());
+        Assert.assertTrue(cigar.isClipped());
     }
 }

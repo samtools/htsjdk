@@ -25,6 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.SAMValidationError.Type;
+import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -90,7 +91,7 @@ public class SamFileValidator {
     private Set<Type> errorsToIgnore = EnumSet.noneOf(Type.class);
     private boolean ignoreWarnings = false;
     private boolean bisulfiteSequenced = false;
-    private boolean validateIndex = false;
+    private IndexValidationStringency indexValidationStringency = IndexValidationStringency.NONE;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted = false;
     private final int maxTempFiles;
 
@@ -198,9 +199,14 @@ public class SamFileValidator {
             orderChecker = new SAMSortOrderChecker(samReader.getFileHeader().getSortOrder());
             validateSamRecordsAndQualityFormat(samReader, samReader.getFileHeader());
             validateUnmatchedPairs();
-            if (validateIndex) {
+            if (indexValidationStringency != IndexValidationStringency.NONE) {
                 try {
-                    BamIndexValidator.exhaustivelyTestIndex(samReader);
+                    if (indexValidationStringency == IndexValidationStringency.LESS_EXHAUSTIVE) {
+                        BamIndexValidator.lessExhaustivelyTestIndex(samReader);
+                    }
+                    else {
+                        BamIndexValidator.exhaustivelyTestIndex(samReader);
+                    }
                 } catch (Exception e) {
                     addError(new SAMValidationError(Type.INVALID_INDEX_FILE_POINTER, e.getMessage(), null));
                 }
@@ -274,11 +280,22 @@ public class SamFileValidator {
                 }
 
                 validateMateFields(record, recordNumber);
-                validateSortOrder(record, recordNumber);
+                final boolean hasValidSortOrder = validateSortOrder(record, recordNumber);
                 validateReadGroup(record, header);
                 final boolean cigarIsValid = validateCigar(record, recordNumber);
                 if (cigarIsValid) {
-                    validateNmTag(record, recordNumber);
+                    try {
+                        validateNmTag(record, recordNumber);
+                    }
+                    catch (SAMException e) {
+                        if (hasValidSortOrder) {
+                            // If a CRAM file has an invalid sort order, the ReferenceFileWalker will throw a
+                            // SAMException due to an out of order request when retrieving reference bases during NM
+                            // tag validation; rethrow the exception only if the sort order is valid, otherwise
+                            // swallow the exception and carry on validating
+                            throw e;
+                        }
+                    }
                 }
                 validateSecondaryBaseCalls(record, recordNumber);
                 validateTags(record, recordNumber);
@@ -397,9 +414,10 @@ public class SamFileValidator {
     }
 
 
-    private void validateSortOrder(final SAMRecord record, final long recordNumber) {
+    private boolean validateSortOrder(final SAMRecord record, final long recordNumber) {
         final SAMRecord prev = orderChecker.getPreviousRecord();
-        if (!orderChecker.isSorted(record)) {
+        boolean isValidSortOrder = orderChecker.isSorted(record);
+        if (!isValidSortOrder) {
             addError(new SAMValidationError(
                     Type.RECORD_OUT_OF_ORDER,
                     String.format(
@@ -411,6 +429,7 @@ public class SamFileValidator {
                     record.getReadName(),
                     recordNumber));
         }
+        return isValidSortOrder;
     }
 
     private void init(final ReferenceSequenceFile reference, final SAMFileHeader header) {
@@ -568,10 +587,16 @@ public class SamFileValidator {
         this.bisulfiteSequenced = bisulfiteSequenced;
     }
 
-    public SamFileValidator setValidateIndex(boolean validateIndex) {
+    /**
+     * @deprecated use setIndexValidationStringency instead
+     */
+    public SamFileValidator setValidateIndex(final boolean validateIndex) {
         // The SAMFileReader must also have IndexCaching enabled to have the index validated,
-        // samReader.enableIndexCaching(true);
-        this.validateIndex = validateIndex;
+        return this.setIndexValidationStringency(validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);
+    }
+
+    public SamFileValidator setIndexValidationStringency(final IndexValidationStringency stringency) {
+        this.indexValidationStringency = stringency;
         return this;
     }
 

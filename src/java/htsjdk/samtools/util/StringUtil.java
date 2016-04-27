@@ -40,7 +40,7 @@ public class StringUtil {
      * @return String that concatenates the result of each item's to String method for all items in objs, with separator between each of them.
      */
     public static <T> String join(final String separator, final Collection<T> objs) {
-        if (objs.size() == 0) {
+        if (objs.isEmpty()) {
             return "";
         }
 
@@ -95,7 +95,7 @@ public class StringUtil {
         if (nTokens < maxTokens)
         {
             final String trailingString = aString.substring(start);
-            if (trailingString.length() > 0)
+            if (!trailingString.isEmpty())
             {
                 tokens[nTokens++] = trailingString;
             }
@@ -134,7 +134,7 @@ public class StringUtil {
         }
         // Add the trailing string,  if it is not empty.
         final String trailingString = aString.substring(start);
-        if (trailingString.length() > 0)
+        if (!trailingString.isEmpty())
         {
             tokens[nTokens++] = trailingString;
         }
@@ -206,12 +206,12 @@ public class StringUtil {
         final StringBuilder sb = new StringBuilder();
         for (final String line: lines) {
             if (sb.length() > 0) {
-                sb.append("\n");
+                sb.append('\n');
             }
             sb.append(wordWrapSingleLine(line, maxLineLength));
         }
         if (s.endsWith("\n")) {
-            sb.append("\n");
+            sb.append('\n');
         }
         return sb.toString();
     }
@@ -237,7 +237,7 @@ public class StringUtil {
             // Include any trailing whitespace
             for (; lastSpaceIndex < s.length() && Character.isWhitespace(s.charAt(lastSpaceIndex)); ++lastSpaceIndex) {}
             if (sb.length() > 0) {
-                sb.append("\n");
+                sb.append('\n');
             }
             // Handle situation in which there is no word break.  Just break the word in the middle.
             if (lastSpaceIndex == startCopyFrom) {

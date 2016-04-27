@@ -159,7 +159,7 @@ public class FormatUtil {
 
     /** Parses a String into a boolean, as per the above convention that true = Y and false = N. */
     public boolean parseBoolean(String value) {
-        if (value == null || value.length() == 0) return false;
+        if (value == null || value.isEmpty()) return false;
         char ch = Character.toUpperCase(value.charAt(0));
         return (ch == 'Y');
     }

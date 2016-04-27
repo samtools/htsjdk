@@ -23,10 +23,13 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * Comparator for "queryname" ordering of SAMRecords.
  */
-public class SAMRecordQueryNameComparator implements SAMRecordComparator {
+public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serializable {
+    private static final long serialVersionUID = 1L;
 
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         int cmp = fileOrderCompare(samRecord1, samRecord2);

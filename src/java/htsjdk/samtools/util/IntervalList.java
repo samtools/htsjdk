@@ -33,6 +33,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -240,7 +241,7 @@ public class IntervalList implements Iterable<Interval> {
             }
         }
 
-        if (toBeMerged.size() > 0) unique.add(merge(toBeMerged, concatenateNames));
+        if (!toBeMerged.isEmpty()) unique.add(merge(toBeMerged, concatenateNames));
         return unique;
     }
 
@@ -447,7 +448,7 @@ public class IntervalList implements Iterable<Interval> {
             // Then read in the intervals
             final FormatUtil format = new FormatUtil();
             do {
-                if (line.trim().length() == 0) continue; // skip over blank lines
+                if (line.trim().isEmpty()) continue; // skip over blank lines
 
                 // Make sure we have the right number of fields
                 final String[] fields = line.split("\t");
@@ -733,7 +734,9 @@ public class IntervalList implements Iterable<Interval> {
  * Comparator that orders intervals based on their sequence index, by coordinate
  * then by strand and finally by name.
  */
-class IntervalCoordinateComparator implements Comparator<Interval> {
+class IntervalCoordinateComparator implements Comparator<Interval>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final SAMFileHeader header;
 
     /** Constructs a comparator using the supplied sequence header. */

@@ -203,7 +203,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
 
     /**
      * If true, uses the caching version of the index reader.
-     * @param enabled true to write source information into each SAMRecord.
+     * @param enabled true to use the caching version of the reader.
      */
     protected void enableIndexCaching(final boolean enabled) {
         if(mIndex != null)
@@ -260,8 +260,16 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     }
 
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }
-    
+
+    @Override
     public void close() {
+        if (mCompressedInputStream != null) {
+            try {
+                mCompressedInputStream.close();
+            } catch (IOException e) {
+                throw new RuntimeIOException("Exception closing compressed input stream.", e);
+            }
+        }
         if (mStream != null) {
             mStream.close();
         }
@@ -504,7 +512,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                 source);
 
         final int sequenceCount = stream.readInt();
-        if (samFileHeader.getSequenceDictionary().size() > 0) {
+        if (!samFileHeader.getSequenceDictionary().isEmpty()) {
             // It is allowed to have binary sequences but no text sequences, so only validate if both are present
             if (sequenceCount != samFileHeader.getSequenceDictionary().size()) {
                 throw new SAMFormatException("Number of sequences in text header (" +

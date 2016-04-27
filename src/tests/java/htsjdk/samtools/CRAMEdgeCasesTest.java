@@ -45,7 +45,7 @@ public class CRAMEdgeCasesTest {
         final File CRAMFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
         final File refFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
         final ReferenceSource refSource = new ReferenceSource(refFile);
-        final CRAMIterator iterator = new CRAMIterator(new FileInputStream(CRAMFile), refSource);
+        final CRAMIterator iterator = new CRAMIterator(new FileInputStream(CRAMFile), refSource, ValidationStringency.STRICT);
         while (iterator.hasNext()) {
             iterator.next();
         }

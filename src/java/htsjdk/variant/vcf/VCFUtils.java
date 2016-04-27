@@ -142,7 +142,7 @@ public class VCFUtils {
         final String referenceValue;
         if (referenceFile != null) {
             if (referenceNameOnly) {
-                final int extensionStart = referenceFile.getName().lastIndexOf(".");
+                final int extensionStart = referenceFile.getName().lastIndexOf('.');
                 referenceValue = extensionStart == -1 ? referenceFile.getName() : referenceFile.getName().substring(0, extensionStart);
             }
             else {

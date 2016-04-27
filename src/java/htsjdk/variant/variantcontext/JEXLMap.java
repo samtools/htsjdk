@@ -1,12 +1,11 @@
 package htsjdk.variant.variantcontext;
 
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.jexl2.JexlContext;
 import org.apache.commons.jexl2.MapContext;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -55,68 +54,14 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      *
      */
     private void createContext() {
-        if ( g == null ) {
-            // todo -- remove dependancy on g to the entire system
+        if ( vc == null ) {
+            jContext = new MapContext(Collections.emptyMap());
+        }
+        else if (g == null) {
             jContext = new VariantJEXLContext(vc);
-        } else {
-            //
-            // this whole branch is here just to support G jexl operations
-            //
-            Map<String, Object> infoMap = new HashMap<String, Object>();
-
-            if ( vc != null ) {
-                // create a mapping of what we know about the variant context, its Chromosome, positions, etc.
-                infoMap.put("CHROM", vc.getChr());
-                infoMap.put("POS", vc.getStart());
-                infoMap.put("TYPE", vc.getType().toString());
-                infoMap.put("QUAL", String.valueOf(vc.getPhredScaledQual()));
-
-                // add alleles
-                infoMap.put("ALLELES", GeneralUtils.join(";", vc.getAlleles()));
-                infoMap.put("N_ALLELES", String.valueOf(vc.getNAlleles()));
-
-                // add attributes
-                addAttributesToMap(infoMap, vc.getAttributes());
-
-                // add filter fields
-                infoMap.put("FILTER", vc.isFiltered() ? "1" : "0");
-                for ( Object filterCode : vc.getFilters() ) {
-                    infoMap.put(String.valueOf(filterCode), "1");
-                }
-
-                // add genotype-specific fields
-                // TODO -- implement me when we figure out a good way to represent this
-                //    for ( Genotype g : vc.getGenotypes().values() ) {
-                //        String prefix = g.getSampleName() + ".";
-                //        addAttributesToMap(infoMap, g.getAttributes(), prefix);
-                //        infoMap.put(prefix + "GT", g.getGenotypeString());
-                //    }
-
-                // add specific genotype if one is provided
-                infoMap.put(VCFConstants.GENOTYPE_KEY, g.getGenotypeString());
-                infoMap.put("isHom", g.isHom() ? "1" : "0");
-                infoMap.put("isHomRef", g.isHomRef() ? "1" : "0");
-                infoMap.put("isHet", g.isHet() ? "1" : "0");
-                infoMap.put("isHomVar", g.isHomVar() ? "1" : "0");
-                infoMap.put("isCalled", g.isCalled()? "1" : "0");
-                infoMap.put("isNoCall", g.isNoCall()? "1" : "0");
-                infoMap.put("isMixed", g.isMixed()? "1" : "0");
-                infoMap.put("isAvailable", g.isAvailable()? "1" : "0");
-                infoMap.put("isPassFT", g.isFiltered()? "0" : "1");
-                infoMap.put(VCFConstants.GENOTYPE_FILTER_KEY, g.isFiltered()?  g.getFilters() : "PASS");
-
-                infoMap.put(VCFConstants.GENOTYPE_QUALITY_KEY, g.getGQ());
-                if ( g.hasDP() )
-                    infoMap.put(VCFConstants.DEPTH_KEY, g.getDP());
-                for ( Entry<String, Object> e : g.getExtendedAttributes().entrySet() ) {
-                    if ( e.getValue() != null && !e.getValue().equals(VCFConstants.MISSING_VALUE_v4) )
-                        infoMap.put(e.getKey(), e.getValue());
-                }
-            }
-
-            // create the internal context that we can evaluate expressions against
-
-            jContext = new MapContext(infoMap);
+        }
+        else {
+            jContext = new GenotypeJEXLContext(vc, g);
         }
     }
 
@@ -185,10 +130,10 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
         } catch (Exception e) {
             // if exception happens because variable is undefined (i.e. field in expression is not present), evaluate to FALSE
             // todo - might be safer if we explicitly checked for an exception type, but Apache's API doesn't seem to have that ability
-            if (e.getMessage().contains("undefined variable"))
+            if (e.getMessage() != null && e.getMessage().contains("undefined variable"))
                 jexl.put(exp,false);
             else
-                throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s", exp.name, e.getMessage()));
+                throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s", exp.name, (e.getMessage() == null ? "no message" : e.getMessage())));
         }
     }
 

@@ -26,6 +26,7 @@ package htsjdk.samtools;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * c.f. http://samtools.sourceforge.net/SAM1.pdf for complete CIGAR specification.
  */
-public class Cigar implements Serializable {
+public class Cigar implements Serializable, Iterable<CigarElement> {
     public static final long serialVersionUID = 1L;
 
     private final List<CigarElement> cigarElements = new ArrayList<CigarElement>();
@@ -82,6 +83,8 @@ public class Cigar implements Serializable {
                 case EQ:
                 case X:
                     length += element.getLength();
+                    break;
+                default: break;
             }
         }
         return length;
@@ -101,6 +104,8 @@ public class Cigar implements Serializable {
                 case X:
                 case P:
                     length += element.getLength();
+                    break;
+                default: break;
             }
         }
         return length;
@@ -236,15 +241,15 @@ public class Cigar implements Serializable {
     }
 
     private static boolean isInDelOperator(final CigarOperator op) {
-        return op == CigarOperator.I || op == CigarOperator.D;
+        return op !=null && op.isIndel();
     }
 
     private static boolean isClippingOperator(final CigarOperator op) {
-        return op == CigarOperator.S || op == CigarOperator.H;
+        return op !=null && op.isClipping();
     }
 
     private static boolean isPaddingOperator(final CigarOperator op) {
-        return op == CigarOperator.P;
+        return op !=null && op.isPadding();
     }
 
     @Override
@@ -254,15 +259,79 @@ public class Cigar implements Serializable {
 
         final Cigar cigar = (Cigar) o;
 
-        if (cigarElements != null ? !cigarElements.equals(cigar.cigarElements) : cigar.cigarElements != null)
-            return false;
-
-        return true;
+        return cigarElements.equals(cigar.cigarElements);
+    }
+    
+    /** build a new Cigar object from a list of cigar operators.
+     * This can be used if you have the  operators associated to
+     * each base in the read.
+     * 
+     * e.g: read length =10 with cigar= <code>[M,M,M,M,M,M,M,M,M,M]</code>, here
+     * fromCigarOperators would generate the cigar '10M'
+     * 
+     * later the user resolved the 'M' to '=' or 'X', the array is now
+     * 
+     * <code>[=,=,=,=,=,X,X,=,=,=]</code>
+     * 
+     * fromCigarOperators would generate the cigar '5M2X3M'
+     * 
+     * */
+    public static Cigar fromCigarOperators(final List<CigarOperator> cigarOperators) {
+        if (cigarOperators == null) throw new IllegalArgumentException("cigarOperators is null");
+        final List<CigarElement> cigarElementList = new ArrayList<>();
+        int i = 0;
+        // find adjacent operators and build list of cigar elements
+        while (i < cigarOperators.size() ) {
+            final CigarOperator currentOp = cigarOperators.get(i);
+            int j = i + 1;
+            while (j < cigarOperators.size() && cigarOperators.get(j).equals(currentOp)) {
+                j++;
+            }
+            cigarElementList.add(new CigarElement(j - i, currentOp));
+            i = j;
+        }
+        return new Cigar(cigarElementList);
+    }
+    
+    /** shortcut to <code>getCigarElements().iterator()</code> */
+    @Override
+    public Iterator<CigarElement> iterator() {
+        return this.getCigarElements().iterator();
+    }
+    
+    /** returns true if the cigar string contains the given operator */
+    public boolean containsOperator(final CigarOperator operator) {
+        return this.cigarElements.stream().anyMatch( element -> element.getOperator() == operator);
+    }
+    
+    /** returns the first cigar element */
+    public CigarElement getFirstCigarElement() {
+        return isEmpty() ? null : this.cigarElements.get(0); 
+    }
+    
+    /** returns the last cigar element */
+    public CigarElement getLastCigarElement() {
+        return isEmpty() ? null : this.cigarElements.get(this.numCigarElements() - 1 ); 
+    }
+    
+    /** returns true if the cigar string starts With a clipping operator */
+    public boolean isLeftClipped() {
+        return !isEmpty() && isClippingOperator(getFirstCigarElement().getOperator());
     }
 
+    /** returns true if the cigar string ends With a clipping operator */
+    public boolean isRightClipped() {
+        return !isEmpty() && isClippingOperator(getLastCigarElement().getOperator());
+    }
+
+    /** returns true if the cigar is clipped */
+    public boolean isClipped() {
+        return isLeftClipped() || isRightClipped();
+    }
+    
     @Override
     public int hashCode() {
-        return cigarElements != null ? cigarElements.hashCode() : 0;
+        return cigarElements.hashCode();
     }
 
     public String toString() {

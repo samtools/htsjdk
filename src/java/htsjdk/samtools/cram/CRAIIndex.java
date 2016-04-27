@@ -1,6 +1,6 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.CRAMIndexer;
+import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.cram.structure.Slice;
@@ -27,10 +27,7 @@ public class CRAIIndex {
     public static final String CRAI_INDEX_SUFFIX = ".crai";
 
     public static void writeIndex(final OutputStream os, final List<CRAIEntry> index) throws IOException {
-        for (final CRAIEntry e : index) {
-            os.write(e.toString().getBytes());
-            os.write('\n');
-        }
+        index.stream().forEach(e -> e.writeToStream(os));
     }
 
     public static List<CRAIEntry> readIndex(final InputStream is) throws CRAIIndexException {
@@ -40,7 +37,7 @@ public class CRAIIndex {
         try {
             while (scanner.hasNextLine()) {
                 final String line = scanner.nextLine();
-                final CRAIEntry entry = CRAIEntry.fromCraiLine(line);
+                final CRAIEntry entry = new CRAIEntry(line);
                 list.add(entry);
             }
         } finally {
@@ -132,7 +129,7 @@ public class CRAIIndex {
         header.setSequenceDictionary(dictionary);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final CRAMIndexer indexer = new CRAMIndexer(baos, header);
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(baos, header);
 
         for (final CRAIEntry entry : full) {
             final Slice slice = new Slice();
@@ -144,7 +141,7 @@ public class CRAIIndex {
             slice.index = entry.sliceIndex;
             slice.offset = entry.sliceOffset;
 
-            indexer.processAlignment(slice);
+            indexer.processSingleReferenceSlice(slice);
         }
         indexer.finish();
 

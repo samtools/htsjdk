@@ -71,12 +71,11 @@ public class ReadBase implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder(getClass().getSimpleName() + "[");
-        sb.append("position=").append(position);
-        sb.append("; base=").appendCodePoint(base);
-        sb.append("; score=").appendCodePoint(qualityScore);
-        sb.append("] ");
-        return sb.toString();
+        return new StringBuilder(getClass().getSimpleName() + "[")
+                .append("position=").append(position)
+                .append("; base=").appendCodePoint(base)
+                .append("; score=").appendCodePoint(qualityScore)
+                .append("] ").toString();
     }
 
     public byte getBase() {

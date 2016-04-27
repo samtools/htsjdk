@@ -62,6 +62,8 @@ public class Sam2CramRecordFactory {
     private final Version version;
     private byte[] refSNPs;
 
+    final private SAMFileHeader header;
+
     private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
     private final Map<String, Integer> readGroupMap = new HashMap<String, Integer>();
@@ -75,8 +77,6 @@ public class Sam2CramRecordFactory {
     public final Set<String> ignoreTags = new TreeSet<String>();
 
     {
-        ignoreTags.add(SAMTag.NM.name());
-        ignoreTags.add(SAMTag.MD.name());
         ignoreTags.add(SAMTag.RG.name());
     }
 
@@ -88,6 +88,7 @@ public class Sam2CramRecordFactory {
     public Sam2CramRecordFactory(final byte[] refBases, final SAMFileHeader samFileHeader, final Version version) {
         this.refBases = refBases;
         this.version = version;
+        this.header = samFileHeader;
 
         final List<SAMReadGroupRecord> readGroups = samFileHeader.getReadGroups();
         for (int i = 0; i < readGroups.size(); i++) {
@@ -96,7 +97,17 @@ public class Sam2CramRecordFactory {
         }
     }
 
+    /**
+     * Create a CramCompressionRecord.
+     *
+     * @param record If the input record does not have an associated SAMFileHeader, it will be updated
+     *               with the header used for the factory in order to allow reference indices to be resolved.
+     * @return CramCompressionRecord
+     */
     public CramCompressionRecord createCramRecord(final SAMRecord record) {
+        if (null == record.getHeader()) {
+            record.setHeader(header);
+        }
         final CramCompressionRecord cramRecord = new CramCompressionRecord();
         if (record.getReadPairedFlag()) {
             cramRecord.mateAlignmentStart = record.getMateAlignmentStart();

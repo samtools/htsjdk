@@ -110,7 +110,7 @@ class TextualBAMIndexWriter implements BAMIndexWriter {
                 continue;
             }
             pw.print("  Ref " + reference + " bin " + bin.getBinNumber() + " has n_chunk= " + chunkList.size());
-            if (chunkList.size() == 0) {
+            if (chunkList.isEmpty()) {
                  pw.println();
             }
             for (final Chunk c : chunkList) {

@@ -103,7 +103,7 @@ public final class CommonInfo implements Serializable {
     }
 
     public boolean isFiltered() {
-        return filters == null ? false : filters.size() > 0;
+        return filters == null ? false : !filters.isEmpty();
     }
 
     public boolean isNotFiltered() {
@@ -207,7 +207,7 @@ public final class CommonInfo implements Serializable {
     public void putAttributes(Map<String, ?> map) {
         if ( map != null ) {
             // for efficiency, we can skip the validation if the map is empty
-            if ( attributes.size() == 0 ) {
+            if (attributes.isEmpty()) {
                 if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
                     attributes = new HashMap<String, Object>();
                 attributes.putAll(map);

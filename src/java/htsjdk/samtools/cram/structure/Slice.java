@@ -4,7 +4,7 @@
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * You may obtain a copy of the License at4
  * <p/>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p/>
@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.structure;
 import htsjdk.samtools.SAMBinaryTagAndUnsignedArrayValue;
 import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
@@ -33,8 +34,9 @@ import java.util.Map;
  * CRAM slice is a logical union of blocks into for example alignment slices.
  */
 public class Slice {
-    public static final int UNMAPPED_OR_NO_REFERENCE = -1;
     public static final int MULTI_REFERENCE = -2;
+    public static final int NO_ALIGNMENT_START = -1;
+    public static final int NO_ALIGNMENT_SPAN = 0;
     private static final Log log = Log.getInstance(Slice.class);
 
     // as defined in the specs:
@@ -66,7 +68,8 @@ public class Slice {
     public SAMBinaryTagAndValue sliceTags;
 
     private void alignmentBordersSanityCheck(final byte[] ref) {
-        if (alignmentStart > 0 && sequenceId >= 0 && ref == null) throw new NullPointerException("Mapped slice reference is null.");
+        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return ;
+        if (alignmentStart > 0 && sequenceId >= 0 && ref == null) throw new IllegalArgumentException ("Mapped slice reference is null.");
 
         if (alignmentStart > ref.length) {
             log.error(String.format("Slice mapped outside of reference: seqID=%d, start=%d, counter=%d.", sequenceId, alignmentStart,
@@ -81,6 +84,11 @@ public class Slice {
     }
 
     public boolean validateRefMD5(final byte[] ref) {
+        if(sequenceId == Slice.MULTI_REFERENCE)
+            throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
+
+        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return true;
+
         alignmentBordersSanityCheck(ref);
 
         if (!validateRefMD5(ref, alignmentStart, alignmentSpan, refMD5)) {
@@ -156,11 +164,8 @@ public class Slice {
                 if (ref.length <= shoulder * 2)
                     sb.append(new String(ref));
                 else {
-                    sb.append(new String(Arrays.copyOfRange(ref,
-                            alignmentStart - 1, alignmentStart + shoulder)));
-                    sb.append("...");
-                    sb.append(new String(Arrays.copyOfRange(ref, alignmentStart
-                            - 1 + span - shoulder, alignmentStart + span)));
+
+                    sb.append(getBrief(alignmentStart, alignmentSpan, ref, shoulder));
                 }
 
                 log.debug(String.format("Slice md5: %s for %d:%d-%d, %s",
@@ -216,12 +221,6 @@ public class Slice {
     }
 
     void setAttribute(final short tag, final Object value, final boolean isUnsignedArray) {
-        if (value != null && !(value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof String ||
-                value instanceof Character || value instanceof Float || value instanceof byte[] || value instanceof short[] || value
-                instanceof int[] || value instanceof float[])) {
-            throw new SAMException("Attribute type " + value.getClass() + " not supported. Tag: " + SAMTagUtil.getSingleton()
-                    .makeStringTag(tag));
-        }
         if (value == null) {
             if (this.sliceTags != null) this.sliceTags = this.sliceTags.remove(tag);
         } else {
@@ -229,14 +228,18 @@ public class Slice {
             if (!isUnsignedArray) {
                 tmp = new SAMBinaryTagAndValue(tag, value);
             } else {
-                if (!value.getClass().isArray() || value instanceof float[]) {
-                    throw new SAMException("Attribute type " + value.getClass() + " cannot be encoded as an unsigned array. Tag: " +
-                            SAMTagUtil.getSingleton().makeStringTag(tag));
-                }
                 tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, value);
             }
             if (this.sliceTags == null) this.sliceTags = tmp;
             else this.sliceTags = this.sliceTags.insert(tmp);
         }
+    }
+
+    public boolean isMapped() {
+        return sequenceId > SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+    }
+
+    public boolean isMultiref() {
+        return sequenceId == Slice.MULTI_REFERENCE;
     }
 }

@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFContigHeaderLine;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,7 +19,8 @@ import java.util.Set;
  * A Comparator that orders VariantContexts by the ordering of the contigs/chromosomes in the List
  * provided at construction time, then by start position with each contig/chromosome.
  */
-public class VariantContextComparator implements Comparator<VariantContext> {
+public class VariantContextComparator implements Comparator<VariantContext>, Serializable {
+	private static final long serialVersionUID = 1L;
 
 	public static List<String> getSequenceNameList(final SAMSequenceDictionary dictionary) {
 		final List<String> list = new ArrayList<String>();
@@ -32,7 +34,7 @@ public class VariantContextComparator implements Comparator<VariantContext> {
 	private final Map<String, Integer> contigIndexLookup;
 
 	public VariantContextComparator(final List<String> contigs) {
-		if (contigs.size() == 0) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
+		if (contigs.isEmpty()) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
 
 		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
 		int index = 0;
@@ -53,7 +55,7 @@ public class VariantContextComparator implements Comparator<VariantContext> {
 	 *
 	 */
 	public VariantContextComparator(final Collection<VCFContigHeaderLine> headerLines) {
-		if (headerLines.size() == 0) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
+		if (headerLines.isEmpty()) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
 
 		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
 		for (final VCFContigHeaderLine headerLine : headerLines) {

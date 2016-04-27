@@ -10,6 +10,6 @@ public class CodeUtilTest {
         final String notNull = "Not null!";
         Assert.assertEquals(CodeUtil.getOrElse(notNull, null), notNull);
         Assert.assertEquals(CodeUtil.getOrElse(null, notNull), notNull);
-        Assert.assertEquals(CodeUtil.getOrElse(null, null), null);
+        Assert.assertEquals((Object) CodeUtil.getOrElse(null, null), (Object) null);
     }
 }

@@ -18,7 +18,11 @@ public class DefaultSAMRecordFactory implements SAMRecordFactory {
         return new SAMRecord(header);
     }
 
-    /** Create a new BAM Record. */
+    /**
+     * Create a new BAM Record. If the reference sequence index or mate reference sequence index are
+     * any value other than NO_ALIGNMENT_REFERENCE_INDEX, the values must be resolvable against the sequence
+     * dictionary in the header argument.
+     */
     public BAMRecord createBAMRecord (final SAMFileHeader header,
                                       final int referenceSequenceIndex,
                                       final int alignmentStart,

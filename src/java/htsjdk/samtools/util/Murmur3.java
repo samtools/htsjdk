@@ -30,11 +30,15 @@
  */
 package htsjdk.samtools.util;
 
+import java.io.Serializable;
+
 /**
  * Provides an implementation of the Murmur3_32 hash algorithm that has desirable properties in terms of randomness
  * and uniformity of the distribution of output values that make it a useful hashing algorithm for downsampling.
  */
-public final class Murmur3 {
+public final class Murmur3 implements Serializable{
+    private static final long serialVersionUID = 1L;
+
     private final int seed ;
 
     /** Constructs a Murmur3 hash with the given seed. */

@@ -63,10 +63,8 @@ public class InsertBase implements Serializable, ReadFeature {
 
     @Override
     public String toString() {
-        final StringBuilder stringBuilder = new StringBuilder().append((char) operator).append('@');
-        stringBuilder.append(position);
-        stringBuilder.append('\\').appendCodePoint(base);
-        return stringBuilder.toString();
+        return new StringBuilder().append((char) operator).append('@')
+                .append(position).append('\\').appendCodePoint(base).toString();
     }
 
     public byte getBase() {

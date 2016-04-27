@@ -75,7 +75,7 @@ public class QualityScorePreservation {
     private static List<PreservationPolicy> parsePolicies(final String spec) {
         final List<PreservationPolicy> policyList = new ArrayList<PreservationPolicy>();
         for (final String string : spec.split("-")) {
-            if (string.length() == 0)
+            if (string.isEmpty())
                 continue;
             final PreservationPolicy policy = parseSinglePolicy(string);
             policyList.add(policy);

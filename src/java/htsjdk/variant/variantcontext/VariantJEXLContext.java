@@ -37,12 +37,11 @@ import java.util.Map;
  *
  * Class VariantJEXLContext
  *
- * implements the JEXML context for VariantContext; this saves us from
- * having to generate a JEXML context lookup map everytime we want to evaluate an expression.
+ * implements the JEXL context for VariantContext; this saves us from
+ * having to generate a JEXL context lookup map everytime we want to evaluate an expression.
  *
  * This is package protected, only classes in variantcontext should have access to it.
  *
- * // todo -- clean up to remove or better support genotype filtering 
  */
 
 class VariantJEXLContext implements JexlContext {
@@ -53,22 +52,21 @@ class VariantJEXLContext implements JexlContext {
         public Object get(VariantContext vc);
     }
 
-    private static Map<String, AttributeGetter> x = new HashMap<String, AttributeGetter>();
+    private static Map<String, AttributeGetter> attributes = new HashMap<String, AttributeGetter>();
 
     static {
-        x.put("vc",   new AttributeGetter() { public Object get(VariantContext vc) { return vc; }});
-        x.put("CHROM",   new AttributeGetter() { public Object get(VariantContext vc) { return vc.getChr(); }});
-        x.put("POS",     new AttributeGetter() { public Object get(VariantContext vc) { return vc.getStart(); }});
-        x.put("TYPE",    new AttributeGetter() { public Object get(VariantContext vc) { return vc.getType().toString(); }});
-        x.put("QUAL",    new AttributeGetter() { public Object get(VariantContext vc) { return -10 * vc.getLog10PError(); }});
-        x.put("ALLELES", new AttributeGetter() { public Object get(VariantContext vc) { return vc.getAlleles(); }});
-        x.put("N_ALLELES", new AttributeGetter() { public Object get(VariantContext vc) { return vc.getNAlleles(); }});
-        x.put("FILTER",    new AttributeGetter() { public Object get(VariantContext vc) { return vc.isFiltered() ? "1" : "0"; }});
+        attributes.put("vc", (VariantContext vc) -> vc);
+        attributes.put("CHROM", VariantContext::getChr);
+        attributes.put("POS", VariantContext::getStart);
+        attributes.put("TYPE", (VariantContext vc) -> vc.getType().toString());
+        attributes.put("QUAL", (VariantContext vc) -> -10 * vc.getLog10PError());
+        attributes.put("ALLELES", VariantContext::getAlleles);
+        attributes.put("N_ALLELES", VariantContext::getNAlleles);
+        attributes.put("FILTER", (VariantContext vc) -> vc.isFiltered() ? "1" : "0");
 
-//        x.put("GT",        new AttributeGetter() { public Object get(VariantContext vc) { return g.getGenotypeString(); }});
-        x.put("homRefCount",  new AttributeGetter() { public Object get(VariantContext vc) { return vc.getHomRefCount(); }});
-        x.put("hetCount",     new AttributeGetter() { public Object get(VariantContext vc) { return vc.getHetCount(); }});
-        x.put("homVarCount",  new AttributeGetter() { public Object get(VariantContext vc) { return vc.getHomVarCount(); }});
+        attributes.put("homRefCount", VariantContext::getHomRefCount);
+        attributes.put("hetCount", VariantContext::getHetCount);
+        attributes.put("homVarCount", VariantContext::getHomVarCount);
     }
 
     public VariantJEXLContext(VariantContext vc) {
@@ -77,8 +75,8 @@ class VariantJEXLContext implements JexlContext {
 
     public Object get(String name) {
         Object result = null;
-        if ( x.containsKey(name) ) { // dynamic resolution of name -> value via map
-            result = x.get(name).get(vc);
+        if ( attributes.containsKey(name) ) { // dynamic resolution of name -> value via map
+            result = attributes.get(name).get(vc);
         } else if ( vc.hasAttribute(name)) {
             result = vc.getAttribute(name);
         } else if ( vc.getFilters().contains(name) ) {

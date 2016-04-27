@@ -123,10 +123,13 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     }
 
     /**
-     * Must be called before addAlignment.
+     * Must be called before addAlignment. Header cannot be null.
      */
     public void setHeader(final SAMFileHeader header)
     {
+        if (null == header) {
+            throw new IllegalArgumentException("A non-null SAMFileHeader is required for a writer");
+        }
         this.header = header;
         if (sortOrder == null) {
              sortOrder = SAMFileHeader.SortOrder.unsorted;
@@ -168,12 +171,19 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         throw new IllegalStateException("sortOrder should not be null");
     }
 
+    /**
+     * Add an alignment record to be emitted by the writer.
+     *
+     * @param alignment Must not be null. The record will be updated to use the header used by this writer, which will
+     *                  in turn cause any unresolved reference and mate reference indices to be resolved against the
+     *                  header's sequence dictionary.
+     * @throws IllegalArgumentException if the record's reference or mate reference indices cannot be
+     * resolved against the writer's header using the current reference and mate reference names
+     */
     public void addAlignment(final SAMRecord alignment)
     {
+        alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
         if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-            if (!header.getGroupOrder().equals(SAMFileHeader.GroupOrder.none)) {
-                throw new UnsupportedOperationException("GroupOrder " + header.getGroupOrder() + " is not supported");
-            }
             writeAlignment(alignment);
         } else if (presorted) {
             assertPresorted(alignment);
@@ -213,7 +223,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
 
     /**
      * Writes the record to disk.  Sort order has been taken care of by the time
-     * this method is called.
+     * this method is called. The record must hava a non-null SAMFileHeader.
      * @param alignment
      */
     abstract protected void writeAlignment(SAMRecord alignment);

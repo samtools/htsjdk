@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.util.StringUtil;
+
 /**
  * Wrapper around a reference sequence that has been read from a reference file.
  *
@@ -59,6 +61,16 @@ public class ReferenceSequence {
      * held interally.  Do not modify it!!!
      */
     public byte[] getBases() { return bases; }
+
+    /**
+     * Returns the bases represented by this ReferenceSequence as a String. Since this will copy the bases
+     * and convert them to two-byte characters, this should not be used on very long reference sequences,
+     * but as a convenience when manipulating short sequences returned by
+     * {@link ReferenceSequenceFile#getSubsequenceAt(String, long, long)}
+     *
+     * @return The set of bases represented by this ReferenceSequence, as a String
+     */
+    public String getBaseString() { return StringUtil.bytesToString(bases); }
 
     /** Gets the 0-based index of this contig in the source file from which it came. */
     public int getContigIndex() { return contigIndex; }

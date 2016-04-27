@@ -78,9 +78,7 @@ public class TextTagCodec {
                 throw new IllegalArgumentException("Value for tag " + tagName + " cannot be stored in either a signed or unsigned 32-bit integer: " + longVal);
             }
         }
-        sb.append(tagType);
-        sb.append(':');
-        sb.append(value.toString());
+        sb.append(tagType).append(':').append(value.toString());
         return sb.toString();
     }
 
@@ -102,7 +100,7 @@ public class TextTagCodec {
         final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
         final int length = Array.getLength(value);
         for (int i = 1; i < length; ++i) {
-            ret.append(",");
+            ret.append(',');
             ret.append(Array.get(value, i).toString());
         }
         return ret.toString();
@@ -139,10 +137,8 @@ public class TextTagCodec {
      * @return Colon-separated text representation suitable for a SAM header, i.e. name:value.
      */
     public String encodeUntypedTag(final String tagName, final Object value) {
-        final StringBuilder sb = new StringBuilder(tagName);
-        sb.append(':');
-        sb.append(value.toString());
-        return sb.toString();
+        return new StringBuilder(tagName).append(':')
+                .append(value.toString()).toString();
     }
 
     /**

@@ -32,14 +32,15 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Provide core sequence dictionary functionality required by all fasta file readers.
  * @author Matt Hanna
  */
 abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
-    protected final File file;
+    private final Path path;
     protected SAMSequenceDictionary sequenceDictionary;
 
     /**
@@ -47,18 +48,26 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      * @param file Fasta file to read.  Also acts as a prefix for supporting files.
      */
     AbstractFastaSequenceFile(final File file) {
-        this.file = file;
-        final File dictionary = findSequenceDictionary(file);
+        this(file == null ? null : file.toPath());
+    }
+
+    /**
+     * Finds and loads the sequence file dictionary.
+     * @param path Fasta file to read.  Also acts as a prefix for supporting files.
+     */
+    AbstractFastaSequenceFile(final Path path) {
+        this.path = path;
+        final Path dictionary = findSequenceDictionary(path);
 
         if (dictionary != null) {
             IOUtil.assertFileIsReadable(dictionary);
 
             try {
                 final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                final BufferedLineReader reader = new BufferedLineReader(new FileInputStream(dictionary));
+                final BufferedLineReader reader = new BufferedLineReader(Files.newInputStream(dictionary));
                 final SAMFileHeader header = codec.decode(reader,
                         dictionary.toString());
-                if (header.getSequenceDictionary() != null && header.getSequenceDictionary().size() > 0) {
+                if (header.getSequenceDictionary() != null && !header.getSequenceDictionary().isEmpty()) {
                     this.sequenceDictionary = header.getSequenceDictionary();
                 }
                 reader.close();
@@ -70,31 +79,49 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     protected static File findSequenceDictionary(final File file) {
+        if (file == null) {
+            return null;
+        }
+        Path dictionary = findSequenceDictionary(file.toPath());
+        if (dictionary == null) {
+            return null;
+        }
+        return dictionary.toFile();
+    }
+
+    protected static Path findSequenceDictionary(final Path path) {
+        if (path == null) {
+            return null;
+        }
         // Try and locate the dictionary
-        String dictionaryName = file.getAbsolutePath();
-        String dictionaryNameExt = file.getAbsolutePath();
+        Path dictionary = path.toAbsolutePath();
+        Path dictionaryExt = path.toAbsolutePath();
         boolean fileTypeSupported = false;
         for (final String extension : ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
-            if (dictionaryName.endsWith(extension)) {
-                  dictionaryNameExt = new String(dictionaryName);
-                  dictionaryNameExt += IOUtil.DICT_FILE_EXTENSION;
-                  dictionaryName = dictionaryName.substring(0, dictionaryName.lastIndexOf(extension));
-                  dictionaryName += IOUtil.DICT_FILE_EXTENSION;
-                  fileTypeSupported = true;
-                  break;
+            String filename = dictionary.getFileName().toString();
+            if (filename.endsWith(extension)) {
+                dictionaryExt = dictionary.resolveSibling(filename + IOUtil
+                    .DICT_FILE_EXTENSION);
+                String filenameNoExt = filename.substring(0, filename.lastIndexOf(extension));
+                dictionary = dictionary.resolveSibling(filenameNoExt+ IOUtil.DICT_FILE_EXTENSION);
+                fileTypeSupported = true;
+                break;
             }
         }
         if (!fileTypeSupported)
-            throw new IllegalArgumentException("File is not a supported reference file type: " + file.getAbsolutePath());
+            throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());
 
-        final File dictionary = new File(dictionaryName);
-        if (dictionary.exists())
+        if (Files.exists(dictionary))
             return dictionary;
         // try without removing the file extension
-        final File dictionaryExt = new File(dictionaryNameExt);
-        if (dictionaryExt.exists())
+        if (Files.exists(dictionaryExt))
             return dictionaryExt;
         else return null;
+    }
+
+    /** Returns the path to the reference file. */
+    protected Path getPath() {
+        return path;
     }
 
     /**
@@ -106,8 +133,13 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     /** Returns the full path to the reference file. */
+    protected String getAbsolutePath() {
+        return path.toAbsolutePath().toString();
+    }
+
+    /** Returns the full path to the reference file. */
     public String toString() {
-        return this.file.getAbsolutePath();
+        return getAbsolutePath();
     }
 
     /** default implementation -- override if index is supported */
@@ -120,7 +152,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
 
     /** default implementation -- override if index is supported */
     public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
-        throw new UnsupportedOperationException("Index does not appear to exist for" + file.getAbsolutePath() + ".  samtools faidx can be used to create an index");
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getAbsolutePath() + ".  samtools faidx can be used to create an index");
     }
 
 }

@@ -33,6 +33,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -99,6 +100,25 @@ public class CramIO {
             return ZERO_B_EOF_MARKER.length;
         }
         return 0;
+    }
+
+    /**
+     * Write a CRAM File header and a SAM Header to an output stream.
+     *
+     * @param cramVersion
+     * @param outStream
+     * @param samFileHeader
+     * @param cramID
+     * @return the offset in the stream after writing the headers
+     */
+
+    public static long writeHeader(final Version cramVersion, final OutputStream outStream, final SAMFileHeader samFileHeader, String cramID) {
+        final CramHeader cramHeader = new CramHeader(cramVersion, cramID, samFileHeader);
+        try {
+            return CramIO.writeCramHeader(cramHeader, outStream);
+        } catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     private static boolean streamEndsWith(final SeekableStream seekableStream, final byte[] marker) throws IOException {
@@ -235,8 +255,8 @@ public class CramIO {
         container.blocks = new Block[]{block};
         container.landmarks = new int[0];
         container.slices = new Slice[0];
-        container.alignmentSpan = 0;
-        container.alignmentStart = 0;
+        container.alignmentSpan = Slice.NO_ALIGNMENT_SPAN;
+        container.alignmentStart = Slice.NO_ALIGNMENT_START;
         container.bases = 0;
         container.globalRecordCounter = 0;
         container.nofRecords = 0;

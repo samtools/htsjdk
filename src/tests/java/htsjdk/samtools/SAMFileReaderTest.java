@@ -82,7 +82,6 @@ public class SAMFileReaderTest {
         return testFiles;
     }
 
-
     @Test(dataProvider = "NoIndexCRAMTest")
     public void CRAMNoIndexTest(final String inputFile, final String referenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
@@ -133,17 +132,8 @@ public class SAMFileReaderTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
-    @DataProvider(name = "cramNegativeTestCases")
-    public Object[][] cramTestNegativeCases() {
-        final Object[][] scenarios = new Object[][]{
-                {"cram_with_bai_index.cram",},
-                {"cram_with_crai_index.cram"},
-        };
-        return scenarios;
-    }
-
-    @Test(dataProvider = "cramNegativeTestCases", expectedExceptions=CRAMException.class)
-    public void testReferenceRequiredForCRAM(final String inputFile) {
+    @Test(dataProvider = "cramTestCases", expectedExceptions=IllegalStateException.class)
+    public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
         for (final SAMRecord rec : reader) {
@@ -151,7 +141,7 @@ public class SAMFileReaderTest {
         CloserUtil.close(reader);
     }
 
-    @DataProvider(name = "cramPositiveTestCases")
+    @DataProvider(name = "cramTestCases")
     public Object[][] cramTestPositiveCases() {
         final Object[][] scenarios = new Object[][]{
                 {"cram_with_bai_index.cram", "hg19mini.fasta"},
@@ -160,7 +150,7 @@ public class SAMFileReaderTest {
         return scenarios;
     }
 
-    @Test(dataProvider = "cramPositiveTestCases")
+    @Test(dataProvider = "cramTestCases")
     public void testIterateCRAMWithIndex(final String inputFile, final String referenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final File reference = new File(TEST_DATA_DIR, referenceFile);
@@ -169,4 +159,12 @@ public class SAMFileReaderTest {
         }
         CloserUtil.close(reader);
     }
+
+    @Test
+    public void samRecordFactoryNullHeaderTest() {
+        final SAMRecordFactory factory = new DefaultSAMRecordFactory();
+        final SAMRecord samRec = factory.createSAMRecord(null);
+        Assert.assertTrue(samRec.getHeader() == null);
+    }
+
 }

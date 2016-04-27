@@ -34,26 +34,30 @@
     <property name="classes.test" value="testclasses"/>
     <property name="scripts" value="src/scripts"/>
     <property name="test.output" value="dist/test"/>
+    <property name="intelDeflator" value="${lib}/jni/libIntelDeflater.so"/>
 
-    <property name="javac.target" value="1.6"/>
+    <property name="javac.target" value="1.8"/>
     <property name="javac.debug" value="true"/>
 
     <!-- Get GIT hash, if available, otherwise leave it blank.  -->
 
     <property name="repository.revision" value=""/>
-    <property name="htsjdk-version" value="1.141"/>
+    <property name="htsjdk-version" value="2.2.2"/>
     <property name="htsjdk-version-file" value="htsjdk.version.properties"/>
     <property name="testng.verbosity" value="2"/>
     <property name="test.debug.port" value="5005" />  <!-- override on the command line if desired -->
 
-    <condition  property="isUnix">
-        <os family="unix"/>
+    <condition property="isUnix">
+        <and>
+            <os family="unix"/>
+            <not><os family="mac"/></not>
+        </and>
     </condition>
     <target name="set_excluded_test_groups_unix" if="isUnix">
         <property name="excludedTestGroups" value="slow, broken"/>
     </target>
     <target name="set_excluded_test_groups_non_unix" unless="isUnix">
-        <property name="excludedTestGroups" value="slow, broken, unix"/>
+        <property name="excludedTestGroups" value="slow, broken, unix, intel"/>
     </target>
     <target name="set_excluded_test_groups" depends="set_excluded_test_groups_unix,set_excluded_test_groups_non_unix"/>
 
@@ -119,30 +123,52 @@
     </target>
 
     <!-- TEST -->
-    <target name="test" depends="compile, set_excluded_test_groups" description="Run unit tests">
-        <taskdef resource="testngtasks" classpathref="classpath"/>
-        <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
-                failureproperty="tests.failed" excludedgroups="${excludedTestGroups}" workingDir="${basedir}"
-                verbose="${testng.verbosity}">
-            <classpath>
-                <pathelement path="${classes}"/>
-                <pathelement path="${classes.test}"/>
-                <pathelement path="${scripts}"/>
-            </classpath>
-            <classfileset dir="${classes.test}">
-                <include name="**/Test*.class"/>
-                <include name="**/*Test.class"/>
-            </classfileset>
-            <jvmarg value="-Xmx2G"/>
-        </testng>
-        <junitreport todir="${dist}/test" >
-            <fileset dir="${test.output}">
-                <include name="*.xml"/>
-            </fileset>
-            <report format="noframes" todir="${dist}/test" styledir="etc/test"/>
-        </junitreport>
-        <copy file="etc/test/testng.css" todir="${dist}/test" overwrite="true"/>
-        <fail if="tests.failed" message="There were failed unit tests"/>
+    <macrodef name="run-test">
+        <attribute name="excludedTestGroups" default=""/>
+        <attribute name="includedTestGroups" default=""/>
+        <attribute name="additionalJVMarg" default=""/>
+
+        <sequential>
+                <taskdef resource="testngtasks" classpathref="classpath"/>
+                <testng suitename="htsjdk-tests" classpathref="classpath" outputdir="${test.output}"
+                        failureproperty="tests.failed" excludedgroups="@{excludedTestGroups}" groups="@{includedTestGroups}"
+                        workingDir="${basedir}"
+                        verbose="${testng.verbosity}">
+                    <classpath>
+                        <pathelement path="${classes}"/>
+                        <pathelement path="${classes.test}"/>
+                        <pathelement path="${scripts}"/>
+                    </classpath>
+                    <classfileset dir="${classes.test}">
+                        <include name="**/Test*.class"/>
+                        <include name="**/*Test.class"/>
+                    </classfileset>
+                    <jvmarg line="-Xmx2G @{additionalJVMarg}"/>
+                </testng>
+                <junitreport todir="${dist}/test" >
+                    <fileset dir="${test.output}">
+                        <include name="*.xml"/>
+                    </fileset>
+                    <report format="noframes" todir="${dist}/test" styledir="etc/test"/>
+                </junitreport>
+                <copy file="etc/test/testng.css" todir="${dist}/test" overwrite="true"/>
+                <fail if="tests.failed" message="There were failed unit tests"/>
+        </sequential>
+    </macrodef>
+
+
+    <target name="test" depends="compile, set_excluded_test_groups, intel-test" description="Run unit tests">
+            <run-test excludedTestGroups="${excludedTestGroups}, sra, intel"/>
+    </target>
+
+    <target name="sra-test" depends="compile, set_excluded_test_groups" description="Run SRA unit tests">
+        <run-test includedTestGroups="sra" excludedTestGroups="${excludedTestGroups}"/>
+    </target>
+
+    <!-- needs to be in a separate target since jvm has different argument -->
+    <target name="intel-test" depends="compile, set_excluded_test_groups" description="Run Intel unit tests" if="isUnix">
+        <echo message="intelDeflator = ${intelDeflator}"/>
+        <run-test includedTestGroups="intel" additionalJVMarg="-Dsamjdk.intel_deflater_so_path=${intelDeflator}"/>
     </target>
 
     <target name="single-test"
@@ -197,7 +223,7 @@
                 protected="true"
                 use="true"
                 version="true"
-                additionalparam="-notimestamp"
+                additionalparam="-Xdoclint:none -notimestamp"
                 failonerror="true">
             <classpath>
                 <pathelement location="${java.home}/../lib/tools.jar" />

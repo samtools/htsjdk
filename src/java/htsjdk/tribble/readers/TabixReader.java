@@ -292,7 +292,7 @@ public class TabixReader {
                     String alt;
                     alt = end >= 0 ? s.substring(beg, end) : s.substring(beg);
                     if (col == 4) { // REF
-                        if (alt.length() > 0) intv.end = intv.beg + alt.length();
+                        if (!alt.isEmpty()) intv.end = intv.beg + alt.length();
                     } else if (col == 8) { // INFO
                         int e_off = -1, i = alt.indexOf("END=");
                         if (i == 0) e_off = 4;
@@ -301,7 +301,7 @@ public class TabixReader {
                             if (i >= 0) e_off = i + 5;
                         }
                         if (e_off > 0) {
-                            i = alt.indexOf(";", e_off);
+                            i = alt.indexOf(';', e_off);
                             intv.end = Integer.parseInt(i > e_off ? alt.substring(e_off, i) : alt.substring(e_off));
                         }
                     }

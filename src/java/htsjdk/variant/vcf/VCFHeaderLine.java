@@ -136,7 +136,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @return true if the line is a VCF meta data line, or false if it is not
      */
     public static boolean isHeaderLine(String line) {
-        return line != null && line.length() > 0 && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
+        return line != null && !line.isEmpty() && VCFHeader.HEADER_INDICATOR.equals(line.substring(0,1));
     }
 
     /**
@@ -146,21 +146,29 @@ public class VCFHeaderLine implements Comparable, Serializable {
      */
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
         StringBuilder builder = new StringBuilder();
-        builder.append("<");
+        builder.append('<');
         boolean start = true;
         for (Map.Entry<String,?> entry : keyValues.entrySet()) {
             if (start) start = false;
-            else builder.append(",");
+            else builder.append(',');
 
             if ( entry.getValue() == null ) throw new TribbleException.InternalCodecException("Header problem: unbound value at " + entry + " from " + keyValues);
 
             builder.append(entry.getKey());
-            builder.append("=");
+            builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
                            entry.getValue().toString().contains(" ") ||
-                           entry.getKey().equals("Description") ? "\""+ entry.getValue() + "\"" : entry.getValue());
+                           entry.getKey().equals("Description") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
-        builder.append(">");
+        builder.append('>');
         return builder.toString();
+    }
+
+    private static String escapeQuotes(final String value) {
+        // java escaping in a string literal makes this harder to read than it should be
+        // without string literal escaping and quoting the regex would be: replaceAll( ([^\])" , $1\" )
+        // ie replace: something that's not a backslash ([^\]) followed by a double quote
+        // with: the thing that wasn't a backslash ($1), followed by a backslash, followed by a double quote
+        return value.replaceAll("([^\\\\])\"", "$1\\\\\"");
     }
 }

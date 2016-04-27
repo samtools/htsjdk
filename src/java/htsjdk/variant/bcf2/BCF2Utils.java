@@ -146,7 +146,7 @@ public final class BCF2Utils {
             for ( final String s : strings ) {
                 if ( s != null ) {
                     assert s.indexOf(",") == -1; // no commas in individual strings
-                    b.append(",").append(s);
+                    b.append(',').append(s);
                 }
             }
             return b.toString();
@@ -169,7 +169,7 @@ public final class BCF2Utils {
     }
 
     public static boolean isCollapsedString(final String s) {
-        return s.length() > 0 && s.charAt(0) == ',';
+        return !s.isEmpty() && s.charAt(0) == ',';
     }
 
     /**

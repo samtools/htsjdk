@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 
 import java.io.*;
@@ -80,7 +81,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
     /** Returns the histogram contained in the metrics file if any. */
     public Histogram<HKEY> getHistogram() {
-        if (histograms.size() > 0) return this.histograms.get(0);
+        if (!histograms.isEmpty()) return this.histograms.get(0);
         else return null;
     }
 
@@ -381,7 +382,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
                             for (int i=0; i<fields.length; ++i) {
                                 Object value = null;
-                                if (values[i] != null && values[i].length() > 0) {
+                                if (values[i] != null && !values[i].isEmpty()) {
                                     value = formatter.parseObject(values[i], fields[i].getType());
                                 }
 
@@ -470,13 +471,13 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
             if (tryOtherPackages) {
                 for (final String p : packages) {
                     try {
-                        return loadClass(p + className.substring(className.lastIndexOf(".")), false);
+                        return loadClass(p + className.substring(className.lastIndexOf('.')), false);
                     }
                     catch (ClassNotFoundException cnf2) {/* do nothing */}
                     // If it ws an inner class, try and see if it's a stand-alone class now
-                    if (className.indexOf("$") > -1) {
+                    if (className.indexOf('$') > -1) {
                         try {
-                            return loadClass(p + "." + className.substring(className.lastIndexOf("$") + 1), false);
+                            return loadClass(p + "." + className.substring(className.lastIndexOf('$') + 1), false);
                         }
                         catch (ClassNotFoundException cnf2) {/* do nothing */}
                     }
@@ -535,14 +536,12 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @param file to be read.
      * @return list of beans from the file.
      */
-    public static List<? extends MetricBase> readBeans(final File file) {
-        try {
-            final MetricsFile<MetricBase, Comparable<?>> metricsFile = new MetricsFile<MetricBase, Comparable<?>>();
-            metricsFile.read(new FileReader(file));
-            return metricsFile.getMetrics();
-        } catch (FileNotFoundException e) {
-            throw new SAMException(e.getMessage(), e);
-        }
+    public static <T extends MetricBase> List<T> readBeans(final File file) {
+        final MetricsFile<T, Comparable<?>> metricsFile = new MetricsFile<T, Comparable<?>>();
+        final Reader in = IOUtil.openFileForBufferedReading(file);
+        metricsFile.read(in);
+        CloserUtil.close(in);
+        return metricsFile.getMetrics();
     }
 
     /**

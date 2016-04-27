@@ -38,7 +38,9 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramIO;
+import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
@@ -46,12 +48,16 @@ import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
 
 /**
  * Class for both constructing BAM index content and writing it out.
@@ -61,7 +67,7 @@ import java.util.List;
  * In both cases, processAlignment is called for each cram slice and
  * finish() is called at the end.
  */
-public class CRAMIndexer {
+public class CRAMBAIIndexer {
 
     // The number of references (chromosomes) in the BAM file
     private final int numReferences;
@@ -80,7 +86,7 @@ public class CRAMIndexer {
      * @param output     binary BAM Index (.bai) file
      * @param fileHeader header for the corresponding bam file
      */
-    public CRAMIndexer(final File output, final SAMFileHeader fileHeader) {
+    public CRAMBAIIndexer(final File output, final SAMFileHeader fileHeader) {
 
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new BAMIndexBuilder(fileHeader);
@@ -93,7 +99,7 @@ public class CRAMIndexer {
      * @param output     Index will be written here.  output will be closed when finish() method is called.
      * @param fileHeader header for the corresponding bam file.
      */
-    public CRAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
+    public CRAMBAIIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
 
         numReferences = fileHeader.getSequenceDictionary().size();
         indexBuilder = new BAMIndexBuilder(fileHeader);
@@ -101,20 +107,89 @@ public class CRAMIndexer {
     }
 
     /**
-     * Record any index information for a given CRAM slice.
-     * If this alignment starts a new reference, write out the old reference.
-     * Requires a non-null value for rec.getFileSource().
+     * Index a container, any of mapped, unmapped and multiple references are allowed. The only requirement is sort
+     * order by coordinate.
+     * For multiref containers the method reads the container through unpacking all reads. This is slower than single
+     * reference but should be faster than normal reading.
      *
-     * @param slice The CRAM slice
+     * @param container container to be indexed
      */
-    public void processAlignment(final Slice slice) {
+    public void processContainer(final Container container, final ValidationStringency validationStringency) {
+        try {
+            if (container == null || container.isEOF()) {
+                return;
+            }
+
+            int sliceIndex = 0;
+            for (final Slice slice : container.slices) {
+                slice.containerOffset = container.offset;
+                slice.index = sliceIndex++;
+                if (slice.isMultiref()) {
+                    final ContainerParser parser = new ContainerParser(indexBuilder.bamHeader);
+                    final Map<Integer, AlignmentSpan> refSet = parser.getReferences(container, validationStringency);
+                    final Slice fakeSlice = new Slice();
+                    slice.containerOffset = container.offset;
+                    slice.index = sliceIndex++;
+                    /**
+                     * Unmapped span must be processed after mapped spans:
+                     */
+                    AlignmentSpan unmappedSpan = refSet.remove(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+                    for (final int refId : new TreeSet<>(refSet.keySet())) {
+                        final AlignmentSpan span = refSet.get(refId);
+                        fakeSlice.sequenceId = refId;
+                        fakeSlice.containerOffset = slice.containerOffset;
+                        fakeSlice.offset = slice.offset;
+                        fakeSlice.index = slice.index;
+
+                        fakeSlice.alignmentStart = span.getStart();
+                        fakeSlice.alignmentSpan = span.getSpan();
+                        fakeSlice.nofRecords = span.getCount();
+                        processSingleReferenceSlice(fakeSlice);
+                    }
+                    if (unmappedSpan != null) {
+                        final AlignmentSpan span = unmappedSpan;
+                        fakeSlice.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+                        fakeSlice.containerOffset = slice.containerOffset;
+                        fakeSlice.offset = slice.offset;
+                        fakeSlice.index = slice.index;
+
+                        fakeSlice.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+                        fakeSlice.alignmentSpan = 0;
+                        fakeSlice.nofRecords = span.getCount();
+                        processSingleReferenceSlice(fakeSlice);
+                    }
+                } else {
+                    processSingleReferenceSlice(slice);
+                }
+            }
+
+        } catch (final IOException e) {
+            throw new RuntimeIOException("Failed to read cram container", e);
+        }
+    }
+
+    /**
+     * Record index information for a given CRAM slice that contains either unmapped reads or
+     * reads mapped to a single reference.
+     * If this alignment starts a new reference, write out the old reference.
+     *
+     * @param slice The CRAM slice, single ref or unmapped only.
+     * @throws htsjdk.samtools.SAMException if slice refers to multiple reference sequences.
+     */
+    public void processSingleReferenceSlice(final Slice slice) {
         try {
             final int reference = slice.sequenceId;
-            if (reference != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX && reference != currentReference) {
+            if (reference == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
+                return;
+            }
+            if (slice.sequenceId == Slice.MULTI_REFERENCE) {
+                throw new SAMException("Expecting a single reference slice.");
+            }
+            if (reference != currentReference) {
                 // process any completed references
                 advanceToReference(reference);
             }
-            indexBuilder.processAlignment(slice);
+            indexBuilder.processSingleReferenceSlice(slice);
         } catch (final Exception e) {
             throw new SAMException("Exception creating BAM index for slice " + slice, e);
         }
@@ -185,11 +260,11 @@ public class CRAMIndexer {
 
 
         /**
-         * Record any index information for a given BAM record
+         * Record any index information for a given CRAM slice
          *
-         * @param slice The BAM record. Requires rec.getFileSource() is non-null.
+         * @param slice CRAM slice, single ref or unmapped only.
          */
-        public void processAlignment(final Slice slice) {
+        private void processSingleReferenceSlice(final Slice slice) {
 
             // metadata
             indexStats.recordMetaData(slice);
@@ -293,7 +368,9 @@ public class CRAMIndexer {
             }
 
             // process bins
-            if (binsSeen == 0) return null;  // no bins for this reference
+            if (binsSeen == 0) {
+                return null;  // no bins for this reference
+            }
 
             // process chunks
             // nothing needed
@@ -347,30 +424,43 @@ public class CRAMIndexer {
      * @param output File for output index file
      * @param log    optional {@link htsjdk.samtools.util.Log} to output progress
      */
-    public static void createIndex(final SeekableStream stream, final File output, final Log log) throws IOException {
+    public static void createIndex(final SeekableStream stream, final File output, final Log log, final ValidationStringency validationStringency) throws IOException {
 
         final CramHeader cramHeader = CramIO.readCramHeader(stream);
-        final CRAMIndexer indexer = new CRAMIndexer(output, cramHeader.getSamFileHeader());
+        if (cramHeader.getSamFileHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+            throw new SAMException("Expecting a coordinate sorted file.");
+        }
+        final CRAMBAIIndexer indexer = new CRAMBAIIndexer(output, cramHeader.getSamFileHeader());
 
         int totalRecords = 0;
         Container container = null;
+        ProgressLogger progressLogger = new ProgressLogger(log, 1, "indexed", "slices");
         do {
-            if (++totalRecords % 10 == 0)
-                if (null != log) log.info(totalRecords + " slices processed ...");
-
             try {
                 final long offset = stream.position();
                 container = ContainerIO.readContainer(cramHeader.getVersion(), stream);
-                if (container == null || container.isEOF())
+                if (container == null || container.isEOF()) {
                     break;
+                }
 
                 container.offset = offset;
 
-                int i = 0;
-                for (final Slice slice : container.slices) {
-                    slice.containerOffset = offset;
-                    slice.index = i++;
-                    indexer.processAlignment(slice);
+                indexer.processContainer(container, validationStringency);
+
+                if (null != log) {
+                    String sequenceName;
+                    switch (container.sequenceId) {
+                        case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
+                            sequenceName = "?";
+                            break;
+                        case Slice.MULTI_REFERENCE:
+                            sequenceName = "???";
+                            break;
+                        default:
+                            sequenceName = cramHeader.getSamFileHeader().getSequence(container.sequenceId).getSequenceName();
+                            break;
+                    }
+                    progressLogger.record(sequenceName, container.alignmentStart);
                 }
 
             } catch (final IOException e) {

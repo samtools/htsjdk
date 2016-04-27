@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -124,6 +125,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
         final ComparableSamRecordIterator iterator = this.pq.poll();
         final SAMRecord record = iterator.next();
         addIfNotEmpty(iterator);
+        // this will resolve the reference indices against the new, merged header
         record.setHeader(this.samHeaderMerger.getMergedHeader());
 
         // Fix the read group if needs be
@@ -141,17 +143,6 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
             if (oldGroupId != null) {
                 final String newGroupId = this.samHeaderMerger.getProgramGroupId(iterator.getReader().getFileHeader(), oldGroupId);
                 record.setAttribute(ReservedTagConstants.PROGRAM_GROUP_ID, newGroupId);
-            }
-        }
-
-        // Fix up the sequence indexes if needs be
-        if (this.samHeaderMerger.hasMergedSequenceDictionary()) {
-            if (record.getReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                record.setReferenceIndex(this.samHeaderMerger.getMergedSequenceIndex(iterator.getReader().getFileHeader(), record.getReferenceIndex()));
-            }
-
-            if (record.getReadPairedFlag() && record.getMateReferenceIndex() != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                record.setMateReferenceIndex(this.samHeaderMerger.getMergedSequenceIndex(iterator.getReader().getFileHeader(), record.getMateReferenceIndex()));
             }
         }
 
@@ -211,7 +202,8 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
      * sequence dictionary.  I hate the fact that this extends SAMRecordCoordinateComparator, but it avoids
      * more copy & paste.
      */
-    private class MergedSequenceDictionaryCoordinateOrderComparator extends SAMRecordCoordinateComparator {
+    private class MergedSequenceDictionaryCoordinateOrderComparator extends SAMRecordCoordinateComparator implements Serializable {
+        private static final long serialVersionUID = 1L;
 
         public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
             final int referenceIndex1 = getReferenceIndex(samRecord1);

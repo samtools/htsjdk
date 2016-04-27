@@ -37,7 +37,7 @@ import java.io.File;
  */
 public class BAMFileWriterTest {
 
-    private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
+    private SAMRecordSetBuilder getRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
         final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
         ret.addPair("readB", 20, 200, 300);
         ret.addPair("readA", 20, 100, 150);
@@ -55,7 +55,7 @@ public class BAMFileWriterTest {
      * @param presorted           If true, samText is in the order specified by sortOrder
      */
     private void testHelper(final SAMRecordSetBuilder samRecordSetBuilder, final SAMFileHeader.SortOrder sortOrder, final boolean presorted) throws Exception {
-        SamReader samReader = samRecordSetBuilder.getSamReader();
+        final SamReader samReader = samRecordSetBuilder.getSamReader();
         final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
         bamFile.deleteOnExit();
         samReader.getFileHeader().setSortOrder(sortOrder);
@@ -68,43 +68,47 @@ public class BAMFileWriterTest {
         it.close();
         samReader.close();
 
-        if (presorted) {
-            // If SAM text input was presorted, then we can compare SAM object to BAM object
-            final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
-            samReader = samRecordSetBuilder.getSamReader();
-            samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
-            Assert.assertEquals(bamReader.getFileHeader(), samReader.getFileHeader());
-            it = samReader.iterator();
-            final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
-            while (it.hasNext()) {
-                Assert.assertTrue(bamIt.hasNext());
-                final SAMRecord samRecord = it.next();
-                final SAMRecord bamRecord = bamIt.next();
-
-                // SAMRecords don't have this set, so stuff it in there
-                samRecord.setIndexingBin(bamRecord.getIndexingBin());
-
-                // Force reference index attributes to be populated
-                samRecord.getReferenceIndex();
-                bamRecord.getReferenceIndex();
-                samRecord.getMateReferenceIndex();
-                bamRecord.getMateReferenceIndex();
-
-                Assert.assertEquals(bamRecord, samRecord);
-            }
-            Assert.assertFalse(bamIt.hasNext());
+        if (presorted) { // If SAM text input was presorted, then we can compare SAM object to BAM object
+            verifyBAMFile(samRecordSetBuilder, bamFile);
         }
+    }
+
+    private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) {
+
+        final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
+        final SamReader samReader = samRecordSetBuilder.getSamReader();
+        samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
+        Assert.assertEquals(bamReader.getFileHeader(), samReader.getFileHeader());
+        final CloseableIterator<SAMRecord> it = samReader.iterator();
+        final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
+        while (it.hasNext()) {
+            Assert.assertTrue(bamIt.hasNext());
+            final SAMRecord samRecord = it.next();
+            final SAMRecord bamRecord = bamIt.next();
+
+            // SAMRecords don't have this set, so stuff it in there
+            samRecord.setIndexingBin(bamRecord.getIndexingBin());
+
+            // Force reference index attributes to be populated
+            samRecord.getReferenceIndex();
+            bamRecord.getReferenceIndex();
+            samRecord.getMateReferenceIndex();
+            bamRecord.getMateReferenceIndex();
+
+            Assert.assertEquals(bamRecord, samRecord);
+        }
+        Assert.assertFalse(bamIt.hasNext());
         CloserUtil.close(samReader);
     }
 
     @DataProvider(name = "test1")
     public Object[][] createTestData() {
         return new Object[][]{
-                {"coordinate sorted", getSAMReader(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.coordinate, false},
-                {"query sorted", getSAMReader(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.queryname, false},
-                {"unsorted", getSAMReader(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.unsorted, false},
-                {"coordinate presorted", getSAMReader(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.coordinate, true},
-                {"query presorted", getSAMReader(true, SAMFileHeader.SortOrder.queryname), SAMFileHeader.SortOrder.queryname, true},
+                {"coordinate sorted", getRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.coordinate, false},
+                {"query sorted", getRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.queryname, false},
+                {"unsorted", getRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.unsorted, false},
+                {"coordinate presorted", getRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.coordinate, true},
+                {"query presorted", getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname), SAMFileHeader.SortOrder.queryname, true},
         };
     }
 
@@ -114,10 +118,75 @@ public class BAMFileWriterTest {
         testHelper(samRecordSetBuilder, order, presorted);
     }
 
+    @Test(dataProvider = "test1")
+    public void testNullRecordHeaders(final String testName, final SAMRecordSetBuilder samRecordSetBuilder, final SAMFileHeader.SortOrder order, final boolean presorted) throws Exception {
+
+        // test that BAMFileWriter can write records that have a null header
+        final SAMFileHeader samHeader = samRecordSetBuilder.getHeader();
+        for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
+            rec.setHeader(null);
+        }
+
+        // make sure the records can actually be written out
+        final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        bamFile.deleteOnExit();
+        samHeader.setSortOrder(order);
+        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(samHeader, presorted, bamFile);
+        for (final SAMRecord rec : samRecordSetBuilder.getRecords()) {
+            bamWriter.addAlignment(rec);
+        }
+        bamWriter.close();
+
+        if (presorted) {
+            verifyBAMFile(samRecordSetBuilder, bamFile);
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testNullRecordsMismatchedHeader() throws Exception {
+
+        final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
+        for (final SAMRecord rec : samRecordSetBuilder.getRecords()) {
+            rec.setHeader(null);
+        }
+
+        // create a fake header to make sure the records cannot  be written using an invalid
+        // sequence dictionary and unresolvable references
+        final SAMFileHeader fakeHeader = new SAMFileHeader();
+        fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        bamFile.deleteOnExit();
+
+        try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(fakeHeader, false, bamFile);) {
+            for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
+                bamWriter.addAlignment(rec);
+            }
+        }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testRecordsMismatchedHeader() throws Exception {
+
+        final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
+
+        // create a fake header to make sure the records cannot  be written using an invalid
+        // sequence dictionary and unresolvable references
+        final SAMFileHeader fakeHeader = new SAMFileHeader();
+        fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
+        final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        bamFile.deleteOnExit();
+
+        try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(fakeHeader, false, bamFile);) {
+            for (SAMRecord rec : samRecordSetBuilder.getRecords()) {
+                bamWriter.addAlignment(rec);
+            }
+        }
+    }
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testNegativePresorted() throws Exception {
 
-        testHelper(getSAMReader(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.queryname, true);
+        testHelper(getRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.queryname, true);
         Assert.fail("Exception should be thrown");
     }
 }

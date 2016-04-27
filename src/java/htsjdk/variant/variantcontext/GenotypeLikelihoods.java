@@ -29,14 +29,17 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
     private final static int NUM_LIKELIHOODS_CACHE_PLOIDY = 10;
-    // caching numAlleles up to 5 and ploidy up to 10
+    // caches likelihoods up to 5 alleles and up to 10 ploidy
     private final static int[][] numLikelihoodCache = new int[NUM_LIKELIHOODS_CACHE_N_ALLELES][NUM_LIKELIHOODS_CACHE_PLOIDY];
 
     public final static int MAX_PL = Integer.MAX_VALUE;
@@ -48,7 +51,6 @@ public class GenotypeLikelihoods {
     //
     private double[] log10Likelihoods = null;
     private String likelihoodsAsString_PLs = null;
-
 
     /**
      * initialize num likelihoods cache
@@ -63,14 +65,21 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * The maximum number of alleles that we can represent as genotype likelihoods
+     * The maximum number of diploid alternate alleles that we can represent as genotype likelihoods
      */
-    public final static int MAX_ALT_ALLELES_THAT_CAN_BE_GENOTYPED = 50;
+    public final static int MAX_DIPLOID_ALT_ALLELES_THAT_CAN_BE_GENOTYPED = 50;
 
-    /*
-    * a cache of the PL index to the 2 alleles it represents over all possible numbers of alternate alleles
-    */
-    private final static GenotypeLikelihoodsAllelePair[] PLIndexToAlleleIndex = calculatePLcache(MAX_ALT_ALLELES_THAT_CAN_BE_GENOTYPED);
+    /**
+     * A cache of the PL index to the 2 alleles it represents over all possible numbers of alternate alleles
+     */
+    private final static GenotypeLikelihoodsAllelePair[] diploidPLIndexToAlleleIndex = calculateDiploidPLcache(MAX_DIPLOID_ALT_ALLELES_THAT_CAN_BE_GENOTYPED);
+
+    /**
+     * A cache of PL index to a list of alleles for any ploidy.
+     * For example, for a ploidy of 3, the allele lists for each PL index is:
+     * {0,0,0}, {0,0,1}, {0,1,1}, {1,1,1}, {0,0,2}, {0,1,2}, {1,1,2}, {0,2,2}, {1,2,2}, {2,2,2}
+     */
+    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
 
     public final static GenotypeLikelihoods fromPLField(String PLs) {
         return new GenotypeLikelihoods(PLs);
@@ -101,11 +110,11 @@ public class GenotypeLikelihoods {
     }
 
     /**
-     * Returns the genotypes likelihoods in negative log10 vector format.  pr{AA} = x, this
+     * The genotypes likelihoods in -10log10(x) vector format.  pr{AA} = x, this
      * vector returns math.log10(x) for each of the genotypes.  Can return null if the
      * genotype likelihoods are "missing".
      *
-     * @return
+     * @return genotypes likelihoods in negative log10 vector format
      */
     public double[] getAsVector() {
         // assumes one of the likelihoods vector or the string isn't null
@@ -264,7 +273,7 @@ public class GenotypeLikelihoods {
         boolean first = true;
         for ( final int pl : GLsToPLs(GLs) ) {
             if ( ! first )
-                s.append(",");
+                s.append(',');
             else
                 first = false;
 
@@ -318,7 +327,13 @@ public class GenotypeLikelihoods {
         }
     }
 
-    private static GenotypeLikelihoodsAllelePair[] calculatePLcache(final int altAlleles) {
+    /**
+     * Calculate the cache of diploid alleles for each PL index
+     *
+     * @param altAlleles   number of alternate alleles
+     * @return cache of diploid alleles for each PL index
+     */
+    private static GenotypeLikelihoodsAllelePair[] calculateDiploidPLcache(final int altAlleles) {
         final int numLikelihoods = numLikelihoods(1 + altAlleles, 2);
         final GenotypeLikelihoodsAllelePair[] cache = new GenotypeLikelihoodsAllelePair[numLikelihoods];
 
@@ -338,6 +353,60 @@ public class GenotypeLikelihoods {
         return cache;
     }
 
+
+    /**
+     * Calculate the alleles for each PL index for a ploidy.
+     * Creates the ordering for all possible combinations of ploidy alleles. Computed recursively and the
+     * result is stored in a cache.
+     *
+     * The implementation is described in The Variant Call Format Specification VCF 4.3, Section 1.6.2 Genotype fields
+     * The likelihoods are ordered for ploidy P and N alternate alleles as follows:
+     * for aP = 0...N
+     *  for aP-1 = 0...aP
+     *      ...
+     *      for a1 = 0...a2
+     *          a1,a2..aP
+     *
+     * This is implemented recursively:
+     *
+     * PLIndexToAlleleIndices(N, P, suffix=empty):
+     *      for a in 0...N
+     *          if (P == 1) accum += (a + suffix)  // have all the alleles for a PL index
+     *          if (P > 1) PLIndexToAlleleIndices(a, P-1, a + suffix )
+     *
+     * @param altAlleles     Number of alternate alleles
+     * @param ploidy         Number of chromosomes in set
+     * @param anyploidPLIndexToAlleleIndices PL index to the alleles of general ploidy over all possible alternate alleles
+     * @param genotype       An entry of ploidy alleles
+     */
+    private static void calculatePLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> anyploidPLIndexToAlleleIndices,
+                                                   final List<Integer> genotype) {
+        for (int a=0; a <= altAlleles; a++) {
+            final List<Integer> gt = new ArrayList<Integer>(Arrays.asList(a));
+            gt.addAll(genotype);
+            if ( ploidy == 1 ) {// have all ploidy alleles for a PL index
+                anyploidPLIndexToAlleleIndices.add(gt);
+            } else if ( ploidy > 1 ) {
+                calculatePLIndexToAlleleIndices(a, ploidy - 1, anyploidPLIndexToAlleleIndices, gt);
+            }
+        }
+    }
+
+    /**
+     * Calculate the cache of allele indices for each PL index for a ploidy.
+     * Calculation in @see #calculatePLIndexToAlleleIndices
+     *
+     * @param altAlleles Number of alternate alleles
+     * @param ploidy    Number of chromosomes in set
+     * @return PL index to the alleles of general ploidy over all possible alternate alleles
+     * @return The alleles for each PL index for a ploidy
+     */
+    protected static List<List<Integer>> calculateAnyploidPLcache(final int altAlleles, final int ploidy) {
+        List<List<Integer>> anyploidPLIndexToAlleleIndices = new ArrayList<List<Integer>>();
+        calculatePLIndexToAlleleIndices(altAlleles, ploidy, anyploidPLIndexToAlleleIndices, new ArrayList<Integer>());
+        return anyploidPLIndexToAlleleIndices;
+    }
+
     // -------------------------------------------------------------------------------------
     //
     // num likelihoods given number of alleles and ploidy
@@ -347,9 +416,9 @@ public class GenotypeLikelihoods {
     /**
      * Actually does the computation in @see #numLikelihoods
      *
-     * @param numAlleles
-     * @param ploidy
-     * @return
+     * @param numAlleles    number of alleles
+     * @param ploidy        number of chromosomes
+     * @return  number of likelihoods
      */
     private static final int calcNumLikelihoods(final int numAlleles, final int ploidy) {
         if (numAlleles == 1)
@@ -408,18 +477,68 @@ public class GenotypeLikelihoods {
         return (allele2Index * (allele2Index+1) / 2) + allele1Index;
     }
 
+
     /**
-     * get the allele index pair for the given PL
+     * Get the diploid allele index pair for the given PL index
      *
      * @param PLindex   the PL index
-     * @return the allele index pair
+     * @return the diploid allele index pair
+     * @throws IllegalStateException if PLindex is negative value or greater than the cache computed by @see #calculateDiploidPLcache
      */
     public static GenotypeLikelihoodsAllelePair getAllelePair(final int PLindex) {
-        // make sure that we've cached enough data
-        if ( PLindex >= PLIndexToAlleleIndex.length )
-            throw new IllegalStateException("Internal limitation: cannot genotype more than " + MAX_ALT_ALLELES_THAT_CAN_BE_GENOTYPED + " alleles");
+        // check the index, make sure that we've cached enough data
+        if ( PLindex < 0 || PLindex >= diploidPLIndexToAlleleIndex.length ) {
+            final String msg = "The PL index " + PLindex + " cannot be " + (PLindex < 0 ? " negative" : " more than " + (diploidPLIndexToAlleleIndex.length - 1));
+            throw new IllegalStateException(msg);
+        }
 
-        return PLIndexToAlleleIndex[PLindex];
+        return diploidPLIndexToAlleleIndex[PLindex];
+    }
+
+    /**
+     * Initialize cache of allele anyploid indices
+     * If initialized multiple times with the same ploidy, the alternate alleles from the last initialization will be used
+     *
+     * @param altAlleles number of alternate alleles
+     * @param ploidy    number of chromosomes
+     * @throws IllegalArgumentException if altAlleles or ploidy &lt= 0
+     */
+    public static synchronized void initializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy) {
+        if ( altAlleles <= 0 )
+            throw new IllegalArgumentException("Must have at least one alternate allele, not " + altAlleles );
+
+        if ( ploidy <= 0 )
+            throw new IllegalArgumentException("Ploidy must be at least 1, not " + ploidy);
+
+        // create the allele indices for each PL index for a ploidy
+        anyploidPloidyToPLIndexToAlleleIndices.put(ploidy, calculateAnyploidPLcache(altAlleles, ploidy));
+    }
+
+    /**
+     * Get the allele ploidy indices for the given PL index
+     * Must use the same ploidy as @see #initializeAnyploidPLIndexToAlleleIndices
+     *
+     * @param PLindex   the PL index
+     * @param ploidy    number of chromosomes
+     * @return the ploidy allele indices
+     * @throws IllegalStateException if @see #anyploidPloidyToPLIndexToAlleleIndices does not contain the requested ploidy or PL index
+     */
+    public static synchronized List<Integer> getAlleles(final int PLindex, final int ploidy) {
+        if ( ploidy == 2 ) { // diploid
+            final GenotypeLikelihoodsAllelePair pair = getAllelePair(PLindex);
+            return Arrays.asList(pair.alleleIndex1, pair.alleleIndex2);
+        } else { // non-diploid
+            if (!anyploidPloidyToPLIndexToAlleleIndices.containsKey(ploidy))
+                throw new IllegalStateException("Must initialize the cache of allele anyploid indices for ploidy " + ploidy);
+
+            if (PLindex < 0 || PLindex >= anyploidPloidyToPLIndexToAlleleIndices.get(ploidy).size()) {
+                final String msg = "The PL index " + PLindex + " does not exist for " + ploidy + " ploidy, " +
+                        (PLindex < 0 ? "cannot have a negative value." : "initialized the cache of allele anyploid indices with the incorrect number of alternate alleles.");
+                throw new IllegalStateException(msg);
+            }
+
+            return anyploidPloidyToPLIndexToAlleleIndices.get(ploidy).get(PLindex);
+        }
     }
 
     // An index conversion from the deprecated PL ordering to the new VCF-based ordering for up to 3 alternate alleles

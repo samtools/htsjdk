@@ -98,7 +98,7 @@ public class BufferedLineReader implements LineReader {
         if (peekedLine == null) {
             return -1;
         }
-        if (peekedLine.length() == 0) {
+        if (peekedLine.isEmpty()) {
             return '\n';
         }
         return peekedLine.charAt(0);

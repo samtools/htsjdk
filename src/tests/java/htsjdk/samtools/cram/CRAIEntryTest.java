@@ -47,7 +47,7 @@ public class CRAIEntryTest {
         final int sliceSise = counter++;
 
         final String line = String.format("%d\t%d\t%d\t%d\t%d\t%d", sequenceId, alignmentStart, alignmentSpan, containerOffset, sliceOffset, sliceSise);
-        final CRAIEntry entry = CRAIEntry.fromCraiLine(line);
+        final CRAIEntry entry = new CRAIEntry(line);
         Assert.assertNotNull(entry);
         Assert.assertEquals(entry.sequenceId, sequenceId);
         Assert.assertEquals(entry.alignmentStart, alignmentStart);
@@ -74,7 +74,6 @@ public class CRAIEntryTest {
         Assert.assertTrue(CRAIEntry.intersect(newEntry(1, 1), newEntry(1, 2)));
         Assert.assertTrue(CRAIEntry.intersect(newEntry(2, 1), newEntry(1, 2)));
     }
-
 
     @Test
     public void testIntersetcsOvertlaping() {

@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import java.io.Serializable;
+
 /**
  * Comparator for sorting SAMRecords by coordinate.  Note that the header is required because
  * the order of sequences in the header defines the major sort order.
@@ -38,7 +40,9 @@ package htsjdk.samtools;
  * if A < B && B < C, then A < C
  *
  */
-public class SAMRecordCoordinateComparator implements SAMRecordComparator {
+public class SAMRecordCoordinateComparator implements SAMRecordComparator, Serializable {
+    private static final long serialVersionUID = 1L;
+
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         int cmp = fileOrderCompare(samRecord1, samRecord2);
         if (cmp != 0) {
@@ -75,10 +79,16 @@ public class SAMRecordCoordinateComparator implements SAMRecordComparator {
      * Less stringent compare method than the regular compare.  If the two records
      * are equal enough that their ordering in a sorted SAM file would be arbitrary,
      * this method returns 0.  If read is paired and unmapped, use the mate mapping to sort.
+     * Records being compared must have non-null SAMFileHeaders.
      *
      * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
      */
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
+
+        if (null == samRecord1.getHeader() || null == samRecord2.getHeader()) {
+            throw new IllegalArgumentException("Records must have non-null SAMFileHeaders to be compared");
+        }
+
         final int refIndex1 = samRecord1.getReferenceIndex();
         final int refIndex2 = samRecord2.getReferenceIndex();
         if (refIndex1 == -1) {

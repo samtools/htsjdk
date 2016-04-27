@@ -68,7 +68,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
     @Override
     public BEDFeature decode(String line) {
 
-        if (line.trim().length() == 0) {
+        if (line.trim().isEmpty()) {
             return null;
         }
 
@@ -134,7 +134,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         // Strand
         if (tokenCount > 5) {
             String strandString = tokens[5].trim();
-            char strand = (strandString.length() == 0)
+            char strand = (strandString.isEmpty())
                     ? ' ' : strandString.charAt(0);
 
             if (strand == '-') {

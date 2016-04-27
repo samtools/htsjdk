@@ -24,6 +24,7 @@ import java.io.Serializable;
  * The class is also responsible for converting combinations of read base and reference base into a byte value (code).
  */
 public class Substitution implements Serializable, ReadFeature {
+    public static final int NO_CODE = -1;
 
     /**
      * zero-based position in read
@@ -40,7 +41,7 @@ public class Substitution implements Serializable, ReadFeature {
     /**
      * A byte value denoting combination of the read base and the reference base.
      */
-    private byte code = -1;
+    private byte code = NO_CODE;
 
     public byte getCode() {
         return code;
@@ -91,11 +92,11 @@ public class Substitution implements Serializable, ReadFeature {
         if (position != substitution.position)
             return false;
 
-        if ((code != substitution.code) & (code == -1 || substitution.code == -1)) {
+        if ((code != substitution.code) & (code == NO_CODE || substitution.code == NO_CODE)) {
             return false;
         }
 
-        if (code > -1 && substitution.code > -1) {
+        if (code > NO_CODE && substitution.code > NO_CODE) {
             if (referenceBase != substitution.referenceBase) return false;
             if (base != substitution.base) return false;
         }

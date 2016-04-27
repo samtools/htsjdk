@@ -33,7 +33,7 @@ import java.util.List;
 
 /**
  * Filter SAMRecords so that only those that overlap the given list of intervals.
- * It is required that the SAMRecords are passed in coordinate order
+ * It is required that the SAMRecords are passed in coordinate order, and have non-null SAMFileHeaders.
  *
  * $Id$
  *

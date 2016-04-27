@@ -177,7 +177,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 while ( arrayIndex < strings.length )
                     sampleNames.add(strings[arrayIndex++]);
 
-                if ( sawFormatTag && sampleNames.size() == 0 )
+                if ( sawFormatTag && sampleNames.isEmpty())
                     throw new TribbleException.InvalidHeader("The FORMAT field was provided but there is no genotype/sample data");
 
                 // If we're performing sample name remapping and there is exactly one sample specified in the header, replace
@@ -211,7 +211,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     final VCFSimpleHeaderLine alt = new VCFSimpleHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"));
                     metaData.add(alt);
                 } else {
-                    int equals = str.indexOf("=");
+                    int equals = str.indexOf('=');
                     if ( equals != -1 )
                         metaData.add(new VCFHeaderLine(str.substring(2, equals), str.substring(equals+1)));
                 }
@@ -402,7 +402,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             generateException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
-            if ( infoField.indexOf("\t") != -1 || infoField.indexOf(" ") != -1 )
+            if ( infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1 )
                 generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
 
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
@@ -532,7 +532,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         Allele refAllele = Allele.create(ref, true);
         alleles.add(refAllele);
 
-        if ( alts.indexOf(",") == -1 ) // only 1 alternatives, don't call string split
+        if ( alts.indexOf(',') == -1 ) // only 1 alternatives, don't call string split
             parseSingleAltAllele(alleles, alts, lineNo);
         else
             for ( String alt : alts.split(",") )
@@ -613,8 +613,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             alleles.add(allele);
     }
 
-    public final static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
+    public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
         try {
+            //isVCFStream closes the stream that's passed in
             return isVCFStream(new FileInputStream(potentialInput), MAGIC_HEADER_LINE) ||
                     isVCFStream(new GZIPInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE) ||
                     isVCFStream(new BlockCompressedInputStream(new FileInputStream(potentialInput)), MAGIC_HEADER_LINE);
@@ -625,14 +626,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
     }
 
-    private final static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
+    private static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
         try {
             byte[] buff = new byte[MAGIC_HEADER_LINE.length()];
             int nread = stream.read(buff, 0, MAGIC_HEADER_LINE.length());
             boolean eq = Arrays.equals(buff, MAGIC_HEADER_LINE.getBytes());
             return eq;
-//            String firstLine = new String(buff);
-//            return firstLine.startsWith(MAGIC_HEADER_LINE);
         } catch ( IOException e ) {
             return false;
         } catch ( RuntimeException e ) {

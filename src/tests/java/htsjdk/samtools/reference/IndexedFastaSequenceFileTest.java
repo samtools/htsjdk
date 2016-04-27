@@ -53,7 +53,9 @@ public class IndexedFastaSequenceFileTest{
     public Object[][] provideSequenceFile() throws FileNotFoundException {
         return new Object[][] { new Object[]
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE) },
-                { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) }};
+                { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
+                { new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
+                { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) }};
     }
 
     @DataProvider(name="comparative")
@@ -62,7 +64,11 @@ public class IndexedFastaSequenceFileTest{
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE),
                                                new IndexedFastaSequenceFile(SEQUENCE_FILE) },
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE, true),
-                                               new IndexedFastaSequenceFile(SEQUENCE_FILE) },};
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE) },
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.toPath()),
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.toPath(), true),
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },};
     }
 
     @Test(dataProvider="homosapiens")

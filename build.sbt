@@ -2,13 +2,16 @@ import com.typesafe.sbt.SbtGit._
 import de.johoop.testngplugin.TestNGPlugin._
 import sbt.Package.ManifestAttributes
 
+//added as a workaround for #https://github.com/samtools/htsjdk/issues/573
+resolvers += Resolver.sbtPluginRepo("releases")
+
 name := "htsjdk"
 
-isSnapshot := true
-
-val buildVersion = "1.142"
+val buildVersion = "2.2.2"
 
 organization := "com.genestack"
+
+libraryDependencies += "gov.nih.nlm.ncbi" % "ngs-java" % "1.2.2"
 
 libraryDependencies += "org.apache.commons" % "commons-jexl" % "2.1.1"
 
@@ -22,7 +25,13 @@ libraryDependencies += "org.tukaani" % "xz" % "1.5"
 
 libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 
+libraryDependencies += "org.testng" % "testng" % "6.8.8"
+
 unmanagedBase := baseDirectory.value
+
+mappings in (Compile, packageBin) ++= Seq(
+  (baseDirectory.value / "lib/jni/libIntelDeflater.so") -> "lib/jni/libIntelDeflater.so"
+)
 
 javaSource in Compile := baseDirectory.value / "src/java"
 
@@ -84,9 +93,7 @@ artifactName := { (sv: ScalaVersion, module: ModuleID, artifact: Artifact) =>
 
 crossPaths := false
 
-javacOptions in Compile ++= Seq("-source", "1.7")
-
-javacOptions in(Compile, compile) ++= Seq("-target", "1.7")
+javacOptions in (Compile,doc) ++= Seq("-Xdoclint:none")
 
 packageOptions := Seq(ManifestAttributes(
   ("Implementation-Version", s"${implementationVersion.value}"),
