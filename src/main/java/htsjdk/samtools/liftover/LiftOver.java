@@ -32,7 +32,12 @@ import htsjdk.samtools.util.OverlapDetector;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Java port of UCSC liftOver.  Only the most basic liftOver functionality is implemented.
@@ -47,6 +52,7 @@ public class LiftOver {
 
     private double liftOverMinMatch = DEFAULT_LIFTOVER_MINMATCH;
     private final OverlapDetector<Chain> chains;
+    private final Map<String, Set<String>> contigMap = new HashMap<>();
 
     /**
      * Load UCSC chain file in order to lift over Intervals.
@@ -54,6 +60,20 @@ public class LiftOver {
     public LiftOver(File chainFile) {
         IOUtil.assertFileIsReadable(chainFile);
         chains = Chain.loadChains(chainFile);
+
+        for (final Chain chain : this.chains.getAll()) {
+            final String from = chain.fromSequenceName;
+            final String to   = chain.toSequenceName;
+            final Set<String> names;
+            if (contigMap.containsKey(from)) {
+                names = contigMap.get(from);
+            }
+            else {
+                names = new HashSet<>();
+                contigMap.put(from, names);
+            }
+            names.add(to);
+        }
     }
 
     /**
@@ -137,6 +157,13 @@ public class LiftOver {
             }
         }
         return ret;
+    }
+
+    /**
+     * @return the set of destination contigs for each source contig in the chains file.
+     */
+    public Map<String, Set<String>> getContigMap() {
+        return Collections.unmodifiableMap(contigMap);
     }
 
     private static Interval createToInterval(final String intervalName, final boolean sourceNegativeStrand, final TargetIntersection targetIntersection) {
