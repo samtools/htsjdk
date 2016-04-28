@@ -1520,7 +1520,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return indexing bin based on alignment start & end.
      */
     int computeIndexingBin() {
-        // reg2bin has zero-based, half-open API
+        // regionToBin has zero-based, half-open API
         final int alignmentStart = getAlignmentStart()-1;
         int alignmentEnd = getAlignmentEnd();
         if (alignmentEnd <= 0) {
@@ -1528,7 +1528,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             // then treat this as a one base alignment for indexing purposes.
             alignmentEnd = alignmentStart + 1;
         }
-        return GenomicIndexUtil.reg2bin(alignmentStart, alignmentEnd);
+        return GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
     }
 
     /**

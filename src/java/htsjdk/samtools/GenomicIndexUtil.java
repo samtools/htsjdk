@@ -54,11 +54,11 @@ public class GenomicIndexUtil {
 
     /**
      * calculate the bin given an alignment in [beg,end)
-     * Copied from SAM spec.
+     * Described in "The Human Genome Browser at UCSC. Kent & al. doi: 10.1101/gr.229102 "
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
      */
-    public static int reg2bin(final int beg, int end)
+    public static int regionToBin(final int beg, int end)
     {
         --end;
 
@@ -70,9 +70,9 @@ public class GenomicIndexUtil {
         return 0;
     }
 
-    // TODO: It is disturbing that reg2bin is 0-based, but regionToBins is 1-based.
+    // TODO: It is disturbing that regionToBins is 0-based, but regionToBins is 1-based.
     // TODO: It is also suspicious that regionToBins decrements endPos.  Test it!
-    // TODO: However end is decremented in reg2bin so perhaps there is no conflict.
+    // TODO: However end is decremented in regionToBins so perhaps there is no conflict.
     /**
      * Get candidate bins for the specified region
      * @param startPos 1-based start of target region, inclusive.
