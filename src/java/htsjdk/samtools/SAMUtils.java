@@ -415,10 +415,10 @@ public final class SAMUtils {
      *
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
-     * @deprecated Use GenomicIndexUtil.reg2bin
+     * @deprecated Use GenomicIndexUtil.regionToBin
      */
     static int reg2bin(final int beg, final int end) {
-        return GenomicIndexUtil.reg2bin(beg, end);
+        return GenomicIndexUtil.regionToBin(beg, end);
     }
 
     /**

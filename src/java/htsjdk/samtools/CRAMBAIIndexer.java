@@ -247,7 +247,7 @@ public class CRAMBAIIndexer {
         }
 
         private int computeIndexingBin(final Slice slice) {
-            // reg2bin has zero-based, half-open API
+            // regionToBin has zero-based, half-open API
             final int alignmentStart = slice.alignmentStart - 1;
             int alignmentEnd = slice.alignmentStart + slice.alignmentSpan - 1;
             if (alignmentEnd <= alignmentStart) {
@@ -255,7 +255,7 @@ public class CRAMBAIIndexer {
                 // then treat this as a one base alignment for indexing purposes.
                 alignmentEnd = alignmentStart + 1;
             }
-            return GenomicIndexUtil.reg2bin(alignmentStart, alignmentEnd);
+            return GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
         }
 
 
