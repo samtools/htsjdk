@@ -77,7 +77,7 @@ public class CRAMComplianceTest {
 
     @Test(dataProvider = "test1")
     public void test(String name) throws IOException {
-        TestCase t = new TestCase(new File("testdata/htsjdk/samtools/cram/"), name);
+        TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
         ReferenceSource source = new ReferenceSource(t.refFile);
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(t.bamFile);

@@ -36,7 +36,7 @@ import java.util.ArrayList;
  * test fastq
  */
 public class FastqWriterTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/util/QualityEncodingDetectorTest");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest");
 
     @DataProvider(name = "fastqsource")
     public Object[][] createTestData() {

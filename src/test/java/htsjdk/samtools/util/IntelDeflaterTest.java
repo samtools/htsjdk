@@ -39,14 +39,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * This is a test for IntelDeflater.
  */
 
 public class IntelDeflaterTest {
-    static final File TEST_DIR = new File("testdata/htsjdk/samtools");
+    static final File TEST_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @DataProvider(name="TestIntelDeflaterIsLoadedData")
     Iterator<Object[]> TestIntelDeflaterIsLoadedData(){
@@ -73,9 +72,8 @@ public class IntelDeflaterTest {
         return retVal.iterator();
     }
 
-    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups="intel",expectedExceptions = IllegalAccessError.class)
+    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups={"unix", "intel"},expectedExceptions = IllegalAccessError.class)
     public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException,IllegalAccessError {
-
         Log log = Log.getInstance(IntelDeflaterTest.class);
         Log.setGlobalLogLevel(Log.LogLevel.INFO);
 

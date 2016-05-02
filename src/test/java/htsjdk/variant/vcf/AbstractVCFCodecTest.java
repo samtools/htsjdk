@@ -38,10 +38,10 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 	@DataProvider(name="thingsToTryToDecode")
 	public Object[][] getThingsToTryToDecode(){
 		return new Object[][] {
-				{"testdata/htsjdk/tribble/tabix/testTabixIndex.vcf", true},
-				{"testdata/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", true},
-				{"testdata/htsjdk/tribble/nonexistant.garbage", false},
-				{"testdata/htsjdk/tribble/testIntervalList.list", false}
+				{"src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", true},
+				{"src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", true},
+				{"src/test/resources/htsjdk/tribble/nonexistant.garbage", false},
+				{"src/test/resources/htsjdk/tribble/testIntervalList.list", false}
 		};
 	}
 

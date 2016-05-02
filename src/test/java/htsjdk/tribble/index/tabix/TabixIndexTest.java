@@ -40,8 +40,8 @@ import java.io.File;
 import java.util.Iterator;
 
 public class TabixIndexTest {
-    private static final File SMALL_TABIX_FILE = new File("testdata/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
-    private static final File BIGGER_TABIX_FILE = new File("testdata/htsjdk/tribble/tabix/bigger.vcf.gz.tbi");
+    private static final File SMALL_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
+    private static final File BIGGER_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/bigger.vcf.gz.tbi");
 
     /**
      * Read an existing index from disk, write it to a temp file, read that in, and assert that both in-memory
@@ -72,7 +72,7 @@ public class TabixIndexTest {
 
     @Test
     public void testQueryProvidedItemsAmount() {
-        final String VCF = "testdata/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf";
+        final String VCF = "src/test/resources/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf";
         // Note that we store only compressed files
         final File plainTextVcfInputFile = new File(VCF);
         plainTextVcfInputFile.deleteOnExit();

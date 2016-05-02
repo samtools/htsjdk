@@ -37,7 +37,7 @@ import java.io.File;
  * @author alecw@broadinstitute.org
  */
 public class SequenceNameTruncationAndValidationTest {
-    private static File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")
     public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {

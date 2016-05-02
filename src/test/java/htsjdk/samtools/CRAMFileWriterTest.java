@@ -228,9 +228,9 @@ public class CRAMFileWriterTest {
 
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
-        SamReader reader = SamReaderFactory.make().open(new File("testdata/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
+        SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final ReferenceSource source = new ReferenceSource(new File("testdata/htsjdk/samtools/cram_tlen.fasta"));
+        final ReferenceSource source = new ReferenceSource(new File("src/test/resources/htsjdk/samtools/cram_tlen.fasta"));
         CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram");
         SAMRecordIterator iterator = reader.iterator();
         List<SAMRecord> records = new ArrayList<SAMRecord>();
@@ -254,8 +254,8 @@ public class CRAMFileWriterTest {
 
     @Test
     public void testCRAMQuerySort() throws IOException {
-        final File input = new File("testdata/htsjdk/samtools/cram_query_sorted.cram");
-        final File reference = new File("testdata/htsjdk/samtools/cram_query_sorted.fasta");
+        final File input = new File("src/test/resources/htsjdk/samtools/cram_query_sorted.cram");
+        final File reference = new File("src/test/resources/htsjdk/samtools/cram_query_sorted.fasta");
         final File outputFile = File.createTempFile("tmp.", ".cram");
 
         try (final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);

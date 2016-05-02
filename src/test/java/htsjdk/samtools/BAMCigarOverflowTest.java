@@ -11,7 +11,7 @@ import java.io.File;
  * causes an overflow in the CIGAR when reading a BAM file for a read that spans a very large intron.
  */
 public class BAMCigarOverflowTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test
     public void testCigarOverflow() throws Exception {

@@ -39,8 +39,8 @@ public class SAMRecordUnitTest {
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
-                { new File("testdata/htsjdk/samtools/serialization_test.sam") },
-                { new File("testdata/htsjdk/samtools/serialization_test.bam") }
+                { new File("src/test/resources/htsjdk/samtools/serialization_test.sam") },
+                { new File("src/test/resources/htsjdk/samtools/serialization_test.bam") }
         };
     }
 

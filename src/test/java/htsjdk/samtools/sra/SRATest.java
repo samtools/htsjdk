@@ -230,7 +230,7 @@ public class SRATest extends AbstractSRATest {
                     1787186, "38M63S", "gi|169794206|ref|NC_010410.1|", 11, true, true},
 
             // local SRA file
-            {"testdata/htsjdk/samtools/sra/test_archive.sra", 1, 99, "test_archive.R.2",
+            {"src/test/resources/htsjdk/samtools/sra/test_archive.sra", 1, 99, "test_archive.R.2",
                     "TGTCGATGCTGAAAGTGTCTGCGGTGAACCACTTCATGCACAGCGCACACTGCAGCTCCACTTCACCCAGCTGACGGCCGTTCTCATCGTCTCCAGAGCCCGTCTGAGCGTCCGCTGCTTCAGAACTGTCCCCGGCTGTATCCTGAAGAC",
                     "BBAABBBFAFFFGGGGGGGGGGGGEEFHHHHGHHHHHFHHGHFDGGGGGHHGHHHHHHHHHHHHFHHHGHHHHHHGGGGGGGHGGHHHHHHHHHGHHHHHGGGGHGHHHGGGGGGGGGHHHHEHHHHHHHHHHGCGGGHHHHHHGBFFGF",
                     2811570, "150M", "NC_007121.5", 60, true, false}

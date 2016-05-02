@@ -1,0 +1,222 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+plugins {
+    id "java"
+    id 'maven'
+    id 'signing'
+    id 'com.palantir.git-version' version '0.5.1'
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.apache.commons:commons-jexl:2.1.1"
+    compile "commons-logging:commons-logging:1.1.1"
+    compile "org.xerial.snappy:snappy-java:1.0.3-rc3"
+    compile "org.apache.commons:commons-compress:1.4.1"
+    compile "org.tukaani:xz:1.5"
+    compile "org.apache.ant:ant:1.8.2"
+    compile "gov.nih.nlm.ncbi:ngs-java:1.2.2"
+
+    testCompile "org.testng:testng:6.9.9"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+final isRelease = versionDetails().commitDistance == 0
+version = isRelease ? gitVersion() : gitVersion() + "-SNAPSHOT"
+
+logger.info("build for version:" + version)
+group = 'com.github.samtools'
+
+defaultTasks 'jar'
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'HTSJDK',
+                'Implementation-Vendor' : 'Samtools Organization',
+                'Implementation-Version': version
+    }
+}
+
+processResources {
+    into "lib/jni/", {
+        from ("lib/jni/libIntelDeflater.so")
+    }
+}
+
+import org.gradle.internal.os.OperatingSystem;
+
+tasks.withType(Test) {
+    outputs.upToDateWhen { false } // tests will always rerun
+    useTestNG()
+
+    // set heap size for the test JVM(s)
+    minHeapSize = "1G"
+    maxHeapSize = "2G"
+
+    jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
+
+
+    if (System.env.CI == "true") {  //if running under a CI output less into the logs
+        int count = 0
+
+        beforeTest { descriptor ->
+            count++
+            if( count % 100 == 0) {
+                logger.lifecycle("Finished "+ Integer.toString(count++) + " tests")
+            }
+        }
+    } else {
+        // show standard out and standard error of the test JVM(s) on the console
+        testLogging.showStandardStreams = true
+        beforeTest { descriptor ->
+            logger.lifecycle("Running Test: " + descriptor)
+        }
+
+        // listen to standard out and standard error of the test JVM(s)
+        onOutput { descriptor, event ->
+            logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
+        }
+    }
+
+    testLogging {
+        testLogging {
+            events "skipped", "failed"
+            exceptionFormat = "full"
+        }
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+            }
+        }
+    }
+}
+
+test {
+    description = "Runs the unit tests other than the SRA tests"
+    useTestNG {
+        if( OperatingSystem.current().isUnix() ){
+            excludeGroups "slow", "broken", "sra", "intel"
+        } else {
+            excludeGroups "slow", "broken", "unix", "sra", "intel"
+        }
+    }
+}
+
+task testIntelDeflater(type: Test){
+    jvmArgs '-Dsamjdk.intel_deflater_so_path=lib/jni/libIntelDeflater.so'
+
+    description "Run the Intel Deflater tests"
+    useTestNG {
+        includeGroups "intel"
+    }
+}
+
+task testSRA(type: Test){
+    description "Run the SRA tests"
+    useTestNG{
+        includeGroups "sra"
+    }
+}
+
+task wrapper(type: Wrapper) {
+    description = "Regenerate the gradle wrapper"
+    gradleVersion = '2.13'
+}
+
+// This is a hack to disable the java 8 default javadoc lint until we fix the html formatting
+if (JavaVersion.current().isJava8Compatible()) {
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+    }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allSource
+    classifier = 'sources'
+}
+
+/**
+ *This specifies what artifacts will be built and uploaded when performing a maven upload.
+ */
+artifacts {
+    archives jar
+    archives javadocJar
+    archives sourcesJar
+}
+
+/**
+ * Sign non-snapshot releases with our secret key.  This should never need to be invoked directly.
+ */
+signing {
+    required { isRelease && gradle.taskGraph.hasTask("uploadArchives") }
+    sign configurations.archives
+}
+
+/**
+ * Upload a release to sonatype.  You must be an authorized uploader and have your sonatype
+ * username and password information in your gradle properties file.  See the readme for more info.
+ *
+ * For releasing to your local maven repo, use gradle install
+ */
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: project.findProperty("sonatypeUsername"), password: project.findProperty("sonatypePassword"))
+            }
+
+            snapshotRepository(url: "https://artifactory.broadinstitute.org/artifactory/libs-snapshot-local/") {
+                authentication(userName: System.env.ARTIFACTORY_USERNAME, password: System.env.ARTIFACTORY_PASSWORD)
+            }
+
+            pom.project {
+                name 'HTSJDK'
+                packaging 'jar'
+                description 'A Java API for high-throughput sequencing data (HTS) formats'
+                url 'http://samtools.github.io/htsjdk/'
+
+                developers {
+                    developer {
+                        id 'picard'
+                        name 'Picard Team'
+                        url 'http://broadinstitute.github.io/picard'
+                    }
+                }
+
+                scm {
+                    url 'git@github.com:samtools/htsjdk.git'
+                    connection 'scm:git:git@github.com:samtools/htsjdk.git'
+                }
+
+                licenses {
+                    license {
+                        name 'MIT License'
+                        url 'http://opensource.org/licenses/MIT'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }
+    }
+    doFirst{
+        System.out.println("Uploading version $version")
+    }
+}

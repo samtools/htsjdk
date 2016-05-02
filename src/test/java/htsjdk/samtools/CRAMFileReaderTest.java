@@ -41,7 +41,7 @@ import java.util.Arrays;
  */
 public class CRAMFileReaderTest {
 
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @BeforeClass
     public void initClass() {

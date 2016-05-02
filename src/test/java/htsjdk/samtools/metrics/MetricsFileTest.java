@@ -182,7 +182,7 @@ public class MetricsFileTest {
 
     @Test
     public void areMetricsFilesEqualTest(){
-        final File TEST_DIR = new File("testdata/htsjdk/samtools/metrics/");
+        final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/metrics/");
         final File file1 = new File(TEST_DIR,"metricsOne.metrics");
         final File file2 = new File(TEST_DIR,"metricsOneCopy.metrics");
         final File fileModifiedHist = new File(TEST_DIR,"metricsOneModifiedHistogram.metrics");

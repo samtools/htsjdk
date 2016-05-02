@@ -27,15 +27,15 @@ public class QualityEncodingDetectorTest {
 
     final static List<Testcase> FASTQ_TESTCASES = Arrays.asList(
             // Need to use full-range quality here, as Solexa and Illumina are near indistinguishable
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa_full_range_as_solexa.fastq"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/s_1_sequence.txt"), FastqQualityFormat.Illumina),
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/5k-30BB2AAXX.3.aligned.sam.fastq"), FastqQualityFormat.Standard)
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa_full_range_as_solexa.fastq"), FastqQualityFormat.Solexa),
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/s_1_sequence.txt"), FastqQualityFormat.Illumina),
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/5k-30BB2AAXX.3.aligned.sam.fastq"), FastqQualityFormat.Standard)
     );
     final static List<Testcase> BAM_TESTCASES = Arrays.asList(
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/unmapped.sam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam"), FastqQualityFormat.Standard),
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa-as-standard.bam"), FastqQualityFormat.Solexa),
-            new Testcase(new File("./testdata/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"), FastqQualityFormat.Illumina)
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/unmapped.sam"), FastqQualityFormat.Standard),
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam"), FastqQualityFormat.Standard),
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/solexa-as-standard.bam"), FastqQualityFormat.Solexa),
+            new Testcase(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"), FastqQualityFormat.Illumina)
 
     );
 

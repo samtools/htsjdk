@@ -33,7 +33,7 @@ import java.util.TreeSet;
  * Created by Vadim on 14/03/2015.
  */
 public class CRAMFileBAIIndexTest {
-    private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private File cramFile;
     private File indexFile;
     private byte[] cramBytes;
@@ -139,8 +139,8 @@ public class CRAMFileBAIIndexTest {
 
     @Test
     public void testNoStringencyConstructor() throws IOException {
-        final File CRAMFile = new File("testdata/htsjdk/samtools/cram/auxf#values.3.0.cram");
-        final File refFile = new File("testdata/htsjdk/samtools/cram/auxf.fa");
+        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/auxf#values.3.0.cram");
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
         ReferenceSource refSource = new ReferenceSource(refFile);
 
         long start = 0;

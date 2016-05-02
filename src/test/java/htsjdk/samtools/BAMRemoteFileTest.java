@@ -40,8 +40,8 @@ import static org.testng.Assert.*;
  * Test BAM file indexing.
  */
 public class BAMRemoteFileTest {
-    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
-    private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private final File BAM_INDEX_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
+    private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = "http://www.broadinstitute.org/~picard/testdata/index_test.bam";
     private final URL bamURL;
 

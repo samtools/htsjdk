@@ -40,7 +40,7 @@ import java.util.TreeMap;
  * @author alecw@broadinstitute.org
  */
 public class LiftOverTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/liftover");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/liftover");
     private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
 
     private LiftOver liftOver;

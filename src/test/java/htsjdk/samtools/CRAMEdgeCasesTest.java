@@ -42,8 +42,8 @@ public class CRAMEdgeCasesTest {
     @Test(expectedExceptions = CRAMException.class)
     public void testContigNotFoundInRef() throws IOException {
         boolean sawException = false;
-        final File CRAMFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
-        final File refFile = new File("testdata/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
+        final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.cram");
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/CRAMException/testContigNotInRef.fa");
         final ReferenceSource refSource = new ReferenceSource(refFile);
         final CRAMIterator iterator = new CRAMIterator(new FileInputStream(CRAMFile), refSource, ValidationStringency.STRICT);
         while (iterator.hasNext()) {

@@ -32,7 +32,7 @@ import java.io.*;
 
 public class SamStreamsTest {
 
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "makeData")
     public void testDataFormat(final String inputFile, final boolean isGzippedSAMFile, final boolean isBAMFile, final boolean isCRAMFile) throws Exception {

@@ -43,7 +43,7 @@ public class PrintVariantsExampleTest {
     public void testExampleWriteFile() throws IOException {
         final File tempFile = File.createTempFile("example", ".vcf");
         tempFile.deleteOnExit();
-        File f1 = new File("testdata/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
+        File f1 = new File("src/test/resources/htsjdk/variant/ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf");
         final String[] args = {
                 f1.getAbsolutePath(),
                 tempFile.getAbsolutePath()

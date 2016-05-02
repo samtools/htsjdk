@@ -32,7 +32,7 @@ import java.io.File;
  * @author alecw@broadinstitute.org
  */
 public class BlockCompressedTerminatorTest {
-    private static final File TEST_DATA_DIR = new File("testdata/htsjdk/samtools/util");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/util");
 
     @Test
     public void testFileWithTerminator() throws Exception {

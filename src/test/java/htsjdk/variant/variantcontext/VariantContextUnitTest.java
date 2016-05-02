@@ -1367,8 +1367,8 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
-                { new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), new VCFCodec() },
-                { new File("testdata/htsjdk/variant/serialization_test.bcf"), new BCF2Codec() }
+                { new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), new VCFCodec() },
+                { new File("src/test/resources/htsjdk/variant/serialization_test.bcf"), new BCF2Codec() }
         };
     }
 

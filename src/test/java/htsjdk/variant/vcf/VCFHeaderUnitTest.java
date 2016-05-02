@@ -39,11 +39,22 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by IntelliJ IDEA.
@@ -143,7 +154,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     private VCFHeader getHiSeqVCFHeader() {
-        final File vcf = new File("testdata/htsjdk/variant/HiSeq.10000.vcf");
+        final File vcf = new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf");
         final VCFFileReader reader = new VCFFileReader(vcf, false);
         final VCFHeader header = reader.getFileHeader();
         reader.close();
@@ -231,7 +242,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddMetaDataLineDoesNotDuplicateContigs() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -252,7 +263,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateContigLine() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -269,7 +280,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderAddDuplicateHeaderLine() {
-        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+        File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
         VCFHeader header = reader.getFileHeader();
@@ -289,7 +300,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     @Test
     public void testVCFHeaderSerialization() throws Exception {
-        final VCFFileReader reader = new VCFFileReader(new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), false);
+        final VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
         final VCFHeader originalHeader = reader.getFileHeader();
         reader.close();
 
@@ -318,7 +329,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // copy and comparing it to the first.
 
         // read an existing VCF
-        final VCFFileReader originalFileReader = new VCFFileReader(new File("testdata/htsjdk/variant/HiSeq.10000.vcf"), false);
+        final VCFFileReader originalFileReader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
         final VCFHeader originalHeader = originalFileReader.getFileHeader();
 
         // add a header line with quotes to the header

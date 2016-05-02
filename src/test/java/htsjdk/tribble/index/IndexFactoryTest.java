@@ -86,7 +86,7 @@ public class IndexFactoryTest {
     @Test
     public void testCreateTabixIndexOnBlockCompressed() {
         // index a VCF
-        final File inputFileVcf = new File("testdata/htsjdk/tribble/tabix/testTabixIndex.vcf");
+        final File inputFileVcf = new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf");
         final VCFFileReader readerVcf = new VCFFileReader(inputFileVcf, false);
         final SAMSequenceDictionary vcfDict = readerVcf.getFileHeader().getSequenceDictionary();
         final TabixIndex tabixIndexVcf =
@@ -94,7 +94,7 @@ public class IndexFactoryTest {
                 vcfDict);
 
         // index the same bgzipped VCF
-        final File inputFileVcfGz = new File("testdata/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
+        final File inputFileVcfGz = new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
         final VCFFileReader readerVcfGz = new VCFFileReader(inputFileVcfGz, false);
         final TabixIndex tabixIndexVcfGz =
                 IndexFactory.createTabixIndex(inputFileVcfGz, new VCFCodec(), TabixFormat.VCF,

@@ -12,7 +12,7 @@ import java.io.IOException;
  * Created by vadim on 10/08/2015.
  */
 public class SamFilesTest {
-    private static final String TEST_DATA = "testdata/htsjdk/samtools/BAMFileIndexTest/";
+    private static final String TEST_DATA = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/";
     private static final File BAM_FILE = new File(TEST_DATA + "index_test.bam");
 
     @DataProvider(name = "FindIndexParams")

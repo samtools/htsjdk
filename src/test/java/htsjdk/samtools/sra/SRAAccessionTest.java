@@ -15,9 +15,9 @@ public class SRAAccessionTest extends AbstractSRATest {
             { "SRR000123", true },
             { "DRR000001", true },
             { "SRR000000", false },
-            { "testdata/htsjdk/samtools/sra/test_archive.sra", true },
-            { "testdata/htsjdk/samtools/compressed.bam", false },
-            { "testdata/htsjdk/samtools/uncompressed.sam", false },
+            { "src/test/resources/htsjdk/samtools/sra/test_archive.sra", true },
+            { "src/test/resources/htsjdk/samtools/compressed.bam", false },
+            { "src/test/resources/htsjdk/samtools/uncompressed.sam", false },
         };
     }
 

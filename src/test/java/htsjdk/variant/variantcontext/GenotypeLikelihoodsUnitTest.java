@@ -33,7 +33,7 @@ import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.utils.GeneralUtils;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -53,8 +53,9 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     final static String vPLString = "93,0,39";
     double[] triAllelic = new double[]{-4.2,-2.0,-3.0,-1.6,0.0,-4.0}; //AA,AB,AC,BB,BC,CC
 
-    @BeforeTest
+    @BeforeMethod
     public void initializeAnyploidPLIndexToAlleleIndices() {
+        GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
         GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(1, 1);
         GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 2);
         GenotypeLikelihoods.initializeAnyploidPLIndexToAlleleIndices(2, 3);

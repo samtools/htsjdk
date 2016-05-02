@@ -35,7 +35,7 @@ import java.io.File;
  * @author farjoun on 4/9/14.
  */
 public class SAMSequenceDictionaryExtractorTest {
-    String path = "testdata/htsjdk/variant/utils/SamSequenceDictionaryExtractor/";
+    String path = "src/test/resources/htsjdk/variant/utils/SamSequenceDictionaryExtractor/";
 
     @DataProvider(name = "testExtractDictionaries")
     public Object[][] dictionaries() {

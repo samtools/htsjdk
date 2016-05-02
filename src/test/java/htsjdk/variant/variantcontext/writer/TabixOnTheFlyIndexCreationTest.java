@@ -37,7 +37,7 @@ import java.io.File;
 import java.util.EnumSet;
 
 public class TabixOnTheFlyIndexCreationTest {
-    private static final File SMALL_VCF = new File("testdata/htsjdk/tribble/tabix/trioDup.vcf.gz");
+    private static final File SMALL_VCF = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
     @Test
     public void simpleTest() throws Exception {
         final VCF3Codec codec = new VCF3Codec();

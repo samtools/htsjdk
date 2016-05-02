@@ -43,9 +43,9 @@ import java.util.List;
 
 public class IoUtilTest {
 
-    private static final File SLURP_TEST_FILE = new File("testdata/htsjdk/samtools/io/slurptest.txt");
-    private static final File EMPTY_FILE = new File("testdata/htsjdk/samtools/io/empty.txt");
-    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("testdata/htsjdk/samtools/io/5newline5.txt");
+    private static final File SLURP_TEST_FILE = new File("src/test/resources/htsjdk/samtools/io/slurptest.txt");
+    private static final File EMPTY_FILE = new File("src/test/resources/htsjdk/samtools/io/empty.txt");
+    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("src/test/resources/htsjdk/samtools/io/5newline5.txt");
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";

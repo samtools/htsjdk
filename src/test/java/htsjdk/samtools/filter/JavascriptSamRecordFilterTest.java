@@ -40,7 +40,7 @@ import java.io.IOException;
  */
 
 public class JavascriptSamRecordFilterTest {
-    final File testDir = new File("./testdata/htsjdk/samtools");
+    final File testDir = new File("./src/test/resources/htsjdk/samtools");
 
     @DataProvider
     public Object[][] jsData() {
