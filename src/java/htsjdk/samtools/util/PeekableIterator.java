@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Generic Closable Iterator that allows you to peek at the next value before calling next
@@ -50,6 +51,7 @@ public class PeekableIterator<Object> implements CloseableIterator<Object> {
 
     /** Returns the next object and advances the iterator. */
     public Object next() {
+        if(!hasNext()) { throw new NoSuchElementException(); }
         Object retval = this.nextObject;
         advance();
         return retval;

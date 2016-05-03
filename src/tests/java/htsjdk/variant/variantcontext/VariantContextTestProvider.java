@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -743,6 +744,7 @@ public class VariantContextTestProvider {
         
         @Override
         public VariantContext next() {
+            if(!hasNext()) { throw new NoSuchElementException(); }
             try {
                 final VariantContext vc = codec.decode(nextSource());
                 return vc == null ? null : vc.fullyDecode(header, false);

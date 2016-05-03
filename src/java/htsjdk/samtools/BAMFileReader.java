@@ -632,6 +632,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         }
 
         public SAMRecord next() {
+            if(!hasNext()) { throw new NoSuchElementException(); }
             assertOpen();
             final SAMRecord result = mNextRecord;
             advance();

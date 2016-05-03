@@ -29,6 +29,7 @@ import htsjdk.samtools.util.PeekableIterator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
@@ -466,6 +467,7 @@ public class SamPairUtil {
         }
 
         public SAMRecord next() {
+            if(!hasNext()) { throw new NoSuchElementException(); }
             advance();
             if (records.isEmpty()) throw new IllegalStateException("Unexpectedly found an empty record list");
             return this.records.poll();
