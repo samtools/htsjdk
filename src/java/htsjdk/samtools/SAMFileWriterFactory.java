@@ -90,8 +90,9 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /** set compression level 0!none 9: max */
-    public void setCompressionLevel(final int compressionLevel) {
+    public SAMFileWriterFactory setCompressionLevel(final int compressionLevel) {
         this.compressionLevel = Math.min(9, Math.max(0, compressionLevel));
+        return this;
     }
     
     public int getCompressionLevel() {
