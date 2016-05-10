@@ -89,6 +89,12 @@ public abstract class SamReaderFactory {
     /** Set this factory's {@link ValidationStringency} to the provided one, then returns itself. */
     abstract public SamReaderFactory validationStringency(final ValidationStringency validationStringency);
 
+    /** Set whether readers created by this factory will use asynchronous IO.
+     * If this methods is not called, this flag will default to the value of {@link Defaults#USE_ASYNC_IO_FOR_SAMTOOLS}.
+     * Note that this option may not be applicable to all readers returned from this factory.
+     * Returns the factory itself. */
+    abstract public SamReaderFactory setUseAsyncIo(final boolean asynchronousIO);
+
     private static SamReaderFactoryImpl DEFAULT =
             new SamReaderFactoryImpl(Option.DEFAULTS, defaultValidationStringency, DefaultSAMRecordFactory.getInstance());
 
@@ -115,6 +121,7 @@ public abstract class SamReaderFactory {
         private final static Log LOG = Log.getInstance(SamReaderFactory.class);
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
+        private boolean asynchronousIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
         private ReferenceSource referenceSource;
@@ -208,6 +215,12 @@ public abstract class SamReaderFactory {
         }
 
         @Override
+        public SamReaderFactory setUseAsyncIo(final boolean asynchronousIO){
+            this.asynchronousIO = asynchronousIO;
+            return this;
+        }
+
+        @Override
         public SamReader open(final SamInputResource resource) {
             final SamReader.PrimitiveSamReader primitiveSamReader;
             try {
@@ -236,6 +249,7 @@ public abstract class SamReaderFactory {
                                 IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
                                 bufferedIndexStream,
                                 false,
+                                asynchronousIO,
                                 validationStringency,
                                 this.samRecordFactory
                         );
@@ -255,10 +269,10 @@ public abstract class SamReaderFactory {
                     if (SamStreams.isBAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
                             // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                            primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, validationStringency, this.samRecordFactory);
+                            primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
                         } else {
                             bufferedStream.close();
-                            primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, validationStringency, this.samRecordFactory);
+                            primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);

@@ -218,7 +218,7 @@ public class BAMIndexMetaData {
      */
     static public void printIndexStats(final File inputBamFile) {
         try {
-            final BAMFileReader bam = new BAMFileReader(inputBamFile, null, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+            final BAMFileReader bam = new BAMFileReader(inputBamFile, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
             if (!bam.hasIndex()) {
                 throw new SAMException("No index for bam file " + inputBamFile);
             }
