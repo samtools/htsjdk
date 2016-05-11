@@ -74,6 +74,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
     private BAMIndex mIndex = null;
     private SAMRecordFactory samRecordFactory = new DefaultSAMRecordFactory();
     private ReaderImplementation mReader = null;
+    private boolean useAsyncIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
 
     private File samFile = null;
 
@@ -200,6 +201,13 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         }
         mReader = null;
         mIndex = null;
+    }
+
+    /**
+     * If true, this reader will use asynchronous IO.
+     */
+    public void setUseAsyncIO(final boolean useAsyncIO) {
+        this.useAsyncIO = useAsyncIO;
     }
 
     /**
@@ -593,7 +601,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         try {
             if (streamLooksLikeBam(strm)) {
                 mIsBinary = true;
-                mReader = new BAMFileReader(strm, indexFile, eagerDecode, validationStringency, this.samRecordFactory);
+                mReader = new BAMFileReader(strm, indexFile, eagerDecode,  useAsyncIO, validationStringency, this.samRecordFactory);
             } else {
                 throw new SAMFormatException("Unrecognized file format: " + strm);
             }
@@ -609,7 +617,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
         try {
             if (streamLooksLikeBam(strm)) {
                 mIsBinary = true;
-                mReader = new BAMFileReader(strm, indexStream, eagerDecode, validationStringency, this.samRecordFactory);
+                mReader = new BAMFileReader(strm, indexStream, eagerDecode, useAsyncIO, validationStringency, this.samRecordFactory);
             } else {
                 throw new SAMFormatException("Unrecognized file format: " + strm);
             }
@@ -645,10 +653,10 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
                 mIsBinary = true;
                 if (file == null || !file.isFile()) {
                     // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                    mReader = new BAMFileReader(bufferedStream, indexFile, eagerDecode, validationStringency, this.samRecordFactory);
+                    mReader = new BAMFileReader(bufferedStream, indexFile, eagerDecode, useAsyncIO, validationStringency, this.samRecordFactory);
                 } else {
                     bufferedStream.close();
-                    mReader = new BAMFileReader(file, indexFile, eagerDecode, validationStringency, this.samRecordFactory);
+                    mReader = new BAMFileReader(file, indexFile, eagerDecode, useAsyncIO,  validationStringency, this.samRecordFactory);
                 }
             } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                 mIsBinary = false;

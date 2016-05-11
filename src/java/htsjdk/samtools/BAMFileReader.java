@@ -67,6 +67,10 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     // If true, all SAMRecords are fully decoded as they are read.
     private boolean eagerDecode;
 
+    // If true, the BAMFileReader will use asynchronous IO.
+    // Note: this field currently has no effect (is not hooked up anywhere), but will be in the future. See https://github.com/samtools/htsjdk/pull/576
+    private final boolean useAsynchronousIO;
+
     // For error-checking.
     private ValidationStringency mValidationStringency;
 
@@ -97,11 +101,13 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     BAMFileReader(final InputStream stream,
                   final File indexFile,
                   final boolean eagerDecode,
+                  final boolean useAsynchronousIO,
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
         mIndexFile = indexFile;
         mIsSeekable = false;
+        this.useAsynchronousIO = useAsynchronousIO;
         mCompressedInputStream = new BlockCompressedInputStream(stream);
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
@@ -119,10 +125,11 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     BAMFileReader(final File file,
                   final File indexFile,
                   final boolean eagerDecode,
+                  final boolean useAsynchronousIO,
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(file), indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, file.getAbsolutePath(), validationStringency, factory);
+        this(new BlockCompressedInputStream(file), indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, useAsynchronousIO, file.getAbsolutePath(), validationStringency, factory);
         if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified()) {
             System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() +
                     " is older than BAM " + file.getAbsolutePath());
@@ -134,24 +141,27 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     BAMFileReader(final SeekableStream strm,
                   final File indexFile,
                   final boolean eagerDecode,
+                  final boolean useAsynchronousIO,
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(strm), indexFile, eagerDecode, strm.getSource(), validationStringency, factory);
+        this(new BlockCompressedInputStream(strm), indexFile, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
     }
 
     BAMFileReader(final SeekableStream strm,
                   final SeekableStream indexStream,
                   final boolean eagerDecode,
+                  final boolean useAsynchronousIO,
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(strm), indexStream, eagerDecode, strm.getSource(), validationStringency, factory);
+        this(new BlockCompressedInputStream(strm), indexStream, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
     }
 
     private BAMFileReader(final BlockCompressedInputStream compressedInputStream,
                           final File indexFile,
                           final boolean eagerDecode,
+                          final boolean useAsynchronousIO,
                           final String source,
                           final ValidationStringency validationStringency,
                           final SAMRecordFactory factory)
@@ -161,6 +171,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
+        this.useAsynchronousIO = useAsynchronousIO;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = factory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
@@ -170,6 +181,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     private BAMFileReader(final BlockCompressedInputStream compressedInputStream,
                           final SeekableStream indexStream,
                           final boolean eagerDecode,
+                          final boolean useAsynchronousIO,
                           final String source,
                           final ValidationStringency validationStringency,
                           final SAMRecordFactory factory)
@@ -179,6 +191,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
+        this.useAsynchronousIO = useAsynchronousIO;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = factory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
@@ -187,7 +200,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
 
     /** Reads through the header and sequence records to find the virtual file offset of the first record in the BAM file. */
     static long findVirtualOffsetOfFirstRecord(final File bam) throws IOException {
-        final BAMFileReader reader = new BAMFileReader(bam, null, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        final BAMFileReader reader = new BAMFileReader(bam, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
         final long offset = reader.mFirstRecordPointer;
         reader.close();
         return offset;
