@@ -40,14 +40,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class ReferenceSource {
+/**
+ * Used to represent a CRAM reference, the backing source for which can either be
+ * a file or the EBI ENA reference service.
+ *
+ * NOTE: In a future release, this class will be renamed and the functionality it
+ * contains will be refactored and distributed into one or more separate reference
+ * source implementations, each corresponding to the type of resource backing the
+ * reference.
+ */
+public class ReferenceSource implements CRAMReferenceSource {
     private static final Log log = Log.getInstance(ReferenceSource.class);
     private ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
     private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
 
-    public ReferenceSource() {
+    private ReferenceSource() {
     }
 
     public ReferenceSource(final File file) {
@@ -64,10 +73,10 @@ public class ReferenceSource {
     }
 
     /**
-     * Attempts to construct a default ReferenceSource for use with CRAM files when
+     * Attempts to construct a default CRAMReferenceSource for use with CRAM files when
      * one has not been explicitly provided.
      *
-     * @return ReferenceSource if one can be acquired. Guaranteed to no be null if none
+     * @return CRAMReferenceSource if one can be acquired. Guaranteed to not be null if none
      * of the listed exceptions is thrown.
      * @throws IllegalStateException if no default reference source can be acquired
      * @throws IllegalArgumentException if the reference_fasta environment variable refers to a
@@ -81,7 +90,7 @@ public class ReferenceSource {
      * <li>ENA Reference Service if it is enabled</li>
      * </ul>
      */
-     public static ReferenceSource getDefaultCRAMReferenceSource() {
+     public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
         if (null != Defaults.REFERENCE_FASTA) {
             if (Defaults.REFERENCE_FASTA.exists()) {
                 return new ReferenceSource(Defaults.REFERENCE_FASTA);

@@ -6,9 +6,14 @@ import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static org.testng.Assert.*;
 
@@ -47,4 +52,60 @@ public class AbstractFeatureReaderTest {
             assertNotNull(feat);
         }
     }
+
+    @DataProvider(name = "blockCompressedExtensionExtensionStrings")
+    public Object[][] createBlockCompressedExtensionStrings() {
+        return new Object[][] {
+                { "testzip.gz", true },
+                { "test.gzip", true },
+                { "test.bgz", true },
+                { "test.bgzf", true },
+                { "test.bzip2", false }
+        };
+    }
+
+    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionStrings")
+    public void testBlockCompressionExtensionString(final String testString, final boolean expected) {
+        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testString), expected);
+    }
+
+    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionStrings")
+    public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
+        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(new File(testString)), expected);
+    }
+
+    @DataProvider(name = "blockCompressedExtensionExtensionURIStrings")
+    public Object[][] createBlockCompressedExtensionURIs() {
+        return new Object[][]{
+                {"testzip.gz", true},
+                {"test.gzip", true},
+                {"test.bgz", true},
+                {"test.bgzf", true},
+                {"test", false},
+                {"test.bzip2", false},
+
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2", false},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877", false},
+
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2?alt=media", false},
+
+                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.gz", true},
+                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.bed", false}
+        };
+    }
+
+    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    public void testBlockCompressionExtension(final String testURIString, final boolean expected) throws URISyntaxException {
+        URI testURI = URI.create(testURIString);
+        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURI), expected);
+    }
+
 }

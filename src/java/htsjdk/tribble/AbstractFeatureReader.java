@@ -24,6 +24,7 @@ import htsjdk.tribble.util.TabixUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -152,6 +153,15 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      */
     public static boolean hasBlockCompressedExtension (final File file) {
         return hasBlockCompressedExtension(file.getName());
+    }
+
+    /**
+     * Whether the path of a URI resource ends in one of the BLOCK_COMPRESSED_EXTENSIONS
+     * @param uri a URI representing the resource to check
+     * @return
+     */
+    public static boolean hasBlockCompressedExtension (final URI uri) {
+        return hasBlockCompressedExtension(uri.getPath());
     }
 
     /**

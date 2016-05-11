@@ -16,6 +16,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringLineReader;
@@ -45,7 +46,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      */
     public CRAMFileWriter(
             final OutputStream outputStream,
-            final ReferenceSource referenceSource,
+            final CRAMReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
             final String fileName)
     {
@@ -67,7 +68,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     public CRAMFileWriter(
             final OutputStream outputStream,
             final OutputStream indexOS,
-            final ReferenceSource referenceSource,
+            final CRAMReferenceSource referenceSource,
             final SAMFileHeader samFileHeader,
             final String fileName)
     {
@@ -87,7 +88,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
      */
     public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
-                          final ReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
+                          final CRAMReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
         if (outputStream == null) {
             throw new IllegalArgumentException("CRAMWriter output stream can not be null.");
         }
