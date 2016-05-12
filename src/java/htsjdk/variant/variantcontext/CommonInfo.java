@@ -29,6 +29,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,7 +58,7 @@ public final class CommonInfo implements Serializable {
     private Set<String> filters = null;
     private Map<String, Object> attributes = NO_ATTRIBUTES;
 
-    public CommonInfo(String name, double log10PError, Set<String> filters, Map<String, Object> attributes) {
+    public CommonInfo(final String name, final double log10PError, final Set<String> filters, final Map<String, Object> attributes) {
         this.name = name;
         setLog10PError(log10PError);
         this.filters = filters;
@@ -78,7 +79,7 @@ public final class CommonInfo implements Serializable {
      *
      * @param name    the name associated with this information
      */
-    public void setName(String name) {
+    public void setName(final String name) {
         if ( name == null ) throw new IllegalArgumentException("Name cannot be null " + this);
         this.name = name;
     }
@@ -90,38 +91,58 @@ public final class CommonInfo implements Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
+    /** @return a <b>modifiable</b> Set of filters. Can be  null. All changes in this set will be reflected in the CommonInfo */
     public Set<String> getFiltersMaybeNull() {
         return filters;
     }
 
+    /** @return an unmodifiable Set of filters. Can be empty by never null */
     public Set<String> getFilters() {
         return filters == null ? NO_FILTERS : Collections.unmodifiableSet(filters);
     }
 
+    /** @return true if no filter has been defined  <code>(getFiltersMaybeNull()==null)</code> */
     public boolean filtersWereApplied() {
         return filters != null;
     }
 
+    /** @return true if any filter been defined  <code>(!filters.isEmpty())</code> */
     public boolean isFiltered() {
         return filters == null ? false : !filters.isEmpty();
     }
 
+    /**
+     * @param filter the filter ID 
+     * @return true if the filters contains 'filter' */
+    public boolean hasFilter(final String filter) {
+        return filters == null ? false : filters.contains(filter);
+    }
+    
+    /** shortcut of <code>!isFiltered()</code> */
     public boolean isNotFiltered() {
         return ! isFiltered();
     }
 
-    public void addFilter(String filter) {
+    /** adds a FILTER 
+     * @param filter filter ID to add
+     * @throws IllegalArgumentException if filter is null or if filter already exists.
+     * */
+    public void addFilter(final String filter) {
         if ( filters == null ) // immutable -> mutable
             filters = new HashSet<String>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
-        if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
+        if ( hasFilter(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
         filters.add(filter);
     }
 
-    public void addFilters(Collection<String> filters) {
+    /** add a collection of FILTER, calling <code>addFilter(filter)</code>
+     * @param filters the filters to be added
+     * @throws IllegalArgumentException if filters is null
+     * */
+    public void addFilters(final Collection<String> filters) {
         if ( filters == null ) throw new IllegalArgumentException("BUG: Attempting to add null filters at" + this);
-        for ( String f : filters )
+        for ( final String f : filters )
             addFilter(f);
     }
 
@@ -131,6 +152,7 @@ public final class CommonInfo implements Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
+    /** @return true if log10-based error estimate has been set */
     public boolean hasLog10PError() {
         return getLog10PError() != NO_LOG10_PERROR;
     }
@@ -151,7 +173,8 @@ public final class CommonInfo implements Serializable {
      */
     public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
 
-    public void setLog10PError(double log10PError) {
+    /** set the Phred scaled quality score */
+    public void setLog10PError(final double log10PError) {
         if ( log10PError > 0 && log10PError != NO_LOG10_PERROR)
             throw new IllegalArgumentException("BUG: log10PError cannot be > 0 : " + this.log10PError);
         if ( Double.isInfinite(this.log10PError) )
@@ -166,11 +189,13 @@ public final class CommonInfo implements Serializable {
     // Working with attributes
     //
     // ---------------------------------------------------------------------------------------------------------
+    /** removes all attributes */
     public void clearAttributes() {
         attributes = new HashMap<String, Object>();
     }
 
     /**
+     * return an unmodifiable Map of attributes
      * @return the attribute map
      */
     public Map<String, Object> getAttributes() {
@@ -178,17 +203,19 @@ public final class CommonInfo implements Serializable {
     }
 
     // todo -- define common attributes as enum
-
-    public void setAttributes(Map<String, ?> map) {
+    /** clear all attributes, and set 'map' as attributes */
+    public void setAttributes(final Map<String, ?> map) {
         clearAttributes();
         putAttributes(map);
     }
 
-    public void putAttribute(String key, Object value) {
+    /** shortcut of <code>putAttribute(key, value, false)</code> */
+    public void putAttribute(final String key, final Object value) {
         putAttribute(key, value, false);
     }
 
-    public void putAttribute(String key, Object value, boolean allowOverwrites) {
+    /** insert a new attribute, raises an exception if allowOverwrites==true and the attribute exists */
+    public void putAttribute(final String key, final Object value, final boolean allowOverwrites) {
         if ( ! allowOverwrites && hasAttribute(key) )
             throw new IllegalStateException("Attempting to overwrite key->value binding: key = " + key + " this = " + this);
 
@@ -198,13 +225,15 @@ public final class CommonInfo implements Serializable {
         attributes.put(key, value);
     }
 
-    public void removeAttribute(String key) {
+    /** removes the attribute identified by key */
+    public void removeAttribute(final String key) {
         if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
             attributes = new HashMap<String, Object>();
         attributes.remove(key);
     }
 
-    public void putAttributes(Map<String, ?> map) {
+    /** insert the attibutes as map using <code>putAttribute(key,value,false)</code> */
+    public void putAttributes(final Map<String, ?> map) {
         if ( map != null ) {
             // for efficiency, we can skip the validation if the map is empty
             if (attributes.isEmpty()) {
@@ -212,17 +241,19 @@ public final class CommonInfo implements Serializable {
                     attributes = new HashMap<String, Object>();
                 attributes.putAll(map);
             } else {
-                for ( Map.Entry<String, ?> elt : map.entrySet() ) {
+                for ( final Map.Entry<String, ?> elt : map.entrySet() ) {
                     putAttribute(elt.getKey(), elt.getValue(), false);
                 }
             }
         }
     }
 
-    public boolean hasAttribute(String key) {
+    /** @return true if the key is present */
+    public boolean hasAttribute(final String key) {
         return attributes.containsKey(key);
     }
 
+    /** @return the number of attributes */
     public int getNumAttributes() {
         return attributes.size();
     }
@@ -232,11 +263,17 @@ public final class CommonInfo implements Serializable {
      *
      * @return the attribute value for the given key (or null if not set)
      */
-    public Object getAttribute(String key) {
+    public Object getAttribute(final String key) {
         return attributes.get(key);
     }
 
-    public Object getAttribute(String key, Object defaultValue) {
+    /**
+     * @param key    the attribute key
+     * @param defaultValue    the default value
+     *
+     * @return the attribute value for the given key (or defaultValue if not set)
+     */
+   public Object getAttribute(final String key, final Object defaultValue) {
         if ( hasAttribute(key) )
             return attributes.get(key);
         else
@@ -247,41 +284,122 @@ public final class CommonInfo implements Serializable {
         as a java.util.List if the value is a List or an Array,
         as a Collections.singletonList if there is only one value */
     @SuppressWarnings("unchecked")
-    public List<Object> getAttributeAsList(String key) {
-        Object o = getAttribute(key);
+    public List<Object> getAttributeAsList(final String key) {
+        final Object o = getAttribute(key);
         if ( o == null ) return Collections.emptyList();
-        if ( o instanceof List ) return (List<Object>)o;
-        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        else if ( o instanceof List ) return (List<Object>)o;
+        else if ( o instanceof int[]) {
+            final int array[]=(int[])o;
+            final List<Object> list = new ArrayList<>( array.length );
+            for( int i : array) list.add(i);
+            return list;
+        } else if ( o instanceof double[]) {
+            final double array[]=(double[])o;
+            final List<Object> list = new ArrayList<>( array.length );
+            for( double i : array) list.add(i);
+            return list;
+        }
+        else if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
         return Collections.singletonList(o);
     }
 
-    public String getAttributeAsString(String key, String defaultValue) {
-        Object x = getAttribute(key);
+    /**
+     * return an attribute as a String.
+     * if given key is not found the defaultValue is returned.
+     * if the value is not a String <code> String.valueOf(x)</code> is returned.
+     * 
+     * @param key the attribute key
+     * @param defaultValue  the default value
+     * @return the attribute as a String
+     */
+    public String getAttributeAsString(final String key, final String defaultValue) {
+        final Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof String ) return (String)x;
-        return String.valueOf(x); // throws an exception if this isn't a string
+        return String.valueOf(x);
     }
 
-    public int getAttributeAsInt(String key, int defaultValue) {
-        Object x = getAttribute(key);
+    /**
+     * return an attribute as an integer.
+     * if given key is not found the defaultValue is returned.
+     * if the value is a String, the value of <code>Integer.parseInt((String)x)</code> is returned.
+     * If the value is not a String or an Integer, an exception is thrown
+     * 
+     * @param key the attribute key
+     * @param defaultValue the default value
+     *
+     * @return the attribute as an integer
+     */
+    public int getAttributeAsInt(final String key, final int defaultValue) {
+        final Object x = getAttribute(key);
         if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
         if ( x instanceof Integer ) return (Integer)x;
-        return Integer.valueOf((String)x); // throws an exception if this isn't a string
+        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
+                "Cannot get attribute(key=\"" + key + ") as an integer because it's not a Number or a String. Class = " + x.getClass());
+        try {
+            return Integer.parseInt((String)x);
+        } catch (final NumberFormatException err) {
+            throw new IllegalArgumentException( "Cannot convert attribute(key=\"" + key + ") = "+ x + " as an integer.", err);
+        }
     }
-
-    public double getAttributeAsDouble(String key, double defaultValue) {
-        Object x = getAttribute(key);
+    
+    /**
+     * return an attribute as a double.
+     * if given key is not found the defaultValue is returned.
+     * if the value is as an Integer, this value is returned.
+     * if the value is a String, the value of <code>Double.parseDouble((String)x)</code> is returned.
+     * If the value is not a Double, a String or an Integer, an exception is thrown
+     * 
+     * @param key the attribute key
+     * @param defaultValue the default value
+     * @return the attribute as a double
+     */
+    public double getAttributeAsDouble(final String key, final double defaultValue) {
+        final Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
         if ( x instanceof Integer ) return (Integer)x;
-        return Double.valueOf((String)x); // throws an exception if this isn't a string
+        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
+                "Cannot get attribute(key=\"" + key + ") as a double because it's not a Double, a Integer or a String. Class = " + x.getClass());
+        try {
+            return Double.parseDouble((String)x);
+        } catch (final NumberFormatException err) {
+            throw new IllegalArgumentException( "Cannot convert attribute(key=\"" + key + ") = "+ x + " as a double.", err);
+        }
     }
 
-    public boolean getAttributeAsBoolean(String key, boolean defaultValue) {
-        Object x = getAttribute(key);
+    /**
+     * return an attribute as a boolean.
+     * if given key is not found the defaultValue is returned.
+     * if the value is a String, the value of <code>Boolean.parseBoolean((String)x)</code> is returned.
+     * If the value is not a Boolean or a String an exception is thrown
+     * 
+     * @param key the attribute key
+     * @param defaultValue the default value
+     * @return the attribute as a boolean
+     */
+    public boolean getAttributeAsBoolean(final String key, final boolean defaultValue) {
+        final Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Boolean ) return (Boolean)x;
-        return Boolean.valueOf((String)x); // throws an exception if this isn't a string
+        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
+                "Cannot get attribute(key=\"" + key + ") as a boolean because it's not a Boolean or a String. Class = " + x.getClass());
+        return Boolean.parseBoolean((String)x);
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder().
+            append("CommonInfo [log10PError=").
+            append(log10PError).
+            append(", name=").
+            append(name).
+            append(", filters=").
+            append(filters).
+            append(", attributes=").
+            append(attributes).
+            append("]").
+            toString();
     }
 
 //    public String getAttributeAsString(String key)      { return (String.valueOf(getExtendedAttribute(key))); } // **NOTE**: will turn a null Object into the String "null"
