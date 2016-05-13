@@ -25,11 +25,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.readers.LineReader;
-import htsjdk.tribble.readers.LineReaderUtil;
-import htsjdk.tribble.readers.PositionalBufferedStream;
-import htsjdk.tribble.readers.TabixIteratorLineReader;
-import htsjdk.tribble.readers.TabixReader;
+import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;
@@ -128,7 +124,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public CloseableTribbleIterator<T> iterator() throws IOException {
         final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
-        final LineReader reader = LineReaderUtil.fromBufferedStream(stream, LineReaderUtil.LineReaderOption.SYNCHRONOUS);
+        final LineReader reader = new SynchronousLineReader(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
     }
 

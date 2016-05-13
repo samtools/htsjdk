@@ -27,13 +27,8 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
-import htsjdk.tribble.readers.LineIteratorImpl;
-import htsjdk.tribble.readers.LineReaderUtil;
+import htsjdk.tribble.readers.*;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -63,8 +58,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     private VCFHeader createHeader(String headerStr) {
         VCFCodec codec = new VCFCodec();
-        VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(LineReaderUtil.fromStringReader(
-                new StringReader(headerStr), LineReaderUtil.LineReaderOption.SYNCHRONOUS)));
+        VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
+                new StringReader(headerStr))));
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF4headerStringCount);
         return header;
     }

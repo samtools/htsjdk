@@ -29,10 +29,7 @@ import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
-import htsjdk.tribble.readers.LineIteratorImpl;
-import htsjdk.tribble.readers.LineReaderUtil;
-import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.*;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -171,7 +168,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
                 error("Couldn't read all of the bytes specified in the header length = " + headerSizeInBytes);
 
             final PositionalBufferedStream bps = new PositionalBufferedStream(new ByteArrayInputStream(headerBytes));
-            final LineIterator lineIterator = new LineIteratorImpl(LineReaderUtil.fromBufferedStream(bps, LineReaderUtil.LineReaderOption.SYNCHRONOUS));
+            final LineIterator lineIterator = new LineIteratorImpl(new SynchronousLineReader(bps));
             final VCFCodec headerParser = new VCFCodec();
             this.header = (VCFHeader) headerParser.readActualHeader(lineIterator);
             bps.close();
