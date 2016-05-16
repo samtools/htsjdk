@@ -43,36 +43,12 @@ import java.util.zip.Deflater;
  */
 public class DeflaterFactory {
 
-    private static Constructor<IntelDeflater> intelDeflaterConstructor;
-
-    static {
-        try {
-            if (Defaults.TRY_USE_INTEL_DEFLATER) {
-                final Class<IntelDeflater> clazz = (Class<IntelDeflater>) Class.forName("htsjdk.samtools.util.zip.IntelDeflater");
-                intelDeflaterConstructor = clazz.getConstructor(Integer.TYPE, Boolean.TYPE);
-            }
-        } catch (ClassNotFoundException e) {
-            intelDeflaterConstructor = null;
-        } catch (NoSuchMethodException e) {
-            intelDeflaterConstructor = null;
-        } catch (UnsatisfiedLinkError e) {
-            intelDeflaterConstructor = null;
-        }
-    }
 
     public static Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
-        if (intelDeflaterConstructor != null) {
-            try {
-                return intelDeflaterConstructor.newInstance(compressionLevel, nowrap);
-            } catch (Exception e) {
-                throw new SAMException("Exception constructing IntelDeflater", e);
-            }
-        } else {
-            return new Deflater(compressionLevel, nowrap);
-        }
+        return new Deflater(compressionLevel, nowrap);
     }
 
     public static boolean usingIntelDeflater() {
-        return intelDeflaterConstructor != null;
+        return false;
     }
 }

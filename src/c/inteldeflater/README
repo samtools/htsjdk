@@ -1,7 +1,0 @@
-- IntelDeflater.c implements JNI for the IntelDeflater in htsjdk.samtools.util.zip.IntelDeflater
-- IntelDeflater uses Intel(R) Integrated  Performance Primitives (Intel(R) IPP) Samples and igzip to accelerate BAM compression.
-- Steps to build Intel Deflater using src/scripts/build_intel_deflater.sh:
-  - $OPENJDK should point to the OpenJDK directory
-  - $IPP8_INSTALL_DIR should point to the composer_xe_YEAR/ipp directory
-  - $IPP8_CODE_SAMPLES_DIR should point to ipp-samples.8.0.0.x directory
-  - $IGZIP_LIB should point to igzip_042/igzip directory, igzip should be built with ONLY_DEFLATE and GENOME_BAM defined. 
