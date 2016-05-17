@@ -468,4 +468,14 @@ public class ValidateSamFileTest {
         Assert.assertFalse(results.isEmpty());
         Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
     }
+
+    /* bam using 'SO:sorted' instead of 'SO:coordinate' e.g. http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqGm12891R2x75Il200AlignsRep2V2.bam (2016-05-17) */
+    @Test
+    public void testSortedOrder() throws Exception {
+        final String header = "@HD	VN:1.0	SO:sorted";
+        final InputStream strm = new ByteArrayInputStream(StringUtil.stringToBytes(header));
+        final SamReader samReader = SamReaderFactory.makeDefault().open(SamInputResource.of(strm));
+        Assert.assertTrue(samReader.getFileHeader().getSortOrder() == SAMFileHeader.SortOrder.coordinate);
+    }
+
 }

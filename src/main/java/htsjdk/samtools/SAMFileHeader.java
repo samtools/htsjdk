@@ -246,6 +246,10 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         if (so == null || so.equals("unknown")) {
             return SortOrder.unsorted;
         }
+        /* some BAM are wrongly using 'sorted'  e.g.: http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeCaltechRnaSeq/wgEncodeCaltechRnaSeqGm12891R2x75Il200AlignsRep2V2.bam  (2016-05-17) . For now, we have only see this with version:1.0 */
+        if (so.equals("sorted") && "1.0".equals(getVersion())) {
+            return SortOrder.coordinate;
+        }
         return SortOrder.valueOf((String) so);
     }
 
