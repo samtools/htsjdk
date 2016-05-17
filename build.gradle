@@ -16,6 +16,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    deployerJars
+}
+
 dependencies {
     compile "org.apache.commons:commons-jexl:2.1.1"
     compile "commons-logging:commons-logging:1.1.1"
@@ -26,6 +30,8 @@ dependencies {
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.2"
 
     testCompile "org.testng:testng:6.9.9"
+
+    deployerJars "org.apache.maven.wagon:wagon-ssh:2.10"
 }
 
 sourceCompatibility = 1.8
@@ -33,10 +39,11 @@ targetCompatibility = 1.8
 
 
 final isRelease = versionDetails().commitDistance == 0
-version = isRelease ? gitVersion() : gitVersion() + "-SNAPSHOT"
+//version = isRelease ? gitVersion() : gitVersion() + "-SNAPSHOT"
+version = versionDetails().lastTag
 
 logger.info("build for version:" + version)
-group = 'com.github.samtools'
+group = 'com.genestack'
 
 defaultTasks 'jar'
 
@@ -177,10 +184,12 @@ signing {
 uploadArchives {
     repositories {
         mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            configuration = configurations.deployerJars
 
-            repository(url: "scpexe://maven@50.19.196.47/var/lib/genestack-repo") {
-                authentication(userName: "maven", privateKey: new File(System.getProperty("user.home"), ".ssh/id_rsa"))
+//            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "scp://50.19.196.47/var/lib/genestack-repo/trunk") {
+                authentication(userName: "maven", privateKey: System.getProperty("user.home") + "/.ssh/id_rsa")
             }
 
 //            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
