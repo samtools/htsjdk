@@ -31,8 +31,7 @@ dependencies {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-
-final isRelease = versionDetails().commitDistance == 0
+final isRelease = Boolean.getBoolean("release")
 version = isRelease ? gitVersion() : gitVersion() + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
