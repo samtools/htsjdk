@@ -13,6 +13,64 @@ manipulating HTS data.
 
 Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
 
+> **NOTE: _HTSJDK does not currently support the latest Variant Call Format Specification (VCFv4.3 and BCFv2.2)._**
+
+#### Building HTSJDK
+
+HTSJDK is now built using [gradle](http://gradle.org/).
+
+A wrapper script (`gradlew`) is included which will download the appropriate version of gradle on the first invocation.
+
+Example gradle usage from the htsjdk root directory:
+ - compile and build a jar 
+ ```
+ ./gradlew
+ ```
+ or
+ ```
+ ./gradlew jar
+ ```
+ The jar will be in build/libs/htsjdk-\<version\>.jar where version is based on the current git commit.
+
+ - run tests, a specific test class, or run a test and wait for the debugger to connect
+ ```
+ ./gradlew test
+
+ ./gradlew test --tests htsjdk.variant.variantcontext.AlleleUnitTest
+ ./gradlew test --tests "*AlleleUnitTest"
+
+ ./gradlew test --tests "*AlleleUnitTest" --debug-jvm
+ ```
+
+ - clean the project directory
+ ```
+ ./gradlew clean
+ ```
+
+ - build a monolithic jar that includes all of htsjdk's dependencies
+ ```
+ ./gradlew shadowJar
+ ```
+ 
+ - create a snapshot and install it into your local maven repository
+ ```
+ ./gradlew install
+ ```
+
+ - for an exhaustive list of all available targets
+ ```
+ ./gradlew tasks
+ ```
+
+#### Create an HTSJDK project in IntelliJ
+To create a project in IntelliJ IDE for htsjdk do the following:
+
+1. Select fom the menu: `File -> New -> Project from Existing Sources`
+2. In the resulting dialog, chose `Import from existing model`, select `Gradle` and `Next`
+3. Choose the `default gradle wrapper` and `Finish`.
+
+From time to time if dependencies change in htsjdk you may need to refresh the project from the `View -> Gradle` menu.
+
 #### Licensing Information
 
 Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
