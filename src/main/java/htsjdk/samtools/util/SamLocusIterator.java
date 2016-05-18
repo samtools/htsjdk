@@ -107,6 +107,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         /** @return 1-based reference position */
         public int getPosition() { return position; }
         public List<RecordAndOffset> getRecordAndPositions() { return Collections.unmodifiableList(recordAndOffsets); }
+        public String getSequenceName() { return referenceSequence.getSequenceName(); }
+        @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
+        public int getSequenceLength() {return referenceSequence.getSequenceLength();}
         public List<RecordAndOffset> getDeletedInRecord() {
             return (deletedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(deletedInRecord);
         }
