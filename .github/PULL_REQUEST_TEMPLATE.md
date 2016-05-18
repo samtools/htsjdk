@@ -9,3 +9,5 @@ Explain the **motivation** for making this change. What existing problem does th
 - [ ] New tests covering changes and new functionality
 - [ ] All tests passing
 - [ ] Extended the README / documentation, if necessary
+- [ ] Is not backward compatible (breaks binary or source compatibility)
+
