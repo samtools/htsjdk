@@ -240,9 +240,9 @@ public class SamLocusIteratorTest {
                 // make sure that we are not accumulating deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
                 if (incIndels && li.getPosition() == insStart) {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage, "Tracking indels: " + incIndels + ". At " + li.toString());
+                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                 } else {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), 0, "Tracking indels: " + incIndels + ". At " + li.toString());
+                    Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 }
             }
         }
@@ -320,6 +320,100 @@ public class SamLocusIteratorTest {
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 1);
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 1);
                     indelPosition = false;
+                }
+                pos++;
+            }
+        }
+    }
+
+    /**
+     * Test an insertion after N in CIGAR
+     */
+    @Test
+    public void testNBeforeInsertion() {
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for (int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record" + i, 0, startPosition, true, false, "2M4N3I27M", null, 10);
+        }
+        final int startN = 167;
+        final int endN = 170;
+
+        // test both for include indels and do not include indels
+        for (final boolean incIndels : new boolean[] {false, true}) {
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setIncludeIndels(incIndels);
+            // make sure we accumulated depth for each position
+            int pos = startPosition;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                // skipping Ns
+                if (pos >= startN && pos <= endN) {
+                    pos = (incIndels) ? endN : endN + 1;
+                }
+                Assert.assertEquals(li.getPosition(), pos);
+                // accumulation of coverage
+                Assert.assertEquals(li.getRecordAndPositions().size(), (pos == endN) ? 0 : coverage);
+                // no accumulation of deletions
+                Assert.assertEquals(li.getDeletedInRecord().size(), 0);
+                // accumulation of insertion
+                Assert.assertEquals(li.getInsertedInRecord().size(), (pos == endN) ? coverage : 0);
+                // check offsets of the insertion
+                if (pos == endN) {
+                    Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 2);
+                    Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 2);
+                }
+                pos++;
+            }
+        }
+    }
+
+    /**
+     * Test a deletion after N in CIGAR
+     */
+    @Test
+    public void testNBeforeDeletion() {
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for (int i = 0; i < coverage; i++) {
+            // add a negative-strand fragment mapped on chrM with base quality of 10
+            builder.addFrag("record" + i, 0, startPosition, true, false, "2M4N4D5M", null, 10);
+        }
+        final int startN = 167;
+        final int endN = 170;
+        final int startDel = 171;
+        final int endDel = 174;
+
+        // test both for include indels and do not include indels
+        for (final boolean incIndels : new boolean[] {false, true}) {
+            final SamLocusIterator sli = createSamLocusIterator(builder);
+            sli.setIncludeIndels(incIndels);
+            // make sure we accumulated depth for each position
+            int pos = startPosition;
+            for (final SamLocusIterator.LocusInfo li : sli) {
+                if (pos >= startN && pos <= endN) {
+                    if (incIndels) {
+                        // skipping Ns
+                        pos = endN + 1;
+                    } else {
+                        // skip deletions
+                        pos = endDel + 1;
+                    }
+                }
+                final boolean insideDeletion = incIndels && (pos >= startDel && pos <= endDel);
+                Assert.assertEquals(li.getPosition(), pos);
+                // accumulation of coverage
+                Assert.assertEquals(li.getRecordAndPositions().size(), (insideDeletion) ? 0 : coverage);
+                // accumulation of deletions
+                Assert.assertEquals(li.getDeletedInRecord().size(), (insideDeletion) ? coverage : 0);
+                // no accumulation of insertion
+                Assert.assertEquals(li.getInsertedInRecord().size(), 0);
+                // check offsets of the insertion
+                if (pos == endN) {
+                    Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 2);
+                    Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 2);
                 }
                 pos++;
             }
