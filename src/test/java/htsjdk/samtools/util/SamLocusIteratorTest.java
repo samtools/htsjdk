@@ -23,7 +23,10 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecordSetBuilder;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -62,7 +65,7 @@ public class SamLocusIteratorTest {
         return ret;
     }
 
-	/**
+    /**
      * Test a simple with only matches, with both including or not indels
      */
     @Test
@@ -70,12 +73,12 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "36M", null, 10);
         }
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}){
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth for each position
@@ -90,7 +93,7 @@ public class SamLocusIteratorTest {
         }
     }
 
-	/**
+    /**
      * Test the emit uncovered loci, with both including or not indels
      */
     @Test
@@ -99,15 +102,15 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "36M", null, 10);
         }
 
         final int coveredEnd = CoordMath.getEnd(startPosition, readLength);
 
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}) {
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setEmitUncoveredLoci(true);
             sli.setIncludeIndels(incIndels);
@@ -130,7 +133,7 @@ public class SamLocusIteratorTest {
         }
     }
 
-	/**
+    /**
      * Test the quality filter, with both including or not indels
      */
     @Test
@@ -138,20 +141,20 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             final String qualityString;
             // half of the reads have a different quality
-            if(i % 2 == 0) {
+            if (i % 2 == 0) {
                 qualityString = null;
             } else {
                 qualityString = "+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*+*";
             }
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "36M", qualityString, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "36M", qualityString, 10);
         }
 
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}) {
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setQualityScoreCutoff(10);
             sli.setIncludeIndels(incIndels);
@@ -167,7 +170,7 @@ public class SamLocusIteratorTest {
         }
     }
 
-	/**
+    /**
      * Test a simple deletion, with both including or not indels
      */
     @Test
@@ -175,26 +178,26 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "18M10D18M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "18M10D18M", null, 10);
         }
         final int deletionStart = 183;
         final int deletionEnd = 192;
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}){
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth for each position
             int pos = startPosition;
             for (final SamLocusIterator.LocusInfo li : sli) {
                 boolean isDeletedPosition = (pos >= deletionStart && pos <= deletionEnd);
-                if(!incIndels && isDeletedPosition) {
+                if (!incIndels && isDeletedPosition) {
                     pos = deletionEnd + 1;
                     isDeletedPosition = false;
                 }
                 Assert.assertEquals(li.getPosition(), pos++);
-                if(isDeletedPosition) {
+                if (isDeletedPosition) {
                     // make sure there are no reads without indels
                     Assert.assertEquals(li.getRecordAndPositions().size(), 0);
                     // make sure that we are accumulating indels
@@ -211,7 +214,7 @@ public class SamLocusIteratorTest {
         }
     }
 
-	/**
+    /**
      * Test a simple insertion, with both including or not indels
      */
     @Test
@@ -219,13 +222,13 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "30M3I3M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "30M3I3M", null, 10);
         }
         final int insStart = 194;
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}){
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth for each position
@@ -236,10 +239,10 @@ public class SamLocusIteratorTest {
                 Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
                 // make sure that we are not accumulating deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-                if(incIndels && li.getPosition() == insStart) {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage, "Tracking indels: "+incIndels+". At "+li.toString());
+                if (incIndels && li.getPosition() == insStart) {
+                    Assert.assertEquals(li.getInsertedInRecord().size(), coverage, "Tracking indels: " + incIndels + ". At " + li.toString());
                 } else {
-                    Assert.assertEquals(li.getInsertedInRecord().size(), 0, "Tracking indels: "+incIndels+". At "+li.toString());
+                    Assert.assertEquals(li.getInsertedInRecord().size(), 0, "Tracking indels: " + incIndels + ". At " + li.toString());
                 }
             }
         }
@@ -253,13 +256,13 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "3I33M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "3I33M", null, 10);
         }
 
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}) {
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth for each position
@@ -274,7 +277,7 @@ public class SamLocusIteratorTest {
                 // accumulation of insertion
                 Assert.assertEquals(li.getInsertedInRecord().size(), (indelPosition) ? coverage : 0);
                 // check offsets of the insertion
-                if(indelPosition) {
+                if (indelPosition) {
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 0);
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 0);
                     indelPosition = false;
@@ -292,13 +295,13 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "1S3I32M", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "1S3I32M", null, 10);
         }
 
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}) {
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
             // make sure we accumulated depth for each position
@@ -313,7 +316,7 @@ public class SamLocusIteratorTest {
                 // accumulation of insertion
                 Assert.assertEquals(li.getInsertedInRecord().size(), (indelPosition) ? coverage : 0);
                 // check offsets of the insertion
-                if(indelPosition) {
+                if (indelPosition) {
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 1);
                     Assert.assertEquals(li.getInsertedInRecord().get(0).getOffset(), 1);
                     indelPosition = false;
@@ -332,9 +335,9 @@ public class SamLocusIteratorTest {
         final SAMRecordSetBuilder builder = getRecordBuilder();
         // add records up to coverage for the test in that position
         final int startPosition = 165;
-        for(int i = 0; i < coverage; i++) {
+        for (int i = 0; i < coverage; i++) {
             // add a negative-strand fragment mapped on chrM with base quality of 10
-            builder.addFrag("record"+i, 0, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
+            builder.addFrag("record" + i, 0, startPosition, true, false, "3S3M3N3M3D3M3I18M3S", null, 10);
         }
 
         // make sure we accumulated depth of 2 for each position
@@ -367,7 +370,7 @@ public class SamLocusIteratorTest {
         final int expectedInsertionOffset = 12; // first read base in the insertion
 
         // test both for include indels and do not include indels
-        for (final boolean incIndels : new boolean[]{false, true}) {
+        for (final boolean incIndels : new boolean[] {false, true}) {
             final SamLocusIterator sli = createSamLocusIterator(builder);
             sli.setIncludeIndels(incIndels);
 
@@ -376,14 +379,14 @@ public class SamLocusIteratorTest {
                 // check if it is in the deletion range
                 boolean inDelRange = (expectedPositions[i] >= firstDelBase && expectedPositions[i] <= lastDelBase);
                 // if we are not including indels, the expected position index change if it is in an deletion range
-                if(!incIndels && inDelRange ) {
+                if (!incIndels && inDelRange) {
                     i += 3;
                     inDelRange = false; // set to false to do not check the range of deletions
                 }
                 // check if the LocusInfo is the expected
                 Assert.assertEquals(li.getPosition(), expectedPositions[i]);
                 // check the insertions
-                if(incIndels && li.getPosition() == expectedInsertionPosition) {
+                if (incIndels && li.getPosition() == expectedInsertionPosition) {
                     // check the accumulated coverage
                     Assert.assertEquals(li.getInsertedInRecord().size(), coverage);
                     // check the record offset
@@ -393,7 +396,7 @@ public class SamLocusIteratorTest {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 }
                 // check the range of deletions
-                if(inDelRange) {
+                if (inDelRange) {
                     // check the coverage for insertion and normal records
                     Assert.assertEquals(li.getDeletedInRecord().size(), coverage);
                     Assert.assertEquals(li.getRecordAndPositions().size(), 0);
@@ -508,28 +511,28 @@ public class SamLocusIteratorTest {
             expectedReadOffsets[i] = new int[]{i};
         }
         // Gap of 10
-        for(; i < 18 + 10; ++i) {
+        for (; i < 18 + 10; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 0;
             expectedDelDepths[i] = 1;
             expectedReadOffsets[i] = new int[0];
         }
         // the next bases for the first read (without the 5 overlapping)
-        for(; i < 46 - 5; ++i) {
+        for (; i < 46 - 5; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
             expectedReadOffsets[i] = new int[]{i - 10};
         }
         // last 5 bases of the first read overlap first 5 bases of second read
-        for(; i < 46; ++i) {
+        for (; i < 46; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 2;
             expectedDelDepths[i] = 0;
-            expectedReadOffsets[i] = new int[]{i - 10, i + 10 - 46 - 5 };
+            expectedReadOffsets[i] = new int[]{i - 10, i + 10 - 46 - 5};
         }
         // Last 31 bases of 2nd read
-        for(; i < numBasesCovered; ++i) {
+        for (; i < numBasesCovered; ++i) {
             expectedReferencePositions[i] = startPosition + i;
             expectedDepths[i] = 1;
             expectedDelDepths[i] = 0;
@@ -546,7 +549,7 @@ public class SamLocusIteratorTest {
             }
             // check the deletions
             Assert.assertEquals(li.getDeletedInRecord().size(), expectedDelDepths[i]);
-            if(expectedDelDepths[i] != 0) {
+            if (expectedDelDepths[i] != 0) {
                 Assert.assertEquals(li.getDeletedInRecord().get(0).getOffset(), expectedDelOffset);
             }
             // checking that insertions are not accumulating

@@ -23,26 +23,10 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.AlignmentBlock;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.filter.AggregateFilter;
-import htsjdk.samtools.filter.DuplicateReadFilter;
-import htsjdk.samtools.filter.FilteringSamIterator;
-import htsjdk.samtools.filter.SamRecordFilter;
-import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
+import htsjdk.samtools.*;
+import htsjdk.samtools.filter.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Iterator that traverses a SAM File, accumulating information on a per-locus basis.
@@ -101,7 +85,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
         /** Accumulate info for one read with a deletion */
         public void addDeleted(final SAMRecord read, int previousPosition) {
-            if(deletedInRecord == null) {
+            if (deletedInRecord == null) {
                 deletedInRecord = new ArrayList<>();
             }
             deletedInRecord.add(new RecordAndOffset(read, previousPosition));
@@ -112,7 +96,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
          * For this locus, the reads in the insertion are included also in recordAndOffsets
          */
         public void addInserted(final SAMRecord read, int firstPosition) {
-            if(insertedInRecord == null) {
+            if (insertedInRecord == null) {
                 insertedInRecord = new ArrayList<>();
             }
             insertedInRecord.add(new RecordAndOffset(read, firstPosition));
@@ -129,13 +113,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         public List<RecordAndOffset> getInsertedInRecord() {
             return (insertedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(insertedInRecord);
         }
-        public String getSequenceName() { return referenceSequence.getSequenceName(); }
-        @Override public String toString() { return referenceSequence.getSequenceName() + ":" + position; }
-        public int getSequenceLength() {return referenceSequence.getSequenceLength();}
 
         /**
          * @return <code>true</code> if all the RecordAndOffset lists are empty;
-         *         <code>false</code> if at least one have records
+         * <code>false</code> if at least one have records
          */
         public boolean isEmpty() {
             return recordAndOffsets.isEmpty() &&
@@ -351,7 +332,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             int start = rec.getAlignmentStart();
             // only if we are including indels and the record does not start in the first base of the reference
             // the stop locus to populate the queue is not the same if the record starts with an insertion
-            if(includeIndels && start != 1 && startWithInsertion(rec.getCigar())) {
+            if (includeIndels && start != 1 && startWithInsertion(rec.getCigar())) {
                 // the start to populate is one less
                 start--;
             }
@@ -382,7 +363,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
             if (!surpassedAccumulationThreshold()) {
                 accumulateSamRecord(rec);
                 // Store the indels if requested
-                if(includeIndels) {
+                if (includeIndels) {
                     accumulateIndels(rec);
                 }
             }
@@ -428,17 +409,15 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     }
 
     /**
-     * Check if cigar start with an insertion, ignoring softclip
-     * @param cigar the cigar element
-     * @return <code>true</code> if it start with an insertion; <code>false</code> otherwise
+     * Check if cigar start with an insertion, ignoring other operators that do not consume references bases
+     * @param cigar the cigar
+     * @return <code>true</code> if the first operator to consume reference bases or be an insertion, is an insertion; <code>false</code> otherwise
      */
     private static boolean startWithInsertion(final Cigar cigar) {
-        for(final CigarElement element: cigar.getCigarElements()) {
-            switch(element.getOperator()) {
-                case I: return true;
-                case S: continue;
-                default: break;
-            }
+        for (final CigarElement element : cigar.getCigarElements()) {
+            if (element.getOperator()==CigarOperator.I) return true;
+            if (!element.getOperator().consumesReferenceBases()) continue;
+            break;
         }
         return false;
     }
@@ -458,11 +437,11 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
 
         // interpret the CIGAR string and add the base info
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
-            final int readStart   = alignmentBlock.getReadStart();
-            final int refStart    = alignmentBlock.getReferenceStart();
+            final int readStart = alignmentBlock.getReadStart();
+            final int refStart = alignmentBlock.getReferenceStart();
             final int blockLength = alignmentBlock.getLength();
 
-            for (int i=0; i<blockLength; ++i) {
+            for (int i = 0; i < blockLength; ++i) {
                 // 0-based offset into the read of the current base
                 final int readOffset = readStart + i - 1;
 
@@ -538,12 +517,10 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 }
                 lastReferenceSequence++;
                 lastPosition = 0;
-            }
-            else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex() || nextbit < stopBeforeLocus.getPosition()) {
+            } else if (lastReferenceSequence < stopBeforeLocus.getSequenceIndex() || nextbit < stopBeforeLocus.getPosition()) {
                 lastPosition = nextbit;
                 return new LocusInfo(getReferenceSequence(lastReferenceSequence), lastPosition);
-            }
-            else if (nextbit >= stopBeforeLocus.getPosition()) {
+            } else if (nextbit >= stopBeforeLocus.getPosition()) {
                 return null;
             }
         }
@@ -562,7 +539,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         // Because of gapped alignments, it is possible to create LocusInfo's with no reads associated with them.
         // Skip over these if not including indels
         while (!accumulator.isEmpty() && accumulator.get(0).isEmpty() &&
-               locusComparator.compare(accumulator.get(0), stopBeforeLocus) < 0) {
+                locusComparator.compare(accumulator.get(0), stopBeforeLocus) < 0) {
             accumulator.remove(0);
         }
         if (accumulator.isEmpty()) {
@@ -603,19 +580,18 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      */
     private int getAccumulatorOffset(SAMRecord rec) {
         final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
-        final int alignmentStart  = rec.getAlignmentStart();
-        final int alignmentEnd    = rec.getAlignmentEnd();
+        final int alignmentStart = rec.getAlignmentStart();
+        final int alignmentEnd = rec.getAlignmentEnd();
         final int alignmentLength = alignmentEnd - alignmentStart;
         // get the offset for an insertion if we are tracking them
-        final int insOffset =
-                (includeIndels && startWithInsertion(rec.getCigar())) ? 1 : 0;
+        final int insOffset = (includeIndels && startWithInsertion(rec.getCigar())) ? 1 : 0;
         // if there is an insertion in the first base and it is not tracked in the accumulator, add it
         if (insOffset == 1 && accumulator.isEmpty()) {
             accumulator.add(new LocusInfo(ref, alignmentStart - 1));
         }
 
         // Ensure there are LocusInfos up to and including this position
-        for (int i=accumulator.size(); i<=alignmentLength+insOffset; ++i) {
+        for (int i = accumulator.size(); i <= alignmentLength + insOffset; ++i) {
             accumulator.add(new LocusInfo(ref, alignmentStart + i - insOffset));
         }
         return alignmentStart - insOffset;
@@ -643,19 +619,29 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         this.samFilters = samFilters;
     }
 
-    public int getQualityScoreCutoff() { return qualityScoreCutoff; }
+    public int getQualityScoreCutoff() {
+        return qualityScoreCutoff;
+    }
 
-    public void setQualityScoreCutoff(final int qualityScoreCutoff) { this.qualityScoreCutoff = qualityScoreCutoff; }
+    public void setQualityScoreCutoff(final int qualityScoreCutoff) {
+        this.qualityScoreCutoff = qualityScoreCutoff;
+    }
 
     public int getMappingQualityScoreCutoff() {
         return mappingQualityScoreCutoff;
     }
 
-    public void setMappingQualityScoreCutoff(final int mappingQualityScoreCutoff) { this.mappingQualityScoreCutoff = mappingQualityScoreCutoff; }
+    public void setMappingQualityScoreCutoff(final int mappingQualityScoreCutoff) {
+        this.mappingQualityScoreCutoff = mappingQualityScoreCutoff;
+    }
 
-    public boolean isIncludeNonPfReads() { return includeNonPfReads; }
+    public boolean isIncludeNonPfReads() {
+        return includeNonPfReads;
+    }
 
-    public void setIncludeNonPfReads(final boolean includeNonPfReads) { this.includeNonPfReads = includeNonPfReads; }
+    public void setIncludeNonPfReads(final boolean includeNonPfReads) {
+        this.includeNonPfReads = includeNonPfReads;
+    }
 
     public boolean isEmitUncoveredLoci() {
         return emitUncoveredLoci;
@@ -674,7 +660,9 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      * As is pointed out above, setting this could cause major bias because of the non-random nature with which the
      * cap is applied (the first maxReadsToAccumulatePerLocus reads are kept and all subsequent ones are dropped).
      */
-    public void setMaxReadsToAccumulatePerLocus(final int maxReadsToAccumulatePerLocus) { this.maxReadsToAccumulatePerLocus = maxReadsToAccumulatePerLocus; }
+    public void setMaxReadsToAccumulatePerLocus(final int maxReadsToAccumulatePerLocus) {
+        this.maxReadsToAccumulatePerLocus = maxReadsToAccumulatePerLocus;
+    }
 
     public boolean isIncludeIndels() {
         return includeIndels;
