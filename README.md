@@ -1,4 +1,5 @@
-Status of master branch build: [![Build Status](https://travis-ci.org/samtools/htsjdk.svg?branch=master)](https://travis-ci.org/samtools/htsjdk)
+Status of master branch build: [![Coverage Status](https://coveralls.io/repos/github/samtools/htsjdk/badge.svg?branch=master)](https://coveralls.io/github/samtools/htsjdk?branch=master)
+[![Build Status](https://travis-ci.org/samtools/htsjdk.svg?branch=master)](https://travis-ci.org/samtools/htsjdk)
 
 Status of downstream projects automatically built on top of the current htsjdk master branch. See [gatk-jenkins](https://gatk-jenkins.broadinstitute.org/view/HTSJDK%20Release%20Tests/) for detailed logs. Failure may indicate problems  in htsjdk, but may also be due to expected incompatibilities between versions, or unrelated failures in downstream projects.
 - [Picard](https://github.com/broadinstitute/picard):  [![Build Status](https://gatk-jenkins.broadinstitute.org/buildStatus/icon?job=picard-on-htsjdk-master)](https://gatk-jenkins.broadinstitute.org/job/picard-on-htsjdk-master/)
@@ -41,6 +42,11 @@ Example gradle usage from the htsjdk root directory:
 
  ./gradlew test --tests "*AlleleUnitTest" --debug-jvm
  ```
+
+- run tests and collect coverage information (report will be in `build/reports/jacoco/test/html/index.html`)
+```
+./gradlew jacocoTestReport
+```
 
  - clean the project directory
  ```
