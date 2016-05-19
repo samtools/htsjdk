@@ -112,15 +112,6 @@ test {
     }
 }
 
-task testIntelDeflater(type: Test){
-    jvmArgs '-Dsamjdk.intel_deflater_so_path=lib/jni/libIntelDeflater.so'
-
-    description "Run the Intel Deflater tests"
-    useTestNG {
-        includeGroups "intel"
-    }
-}
-
 task testSRA(type: Test){
     description "Run the SRA tests"
     useTestNG{
