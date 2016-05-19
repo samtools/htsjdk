@@ -58,12 +58,6 @@ public class Defaults {
     public static final boolean TRY_USE_INTEL_DEFLATER;
 
     /**
-     * Path to libIntelDeflater.so.  If this is not set, the library is looked for in the directory
-     * where the executable jar lives.
-     */
-    public static final String INTEL_DEFLATER_SHARED_LIBRARY_PATH;
-
-    /**
      * The reference FASTA file.  If this is not set, the file is null.  This file may be required for reading
      * writing SAM files (ex. CRAM).
      */
@@ -104,8 +98,7 @@ public class Defaults {
         }
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
-        TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", true);
-        INTEL_DEFLATER_SHARED_LIBRARY_PATH = getStringProperty("intel_deflater_so_path", null);
+        TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", false);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
         } else {
@@ -132,7 +125,6 @@ public class Defaults {
         result.put("COMPRESSION_LEVEL", COMPRESSION_LEVEL);
         result.put("BUFFER_SIZE", BUFFER_SIZE);
         result.put("TRY_USE_INTEL_DEFLATER", TRY_USE_INTEL_DEFLATER);
-        result.put("INTEL_DEFLATER_SHARED_LIBRARY_PATH", INTEL_DEFLATER_SHARED_LIBRARY_PATH);
         result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
         result.put("REFERENCE_FASTA", REFERENCE_FASTA);
         result.put("USE_CRAM_REF_DOWNLOAD", USE_CRAM_REF_DOWNLOAD);

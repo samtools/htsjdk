@@ -50,6 +50,9 @@ public class BlockCompressedOutputStream
         extends OutputStream
         implements LocationAware
 {
+
+    private static final Log log = Log.getInstance(BlockCompressedOutputStream.class);
+
     private static int defaultCompressionLevel = BlockCompressedStreamConstants.DEFAULT_COMPRESSION_LEVEL;
 
     /**
@@ -127,6 +130,7 @@ public class BlockCompressedOutputStream
         this.file = file;
         codec = new BinaryCodec(file, true);
         deflater = DeflaterFactory.makeDeflater(compressionLevel, true);
+        log.debug("Using deflater: " + deflater.getClass().getSimpleName());
     }
 
     /**
@@ -144,6 +148,7 @@ public class BlockCompressedOutputStream
             codec.setOutputFileName(file.getAbsolutePath());
         }
         deflater = DeflaterFactory.makeDeflater(compressionLevel, true);
+        log.debug("Using deflater: " + deflater.getClass().getSimpleName());
     }
 
     /**

@@ -16,6 +16,12 @@ plugins {
 
 repositories {
     mavenCentral()
+
+    // Include the Broad artifactory for intel-gkl snapshots. This is temporary
+    // until intel-gkl is available on maven central.
+    maven {
+        url "https://artifactory.broadinstitute.org/artifactory/libs-snapshot/"
+    }
 }
 
 jacocoTestReport {
@@ -42,6 +48,7 @@ dependencies {
     compile "org.tukaani:xz:1.5"
     compile "org.apache.ant:ant:1.8.2"
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.2"
+    compile "com.intel:intel-gkl:0.0.1-20160525.160915-2"
 
     testCompile "org.testng:testng:6.9.9"
 }
@@ -65,12 +72,6 @@ jar {
     }
 }
 
-processResources {
-    into "lib/jni/", {
-        from ("lib/jni/libIntelDeflater.so")
-    }
-}
-
 import org.gradle.internal.os.OperatingSystem;
 
 tasks.withType(Test) {
@@ -82,7 +83,6 @@ tasks.withType(Test) {
     maxHeapSize = "2G"
 
     jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
-
 
     if (System.env.CI == "true") {  //if running under a CI output less into the logs
         int count = 0
@@ -121,6 +121,7 @@ tasks.withType(Test) {
 
 test {
     description = "Runs the unit tests other than the SRA tests"
+
     useTestNG {
         if( OperatingSystem.current().isUnix() ){
             excludeGroups "slow", "broken", "sra", "intel"
@@ -131,7 +132,7 @@ test {
 }
 
 task testIntelDeflater(type: Test){
-    jvmArgs '-Dsamjdk.intel_deflater_so_path=lib/jni/libIntelDeflater.so'
+    jvmArgs '-Dsamjdk.try_use_intel_deflater=true'
 
     description "Run the Intel Deflater tests"
     useTestNG {
