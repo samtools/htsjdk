@@ -3,9 +3,9 @@ package htsjdk.samtools.cram.io;
 import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.util.IOUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
-import org.apache.tools.bzip2.CBZip2InputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -58,7 +58,11 @@ public class ExternalCompression {
      * @return compressed blob
      */
     public static byte[] bzip2(final byte[] data) throws IOException {
-        return InputStreamUtils.readFully(new BZip2CompressorInputStream(new ByteArrayInputStream(data)));
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        final BZip2CompressorOutputStream bos = new BZip2CompressorOutputStream(byteArrayOutputStream);
+        IOUtil.copyStream(new ByteArrayInputStream(data), bos);
+        bos.close();
+        return byteArrayOutputStream.toByteArray();
     }
 
     /**
@@ -71,10 +75,7 @@ public class ExternalCompression {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static byte[] unbzip2(final byte[] data) throws IOException {
         final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
-        // hello, apache!
-        byteArrayInputStream.read();
-        byteArrayInputStream.read();
-        return InputStreamUtils.readFully(new CBZip2InputStream(byteArrayInputStream));
+        return InputStreamUtils.readFully(new BZip2CompressorInputStream(byteArrayInputStream));
     }
 
     /**
