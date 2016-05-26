@@ -1,6 +1,10 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.Iterables;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -19,8 +23,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 public class SamReaderFactoryTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -44,6 +50,17 @@ public class SamReaderFactoryTest {
             count++;
         }
         iter.close();
+        return count;
+    }
+
+    private int countRecords(final SamReader reader) {
+        int count = 0;
+        try (final SAMRecordIterator iter = reader.iterator()) {
+            while (iter.hasNext()) {
+                iter.next();
+                count++;
+            }
+        }
         return count;
     }
 
@@ -73,6 +90,7 @@ public class SamReaderFactoryTest {
                 {"uncompressed.sam"},
                 {"compressed.sam.gz"},
                 {"compressed.bam"},
+                {"unsorted.sam"}
         };
     }
 
@@ -313,4 +331,107 @@ public class SamReaderFactoryTest {
       Assert.assertEquals(SamInputResource.of("/a/b/c").data().type(),
           InputResource.Type.FILE);
     }
+
+    @Test
+    public void testCRAMReaderFromURL() throws IOException {
+        // get a CRAM reader with an index from a URL-backed resource
+        getCRAMReaderFromInputResource(
+                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(indexURL);},
+                true,
+                3);
+    }
+
+    @Test
+    public void testCRAMReaderFromURLStream() throws IOException {
+        // get a CRAM reader with an index from a stream-backed resource created from a URL
+        getCRAMReaderFromInputResource(
+                (cramURL, indexURL) -> {
+                    try {
+                        ISeekableStreamFactory streamFactory = SeekableStreamFactory.getInstance();
+                        return SamInputResource
+                                .of(streamFactory.getStreamFor(cramURL))
+                                .index(streamFactory.getStreamFor(indexURL));
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeIOException(e);
+                    }
+                },
+                true,
+                3);
+    }
+
+    @Test
+    public void testCRAMReaderFromURLNoIndexFile() throws IOException {
+        // get just a CRAM reader (no index) from an URL-backed resource
+        getCRAMReaderFromInputResource(
+                (cramURL, indexURL) -> { return SamInputResource.of(cramURL); },
+            false,
+            11);
+    }
+
+    @Test(expectedExceptions=RuntimeIOException.class)
+    public void testCRAMReaderFromURLBadIndexFile() throws IOException {
+        // deliberately specify a bad index file to ensure we get an IOException
+        getCRAMReaderFromInputResource(
+                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(new File("nonexistent.bai")); },
+            true,
+            3);
+    }
+
+    private void getCRAMReaderFromInputResource(
+            final BiFunction<URL, URL, SamInputResource> getInputResource,
+            final boolean hasIndex,
+            final int expectedCount) throws IOException {
+        final String cramFilePath = new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath();
+        final String cramIndexPath = new File(TEST_DATA_DIR, "cram_with_bai_index.cram.bai").getAbsolutePath();
+        final URL cramURL = new URL("file://" + cramFilePath);
+        final URL indexURL = new URL("file://" + cramIndexPath);
+
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .referenceSource(new ReferenceSource(new File(TEST_DATA_DIR, "hg19mini.fasta")))
+                .validationStringency(ValidationStringency.SILENT);
+        final SamReader reader = factory.open(getInputResource.apply(cramURL, indexURL));
+
+        int count = hasIndex ?
+            countRecordsInQueryInterval(reader, new QueryInterval(1, 10, 1000)) :
+            countRecords(reader);
+        Assert.assertEquals(count, expectedCount);
+    }
+
+    @Test
+    public void testSamReaderFromSeekableStream() throws IOException {
+        // even though a SAM isn't indexable, make sure we can open one
+        // using a seekable stream
+        final File samFile = new File(TEST_DATA_DIR, "unsorted.sam");
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT);
+        final SamReader reader = factory.open(
+                SamInputResource.of(new SeekableFileStream(samFile)));
+        Assert.assertEquals(countRecords(reader), 10);
+    }
+
+
+    @Test
+    public void testSamReaderFromURL() throws IOException {
+        final String samFilePath = new File(TEST_DATA_DIR, "unsorted.sam").getAbsolutePath();
+        final URL samURL = new URL("file://" + samFilePath);
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT);
+        final SamReader reader = factory.open(SamInputResource.of(samURL));
+        Assert.assertEquals(countRecords(reader), 10);
+    }
+
+    @Test(expectedExceptions=SAMFormatException.class)
+    public void testSamReaderFromMalformedSeekableStream() throws IOException {
+        // use a bogus (.bai file) to force SamReaderFactory to fall through to the
+        // fallback code that assumes a SAM File when it can't determine the
+        // format of the input, to ensure that it results in a SAMFormatException
+        final File samFile = new File(TEST_DATA_DIR, "cram_with_bai_index.cram.bai");
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT);
+        final SamReader reader = factory.open(
+                SamInputResource.of(new SeekableFileStream(samFile)));
+        countRecords(reader);
+    }
+
 }

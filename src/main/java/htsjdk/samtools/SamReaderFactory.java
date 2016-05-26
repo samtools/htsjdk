@@ -257,8 +257,22 @@ public abstract class SamReaderFactory {
                                 validationStringency,
                                 this.samRecordFactory
                         );
+                    } else if (SamStreams.sourceLikeCram(data.asUnbufferedSeekableStream())) {
+                        if (referenceSource == null) {
+                            referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
+                        }
+                        SeekableStream bufferedIndexStream = indexDefined ?
+                                IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream()) :
+                                null;
+                        primitiveSamReader = new CRAMFileReader(
+                                IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
+                                bufferedIndexStream, referenceSource, validationStringency);
                     } else {
-                        throw new SAMFormatException("Unrecognized file format: " + data.asUnbufferedSeekableStream());
+                        // assume its a SAM file/no index
+                        LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
+                        primitiveSamReader = new SAMTextReader(
+                                IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
+                                validationStringency, this.samRecordFactory);
                     }
                 } else if (type == InputResource.Type.SRA_ACCESSION) {
                     primitiveSamReader = new SRAFileReader(data.asSRAAccession());
