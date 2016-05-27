@@ -19,9 +19,9 @@ repositories {
 
     // Include the Broad artifactory for intel-gkl snapshots. This is temporary
     // until intel-gkl is available on maven central.
-    maven {
-        url "https://artifactory.broadinstitute.org/artifactory/libs-snapshot/"
-    }
+    //maven {
+    //    url "https://artifactory.broadinstitute.org/artifactory/libs-snapshot/"
+    //}
 }
 
 jacocoTestReport {
@@ -47,7 +47,9 @@ dependencies {
     compile "org.apache.commons:commons-compress:1.4.1"
     compile "org.tukaani:xz:1.5"
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.2"
-    compile "com.intel:intel-gkl:0.0.1-20160525.160915-2"
+
+    // Disabled until intel-gkl is in maven central
+    // compile "com.intel:intel-gkl:0.0.1-20160525.160915-2"
 
     testCompile "org.testng:testng:6.9.9"
 }
