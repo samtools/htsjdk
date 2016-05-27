@@ -72,7 +72,7 @@ public class IntelDeflaterTest {
         return retVal.iterator();
     }
 
-    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups={"unix", "intel"},expectedExceptions = IllegalAccessError.class)
+    @Test(dataProvider = "TestIntelDeflaterIsLoadedData", groups={"intel"}, expectedExceptions = IllegalAccessError.class)
     public void TestIntelDeflatorIsLoaded(final File inputFile, final Boolean eagerlyDecode,final Integer compressionLevel) throws IOException,IllegalAccessError {
         Log log = Log.getInstance(IntelDeflaterTest.class);
         Log.setGlobalLogLevel(Log.LogLevel.INFO);

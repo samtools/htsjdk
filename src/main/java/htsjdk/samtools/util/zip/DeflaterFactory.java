@@ -23,49 +23,66 @@
  */
 package htsjdk.samtools.util.zip;
 
+import com.intel.gkl.compression.IntelDeflater;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.zip.Deflater;
 
 /**
- * Create zlib-based Deflater if JNI library and other require libraries are available, otherwise create standard
- * JDK Deflater.
- * Java 7 has its own Deflater implementation (libzip.so).  This is almost as fast as a zlib-based Deflater, so in general
- * there isn't a compelling reason to use zlib.  However, Intel has created a hardware-assisted zlib implementation
- * as part of their IPP (Integrated Performance Primitives) package that can run significantly faster on some Intel
- * hardware.  We have seen compression times reduced by 13% to 33% depending on particular hardware, and hope that
- * newer Intel processors will be even better.
+ * Create a hardware-accelerated Intel deflater if the required library is available on the classpath and
+ * {@link Defaults#TRY_USE_INTEL_DEFLATER} is true, otherwise create a standard JDK deflater.
  *
- * Note that this class will no longer be necessary once Java 8 is required, because JDK 8 will use zlib instead
- * of libzip implementation.
+ * The Intel deflater has been shown to significantly (by ~30%) outperform the standard JDK deflater
+ * at compression level 1, and to outperform the JDK deflater by smaller but still significant margins
+ * at higher compression levels.
+ *
+ * We use reflection to instantiate the IntelDeflater so that DeflaterFactory can be loaded
+ * and used at runtime even when the IntelDeflater is not on the classpath.
  */
 public class DeflaterFactory {
 
-    private static Constructor<IntelDeflater> intelDeflaterConstructor;
+    public static final String INTEL_DEFLATER_CLASS_NAME = "com.intel.gkl.compression.IntelDeflater";
+
+    private static final boolean usingIntelDeflater;
+    private static Constructor<? extends Deflater> intelDeflaterConstructor;
 
     static {
+        boolean intelDeflaterLibrarySuccessfullyLoaded = false;
+
         try {
             if (Defaults.TRY_USE_INTEL_DEFLATER) {
-                final Class<IntelDeflater> clazz = (Class<IntelDeflater>) Class.forName("htsjdk.samtools.util.zip.IntelDeflater");
+                @SuppressWarnings("unchecked")
+                final Class<IntelDeflater> clazz = (Class<IntelDeflater>)Class.forName(INTEL_DEFLATER_CLASS_NAME);
+
+                // Get the constructor we'll use to create new instances of IntelDeflater in makeDeflater()
                 intelDeflaterConstructor = clazz.getConstructor(Integer.TYPE, Boolean.TYPE);
+
+                // We also need to call load() on an IntelDeflater instance to actually load the native library
+                // (.so or .dylib) from a resource on the classpath. This should only be done once at startup.
+                final Constructor<IntelDeflater> zeroArgIntelDeflaterConstructor = clazz.getConstructor();
+                intelDeflaterLibrarySuccessfullyLoaded = zeroArgIntelDeflaterConstructor != null &&
+                                                         zeroArgIntelDeflaterConstructor.newInstance().load();
             }
-        } catch (ClassNotFoundException e) {
-            intelDeflaterConstructor = null;
-        } catch (NoSuchMethodException e) {
-            intelDeflaterConstructor = null;
-        } catch (UnsatisfiedLinkError e) {
+        }
+        catch ( ClassNotFoundException | NoSuchMethodException | UnsatisfiedLinkError |
+                IllegalAccessException | InstantiationException | InvocationTargetException e ) {
             intelDeflaterConstructor = null;
         }
+
+        usingIntelDeflater = intelDeflaterConstructor != null && intelDeflaterLibrarySuccessfullyLoaded;
     }
 
     public static Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
-        if (intelDeflaterConstructor != null) {
+        // The Intel Deflater currently only supports compression level 1
+        if ( usingIntelDeflater() && compressionLevel == 1 ) {
             try {
                 return intelDeflaterConstructor.newInstance(compressionLevel, nowrap);
-            } catch (Exception e) {
-                throw new SAMException("Exception constructing IntelDeflater", e);
+            }
+            catch ( IllegalAccessException | InstantiationException | InvocationTargetException e ) {
+                throw new SAMException("Error constructing IntelDeflater", e);
             }
         } else {
             return new Deflater(compressionLevel, nowrap);
@@ -73,6 +90,6 @@ public class DeflaterFactory {
     }
 
     public static boolean usingIntelDeflater() {
-        return intelDeflaterConstructor != null;
+        return usingIntelDeflater;
     }
 }
