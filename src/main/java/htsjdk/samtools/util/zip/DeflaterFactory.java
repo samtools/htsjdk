@@ -23,7 +23,7 @@
  */
 package htsjdk.samtools.util.zip;
 
-import com.intel.gkl.compression.IntelDeflater;
+// import com.intel.gkl.compression.IntelDeflater;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 
@@ -52,6 +52,8 @@ public class DeflaterFactory {
     static {
         boolean intelDeflaterLibrarySuccessfullyLoaded = false;
 
+        // Disabled until the intel-gkl library is available on maven central
+        /*
         try {
             if (Defaults.TRY_USE_INTEL_DEFLATER) {
                 @SuppressWarnings("unchecked")
@@ -71,7 +73,7 @@ public class DeflaterFactory {
                 IllegalAccessException | InstantiationException | InvocationTargetException e ) {
             intelDeflaterConstructor = null;
         }
-
+        */
         usingIntelDeflater = intelDeflaterConstructor != null && intelDeflaterLibrarySuccessfullyLoaded;
     }
 
