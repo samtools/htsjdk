@@ -28,20 +28,19 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
-import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,6 +119,26 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
 
         writer = builder.setOutputFile(bcf.getAbsolutePath()).build();
         Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFile BCF File");
+    }
+
+    @Test
+    public void testDetermineOutputType() {
+        Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.vcf));
+        Assert.assertEquals(OutputType.BCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.bcf));
+        Assert.assertEquals(OutputType.VCF_STREAM, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("/dev/stdout")));
+
+        // Test symlinking
+        try {
+            final Path link = Files.createTempFile("foo.", ".tmp");
+            Files.deleteIfExists(link);
+            Files.createSymbolicLink(link, this.vcf.toPath());
+            link.toFile().deleteOnExit();
+            Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(link.toFile()));
+            link.toFile().delete();
+        }
+        catch (final IOException ioe) {
+            throw new RuntimeIOException(ioe);
+        }
     }
 
     @Test

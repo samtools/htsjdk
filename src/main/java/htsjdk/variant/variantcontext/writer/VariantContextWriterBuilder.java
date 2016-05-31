@@ -157,7 +157,7 @@ public class VariantContextWriterBuilder {
     public VariantContextWriterBuilder setOutputFile(final File outFile) {
         this.outFile = outFile;
         this.outStream = null;
-        determineOutputTypeFromFilename(outFile);
+        this.outType = determineOutputTypeFromFile(outFile);
         return this;
     }
 
@@ -169,10 +169,7 @@ public class VariantContextWriterBuilder {
      * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFile(final String outFile) {
-        this.outFile = new File(outFile);
-        this.outStream = null;
-        determineOutputTypeFromFilename(this.outFile);
-        return this;
+        return setOutputFile(new File(outFile));
     }
 
     /**
@@ -465,37 +462,43 @@ public class VariantContextWriterBuilder {
         return writer;
      }
 
-    private void determineOutputTypeFromFilename(final File f) {
+    /**
+     * Attempts to determine the type of file/data to write based on the File path being
+     * written to. Will attempt to determine using the logical filename; if that fails it will
+     * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
+     * but is neither a file or directory then VCF_STREAM is returned.
+     */
+    protected static OutputType determineOutputTypeFromFile(final File f) {
         if (isBCF(f)) {
-            this.outType = OutputType.BCF;
+            return OutputType.BCF;
         } else if (isCompressedVCF(f)) {
-            this.outType = OutputType.BLOCK_COMPRESSED_VCF;
+            return OutputType.BLOCK_COMPRESSED_VCF;
         } else if (isVCF(f)) {
-            this.outType = OutputType.VCF;
+            return OutputType.VCF;
         }
         else {
             // See if we have a special file (device, named pipe, etc.)
-            final File canonical = new File(IOUtil.getFullCanonicalPath(this.outFile));
+            final File canonical = new File(IOUtil.getFullCanonicalPath(f));
             if (!canonical.equals(f)) {
-                determineOutputTypeFromFilename(canonical);
+                return determineOutputTypeFromFile(canonical);
             }
             else if (f.exists() && !f.isFile() && !f.isDirectory()) {
-                this.outType = OutputType.VCF_STREAM;
+                return OutputType.VCF_STREAM;
             } else {
-                this.outType = OutputType.UNSPECIFIED;
+                return OutputType.UNSPECIFIED;
             }
         }
     }
 
-    private boolean isVCF(final File outFile) {
+    private static boolean isVCF(final File outFile) {
         return outFile != null && outFile.getName().endsWith(".vcf");
     }
 
-    private boolean isBCF(final File outFile) {
+    private static boolean isBCF(final File outFile) {
         return outFile != null && outFile.getName().endsWith(".bcf");
     }
 
-    private boolean isCompressedVCF(final File outFile) {
+    private static boolean isCompressedVCF(final File outFile) {
         if (outFile == null)
             return false;
 
