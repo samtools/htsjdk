@@ -449,7 +449,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
                 final int readOffset = readStart + i - 1;
 
                 // if the quality score cutoff is met, accumulate the base info
-                if (dontCheckQualities || baseQualities[readOffset] >= minQuality) {
+                if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readOffset] >= minQuality) {
                     // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
                     final int refOffset = refStart + i - accOffset;
                     accumulator.get(refOffset).add(rec, readOffset);
