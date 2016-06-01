@@ -96,7 +96,7 @@ public final class PrintReadsExample {
                 " on " + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                 ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
                 ' ' + System.getProperty("java.runtime.version") +
-                ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater" : "JdkDeflater"));
+                ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater loaded and available for Level 1 compression" : "Using JdkDeflater"));
 
         final List<String> list = Defaults.allDefaults().entrySet().stream().map(e -> e.getKey() + ':' + e.getValue()).collect(Collectors.toList());
         log.info(String.join(" ", list));

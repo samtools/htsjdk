@@ -178,7 +178,10 @@ public class VariantContextBuilder {
     }
 
     /**
-     * Tells this builder to use this map of attributes alleles for the resulting <code>VariantContext</code>
+     * Tells this builder to use this map of attributes for the resulting <code>VariantContext</code>. The
+     * contents of the Map are copied to a new Map to ensure that modifications to the provided Map post-invocation
+     * don't affect the VariantContext and also to ensure additional attributes can be added in case the provided
+     * map doesn't support changes (e.g. UnmodifiableMap).
      *
      * Attributes can be <code>null</code> -&gt; meaning there are no attributes.  After
      * calling this routine the builder assumes it can modify the attributes
@@ -187,16 +190,11 @@ public class VariantContextBuilder {
      * Value for each attribute must be of a type that implements {@link Serializable} or else
      * serialization will fail.
      *
-     * @param attributes
+     * @param attributes a Map of attributes to replace any existing attributes with
      */
-    public VariantContextBuilder attributes(final Map<String, Object> attributes) {
-        if (attributes != null) {
-            this.attributes = attributes;
-        }
-        else {
-            this.attributes = new HashMap<String, Object>();
-        }
-
+    public VariantContextBuilder attributes(final Map<String, ?> attributes) {
+        this.attributes = new HashMap<>();
+        if (attributes != null) this.attributes.putAll(attributes);
         this.attributesCanBeModified = true;
         return this;
     }
