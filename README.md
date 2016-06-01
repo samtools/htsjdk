@@ -1,5 +1,8 @@
-Status of master branch build: [![Coverage Status](https://coveralls.io/repos/github/samtools/htsjdk/badge.svg?branch=master)](https://coveralls.io/github/samtools/htsjdk?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/samtools/htsjdk/badge.svg?branch=master)](https://coveralls.io/github/samtools/htsjdk?branch=master)
 [![Build Status](https://travis-ci.org/samtools/htsjdk.svg?branch=master)](https://travis-ci.org/samtools/htsjdk)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
+[![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
+[![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
 
 Status of downstream projects automatically built on top of the current htsjdk master branch. See [gatk-jenkins](https://gatk-jenkins.broadinstitute.org/view/HTSJDK%20Release%20Tests/) for detailed logs. Failure may indicate problems  in htsjdk, but may also be due to expected incompatibilities between versions, or unrelated failures in downstream projects.
 - [Picard](https://github.com/broadinstitute/picard):  [![Build Status](https://gatk-jenkins.broadinstitute.org/buildStatus/icon?job=picard-on-htsjdk-master)](https://gatk-jenkins.broadinstitute.org/job/picard-on-htsjdk-master/)
