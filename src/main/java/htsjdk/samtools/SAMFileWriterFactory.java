@@ -29,11 +29,13 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 
 /**
  * Create a writer for writing SAM, BAM, or CRAM files.
@@ -51,6 +53,7 @@ public class SAMFileWriterFactory implements Cloneable {
     /** compression level 0: min 9:max */
     private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
     private Integer maxRecordsInRam = null;
+    private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
 
     /** simple constructor */
     public SAMFileWriterFactory() {
@@ -86,6 +89,18 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     public SAMFileWriterFactory setCreateMd5File(final boolean createMd5File) {
         this.createMd5File = createMd5File;
+        return this;
+    }
+
+    /**
+     * Set the deflater factory used by BAM writers created by this writer factory. Must not be null.
+     * If this method is not called, the default  {@link DeflaterFactory} is used which creates the default JDK {@link Deflater}.
+     * This method returns the SAMFileWriterFactory itself. */
+    public SAMFileWriterFactory setDeflaterFactory(final DeflaterFactory deflaterFactory){
+        if (deflaterFactory == null){
+            throw new IllegalArgumentException("null deflater factory");
+        }
+        this.deflaterFactory = deflaterFactory;
         return this;
     }
 
@@ -206,7 +221,7 @@ public class SAMFileWriterFactory implements Cloneable {
             }
             OutputStream os = IOUtil.maybeBufferOutputStream(new FileOutputStream(outputFile, false), bufferSize);
             if (createMd5File) os = new Md5CalculatingOutputStream(os, new File(outputFile.getAbsolutePath() + ".md5"));
-            final BAMFileWriter ret = new BAMFileWriter(os, outputFile, compressionLevel);
+            final BAMFileWriter ret = new BAMFileWriter(os, outputFile, compressionLevel, deflaterFactory);
             final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputFile);
             if (this.createIndex && !createIndex) {
                 log.warn("Cannot create index for BAM because output file is not a regular file: " + outputFile.getAbsolutePath());
@@ -282,7 +297,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
 
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel()));
+        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel(), this.deflaterFactory));
     }
 
     /**

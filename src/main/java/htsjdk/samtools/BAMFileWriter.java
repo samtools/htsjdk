@@ -26,6 +26,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -64,6 +65,12 @@ class BAMFileWriter extends SAMFileWriterImpl {
 
     protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel);
+        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec.setOutputFileName(getPathString(file));
+    }
+
+    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
