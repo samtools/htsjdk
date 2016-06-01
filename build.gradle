@@ -64,7 +64,7 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 final isRelease = Boolean.getBoolean("release")
-final gitVersion = gitVersion().replaceAll(".dirty", "")
+final gitVersion = versionDetails().lastTag
 version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
