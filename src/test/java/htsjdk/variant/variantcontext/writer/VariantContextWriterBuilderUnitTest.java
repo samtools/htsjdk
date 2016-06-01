@@ -124,9 +124,11 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     @Test
     public void testDetermineOutputType() {
         Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.vcf));
-        Assert.assertEquals(OutputType.BLOCK_COMPRESSED_VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("foo.vcf.gz")));
         Assert.assertEquals(OutputType.BCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.bcf));
         Assert.assertEquals(OutputType.VCF_STREAM, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("/dev/stdout")));
+        for (final File f: this.blockCompressedVCFs) {
+            Assert.assertEquals(OutputType.BLOCK_COMPRESSED_VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(f));
+        }
 
         // Test symlinking
         try {
