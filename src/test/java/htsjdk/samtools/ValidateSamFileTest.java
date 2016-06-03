@@ -332,7 +332,7 @@ public class ValidateSamFileTest {
     public void testQualityFormatValidation() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault().open(new File("./src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest/illumina-as-standard.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        final Histogram<String>.Bin bin = results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
+        final Histogram.Bin<String> bin = results.get(SAMValidationError.Type.INVALID_QUALITY_FORMAT.getHistogramString());
         final double value = bin.getValue();
         Assert.assertEquals(value, 1.0);
     }
