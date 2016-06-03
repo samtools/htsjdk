@@ -7,6 +7,7 @@ buildscript {
 plugins {
     id "java"
     id 'maven'
+    id 'maven-publish'
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.5.1'
@@ -22,6 +23,14 @@ repositories {
     //maven {
     //    url "https://artifactory.broadinstitute.org/artifactory/libs-snapshot/"
     //}
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
 }
 
 jacocoTestReport {
