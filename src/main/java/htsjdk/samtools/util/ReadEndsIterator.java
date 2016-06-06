@@ -35,7 +35,7 @@ import htsjdk.samtools.SamReader;
  * the interval list.  If no target interval list, whatever loci are covered by the input reads are returned.
  * By default duplicate reads and non-primary alignments are filtered out.  Filtering may be changed
  * via setSamFilters(). Difference from SamLocusIterator is that this implementation accumulates data
- * only about start and end of aligned blocks from reads, not on each aligned base.
+ * only about start and end of alignment blocks from reads, not about each aligned base.
  */
 public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset, AbstractLocusInfo<TypedRecordAndOffset>> {
 
@@ -79,7 +79,8 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      * Capture the loci covered by the given SAMRecord in the LocusInfos in the accumulator,
      * creating new LocusInfos as needed. TypedRecordAndOffset object are created only for start
      * and end of each alignment block of SAMRecord.
-     *
+     * If list of intervals is defined, start or/and length of alignment block are shifted to match the interval, to
+     * prevent exceeding the interval.
      * @param rec SAMRecord to process and add to <code>AbstractLocusInfo</code>
      */
     @Override
@@ -145,7 +146,7 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      *
      * @param rec        aligned SamRecord
      * @param readOffset offset from start of read
-     * @param length     length of aligned block
+     * @param length     length of alignment block
      * @param refPos     position in the reference sequence
      * @param type       BEGIN or END type of RecordAndOffset
      * @return created <code>TypedRecordAndOffset</code>
@@ -194,7 +195,8 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      */
     @Override
     public void setEmitUncoveredLoci(boolean emitUncoveredLoci) {
-        throw new UnsupportedOperationException(getClass().getSimpleName() + " does'n support work with skipping uncovered bases.");
+        throw new UnsupportedOperationException(getClass().getSimpleName() + " doesn't support work with skipping " +
+                "uncovered bases.");
     }
 
 

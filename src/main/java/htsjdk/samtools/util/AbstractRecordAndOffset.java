@@ -43,7 +43,7 @@ public class AbstractRecordAndOffset {
      */
     private final int offset;
     /**
-     * Length of aligned block of the read
+     * Length of alignment block of the read
      */
     private final int length;
     /**
@@ -54,23 +54,23 @@ public class AbstractRecordAndOffset {
 
     /**
      * @param record inner SAMRecord
-     * @param offset form the start of the read
-     * @param length of aligned block
+     * @param offset from the start of the read
+     * @param length of alignment block
      * @param refPos corresponding to read offset reference position
      */
     public AbstractRecordAndOffset(final SAMRecord record, final int offset, int length, int refPos) {
         validateIndex(offset, record.getBaseQualities());
-        this.offset = offset;
-        this.record = record;
         if (length > record.getReadLength()) {
             throw new IllegalArgumentException("Block length cannot be larger than whole read length");
         }
+        this.offset = offset;
+        this.record = record;
         this.length = length;
         this.refPos = refPos;
     }
 
     /**
-     * @return offset if aligned read base form the start of the read.
+     * @return offset of aligned read base from the start of the read.
      */
     public int getOffset() {
         return offset;
@@ -98,14 +98,14 @@ public class AbstractRecordAndOffset {
     }
 
     /**
-     * @return the length of aligned block, which is represented by the object.
+     * @return the length of alignment block represented by the object.
      */
     public int getLength() {
         return length;
     }
 
     /**
-     * @return the position in reference sequence, tp which the start of aligned block is aligned.
+     * @return the position in reference sequence, to which the start of alignment block is aligned.
      */
     public int getRefPos() {
         return refPos;
@@ -127,7 +127,7 @@ public class AbstractRecordAndOffset {
 
 
     /**
-     * @param position in reference
+     * @param position in the reference
      * @return base quality of a read base, corresponding to a given reference position
      */
     public byte getBaseQuality(int position) {
@@ -139,7 +139,8 @@ public class AbstractRecordAndOffset {
 
     private void validateIndex(int index, byte[] array) {
         if (index < 0 || index >= array.length) {
-            throw new IllegalArgumentException("The requested position if not covered by this AbstractRecordAndOffset object.");
+            throw new IllegalArgumentException("The requested position is not covered by this AbstractRecordAndOffset" +
+                    " object.");
         }
     }
 

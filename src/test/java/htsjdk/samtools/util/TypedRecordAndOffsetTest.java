@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2010 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package htsjdk.samtools.util;
 
 
@@ -24,7 +47,7 @@ public class TypedRecordAndOffsetTest {
     }
 
     @Test
-    public void testForCreate(){
+    public void testConstructor(){
         TypedRecordAndOffset typedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 3, TypedRecordAndOffset.Type.BEGIN);
         assertArrayEquals(qualities, typedRecordAndOffset.getBaseQualities());
         assertArrayEquals(bases, typedRecordAndOffset.getRecord().getReadBases());
@@ -35,7 +58,7 @@ public class TypedRecordAndOffsetTest {
     }
 
     @Test
-    public void  testForGetSetStart(){
+    public void  testGetSetStart(){
         TypedRecordAndOffset typedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 3, TypedRecordAndOffset.Type.BEGIN);
         TypedRecordAndOffset typedRecordAndOffsetEnd = new TypedRecordAndOffset(record, 9, 10, 3, TypedRecordAndOffset.Type.END);
         typedRecordAndOffsetEnd.setStart(typedRecordAndOffset);
@@ -43,35 +66,35 @@ public class TypedRecordAndOffsetTest {
     }
 
     @Test
-    public void testForNotEqualsTypedRecords(){
+    public void testNotEqualsTypedRecords(){
         TypedRecordAndOffset typedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 3, TypedRecordAndOffset.Type.BEGIN);
-        TypedRecordAndOffset secondtypedRecordAndOffset = new TypedRecordAndOffset(record, 5, 10, 3, TypedRecordAndOffset.Type.BEGIN);
-        assertNotSame(typedRecordAndOffset.getBaseQuality(), secondtypedRecordAndOffset.getBaseQuality());
-        assertArrayEquals(typedRecordAndOffset.getBaseQualities(), secondtypedRecordAndOffset.getBaseQualities());
+        TypedRecordAndOffset secondTypedRecordAndOffset = new TypedRecordAndOffset(record, 5, 10, 3, TypedRecordAndOffset.Type.BEGIN);
+        assertNotSame(typedRecordAndOffset.getBaseQuality(), secondTypedRecordAndOffset.getBaseQuality());
+        assertArrayEquals(typedRecordAndOffset.getBaseQualities(), secondTypedRecordAndOffset.getBaseQualities());
     }
 
     @Test
-    public void testForGetOffset(){
-        TypedRecordAndOffset secondtypedRecordAndOffset = new TypedRecordAndOffset(record, 5, 10, 3, TypedRecordAndOffset.Type.BEGIN);
-        assertEquals(70, secondtypedRecordAndOffset.getBaseQuality());
-        assertEquals('C', secondtypedRecordAndOffset.getReadBase());
+    public void testGetOffset(){
+        TypedRecordAndOffset secondTypedRecordAndOffset = new TypedRecordAndOffset(record, 5, 10, 3, TypedRecordAndOffset.Type.BEGIN);
+        assertEquals(70, secondTypedRecordAndOffset.getBaseQuality());
+        assertEquals('C', secondTypedRecordAndOffset.getReadBase());
     }
 
     @Test
-    public void testForGetQualityAtPosition(){
-        TypedRecordAndOffset secondtypedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 1, TypedRecordAndOffset.Type.BEGIN);
-        assertEquals(50, secondtypedRecordAndOffset.getBaseQuality(2));
+    public void testGetQualityAtPosition(){
+        TypedRecordAndOffset secondTypedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 1, TypedRecordAndOffset.Type.BEGIN);
+        assertEquals(50, secondTypedRecordAndOffset.getBaseQuality(2));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testForWrongSetStart(){
+    public void testWrongSetStart(){
         TypedRecordAndOffset typedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 3, TypedRecordAndOffset.Type.BEGIN);
         TypedRecordAndOffset typedRecordAndOffsetEnd = new TypedRecordAndOffset(record, 9, 10, 3, TypedRecordAndOffset.Type.END);
         typedRecordAndOffset.setStart(typedRecordAndOffsetEnd);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testForWrongSetStartWithTypeEnd(){
+    public void testWrongSetStartWithTypeEnd(){
         TypedRecordAndOffset typedRecordAndOffset = new TypedRecordAndOffset(record, 0, 10, 3, TypedRecordAndOffset.Type.END);
         TypedRecordAndOffset typedRecordAndOffsetEnd = new TypedRecordAndOffset(record, 9, 10, 3, TypedRecordAndOffset.Type.END);
         typedRecordAndOffset.setStart(typedRecordAndOffsetEnd);

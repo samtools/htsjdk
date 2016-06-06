@@ -125,7 +125,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     /**
      * When there is a target mask, these members remember the last locus for which a AbstractLocusInfo has been
-     * // returned, so that any uncovered locus in the target mask can be covered by a 0-coverage AbstractLocusInfo
+     * returned, so that any uncovered locus in the target mask can be covered by a 0-coverage AbstractLocusInfo
      */
     private int lastReferenceSequence = 0;
 
@@ -141,6 +141,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
     private final LocusComparator<Locus> locusComparator = new LocusComparator<>();
 
+    /**
+     * Last processed interval, relevant only if list of intervals is defined.
+     */
     private int lastInterval = 0;
 
     /**
@@ -196,7 +199,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     }
 
     /**
-     * closes inner <code>SamIterator</>
+     * Closes inner <code>SamIterator</>.
      */
     public void close() {
         this.samIterator.close();

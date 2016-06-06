@@ -31,34 +31,35 @@ import java.util.List;
 
 /**
  * The unit of iteration for AbstractLocusIterator.
- * Holds information about the locus (the SAMSequenceRecord and 1-based position
- * on the reference), plus List of AbstractRecordAndOffset objects,
- * If RecordAndOffset class is used - one object for each read that overlaps the locus.
- * It TypedRecordAndOffset class is used - one for each read that starts or ends at the locus.
+ * Holds information about the locus (the SAMSequenceRecord and 1-based position on the reference),
+ * plus list of AbstractRecordAndOffset objects,
+ * If <code>RecordAndOffset</code> class is used, one object represents one aligned read that overlaps the locus.
+ * If <code>TypedRecordAndOffset</code> class is used, one object represents one aligned read,
+ * that starts or ends at the locus.
  */
 public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus {
     /**
-     * Reference sequence at which the reads are aligned
+     * Reference sequence, to which the reads are aligned.
      **/
     private final SAMSequenceRecord referenceSequence;
     /**
-     * Position in the sequence at which the reads are aligned
+     * Position in the sequence, to which the reads are aligned.
      **/
     private final int position;
 
     /**
-     * Initial size for list of AbstractRecordAndOffset objects
+     * Initial size for the list of <code>AbstractRecordAndOffset</code> objects
      **/
     private final static int INITIAL_LIST_SIZE = 100;
 
     /**
-     * List of aligned at current position reads
+     * List of aligned to current position reads
      **/
     private final List<E> recordAndOffsets = new ArrayList<>(INITIAL_LIST_SIZE);
 
     /**
-     * @param referenceSequence reference sequence at which the reads are aligned
-     * @param position          position in the sequence at which the reads are aligned
+     * @param referenceSequence reference sequence to which the reads are aligned
+     * @param position          position in the sequence to which the reads are aligned
      */
     public AbstractLocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
         this.referenceSequence = referenceSequence;
@@ -66,7 +67,7 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
     }
 
     /**
-     * Accumulates info for one read at the locus. Method doesn't check, that <code>recordAndOffset</code>
+     * Accumulates info for one read aligned to the locus. Method doesn't check, that <code>recordAndOffset</code>
      * is really aligned to current reference position, so it must have valid reference sequence and
      * position or further processing can go wrong.
      *

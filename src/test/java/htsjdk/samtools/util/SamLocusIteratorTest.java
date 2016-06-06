@@ -23,40 +23,14 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecordSetBuilder;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * @author alecw@broadinstitute.org
  */
-public class SamLocusIteratorTest {
-
-    /** Coverage for tests with the same reads */
-    final static int coverage = 2;
-
-    /** the read length for the testss */
-    final static int readLength = 36;
-
-    final static SAMFileHeader header = new SAMFileHeader();
-
-    static {
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        SAMSequenceDictionary dict = new SAMSequenceDictionary();
-        dict.addSequence(new SAMSequenceRecord("chrM", 100000));
-        header.setSequenceDictionary(dict);
-    }
-
-    /** Get the record builder for the tests with the default parameters that are needed */
-    private static SAMRecordSetBuilder getRecordBuilder() {
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-        builder.setHeader(header);
-        builder.setReadLength(readLength);
-        return builder;
-    }
+public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
 
     /** Create the SamLocusIterator with the builder*/
     private SamLocusIterator createSamLocusIterator(final SAMRecordSetBuilder builder) {
@@ -68,6 +42,7 @@ public class SamLocusIteratorTest {
     /**
      * Test a simple with only matches, with both including or not indels
      */
+    @Override
     @Test
     public void testBasicIterator() {
         final SAMRecordSetBuilder builder = getRecordBuilder();
@@ -118,6 +93,7 @@ public class SamLocusIteratorTest {
     /**
      * Test the emit uncovered loci, with both including or not indels
      */
+    @Override
     @Test
     public void testEmitUncoveredLoci() {
 
@@ -459,6 +435,7 @@ public class SamLocusIteratorTest {
      * Try all CIGAR operands (except H and P) and confirm that loci produced by SamLocusIterator are as expected,
      * with both including or not indels
      */
+    @Override
     @Test
     public void testSimpleGappedAlignment() {
         final SAMRecordSetBuilder builder = getRecordBuilder();
@@ -551,6 +528,7 @@ public class SamLocusIteratorTest {
     /**
      * Test two reads that overlap because one has a deletion in the middle of it, without tracking indels
      */
+    @Override
     @Test
     public void testOverlappingGappedAlignmentsWithoutIndels() {
         final SAMRecordSetBuilder builder = getRecordBuilder();

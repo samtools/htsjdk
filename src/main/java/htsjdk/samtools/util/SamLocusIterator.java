@@ -208,7 +208,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Implementation of <code>AbstarctRecordAndOffset</code> class for <code>SamLocusIterator</code>.
+     * Implementation of <code>AbstractRecordAndOffset</code> class for <code>SamLocusIterator</code>.
      * One object represents one aligned base of inner <code>SAMRecord</code>.
      */
     public static class RecordAndOffset extends AbstractRecordAndOffset {

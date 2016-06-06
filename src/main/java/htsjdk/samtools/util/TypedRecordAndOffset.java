@@ -31,15 +31,13 @@ import static htsjdk.samtools.util.TypedRecordAndOffset.Type.END;
 
 /**
  * Holds a SAMRecord plus the zero-based offset into that SAMRecord's bases and quality scores that corresponds
- * to the base and quality for the start or end of alignment block
- * at the genomic position described the containing AbstractLocusInfo.
- * This is implementation for ReadEndsIterator, fieled Type added to indicate whether object represents start or end
- * if alignment block.
+ * to the base and quality for the start of alignment block at the genomic position described by the AbstractLocusInfo.
+ * This is implementation for ReadEndsIterator, field <code>type</code> added to indicate whether object
+ * represents the start or the end of an alignment block.
  */
 public class TypedRecordAndOffset extends AbstractRecordAndOffset {
     /**
-     * Indicates whether object represents start or end
-     * if alignment block.
+     * Indicates whether object represents the start or the end of an alignment block.
      */
     private Type type;
 
@@ -48,8 +46,20 @@ public class TypedRecordAndOffset extends AbstractRecordAndOffset {
      */
     private TypedRecordAndOffset start;
 
+
     /**
-     * @return <code>TypedRecordAndOffset</code> that represents the start of aligned block of the read
+     * @param record inner SAMRecord
+     * @param offset from the start of the read
+     * @param length of alignment block
+     * @param refPos corresponding to read offset reference position
+     */
+    public TypedRecordAndOffset(SAMRecord record, int offset, int length, int refPos, Type type) {
+        super(record, offset, length, refPos);
+        this.type = type;
+    }
+
+    /**
+     * @return <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read
      * for object with type END. For object with type BEGIN will return null.
      */
     public TypedRecordAndOffset getStart() {
@@ -58,9 +68,9 @@ public class TypedRecordAndOffset extends AbstractRecordAndOffset {
 
 
     /**
-     * Method can be called only for object with type END.
-     * @param start <code>TypedRecordAndOffset</code> that represents the start of aligned block of the read,
-     *              must have type BEGIN.
+     * Method can be called only for an object with type END.
+     * @param start <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read,
+     *              must have type <code>BEGIN</code>.
      */
     public void setStart(TypedRecordAndOffset start) {
         if (type != END) {
@@ -72,20 +82,9 @@ public class TypedRecordAndOffset extends AbstractRecordAndOffset {
         this.start = start;
     }
 
-    /**
-     * @param record inner SAMRecord
-     * @param offset form the start of the read
-     * @param length of aligned block
-     * @param refPos corresponding to read offset reference position
-     */
-    public TypedRecordAndOffset(SAMRecord record, int offset, int length, int refPos, Type type) {
-        super(record, offset, length, refPos);
-        this.type = type;
-    }
-
 
     /**
-     * @return type of object/
+     * @return type of object
      */
     public Type getType() {
         return type;
@@ -93,7 +92,7 @@ public class TypedRecordAndOffset extends AbstractRecordAndOffset {
 
     /**
      * Describes the type of <code>TypedRecordAndOffset</code>, whether it represents the start or the end of
-     * alignment block.
+     * an alignment block.
      */
     public enum Type {
         BEGIN, END
