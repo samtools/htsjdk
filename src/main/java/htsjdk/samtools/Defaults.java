@@ -54,9 +54,6 @@ public class Defaults {
      */
     public static final int NON_ZERO_BUFFER_SIZE;
 
-    /** Should BlockCompressedOutputStream attempt to load libIntelDeflater? */
-    public static final boolean TRY_USE_INTEL_DEFLATER;
-
     /**
      * The reference FASTA file.  If this is not set, the file is null.  This file may be required for reading
      * writing SAM files (ex. CRAM).
@@ -98,7 +95,6 @@ public class Defaults {
         }
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
-        TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", false);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
         } else {
@@ -124,7 +120,6 @@ public class Defaults {
         result.put("USE_ASYNC_IO_FOR_TRIBBLE", USE_ASYNC_IO_FOR_TRIBBLE);
         result.put("COMPRESSION_LEVEL", COMPRESSION_LEVEL);
         result.put("BUFFER_SIZE", BUFFER_SIZE);
-        result.put("TRY_USE_INTEL_DEFLATER", TRY_USE_INTEL_DEFLATER);
         result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
         result.put("REFERENCE_FASTA", REFERENCE_FASTA);
         result.put("USE_CRAM_REF_DOWNLOAD", USE_CRAM_REF_DOWNLOAD);

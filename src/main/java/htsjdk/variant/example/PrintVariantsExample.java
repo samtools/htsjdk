@@ -25,7 +25,6 @@ package htsjdk.variant.example;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.zip.DeflaterFactory;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -97,8 +96,7 @@ public final class PrintVariantsExample {
                 System.getProperty("user.name") + '@' + InetAddress.getLocalHost().getHostName() +
                 " on " + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                 ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
-                ' ' + System.getProperty("java.runtime.version") +
-                ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater loaded and available for Level 1 compression" : "Using JdkDeflater"));
+                ' ' + System.getProperty("java.runtime.version"));
 
         log.info(Defaults.allDefaults().entrySet().stream().map(e -> e.getKey() + ':' + e.getValue()).collect(Collectors.<String>joining(" ")));
     }

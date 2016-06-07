@@ -23,75 +23,26 @@
  */
 package htsjdk.samtools.util.zip;
 
-// import com.intel.gkl.compression.IntelDeflater;
-import htsjdk.samtools.Defaults;
-import htsjdk.samtools.SAMException;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import java.util.zip.Deflater;
 
 /**
- * Create a hardware-accelerated Intel deflater if the required library is available on the classpath and
- * {@link Defaults#TRY_USE_INTEL_DEFLATER} is true, otherwise create a standard JDK deflater.
- *
- * The Intel deflater has been shown to significantly (by ~30%) outperform the standard JDK deflater
- * at compression level 1, and to outperform the JDK deflater by smaller but still significant margins
- * at higher compression levels.
- *
- * We use reflection to instantiate the IntelDeflater so that DeflaterFactory can be loaded
- * and used at runtime even when the IntelDeflater is not on the classpath.
+ * Factory for {@link Deflater} objects used by {@link BlockCompressedOutputStream}.
+ * This class may be extended to provide alternative deflaters (e.g., for improved performance).
  */
 public class DeflaterFactory {
 
-    public static final String INTEL_DEFLATER_CLASS_NAME = "com.intel.gkl.compression.IntelDeflater";
-
-    private static final boolean usingIntelDeflater;
-    private static Constructor<? extends Deflater> intelDeflaterConstructor;
-
-    static {
-        boolean intelDeflaterLibrarySuccessfullyLoaded = false;
-
-        // Disabled until the intel-gkl library is available on maven central
-        /*
-        try {
-            if (Defaults.TRY_USE_INTEL_DEFLATER) {
-                @SuppressWarnings("unchecked")
-                final Class<IntelDeflater> clazz = (Class<IntelDeflater>)Class.forName(INTEL_DEFLATER_CLASS_NAME);
-
-                // Get the constructor we'll use to create new instances of IntelDeflater in makeDeflater()
-                intelDeflaterConstructor = clazz.getConstructor(Integer.TYPE, Boolean.TYPE);
-
-                // We also need to call load() on an IntelDeflater instance to actually load the native library
-                // (.so or .dylib) from a resource on the classpath. This should only be done once at startup.
-                final Constructor<IntelDeflater> zeroArgIntelDeflaterConstructor = clazz.getConstructor();
-                intelDeflaterLibrarySuccessfullyLoaded = zeroArgIntelDeflaterConstructor != null &&
-                                                         zeroArgIntelDeflaterConstructor.newInstance().load();
-            }
-        }
-        catch ( ClassNotFoundException | NoSuchMethodException | UnsatisfiedLinkError |
-                IllegalAccessException | InstantiationException | InvocationTargetException e ) {
-            intelDeflaterConstructor = null;
-        }
-        */
-        usingIntelDeflater = intelDeflaterConstructor != null && intelDeflaterLibrarySuccessfullyLoaded;
+    public DeflaterFactory() {
+        //Note: made explicit constructor to make searching for references easier
     }
 
-    public static Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
-        // The Intel Deflater currently only supports compression level 1
-        if ( usingIntelDeflater() && compressionLevel == 1 ) {
-            try {
-                return intelDeflaterConstructor.newInstance(compressionLevel, nowrap);
-            }
-            catch ( IllegalAccessException | InstantiationException | InvocationTargetException e ) {
-                throw new SAMException("Error constructing IntelDeflater", e);
-            }
-        } else {
-            return new Deflater(compressionLevel, nowrap);
-        }
-    }
-
-    public static boolean usingIntelDeflater() {
-        return usingIntelDeflater;
+    /**
+     * Returns a deflater object that will be used when writing BAM files.
+     * Subclasses may override to provide their own deflater implementation.
+     * @param compressionLevel the compression level (0-9)
+     * @param nowrap if true then use GZIP compatible compression
+     */
+    public Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
+        return new Deflater(compressionLevel, nowrap);
     }
 }

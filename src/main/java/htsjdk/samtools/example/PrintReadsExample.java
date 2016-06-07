@@ -25,7 +25,6 @@ package htsjdk.samtools.example;
 import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +38,7 @@ import java.util.stream.Collectors;
  * This is a example program showing how to use SAM readers and (optionally) writers.
  * It's also useful for measuring time.
  * An example invocation is:
- * java -cp dist/htsjdk-2.1.1.jar htsjdk.samtools.example.PrintReadsExample in.bam false a.bam
- * <p>
- * or (to test the IntelDeflator)
- * java -Dsamjdk.intel_deflater_so_path=$PWD/lib/jni/libIntelDeflater.so -cp dist/htsjdk-2.1.1.jar htsjdk.samtools.example.PrintReadsExample in.bam false a.bam
- * <p>
+ * <code>java -cp dist/htsjdk-2.1.1.jar htsjdk.samtools.example.PrintReadsExample in.bam false a.bam</code>
  * Arguments:
  * - the first argument is the input file (SAM or BAM)
  * - the second argument is a boolean (true or false) that indicates whether reads are to be eagerly decoded (useful for benchmarking)
@@ -95,8 +90,7 @@ public final class PrintReadsExample {
                 System.getProperty("user.name") + '@' + InetAddress.getLocalHost().getHostName() +
                 " on " + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                 ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
-                ' ' + System.getProperty("java.runtime.version") +
-                ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater loaded and available for Level 1 compression" : "Using JdkDeflater"));
+                ' ' + System.getProperty("java.runtime.version"));
 
         final List<String> list = Defaults.allDefaults().entrySet().stream().map(e -> e.getKey() + ':' + e.getValue()).collect(Collectors.toList());
         log.info(String.join(" ", list));
