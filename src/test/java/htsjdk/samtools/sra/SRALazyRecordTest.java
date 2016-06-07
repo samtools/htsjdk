@@ -12,7 +12,7 @@ import org.testng.annotations.Test;
  * Tests for SRA extension of SAMRecord objects which load fields on demand
  */
 public class SRALazyRecordTest extends AbstractSRATest {
-    private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR1298981");
+    private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR2096940");
 
     @DataProvider(name = "serializationTestData")
     private Object[][] getSerializationTestData() {

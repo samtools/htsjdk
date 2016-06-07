@@ -7,6 +7,7 @@ import org.testng.SkipException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
 
 @Test(groups = "sra")
@@ -16,6 +17,25 @@ public abstract class AbstractSRATest {
     public final void assertSRAIsSupported(){
         if(!SRAAccession.isSupported()){
             throw new SkipException("Skipping SRA Test because SRA native code is unavailable.");
+        }
+    }
+
+    @BeforeMethod
+    public final void skipIfCantResolve(Method method, Object[] params) {
+        String accession = null;
+
+        if (params.length > 0) {
+            Object firstParam = params[0];
+            if (firstParam instanceof String) {
+                accession = (String)firstParam;
+            } else if (firstParam instanceof SRAAccession) {
+                accession = firstParam.toString();
+            }
+        }
+
+        if (accession != null &&
+                accession.matches(SRAAccession.REMOTE_ACCESSION_PATTERN) && !SRAAccession.isValid(accession)) {
+            throw new SkipException("Skipping network SRA Test because cannot resolve SRA accession.");
         }
     }
 
