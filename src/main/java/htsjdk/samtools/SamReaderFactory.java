@@ -9,6 +9,7 @@ import htsjdk.samtools.util.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.zip.GZIPInputStream;
@@ -51,6 +52,13 @@ public abstract class SamReaderFactory {
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
     
     abstract public SamReader open(final File file);
+
+    public SamReader open(final Path path) {
+        final SamInputResource r = SamInputResource.of(path);
+        final Path indexMaybe = SamFiles.findIndex(path);
+        if (indexMaybe != null) r.index(indexMaybe);
+        return open(r);
+    }
 
     abstract public SamReader open(final SamInputResource resource);
 

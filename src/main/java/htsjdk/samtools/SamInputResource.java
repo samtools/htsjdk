@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.sra.SRAAccession;
@@ -12,7 +13,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Describes a SAM-like resource, including its data (where the records are), and optionally an index.
@@ -60,6 +65,9 @@ public class SamInputResource {
     public static SamInputResource of(final File file) { return new SamInputResource(new FileInputResource(file)); }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
+    public static SamInputResource of(final Path path) { return new SamInputResource(new PathInputResource(path)); }
+
+    /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final InputStream inputStream) { return new SamInputResource(new InputStreamInputResource(inputStream)); }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
@@ -84,6 +92,12 @@ public class SamInputResource {
     /** Updates the index to point at the provided resource, then returns itself. */
     public SamInputResource index(final File file) {
         this.index = new FileInputResource(file);
+        return this;
+    }
+
+    /** Updates the index to point at the provided resource, then returns itself. */
+    public SamInputResource index(final Path path) {
+        this.index = new PathInputResource(path);
         return this;
     }
 
@@ -116,7 +130,7 @@ abstract class InputResource {
     protected InputResource(final Type type) {this.type = type;}
 
     enum Type {
-        FILE, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION
+        FILE, PATH, URL, SEEKABLE_STREAM, INPUT_STREAM, SRA_ACCESSION
     }
 
     private final Type type;
@@ -127,6 +141,9 @@ abstract class InputResource {
 
     /** Returns null if this resource cannot be represented as a {@link File}. */
     abstract File asFile();
+
+    /** Returns null if this resource cannot be represented as a {@link Path}. */
+    abstract Path asPath();
 
     /** Returns null if this resource cannot be represented as a {@link URL}. */
     abstract URL asUrl();
@@ -146,6 +163,9 @@ abstract class InputResource {
         switch (type()) {
             case FILE:
                 childToString = asFile().toString();
+                break;
+            case PATH:
+                childToString = asPath().toString();
                 break;
             case INPUT_STREAM:
                 childToString = asUnbufferedInputStream().toString();
@@ -192,8 +212,76 @@ class FileInputResource extends InputResource {
     }
 
     @Override
+    public Path asPath() {
+        return fileResource.toPath();
+    }
+
+    @Override
     public URL asUrl() {
+        try {
+            return asPath().toUri().toURL();
+        } catch (MalformedURLException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public SeekableStream asUnbufferedSeekableStream() {
+        return lazySeekableStream.get();
+    }
+
+    @Override
+    public InputStream asUnbufferedInputStream() {
+        return asUnbufferedSeekableStream();
+    }
+
+    @Override
+    public SRAAccession asSRAAccession() {
         return null;
+    }
+}
+
+class PathInputResource extends InputResource {
+
+    final Path pathResource;
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+        @Override
+        public SeekableStream make() {
+            try {
+                return new SeekablePathStream(pathResource);
+            } catch (final IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+    });
+
+
+    PathInputResource(final Path pathResource) {
+        super(Type.PATH);
+        this.pathResource = pathResource;
+    }
+
+    @Override
+    public File asFile() {
+        try {
+            return asPath().toFile();
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Path asPath() {
+        return pathResource;
+    }
+
+    @Override
+    public URL asUrl() {
+        try {
+            return asPath().toUri().toURL();
+        } catch (MalformedURLException e) {
+            return null;
+        }
     }
 
     @Override
@@ -234,6 +322,16 @@ class UrlInputResource extends InputResource {
     }
 
     @Override
+    public Path asPath() {
+        try {
+            return Paths.get(urlResource.toURI());
+        } catch (URISyntaxException | IllegalArgumentException |
+            FileSystemNotFoundException | SecurityException e) {
+            return null;
+        }
+    }
+
+    @Override
     public URL asUrl() {
         return urlResource;
     }
@@ -265,6 +363,11 @@ class SeekableStreamInputResource extends InputResource {
 
     @Override
     File asFile() {
+        return null;
+    }
+
+    @Override
+    Path asPath() {
         return null;
     }
 
@@ -304,6 +407,11 @@ class InputStreamInputResource extends InputResource {
     }
 
     @Override
+    Path asPath() {
+        return null;
+    }
+
+    @Override
     URL asUrl() {
         return null;
     }
@@ -335,6 +443,11 @@ class SRAInputResource extends InputResource {
 
     @Override
     File asFile() {
+        return null;
+    }
+
+    @Override
+    Path asPath() {
         return null;
     }
 
