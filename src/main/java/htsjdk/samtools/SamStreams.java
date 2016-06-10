@@ -8,6 +8,8 @@ import htsjdk.samtools.util.BlockCompressedStreamConstants;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
@@ -90,10 +92,73 @@ public class SamStreams {
     // Rely on file extension.
     public static boolean sourceLikeBam(final SeekableStream strm) {
         String source = strm.getSource();
-        if (source == null) return true;
-        source = source.toLowerCase();
+        if (source == null) {
+            // assume any stream with a null source is a BAM file
+            // (https://github.com/samtools/htsjdk/issues/619)
+            return true;
+        }
+
         //Source will typically be a file path or URL
-        //If it's a URL we require one of the query parameters to be bam file
-        return source.endsWith(".bam") || source.contains(".bam?") || source.contains(".bam&") || source.contains(".bam%26");
+        //If it's a URL we require one of the query parameters to be a cram file
+        try {
+            final URL sourceURL = new URL(source);
+            final String urlPath = sourceURL.getPath().toLowerCase();
+            String queryParams = sourceURL.getQuery();
+            if (queryParams != null) {
+                queryParams = queryParams.toLowerCase();
+            }
+            return urlPath.endsWith(".bam") ||
+                    (queryParams != null &&
+                            (queryParams.endsWith(".bam") ||
+                                    queryParams.contains(".bam?") ||
+                                    queryParams.contains(".bam&") ||
+                                    queryParams.contains(".bam%26"))
+                    );
+        }
+        catch (MalformedURLException e) {
+            source = source.toLowerCase();
+            return source.endsWith(".bam") ||
+                    source.contains(".bam?") ||
+                    source.contains(".bam&") ||
+                    source.contains(".bam%26");
+        }
     }
+
+    // Its too expensive to examine the remote file to determine type.
+    // Rely on file extension.
+    public static boolean sourceLikeCram(final SeekableStream strm) {
+        String source = strm.getSource();
+        if (source == null) {
+            // sourceLikeBam assumes any stream with a null source is a BAM file
+            // (https://github.com/samtools/htsjdk/issues/619); in order to not
+            // propagate more chaos we return false here
+            return false;
+        }
+
+        // Source will typically be a file path or URL
+        // If it's a URL we require one of the query parameters to be a cram file
+        try {
+            final URL sourceURL = new URL(source);
+            final String urlPath = sourceURL.getPath().toLowerCase();
+            String queryParams = sourceURL.getQuery();
+            if (queryParams != null) {
+                queryParams = queryParams.toLowerCase();
+            }
+            return urlPath.endsWith(".cram") ||
+                    (queryParams != null &&
+                            (queryParams.endsWith(".cram") ||
+                             queryParams.contains(".cram?") ||
+                             queryParams.contains(".cram&") ||
+                             queryParams.contains(".cram%26"))
+                    );
+        }
+        catch (MalformedURLException e) {
+            source = source.toLowerCase();
+            return source.endsWith(".cram") ||
+                    source.contains(".cram?") ||
+                    source.contains(".cram&") ||
+                    source.contains(".cram%26");
+        }
+    }
+
 }

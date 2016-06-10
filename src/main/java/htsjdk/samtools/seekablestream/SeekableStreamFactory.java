@@ -76,6 +76,8 @@ public class SeekableStreamFactory{
                 return new SeekableHTTPStream(url);
             } else if (path.startsWith("ftp:")) {
                 return new SeekableFTPStream(new URL(path));
+            } else if (path.startsWith("file:")) {
+                return new SeekableFileStream(new File(new URL(path).getPath()));
             } else {
                 return new SeekableFileStream(new File(path));
             }
