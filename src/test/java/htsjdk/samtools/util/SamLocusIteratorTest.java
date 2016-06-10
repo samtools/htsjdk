@@ -93,6 +93,27 @@ public class SamLocusIteratorTest {
         }
     }
 
+    @Test
+    public void testMissingQualityString() {
+
+        final SAMRecordSetBuilder builder = getRecordBuilder();
+        // add records up to coverage for the test in that position
+        final int startPosition = 165;
+        for (int i = 0; i < coverage; i++) {
+
+            builder.addFrag("record" + i, 0, startPosition, true, false, "36M", "*", 0);
+        }
+        final SamLocusIterator sli = createSamLocusIterator(builder);
+
+        // make sure we accumulated depth of 2 for each position
+        int pos = 165;
+        for (final SamLocusIterator.LocusInfo li : sli) {
+            Assert.assertEquals(pos++, li.getPosition());
+            Assert.assertEquals(2, li.getRecordAndPositions().size());
+        }
+
+    }
+
     /**
      * Test the emit uncovered loci, with both including or not indels
      */
