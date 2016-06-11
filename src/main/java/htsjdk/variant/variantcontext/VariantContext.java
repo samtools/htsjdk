@@ -37,7 +37,6 @@ import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +44,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -238,7 +236,7 @@ public class VariantContext implements Feature, Serializable {
     protected CommonInfo commonInfo = null;
     public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<String>());
+    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<>());
 
     /** The location of this VariantContext */
     final protected String contig;
@@ -274,7 +272,7 @@ public class VariantContext implements Feature, Serializable {
 * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
 */
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
-        final Set<String> keys = new HashSet<String>();
+        final Set<String> keys = new HashSet<>();
 
         boolean sawGoodGT = false;
         boolean sawGoodQual = false;
@@ -298,11 +296,11 @@ public class VariantContext implements Feature, Serializable {
         if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
         if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<String>(keys));
+        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
 
         // make sure the GT is first
         if (sawGoodGT) {
-            final List<String> newList = new ArrayList<String>(sortedList.size()+1);
+            final List<String> newList = new ArrayList<>(sortedList.size() + 1);
             newList.add(VCFConstants.GENOTYPE_KEY);
             newList.addAll(sortedList);
             sortedList = newList;
@@ -342,7 +340,7 @@ public class VariantContext implements Feature, Serializable {
      * @param other the VariantContext to copy
      */
     protected VariantContext(VariantContext other) {
-        this(other.getSource(), other.getID(), other.getChr(), other.getStart(), other.getEnd(),
+        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
                 other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
@@ -445,7 +443,7 @@ public class VariantContext implements Feature, Serializable {
                 Set<Allele> allelesFromGenotypes = allelesOfGenotypes(newGenotypes);
 
                 // ensure original order of genotypes
-                List<Allele> rederivedAlleles = new ArrayList<Allele>(allelesFromGenotypes.size());
+                List<Allele> rederivedAlleles = new ArrayList<>(allelesFromGenotypes.size());
                 for (Allele allele : alleles)
                     if (allelesFromGenotypes.contains(allele))
                         rederivedAlleles.add(allele);
@@ -480,7 +478,7 @@ public class VariantContext implements Feature, Serializable {
      * @return allele set
      */
     private final Set<Allele> allelesOfGenotypes(Collection<Genotype> genotypes) {
-        final Set<Allele> alleles = new HashSet<Allele>();
+        final Set<Allele> alleles = new HashSet<>();
 
         boolean addedref = false;
         for ( final Genotype g : genotypes ) {
@@ -872,12 +870,10 @@ public class VariantContext implements Feature, Serializable {
             return null;
         }
 
-        List<Integer> lengths = new ArrayList<Integer>();
-        for ( Allele a : getAlternateAlleles() ) {
-            lengths.add(a.length() - getReference().length());
-        }
-
-        return lengths;
+        return getAlternateAlleles()
+                .stream()
+                .map(a -> a.length() - getReference().length())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -982,7 +978,7 @@ public class VariantContext implements Feature, Serializable {
      * @throws IllegalArgumentException if sampleName isn't bound to a genotype
      */
     protected GenotypesContext getGenotypes(Collection<String> sampleNames) {
-        return getGenotypes().subsetToSamples(new HashSet<String>(sampleNames));
+        return getGenotypes().subsetToSamples(new HashSet<>(sampleNames));
     }
 
     public GenotypesContext getGenotypes(Set<String> sampleNames) {
@@ -1058,7 +1054,7 @@ public class VariantContext implements Feature, Serializable {
      * @return chromosome count
      */
     public int getCalledChrCount(Allele a) {
-        return getCalledChrCount(a,new HashSet<String>(0));
+        return getCalledChrCount(a, new HashSet<>(0));
     }
 
     /**
@@ -1212,23 +1208,24 @@ public class VariantContext implements Feature, Serializable {
 
         // maintain a list of non-symbolic alleles reported in the REF and ALT fields of the record
         // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
-        final List<Allele> reportedAlleles = new ArrayList<Allele>();
-        for ( final Allele allele : getAlleles() ) {
-            if ( !allele.isSymbolic() )
-                reportedAlleles.add(allele);
-        }
+        final List<Allele> reportedAlleles = getAlleles()
+                .stream()
+                .filter(allele -> !allele.isSymbolic())
+                .collect(Collectors.toList());
 
         // maintain a list of non-symbolic alleles observed in the genotypes
-        final Set<Allele> observedAlleles = new HashSet<Allele>();
+        final Set<Allele> observedAlleles = new HashSet<>();
         observedAlleles.add(getReference());
-        for ( final Genotype g : getGenotypes() ) {
-            if ( g.isCalled() ) {
-                for ( final Allele allele : g.getAlleles() ) {
-                    if ( !allele.isSymbolic() )
-                        observedAlleles.add(allele);
-                }
-            }
-        }
+        getGenotypes()
+                .stream()
+                .filter(Genotype::isCalled)
+                .forEach(g -> {
+                    observedAlleles.addAll(g
+                            .getAlleles()
+                            .stream()
+                            .filter(allele -> !allele.isSymbolic())
+                            .collect(Collectors.toList()));
+                });
         if ( observedAlleles.contains(Allele.NO_CALL) )
             observedAlleles.remove(Allele.NO_CALL);
 
@@ -1256,13 +1253,14 @@ public class VariantContext implements Feature, Serializable {
 
         // AC
         if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
-            ArrayList<Integer> observedACs = new ArrayList<Integer>();
+            ArrayList<Integer> observedACs = new ArrayList<>();
 
             // if there are alternate alleles, record the relevant tags
             if (!getAlternateAlleles().isEmpty()) {
-                for ( Allele allele : getAlternateAlleles() ) {
-                    observedACs.add(getCalledChrCount(allele));
-                }
+                observedACs.addAll(getAlternateAlleles()
+                        .stream()
+                        .map(this::getCalledChrCount)
+                        .collect(Collectors.toList()));
             }
             else { // otherwise, set them to 0
                 observedACs.add(0);
@@ -1392,6 +1390,7 @@ public class VariantContext implements Feature, Serializable {
     private void determinePolymorphicType() {
         type = null;
 
+
         // do a pairwise comparison of all alleles against the reference allele
         for ( Allele allele : alleles ) {
             if ( allele == REF )
@@ -1482,7 +1481,7 @@ public class VariantContext implements Feature, Serializable {
 
     // protected basic manipulation routines
     private static List<Allele> makeAlleles(Collection<Allele> alleles) {
-        final List<Allele> alleleList = new ArrayList<Allele>(alleles.size());
+        final List<Allele> alleleList = new ArrayList<>(alleles.size());
 
         boolean sawRef = false;
         for ( final Allele a : alleles ) {
@@ -1553,7 +1552,7 @@ public class VariantContext implements Feature, Serializable {
     private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
                                                             final VCFHeader header,
                                                             final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<String, Object>(10);
+        final Map<String, Object> newAttributes = new HashMap<>(10);
 
         for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
             final String field = attr.getKey();
@@ -1591,16 +1590,16 @@ public class VariantContext implements Feature, Serializable {
             final String string = (String)value;
             if ( string.indexOf(',') != -1 ) {
                 final String[] splits = string.split(",");
-                final List<Object> values = new ArrayList<Object>(splits.length);
-                for ( int i = 0; i < splits.length; i++ )
-                    values.add(decodeOne(field, splits[i], format));
+                final List<Object> values = new ArrayList<>(splits.length);
+                for (String split : splits)
+                    values.add(decodeOne(field, split, format));
                 return values;
             } else {
                 return decodeOne(field, string, format);
             }
         } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
             final List<String> asList = (List<String>)value;
-            final List<Object> values = new ArrayList<Object>(asList.size());
+            final List<Object> values = new ArrayList<>(asList.size());
             for ( final String s : asList )
                 values.add(decodeOne(field, s, format));
             return values;
@@ -1653,7 +1652,7 @@ public class VariantContext implements Feature, Serializable {
     // tribble integration routines -- not for public consumption
     //
     // ---------------------------------------------------------------------------------------------------------
-    @Deprecated
+    @Deprecated /** use {@link VariantContext#getContig} instead */
     public String getChr() {
         return getContig();
     }

@@ -106,8 +106,13 @@ import java.util.Collection;
  * If you know where allele is the reference, you can determine whether the variant is an insertion or deletion.
  * </p>
  * <p>
- * Alelle also supports is concept of a NO_CALL allele.  This Allele represents a haplotype that couldn't be
+ * Alelle also supports the concept of a NO_CALL allele.  This Allele represents a haplotype that couldn't be
  * determined. This is usually represented by a '.' allele.
+ * </p>
+ * <p>
+ * Alelle also supports the concept of a SPANNING_DELETION allele.  This Allele represents a deletion that is represented
+ * in an upstream position. It is symbolic, since it could be refering to different actualy deletions for two different
+ * samples in the same record.
  * </p>
  * <p>
  * Note that Alleles store all bases as bytes, in **UPPER CASE**.  So 'atc' == 'ATC' from the perspective of an
@@ -127,10 +132,10 @@ public class Allele implements Comparable<Allele>, Serializable {
     private byte[] bases = null;
 
     /** A generic static NO_CALL allele for use */
-    public final static String NO_CALL_STRING = ".";
+    public final static String NO_CALL_STRING = String.format("%c", VCFConstants.NO_CALL_ALLELE);
 
     /** A generic static SPAN_DEL allele for use */
-    public final static String SPAN_DEL_STRING = "*";
+    public final static String SPAN_DEL_STRING = String.format("%c", VCFConstants.SPANNING_DELETION_ALLELE);
 
     // no public way to create an allele
     protected Allele(final byte[] bases, final boolean isRef) {
@@ -182,19 +187,18 @@ public class Allele implements Comparable<Allele>, Serializable {
         this.isSymbolic = allele.isSymbolic;
     }
 
-
-    private final static Allele REF_A = new Allele("A", true);
-    private final static Allele ALT_A = new Allele("A", false);
-    private final static Allele REF_C = new Allele("C", true);
-    private final static Allele ALT_C = new Allele("C", false);
-    private final static Allele REF_G = new Allele("G", true);
-    private final static Allele ALT_G = new Allele("G", false);
-    private final static Allele REF_T = new Allele("T", true);
-    private final static Allele ALT_T = new Allele("T", false);
-    private final static Allele REF_N = new Allele("N", true);
-    private final static Allele ALT_N = new Allele("N", false);
-    public final static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
-    public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
+    private static Allele REF_A = new Allele("A", true);
+    private static Allele ALT_A = new Allele("A", false);
+    private static Allele REF_C = new Allele("C", true);
+    private static Allele ALT_C = new Allele("C", false);
+    private static Allele REF_G = new Allele("G", true);
+    private static Allele ALT_G = new Allele("G", false);
+    private static Allele REF_T = new Allele("T", true);
+    private static Allele ALT_T = new Allele("T", false);
+    private static Allele REF_N = new Allele("N", true);
+    private static Allele ALT_N = new Allele("N", false);
+    public  static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
+    public  static Allele NO_CALL  = new Allele(NO_CALL_STRING, false);
 
     // ---------------------------------------------------------------------------------------------------------
     //
@@ -217,10 +221,10 @@ public class Allele implements Comparable<Allele>, Serializable {
         if ( bases.length == 1 ) {
             // optimization to return a static constant Allele for each single base object
             switch (bases[0]) {
-                case '.':
+                case VCFConstants.NO_CALL_ALLELE:
                     if ( isRef ) throw new IllegalArgumentException("Cannot tag a NoCall allele as the reference allele");
                     return NO_CALL;
-                case '*':
+              case VCFConstants.SPANNING_DELETION_ALLELE:
                     if ( isRef ) throw new IllegalArgumentException("Cannot tag a spanning deletions allele as the reference allele");
                     return SPAN_DEL;
                 case 'A': case 'a' : return isRef ? REF_A : ALT_A;
@@ -258,7 +262,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent the null allele
      */
     public static boolean wouldBeNullAllele(final byte[] bases) {
-        return (bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NULL_ALLELE) || bases.length == 0;
+        return (bases.length == 1 && bases[0] == VCFConstants.NULL_ALLELE) || bases.length == 0;
     }
 
     /**
@@ -266,7 +270,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent the SPAN_DEL allele
      */
     public static boolean wouldBeStarAllele(final byte[] bases) {
-        return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.SPANNING_DELETION_ALLELE;
+        return bases.length == 1 && bases[0] == VCFConstants.SPANNING_DELETION_ALLELE;
     }
 
     /**
@@ -274,7 +278,7 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent the NO_CALL allele
      */
     public static boolean wouldBeNoCallAllele(final byte[] bases) {
-        return bases.length == 1 && bases[0] == htsjdk.variant.vcf.VCFConstants.NO_CALL_ALLELE;
+        return bases.length == 1 && bases[0] == VCFConstants.NO_CALL_ALLELE;
     }
 
     /**
@@ -282,12 +286,16 @@ public class Allele implements Comparable<Allele>, Serializable {
      * @return true if the bases represent a symbolic allele
      */
     public static boolean wouldBeSymbolicAllele(final byte[] bases) {
-    	if ( bases.length <= 1 )
+
+        // The spanning deletion is a special case of a symbolic allele as it doesn't have the brackets, and it is of length 1.
+        if (wouldBeStarAllele(bases)) return true;
+
+        if (bases.length <= 1) {
             return false;
-        else {
+        } else {
             final String strBases = new String(bases);
-            return (bases[0] == '<' || bases[bases.length-1] == '>') || // symbolic or large insertion
-            		(bases[0] == '.' || bases[bases.length-1] == '.') || // single breakend
+            return (bases[0] == '<' || bases[bases.length - 1] == '>') || // symbolic or large insertion
+                    (bases[0] == '.' || bases[bases.length - 1] == '.') || // single breakend
                     (strBases.contains("[") || strBases.contains("]")); // mated breakend
         }
     }
@@ -327,11 +335,13 @@ public class Allele implements Comparable<Allele>, Serializable {
         if ( wouldBeNullAllele(bases) )
             return false;
 
-        if ( wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases) )
-            return true;
-
+        //The spanning deletion cannot be the reference allele, but other symbolic alleles can.
         if ( wouldBeStarAllele(bases) )
             return !isReferenceAllele;
+
+        if ( wouldBeNoCallAllele(bases) || wouldBeSymbolicAllele(bases) ) {
+            return true;
+        }
 
         for (byte base :  bases ) {
             switch (base) {
