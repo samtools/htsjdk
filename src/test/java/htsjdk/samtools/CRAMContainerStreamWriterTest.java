@@ -172,7 +172,7 @@ public class CRAMContainerStreamWriterTest {
                 indexTempFile,
                 refSource,
                 ValidationStringency.SILENT);
-        final CloseableIterator<SAMRecord> iterator = reader.query(1, 10, 10, true);
+        final CloseableIterator<SAMRecord> iterator = reader.query(new QueryInterval[]{new QueryInterval(1, 10, 10)}, false);
         int count = 0;
         while (iterator.hasNext()) {
             SAMRecord actualRecord = iterator.next();

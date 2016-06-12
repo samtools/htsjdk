@@ -53,7 +53,9 @@ public class CRAMFileWriterWithIndexTest {
         private boolean isTabu(long position) {
 
             for (Chunk chunk : tabuChunks) {
-                if ((chunk.getChunkStart() >> 16) < position && position < (chunk.getChunkEnd() >> 16)) return true;
+                if ((chunk.getChunkStart() >> 16) < position && position < (chunk.getChunkEnd() >> 16)) {
+                    return true;
+                }
             }
 
             return false;
@@ -71,7 +73,9 @@ public class CRAMFileWriterWithIndexTest {
 
         @Override
         public void seek(long position) throws IOException {
-            if (isTabu(position)) throw new TabuError();
+            if (isTabu(position)) {
+                throw new TabuError();
+            }
             delegate.seek(position);
         }
 
@@ -84,7 +88,9 @@ public class CRAMFileWriterWithIndexTest {
         @Override
         public int read(byte[] buffer, int offset, int length) throws IOException {
             for (long pos = position(); pos < position() + length; pos++)
-                if (isTabu(pos)) throw new TabuError();
+                if (isTabu(pos)) {
+                    throw new TabuError();
+                }
             return delegate.read(buffer, offset, length);
         }
 
@@ -124,8 +130,8 @@ public class CRAMFileWriterWithIndexTest {
 
         CRAMFileReader reader = new CRAMFileReader(tabuIS, new ByteArraySeekableStream(indexBytes), source, ValidationStringency.SILENT);
         try {
-            reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
-            // attempt to read 1st container must fail:
+            // the attempt to read 1st container, which will happen when the iterator is initialized, must throw
+            CloseableIterator<SAMRecord> it = reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
             Assert.fail();
         } catch (TabuError e) {
 
