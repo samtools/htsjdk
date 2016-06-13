@@ -83,6 +83,10 @@ public class Defaults {
      */
     public static final String EBI_REFERENCE_SERVICE_URL_MASK;
 
+    /**
+     * Boolean describing whether downloading of SRA native libraries is allowed,
+     * in case such native libraries are not found locally
+     */
     public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
 

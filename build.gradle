@@ -124,11 +124,11 @@ test {
     }
 }
 
-task testSRA(type: Test){
+task testSRA(type: Test) {
     jvmArgs '-Dsamjdk.sra_libraries_download=true'
 
     description "Run the SRA tests"
-    useTestNG{
+    useTestNG {
         includeGroups "sra"
     }
 }

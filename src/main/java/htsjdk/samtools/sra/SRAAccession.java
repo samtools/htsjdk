@@ -50,7 +50,6 @@ public class SRAAccession implements Serializable {
 
     private static boolean noLibraryDownload;
     private static boolean initTried = false;
-    private static ExceptionInInitializerError ngsInitError;
     private static String appVersionString = null;
     private final static String defaultAppVersionString = "[unknown software]";
     private final static String htsJdkVersionString = "HTSJDK-NGS";
@@ -88,6 +87,7 @@ public class SRAAccession implements Serializable {
      * @return ExceptionInInitializerError if initialization failed, null if initialization was successful
      */
     public static ExceptionInInitializerError checkIfInitialized() {
+        final ExceptionInInitializerError ngsInitError;
         if (!initTried) {
             log.debug("Initializing SRA module");
             ngsInitError = NGS.getInitializationError();
@@ -97,6 +97,8 @@ public class SRAAccession implements Serializable {
                 NGS.setAppVersionString(getFullVersionString());
             }
             initTried = true;
+        } else {
+            ngsInitError = NGS.getInitializationError();
         }
         return ngsInitError;
     }
@@ -130,12 +132,12 @@ public class SRAAccession implements Serializable {
 
         if (!looksLikeSRA) return false;
 
-        ExceptionInInitializerError initError = checkIfInitialized();
+        final ExceptionInInitializerError initError = checkIfInitialized();
         if (initError != null) {
             if (noLibraryDownload && initError instanceof LibraryLoadError) {
                 throw new LinkageError(
                         "Failed to load SRA native libraries and auto-download is disabled. " +
-                        "Please set property samjdk.sra_libraries_download=true to enable auto-download of native libraries",
+                        "Please re-run with JVM argument -Dsamjdk.sra_libraries_download=true to enable auto-download of native libraries",
                         initError
                 );
             } else {

@@ -60,7 +60,8 @@ public class SRATest extends AbstractSRATest {
     @DataProvider(name = "testCounts")
     private Object[][] createDataForCounts() {
         return new Object[][] {
-            {"SRR2096940", 10591, 498}
+            {"SRR2096940", 10591, 498},
+            {"SRR000123", 0, 4583}
         };
     }
 
