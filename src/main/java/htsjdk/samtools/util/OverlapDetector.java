@@ -23,21 +23,22 @@
  */
 package htsjdk.samtools.util;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Utility class to efficiently do in memory overlap detection between a large
  * set of mapping like objects, and one or more candidate mappings.
+ *
+ * You can use it for example to detect all locatables overlapping a given set of locatables:
+ * <pre>{@code
+ *    OverlapDetector<Locatable> detector = OverlapDetector.create(locatables);
+ *    Set<Locatable> overlaps = detector.getOverlaps(query);
+ *
+ *    boolean anyOverlap = detector.overlapsAny(query); //faster API for checking presence of any overlap
+ * }</pre>
  */
 public class OverlapDetector<T> {
-    private Map<Object, IntervalTree<Set<T>>> cache = new HashMap<Object, IntervalTree<Set<T>>>();
+    private final Map<Object, IntervalTree<Set<T>>> cache = new HashMap<>();
     private final int lhsBuffer;
     private final int rhsBuffer;
 
@@ -53,36 +54,60 @@ public class OverlapDetector<T> {
         this.rhsBuffer = rhsBuffer;
     }
 
-    /** Adds a mapping to the set of mappings against which to match candidates. */
-    public void addLhs(T object, Interval interval) {
-        Object seqId = interval.getContig();
+    /**
+     * Creates a new OverlapDetector with no trim and the given set of intervals.
+     */
+    public static <T extends Locatable> OverlapDetector<T> create(final List<T> intervals) {
+        final OverlapDetector<T> detector = new OverlapDetector<>(0, 0);
+        detector.addAll(intervals, intervals);
+        return detector;
+    }
+
+    /** Adds a Locatable to the set of Locatables against which to match candidates. */
+    public void addLhs(final T object, final Locatable interval) {
+        if (object == null) {
+            throw new IllegalArgumentException("null object");
+        }
+        if (interval == null) {
+            throw new IllegalArgumentException("null interval");
+        }
+        final String seqId = interval.getContig();
 
         IntervalTree<Set<T>> tree = this.cache.get(seqId);
         if (tree == null) {
-            tree = new IntervalTree<Set<T>>();
+            tree = new IntervalTree<>();
             this.cache.put(seqId, tree);
         }
 
-        int start = interval.getStart() + this.lhsBuffer;
-        int end   = interval.getEnd()   - this.lhsBuffer;
+        final int start = interval.getStart() + this.lhsBuffer;
+        final int end   = interval.getEnd()   - this.lhsBuffer;
 
-        Set<T> objects = new HashSet<T>();
+        final Set<T> objects = new HashSet<>(1);
         objects.add(object);
-        if (start <= end)  // Don't put in sequences that have no overlappable bases
-        {
-            Set<T> alreadyThere = tree.put(start, end, objects);
-            if (alreadyThere != null)
-            {
+        if (start <= end) {  // Don't put in sequences that have no overlappable bases
+            final Set<T> alreadyThere = tree.put(start, end, objects);
+            if (alreadyThere != null) {
                 alreadyThere.add(object);
                 tree.put(start, end, alreadyThere);
             }
         }
     }
 
-    /** Adds all items to the overlap detector. */
-    public void addAll(List<T> objects, List<Interval> intervals) {
+    /**
+     * Adds all items to the overlap detector.
+     *
+     * The order of the lists matters only in the sense that it needs to be the same for the intervals
+     * and the corresponding objects.
+     */
+    public void addAll(final List<T> objects, final List<? extends Locatable> intervals) {
+        if (objects == null) {
+            throw new IllegalArgumentException("null objects");
+        }
+        if (intervals == null) {
+            throw new IllegalArgumentException("null intervals");
+        }
         if (objects.size() != intervals.size()) {
-            throw new IllegalArgumentException("Objects and intervals must be the same size.");
+            throw new IllegalArgumentException("Objects and intervals must be the same size but were " + objects.size() + " and " + intervals.size());
         }
 
         for (int i=0; i<objects.size(); ++i) {
@@ -90,37 +115,79 @@ public class OverlapDetector<T> {
         }
     }
 
-    /** Gets all the objects that could be returned by the overlap detector. */
-    public Collection<T> getAll() {
-        Collection<T> all = new HashSet<T>();
-        for (IntervalTree<Set<T>> tree : this.cache.values()) {
+    /**
+     * Gets all the objects that could be returned by the overlap detector.
+     */
+    public Set<T> getAll() {
+        final Set<T> all = new HashSet<>();
+        for (final IntervalTree<Set<T>> tree : this.cache.values()) {
             for (IntervalTree.Node<Set<T>> node : tree) {
                 all.addAll(node.getValue());
             }
         }
-
         return all;
     }
 
-    /** Gets the collection of objects that overlap the provided mapping. */
-    public Collection<T> getOverlaps(Interval rhs)  {
-        Collection<T> matches = new ArrayList<T>();
+    /**
+     * Returns true iff the given locatable overlaps any locatable in this detector.
+     *
+     * This is a performance shortcut API functionally equivalent to:
+     * <pre>{@code
+     *      ! getOverlaps(locatable).isEmpty()
+     * }</pre>
+     */
+    public boolean overlapsAny(final Locatable locatable) {
+        if (locatable == null) {
+            throw new IllegalArgumentException("null locatable");
+        }
+        final String seqId = locatable.getContig();
+        final IntervalTree<Set<T>> tree = this.cache.get(seqId);
+        if (tree == null) {
+            return false;
+        }
+        final int start = locatable.getStart() + this.rhsBuffer;
+        final int end   = locatable.getEnd()   - this.rhsBuffer;
 
-        Object seqId = rhs.getContig();
-        IntervalTree<Set<T>> tree = this.cache.get(seqId);
-        int start = rhs.getStart() + this.rhsBuffer;
-        int end = rhs.getEnd() - this.rhsBuffer;
-
-        if (tree != null && start <= end)
-        {
-            Iterator<IntervalTree.Node<Set<T>>> it = tree.overlappers(start, end);
-            while (it.hasNext())
-            {
-                IntervalTree.Node<Set<T>> node = it.next();
-                matches.addAll(node.getValue());
-            }
+        if (start > end) {
+            return false;
         }
 
+        final Iterator<IntervalTree.Node<Set<T>>> it = tree.overlappers(start, end);
+        while (it.hasNext()) {
+            final IntervalTree.Node<Set<T>> node = it.next();
+            if (!node.getValue().isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets the Set of objects that overlap the provided locatable.
+     * The returned set may not be modifiable.
+     */
+    public Set<T> getOverlaps(final Locatable locatable)  {
+        if (locatable == null) {
+            throw new IllegalArgumentException("null locatable");
+        }
+        final String seqId = locatable.getContig();
+        final IntervalTree<Set<T>> tree = this.cache.get(seqId);
+        if (tree == null) {
+            return Collections.emptySet();
+        }
+        final int start = locatable.getStart() + this.rhsBuffer;
+        final int end   = locatable.getEnd()   - this.rhsBuffer;
+
+        if (start > end) {
+            return Collections.emptySet();
+        }
+
+        final Set<T> matches = new HashSet<>();
+        final Iterator<IntervalTree.Node<Set<T>>> it = tree.overlappers(start, end);
+        while (it.hasNext()) {
+            final IntervalTree.Node<Set<T>> node = it.next();
+            matches.addAll(node.getValue());
+        }
         return matches;
     }
 }
