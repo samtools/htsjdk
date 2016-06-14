@@ -43,11 +43,6 @@ public class SAMTextWriterTest {
     }
 
     @Test
-    public void testBasic() throws Exception {
-        doTest(getSAMReader(true, SAMFileHeader.SortOrder.coordinate));
-    }
-
-    @Test
     public void testNullHeader() throws Exception {
         final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
         for (final SAMRecord rec : recordSetBuilder.getRecords()) {
@@ -56,7 +51,35 @@ public class SAMTextWriterTest {
         doTest(recordSetBuilder);
     }
 
-    private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception{
+    @Test
+    public void testBasic() throws Exception {
+        doTest(SamFlagField.DECIMAL);
+    }
+
+    @Test
+    public void testBasicHexFlag() throws Exception {
+        doTest(SamFlagField.HEXADECIMAL);
+    }
+
+    @Test
+    public void testBasicOctalFlag() throws Exception {
+        doTest(SamFlagField.OCTAL);
+    }
+
+    @Test
+    public void testBasicStringFlag() throws Exception {
+        doTest(SamFlagField.STRING);
+    }
+
+    private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception {
+        doTest(recordSetBuilder, SamFlagField.DECIMAL);
+    }
+
+    private void doTest(final SamFlagField samFlagField) throws Exception {
+        doTest(getSAMReader(true, SAMFileHeader.SortOrder.coordinate), samFlagField);
+    }
+
+    private void doTest(final SAMRecordSetBuilder recordSetBuilder, final SamFlagField samFlagField) throws Exception {
         SamReader inputSAM = recordSetBuilder.getSamReader();
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
@@ -68,7 +91,7 @@ public class SAMTextWriterTest {
         for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
             inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
         }
-        final SAMFileWriter samWriter = new SAMFileWriterFactory().makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
+        final SAMFileWriter samWriter = new SAMFileWriterFactory().setSamFlagFieldOutput(samFlagField).makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
         for (final SAMRecord samRecord : inputSAM) {
             samWriter.addAlignment(samRecord);
         }
