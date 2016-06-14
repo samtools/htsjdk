@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -122,7 +123,9 @@ public class CRAMFileWriterWithIndexTest {
      */
     @Test
     public void testUnnecessaryIO() throws IOException {
-        BAMIndex index = new CachingBAMFileIndex(new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
+        final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
+
+        BAMIndex index = new CachingBAMFileIndex(baiStream, header.getSequenceDictionary());
         int refID = 0;
         long start = index.getSpanOverlapping(refID, 1, Integer.MAX_VALUE).getFirstOffset();
         long end = index.getSpanOverlapping(refID + 1, 1, Integer.MAX_VALUE).getFirstOffset();
@@ -169,7 +172,6 @@ public class CRAMFileWriterWithIndexTest {
         ByteArrayOutputStream indexOS = new ByteArrayOutputStream();
         CRAMFileWriter writer = new CRAMFileWriter(os, indexOS, source, header, null);
 
-
         int readPairsPerSequence = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
 
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
@@ -178,7 +180,6 @@ public class CRAMFileWriterWithIndexTest {
                 builder.addPair(Integer.toString(i), sequenceRecord.getSequenceIndex(), alignmentStart, alignmentStart + 2);
                 alignmentStart++;
             }
-
         }
 
         List<SAMRecord> list = new ArrayList<SAMRecord>(readPairsPerSequence);
@@ -189,7 +190,6 @@ public class CRAMFileWriterWithIndexTest {
             writer.addAlignment(record);
 
         list.clear();
-        writer.finish();
         writer.close();
         cramBytes = os.toByteArray();
         indexBytes = indexOS.toByteArray();

@@ -61,7 +61,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
      * Create a CRAMFileReader from either a file or input stream using the reference source returned by
      * {@link ReferenceSource#getDefaultCRAMReferenceSource() getDefaultCRAMReferenceSource}.
      *
-     *
      * @param cramFile CRAM file to open
      * @param inputStream CRAM stream to read
      *
@@ -172,13 +171,12 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
         if (indexInputStream != null) {
-            try {
-                mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
-            } catch (Exception e) {
-                // try CRAI instead:
-                indexInputStream.seek(0);
-                final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            if (null != baiStream)  {
                 mIndex = new CachingBAMFileIndex(baiStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            }
+            else {
+                throw new IllegalArgumentException("CRAM index must be a BAI or CRAI stream");
             }
         }
     }
@@ -249,7 +247,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     public BAMIndex getIndex() {
         if (!hasIndex())
-            throw new SAMException("No index is available for this BAM file.");
+            throw new SAMException("No index is available for this CRAM file.");
         if (mIndex == null) {
             final SAMSequenceDictionary dictionary = getFileHeader()
                     .getSequenceDictionary();
@@ -265,7 +263,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             // convert CRAI into BAI:
             final SeekableStream baiStream;
             try {
-                baiStream = CRAIIndex.openCraiFileAsBaiStream(mIndexFile, iterator.getSAMFileHeader().getSequenceDictionary());
+                baiStream = SamIndexes.asBaiSeekableStreamOrNull(new SeekableFileStream(mIndexFile), iterator.getSAMFileHeader().getSequenceDictionary());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
