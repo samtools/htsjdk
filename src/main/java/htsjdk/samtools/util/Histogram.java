@@ -73,7 +73,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
     }
 
     /** Represents a bin in the Histogram. */
-    public static class Bin<K> implements Serializable{
+    public static class Bin<K extends Comparable> implements Serializable {
         private static final long serialVersionUID = 1L;
         private final K id;
         private double value = 0;
