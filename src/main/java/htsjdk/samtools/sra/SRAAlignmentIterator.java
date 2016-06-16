@@ -32,12 +32,12 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SRAIterator;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.util.CloseableIterator;
 import ngs.Alignment;
 import ngs.AlignmentIterator;
 import ngs.ErrorMsg;
 import ngs.ReadCollection;
 import ngs.Reference;
-import ngs.ReferenceIterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -50,7 +50,7 @@ import java.util.NoSuchElementException;
  * Is used from SRAIterator.
  * Created by andrii.nikitiuk on 9/3/15.
  */
-public class SRAAlignmentIterator implements Iterator<SAMRecord> {
+public class SRAAlignmentIterator implements CloseableIterator<SAMRecord> {
     private ValidationStringency validationStringency;
 
     private SRAAccession accession;
@@ -95,9 +95,13 @@ public class SRAAlignmentIterator implements Iterator<SAMRecord> {
     @Override
     public boolean hasNext() {
         // check aligned
+        if (lastRecord != null) {
+            lastRecord.detachFromIterator();
+            lastRecord = null;
+        }
+
         if (hasMoreAlignments == null) {
             try {
-                lastRecord.detachFromIterator();
                 hasMoreAlignments = alignedIterator.nextAlignment();
             } catch (ErrorMsg e) {
                 throw new RuntimeException(e);
@@ -149,16 +153,17 @@ public class SRAAlignmentIterator implements Iterator<SAMRecord> {
         }
 
         try {
+            alignedIterator = null;
+            hasMoreAlignments = false;
+
             hasMoreReferences = referencesChunksIterator.hasNext();
             if (!hasMoreReferences) {
-                hasMoreAlignments = false;
                 return;
             }
 
             currentReference++;
             Chunk refChunk = referencesChunksIterator.next();
             if (refChunk == null) {
-                hasMoreAlignments = false;
                 return;
             }
 
@@ -190,5 +195,15 @@ public class SRAAlignmentIterator implements Iterator<SAMRecord> {
         }
 
         return referencesChunks;
+    }
+
+    @Override
+    public void close() {
+        if (lastRecord != null) {
+            lastRecord.detachFromIterator();
+            lastRecord = null;
+        }
+
+        alignedIterator = null;
     }
 }

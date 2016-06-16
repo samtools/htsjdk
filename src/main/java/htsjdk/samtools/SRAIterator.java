@@ -197,6 +197,9 @@ public class SRAIterator implements SAMRecordIterator {
                 return true;
             }
 
+            if (alignmentIterator != null) {
+                alignmentIterator.close();
+            }
             alignmentIterator = null;
             unalignmentIterator = null;
             if (chunksIterator.hasNext()) {
@@ -230,7 +233,12 @@ public class SRAIterator implements SAMRecordIterator {
     public void remove() { throw new UnsupportedOperationException("Removal of records not implemented."); }
 
     @Override
-    public void close() { }
+    public void close() {
+        if (alignmentIterator != null) {
+            alignmentIterator.close();
+            alignmentIterator = null;
+        }
+    }
 
     @Override
     public SAMRecordIterator assertSorted(final SortOrder sortOrder) { throw new UnsupportedOperationException("assertSorted is not implemented."); }

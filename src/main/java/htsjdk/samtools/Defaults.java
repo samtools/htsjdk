@@ -83,6 +83,12 @@ public class Defaults {
      */
     public static final String EBI_REFERENCE_SERVICE_URL_MASK;
 
+    /**
+     * Boolean describing whether downloading of SRA native libraries is allowed,
+     * in case such native libraries are not found locally
+     */
+    public static final boolean SRA_LIBRARIES_DOWNLOAD;
+
 
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
@@ -108,6 +114,7 @@ public class Defaults {
         EBI_REFERENCE_SERVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
+        SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
     }
 
     /**
