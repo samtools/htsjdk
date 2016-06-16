@@ -393,10 +393,10 @@ public class SortingCollection<T> implements Iterable<T> {
      * location in the PriorityQueue
      */
     class MergingIterator implements CloseableIterator<T> {
-        private final PollableTreeSet<PeekFileRecordIterator> queue;
+        private final TreeSet<PeekFileRecordIterator> queue;
 
         MergingIterator() {
-            this.queue = new PollableTreeSet<PeekFileRecordIterator>(new PeekFileRecordIteratorComparator());
+            this.queue = new TreeSet<PeekFileRecordIterator>(new PeekFileRecordIteratorComparator());
             int n = 0;
             for (final File f : SortingCollection.this.files) {
                 final FileRecordIterator it = new FileRecordIterator(f);
@@ -418,7 +418,7 @@ public class SortingCollection<T> implements Iterable<T> {
                 throw new NoSuchElementException();
             }
 
-            final PeekFileRecordIterator fileIterator = queue.poll();
+            final PeekFileRecordIterator fileIterator = queue.pollFirst();
             final T ret = fileIterator.next();
             if (fileIterator.hasNext()) {
                 this.queue.add(fileIterator);
@@ -436,7 +436,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
         public void close() {
             while (!this.queue.isEmpty()) {
-                final PeekFileRecordIterator it = this.queue.poll();
+                final PeekFileRecordIterator it = this.queue.pollFirst();
                 ((CloseableIterator<T>)it.getUnderlyingIterator()).close();
             }
         }
@@ -509,24 +509,6 @@ public class SortingCollection<T> implements Iterable<T> {
             final int result = comparator.compare(lhs.peek(), rhs.peek());
             if (result == 0) return lhs.n - rhs.n;
             else return result;
-        }
-    }
-
-    /** Little class that provides the Java 1.5 TreeSet with a poll() method */
-    static class PollableTreeSet<T> extends TreeSet<T> {
-        PollableTreeSet(final Comparator<? super T> comparator) {
-            super(comparator);
-        }
-
-        public T poll() {
-            if (isEmpty()) {
-                return null;
-            }
-            else {
-                final T t = first();
-                remove(t);
-                return t;
-            }
         }
     }
 }
