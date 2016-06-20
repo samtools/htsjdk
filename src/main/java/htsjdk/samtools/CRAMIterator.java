@@ -181,7 +181,6 @@ public class CRAMIterator implements SAMRecordIterator {
                 final String msg = String
                         .format("Reference sequence MD5 mismatch for slice: seq id %d, start %d, span %d, expected MD5 %s", slice.sequenceId,
                                 slice.alignmentStart, slice.alignmentSpan, String.format("%032x", new BigInteger(1, slice.refMD5)));
-                log.error(msg);
                 throw new CRAMException(msg);
             }
         }
