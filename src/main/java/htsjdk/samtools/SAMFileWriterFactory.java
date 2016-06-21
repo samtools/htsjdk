@@ -46,7 +46,7 @@ public class SAMFileWriterFactory implements Cloneable {
     private boolean createIndex = defaultCreateIndexWhileWriting;
     private static boolean defaultCreateMd5File = Defaults.CREATE_MD5;
     private boolean createMd5File = defaultCreateMd5File;
-    private boolean useAsyncIo = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+    private boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
     private int asyncOutputBufferSize = AsyncSAMFileWriter.DEFAULT_QUEUE_SIZE;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private File tmpDir;

@@ -22,25 +22,20 @@ public class Defaults {
     /** Should MD5 files be created when writing out SAM and BAM files?  Default = false. */
     public static final boolean CREATE_MD5;
 
-    /** Should asynchronous I/O be used where supported throughout all of htsjdk (one thread per file).
-     *  Note: this option takes precedence over {@link #USE_ASYNC_IO_FOR_SAMTOOLS} and {@link #USE_ASYNC_IO_FOR_TRIBBLE}.
+    /** Should asynchronous read I/O be used where supported by the samtools package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO;
+    public static final boolean USE_ASYNC_IO_READ_FOR_SAMTOOLS;
 
-    /** Should asynchronous I/O be used where supported by the samtools package (one thread per file).
-     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+    /** Should asynchronous write I/O be used where supported by the samtools package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO_FOR_SAMTOOLS;
+    public static final boolean USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
 
-    /** Should asynchronous I/O be used where supported by the tribble package (one thread per file).
-     *  Note: performance may depend on the characteristics of the input file (eg number of samples in the VCF) and should be tested on a case-by-case basis.
-     *  In particular, asynchronous reading of VCF files with few samples is known to perform worse than synchronous reading.
-     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+    /** Should asynchronous write I/O be used where supported by the tribble package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO_FOR_TRIBBLE;
+    public static final boolean USE_ASYNC_IO_WRITE_FOR_TRIBBLE;
 
     /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
@@ -93,15 +88,9 @@ public class Defaults {
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
-        if (hasProperty("use_async_io")){
-            USE_ASYNC_IO = getBooleanProperty("use_async_io", false);
-            USE_ASYNC_IO_FOR_SAMTOOLS = USE_ASYNC_IO;
-            USE_ASYNC_IO_FOR_TRIBBLE = USE_ASYNC_IO;
-        } else {
-            USE_ASYNC_IO = false;
-            USE_ASYNC_IO_FOR_SAMTOOLS = getBooleanProperty("use_async_io_samtools", false);
-            USE_ASYNC_IO_FOR_TRIBBLE = getBooleanProperty("use_async_io_tribble", false);
-        }
+        USE_ASYNC_IO_READ_FOR_SAMTOOLS = getBooleanProperty("use_async_io_read_samtools", false);
+        USE_ASYNC_IO_WRITE_FOR_SAMTOOLS = getBooleanProperty("use_async_io_write_samtools", false);
+        USE_ASYNC_IO_WRITE_FOR_TRIBBLE = getBooleanProperty("use_async_io_write_tribble", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
         if (BUFFER_SIZE == 0) {
@@ -126,9 +115,9 @@ public class Defaults {
         final SortedMap<String, Object> result = new TreeMap<>();
         result.put("CREATE_INDEX", CREATE_INDEX);
         result.put("CREATE_MD5", CREATE_MD5);
-        result.put("USE_ASYNC_IO", USE_ASYNC_IO);
-        result.put("USE_ASYNC_IO_FOR_SAMTOOLS", USE_ASYNC_IO_FOR_SAMTOOLS);
-        result.put("USE_ASYNC_IO_FOR_TRIBBLE", USE_ASYNC_IO_FOR_TRIBBLE);
+        result.put("USE_ASYNC_IO_READ_FOR_SAMTOOLS", USE_ASYNC_IO_READ_FOR_SAMTOOLS);
+        result.put("USE_ASYNC_IO_WRITE_FOR_SAMTOOLS", USE_ASYNC_IO_WRITE_FOR_SAMTOOLS);
+        result.put("USE_ASYNC_IO_WRITE_FOR_TRIBBLE", USE_ASYNC_IO_WRITE_FOR_TRIBBLE);
         result.put("COMPRESSION_LEVEL", COMPRESSION_LEVEL);
         result.put("BUFFER_SIZE", BUFFER_SIZE);
         result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
@@ -176,7 +165,7 @@ public class Defaults {
         return Integer.parseInt(value);
     }
 
-    /** Gets a File system property, prefixed with "samdjk." using the default if the property does not exist. */
+    /** Gets a File system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
         // TODO: assert that it is readable

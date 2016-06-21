@@ -125,7 +125,7 @@ public abstract class SamReaderFactory {
         private final static Log LOG = Log.getInstance(SamReaderFactory.class);
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
-        private boolean asynchronousIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+        private boolean asynchronousIO = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
         private CRAMReferenceSource referenceSource;

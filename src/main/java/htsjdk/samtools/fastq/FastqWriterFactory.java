@@ -10,7 +10,7 @@ import java.io.File;
  * @author Tim Fennell
  */
 public class FastqWriterFactory {
-    boolean useAsyncIo = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+    boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
     boolean createMd5  = Defaults.CREATE_MD5;
 
     /** Sets whether or not to use async io (i.e. a dedicated thread per writer. */
