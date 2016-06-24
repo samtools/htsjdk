@@ -58,7 +58,7 @@ public class BlockGunzipper {
      * @param compressedBlock compressed data starting at offset 0
      * @param compressedLength size of compressed data, possibly less than the size of the buffer.
      */
-    void unzipBlock(byte[] uncompressedBlock, byte[] compressedBlock, int compressedLength) {
+    public void unzipBlock(byte[] uncompressedBlock, byte[] compressedBlock, int compressedLength) {
         try {
             ByteBuffer byteBuffer = ByteBuffer.wrap(compressedBlock, 0, compressedLength);
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
