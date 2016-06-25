@@ -57,10 +57,26 @@ public class BlockGunzipper {
      * @param uncompressedBlock must be big enough to hold decompressed output.
      * @param compressedBlock compressed data starting at offset 0
      * @param compressedLength size of compressed data, possibly less than the size of the buffer.
+     * @return the uncompressed data size.
      */
-    public void unzipBlock(byte[] uncompressedBlock, byte[] compressedBlock, int compressedLength) {
+    public int unzipBlock(byte[] uncompressedBlock, byte[] compressedBlock, int compressedLength) {
+        return unzipBlock(uncompressedBlock, 0, compressedBlock, 0, compressedLength);
+    }
+
+    /**
+     * Decompress GZIP-compressed data
+     * @param uncompressedBlock must be big enough to hold decompressed output.
+     * @param uncompressedBlockOffset the offset into uncompressedBlock.
+     * @param compressedBlock compressed data starting at offset 0.
+     * @param compressedBlock  the offset into the compressed data.
+     * @param compressedLength size of compressed data, possibly less than the size of the buffer.
+     * @return the uncompressed data size.
+     */
+    public int unzipBlock(byte[] uncompressedBlock, int uncompressedBlockOffset,
+                           byte[] compressedBlock, int compressedBlockOffset, int compressedLength) {
+        int uncompressedSize;
         try {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(compressedBlock, 0, compressedLength);
+            ByteBuffer byteBuffer = ByteBuffer.wrap(compressedBlock, compressedBlockOffset, compressedLength);
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
 
             // Validate GZIP header
@@ -88,12 +104,12 @@ public class BlockGunzipper {
             final int deflatedSize = compressedLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH - BlockCompressedStreamConstants.BLOCK_FOOTER_LENGTH;
             byteBuffer.position(byteBuffer.position() + deflatedSize);
             int expectedCrc = byteBuffer.getInt();
-            int uncompressedSize = byteBuffer.getInt();
+            uncompressedSize = byteBuffer.getInt();
             inflater.reset();
 
             // Decompress
-            inflater.setInput(compressedBlock, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, deflatedSize);
-            final int inflatedBytes = inflater.inflate(uncompressedBlock, 0, uncompressedSize);
+            inflater.setInput(compressedBlock, compressedBlockOffset + BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH, deflatedSize);
+            final int inflatedBytes = inflater.inflate(uncompressedBlock, uncompressedBlockOffset, uncompressedSize);
             if (inflatedBytes != uncompressedSize) {
                 throw new SAMFormatException("Did not inflate expected amount");
             }
@@ -101,7 +117,7 @@ public class BlockGunzipper {
             // Validate CRC if so desired
             if (this.checkCrcs) {
                 crc32.reset();
-                crc32.update(uncompressedBlock, 0, uncompressedSize);
+                crc32.update(uncompressedBlock, uncompressedBlockOffset, uncompressedSize);
                 final long crc = crc32.getValue();
                 if ((int)crc != expectedCrc) {
                     throw new SAMFormatException("CRC mismatch");
@@ -111,5 +127,6 @@ public class BlockGunzipper {
         {
             throw new RuntimeIOException(e);
         }
+        return uncompressedSize;
     }
 }
