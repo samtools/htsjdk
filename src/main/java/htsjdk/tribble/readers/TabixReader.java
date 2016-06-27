@@ -23,8 +23,7 @@
  */
 package htsjdk.tribble.readers;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
@@ -144,7 +143,7 @@ public class TabixReader {
     }
 
     public static String readLine(final InputStream is) throws IOException {
-        StringBuffer buf = new StringBuffer();
+        final StringBuilder buf = new StringBuilder(10000);
         int c;
         while ((c = is.read()) >= 0 && c != '\n')
             buf.append((char) c);
