@@ -64,6 +64,14 @@ class ContainerHeaderIO {
         return true;
     }
 
+    /**
+     * Write CRAM {@link Container} out into the given {@link OutputStream}.
+     * @param major CRAM major version
+     * @param container container to be written
+     * @param outputStream the output stream to write the container to
+     * @return number of bytes written out to the output stream
+     * @throws IOException as per java IO contract
+     */
     public int writeContainerHeader(final int major, final Container container, final OutputStream outputStream)
             throws IOException {
         final CRC32OutputStream crc32OutputStream = new CRC32OutputStream(outputStream);
@@ -80,7 +88,7 @@ class ContainerHeaderIO {
 
         if (major >= 3) {
             outputStream.write(crc32OutputStream.getCrc32_LittleEndian());
-            length += 4 * 8;
+            length += 4 ;
         }
 
         return length;

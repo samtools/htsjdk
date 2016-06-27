@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
@@ -53,7 +54,9 @@ public class CRAMFileWriterWithIndexTest {
         private boolean isTabu(long position) {
 
             for (Chunk chunk : tabuChunks) {
-                if ((chunk.getChunkStart() >> 16) < position && position < (chunk.getChunkEnd() >> 16)) return true;
+                if ((chunk.getChunkStart() >> 16) < position && position < (chunk.getChunkEnd() >> 16)) {
+                    return true;
+                }
             }
 
             return false;
@@ -71,7 +74,9 @@ public class CRAMFileWriterWithIndexTest {
 
         @Override
         public void seek(long position) throws IOException {
-            if (isTabu(position)) throw new TabuError();
+            if (isTabu(position)) {
+                throw new TabuError();
+            }
             delegate.seek(position);
         }
 
@@ -84,7 +89,9 @@ public class CRAMFileWriterWithIndexTest {
         @Override
         public int read(byte[] buffer, int offset, int length) throws IOException {
             for (long pos = position(); pos < position() + length; pos++)
-                if (isTabu(pos)) throw new TabuError();
+                if (isTabu(pos)) {
+                    throw new TabuError();
+                }
             return delegate.read(buffer, offset, length);
         }
 
@@ -116,7 +123,9 @@ public class CRAMFileWriterWithIndexTest {
      */
     @Test
     public void testUnnecessaryIO() throws IOException {
-        BAMIndex index = new CachingBAMFileIndex(new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
+        final SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(new ByteArraySeekableStream(indexBytes), header.getSequenceDictionary());
+
+        BAMIndex index = new CachingBAMFileIndex(baiStream, header.getSequenceDictionary());
         int refID = 0;
         long start = index.getSpanOverlapping(refID, 1, Integer.MAX_VALUE).getFirstOffset();
         long end = index.getSpanOverlapping(refID + 1, 1, Integer.MAX_VALUE).getFirstOffset();
@@ -124,8 +133,8 @@ public class CRAMFileWriterWithIndexTest {
 
         CRAMFileReader reader = new CRAMFileReader(tabuIS, new ByteArraySeekableStream(indexBytes), source, ValidationStringency.SILENT);
         try {
-            reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
-            // attempt to read 1st container must fail:
+            // the attempt to read 1st container, which will happen when the iterator is initialized, must throw
+            CloseableIterator<SAMRecord> it = reader.queryAlignmentStart(header.getSequence(refID).getSequenceName(), 1);
             Assert.fail();
         } catch (TabuError e) {
 
@@ -163,7 +172,6 @@ public class CRAMFileWriterWithIndexTest {
         ByteArrayOutputStream indexOS = new ByteArrayOutputStream();
         CRAMFileWriter writer = new CRAMFileWriter(os, indexOS, source, header, null);
 
-
         int readPairsPerSequence = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE;
 
         for (SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
@@ -172,7 +180,6 @@ public class CRAMFileWriterWithIndexTest {
                 builder.addPair(Integer.toString(i), sequenceRecord.getSequenceIndex(), alignmentStart, alignmentStart + 2);
                 alignmentStart++;
             }
-
         }
 
         List<SAMRecord> list = new ArrayList<SAMRecord>(readPairsPerSequence);
@@ -183,7 +190,6 @@ public class CRAMFileWriterWithIndexTest {
             writer.addAlignment(record);
 
         list.clear();
-        writer.finish();
         writer.close();
         cramBytes = os.toByteArray();
         indexBytes = indexOS.toByteArray();

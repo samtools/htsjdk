@@ -282,13 +282,20 @@ public class CRAMFileBAIIndexTest {
         // to reduce granularity let's use this hacky approach:
         int previousValue = CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE ;
         CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = nofReadsPerContainer;
-        CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), bamFile.getName());
-        while (iterator.hasNext()) {
-            SAMRecord record = iterator.next();
-            writer.addAlignment(record);
+        try {
+            CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), bamFile.getName());
+            while (iterator.hasNext()) {
+                SAMRecord record = iterator.next();
+                writer.addAlignment(record);
+            }
+            writer.close();
         }
-        writer.close();
-        CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
+        finally {
+            // failing to reset this can cause unrelated tests to fail if this test fails
+            CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE = previousValue;
+        }
         return baos.toByteArray();
     }
+
+
 }

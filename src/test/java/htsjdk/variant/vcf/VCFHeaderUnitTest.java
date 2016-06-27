@@ -329,7 +329,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // copy and comparing it to the first.
 
         // read an existing VCF
-        final VCFFileReader originalFileReader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/HiSeq.10000.vcf"), false);
+        final VCFFileReader originalFileReader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
         final VCFHeader originalHeader = originalFileReader.getFileHeader();
 
         // add a header line with quotes to the header
@@ -338,6 +338,26 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
         final VCFSimpleHeaderLine addedHeaderLine = new VCFSimpleHeaderLine("GATKCommandLine.Test", attributes);
         originalHeader.addMetaDataLine(addedHeaderLine);
+
+        final VCFFilterHeaderLine originalCopyAnnotationLine1 = originalHeader.getFilterHeaderLine("ANNOTATION");
+        Assert.assertNotNull(originalCopyAnnotationLine1);
+        Assert.assertEquals(originalCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01", originalCopyAnnotationLine1.toString());
+
+        final VCFFilterHeaderLine originalCopyAnnotationLine2 = originalHeader.getFilterHeaderLine("ANNOTATION2");
+        Assert.assertNotNull(originalCopyAnnotationLine2);
+        Assert.assertEquals(originalCopyAnnotationLine2.getGenericFieldValue("Description"), "ANNOTATION with quote \" that is unmatched but escaped");
+
+        final VCFInfoHeaderLine originalEscapingQuoteInfoLine = originalHeader.getInfoHeaderLine("EscapingQuote");
+        Assert.assertNotNull(originalEscapingQuoteInfoLine);
+        Assert.assertEquals(originalEscapingQuoteInfoLine.getDescription(), "This description has an escaped \" quote in it");
+
+        final VCFInfoHeaderLine originalEscapingBackslashInfoLine = originalHeader.getInfoHeaderLine("EscapingBackslash");
+        Assert.assertNotNull(originalEscapingBackslashInfoLine);
+        Assert.assertEquals(originalEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
+
+        final VCFInfoHeaderLine originalEscapingNonQuoteOrBackslashInfoLine = originalHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
+        Assert.assertNotNull(originalEscapingNonQuoteOrBackslashInfoLine);
+        Assert.assertEquals(originalEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         // write the file out into a new copy
         final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", ".vcf");
@@ -363,6 +383,26 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFHeaderLine firstCopyNewHeaderLine = firstCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
         Assert.assertNotNull(firstCopyNewHeaderLine);
 
+        final VCFFilterHeaderLine firstCopyAnnotationLine1 = firstCopyHeader.getFilterHeaderLine("ANNOTATION");
+        Assert.assertNotNull(firstCopyAnnotationLine1);
+        Assert.assertEquals(firstCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
+
+        final VCFFilterHeaderLine firstCopyAnnotationLine2 = firstCopyHeader.getFilterHeaderLine("ANNOTATION2");
+        Assert.assertNotNull(firstCopyAnnotationLine2);
+
+        final VCFInfoHeaderLine firstCopyEscapingQuoteInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingQuote");
+        Assert.assertNotNull(firstCopyEscapingQuoteInfoLine);
+        Assert.assertEquals(firstCopyEscapingQuoteInfoLine.getDescription(), "This description has an escaped \" quote in it");
+
+        final VCFInfoHeaderLine firstCopyEscapingBackslashInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingBackslash");
+        Assert.assertNotNull(firstCopyEscapingBackslashInfoLine);
+        Assert.assertEquals(firstCopyEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
+
+        final VCFInfoHeaderLine firstCopyEscapingNonQuoteOrBackslashInfoLine = firstCopyHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
+        Assert.assertNotNull(firstCopyEscapingNonQuoteOrBackslashInfoLine);
+        Assert.assertEquals(firstCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
+
+
         // write one more copy to make sure things don't get double escaped
         final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", ".vcf");
         secondCopyVCFFile.deleteOnExit();
@@ -385,9 +425,33 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
         final VCFHeaderLine secondCopyNewHeaderLine = secondCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
         Assert.assertNotNull(secondCopyNewHeaderLine);
+
+        final VCFFilterHeaderLine secondCopyAnnotationLine1 = secondCopyHeader.getFilterHeaderLine("ANNOTATION");
+        Assert.assertNotNull(secondCopyAnnotationLine1);
+
+        final VCFFilterHeaderLine secondCopyAnnotationLine2 = secondCopyHeader.getFilterHeaderLine("ANNOTATION2");
+        Assert.assertNotNull(secondCopyAnnotationLine2);
+
         Assert.assertEquals(firstCopyNewHeaderLine, secondCopyNewHeaderLine);
         Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
         Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+
+        Assert.assertEquals(firstCopyAnnotationLine1, secondCopyAnnotationLine1);
+        Assert.assertEquals(secondCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
+        Assert.assertEquals(firstCopyAnnotationLine2, secondCopyAnnotationLine2);
+        Assert.assertEquals(secondCopyAnnotationLine2.getGenericFieldValue("Description"), "ANNOTATION with quote \" that is unmatched but escaped");
+
+        final VCFInfoHeaderLine secondCopyEscapingQuoteInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingQuote");
+        Assert.assertNotNull(secondCopyEscapingQuoteInfoLine);
+        Assert.assertEquals(secondCopyEscapingQuoteInfoLine.getDescription(), "This description has an escaped \" quote in it");
+
+        final VCFInfoHeaderLine secondCopyEscapingBackslashInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingBackslash");
+        Assert.assertNotNull(secondCopyEscapingBackslashInfoLine);
+        Assert.assertEquals(secondCopyEscapingBackslashInfoLine.getDescription(), "This description has an escaped \\ backslash in it");
+
+        final VCFInfoHeaderLine secondCopyEscapingNonQuoteOrBackslashInfoLine = secondCopyHeader.getInfoHeaderLine("EscapingNonQuoteOrBackslash");
+        Assert.assertNotNull(secondCopyEscapingNonQuoteOrBackslashInfoLine);
+        Assert.assertEquals(secondCopyEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         firstCopyReader.close();
         secondCopyReader.close();

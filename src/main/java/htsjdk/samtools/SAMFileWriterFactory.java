@@ -29,11 +29,13 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 
 /**
  * Create a writer for writing SAM, BAM, or CRAM files.
@@ -44,13 +46,15 @@ public class SAMFileWriterFactory implements Cloneable {
     private boolean createIndex = defaultCreateIndexWhileWriting;
     private static boolean defaultCreateMd5File = Defaults.CREATE_MD5;
     private boolean createMd5File = defaultCreateMd5File;
-    private boolean useAsyncIo = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+    private boolean useAsyncIo = Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
     private int asyncOutputBufferSize = AsyncSAMFileWriter.DEFAULT_QUEUE_SIZE;
     private int bufferSize = Defaults.BUFFER_SIZE;
     private File tmpDir;
     /** compression level 0: min 9:max */
     private int compressionLevel = BlockCompressedOutputStream.getDefaultCompressionLevel();
+    private SamFlagField samFlagFieldOutput = SamFlagField.NONE;
     private Integer maxRecordsInRam = null;
+    private DeflaterFactory deflaterFactory = BlockCompressedOutputStream.getDefaultDeflaterFactory();
 
     /** simple constructor */
     public SAMFileWriterFactory() {
@@ -73,7 +77,7 @@ public class SAMFileWriterFactory implements Cloneable {
     public SAMFileWriterFactory clone() {
         return new SAMFileWriterFactory(this);
     }
-    
+
     /**
      * Sets the default for whether to create md5Files for BAM files this factory.
      */
@@ -86,6 +90,18 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     public SAMFileWriterFactory setCreateMd5File(final boolean createMd5File) {
         this.createMd5File = createMd5File;
+        return this;
+    }
+
+    /**
+     * Set the deflater factory used by BAM writers created by this writer factory. Must not be null.
+     * If this method is not called, the default  {@link DeflaterFactory} is used which creates the default JDK {@link Deflater}.
+     * This method returns the SAMFileWriterFactory itself. */
+    public SAMFileWriterFactory setDeflaterFactory(final DeflaterFactory deflaterFactory){
+        if (deflaterFactory == null){
+            throw new IllegalArgumentException("null deflater factory");
+        }
+        this.deflaterFactory = deflaterFactory;
         return this;
     }
 
@@ -179,6 +195,16 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Set the flag output format only when writing text.
+     * Default value: [[htsjdk.samtools.SAMTextWriter.samFlagFieldOutput.DECIMAL]]
+     */
+    public SAMFileWriterFactory setSamFlagFieldOutput(final SamFlagField samFlagFieldOutput) {
+        if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
+        this.samFlagFieldOutput = samFlagFieldOutput;
+        return this;
+    }
+
+    /**
      * Create a BAMFileWriter that is ready to receive SAMRecords.  Uses default compression level.
      *
      * @param header     entire header. Sort order is determined by the sortOrder property of this arg.
@@ -206,7 +232,7 @@ public class SAMFileWriterFactory implements Cloneable {
             }
             OutputStream os = IOUtil.maybeBufferOutputStream(new FileOutputStream(outputFile, false), bufferSize);
             if (createMd5File) os = new Md5CalculatingOutputStream(os, new File(outputFile.getAbsolutePath() + ".md5"));
-            final BAMFileWriter ret = new BAMFileWriter(os, outputFile, compressionLevel);
+            final BAMFileWriter ret = new BAMFileWriter(os, outputFile, compressionLevel, deflaterFactory);
             final boolean createIndex = this.createIndex && IOUtil.isRegularPath(outputFile);
             if (this.createIndex && !createIndex) {
                 log.warn("Cannot create index for BAM because output file is not a regular file: " + outputFile.getAbsolutePath());
@@ -240,11 +266,18 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param outputFile where to write the output.
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile) {
+        /**
+         * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldOutput value has not been set.  This should
+         * be SamFlagField.DECIMAL when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+         */
+        if (samFlagFieldOutput == SamFlagField.NONE) {
+            samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
+        }
         try {
             final SAMTextWriter ret = this.createMd5File
                     ? new SAMTextWriter(new Md5CalculatingOutputStream(new FileOutputStream(outputFile, false),
-                    new File(outputFile.getAbsolutePath() + ".md5")))
-                    : new SAMTextWriter(outputFile);
+                    new File(outputFile.getAbsolutePath() + ".md5")), samFlagFieldOutput)
+                    : new SAMTextWriter(outputFile, samFlagFieldOutput);
             ret.setSortOrder(header.getSortOrder(), presorted);
             if (maxRecordsInRam != null) {
                 ret.setMaxRecordsInRam(maxRecordsInRam);
@@ -268,7 +301,14 @@ public class SAMFileWriterFactory implements Cloneable {
      *                  caller must buffer if desired.  Note that PrintStream is buffered.
      */
     public SAMFileWriter makeSAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, false, new SAMTextWriter(stream));
+        /**
+         * Use the value specified from Defaults.SAM_FLAG_FIELD_FORMAT when samFlagFieldOutput value has not been set.  This should
+         * be samFlagFieldOutput.DECIMAL when the user has not set Defaults.SAM_FLAG_FIELD_FORMAT.
+         */
+        if (samFlagFieldOutput == SamFlagField.NONE) {
+            samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
+        }
+        return initWriter(header, presorted, false, new SAMTextWriter(stream, samFlagFieldOutput));
     }
 
     /**
@@ -282,7 +322,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
 
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel()));
+        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel(), this.deflaterFactory));
     }
 
     /**

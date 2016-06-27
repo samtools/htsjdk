@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -44,10 +45,12 @@ public class LiftOverTest {
     private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
 
     private LiftOver liftOver;
+    Map<String, Set<String>> contigMap;
 
     @BeforeClass
     public void initLiftOver() {
         liftOver = new LiftOver(CHAIN_FILE);
+        contigMap = liftOver.getContigMap();
     }
 
     @Test(dataProvider = "testIntervals")
@@ -454,5 +457,12 @@ public class LiftOverTest {
             newChainMap.put(chain.id, chain);
         }
         Assert.assertEquals(newChainMap, originalChainMap);
+    }
+
+    @Test(dataProvider = "testIntervals")
+    public void testGetContigMap(final Interval in, final Interval expected) {
+        if (expected != null) {
+            Assert.assertTrue(contigMap.get(in.getContig()).contains(expected.getContig()));
+        }
     }
 }

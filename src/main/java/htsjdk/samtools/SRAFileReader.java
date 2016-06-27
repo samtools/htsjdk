@@ -170,7 +170,9 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
     }
 
     @Override
-    public void close() { }
+    public void close() {
+        run = null;
+    }
 
     @Override
     public ValidationStringency getValidationStringency() {

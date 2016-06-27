@@ -209,7 +209,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
                 .setOutputFile(vcf);
 
         VariantContextWriter writer = builder.build();
-        Assert.assertEquals(writer instanceof AsyncVariantContextWriter, Defaults.USE_ASYNC_IO_FOR_TRIBBLE, "testAsync default");
+        Assert.assertEquals(writer instanceof AsyncVariantContextWriter, Defaults.USE_ASYNC_IO_WRITE_FOR_TRIBBLE, "testAsync default");
 
         writer = builder.setOption(Options.USE_ASYNC_IO).build();
         Assert.assertTrue(writer instanceof AsyncVariantContextWriter, "testAsync option=set");

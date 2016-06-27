@@ -4,16 +4,12 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.sra.SRAAccession;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.samtools.util.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.zip.GZIPInputStream;
@@ -56,6 +52,13 @@ public abstract class SamReaderFactory {
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
     
     abstract public SamReader open(final File file);
+
+    public SamReader open(final Path path) {
+        final SamInputResource r = SamInputResource.of(path);
+        final Path indexMaybe = SamFiles.findIndex(path);
+        if (indexMaybe != null) r.index(indexMaybe);
+        return open(r);
+    }
 
     abstract public SamReader open(final SamInputResource resource);
 
@@ -122,7 +125,7 @@ public abstract class SamReaderFactory {
         private final static Log LOG = Log.getInstance(SamReaderFactory.class);
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
-        private boolean asynchronousIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+        private boolean asynchronousIO = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
         private SAMRecordFactory samRecordFactory;
         private CustomReaderFactory customReaderFactory;
         private CRAMReferenceSource referenceSource;
@@ -254,8 +257,22 @@ public abstract class SamReaderFactory {
                                 validationStringency,
                                 this.samRecordFactory
                         );
+                    } else if (SamStreams.sourceLikeCram(data.asUnbufferedSeekableStream())) {
+                        if (referenceSource == null) {
+                            referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
+                        }
+                        SeekableStream bufferedIndexStream = indexDefined ?
+                                IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream()) :
+                                null;
+                        primitiveSamReader = new CRAMFileReader(
+                                IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
+                                bufferedIndexStream, referenceSource, validationStringency);
                     } else {
-                        throw new SAMFormatException("Unrecognized file format: " + data.asUnbufferedSeekableStream());
+                        // assume its a SAM file/no index
+                        LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
+                        primitiveSamReader = new SAMTextReader(
+                                IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
+                                validationStringency, this.samRecordFactory);
                     }
                 } else if (type == InputResource.Type.SRA_ACCESSION) {
                     primitiveSamReader = new SRAFileReader(data.asSRAAccession());
@@ -320,6 +337,10 @@ public abstract class SamReaderFactory {
         /** Attempts to detect whether the file is an SRA accessioned file. If SRA support is not available, returns false. */
         private boolean isSra(final File sourceFile) {
             try {
+                // if SRA fails to initialize (the most common reason is a failure to find/load native libraries),
+                // it will throw a subclass of java.lang.Error and here we only catch subclasses of java.lang.Exception
+                //
+                // Note: SRA initialization errors should not be ignored, but rather shown to user
                 return SRAAccession.isValid(sourceFile.getPath());
             } catch (final Exception e) {
                 return false;

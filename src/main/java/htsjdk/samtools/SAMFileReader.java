@@ -74,7 +74,7 @@ public class SAMFileReader implements SamReader, SamReader.Indexing {
     private BAMIndex mIndex = null;
     private SAMRecordFactory samRecordFactory = new DefaultSAMRecordFactory();
     private ReaderImplementation mReader = null;
-    private boolean useAsyncIO = Defaults.USE_ASYNC_IO_FOR_SAMTOOLS;
+    private boolean useAsyncIO = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
 
     private File samFile = null;
 

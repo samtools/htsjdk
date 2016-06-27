@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 public class ExternalCompressionTest {
-    public static final File BZIP2_FILE = new File("testdata/htsjdk/samtools/io/bzip2-test.bz2");
+    public static final File BZIP2_FILE = new File("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
     public static final byte [] TEST_BYTES = "This is a simple string to test BZip2".getBytes();
 
     @Test

@@ -22,25 +22,20 @@ public class Defaults {
     /** Should MD5 files be created when writing out SAM and BAM files?  Default = false. */
     public static final boolean CREATE_MD5;
 
-    /** Should asynchronous I/O be used where supported throughout all of htsjdk (one thread per file).
-     *  Note: this option takes precedence over {@link #USE_ASYNC_IO_FOR_SAMTOOLS} and {@link #USE_ASYNC_IO_FOR_TRIBBLE}.
+    /** Should asynchronous read I/O be used where supported by the samtools package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO;
+    public static final boolean USE_ASYNC_IO_READ_FOR_SAMTOOLS;
 
-    /** Should asynchronous I/O be used where supported by the samtools package (one thread per file).
-     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+    /** Should asynchronous write I/O be used where supported by the samtools package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO_FOR_SAMTOOLS;
+    public static final boolean USE_ASYNC_IO_WRITE_FOR_SAMTOOLS;
 
-    /** Should asynchronous I/O be used where supported by the tribble package (one thread per file).
-     *  Note: performance may depend on the characteristics of the input file (eg number of samples in the VCF) and should be tested on a case-by-case basis.
-     *  In particular, asynchronous reading of VCF files with few samples is known to perform worse than synchronous reading.
-     *  Note: The {@link #USE_ASYNC_IO} option takes precedence over this option.
+    /** Should asynchronous write I/O be used where supported by the tribble package (one thread per file).
      *  Default = false.
      */
-    public static final boolean USE_ASYNC_IO_FOR_TRIBBLE;
+    public static final boolean USE_ASYNC_IO_WRITE_FOR_TRIBBLE;
 
     /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
@@ -48,14 +43,14 @@ public class Defaults {
     /** Buffer size, in bytes, used whenever reading/writing files or streams.  Default = 128k. */
     public static final int BUFFER_SIZE;
 
+    /** The output format of the flag field when writing SAM text.  Ignored for reading SAM text. */
+    public static final SamFlagField SAM_FLAG_FIELD_FORMAT;
+
     /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
      * this == BUFFER_SIZE
      */
     public static final int NON_ZERO_BUFFER_SIZE;
-
-    /** Should BlockCompressedOutputStream attempt to load libIntelDeflater? */
-    public static final boolean TRY_USE_INTEL_DEFLATER;
 
     /**
      * The reference FASTA file.  If this is not set, the file is null.  This file may be required for reading
@@ -81,24 +76,23 @@ public class Defaults {
      * A mask (pattern) to use when building EBI reference service URL for a
      * given MD5 checksum. Must contain one and only one string placeholder.
      */
-    public static final String EBI_REFERENCE_SEVICE_URL_MASK;
+    public static final String EBI_REFERENCE_SERVICE_URL_MASK;
+
+    /**
+     * Boolean describing whether downloading of SRA native libraries is allowed,
+     * in case such native libraries are not found locally
+     */
+    public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
 
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
-        if (hasProperty("use_async_io")){
-            USE_ASYNC_IO = getBooleanProperty("use_async_io", false);
-            USE_ASYNC_IO_FOR_SAMTOOLS = USE_ASYNC_IO;
-            USE_ASYNC_IO_FOR_TRIBBLE = USE_ASYNC_IO;
-        } else {
-            USE_ASYNC_IO = false;
-            USE_ASYNC_IO_FOR_SAMTOOLS = getBooleanProperty("use_async_io_samtools", false);
-            USE_ASYNC_IO_FOR_TRIBBLE = getBooleanProperty("use_async_io_tribble", false);
-        }
+        USE_ASYNC_IO_READ_FOR_SAMTOOLS = getBooleanProperty("use_async_io_read_samtools", false);
+        USE_ASYNC_IO_WRITE_FOR_SAMTOOLS = getBooleanProperty("use_async_io_write_samtools", false);
+        USE_ASYNC_IO_WRITE_FOR_TRIBBLE = getBooleanProperty("use_async_io_write_tribble", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
-        TRY_USE_INTEL_DEFLATER = getBooleanProperty("try_use_intel_deflater", false);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
         } else {
@@ -106,8 +100,10 @@ public class Defaults {
         }
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
-        EBI_REFERENCE_SEVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
+        EBI_REFERENCE_SERVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
+        SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
+        SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
     }
 
     /**
@@ -119,17 +115,17 @@ public class Defaults {
         final SortedMap<String, Object> result = new TreeMap<>();
         result.put("CREATE_INDEX", CREATE_INDEX);
         result.put("CREATE_MD5", CREATE_MD5);
-        result.put("USE_ASYNC_IO", USE_ASYNC_IO);
-        result.put("USE_ASYNC_IO_FOR_SAMTOOLS", USE_ASYNC_IO_FOR_SAMTOOLS);
-        result.put("USE_ASYNC_IO_FOR_TRIBBLE", USE_ASYNC_IO_FOR_TRIBBLE);
+        result.put("USE_ASYNC_IO_READ_FOR_SAMTOOLS", USE_ASYNC_IO_READ_FOR_SAMTOOLS);
+        result.put("USE_ASYNC_IO_WRITE_FOR_SAMTOOLS", USE_ASYNC_IO_WRITE_FOR_SAMTOOLS);
+        result.put("USE_ASYNC_IO_WRITE_FOR_TRIBBLE", USE_ASYNC_IO_WRITE_FOR_TRIBBLE);
         result.put("COMPRESSION_LEVEL", COMPRESSION_LEVEL);
         result.put("BUFFER_SIZE", BUFFER_SIZE);
-        result.put("TRY_USE_INTEL_DEFLATER", TRY_USE_INTEL_DEFLATER);
         result.put("NON_ZERO_BUFFER_SIZE", NON_ZERO_BUFFER_SIZE);
         result.put("REFERENCE_FASTA", REFERENCE_FASTA);
         result.put("USE_CRAM_REF_DOWNLOAD", USE_CRAM_REF_DOWNLOAD);
-        result.put("EBI_REFERENCE_SEVICE_URL_MASK", EBI_REFERENCE_SEVICE_URL_MASK);
+        result.put("EBI_REFERENCE_SERVICE_URL_MASK", EBI_REFERENCE_SERVICE_URL_MASK);
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
+        result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
         return Collections.unmodifiableSortedMap(result);
     }
 
@@ -169,7 +165,7 @@ public class Defaults {
         return Integer.parseInt(value);
     }
 
-    /** Gets a File system property, prefixed with "samdjk." using the default if the property does not exist. */
+    /** Gets a File system property, prefixed with "samjdk." using the default if the property does not exist. */
     private static File getFileProperty(final String name, final String def) {
         final String value = getStringProperty(name, def);
         // TODO: assert that it is readable

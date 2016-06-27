@@ -1,14 +1,14 @@
 package htsjdk.samtools.cram;
 
 import htsjdk.samtools.BAMFileSpan;
+import htsjdk.samtools.CRAMCRAIIndexer;
 import htsjdk.samtools.DiskBasedBAMFileIndex;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
-import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,7 +18,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -133,9 +132,13 @@ public class CRAIIndexTest {
     public SeekableStream getBaiStreamFromMemory(SAMSequenceDictionary dictionary, final List<CRAIEntry> index) {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final GZIPOutputStream gos = new GZIPOutputStream(baos);
-            CRAIIndex.writeIndex(gos, index);
-            gos.close();
+            SAMFileHeader samHeader = new SAMFileHeader();
+            samHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+            CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, samHeader);
+            for (CRAIEntry entry: index) {
+                indexer.addEntry(entry);
+            }
+            indexer.finish();
             final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new ByteArrayInputStream(baos.toByteArray()), dictionary);
             Assert.assertNotNull(baiStream);
             return baiStream;
@@ -150,9 +153,13 @@ public class CRAIIndexTest {
             final File file = File.createTempFile("test", ".crai");
             file.deleteOnExit();
             final FileOutputStream fos = new FileOutputStream(file);
-            final GZIPOutputStream gos = new GZIPOutputStream(fos);
-            CRAIIndex.writeIndex(gos, index);
-            gos.close();
+            SAMFileHeader samHeader = new SAMFileHeader();
+            samHeader.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+            CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, samHeader);
+            for (CRAIEntry entry: index) {
+                indexer.addEntry(entry);
+            }
+            indexer.finish();
             final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(new SeekableBufferedStream(new SeekableFileStream(file)), dictionary);
             Assert.assertNotNull(baiStream);
             return baiStream;

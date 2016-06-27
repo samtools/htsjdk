@@ -10,7 +10,7 @@ cache:
     - $HOME/.m2
 jdk:
   - oraclejdk8
-script: ./gradlew jacocoTestReport testSRA testIntelDeflater;
+script: ./gradlew jacocoTestReport testSRA;
 after_success:
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";

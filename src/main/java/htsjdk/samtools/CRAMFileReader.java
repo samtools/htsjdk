@@ -28,15 +28,15 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeEOFException;
-import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * {@link htsjdk.samtools.BAMFileReader BAMFileReader} analogue for CRAM files.
@@ -60,7 +60,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     /**
      * Create a CRAMFileReader from either a file or input stream using the reference source returned by
      * {@link ReferenceSource#getDefaultCRAMReferenceSource() getDefaultCRAMReferenceSource}.
-     *
      *
      * @param cramFile CRAM file to open
      * @param inputStream CRAM stream to read
@@ -172,13 +171,12 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
 
         iterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
         if (indexInputStream != null) {
-            try {
-                mIndex = new CachingBAMFileIndex(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
-            } catch (Exception e) {
-                // try CRAI instead:
-                indexInputStream.seek(0);
-                final SeekableStream baiStream = CRAIIndex.openCraiFileAsBaiStream(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            SeekableStream baiStream = SamIndexes.asBaiSeekableStreamOrNull(indexInputStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            if (null != baiStream)  {
                 mIndex = new CachingBAMFileIndex(baiStream, iterator.getSAMFileHeader().getSequenceDictionary());
+            }
+            else {
+                throw new IllegalArgumentException("CRAM index must be a BAI or CRAI stream");
             }
         }
     }
@@ -249,7 +247,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     public BAMIndex getIndex() {
         if (!hasIndex())
-            throw new SAMException("No index is available for this BAM file.");
+            throw new SAMException("No index is available for this CRAM file.");
         if (mIndex == null) {
             final SAMSequenceDictionary dictionary = getFileHeader()
                     .getSequenceDictionary();
@@ -265,7 +263,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             // convert CRAI into BAI:
             final SeekableStream baiStream;
             try {
-                baiStream = CRAIIndex.openCraiFileAsBaiStream(mIndexFile, iterator.getSAMFileHeader().getSequenceDictionary());
+                baiStream = SamIndexes.asBaiSeekableStreamOrNull(new SeekableFileStream(mIndexFile), iterator.getSAMFileHeader().getSequenceDictionary());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -364,61 +362,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence,
                                                             final int start) {
-        long[] filePointers = null;
-
-        // Hit the index to determine the chunk boundaries for the required data.
         final SAMFileHeader fileHeader = getFileHeader();
         final int referenceIndex = fileHeader.getSequenceIndex(sequence);
-        if (referenceIndex != -1) {
-            final BAMIndex fileIndex = getIndex();
-            final BAMFileSpan fileSpan = fileIndex.getSpanOverlapping(
-                    referenceIndex, start, -1);
-            filePointers = fileSpan != null ? fileSpan.toCoordinateArray()
-                    : null;
-        }
-
-        if (filePointers == null || filePointers.length == 0)
-            return emptyIterator;
-
-        Container container;
-        final SeekableStream seekableStream = getSeekableStreamOrFailWithRTE();
-        for (int i = 0; i < filePointers.length; i += 2) {
-            final long containerOffset = filePointers[i] >>> 16;
-
-            try {
-                seekableStream.seek(containerOffset);
-                iterator.nextContainer();
-
-                if (iterator.jumpWithinContainerToPos(fileHeader.getSequenceIndex(sequence), start)) {
-                    return new IntervalIterator(iterator, new QueryInterval(referenceIndex, start, -1));
-                }
-            } catch (final IOException e) {
-                throw new RuntimeIOException(e);
-            } catch (IllegalAccessException e) {
-                throw new SAMException(e);
-            }
-        }
-        throw new SAMException("Failed to query alignment start: " + sequence + " at " + start);
-    }
-
-    CloseableIterator<SAMRecord> query(final int referenceIndex,
-                                       final int start, final int end, final boolean overlap) throws IOException {
-        long[] filePointers = null;
-
-        // Hit the index to determine the chunk boundaries for the required data.
-        if (referenceIndex != -1) {
-            final BAMIndex fileIndex = getIndex();
-            final BAMFileSpan fileSpan = fileIndex.getSpanOverlapping(
-                    referenceIndex, start, -1);
-            filePointers = fileSpan != null ? fileSpan.toCoordinateArray()
-                    : null;
-        }
-
-        if (filePointers == null || filePointers.length == 0)
-            return emptyIterator;
-
-        final CRAMIterator newIterator = new CRAMIterator(getSeekableStreamOrFailWithRTE(), referenceSource, filePointers, validationStringency);
-        return new IntervalIterator(newIterator, new QueryInterval(referenceIndex, start, end), overlap);
+        return new CRAMIntervalIterator(new QueryInterval[]{new QueryInterval(referenceIndex, start, -1)}, true);
     }
 
     @Override
@@ -434,7 +380,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             final Container container = ContainerIO.readContainerHeader(newIterator.getCramHeader().getVersion().major, seekableStream);
             seekableStream.seek(seekableStream.position() + container.containerByteSize);
             iterator = newIterator;
-            iterator.jumpWithinContainerToPos(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
+            boolean atAlignments;
+            do {
+                atAlignments = iterator.advanceToAlignmentInContainer(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START);
+            } while (!atAlignments && iterator.hasNext());
         } catch (final IOException e) {
             throw new RuntimeEOFException(e);
         }
@@ -477,7 +426,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     @Override
     public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals,
                                               final boolean contained) {
-        return new MultiIntervalIterator(Arrays.asList(intervals).iterator(), !contained);
+        return new CRAMIntervalIterator(intervals, contained);
     }
 
     @Override
@@ -491,135 +440,94 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             iterator.setFileSource(enabled ? reader : null);
     }
 
-    private class MultiIntervalIterator implements SAMRecordIterator {
-        private final Iterator<QueryInterval> queries;
-        private CloseableIterator<SAMRecord> iterator;
-        private final boolean overlap;
+    private class CRAMIntervalIterator
+            extends BAMQueryMultipleIntervalsIteratorFilter
+            implements SAMRecordIterator {
 
-        public MultiIntervalIterator(final Iterator<QueryInterval> queries, final boolean overlap) {
-            this.queries = queries;
-            this.overlap = overlap;
-        }
+        // the granularity of this iterator is the container, so the records returned
+        // by it must still be filtered to find those matching the filter criteria
+        private CRAMIterator unfilteredIterator;
+        SAMRecord nextRec = null;
 
-        @Override
-        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
-            return null;
-        }
+        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained) {
+            super(queries, contained);
 
-        @Override
-        public void close() {
-
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (iterator == null || !iterator.hasNext()) {
-                if (!queries.hasNext()) return false;
-                do {
-                    final QueryInterval query = queries.next();
-                    try {
-                        iterator = query(query.referenceIndex, query.start, query.end, overlap);
-                    } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                } while (!iterator.hasNext() && queries.hasNext());
-            }
-            return iterator.hasNext();
-        }
-
-        @Override
-        public SAMRecord next() {
-            return iterator.next();
-        }
-
-        @Override
-        public void remove() {
-            iterator.remove();
-        }
-    }
-
-    public static class IntervalIterator implements SAMRecordIterator {
-        private final CloseableIterator<SAMRecord> delegate;
-        private final QueryInterval interval;
-        private SAMRecord next;
-        private boolean noMore = false;
-        private final boolean overlap;
-
-        public IntervalIterator(final CloseableIterator<SAMRecord> delegate, final QueryInterval interval) {
-            this(delegate, interval, true);
-        }
-
-        public IntervalIterator(final CloseableIterator<SAMRecord> delegate, final QueryInterval interval, final boolean overlap) {
-            this.delegate = delegate;
-            this.interval = interval;
-            this.overlap = overlap;
-        }
-
-        @Override
-        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
-            return null;
-        }
-
-        @Override
-        public void close() {
-            delegate.close();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (next != null) return true;
-            if (noMore) return false;
-
-            while (delegate.hasNext()) {
-                next = delegate.next();
-
-                if (isWithinTheInterval(next)) break;
-                if (isBeyondTheInterval(next)) {
-                    next = null;
-                    noMore = true;
-                    return false;
+            long[] coordinates = coordinatesFromQueryIntervals(getIndex(), queries);
+            if (coordinates != null && coordinates.length != 0) {
+                try {
+                    unfilteredIterator = new CRAMIterator(
+                            getSeekableStreamOrFailWithRTE(),
+                            referenceSource,
+                            coordinates,
+                            validationStringency
+                    );
+                } catch (final IOException e) {
+                    throw new RuntimeEOFException(e);
                 }
-                next = null;
+                getNextRecord(); // advance to the first record that matches the filter criteria
             }
-
-            return next != null;
         }
 
-        boolean isWithinTheInterval(final SAMRecord record) {
-            final boolean refMatch = record.getReferenceIndex() == interval.referenceIndex;
-            if (interval.start == -1) return refMatch;
-            if (!refMatch) return false;
-
-            final int start = record.getAlignmentStart();
-            final int end = record.getAlignmentEnd();
-            if (overlap) {
-                return CoordMath.overlaps(start, end, interval.start, interval.end < 0 ? Integer.MAX_VALUE : interval.end);
-            } else {
-                // contained:
-                return CoordMath.encloses(interval.start, interval.end < 0 ? Integer.MAX_VALUE : interval.end, start, end);
+        // convert queries -> merged BAMFileSpan -> coordinate array
+        private long[] coordinatesFromQueryIntervals(BAMIndex index, QueryInterval[] queries) {
+            ArrayList<BAMFileSpan> spanList = new ArrayList<>(1);
+            Arrays.asList(queries).forEach(qi -> spanList.add(mIndex.getSpanOverlapping(qi.referenceIndex, qi.start, qi.end)));
+            BAMFileSpan spanArray[] = new BAMFileSpan[spanList.size()];
+            for (int i = 0; i < spanList.size(); i++) {
+                spanArray[i] = spanList.get(i);
             }
 
+            return BAMFileSpan.merge(spanArray).toCoordinateArray();
         }
 
-        boolean isBeyondTheInterval(final SAMRecord record) {
-            if (record.getReadUnmappedFlag()) return false;
-            if (record.getReferenceIndex() > interval.referenceIndex) return true;
-            if (record.getReferenceIndex() != interval.referenceIndex) return false;
+        @Override
+        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
+            return null;
+        }
 
-            return interval.end != -1 && record.getAlignmentStart() > interval.end;
+        @Override
+        public void close() {
+            if (unfilteredIterator != null) {
+                unfilteredIterator.close();
+            }
+        }
 
+        @Override
+        public boolean hasNext() {
+            return nextRec != null;
         }
 
         @Override
         public SAMRecord next() {
-            final SAMRecord result = next;
-            next = null;
+            if (!hasNext()) {
+                throw new NoSuchElementException("Next called on empty CRAMIntervalIterator");
+            }
+            return getNextRecord();
+        }
+
+        private SAMRecord getNextRecord() {
+            final SAMRecord result = nextRec;
+            nextRec = null;
+            while(nextRec == null && unfilteredIterator.hasNext()) {
+                SAMRecord nextRecord = unfilteredIterator.next();
+                switch(compareToFilter(nextRecord)) {
+                    case MATCHES_FILTER:
+                        nextRec = nextRecord;
+                        break;
+                    case CONTINUE_ITERATION:
+                        continue;
+                    case STOP_ITERATION:
+                        break;
+                    default:
+                        throw new SAMException("Unexpected return from compareToFilter");
+                }
+            }
             return result;
         }
 
         @Override
         public void remove() {
-            throw new RuntimeException("Not available.");
+            throw new RuntimeException("Method \"remove\" not implemented for CRAMIntervalIterator.");
         }
     }
 }

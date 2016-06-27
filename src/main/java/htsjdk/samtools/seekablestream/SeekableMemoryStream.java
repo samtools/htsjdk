@@ -50,7 +50,7 @@ public class SeekableMemoryStream extends SeekableStream {
     @Override
     public int read() throws IOException {
         if (buf.position() < buf.limit()) {
-            return buf.get();
+            return buf.get() & 0xFF;
         } else {
             return -1;
         }

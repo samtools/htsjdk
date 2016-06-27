@@ -49,7 +49,7 @@ public enum SAMFlag {
     final int flag;
     private final String description;
 
-    SAMFlag(int flag,String description) {
+    SAMFlag(int flag, String description) {
         this.flag = flag;
         this.description = description;
     }

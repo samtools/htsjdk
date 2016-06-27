@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -32,6 +33,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.Deflater;
 
 public class BlockCompressedOutputStreamTest {
 
@@ -108,5 +110,56 @@ public class BlockCompressedOutputStreamTest {
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream("/dev/null");
         bcos.write("Hi, Mom!".getBytes());
         bcos.close();
+    }
+
+    @Test
+    public void testCustomDeflater() throws Exception {
+        final File f = File.createTempFile("testCustomDeflater.", ".gz");
+        f.deleteOnExit();
+        System.out.println("Creating file " + f);
+
+        final int[] deflateCalls = {0}; //Note: using and array is a HACK to fool the compiler
+
+        class MyDeflater extends Deflater{
+            MyDeflater(int level, boolean nowrap){
+                super(level, nowrap);
+            }
+            @Override
+            public int deflate(byte[] b, int off, int len) {
+                deflateCalls[0]++;
+                return super.deflate(b, off, len);
+            }
+
+        }
+        final DeflaterFactory myDeflaterFactory= new DeflaterFactory(){
+            public Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
+                return new MyDeflater(compressionLevel, nowrap);
+            }
+        };
+        final List<String> linesWritten = new ArrayList<>();
+        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f, 5, myDeflaterFactory);
+        String s = "Hi, Mom!\n";
+        bcos.write(s.getBytes()); //Call 1
+        linesWritten.add(s);
+        s = "Hi, Dad!\n";
+        bcos.write(s.getBytes()); //Call 2
+        linesWritten.add(s);
+        bcos.flush();
+        final StringBuilder sb = new StringBuilder(BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2);
+        s = "1234567890123456789012345678901234567890123456789012345678901234567890\n";
+        while (sb.length() <= BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE) {
+            sb.append(s);
+            linesWritten.add(s);
+        }
+        bcos.write(sb.toString().getBytes()); //Call 3
+        bcos.close();
+        final BlockCompressedInputStream bcis = new BlockCompressedInputStream(f);
+        final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis));
+        String line;
+        for(int i = 0; (line = reader.readLine()) != null; ++i) {
+            Assert.assertEquals(line + "\n", linesWritten.get(i));
+        }
+        bcis.close();
+        Assert.assertEquals(deflateCalls[0], 3, "deflate calls");
     }
 }

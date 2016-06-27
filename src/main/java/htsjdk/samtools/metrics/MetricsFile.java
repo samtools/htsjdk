@@ -49,16 +49,18 @@ import java.util.TreeSet;
  * @author Tim Fennell
  */
 public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public static final String MAJOR_HEADER_PREFIX = "## ";
     public static final String MINOR_HEADER_PREFIX = "# ";
     public static final String SEPARATOR = "\t";
     public static final String HISTO_HEADER = "## HISTOGRAM\t";
     public static final String METRIC_HEADER = "## METRICS CLASS\t";
 
-    private final Set<String> columnLabels = new HashSet<String>();
-    private final List<Header> headers = new ArrayList<Header>();
-    private final List<BEAN> metrics = new ArrayList<BEAN>();
-    private final List<Histogram<HKEY>> histograms = new ArrayList<Histogram<HKEY>>();
+    private final Set<String> columnLabels = new HashSet<>();
+    private final List<Header> headers = new ArrayList<>();
+    private final List<BEAN> metrics = new ArrayList<>();
+    private final List<Histogram<HKEY>> histograms = new ArrayList<>();
 
     /** Adds a header to the collection of metrics. */
     public void addHeader(Header h) { this.headers.add(h); }
@@ -267,7 +269,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
             out.append(key.toString());
 
             for (final Histogram<HKEY> histo : nonEmptyHistograms) {
-                final Histogram<HKEY>.Bin bin = histo.get(key);
+                final Histogram.Bin<HKEY> bin = histo.get(key);
                 final double value = (bin == null ? 0 : bin.getValue());
 
                 out.append(SEPARATOR);
@@ -537,7 +539,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      * @return list of beans from the file.
      */
     public static <T extends MetricBase> List<T> readBeans(final File file) {
-        final MetricsFile<T, Comparable<?>> metricsFile = new MetricsFile<T, Comparable<?>>();
+        final MetricsFile<T, ?> metricsFile = new MetricsFile<>();
         final Reader in = IOUtil.openFileForBufferedReading(file);
         metricsFile.read(in);
         CloserUtil.close(in);
@@ -549,7 +551,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      */
     public static List<Header> readHeaders(final File file) {
         try {
-            final MetricsFile<MetricBase, Comparable<?>> metricsFile = new MetricsFile<MetricBase, Comparable<?>>();
+            final MetricsFile<MetricBase, ?> metricsFile = new MetricsFile<>();
             metricsFile.read(new FileReader(file));
             return metricsFile.getHeaders();
         } catch (FileNotFoundException e) {
@@ -562,8 +564,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      */
     public static boolean areMetricsEqual(final File file1, final File file2) {
         try {
-            final MetricsFile<MetricBase, Comparable<?>> mf1 = new MetricsFile<MetricBase, Comparable<?>>();
-            final MetricsFile<MetricBase, Comparable<?>> mf2 = new MetricsFile<MetricBase, Comparable<?>>();
+            final MetricsFile<MetricBase, ?> mf1 = new MetricsFile<>();
+            final MetricsFile<MetricBase, ?> mf2 = new MetricsFile<>();
             mf1.read(new FileReader(file1));
             mf2.read(new FileReader(file2));
             return mf1.areMetricsEqual(mf2);
@@ -578,8 +580,8 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
      */
     public static boolean areMetricsAndHistogramsEqual(final File file1, final File file2) {
         try {
-            final MetricsFile<MetricBase, Comparable<?>> mf1 = new MetricsFile<MetricBase, Comparable<?>>();
-            final MetricsFile<MetricBase, Comparable<?>> mf2 = new MetricsFile<MetricBase, Comparable<?>>();
+            final MetricsFile<MetricBase, ?> mf1 = new MetricsFile<>();
+            final MetricsFile<MetricBase, ?> mf2 = new MetricsFile<>();
             mf1.read(new FileReader(file1));
             mf2.read(new FileReader(file2));
 

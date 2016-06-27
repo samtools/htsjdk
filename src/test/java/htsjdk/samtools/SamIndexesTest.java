@@ -65,7 +65,11 @@ public class SamIndexesTest {
 
     @Test
     public void testCraiInMemory() throws IOException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(baos, header);
         final CRAIEntry entry = new CRAIEntry();
         entry.sequenceId = 0;
         entry.alignmentStart = 1;
@@ -73,12 +77,9 @@ public class SamIndexesTest {
         entry.sliceOffset = 3;
         entry.sliceSize = 4;
         entry.containerStartOffset = 5;
-        index.add(entry);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final GZIPOutputStream gos = new GZIPOutputStream(baos);
-        CRAIIndex.writeIndex(gos, index);
-        gos.close();
+        indexer.addEntry(entry);
+        indexer.finish();
+        baos.close();
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
@@ -99,7 +100,13 @@ public class SamIndexesTest {
 
     @Test
     public void testCraiFromFile() throws IOException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final File file = File.createTempFile("test", ".crai");
+        file.deleteOnExit();
+        final FileOutputStream fos = new FileOutputStream(file);
+
+        SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header);
         final CRAIEntry entry = new CRAIEntry();
         entry.sequenceId = 0;
         entry.alignmentStart = 1;
@@ -107,14 +114,9 @@ public class SamIndexesTest {
         entry.sliceOffset = 3;
         entry.sliceSize = 4;
         entry.containerStartOffset = 5;
-        index.add(entry);
-
-        final File file = File.createTempFile("test", ".crai");
-        file.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(file);
-        final GZIPOutputStream gos = new GZIPOutputStream(fos);
-        CRAIIndex.writeIndex(gos, index);
-        gos.close();
+        indexer.addEntry(entry);
+        indexer.finish();
+        fos.close();
 
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
@@ -158,7 +160,12 @@ public class SamIndexesTest {
         final SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
         dictionary.addSequence(new SAMSequenceRecord("1", 100));
 
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final File file = File.createTempFile("test", ".crai");
+        file.deleteOnExit();
+        final FileOutputStream fos = new FileOutputStream(file);
+        SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        CRAMCRAIIndexer indexer = new CRAMCRAIIndexer(fos, header);
         final CRAIEntry entry = new CRAIEntry();
         entry.sequenceId = 0;
         entry.alignmentStart = 1;
@@ -166,15 +173,9 @@ public class SamIndexesTest {
         entry.sliceOffset = 3;
         entry.sliceSize = 4;
         entry.containerStartOffset = 5;
-        index.add(entry);
-
-
-        final File file = File.createTempFile("test", ".crai");
-        file.deleteOnExit();
-        final FileOutputStream fos = new FileOutputStream(file);
-        final GZIPOutputStream gos = new GZIPOutputStream(fos);
-        CRAIIndex.writeIndex(gos, index);
-        gos.close();
+        indexer.addEntry(entry);
+        indexer.finish();
+        fos.close();
 
         final InputStream baiStream = SamIndexes.openIndexUrlAsBaiOrNull(file.toURI().toURL(), dictionary);
         Assert.assertNotNull(baiStream);

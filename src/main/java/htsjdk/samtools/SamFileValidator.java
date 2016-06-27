@@ -131,8 +131,8 @@ public class SamFileValidator {
 
         if (errorsByType.getCount() > 0) {
             // Convert to a histogram with String IDs so that WARNING: or ERROR: can be prepended to the error type.
-            final Histogram<String> errorsAndWarningsByType = new Histogram<String>("Error Type", "Count");
-            for (final Histogram<SAMValidationError.Type>.Bin bin : errorsByType.values()) {
+            final Histogram<String> errorsAndWarningsByType = new Histogram<>("Error Type", "Count");
+            for (final Histogram.Bin<Type> bin : errorsByType.values()) {
                 errorsAndWarningsByType.increment(bin.getId().getHistogramString(), bin.getValue());
             }
             final MetricsFile<ValidationMetrics, String> metricsFile = new MetricsFile<ValidationMetrics, String>();
