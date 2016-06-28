@@ -244,7 +244,7 @@ public class SamPairUtil {
             mapped.setMateAlignmentStart(unmapped.getAlignmentStart());
             mapped.setMateNegativeStrandFlag(unmapped.getReadNegativeStrandFlag());
             mapped.setMateUnmappedFlag(true);
-            // For the mapped read, set it's mateCigar to null, since the other read must be unmapped
+            mapped.setAttribute(SAMTag.MQ.name(), null);
             mapped.setAttribute(SAMTag.MC.name(), null);
             mapped.setInferredInsertSize(0);
 
@@ -252,7 +252,8 @@ public class SamPairUtil {
             unmapped.setMateAlignmentStart(mapped.getAlignmentStart());
             unmapped.setMateNegativeStrandFlag(mapped.getReadNegativeStrandFlag());
             unmapped.setMateUnmappedFlag(false);
-            // For the unmapped read, set it's mateCigar to the mate's Cigar, since the mate must be mapped
+            unmapped.setAttribute(SAMTag.MQ.name(), mapped.getMappingQuality());
+            // For the unmapped read, set mateCigar to the mate's Cigar, since the mate must be mapped
             if (setMateCigar) unmapped.setAttribute(SAMTag.MC.name(), mapped.getCigarString());
             else unmapped.setAttribute(SAMTag.MC.name(), null);
             unmapped.setInferredInsertSize(0);
