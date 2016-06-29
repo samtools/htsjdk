@@ -91,12 +91,12 @@ public final class CommonInfo implements Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
 
-    /** @return a <b>modifiable</b> Set of filters. Can be  null. All changes in this set will be reflected in the CommonInfo */
+    /** @return a <b>modifiable</b> Set of filters. Can be null. All changes in this set will be reflected in the CommonInfo */
     public Set<String> getFiltersMaybeNull() {
         return filters;
     }
 
-    /** @return an unmodifiable Set of filters. Can be empty by never null */
+    /** @return an unmodifiable Set of filters. Can be empty but never null */
     public Set<String> getFilters() {
         return filters == null ? NO_FILTERS : Collections.unmodifiableSet(filters);
     }
@@ -305,7 +305,7 @@ public final class CommonInfo implements Serializable {
         final Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof String ) return (String)x;
-        return String.valueOf(x);
+        return String.valueOf(x); // throws an exception if this isn't a string
     }
 
     /**
