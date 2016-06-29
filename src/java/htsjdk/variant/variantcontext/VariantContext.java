@@ -838,8 +838,6 @@ public class VariantContext implements Feature, Serializable {
      *   as a Collections.singletonList if there is only one value
      */
     public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-    /** shortcut to {@link CommonInfo#hasFilter(String)} */
-    public boolean hasFilter(final String filter) { return commonInfo.hasFilter(filter); }
     
     /** returns the internal {@link CommonInfo} */
     public CommonInfo getCommonInfo() {

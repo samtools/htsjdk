@@ -132,7 +132,7 @@ public final class CommonInfo implements Serializable {
             filters = new HashSet<String>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
-        if ( hasFilter(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
+        if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
         filters.add(filter);
     }
 
@@ -285,21 +285,10 @@ public final class CommonInfo implements Serializable {
         as a Collections.singletonList if there is only one value */
     @SuppressWarnings("unchecked")
     public List<Object> getAttributeAsList(final String key) {
-        final Object o = getAttribute(key);
+        Object o = getAttribute(key);
         if ( o == null ) return Collections.emptyList();
-        else if ( o instanceof List ) return (List<Object>)o;
-        else if ( o instanceof int[]) {
-            final int array[]=(int[])o;
-            final List<Object> list = new ArrayList<>( array.length );
-            for( int i : array) list.add(i);
-            return list;
-        } else if ( o instanceof double[]) {
-            final double array[]=(double[])o;
-            final List<Object> list = new ArrayList<>( array.length );
-            for( double i : array) list.add(i);
-            return list;
-        }
-        else if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        if ( o instanceof List ) return (List<Object>)o;
+        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
         return Collections.singletonList(o);
     }
 
@@ -331,16 +320,10 @@ public final class CommonInfo implements Serializable {
      * @return the attribute as an integer
      */
     public int getAttributeAsInt(final String key, final int defaultValue) {
-        final Object x = getAttribute(key);
+        Object x = getAttribute(key);
         if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
         if ( x instanceof Integer ) return (Integer)x;
-        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
-                "Cannot get attribute(key=\"" + key + ") as an integer because it's not a Number or a String. Class = " + x.getClass());
-        try {
-            return Integer.parseInt((String)x);
-        } catch (final NumberFormatException err) {
-            throw new IllegalArgumentException( "Cannot convert attribute(key=\"" + key + ") = "+ x + " as an integer.", err);
-        }
+        return Integer.valueOf((String)x); // throws an exception if this isn't a string
     }
     
     /**
@@ -355,17 +338,11 @@ public final class CommonInfo implements Serializable {
      * @return the attribute as a double
      */
     public double getAttributeAsDouble(final String key, final double defaultValue) {
-        final Object x = getAttribute(key);
+        Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Double ) return (Double)x;
         if ( x instanceof Integer ) return (Integer)x;
-        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
-                "Cannot get attribute(key=\"" + key + ") as a double because it's not a Double, a Integer or a String. Class = " + x.getClass());
-        try {
-            return Double.parseDouble((String)x);
-        } catch (final NumberFormatException err) {
-            throw new IllegalArgumentException( "Cannot convert attribute(key=\"" + key + ") = "+ x + " as a double.", err);
-        }
+        return Double.valueOf((String)x); // throws an exception if this isn't a string
     }
 
     /**
@@ -379,27 +356,10 @@ public final class CommonInfo implements Serializable {
      * @return the attribute as a boolean
      */
     public boolean getAttributeAsBoolean(final String key, final boolean defaultValue) {
-        final Object x = getAttribute(key);
+        Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof Boolean ) return (Boolean)x;
-        if ( !( x instanceof String ) ) throw new IllegalArgumentException(
-                "Cannot get attribute(key=\"" + key + ") as a boolean because it's not a Boolean or a String. Class = " + x.getClass());
-        return Boolean.parseBoolean((String)x);
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().
-            append("CommonInfo [log10PError=").
-            append(log10PError).
-            append(", name=").
-            append(name).
-            append(", filters=").
-            append(filters).
-            append(", attributes=").
-            append(attributes).
-            append("]").
-            toString();
+        return Boolean.valueOf((String)x); // throws an exception if this isn't a string
     }
 
 //    public String getAttributeAsString(String key)      { return (String.valueOf(getExtendedAttribute(key))); } // **NOTE**: will turn a null Object into the String "null"
