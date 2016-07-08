@@ -1684,20 +1684,15 @@ public class VariantContext implements Feature, Serializable {
 
     public Allele getAltAlleleWithHighestAlleleCount() {
         // optimization: for bi-allelic sites, just return the only alt allele
-        try {
+
         if ( isBiallelic() )
             return getAlternateAllele(0);
 
             return getAlternateAlleles().stream()
                     .map(allele -> new Tuple<>(allele, getCalledChrCount(allele)))
                     .max((alleleAndCount1, alleleAndCount2) -> Integer.compare(alleleAndCount1.b, alleleAndCount2.b))
-                    .get()
+                    .orElse(null)
                     .a;
-        }
-        catch(NoSuchElementException e)
-        {
-            return null;
-        }
     }
 
     /**
