@@ -1691,7 +1691,7 @@ public class VariantContext implements Feature, Serializable {
             return getAlternateAlleles().stream()
                     .map(allele -> new Tuple<>(allele, getCalledChrCount(allele)))
                     .max((alleleAndCount1, alleleAndCount2) -> Integer.compare(alleleAndCount1.b, alleleAndCount2.b))
-                    .orElse(null)
+                    .orElse(null) 
                     .a;
     }
 
