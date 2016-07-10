@@ -53,6 +53,10 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         tests.add(new Object[]{"DP", "info", true});
         tests.add(new Object[]{"DB", "info", true});
         tests.add(new Object[]{"END", "info", true});
+        tests.add(new Object[]{"SB", "info", true});
+        tests.add(new Object[]{"MQ", "info", true});
+        tests.add(new Object[]{"MQ0", "info", true});
+        tests.add(new Object[]{"SOMATIC", "info", true});
 
         // format
         tests.add(new Object[]{"GT", "format", true});
@@ -60,6 +64,8 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         tests.add(new Object[]{"DP", "format", true});
         tests.add(new Object[]{"AD", "format", true});
         tests.add(new Object[]{"PL", "format", true});
+        tests.add(new Object[]{"FT", "format", true});
+        tests.add(new Object[]{"PQ", "format", true});
 
         tests.add(new Object[]{"NOT_STANDARD", "info", false});
         tests.add(new Object[]{"NOT_STANDARD", "format", false});
@@ -81,8 +87,51 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         if ( expectedToBeStandard ) {
             Assert.assertNotNull(line);
             Assert.assertEquals(line.getID(), key);
-        } else
+            Assert.assertTrue(deeperTest(line));
+        } else {
             Assert.assertNull(line);
+        }
+    }
+
+    private boolean deeperTest(final VCFCompoundHeaderLine line){
+
+        final String id = line.getID();
+        if(id.equals(VCFConstants.GENOTYPE_KEY))
+            return line.getType().equals(VCFHeaderLineType.String) && line.getCount()==1 ;
+        else if(id.equals(VCFConstants.GENOTYPE_QUALITY_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.DEPTH_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.GENOTYPE_PL_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCountType().equals(VCFHeaderLineCount.G);
+        else if(id.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCountType().equals(VCFHeaderLineCount.R);
+        else if(id.equals(VCFConstants.GENOTYPE_FILTER_KEY))
+            return line.getType().equals(VCFHeaderLineType.String) && line.getCountType().equals(VCFHeaderLineCount.UNBOUNDED);
+        else if(id.equals(VCFConstants.PHASE_QUALITY_KEY))
+            return line.getType().equals(VCFHeaderLineType.Float) && line.getCount()==1;
+        else if(id.equals(VCFConstants.END_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.DBSNP_KEY))
+            return line.getType().equals(VCFHeaderLineType.Flag) && line.getCount()==0;
+        else if(id.equals(VCFConstants.DEPTH_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.STRAND_BIAS_KEY))
+            return line.getType().equals(VCFHeaderLineType.Float) && line.getCount()==1;
+        else if(id.equals(VCFConstants.ALLELE_FREQUENCY_KEY))
+            return line.getType().equals(VCFHeaderLineType.Float) && line.getCountType().equals(VCFHeaderLineCount.A);
+        else if(id.equals(VCFConstants.ALLELE_COUNT_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCountType().equals(VCFHeaderLineCount.A);
+        else if(id.equals(VCFConstants.ALLELE_NUMBER_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.MAPPING_QUALITY_ZERO_KEY))
+            return line.getType().equals(VCFHeaderLineType.Integer) && line.getCount()==1;
+        else if(id.equals(VCFConstants.RMS_MAPPING_QUALITY_KEY))
+            return line.getType().equals(VCFHeaderLineType.Float) && line.getCount()==1;
+        else if(id.equals(VCFConstants.SOMATIC_KEY))
+            return line.getType().equals(VCFHeaderLineType.Flag) && line.getCount()==0;
+        else
+            throw new IllegalArgumentException("Unexpected id : " + id);
     }
 
     private class RepairHeaderTest {
@@ -137,7 +186,7 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "RepairHeaderTest")
-    public void testRepairHeaderTest(RepairHeaderTest cfg) {
+    public void testRepairHeaderTest(final RepairHeaderTest cfg) {
         final VCFHeader toRepair = new VCFHeader(Collections.singleton((VCFHeaderLine)cfg.original));
         final VCFHeader repaired = VCFStandardHeaderLines.repairStandardHeaderLines(toRepair);
 
@@ -148,7 +197,8 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         Assert.assertEquals(repairedLine.getID(), cfg.expectedResult.getID());
         Assert.assertEquals(repairedLine.getType(), cfg.expectedResult.getType());
         Assert.assertEquals(repairedLine.getCountType(), cfg.expectedResult.getCountType());
-        if ( repairedLine.getCountType() == VCFHeaderLineCount.INTEGER )
+        if ( repairedLine.getCountType() == VCFHeaderLineCount.INTEGER ) {
             Assert.assertEquals(repairedLine.getCount(), cfg.expectedResult.getCount());
+        }
     }
 }
