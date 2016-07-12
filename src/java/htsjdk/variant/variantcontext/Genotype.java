@@ -556,6 +556,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return getDP();
+        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+            return getFilters();
         } else {
             return getExtendedAttribute(key);
         }
@@ -572,6 +574,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return hasPL();
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return hasDP();
+        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+            return true;  //always available
         } else {
             return hasExtendedAttribute(key);
         }

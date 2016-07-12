@@ -191,10 +191,10 @@ public class VariantContextBuilder {
      */
     public VariantContextBuilder attributes(final Map<String, Object> attributes) {
         if (attributes != null) {
-            this.attributes = attributes;
+            this.attributes = new HashMap<>(attributes);
         }
         else {
-            this.attributes = new HashMap<String, Object>();
+            this.attributes = new HashMap<>();
         }
 
         this.attributesCanBeModified = true;
