@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import org.testng.Assert;
 import org.testng.SkipException;
+import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -12,9 +13,19 @@ import java.util.NoSuchElementException;
 
 @Test(groups = "sra")
 public abstract class AbstractSRATest {
+    private static boolean canResolveNetworkAccession = false;
+    private static String checkAccession = "SRR000123";
+
+    @BeforeGroups(groups = "sra")
+    public final void checkIfCanResolve() {
+        if (!SRAAccession.isSupported()) {
+            return;
+        }
+        canResolveNetworkAccession = SRAAccession.isValid(checkAccession);
+    }
 
     @BeforeMethod
-    public final void assertSRAIsSupported(){
+    public final void assertSRAIsSupported() {
         if(!SRAAccession.isSupported()){
             throw new SkipException("Skipping SRA Test because SRA native code is unavailable.");
         }
@@ -34,8 +45,9 @@ public abstract class AbstractSRATest {
         }
 
         if (accession != null &&
-                accession.matches(SRAAccession.REMOTE_ACCESSION_PATTERN) && !SRAAccession.isValid(accession)) {
-            throw new SkipException("Skipping network SRA Test because cannot resolve SRA accession.");
+                accession.matches(SRAAccession.REMOTE_ACCESSION_PATTERN) && !canResolveNetworkAccession) {
+            throw new SkipException("Skipping network SRA Test because cannot resolve remote SRA accession '" +
+                    checkAccession + "'.");
         }
     }
 
