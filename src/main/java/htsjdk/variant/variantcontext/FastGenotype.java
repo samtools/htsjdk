@@ -29,7 +29,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class encompasses all the basic information about a genotype.  It is immutable.
+ * This class encompasses all the basic information about a genotype.
+ *
+ * For the sake of performance, it does not make a copy of the Collections/arrays it's constructed from, and so
+ * subsequent changes to those Collections/arrays will be reflected in the FastGenotype object
  *
  * A genotype has several key fields
  *
