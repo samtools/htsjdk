@@ -4,7 +4,7 @@ import sbt.Package.ManifestAttributes
 
 name := "htsjdk"
 
-val buildVersion = "2.1.1"
+val buildVersion = "2.2.0"
 
 organization := "com.github.samtools"
 
@@ -25,6 +25,10 @@ libraryDependencies += "org.apache.ant" % "ant" % "1.8.2"
 libraryDependencies += "org.testng" % "testng" % "6.8.8"
 
 unmanagedBase := baseDirectory.value
+
+mappings in (Compile, packageBin) ++= Seq(
+  (baseDirectory.value / "lib/jni/libIntelDeflater.so") -> "lib/jni/libIntelDeflator.so"
+)
 
 javaSource in Compile := baseDirectory.value / "src/java"
 

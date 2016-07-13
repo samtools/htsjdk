@@ -63,7 +63,7 @@ public class BlockCompressedOutputStreamTest {
         for(int i = 0; (line = reader.readLine()) != null; ++i) {
             Assert.assertEquals(line + "\n", linesWritten.get(i));
         }
-
+        bcis.close();
         final BlockCompressedInputStream bcis2 = new BlockCompressedInputStream(f);
         int available = bcis2.available();
         Assert.assertFalse(bcis2.endOfBlock(), "Should not be at end of block");
@@ -71,6 +71,7 @@ public class BlockCompressedOutputStreamTest {
         byte[] buffer = new byte[available];
         Assert.assertEquals(bcis2.read(buffer), available, "Should read to end of block");
         Assert.assertTrue(bcis2.endOfBlock(), "Should be at end of block");
+        bcis2.close();
     }
 
     @Test
@@ -97,6 +98,7 @@ public class BlockCompressedOutputStreamTest {
             }
         }
         Assert.assertEquals(i, INPUT_SIZE);
+        bcis.close();
     }
 
     // PIC-393 exception closing BGZF stream opened to /dev/null

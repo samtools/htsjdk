@@ -51,7 +51,13 @@ static jfieldID setParamsID;
 static jfieldID finishID;
 static jfieldID finishedID;
 static jfieldID bufID, offID, lenID;
-static jint useIGZIP;
+
+typedef struct {
+    z_stream zStream;
+    LZ_Stream2 lz2Stream;
+    int useIGZIP;
+} Stream;
+
 
 bool is_cpuid_ecx_bit_set(int eax, int bitidx) 
 { 
@@ -133,31 +139,30 @@ JNIEXPORT jlong JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_init(JNIEnv *env, jclass cls, jint level,
                                  jint strategy, jboolean nowrap)
 {
+    Stream *strm = calloc(1, sizeof(Stream));
     if (level == FAST_COMPRESSION && is_sse42_supported()) { //Use igzip
 	printf("Using igzip\n");
-	useIGZIP = IGZIP_TRUE;
-	LZ_Stream2 *strm = calloc(1, sizeof(LZ_Stream2));
+	strm->useIGZIP = IGZIP_TRUE;
 	if (strm == 0) {
 	    JNU_ThrowOutOfMemoryError(env, 0);
 	    return jlong_zero;
 	} else {
-	    init_stream(strm); //CHECK RETURN VALUE
+	    init_stream(&strm->lz2Stream); //CHECK RETURN VALUE
 	    return ptr_to_jlong(strm);
 	}
       
     } else {
-	z_stream *strm = calloc(1, sizeof(z_stream));
 
 	if (strm == 0) {
 	    JNU_ThrowOutOfMemoryError(env, 0);
 	    return jlong_zero;
 	} else {
 	    char *msg;
-	    switch (deflateInit2(strm, level, Z_DEFLATED,
+	    switch (deflateInit2(&strm->zStream, level, Z_DEFLATED,
 				 nowrap ? -MAX_WBITS : MAX_WBITS,
 				 DEF_MEM_LEVEL, strategy)) {
 	    case Z_OK:
-		return ptr_to_jlong(strm);
+		return ptr_to_jlong(&strm->zStream);
 	    case Z_MEM_ERROR:
 		free(strm);
 		JNU_ThrowOutOfMemoryError(env, 0);
@@ -167,7 +172,7 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_init(JNIEnv *env, jclass cls, jint l
 		JNU_ThrowIllegalArgumentException(env, 0);
 		return jlong_zero;
 	    default:
-		msg = strm->msg;
+		msg = strm->zStream.msg;
 		free(strm);
 		JNU_ThrowInternalError(env, msg);
 		return jlong_zero;
@@ -185,7 +190,7 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_setDictionary(JNIEnv *env, jclass cl
     if (buf == 0) {/* out of memory */
         return;
     }
-    res = deflateSetDictionary((z_stream *)jlong_to_ptr(addr), buf + off, len);
+    res = deflateSetDictionary(&((Stream *)jlong_to_ptr(addr))->zStream, buf + off, len);
     (*env)->ReleasePrimitiveArrayCritical(env, b, buf, 0);
     switch (res) {
     case Z_OK:
@@ -194,7 +199,7 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_setDictionary(JNIEnv *env, jclass cl
         JNU_ThrowIllegalArgumentException(env, 0);
         break;
     default:
-        JNU_ThrowInternalError(env, ((z_stream *)jlong_to_ptr(addr))->msg);
+        JNU_ThrowInternalError(env, ((Stream *)jlong_to_ptr(addr))->zStream.msg);
         break;
     }
 }
@@ -208,15 +213,13 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
     jint this_len = (*env)->GetIntField(env, this, lenID);
     jbyte *in_buf;
     jbyte *out_buf;
-    LZ_Stream2 *strm;
-    if (useIGZIP) {
-	strm = jlong_to_ptr(addr);
-    }
+    Stream *strm = jlong_to_ptr(addr);
+
     //igzip only supports one compression level so setParamsID should not be set when using igzip 
     //igzip does not support flush
-    if (useIGZIP && (((*env)->GetBooleanField(env, this, setParamsID) && strm->total_in != 0)  || flush == 1)) {
+    if (((Stream *)jlong_to_ptr(addr))->useIGZIP && (((*env)->GetBooleanField(env, this, setParamsID) && strm->lz2Stream.total_in != 0)  || flush == 1)) {
 	JNU_ThrowInternalError(env, "igzip doesn't support this");
-    } else if (useIGZIP) {
+    } else if (((Stream *)jlong_to_ptr(addr))->useIGZIP) {
 	in_buf = (*env)->GetPrimitiveArrayCritical(env, this_buf, 0);
 	if (in_buf == NULL) {
 	    // Throw OOME only when length is not zero
@@ -233,31 +236,31 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 	    }
 	    return 0;
 	}
-	strm->next_in = (Bytef *) (in_buf + this_off);
-	strm->next_out = (Bytef *) (out_buf + off);
-	strm->avail_in = this_len;
-	strm->avail_out = len;
-	assert(strm->avail_in != 0);
-	assert(strm->avail_out != 0);
+	strm->lz2Stream.next_in = (Bytef *) (in_buf + this_off);
+	strm->lz2Stream.next_out = (Bytef *) (out_buf + off);
+	strm->lz2Stream.avail_in = this_len;
+	strm->lz2Stream.avail_out = len;
+	assert(strm->lz2Stream.avail_in != 0);
+	assert(strm->lz2Stream.avail_out != 0);
 	jboolean finish = (*env)->GetBooleanField(env, this, finishID);
 	if (finish) {
-	    strm->end_of_stream = 1;
+	    strm->lz2Stream.end_of_stream = 1;
 	} else {
-	    strm->end_of_stream = 0;
+	    strm->lz2Stream.end_of_stream = 0;
 	}
-	fast_lz(strm);
+	fast_lz(&strm->lz2Stream);
 
 	(*env)->ReleasePrimitiveArrayCritical(env, b, out_buf, 0);
 	(*env)->ReleasePrimitiveArrayCritical(env, this_buf, in_buf, 0);
 	if (finish) {
 	    (*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
 	}
-	this_off += this_len - strm->avail_in;
+	this_off += this_len - strm->lz2Stream.avail_in;
 	(*env)->SetIntField(env, this, offID, this_off);
-	(*env)->SetIntField(env, this, lenID, strm->avail_in);
-	return len - strm->avail_out;
+	(*env)->SetIntField(env, this, lenID, strm->lz2Stream.avail_in);
+	return len - strm->lz2Stream.avail_out;
     } else {
-	z_stream *strm = jlong_to_ptr(addr);
+
 	int res;
 	if ((*env)->GetBooleanField(env, this, setParamsID)) {
 	    int level = (*env)->GetIntField(env, this, levelID);
@@ -278,26 +281,26 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 		return 0;
 	    }
 
-	    strm->next_in = (Bytef *) (in_buf + this_off);
-	    strm->next_out = (Bytef *) (out_buf + off);
-	    strm->avail_in = this_len;
-	    strm->avail_out = len;
-	    res = deflateParams(strm, level, strategy);
+	    strm->zStream.next_in = (Bytef *) (in_buf + this_off);
+	    strm->zStream.next_out = (Bytef *) (out_buf + off);
+	    strm->zStream.avail_in = this_len;
+	    strm->zStream.avail_out = len;
+	    res = deflateParams(&strm->zStream, level, strategy);
 	    (*env)->ReleasePrimitiveArrayCritical(env, b, out_buf, 0);
 	    (*env)->ReleasePrimitiveArrayCritical(env, this_buf, in_buf, 0);
 
 	    switch (res) {
 	    case Z_OK:
 		(*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
-		this_off += this_len - strm->avail_in;
+		this_off += this_len - strm->zStream.avail_in;
 		(*env)->SetIntField(env, this, offID, this_off);
-		(*env)->SetIntField(env, this, lenID, strm->avail_in);
-		return len - strm->avail_out;
+		(*env)->SetIntField(env, this, lenID, strm->zStream.avail_in);
+		return len - strm->zStream.avail_out;
 	    case Z_BUF_ERROR:
 		(*env)->SetBooleanField(env, this, setParamsID, JNI_FALSE);
 		return 0;
 	    default:
-		JNU_ThrowInternalError(env, strm->msg);
+		JNU_ThrowInternalError(env, strm->zStream.msg);
 		return 0;
 	    }
 	} else {
@@ -317,11 +320,11 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 		return 0;
 	    }
 
-	    strm->next_in = (Bytef *) (in_buf + this_off);
-	    strm->next_out = (Bytef *) (out_buf + off);
-	    strm->avail_in = this_len;
-	    strm->avail_out = len;
-	    res = deflate(strm, finish ? Z_FINISH : flush);
+	    strm->zStream.next_in = (Bytef *) (in_buf + this_off);
+	    strm->zStream.next_out = (Bytef *) (out_buf + off);
+	    strm->zStream.avail_in = this_len;
+	    strm->zStream.avail_out = len;
+	    res = deflate(&strm->zStream, finish ? Z_FINISH : flush);
 	    (*env)->ReleasePrimitiveArrayCritical(env, b, out_buf, 0);
 	    (*env)->ReleasePrimitiveArrayCritical(env, this_buf, in_buf, 0);
 
@@ -330,14 +333,14 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 		(*env)->SetBooleanField(env, this, finishedID, JNI_TRUE);
 		/* fall through */
 	    case Z_OK:
-		this_off += this_len - strm->avail_in;
+		this_off += this_len - strm->zStream.avail_in;
 		(*env)->SetIntField(env, this, offID, this_off);
-		(*env)->SetIntField(env, this, lenID, strm->avail_in);
-		return len - strm->avail_out;
+		(*env)->SetIntField(env, this, lenID, strm->zStream.avail_in);
+		return len - strm->zStream.avail_out;
 	    case Z_BUF_ERROR:
 		return 0;
             default:
-		JNU_ThrowInternalError(env, strm->msg);
+		JNU_ThrowInternalError(env, strm->zStream.msg);
 		return 0;
 	    }
 	}
@@ -347,31 +350,31 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_deflateBytes(JNIEnv *env, jobject th
 JNIEXPORT jint JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_getAdler(JNIEnv *env, jclass cls, jlong addr)
 {
-    if (useIGZIP)
+    if (((Stream *)jlong_to_ptr(addr))->useIGZIP)
 	JNU_ThrowInternalError(env, "igzip doesn't support getAdler function");
     else
-	return ((z_stream *)jlong_to_ptr(addr))->adler;
+	return ((Stream *)jlong_to_ptr(addr))->zStream.adler;
 }
 
 JNIEXPORT jlong JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_getBytesRead(JNIEnv *env, jclass cls, jlong addr)
 {
-    return (useIGZIP ? ((LZ_Stream2 *) jlong_to_ptr(addr))->total_in : ((z_stream *)jlong_to_ptr(addr))->total_in);
+    return ( ((Stream *)jlong_to_ptr(addr))->useIGZIP ? ((Stream *) jlong_to_ptr(addr))->lz2Stream.total_in : ((Stream *)jlong_to_ptr(addr))->zStream.total_in);
 }
 
 JNIEXPORT jlong JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_getBytesWritten(JNIEnv *env, jclass cls, jlong addr)
 {
-    return (useIGZIP ? ((LZ_Stream2 *) jlong_to_ptr(addr))->total_out : ((z_stream *)jlong_to_ptr(addr))->total_out);
+    return ( ((Stream *)jlong_to_ptr(addr))->useIGZIP ? ((Stream *) jlong_to_ptr(addr))->lz2Stream.total_out : ((Stream *)jlong_to_ptr(addr))->zStream.total_out);
 }
 
 JNIEXPORT void JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_reset(JNIEnv *env, jclass cls, jlong addr)
 {
-    if (useIGZIP) {
-	init_stream((LZ_Stream2 *)jlong_to_ptr(addr));
-    } else {
-	if (deflateReset((z_stream *)jlong_to_ptr(addr)) != Z_OK) {
+    if  (((Stream *)jlong_to_ptr(addr))->useIGZIP)
+	init_stream(&(((Stream *)jlong_to_ptr(addr))->lz2Stream));
+    else {
+    if (deflateReset(&(((Stream *)jlong_to_ptr(addr))->zStream)) != Z_OK) {
 	    JNU_ThrowInternalError(env, 0);
 	}
     }
@@ -380,13 +383,10 @@ Java_htsjdk_samtools_util_zip_IntelDeflater_reset(JNIEnv *env, jclass cls, jlong
 JNIEXPORT void JNICALL
 Java_htsjdk_samtools_util_zip_IntelDeflater_end(JNIEnv *env, jclass cls, jlong addr)
 {
-    if (useIGZIP) {
-	free((LZ_Stream2 *)jlong_to_ptr(addr));
-    } else {
-	if (deflateEnd((z_stream *)jlong_to_ptr(addr)) == Z_STREAM_ERROR) {
+    if (!((Stream *)jlong_to_ptr(addr))->useIGZIP) {
+	if (deflateEnd(&(((Stream *)jlong_to_ptr(addr))->zStream)) == Z_STREAM_ERROR) {
 	    JNU_ThrowInternalError(env, 0);
-	} else {
-	    free((z_stream *)jlong_to_ptr(addr));
-	}
+	} 
     }
+    free((Stream *)jlong_to_ptr(addr));
 }

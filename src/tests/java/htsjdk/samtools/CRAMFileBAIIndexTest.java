@@ -27,15 +27,15 @@ import java.util.Map;
 import java.util.TreeSet;
 
 /**
- * A collection of tests for CRAM index write/read that use BAMFileIndexTest/index_test.bam file as the source of the test data.
+ * A collection of tests for CRAM BAI index write/read that use BAMFileIndexTest/index_test.bam file as the source of the test data.
  * The test will create a BAI index of the cram file before hand.
  * The scan* tests check that for every records in the BAM file the query returns the same records from the CRAM file.
  * Created by Vadim on 14/03/2015.
  */
-public class CRAMFileIndexTest {
+public class CRAMFileBAIIndexTest {
     private final File BAM_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private File cramFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram");
-    private File indexFile = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.cram.bai");
+    private File cramFile;
+    private File indexFile;
     private byte[] cramBytes;
     private byte[] baiBytes;
     private ReferenceSource source;
@@ -45,6 +45,8 @@ public class CRAMFileIndexTest {
     private int nofReadsPerContainer = 1000 ;
 
 
+    // Mixes testing queryAlignmentStart with each CRAMFileReaderConstructor
+    // Separate into individual tests
     @Test
     public void testConstructors () throws IOException {
         CRAMFileReader reader = new CRAMFileReader(cramFile, indexFile, source, ValidationStringency.SILENT);
@@ -91,6 +93,7 @@ public class CRAMFileIndexTest {
         reader.close();
     }
 
+    // this test is the same as the ones above in testConstructors
     @Test
     public void test_chrM_1500_location() throws IOException {
         CRAMFileReader reader = new CRAMFileReader(cramFile, indexFile, source);
@@ -139,7 +142,6 @@ public class CRAMFileIndexTest {
         final File CRAMFile = new File("testdata/htsjdk/samtools/cram/auxf#values.3.0.cram");
         final File refFile = new File("testdata/htsjdk/samtools/cram/auxf.fa");
         ReferenceSource refSource = new ReferenceSource(refFile);
-        File indexFile = null;
 
         long start = 0;
         long end = CRAMFile.length();
@@ -262,7 +264,7 @@ public class CRAMFileIndexTest {
         fos.write(cramBytes);
         fos.close();
 
-        CRAMIndexer.createIndex(new SeekableFileStream(cramFile), indexFile, null, ValidationStringency.STRICT);
+        CRAMBAIIndexer.createIndex(new SeekableFileStream(cramFile), indexFile, null, ValidationStringency.STRICT);
         baiBytes = readFile(indexFile);
     }
 

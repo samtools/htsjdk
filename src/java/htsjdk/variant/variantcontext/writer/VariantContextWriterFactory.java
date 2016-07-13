@@ -56,7 +56,7 @@ public class VariantContextWriterFactory {
     public static final EnumSet<Options> NO_OPTIONS = EnumSet.noneOf(Options.class);
 
     static {
-        if (Defaults.USE_ASYNC_IO) {
+        if (Defaults.USE_ASYNC_IO_FOR_TRIBBLE) {
             DEFAULT_OPTIONS.add(Options.USE_ASYNC_IO);
         }
     }

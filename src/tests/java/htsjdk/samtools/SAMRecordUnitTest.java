@@ -804,7 +804,7 @@ public class SAMRecordUnitTest {
     }
 
     @Test
-    private SAMRecord testNullHeaderDeepCopy() {
+    private void testNullHeaderDeepCopy() {
         SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
         final SAMRecord deepCopy = sam.deepCopy();
@@ -814,7 +814,6 @@ public class SAMRecordUnitTest {
         deepCopy.setIndexingBin(deepCopy.computeIndexingBin());
         Assert.assertTrue(sam.equals(deepCopy));
 
-        return deepCopy;
     }
 
     private void testNullHeaderCigar(SAMRecord rec) {

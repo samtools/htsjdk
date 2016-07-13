@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 /**
@@ -95,12 +97,8 @@ public final class PrintReadsExample {
                 ' ' + System.getProperty("os.arch") + "; " + System.getProperty("java.vm.name") +
                 ' ' + System.getProperty("java.runtime.version") +
                 ' ' + (DeflaterFactory.usingIntelDeflater() ? "IntelDeflater" : "JdkDeflater"));
-        log.info("CREATE_INDEX:" + Defaults.CREATE_INDEX +
-                ' ' + "CREATE_MD5:" + Defaults.CREATE_MD5 +
-                ' ' + "USE_ASYNC_IO:" + Defaults.USE_ASYNC_IO +
-                ' ' + "BUFFER_SIZE:" + Defaults.BUFFER_SIZE +
-                ' ' + "COMPRESSION_LEVEL:" + Defaults.COMPRESSION_LEVEL +
-                ' ' + "NON_ZERO_BUFFER_SIZE:" + Defaults.NON_ZERO_BUFFER_SIZE +
-                ' ' + "CUSTOM_READER_FACTORY:" + Defaults.CUSTOM_READER_FACTORY);
+
+        final List<String> list = Defaults.allDefaults().entrySet().stream().map(e -> e.getKey() + ':' + e.getValue()).collect(Collectors.toList());
+        log.info(String.join(" ", list));
     }
 }
