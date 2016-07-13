@@ -528,7 +528,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     }
 
     /**
-     * A totally generic getter, that allows you to specific keys that correspond
+     * A totally generic getter, that allows you to get specific keys that correspond
      * to even inline values (GQ, for example).  Can be very expensive.  Additionally,
      * all <code>int[]</code> are converted inline into <code>List&lt;Integer&gt;</code> for convenience.
      *
@@ -556,6 +556,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return getDP();
+        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+            return getFilters();
         } else {
             return getExtendedAttribute(key);
         }
@@ -572,6 +574,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return hasPL();
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return hasDP();
+        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+            return true;  //always available
         } else {
             return hasExtendedAttribute(key);
         }
