@@ -50,7 +50,7 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
             return attributes.get(name).get(g);
         } else if ( g.hasAnyAttribute(name) ) {
             return g.getAnyAttribute(name);
-        } else if ( g.getFilters().contains(name) ) {
+        } else if ( g.getFilters() != null && g.getFilters().contains(name) ) {
             return "1";
         } else
             return super.get(name);

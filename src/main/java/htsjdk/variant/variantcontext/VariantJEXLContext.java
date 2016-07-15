@@ -83,8 +83,6 @@ class VariantJEXLContext implements JexlContext {
             result = "1";
         }
 
-        //System.out.printf("dynamic lookup %s => %s%n", name, result);
-
         return result;
     }
 
