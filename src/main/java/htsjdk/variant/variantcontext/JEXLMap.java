@@ -54,6 +54,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     }
 
     /**
+     * Note: due to laziness, this accessor actually modifies the instance by possibly forcing evaluation of an Jexl expression.
      * @throws IllegalArgumentException when {@code o} is {@code null}
      */
     public Boolean get(Object o) {
@@ -87,6 +88,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * This is fine if you truly want all the keys, but if you only want a portion, or  know
      * the keys you want, you would be better off using get() to get them by name.
      *
+     * Note: due to laziness, this accessor actually modifies the instance by possibly forcing evaluation of an Jexl expression.
      * @return a collection of boolean values, representing the results of all the variants evaluated
      *
      * @throws IllegalArgumentException
