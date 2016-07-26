@@ -1,6 +1,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -14,6 +15,7 @@ import java.util.List;
 
 
 public class AbstractVCFCodecTest extends VariantBaseTest {
+
 	@Test
 	public void shouldPreserveSymbolicAlleleCase() {
 		VCFFileReader reader = new VCFFileReader(new File(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"), false);
@@ -48,6 +50,12 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 	@Test(dataProvider = "thingsToTryToDecode")
 	public void testCanDecodeFile(String potentialInput, boolean canDecode) {
 		Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
+	}
+
+	@Test
+	public void testGetTabixFormat() {
+		Assert.assertEquals(new VCFCodec().getTabixFormat(), TabixFormat.VCF);
+		Assert.assertEquals(new VCF3Codec().getTabixFormat(), TabixFormat.VCF);
 	}
 
 }

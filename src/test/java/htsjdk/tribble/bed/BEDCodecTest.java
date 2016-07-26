@@ -31,6 +31,7 @@ import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -220,5 +221,10 @@ public class BEDCodecTest {
             }
         }
 
+    }
+
+    @Test
+    public void testGetTabixFormat() {
+        Assert.assertEquals(new BEDCodec().getTabixFormat(), TabixFormat.BED);
     }
 }
