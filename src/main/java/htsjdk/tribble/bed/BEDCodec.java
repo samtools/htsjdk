@@ -25,6 +25,7 @@ package htsjdk.tribble.bed;
 
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.annotation.Strand;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
 
@@ -222,6 +223,11 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         public int value() {
             return this.start;
         }
+    }
+
+    @Override
+    public TabixFormat getTabixFormat() {
+        return TabixFormat.BED;
     }
 
 }

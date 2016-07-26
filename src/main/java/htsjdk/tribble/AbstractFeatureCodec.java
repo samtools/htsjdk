@@ -23,6 +23,8 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.tribble.index.tabix.TabixFormat;
+
 import java.io.IOException;
 
 /**
@@ -46,5 +48,12 @@ public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE>
     @Override
     public Class<FEATURE_TYPE> getFeatureType() {
         return myClass;
+    }
+
+    /**
+     * Default implementation throws an exception
+     */
+    public TabixFormat getTabixFormat() {
+        throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
     }
 }
