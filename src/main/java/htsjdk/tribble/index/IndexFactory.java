@@ -269,7 +269,7 @@ public class IndexFactory {
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
      * @param type      the type of index to create
-     * @param
+     * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
      */
     public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
                                                                                 final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
