@@ -50,10 +50,4 @@ public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE>
         return myClass;
     }
 
-    /**
-     * Default implementation throws an exception
-     */
-    public TabixFormat getTabixFormat() {
-        throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
-    }
 }

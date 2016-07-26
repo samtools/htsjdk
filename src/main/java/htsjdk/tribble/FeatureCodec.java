@@ -122,7 +122,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
     public boolean canDecode(final String path);
 
     /**
-     * Define the tabix format for the feature, used for indexing.
+     * Define the tabix format for the feature, used for indexing. Default implementation throws an exception.
      *
      * Note that only {@link AsciiFeatureCodec} could read tabix files as defined in
      * {@link AbstractFeatureReader#getFeatureReader(String, String, FeatureCodec, boolean)}
@@ -130,5 +130,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * @return the format to use with tabix
      * @throws TribbleException if the format is not defined
      */
-    public TabixFormat getTabixFormat();
+    default public TabixFormat getTabixFormat() {
+        throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
+    }
 }
