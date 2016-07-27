@@ -217,7 +217,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path);
-            if (isGZIPPath(path)) {
+            if (hasBlockCompressedExtension(path) || hasBlockCompressedExtension(new URI(path))) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
