@@ -46,7 +46,7 @@ import java.util.Set;
  * Created by andrii.nikitiuk on 10/28/15.
  */
 public class SRAIndexTest extends AbstractSRATest {
-    private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR1298981");
+    private static final SRAAccession DEFAULT_ACCESSION = new SRAAccession("SRR2096940");
     private static final int LAST_BIN_LEVEL = GenomicIndexUtil.LEVEL_STARTS.length - 1;
     private static final int SRA_BIN_OFFSET = GenomicIndexUtil.LEVEL_STARTS[LAST_BIN_LEVEL];
 

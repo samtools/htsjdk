@@ -28,6 +28,7 @@ public class Lazy<T> {
     }
 
     /** Describes how to build the instance of the lazy object. */
+    @FunctionalInterface
     public interface LazyInitializer<T> {
         /** Returns the desired object instance. */
         T make();

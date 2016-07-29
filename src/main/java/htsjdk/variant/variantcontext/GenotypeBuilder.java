@@ -28,6 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,6 +49,11 @@ import java.util.Map;
  * this builder.  Can be called multiple times to create independent copies,
  * or with intervening sets to conveniently make similar Genotypes with
  * slight modifications.
+ *
+ * Re-using the same GenotypeBuilder to build multiple Genotype objects via calls
+ * to make() is dangerous, since reference types in the builder (eg., Collections/arrays)
+ * don't get copied when making each Genotype. To safely re-use the same builder object
+ * multiple times, use makeWithShallowCopy() instead of make().
  *
  * @author Mark DePristo
  * @since 06/12
@@ -185,11 +191,32 @@ public final class GenotypeBuilder {
      * created, althrough the contents of array values like PL should never be modified
      * inline as they are not copied for efficiency reasons.
      *
+     * Note: if attributes are added via this builder after a call to make(), the new Genotype will
+     * be modified. Use {@link #makeWithShallowCopy} to safely re-use the same builder object
+     * multiple times.
+     *
      * @return a newly minted Genotype object with values provided from this builder
      */
     public Genotype make() {
-        final Map<String, Object> ea = extendedAttributes == null ? NO_ATTRIBUTES : extendedAttributes;
+        final Map<String, Object> ea = (extendedAttributes == null) ? NO_ATTRIBUTES : extendedAttributes;
         return new FastGenotype(sampleName, alleles, isPhased, GQ, DP, AD, PL, filters, ea);
+    }
+
+    /**
+     * Create a new Genotype object using the values set in this builder, and perform a
+     * shallow copy of reference types to allow safer re-use of this builder
+     *
+     * After creation the values in this builder can be modified and more Genotypes
+     * created.
+     *
+     * @return a newly minted Genotype object with values provided from this builder
+     */
+    public Genotype makeWithShallowCopy() {
+        final Map<String, Object> ea = (extendedAttributes == null) ? NO_ATTRIBUTES : new HashMap<>(extendedAttributes);
+        final List<Allele> al = new ArrayList<>(alleles);
+        final int[] copyAD = (AD == null) ? null : Arrays.copyOf(AD, AD.length);
+        final int[] copyPL = (PL == null) ? null : Arrays.copyOf(PL, PL.length);
+        return new FastGenotype(sampleName, al, isPhased, GQ, DP, copyAD, copyPL, filters, ea);
     }
 
     /**
@@ -303,9 +330,9 @@ public final class GenotypeBuilder {
     }
 
     /**
-     * This genotype has these attributes.
+     * This genotype has these attributes. Attributes are added to previous ones.
      *
-     * Cannot contain inline attributes (DP, AD, GQ, PL)
+     * Cannot contain inline attributes (DP, AD, GQ, PL). Note: this is not checked
      * @return
      */
     public GenotypeBuilder attributes(final Map<String, Object> attributes) {
@@ -327,7 +354,7 @@ public final class GenotypeBuilder {
     /**
      * This genotype has this attribute key / value pair.
      *
-     * Cannot contain inline attributes (DP, AD, GQ, PL)
+     * Cannot contain inline attributes (DP, AD, GQ, PL). Note: this is not checked
      * @return
      */
     public GenotypeBuilder attribute(final String key, final Object value) {

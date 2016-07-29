@@ -101,13 +101,8 @@ public class SRATest extends AbstractSRATest {
     @DataProvider(name = "testGroups")
     private Object[][] createDataForGroups() {
         return new Object[][] {
-            {"SRR822962", new TreeSet<>(Arrays.asList(
-                    "GS54389-FS3-L08", "GS57511-FS3-L08", "GS54387-FS3-L02", "GS54387-FS3-L01",
-                    "GS57510-FS3-L01", "GS57510-FS3-L03", "GS54389-FS3-L07", "GS54389-FS3-L05",
-                    "GS54389-FS3-L06", "GS57510-FS3-L02", "GS57510-FS3-L04", "GS54387-FS3-L03",
-                    "GS46253-FS3-L03"))
-            },
-            {"SRR2096940", new HashSet<>(Arrays.asList("SRR2096940"))}
+            {"SRR1035115", new TreeSet<>(Arrays.asList("15656144_B09YG", "15656144_B09MR"))},
+            {"SRR2096940", new TreeSet<>(Arrays.asList("SRR2096940"))}
         };
     }
 
@@ -148,15 +143,17 @@ public class SRATest extends AbstractSRATest {
     private Object[][] createDataForReferences() {
         return new Object[][] {
             // primary alignment only
-            {"SRR1063272", 1,
-                    Arrays.asList("supercont2.1", "supercont2.2", "supercont2.3", "supercont2.4",
-                                  "supercont2.5", "supercont2.6", "supercont2.7", "supercont2.8",
-                                  "supercont2.9", "supercont2.10", "supercont2.11", "supercont2.12",
-                                  "supercont2.13", "supercont2.14"),
-                    Arrays.asList(2291499, 1621675, 1575141, 1084805,
-                                  1814975, 1422463, 1399503, 1398693,
-                                  1186808, 1059964, 1561994, 774062,
-                                  756744, 926563)},
+            {"SRR353866", 9,
+                    Arrays.asList(
+                            "AAAB01001871.1", "AAAB01002233.1", "AAAB01004056.1", "AAAB01006027.1",
+                            "AAAB01008846.1", "AAAB01008859.1", "AAAB01008960.1", "AAAB01008982.1",
+                            "AAAB01008987.1"
+                    ),
+                    Arrays.asList(
+                            1115, 1034, 1301, 1007,
+                            11308833, 12516315, 23099915, 1015562,
+                            16222597
+                    )},
         };
     }
 
@@ -208,67 +205,66 @@ public class SRATest extends AbstractSRATest {
     private Object[][] createDataForRowsTest() {
         return new Object[][] {
             // primary alignment only
-            {"SRR1063272", 0, 99, "SRR1063272.R.1",
-                    "ACTCGACATTCTGCCTTCGACCTATCTTTCTCCTCTCCCAGTCATCGCCCAGTAGAATTACCAGGCAATGAACCAGGGCCTTCCATCCCAACGGCACAGCA",
-                    "@@CDDBDFFBFHFIEEFGIGGHIEHIGIGGFGEGAFDHIIIIIGGGDFHII;=BF@FEHGIEEH?AHHFHFFFFDC5'5=?CC?ADCD@AC??9BDDCDB<",
-                    86, "101M", "supercont2.1", 60, true, false},
+            {"SRR2127895", 1, 83, "SRR2127895.R.1",
+                    "CGTGCGCGTGACCCATCAGATGCTGTTCAATCAGTGGCAAATGCGGAACGGTTTCTGCGGGTTGCCGATATTCTGGAGAGTAATGCCAGGCAGGGGCAGGT",
+                    "DDBDDDDDBCABC@CCDDDC?99CCA:CDCDDDDDDDECDDDFFFHHHEGIJIIGIJIHIGJIJJJJJJJIIJIIHIGJIJJJIJJIHFFBHHFFFDFBBB",
+                    366, "29S72M", "gi|152968582|ref|NC_009648.1|", 147, true, false, false},
 
             // small SRA archive
             {"SRR2096940", 1, 16, "SRR2096940.R.3",
                     "GTGTGTCACCAGATAAGGAATCTGCCTAACAGGAGGTGTGGGTTAGACCCAATATCAGGAGACCAGGAAGGAGGAGGCCTAAGGATGGGGCTTTTCTGTCACCAATCCTGTCCCTAGTGGCCCCACTGTGGGGTGGAGGGGACAGATAAAAGTACCCAGAACCAGAG",
                     "AAAABFFFFFFFGGGGGGGGIIIIIIIIIIIIIIIIIIIIIIIIIIIIII7IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIGGGGGFGFFDFFFFFC",
-                    55627016, "167M", "CM000681.1", 42, false, false},
+                    55627016, "167M", "CM000681.1", 42, false, false, false},
 
             {"SRR2096940", 10591, 4, "SRR2096940.R.10592",
                     "CTCTGGTTCTGGGTACTTTTATCTGTCCCCTCCACCCCACAGTGGCGAGCCAGATTCCTTATCTGGTGACACAC",
                     "IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII",
-                    -1, null, null, -1, false, false},
+                    -1, null, null, -1, false, false, false},
 
             // primary and secondary alignments
             {"SRR833251", 81, 393, "SRR833251.R.51",
                     "ATGCAAATCCGAATGGGCTATTTGTGGGTACTTGGGCAGGTAAGTAGCTGGCAATCTTGGTCGGTAAACCAATACCCAAGTTCACATAGGCACCATCGGGA",
                     "CCCFFFFFHHHHHIJJJIJJJJJIIJJJGIJIJIIJIJJJDGIGIIJIJIHIJJJJJJGIGHIHEDFFFFDDEEEDDDDDCDEEDDDDDDDDDDDDDBBDB",
-                    1787186, "38M63S", "gi|169794206|ref|NC_010410.1|", 11, true, true},
+                    1787186, "38M63S", "gi|169794206|ref|NC_010410.1|", 11, true, true, true},
 
             // local SRA file
             {"src/test/resources/htsjdk/samtools/sra/test_archive.sra", 1, 99, "test_archive.R.2",
                     "TGTCGATGCTGAAAGTGTCTGCGGTGAACCACTTCATGCACAGCGCACACTGCAGCTCCACTTCACCCAGCTGACGGCCGTTCTCATCGTCTCCAGAGCCCGTCTGAGCGTCCGCTGCTTCAGAACTGTCCCCGGCTGTATCCTGAAGAC",
                     "BBAABBBFAFFFGGGGGGGGGGGGEEFHHHHGHHHHHFHHGHFDGGGGGHHGHHHHHHHHHHHHFHHHGHHHHHHGGGGGGGHGGHHHHHHHHHGHHHHHGGGGHGHHHGGGGGGGGGHHHHEHHHHHHHHHHGCGGGHHHHHHGBFFGF",
-                    2811570, "150M", "NC_007121.5", 60, true, false}
+                    2811570, "150M", "NC_007121.5", 60, true, false, false}
         };
     }
 
     @Test(dataProvider = "testRows")
     public void testRows(String acc, int recordIndex, int flags, String readName, String bases, String quals, int refStart, String cigar,
-                         String refName, int mapQ, boolean hasMate, boolean isSecondaryAlignment) {
+                         String refName, int mapQ, boolean hasMate, boolean isSecondOfPair, boolean isSecondaryAlignment) {
         SAMRecord record = getRecordByIndex(acc, recordIndex, false);
 
-        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
+        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondOfPair, isSecondaryAlignment);
     }
 
     @Test(dataProvider = "testRows")
     public void testRowsAfterIteratorDetach(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                             int refStart, String cigar, String refName, int mapQ, boolean hasMate,
-                                            boolean isSecondaryAlignment) {
+                                            boolean isSecondOfPair, boolean isSecondaryAlignment) {
         SAMRecord record = getRecordByIndex(acc, recordIndex, true);
 
-        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
+        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondOfPair, isSecondaryAlignment);
     }
 
     @Test(dataProvider = "testRows")
     public void testRowsOverrideValues(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                        int refStart, String cigar, String refName, int mapQ, boolean hasMate,
-                                       boolean isSecondaryAlignment) {
+                                       boolean isSecondOfPair, boolean isSecondaryAlignment) {
         SAMRecord record = getRecordByIndex(acc, recordIndex, true);
         SAMFileHeader header = record.getHeader();
-
 
         record.setFlags(0);
         record.setReadUnmappedFlag(refStart == -1);
         record.setReadBases("C".getBytes());
         record.setBaseQualities(SAMUtils.fastqToPhred("A"));
         if (refStart == -1) {
-            checkSAMRecord(record, 4, readName, "C", "A", refStart, "1M", refName, mapQ, false, false);
+            checkSAMRecord(record, 4, readName, "C", "A", refStart, "1M", refName, mapQ, false, false, false);
         } else {
             int sequenceIndex = header.getSequenceIndex(refName);
             Assert.assertFalse(sequenceIndex == -1);
@@ -288,14 +284,14 @@ public class SRATest extends AbstractSRATest {
             record.setMappingQuality(mapQ - 1);
             record.setReferenceIndex(sequenceIndex);
 
-            checkSAMRecord(record, 0, readName, "C", "A", refStart - 100, "1M", refName, mapQ - 1, false, false);
+            checkSAMRecord(record, 0, readName, "C", "A", refStart - 100, "1M", refName, mapQ - 1, false, false, false);
         }
     }
 
     @Test(dataProvider = "testRows")
     public void testRowsBySpan(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                             int refStart, String cigar, String refName, int mapQ, boolean hasMate,
-                                            boolean isSecondaryAlignment) {
+                                            boolean isSecondOfPair, boolean isSecondaryAlignment) {
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -330,13 +326,13 @@ public class SRATest extends AbstractSRATest {
             }
         }
 
-        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
+        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondOfPair, isSecondaryAlignment);
     }
 
     @Test(dataProvider = "testRows")
     public void testRowsByIndex(String acc, int recordIndex, int flags, String readName, String bases, String quals,
                                 int refStart, String cigar, String refName, int mapQ, boolean hasMate,
-                                boolean isSecondaryAlignment) {
+                                boolean isSecondOfPair, boolean isSecondaryAlignment) {
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(
                 SamInputResource.of(new SRAAccession(acc))
         );
@@ -366,13 +362,15 @@ public class SRATest extends AbstractSRATest {
                 continue;
             }
 
-            if (currentRecord.getReadName().equals(readName)) {
+            if (currentRecord.getReadName().equals(readName)
+                    && currentRecord.getNotPrimaryAlignmentFlag() == isSecondaryAlignment
+                    && (!hasMate || currentRecord.getSecondOfPairFlag() == isSecondOfPair)) {
                 record = currentRecord;
                 break;
             }
         }
 
-        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondaryAlignment);
+        checkSAMRecord(record, flags, readName, bases, quals, refStart, cigar, refName, mapQ, hasMate, isSecondOfPair, isSecondaryAlignment);
     }
 
     private SAMRecord getRecordByIndex(String acc, int recordIndex, boolean detach) {
@@ -401,7 +399,7 @@ public class SRATest extends AbstractSRATest {
 
     private void checkSAMRecord(SAMRecord record, int flags, String readName, String bases, String quals,
                                 int refStart, String cigar, String refName, int mapQ, boolean hasMate,
-                                boolean isSecondaryAlignment) {
+                                boolean isSecondOfPair, boolean isSecondaryAlignment) {
 
         Assert.assertNotNull(record, "Record with read id: " + readName + " was not found by span created from index");
 
@@ -409,11 +407,15 @@ public class SRATest extends AbstractSRATest {
         Assert.assertNull(validationErrors, "SRA Lazy record is invalid. List of errors: " +
                 (validationErrors != null ? validationErrors.toString() : ""));
 
+        Assert.assertEquals(record.getReadName(), readName);
         Assert.assertEquals(new String(record.getReadBases()), bases);
         Assert.assertEquals(record.getBaseQualityString(), quals);
         Assert.assertEquals(record.getReadPairedFlag(), hasMate);
         Assert.assertEquals(record.getFlags(), flags);
         Assert.assertEquals(record.getNotPrimaryAlignmentFlag(), isSecondaryAlignment);
+        if (hasMate) {
+            Assert.assertEquals(record.getSecondOfPairFlag(), isSecondOfPair);
+        }
         if (refStart == -1) {
             Assert.assertEquals(record.getReadUnmappedFlag(), true);
             Assert.assertEquals(record.getAlignmentStart(), 0);

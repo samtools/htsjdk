@@ -54,6 +54,8 @@ public class SRAAccession implements Serializable {
     private final static String defaultAppVersionString = "[unknown software]";
     private final static String htsJdkVersionString = "HTSJDK-NGS";
 
+    static final String REMOTE_ACCESSION_PATTERN = "^[SED]RR[0-9]{6,9}$";
+
     private String acc;
 
     static {
@@ -127,7 +129,7 @@ public class SRAAccession implements Serializable {
             // anything else local other than a file is not an SRA archive
             looksLikeSRA = false;
         } else {
-            looksLikeSRA = acc.toUpperCase().matches ( "^[SED]RR[0-9]{6,9}$" );
+            looksLikeSRA = acc.toUpperCase().matches ( REMOTE_ACCESSION_PATTERN );
         }
 
         if (!looksLikeSRA) return false;
