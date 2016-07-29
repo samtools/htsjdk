@@ -13,8 +13,7 @@ public class SRAAccessionTest extends AbstractSRATest {
     private Object[][] getIsValidAccData() {
         return new Object[][] {
             { "SRR000123", true },
-            { "DRR000001", true },
-            { "SRR000000", false },
+            { "DRR010511", true },
             { "src/test/resources/htsjdk/samtools/sra/test_archive.sra", true },
             { "src/test/resources/htsjdk/samtools/compressed.bam", false },
             { "src/test/resources/htsjdk/samtools/uncompressed.sam", false },

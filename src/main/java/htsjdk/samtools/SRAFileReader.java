@@ -61,7 +61,8 @@ public class SRAFileReader extends SamReader.ReaderImplementation implements Sam
         this.acc = acc;
 
         if (!acc.isValid()) {
-            throw new IllegalArgumentException("Invalid SRA accession was passed to SRA reader: " + acc);
+            throw new IllegalArgumentException("SRAFileReader: cannot resolve SRA accession '" + acc + "'\n" +
+                "Possible causes are an invalid SRA accession or a connection problem.");
         }
 
         try {

@@ -129,6 +129,7 @@ task testSRA(type: Test) {
 
     description "Run the SRA tests"
     useTestNG {
+        configFailurePolicy 'continue'
         includeGroups "sra"
     }
 }
