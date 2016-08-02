@@ -26,54 +26,102 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * @author alecw@broadinstitute.org
  */
 public class SAMRecordUtil {
-
-    /** List of String tags that must be reversed if present when a SAMRecord is reverseComplemented */
-    private static final short[] STRING_TAGS_TO_REVERSE = {
-            SAMTagUtil.getSingleton().U2,
-            SAMTagUtil.getSingleton().OQ
-    };
+    public static List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
+    public static List<String> TAGS_TO_REVERSE            = Arrays.asList(SAMTag.OQ.name(), SAMTag.U2.name());
 
     /**
-     * Reverse-complement all known sequence and base quality attributes of the SAMRecord.
+     * Reverse-complement bases and reverse quality scores along with known optional attributes that
+     * need the same treatment.  See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
+     * for the default set of tags that are handled.
      */
     public static void reverseComplement(final SAMRecord rec) {
+        reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE);
+    }
+
+    /**
+     * Reverse complement bases and reverse quality scores. In addition reverse complement any
+     * non-null attributes specified by tagsToRevcomp and reverse and non-null attributes
+     * specified by tagsToReverse.
+     */
+    public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse) {
         final byte[] readBases = rec.getReadBases();
         SequenceUtil.reverseComplement(readBases);
         rec.setReadBases(readBases);
         final byte qualities[] = rec.getBaseQualities();
         reverseArray(qualities);
         rec.setBaseQualities(qualities);
-        final byte[] sqTagValue = (byte[])rec.getAttribute(SAMTagUtil.getSingleton().SQ);
-        if (sqTagValue != null) {
-            SQTagUtil.reverseComplementSqArray(sqTagValue);
-            rec.setAttribute(SAMTagUtil.getSingleton().SQ, sqTagValue);
+
+        // Deal with tags that need to be reverse complemented
+        if (tagsToRevcomp != null) {
+            for (final String tag: tagsToRevcomp) {
+                Object value = rec.getAttribute(tag);
+                if (value != null) {
+                    if (value instanceof byte[]) SequenceUtil.reverseComplement((byte[]) value);
+                    else if (value instanceof String) value = SequenceUtil.reverseComplement((String) value);
+                    else throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
+                    rec.setAttribute(tag, value);
+                }
+            }
         }
-        final String e2TagValue = (String)rec.getAttribute(SAMTagUtil.getSingleton().E2);
-        if (e2TagValue != null) {
-            final byte[] secondaryBases = StringUtil.stringToBytes(e2TagValue);
-            SequenceUtil.reverseComplement(secondaryBases);
-            rec.setAttribute(SAMTagUtil.getSingleton().E2, StringUtil.bytesToString(secondaryBases));
-        }
-        for (final short stringTag : STRING_TAGS_TO_REVERSE) {
-            final String value = (String)rec.getAttribute(stringTag);
-            if (value != null) {
-                rec.setAttribute(stringTag, StringUtil.reverseString(value));
+
+        // Deal with tags that needed to just be reversed
+        if (tagsToReverse != null) {
+            for (final String tag : tagsToReverse) {
+                Object value = rec.getAttribute(tag);
+                if (value != null) {
+                    if (value instanceof String) {
+                        value = StringUtil.reverseString((String) value);
+                    }
+                    else if (value.getClass().isArray()) {
+                        if (value instanceof byte[]) reverseArray((byte[]) value);
+                        else if (value instanceof short[]) reverseArray((short[]) value);
+                        else if (value instanceof int[]) reverseArray((int[]) value);
+                        else if (value instanceof float[]) reverseArray((float[]) value);
+                        else throw new UnsupportedOperationException("Reversing array attribute of type " + value.getClass().getComponentType() + " not supported.");
+                    }
+                    else throw new UnsupportedOperationException("Don't know how to reverse: " + value);
+
+                    rec.setAttribute(tag, value);
+                }
             }
         }
     }
 
-    /**
-     * Reverse the given array in place.
-     */
-    public static void reverseArray(final byte[] array) {
-        final int lastIndex = array.length - 1;
-        int i, j;
-        for (i=0, j=lastIndex; i<j; ++i, --j) {
+    private static void reverseArray(final byte[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
             final byte tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final short[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final short tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final int[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final int tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final float[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final float tmp = array[i];
             array[i] = array[j];
             array[j] = tmp;
         }
