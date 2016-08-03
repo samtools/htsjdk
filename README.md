@@ -40,6 +40,8 @@ Example gradle usage from the htsjdk root directory:
  ```
  ./gradlew test
 
+ ./gradlew test -Dtest.single=TestClassName
+
  ./gradlew test --tests htsjdk.variant.variantcontext.AlleleUnitTest
  ./gradlew test --tests "*AlleleUnitTest"
 
