@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.readers.LineIterator;
@@ -23,7 +24,7 @@ import static org.testng.Assert.*;
  */
 public class AbstractFeatureReaderTest {
 
-    final static String HTTP_INDEXED_VCF_PATH = "http://www.broadinstitute.org/~picard/testdata/ex2.vcf";
+    final static String HTTP_INDEXED_VCF_PATH = TestUtil.BASE_URL_FOR_HTTP_TESTS + "ex2.vcf";
     final static String LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH = VariantBaseTest.variantTestDataRoot + "ex2.vcf";
 
     /**
