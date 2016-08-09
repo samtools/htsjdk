@@ -14,6 +14,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * NOTE: Objects of subclasses of this class are not intended to be shared between threads.
  * In particular there must be only one thread that calls {@link #write} and {@link #close}.
  *
+ * NOTE: Any exception thrown by the underlying Writer will be propagated back to the caller
+ * during the next available call to {@link #write} or {@link #close}. After the exception
+ * has been thrown to the caller, it is not safe to attempt further operations on the instance.
+ *
  * @author Tim Fennell
  */
 public abstract class AbstractAsyncWriter<T> implements Closeable {
@@ -92,8 +96,9 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * or RuntimeException as appropriate.
      */
     private final void checkAndRethrow() {
-        final Throwable t = this.ex.get();
+        final Throwable t = this.ex.getAndSet(null);
         if (t != null) {
+            this.isClosed.set(true); // Ensure no further attempts to write
             if (t instanceof Error) throw (Error) t;
             if (t instanceof RuntimeException) throw (RuntimeException) t;
             else throw new RuntimeException(t);
