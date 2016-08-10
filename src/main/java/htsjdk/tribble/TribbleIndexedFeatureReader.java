@@ -274,6 +274,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     }
 
     //Visible for testing
+    @Deprecated
     static boolean isGZIPPath(final String path) {
         if (path.toLowerCase().endsWith(".gz")) {
             return true;
