@@ -65,7 +65,8 @@ public class TribbleIndexFeatureReaderTest {
         return new Object[][]{
                 {TestUtils.DATA_DIR + "test.vcf", 5},
                 {TestUtils.DATA_DIR + "test.vcf.gz", 5},
-                {TestUtils.DATA_DIR + "test.vcf.bgz", 5}
+                {TestUtils.DATA_DIR + "test.vcf.bgz", 5},
+                {TestUtils.DATA_DIR + "test with spaces.vcf", 5}
         };
     }
 
