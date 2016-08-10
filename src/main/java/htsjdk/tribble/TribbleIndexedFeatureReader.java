@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -217,7 +218,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path);
-            if (hasBlockCompressedExtension(new URI(path))) {
+            if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
