@@ -54,4 +54,9 @@ public class BinaryFeaturesTest {
         originalReader.close();
         binaryReader.close();
     }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testGetTabixFormatThrowsException() {
+        new ExampleBinaryCodec().getTabixFormat();
+    }
 }
