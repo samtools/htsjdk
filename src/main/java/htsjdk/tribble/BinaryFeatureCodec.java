@@ -49,5 +49,4 @@ abstract public class BinaryFeatureCodec<T extends Feature> implements FeatureCo
     public final TabixFormat getTabixFormat() {
         throw new TribbleException("Binary codecs does not support tabix");
     }
-
 }

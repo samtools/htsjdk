@@ -23,8 +23,6 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.tribble.index.tabix.TabixFormat;
-
 import java.io.IOException;
 
 /**
@@ -49,5 +47,4 @@ public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE>
     public Class<FEATURE_TYPE> getFeatureType() {
         return myClass;
     }
-
 }

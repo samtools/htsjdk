@@ -264,7 +264,7 @@ public class IndexFactory {
     }
 
     /**
-     * Create a index of the specified type with default binning parameters
+     * Create an index of the specified type with default binning parameters
      *
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
@@ -334,7 +334,7 @@ public class IndexFactory {
 
     /**
      * @param inputFile The file to be indexed.
-     * @param codec Mechanism for reading inputFile.
+     * @param codec the codec to use for decoding records
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation.  Features
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      *

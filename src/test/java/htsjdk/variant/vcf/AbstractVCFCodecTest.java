@@ -57,5 +57,4 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 		Assert.assertEquals(new VCFCodec().getTabixFormat(), TabixFormat.VCF);
 		Assert.assertEquals(new VCF3Codec().getTabixFormat(), TabixFormat.VCF);
 	}
-
 }

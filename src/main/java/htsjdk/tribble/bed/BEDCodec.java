@@ -229,5 +229,4 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
     public TabixFormat getTabixFormat() {
         return TabixFormat.BED;
     }
-
 }

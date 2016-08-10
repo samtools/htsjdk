@@ -220,7 +220,6 @@ public class BEDCodecTest {
                 stream.close();
             }
         }
-
     }
 
     @Test
