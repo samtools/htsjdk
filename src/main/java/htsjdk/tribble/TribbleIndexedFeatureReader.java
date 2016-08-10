@@ -33,10 +33,12 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -217,7 +219,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path);
-            if (isGZIPPath(path)) {
+            if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
@@ -273,7 +275,11 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         return new WFIterator();
     }
 
+    /**
+     * @deprecated use {@link #hasBlockCompressedExtension(String)} instead
+     */
     //Visible for testing
+    @Deprecated
     static boolean isGZIPPath(final String path) {
         if (path.toLowerCase().endsWith(".gz")) {
             return true;
@@ -310,7 +316,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final InputStream inputStream = ParsingUtils.openInputStream(path);
 
             final PositionalBufferedStream pbs;
-            if (isGZIPPath(path)) {
+            if (hasBlockCompressedExtension(path)) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
                 final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));
