@@ -33,6 +33,7 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -274,6 +275,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         return new WFIterator();
     }
 
+    /**
+     * @deprecated use {@link #hasBlockCompressedExtension(String)} instead
+     */
     //Visible for testing
     @Deprecated
     static boolean isGZIPPath(final String path) {
