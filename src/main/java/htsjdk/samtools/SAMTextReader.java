@@ -221,10 +221,16 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         }
 
         public void close() {
-            SAMTextReader.this.close();
+            if ( mReader != null) {
+                if (mIterator != null && this != mIterator) {
+                    throw new IllegalStateException("Attempt to close non-current iterator");
+                }
+                mIterator = null;
+            }
         }
 
         public boolean hasNext() {
+            if (mIterator == null) {throw new IllegalStateException("Iterator has been closed");}
             return mCurrentLine != null;
         }
 

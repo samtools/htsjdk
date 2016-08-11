@@ -434,4 +434,25 @@ public class SamReaderFactoryTest {
         countRecords(reader);
     }
 
+    @Test
+    public void testGettingNewIteratorFromSamTextFileAfterClosing() throws IOException {
+        final String samFilePath = new File(TEST_DATA_DIR, "unsorted.sam").getAbsolutePath();
+        final URL samURL = new URL("file://" + samFilePath);
+        final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT);
+        final SamReader reader = factory.open(SamInputResource.of(samURL));
+        CloseableIterator<SAMRecord> iterator = reader.iterator();
+        Assert.assertTrue(iterator.hasNext());
+        iterator.close();
+        //Testing that an empty iterator throws
+        boolean hasThrown = false;
+        try {
+            iterator.hasNext();
+        } catch (IllegalStateException e) {
+            hasThrown = true;
+        }
+        Assert.assertTrue(hasThrown);
+        iterator = reader.iterator();
+        Assert.assertTrue(iterator.hasNext());
+    }
 }
