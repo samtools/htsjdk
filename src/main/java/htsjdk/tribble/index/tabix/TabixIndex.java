@@ -201,6 +201,7 @@ public class TabixIndex implements Index {
      *
      * @param tabixFile Where to write the index.
      */
+    @Override
     public void write(final File tabixFile) {
         final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(tabixFile));
         try {

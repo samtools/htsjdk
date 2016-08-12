@@ -70,6 +70,14 @@ public interface Index {
     public void write(LittleEndianOutputStream stream) throws IOException;
 
     /**
+     * Writes the index into a file.
+     *
+     * @param idxFile Where to write the index.
+     * @throws IOException if the index is unable to write to the specified file
+     */
+    public void write(final File idxFile) throws IOException;
+
+    /**
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
      * If featureFile is not a normal file, the index will silently not be written.
      * @param featureFile

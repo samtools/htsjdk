@@ -41,16 +41,13 @@ import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -290,16 +287,7 @@ public class IndexFactory {
      * @throws IOException
      */
     public static void writeIndex(final Index idx, final File idxFile) throws IOException {
-        LittleEndianOutputStream stream = null;
-        try {
-            stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
-            idx.write(stream);
-        }
-        finally {
-            if(stream != null) {
-                stream.close();
-            }
-        }
+        idx.write(idxFile);
     }
 
     /**
