@@ -733,16 +733,18 @@ public class VariantContext implements Feature, Serializable {
     public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
     
     /** shortcut to {@link CommonInfo#getFilters()} 
-     * @return an unmodifiable Set of filters. Can be empty by never null
+     * @return an unmodifiable Set of filters. Can be empty but never null
      */
     public Set<String> getFilters()             { return commonInfo.getFilters(); }
     
-    /** shortcut to {@link CommonInfo#isFiltered()}
-     * @return true if any filter been defined  <code>(!filters.isEmpty())
+    /**
+     * @return true if filters were applied and the VariantContext did not pass filters
      */
     public boolean isFiltered()                 { return commonInfo.isFiltered(); }
     
-    /** shortcut to {@link CommonInfo#isNotFiltered()} */
+    /**
+     * equivalent to <code>!isFiltered()</code>
+     */
     public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
     
     /** shortcut to {@link CommonInfo#filtersWereApplied()}
@@ -751,7 +753,7 @@ public class VariantContext implements Feature, Serializable {
     public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
     
     /** shortcut to {@link CommonInfo#hasLog10PError()}
-     * @return true if log10-based error estimate has been set 
+     * @return true if log10-based error estimate has been set  TODO
      */
     public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
     
@@ -761,7 +763,7 @@ public class VariantContext implements Feature, Serializable {
     public double getLog10PError()              { return commonInfo.getLog10PError(); }
     
     /** shortcut to {@link CommonInfo#getPhredScaledQual}
-     *  @return double - Phred scaled quality score
+     *  @return quality score
      */
     public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
     
@@ -775,12 +777,14 @@ public class VariantContext implements Feature, Serializable {
      */
     public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
     
-    /** shortcut to {@link CommonInfo#getAttribute(String)}
-     * @return the attribute value for the given key (or null if not set)
+    /** 
+     * @see {@link CommonInfo#getAttribute(String)}
+     * @return the attribute value for the specified key (or null if not set)
      */
     public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
     
-    /** shortcut to {@link CommonInfo#getAttribute(String, Object)}
+    /**
+     * @see {@link CommonInfo#getAttribute(String, Object)}
      * @return the attribute value for the given key (or defaultValue if not set)
      */
     public Object getAttribute(String key, Object defaultValue) {
@@ -797,7 +801,7 @@ public class VariantContext implements Feature, Serializable {
     
     /** shortcut to {@link CommonInfo#getAttributeAsInt(String, int)}
      * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Integer.parseInt((String)x)</code> is returned.
+     * if the value is a String, the value of <code>Integer.valueOf((String)x)</code> is returned.
      * If the value is not a String or an Integer, an exception is thrown
      * 
      * @param key the attribute key
@@ -809,8 +813,8 @@ public class VariantContext implements Feature, Serializable {
    
     /** shortcut to {@link CommonInfo#getAttributeAsDouble(String, double)}
      * if given key is not found the defaultValue is returned.
-     * if the value is as an Integer, this value is returned.
-     * if the value is a String, the value of <code>Double.parseDouble((String)x)</code> is returned.
+     * if the value is as an Integer or a Double, this value is returned.
+     * if the value is a String, the value of <code>Double.valueOf((String)x)</code> is returned.
      * If the value is not a Double, a String or an Integer, an exception is thrown
      * 
      * @param key the attribute key
@@ -822,7 +826,7 @@ public class VariantContext implements Feature, Serializable {
     /** shortcut to {@link CommonInfo#getAttributeAsBoolean(String, boolean)}
      * return an attribute as a boolean.
      * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Boolean.parseBoolean((String)x)</code> is returned.
+     * if the value is a String, the value of <code>Boolean.valueOf((String)x)</code> is returned.
      * If the value is not a Boolean or a String an exception is thrown
      * 
      * @param key the attribute key
@@ -1034,7 +1038,10 @@ public class VariantContext implements Feature, Serializable {
     public boolean hasGenotypes() {
         return ! genotypes.isEmpty();
     }
-
+    
+    /**
+     * @see {@link GenotypesContext#containsSamples-java.util.Collection-}
+     */
     public boolean hasGenotypes(final Collection<String> sampleNames) {
         return genotypes.containsSamples(sampleNames);
     }
@@ -1086,14 +1093,14 @@ public class VariantContext implements Feature, Serializable {
 
 
     /**
-     * @return the set of all sample names in this context, not ordered
+     * @return the set of all sample names in this context, not ordered by name
      */
     public Set<String> getSampleNames() {
         return getGenotypes().getSampleNames();
     }
 
     /**
-     * @return the list of all sample names in this context, ordered
+     * @return the list of all sample names in this context, ordered by name
      */
     public List<String> getSampleNamesOrderedByName() {
         return getGenotypes().getSampleNamesOrderedByName();

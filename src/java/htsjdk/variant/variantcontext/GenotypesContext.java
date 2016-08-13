@@ -660,7 +660,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
         return sampleNameToOffset.containsKey(sample);
     }
 
-    /** return true if all {@link GenotypesContext#getSampleNames() contains all sample */
+    /** @return true if the list of samples in this context as returned by {@link #getSampleNames()} contains all samples in the Collection passed in  'samples' */
     public boolean containsSamples(final Collection<String> samples) {
         return getSampleNames().containsAll(samples);
     }

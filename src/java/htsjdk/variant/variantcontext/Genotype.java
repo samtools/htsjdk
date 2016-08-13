@@ -183,6 +183,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     /**
      * if {@link #getAlleles()} is empty, the type is {@link GenotypeType#UNAVAILABLE}.
      * if all the  alleles are NoCall,  the type is {@link GenotypeType#NO_CALL}.
+     * if none of the alleles are NoCall , the type is  one of {@link GenotypeType#HET}, {@link GenotypeType#HOM_REF}, {@link GenotypeType#HOM_VAR}.
      * if some, but not all, alleles are NoCall,  the type is {@link GenotypeType#MIXED}.
      *
      * @return the high-level type of this sample's genotype
@@ -259,19 +260,19 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     public boolean isNoCall() { return getType() == GenotypeType.NO_CALL; }
 
     /**
-     * shortcut of ( {@link #getType()} != NO_CALL AND {@link #getType()} != UNAVAILABLE )
-     * @return true if this genotype is comprised of any alleles that are not no-calls (even if some are).
+     * Return true is the type isn't {@link GenotypeType#NO_CALL} and the type isn't {@link GenotypeType#UNAVAILABLE}
+     * @return true if this genotype is comprised of any alleles that are not {@link GenotypeType#NO_CALL} (even if some are).
      */
     public boolean isCalled() { return getType() != GenotypeType.NO_CALL && getType() != GenotypeType.UNAVAILABLE; }
 
     /**
-     * shortcut of ( {@link #getType()} == MIXED )
+     * Return true if the type is {@link GenotypeType#MIXED}
      * @return true if this genotype is comprised of both calls and no-calls.
      */
     public boolean isMixed() { return getType() == GenotypeType.MIXED; }
 
     /**
-     * shortcut of ( {@link #getType()} != UNAVAILABLE )
+     * Return true if the type isn't {@link GenotypeType#UNAVAILABLE}
      * @return true if the type of this genotype is set.
      */
     public boolean isAvailable() { return getType() != GenotypeType.UNAVAILABLE; }

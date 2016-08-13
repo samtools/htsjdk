@@ -101,12 +101,12 @@ public final class CommonInfo implements Serializable {
         return filters == null ? NO_FILTERS : Collections.unmodifiableSet(filters);
     }
 
-    /** @return true if no filter has been defined  <code>(getFiltersMaybeNull()==null)</code> */
+    /** @return true if filters were applied and the VariantContext did not pass filters */
     public boolean filtersWereApplied() {
         return filters != null;
     }
 
-    /** @return true if any filter been defined  <code>(!filters.isEmpty())</code> */
+    /** @return true if any filter been defined. This method won't work for <code>PASS</code>, since it's not included in the set of filters */
     public boolean isFiltered() {
         return filters == null ? false : !filters.isEmpty();
     }
@@ -173,7 +173,7 @@ public final class CommonInfo implements Serializable {
      */
     public double getPhredScaledQual() { return (getLog10PError() * -10) + 0.0; }
 
-    /** set the Phred scaled quality score */
+    /** set the quality score */
     public void setLog10PError(final double log10PError) {
         if ( log10PError > 0 && log10PError != NO_LOG10_PERROR)
             throw new IllegalArgumentException("BUG: log10PError cannot be > 0 : " + this.log10PError);
@@ -203,18 +203,18 @@ public final class CommonInfo implements Serializable {
     }
 
     // todo -- define common attributes as enum
-    /** clear all attributes, and set 'map' as attributes */
+    /** clear all attributes, and set 'map' as attributes. Subsequent changes to <code>map</code>  won't be reflected in 'this' record */
     public void setAttributes(final Map<String, ?> map) {
         clearAttributes();
         putAttributes(map);
     }
 
-    /** shortcut of <code>putAttribute(key, value, false)</code> */
+    /** put a new attribute, raises an exception if the attribute exists */
     public void putAttribute(final String key, final Object value) {
         putAttribute(key, value, false);
     }
 
-    /** insert a new attribute, raises an exception if allowOverwrites==true and the attribute exists */
+    /** insert a new attribute, raises an exception if allowOverwrites==false and the attribute exists */
     public void putAttribute(final String key, final Object value, final boolean allowOverwrites) {
         if ( ! allowOverwrites && hasAttribute(key) )
             throw new IllegalStateException("Attempting to overwrite key->value binding: key = " + key + " this = " + this);
@@ -232,7 +232,7 @@ public final class CommonInfo implements Serializable {
         attributes.remove(key);
     }
 
-    /** insert the attibutes as map using <code>putAttribute(key,value,false)</code> */
+    /** insert the attibutes in the map using <code>putAttribute(key,value,false)</code> */
     public void putAttributes(final Map<String, ?> map) {
         if ( map != null ) {
             // for efficiency, we can skip the validation if the map is empty
@@ -248,7 +248,7 @@ public final class CommonInfo implements Serializable {
         }
     }
 
-    /** @return true if the key is present */
+    /** @return true if the specified attribute is present */
     public boolean hasAttribute(final String key) {
         return attributes.containsKey(key);
     }
@@ -305,13 +305,13 @@ public final class CommonInfo implements Serializable {
         final Object x = getAttribute(key);
         if ( x == null ) return defaultValue;
         if ( x instanceof String ) return (String)x;
-        return String.valueOf(x); // throws an exception if this isn't a string
+        return String.valueOf(x);
     }
 
     /**
      * return an attribute as an integer.
      * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Integer.parseInt((String)x)</code> is returned.
+     * if the value is a String, the value of <code>Integer.valueOf((String)x)</code> is returned.
      * If the value is not a String or an Integer, an exception is thrown
      * 
      * @param key the attribute key
@@ -329,8 +329,8 @@ public final class CommonInfo implements Serializable {
     /**
      * return an attribute as a double.
      * if given key is not found the defaultValue is returned.
-     * if the value is as an Integer, this value is returned.
-     * if the value is a String, the value of <code>Double.parseDouble((String)x)</code> is returned.
+     * if the value is as an Integer or a Douvle, the value is returned as a double.
+     * if the value is a String, the value of <code>Double.valueOf((String)x)</code> is returned.
      * If the value is not a Double, a String or an Integer, an exception is thrown
      * 
      * @param key the attribute key
@@ -348,7 +348,7 @@ public final class CommonInfo implements Serializable {
     /**
      * return an attribute as a boolean.
      * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Boolean.parseBoolean((String)x)</code> is returned.
+     * if the value is a String, the value of <code>Boolean.valueOf((String)x)</code> is returned.
      * If the value is not a Boolean or a String an exception is thrown
      * 
      * @param key the attribute key
