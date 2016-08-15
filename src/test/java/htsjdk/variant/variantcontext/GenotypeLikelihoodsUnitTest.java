@@ -189,7 +189,7 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
         int counter = 0;
         for ( int i = 0; i <= 3; i++ ) {
             for ( int j = i; j <= 3; j++ ) {
-                Assert.assertEquals(GenotypeLikelihoods.calculatePLindex(i, j), GenotypeLikelihoods.PLindexConversion[counter++], "PL index of alleles " + i + "," + j + " was not calculated correctly");
+                Assert.assertEquals(GenotypeLikelihoods.calculatePLIndex(i, j), GenotypeLikelihoods.PLindexConversion[counter++], "PL index of alleles " + i + "," + j + " was not calculated correctly");
             }
         }
     }
@@ -212,8 +212,8 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "testGetAllelePairData")
     public void testGetAllelePair(final int PLindex, final int allele1, final int allele2) {
-        Assert.assertEquals(GenotypeLikelihoods.getAllelePair(PLindex).alleleIndex1, allele1, "allele index " + allele1 + " from PL index " + PLindex + " was not calculated correctly");
-        Assert.assertEquals(GenotypeLikelihoods.getAllelePair(PLindex).alleleIndex2, allele2, "allele index " + allele2 + " from PL index " + PLindex + " was not calculated correctly");
+        Assert.assertEquals(GenotypeLikelihoods.getAlleleIndicesPair(PLindex).alleleIndex1, allele1, "allele index " + allele1 + " from PL index " + PLindex + " was not calculated correctly");
+        Assert.assertEquals(GenotypeLikelihoods.getAlleleIndicesPair(PLindex).alleleIndex2, allele2, "allele index " + allele2 + " from PL index " + PLindex + " was not calculated correctly");
     }
 
     @DataProvider
@@ -262,7 +262,7 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "testCalculateAnyploidPLcacheData")
     public void testCalculateAnyploidPLcache(final int altAlleles, final int ploidy, final List<List<Integer>> expected) {
-        List<List<Integer>> anyploidPLIndexToAlleleIndices = GenotypeLikelihoods.calculateAnyploidPLcache(altAlleles, ploidy);
+        List<List<Integer>> anyploidPLIndexToAlleleIndices = GenotypeLikelihoods.calculateAnyploidPLCache(altAlleles, ploidy);
         for ( int i=0; i < anyploidPLIndexToAlleleIndices.size(); i++ )
             Assert.assertEquals(anyploidPLIndexToAlleleIndices.get(i), expected.get(i));
     }
@@ -311,7 +311,7 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "testGetAllelesData")
     public void testGetAlleles(final int PLindex, final int altAlleles, final int ploidy, final List<Integer> expected ) {
-        Assert.assertEquals(GenotypeLikelihoods.getAlleles(PLindex, ploidy), expected);
+        Assert.assertEquals(GenotypeLikelihoods.getAlleleIndices(PLindex, ploidy), expected);
     }
 
     @DataProvider
@@ -326,12 +326,12 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
 
     @Test(dataProvider = "testGetAllelesIndexOutOfBoundsData", expectedExceptions = IllegalStateException.class)
     public void testGetAllelesOutOfBounds(final int PLindex, final int ploidy) {
-        final List<Integer> alleles = GenotypeLikelihoods.getAlleles(PLindex, ploidy);
+        final List<Integer> alleles = GenotypeLikelihoods.getAlleleIndices(PLindex, ploidy);
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testGetAllelesUnitialized() {
         GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.clear();
-        final List<Integer> alleles = GenotypeLikelihoods.getAlleles(0, 3);
+        final List<Integer> alleles = GenotypeLikelihoods.getAlleleIndices(0, 3);
     }
 }

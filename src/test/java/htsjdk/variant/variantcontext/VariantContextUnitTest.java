@@ -643,7 +643,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         }
     }
 
-    @DataProvider(name = "getAlleles")
+    @DataProvider(name = "getAlleleIndices")
     public Object[][] mergeAllelesData() {
         List<Object[]> tests = new ArrayList<Object[]>();
 
