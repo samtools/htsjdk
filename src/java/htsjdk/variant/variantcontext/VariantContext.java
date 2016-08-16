@@ -722,23 +722,24 @@ public class VariantContext implements Feature, Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
     
-    /** shortcut to {@link CommonInfo#getName()} 
+    /** 
+     * @see {@link CommonInfo#getName()} 
      * @return the source name
      */
     public String getSource()                   { return commonInfo.getName(); }
     
-    /** shortcut to {@link CommonInfo#getFiltersMaybeNull()} 
-     *  @return a <b>modifiable</b> Set of filters. Can be  null. All changes in this set will be reflected in the CommonInfo 
+    /**
+     * @see {@link CommonInfo#getFiltersMaybeNull()} 
      */
     public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
     
-    /** shortcut to {@link CommonInfo#getFilters()} 
-     * @return an unmodifiable Set of filters. Can be empty but never null
+    /**
+     * @see {@link CommonInfo#getFilters()} 
      */
     public Set<String> getFilters()             { return commonInfo.getFilters(); }
     
     /**
-     * @return true if filters were applied and the VariantContext did not pass filters
+     * @see {@link CommonInfo#isFiltered()} 
      */
     public boolean isFiltered()                 { return commonInfo.isFiltered(); }
     
@@ -747,99 +748,70 @@ public class VariantContext implements Feature, Serializable {
      */
     public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
     
-    /** shortcut to {@link CommonInfo#filtersWereApplied()}
-     *  @return true if no filter has been defined  <code>(getFiltersMaybeNull()==null)</code>
+    /**
+     * @see {@link CommonInfo#filtersWereApplied()} 
      */
     public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
     
-    /** shortcut to {@link CommonInfo#hasLog10PError()}
-     * @return true if log10-based error estimate has been set  TODO
+    /** 
+     * @see {@link CommonInfo#hasLog10PError()}
      */
     public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
     
-    /** shortcut to {@link CommonInfo#getLog10PError()}
-     * @return the -1 * log10-based error estimate
+    /**
+     * @see {@link CommonInfo#getLog10PError()}
      */
     public double getLog10PError()              { return commonInfo.getLog10PError(); }
     
-    /** shortcut to {@link CommonInfo#getPhredScaledQual}
-     *  @return quality score
+    /**
+     * @see {@link CommonInfo#getPhredScaledQual()}
      */
     public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
     
-    /** shortcut to {@link CommonInfo#getAttributes()}
-     * @return an unmodifiable Map of attributes
+    /**
+     * @see {@link CommonInfo#getAttributes()}
      */
     public Map<String, Object>  getAttributes() { return commonInfo.getAttributes(); }
     
-    /** shortcut to {@link CommonInfo#hasAttribute(String)}
-     * @return true if the key is present
+    /**
+     * @see {@link CommonInfo#hasAttribute(String)}
      */
     public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
     
     /** 
      * @see {@link CommonInfo#getAttribute(String)}
-     * @return the attribute value for the specified key (or null if not set)
      */
     public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
     
     /**
      * @see {@link CommonInfo#getAttribute(String, Object)}
-     * @return the attribute value for the given key (or defaultValue if not set)
      */
     public Object getAttribute(String key, Object defaultValue) {
         return commonInfo.getAttribute(key, defaultValue);
     }
     
-    /** shortcut to {@link CommonInfo#getAttributeAsString(String, String)}
-     * return an attribute as a String.
-     * if given key is not found the defaultValue is returned.
-     * if the value is not a String <code> String.valueOf(x)</code> is returned.
-     * @return the attribute as a String
+    /**
+     * @see {@link CommonInfo#getAttributeAsString(String, String)}
      */
     public String getAttributeAsString(String key, String defaultValue)   { return commonInfo.getAttributeAsString(key, defaultValue); }
     
-    /** shortcut to {@link CommonInfo#getAttributeAsInt(String, int)}
-     * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Integer.valueOf((String)x)</code> is returned.
-     * If the value is not a String or an Integer, an exception is thrown
-     * 
-     * @param key the attribute key
-     * @param defaultValue the default value
-     *
-     * @return the attribute as an integer
+    /**
+     * @see {@link CommonInfo#getAttributeAsString(String, int)}
      */
     public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
    
-    /** shortcut to {@link CommonInfo#getAttributeAsDouble(String, double)}
-     * if given key is not found the defaultValue is returned.
-     * if the value is as an Integer or a Double, this value is returned.
-     * if the value is a String, the value of <code>Double.valueOf((String)x)</code> is returned.
-     * If the value is not a Double, a String or an Integer, an exception is thrown
-     * 
-     * @param key the attribute key
-     * @param defaultValue the default value
-     * @return the attribute as a double
+    /**
+     * @see {@link CommonInfo#getAttributeAsDouble(String, double)}
      */
     public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
     
-    /** shortcut to {@link CommonInfo#getAttributeAsBoolean(String, boolean)}
-     * return an attribute as a boolean.
-     * if given key is not found the defaultValue is returned.
-     * if the value is a String, the value of <code>Boolean.valueOf((String)x)</code> is returned.
-     * If the value is not a Boolean or a String an exception is thrown
-     * 
-     * @param key the attribute key
-     * @param defaultValue the default value
-     * @return the attribute as a boolean
+    /**
+     * @see {@link CommonInfo#getAttributeAsBoolean(String, boolean)}
      */
     public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
     
-    /** 
-     * shortcut to {@link CommonInfo#getAttributeAsList(String)}
-     * @return the value as an empty list if the key was not found,
-     *   as a java.util.List if the value is a List or an Array,
-     *   as a Collections.singletonList if there is only one value
+    /**
+     * @see {@link CommonInfo#getAttributeAsList(String)}
      */
     public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
     
@@ -866,7 +838,7 @@ public class VariantContext implements Feature, Serializable {
 
 
     /**
-     * shortcut to <code>{@link #getNAlleles()} == 2</code<
+     * return true if <code>{@link #getNAlleles()} == 2</code<
      * @return true if the context is strictly bi-allelic
      */
     public boolean isBiallelic() {
