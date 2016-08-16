@@ -106,14 +106,14 @@ public final class CommonInfo implements Serializable {
         return filters != null;
     }
 
-    /** @return true if any filter been defined. This method won't work for <code>PASS</code>, since it's not included in the set of filters */
+    /** @return true if any filter been defined*/
     public boolean isFiltered() {
         return filters == null ? false : !filters.isEmpty();
     }
 
     /**
      * @param filter the filter ID 
-     * @return true if the filters contains 'filter' */
+     * @return true if the filters contains 'filter'. This method won't work for <code>PASS</code>, since it's not included in the set of filters */
     public boolean hasFilter(final String filter) {
         return filters == null ? false : filters.contains(filter);
     }
