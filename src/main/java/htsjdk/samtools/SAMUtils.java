@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 
 /**
@@ -1095,5 +1096,73 @@ public final class SAMUtils {
      */
     public static boolean isValidUnsignedIntegerAttribute(long value) {
         return value >= 0 && value <= BinaryCodec.MAX_UINT;
+    }
+    
+    /**
+     * Extract a List of 'other canonical alignments' from a SAM record. Those alignments are stored as a string in the 'SA' tag as defined
+     * in the SAM specification.
+     * Each record in the List is a non-paired read.
+     * The name, sequence and qualities are copied from the original recordabsent.
+     * The SAM flag is set to <code>SUPPLEMENTARY_ALIGNMENT (+ READ_REVERSE_STRAND )</code>
+     * @param record must be non null and must have a non-null associated header.
+     * @return a list of 'other canonical alignments' SAMRecords. The list is empty if the 'SA' attribute is missing.
+     */
+    public static List<SAMRecord> getOtherCanonicalAlignments(final SAMRecord record) {
+        final Pattern semiColonPattern = Pattern.compile("[;]");
+        final Pattern commaPattern = Pattern.compile("[,]");
+        if( record == null ) throw new IllegalArgumentException("record is null");
+        if( record.getHeader() == null ) throw new IllegalArgumentException("record.getHeader() is null");
+        /* extract value of SA tag */
+        final Object saValue = record.getAttribute( SAMTagUtil.getSingleton().SA );
+        if( saValue == null ) return Collections.emptyList();
+        if( ! (saValue instanceof String) ) throw new SAMException(
+                "Expected a String for attribute 'SA' but got " + saValue.getClass() );
+        
+        final SAMRecordFactory srf = new DefaultSAMRecordFactory();
+        
+        /* the spec says: "Other canonical alignments in a chimeric alignment, formatted as a 
+         * semicolon-delimited list: (rname,pos,strand,CIGAR,mapQ,NM;)+. 
+         * Each element in the list represents a part of the chimeric alignment.
+         * Conventionally, at a supplementary line, the  rst element points to the primary line.
+         */
+        
+        /* break string using semicolon */
+        final String semiColonStrs[] = semiColonPattern.split((String)saValue);
+        
+        /* the result list */
+        final List<SAMRecord> alignments = new ArrayList<>( semiColonStrs.length );
+        
+        for( final String semiColonStr : semiColonStrs ) {
+            /* ignore empty string */
+            if( semiColonStr.isEmpty() ) continue;
+            
+            /* break string using comma */
+            final String commaStrs[] = commaPattern.split(semiColonStr);
+            if( commaStrs.length < 5 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr);
+            
+            /* create the new record */
+            final SAMRecord otherRec = srf.createSAMRecord( record.getHeader() );
+            
+            /* copy fields from the original record */
+            otherRec.setReadName( record.getReadName() );
+            otherRec.setReadBases( record.getReadBases() );
+            otherRec.setBaseQualities( record.getBaseQualities() );
+            
+            /* get reference sequence */
+            final int tid = record.getHeader().getSequenceIndex( commaStrs[0] );
+            if( tid == -1 ) throw new SAMException("Unknown contig in " + semiColonStr);
+            otherRec.setReferenceIndex( tid );
+            
+            /* fill other fields */
+            otherRec.setAlignmentStart( Integer.parseInt(commaStrs[1]) ); 
+            otherRec.setFlags(
+                SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag + 
+                (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) );
+            otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
+            otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
+            otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]) );                  
+            alignments.add( otherRec );
+        }
+        return alignments;
     }
 }

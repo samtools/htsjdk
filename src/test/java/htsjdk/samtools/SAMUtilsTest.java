@@ -26,7 +26,7 @@ package htsjdk.samtools;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
+import java.util.List;
 
 public class SAMUtilsTest {
     @Test
@@ -173,4 +173,57 @@ public class SAMUtilsTest {
         record.setSecondOfPairFlag(true);
         Assert.assertEquals(SAMUtils.getNumOverlappingAlignedBasesToClip(record), 10);
     }
+    
+    @Test
+    public void testOtherCanonicalAlignments() {
+        // setup the record
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("1", 1000));
+        header.addSequence(new SAMSequenceRecord("2", 1000));
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadPairedFlag(true);
+        record.setFirstOfPairFlag(true);
+        record.setCigar(TextCigarCodec.decode("10M"));
+        record.setReferenceIndex(0);
+        record.setAlignmentStart(1);
+        record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(1);
+        record.setReadBases("AAAAAAAAAA".getBytes());
+        record.setBaseQualities("##########".getBytes());
+        record.setAttribute(SAMTagUtil.getSingleton().SA,
+                "2,500,+,3S2=1X2=2S,60,1;" + 
+                "1,191,-,8M2S,60,0;");
+        
+        // extract suppl alignments
+        final List<SAMRecord> suppl = SAMUtils.getOtherCanonicalAlignments(record);
+        Assert.assertNotNull(suppl);
+        Assert.assertEquals(suppl.size(), 2);
+    
+        for(final SAMRecord other: suppl) {
+            Assert.assertFalse(other.getReadUnmappedFlag());
+            Assert.assertFalse(other.getReadPairedFlag());
+            Assert.assertTrue(other.getSupplementaryAlignmentFlag());
+            Assert.assertEquals(other.getReadName(),record.getReadName());
+            Assert.assertEquals(other.getReadString(),record.getReadString());
+            Assert.assertEquals(other.getBaseQualityString(),record.getBaseQualityString());
+        }
+        
+        SAMRecord other = suppl.get(0);
+        Assert.assertEquals(other.getReferenceName(),"2");
+        Assert.assertEquals(other.getAlignmentStart(),500);
+        Assert.assertFalse(other.getReadNegativeStrandFlag());
+        Assert.assertEquals(other.getMappingQuality(), 60);
+        Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),1);
+        Assert.assertEquals(other.getCigarString(),"3S2=1X2=2S");
+        
+        other = suppl.get(1);
+        Assert.assertEquals(other.getReferenceName(),"1");
+        Assert.assertEquals(other.getAlignmentStart(),191);
+        Assert.assertTrue(other.getReadNegativeStrandFlag());
+        Assert.assertEquals(other.getMappingQuality(), 60);
+        Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),0);
+        Assert.assertEquals(other.getCigarString(),"8M2S");
+        
+    }
+    
 }
