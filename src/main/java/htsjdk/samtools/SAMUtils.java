@@ -1102,7 +1102,7 @@ public final class SAMUtils {
      * Extract a List of 'other canonical alignments' from a SAM record. Those alignments are stored as a string in the 'SA' tag as defined
      * in the SAM specification.
      * Each record in the List is a non-paired read.
-     * The name, sequence and qualities are copied from the original recordabsent.
+     * The name, sequence and qualities are copied from the original record.
      * The SAM flag is set to <code>SUPPLEMENTARY_ALIGNMENT (+ READ_REVERSE_STRAND )</code>
      * @param record must be non null and must have a non-null associated header.
      * @return a list of 'other canonical alignments' SAMRecords. The list is empty if the 'SA' attribute is missing.
@@ -1123,7 +1123,7 @@ public final class SAMUtils {
         /* the spec says: "Other canonical alignments in a chimeric alignment, formatted as a 
          * semicolon-delimited list: (rname,pos,strand,CIGAR,mapQ,NM;)+. 
          * Each element in the list represents a part of the chimeric alignment.
-         * Conventionally, at a supplementary line, the  rst element points to the primary line.
+         * Conventionally, at a supplementary line, the  1rst element points to the primary line.
          */
         
         /* break string using semicolon */
