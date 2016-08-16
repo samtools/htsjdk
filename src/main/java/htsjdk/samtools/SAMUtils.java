@@ -1118,7 +1118,7 @@ public final class SAMUtils {
         if( ! (saValue instanceof String) ) throw new SAMException(
                 "Expected a String for attribute 'SA' but got " + saValue.getClass() );
         
-        final SAMRecordFactory srf = new DefaultSAMRecordFactory();
+        final SAMRecordFactory samReaderFactory = new DefaultSAMRecordFactory();
         
         /* the spec says: "Other canonical alignments in a chimeric alignment, formatted as a 
          * semicolon-delimited list: (rname,pos,strand,CIGAR,mapQ,NM;)+. 
@@ -1138,10 +1138,10 @@ public final class SAMUtils {
             
             /* break string using comma */
             final String commaStrs[] = commaPattern.split(semiColonStr);
-            if( commaStrs.length < 5 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr);
+            if( commaStrs.length != 6 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr);
             
             /* create the new record */
-            final SAMRecord otherRec = srf.createSAMRecord( record.getHeader() );
+            final SAMRecord otherRec = samReaderFactory.createSAMRecord( record.getHeader() );
             
             /* copy fields from the original record */
             otherRec.setReadName( record.getReadName() );
@@ -1160,7 +1160,9 @@ public final class SAMUtils {
                 (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) );
             otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
             otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
-            otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]) );                  
+            otherRec.setAttribute( SAMTagUtil.getSingleton().NM , Integer.parseInt(commaStrs[5]) );                  
+            
+            /* add the alignment */
             alignments.add( otherRec );
         }
         return alignments;
