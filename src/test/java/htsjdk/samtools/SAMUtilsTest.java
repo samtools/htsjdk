@@ -188,8 +188,19 @@ public class SAMUtilsTest {
         record.setAlignmentStart(1);
         record.setMateReferenceIndex(0);
         record.setMateAlignmentStart(1);
+        record.setReadPairedFlag(true);
+        record.setSupplementaryAlignmentFlag(true);//spec says first 'SA' record will be the primary record
+     
+        record.setMateReferenceIndex(0);
+        record.setMateAlignmentStart(100);
+        record.setInferredInsertSize(99);
+        
         record.setReadBases("AAAAAAAAAA".getBytes());
         record.setBaseQualities("##########".getBytes());
+        // check no alignments if no SA tag */
+        Assert.assertEquals(SAMUtils.getOtherCanonicalAlignments(record).size(),0);
+        
+        
         record.setAttribute(SAMTagUtil.getSingleton().SA,
                 "2,500,+,3S2=1X2=2S,60,1;" + 
                 "1,191,-,8M2S,60,0;");
@@ -201,8 +212,11 @@ public class SAMUtilsTest {
     
         for(final SAMRecord other: suppl) {
             Assert.assertFalse(other.getReadUnmappedFlag());
-            Assert.assertFalse(other.getReadPairedFlag());
-            Assert.assertTrue(other.getSupplementaryAlignmentFlag());
+            Assert.assertTrue(other.getReadPairedFlag());
+            Assert.assertFalse(other.getMateUnmappedFlag());
+            Assert.assertEquals(other.getMateAlignmentStart(),record.getMateAlignmentStart());
+            Assert.assertEquals(other.getMateReferenceName(),record.getMateReferenceName());
+
             Assert.assertEquals(other.getReadName(),record.getReadName());
             if( other.getReadNegativeStrandFlag()==record.getReadNegativeStrandFlag()) {
                 Assert.assertEquals(other.getReadString(),record.getReadString());
@@ -211,20 +225,26 @@ public class SAMUtilsTest {
         }
         
         SAMRecord other = suppl.get(0);
+        Assert.assertFalse(other.getSupplementaryAlignmentFlag());//1st of suppl and 'record' is supplementary
         Assert.assertEquals(other.getReferenceName(),"2");
         Assert.assertEquals(other.getAlignmentStart(),500);
         Assert.assertFalse(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
         Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),1);
         Assert.assertEquals(other.getCigarString(),"3S2=1X2=2S");
+        Assert.assertEquals(other.getInferredInsertSize(),0);
+
         
         other = suppl.get(1);
+        Assert.assertTrue(other.getSupplementaryAlignmentFlag());
         Assert.assertEquals(other.getReferenceName(),"1");
         Assert.assertEquals(other.getAlignmentStart(),191);
         Assert.assertTrue(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
         Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),0);
         Assert.assertEquals(other.getCigarString(),"8M2S");
+        Assert.assertEquals(other.getInferredInsertSize(),-91);//100(mate) - 191(other)
+
         
     }
     

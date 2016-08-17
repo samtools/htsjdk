@@ -48,6 +48,11 @@ import java.util.regex.Pattern;
  * Utilty methods.
  */
 public final class SAMUtils {
+    /** regex for semicolon, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    private static final Pattern SEMICOLON_PAT = Pattern.compile("[;]");
+    /** regex for comma, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    private static final Pattern COMMA_PAT = Pattern.compile("[,]");
+
     // Representation of bases, one for when in low-order nybble, one for when in high-order nybble.
     private static final byte COMPRESSED_EQUAL_LOW = 0;
     private static final byte COMPRESSED_A_LOW = 1;
@@ -1101,15 +1106,11 @@ public final class SAMUtils {
     /**
      * Extract a List of 'other canonical alignments' from a SAM record. Those alignments are stored as a string in the 'SA' tag as defined
      * in the SAM specification.
-     * Each record in the List is a non-paired read.
-     * The name, sequence and qualities are copied from the original record.
-     * The SAM flag is set to <code>SUPPLEMENTARY_ALIGNMENT (+ READ_REVERSE_STRAND )</code>
+     * The name, sequence and qualities, mate data are copied from the original record.
      * @param record must be non null and must have a non-null associated header.
      * @return a list of 'other canonical alignments' SAMRecords. The list is empty if the 'SA' attribute is missing.
      */
     public static List<SAMRecord> getOtherCanonicalAlignments(final SAMRecord record) {
-        final Pattern semiColonPattern = Pattern.compile("[;]");
-        final Pattern commaPattern = Pattern.compile("[,]");
         if( record == null ) throw new IllegalArgumentException("record is null");
         if( record.getHeader() == null ) throw new IllegalArgumentException("record.getHeader() is null");
         /* extract value of SA tag */
@@ -1127,17 +1128,25 @@ public final class SAMUtils {
          */
         
         /* break string using semicolon */
-        final String semiColonStrs[] = semiColonPattern.split((String)saValue);
+        final String semiColonStrs[] = SEMICOLON_PAT.split((String)saValue);
         
         /* the result list */
         final List<SAMRecord> alignments = new ArrayList<>( semiColonStrs.length );
+                
+        /* base SAM flag */
+        int record_flag = record.getFlags() ;
+        record_flag &= ~SAMFlag.PROPER_PAIR.flag;
+        record_flag &= ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
+        record_flag &= ~SAMFlag.READ_REVERSE_STRAND.flag;
         
-        for( final String semiColonStr : semiColonStrs ) {
+        
+        for(int i=0; i< semiColonStrs.length;++i  ) {
+            final String semiColonStr = semiColonStrs[i];
             /* ignore empty string */
             if( semiColonStr.isEmpty() ) continue;
             
             /* break string using comma */
-            final String commaStrs[] = commaPattern.split(semiColonStr);
+            final String commaStrs[] = COMMA_PAT.split(semiColonStr);
             if( commaStrs.length != 6 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr);
             
             /* create the new record */
@@ -1147,20 +1156,59 @@ public final class SAMUtils {
             otherRec.setReadName( record.getReadName() );
             otherRec.setReadBases( record.getReadBases() );
             otherRec.setBaseQualities( record.getBaseQualities() );
+            if( record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
+                otherRec.setMateReferenceIndex( record.getMateReferenceIndex() );
+                otherRec.setMateAlignmentStart( record.getMateAlignmentStart() );
+            }
+            
             
             /* get reference sequence */
             final int tid = record.getHeader().getSequenceIndex( commaStrs[0] );
             if( tid == -1 ) throw new SAMException("Unknown contig in " + semiColonStr);
             otherRec.setReferenceIndex( tid );
             
-            /* fill other fields */
-            otherRec.setAlignmentStart( Integer.parseInt(commaStrs[1]) ); 
-            otherRec.setFlags(
-                SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag + 
-                (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) );
-            otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
-            otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
-            otherRec.setAttribute( SAMTagUtil.getSingleton().NM , Integer.parseInt(commaStrs[5]) );                  
+            /* fill POS */
+            final int alignStart;
+            try {
+                alignStart = Integer.parseInt(commaStrs[1]);
+            } catch( final NumberFormatException err ) {
+                throw new SAMException("bad POS in "+semiColonStr, err);
+            }
+            
+            otherRec.setAlignmentStart( alignStart ); 
+            
+            /* set TLEN */
+            if( record.getReadPairedFlag() && 
+                !record.getMateUnmappedFlag() && 
+                record.getMateReferenceIndex() == tid ) {
+                otherRec.setInferredInsertSize( record.getMateAlignmentStart() - alignStart );
+            }
+
+            /* set FLAG */ 
+           int other_flag = record_flag;
+           other_flag |= (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) ;
+           /* spec: Conventionally, at a supplementary line, the  1st element points to the primary line */
+           if( !( record.getSupplementaryAlignmentFlag() && i==0 ) ) {
+               other_flag |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
+           }           
+           otherRec.setFlags(other_flag);
+            
+           /* set CIGAR */
+           otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
+            
+            /* set MAPQ */
+            try {
+                otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
+            } catch (final NumberFormatException err) {
+                throw new SAMException("bad MAPQ in "+semiColonStr, err);
+            }
+            
+            /* fill NM */
+            try {
+                otherRec.setAttribute( SAMTagUtil.getSingleton().NM , Integer.parseInt(commaStrs[5]) );                  
+            } catch (final NumberFormatException err) {
+                throw new SAMException("bad NM in "+semiColonStr, err);
+            }
             
             /* if strand is not the same: reverse-complement */
             if( otherRec.getReadNegativeStrandFlag() != record.getReadNegativeStrandFlag() ) {
