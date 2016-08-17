@@ -1162,6 +1162,11 @@ public final class SAMUtils {
             otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
             otherRec.setAttribute( SAMTagUtil.getSingleton().NM , Integer.parseInt(commaStrs[5]) );                  
             
+            /* if strand is not the same: reverse-complement */
+            if( otherRec.getReadNegativeStrandFlag() != record.getReadNegativeStrandFlag() ) {
+                SAMRecordUtil.reverseComplement(otherRec);
+            }
+            
             /* add the alignment */
             alignments.add( otherRec );
         }

@@ -204,8 +204,10 @@ public class SAMUtilsTest {
             Assert.assertFalse(other.getReadPairedFlag());
             Assert.assertTrue(other.getSupplementaryAlignmentFlag());
             Assert.assertEquals(other.getReadName(),record.getReadName());
-            Assert.assertEquals(other.getReadString(),record.getReadString());
-            Assert.assertEquals(other.getBaseQualityString(),record.getBaseQualityString());
+            if( other.getReadNegativeStrandFlag()==record.getReadNegativeStrandFlag()) {
+                Assert.assertEquals(other.getReadString(),record.getReadString());
+                Assert.assertEquals(other.getBaseQualityString(),record.getBaseQualityString());
+                }
         }
         
         SAMRecord other = suppl.get(0);
