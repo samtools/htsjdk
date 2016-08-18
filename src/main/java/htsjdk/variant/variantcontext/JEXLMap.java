@@ -14,16 +14,6 @@ import java.util.Set;
 /**
  * This is an implementation of a Map of {@link JexlVCMatchExp} to true or false values.
  * It lazily initializes each value as requested to save as much processing time as possible.
- *
- * TODO: must resolve the following outdated comment in PR review rounds
- * Compatible with JEXL 1.1 (this code will be easier if we move to 2.0, all of the functionality can go into the
- * JexlContext's get()
- *
- * TODO: there is some troubling design choices in this class: the laziness and exception behavior:
- * TODO:   because the class is designed to be lazy, when an instance is created, some invalid expressions may be provided
- * TODO:   later when user requests some/all values, those invalid expressions will result in IllegalArgumentException,
- * TODO:   especially when calling the function values(), which is the last thing users expect when calling such accessors.
- * TODO:   but there may be no good choice here. could decide to "unsupport" the values() function.
  */
 
 class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
@@ -40,11 +30,8 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      */
     private Map<JexlVCMatchExp,Boolean> jexl;
 
-    // -----------------------------------------------------------------------------------------------
-    // Initializers and accessors
-    // -----------------------------------------------------------------------------------------------
     public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g) {
-        lazyInitialize(jexlCollection);
+        initialize(jexlCollection);
         this.vc = vc;
         this.g = g;
     }
@@ -55,7 +42,9 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
 
     /**
      * Note: due to laziness, this accessor actually modifies the instance by possibly forcing evaluation of an Jexl expression.
-     * @throws IllegalArgumentException when {@code o} is {@code null}
+     *
+     * @throws IllegalArgumentException when {@code o} is {@code null} or
+     *                                  when any of the JexlVCMatchExp (i.e. keys) contains invalid Jexl expressions.
      */
     public Boolean get(Object o) {
         if(o == null){
@@ -89,9 +78,10 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * the keys you want, you would be better off using get() to get them by name.
      *
      * Note: due to laziness, this accessor actually modifies the instance by possibly forcing evaluation of an Jexl expression.
+     *
      * @return a collection of boolean values, representing the results of all the variants evaluated
      *
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException when any of the JexlVCMatchExp (i.e. keys) contains invalid Jexl expressions.
      */
     public Collection<Boolean> values() {
         for (final JexlVCMatchExp exp : jexl.keySet()) {
@@ -103,18 +93,13 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     }
 
     /**
-     * TODO: the number may count invalid entries, is this good?
-     * @return the number of keys, i.e. {@link JexlVCMatchExp}'s hold by this mapping.
+     * @return the number of keys, i.e. {@link JexlVCMatchExp}'s held by this mapping.
      */
     public int size() {
         return jexl.size();
     }
 
     public boolean isEmpty() { return this.jexl.isEmpty(); }
-
-    // -----------------------------------------------------------------------------------------------
-    // Modifiers
-    // -----------------------------------------------------------------------------------------------
 
     public Boolean put(JexlVCMatchExp jexlVCMatchExp, Boolean aBoolean) {
         return jexl.put(jexlVCMatchExp, aBoolean);
@@ -124,15 +109,11 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
         jexl.putAll(map);
     }
 
-    // -----------------------------------------------------------------------------------------------
-    // Utilities
-    // -----------------------------------------------------------------------------------------------
-
     /**
-     * Lazily initializes {@link #jexl}, in the sense that all keys in {@code jexlCollection} are associated with {@code null}.
-     * @param jexlCollection
+     * Initializes all keys with null values indicating that they have not yet been evaluated.
+     * The actual value will be computed only when the key is requested via {@link #get(Object)} or {@link #values()}.
      */
-    private void lazyInitialize(Collection<JexlVCMatchExp> jexlCollection) {
+    private void initialize(Collection<JexlVCMatchExp> jexlCollection) {
         jexl = new HashMap<>();
         for (final JexlVCMatchExp exp: jexlCollection) {
             jexl.put(exp, null);
@@ -141,8 +122,12 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
 
     /**
      * Evaluates a {@link JexlVCMatchExp}'s expression, given the current context (and setup the context if it's {@code null}).
+     *
      * @param exp the {@link JexlVCMatchExp} to evaluate
-     * @throws IllegalArgumentException when {@code exp} is {@code null}
+     *
+     * @throws IllegalArgumentException when {@code exp} is {@code null}, or
+     *                                  when the Jexl expression in {@code exp} fails to evaluate the JexlContext
+     *                                  constructed with the input VC or genotype.
      */
     private void evaluateExpression(final JexlVCMatchExp exp) {
         // if the context is null, we need to create it to evaluate the JEXL expression
@@ -154,16 +139,13 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
             final Boolean value = (Boolean) exp.exp.evaluate(jContext);
             // treat errors as no match
             jexl.put(exp, value == null ? false : value);
-        } catch (final JexlException e) {
-            // TODO: is this decision the desired result?
+        } catch (final JexlException.Variable e){
             // if exception happens because variable is undefined (i.e. field in expression is not present), evaluate to FALSE
             jexl.put(exp,false);
-            // todo for a todo (must resolve both in PR review rounds): should I remove the todo and code below?
-            // todo - might be safer if we explicitly checked for an exception type, but Apache's API doesn't seem to have that ability
-            // if exception happens because variable is undefined (i.e. field in expression is not present), evaluate to FALSE
+        } catch (final JexlException e) {
+            // todo - might be better if no exception is caught here but let's user decide how to deal with them; note this will propagate to get() and values()
             throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s",
-                    exp.name,
-                        /*(e.getMessage() == null ? */"no message" /*: e.getMessage())*/));
+                    exp.name, e.getMessage()));
         }
     }
 
@@ -174,27 +156,17 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     private void createContext() {
         if ( vc == null ) {
             jContext = new MapContext(Collections.emptyMap());
-        } else {
-            jContext = (g==null) ? new VariantJEXLContext(vc) : new GenotypeJEXLContext(vc, g);
         }
-    }
-
-    /**
-     * TODO: function is not used, remove or not? resolve in PR review rounds.
-     * adds the list of attributes to the information map we're building
-     * @param infoMap the map
-     * @param attributes the attributes
-     */
-    private static void addAttributesToMap(final Map<String, Object> infoMap, final Map<String, ?> attributes ) {
-        for (Entry<String, ?> e : attributes.entrySet()) {
-            infoMap.put(e.getKey(), String.valueOf(e.getValue()));
+        else if (g == null) {
+            jContext = new VariantJEXLContext(vc);
+        }
+        else {
+            jContext = new GenotypeJEXLContext(vc, g);
         }
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
-    // TODO: is the following comment still true? must resolve in PR review rounds
-    // TODO: is not supported, any other way to resolve at compile time rather than blow up in your face?
-    // The Following are unsupported at the moment
+    // The Following are unsupported at the moment (date: 2016/08/18)
     // //////////////////////////////////////////////////////////////////////////////////////
 
     // this doesn't make much sense to implement, boolean doesn't offer too much variety to deal
