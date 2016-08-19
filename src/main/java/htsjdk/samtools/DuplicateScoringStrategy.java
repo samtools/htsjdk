@@ -24,6 +24,8 @@
 
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.Murmur3;
+
 /**
  * This class helps us compute and compare duplicate scores, which are used for selecting the non-duplicate
  * during duplicate marking (see MarkDuplicates).
@@ -33,8 +35,12 @@ public class DuplicateScoringStrategy {
 
     public enum ScoringStrategy {
         SUM_OF_BASE_QUALITIES,
-        TOTAL_MAPPED_REFERENCE_LENGTH
+        TOTAL_MAPPED_REFERENCE_LENGTH,
+        RANDOM,
     }
+
+    /** Hash used for the RANDOM scoring strategy. */
+    private static final Murmur3 hasher = new Murmur3(1);
 
     /** An enum to use for storing temporary attributes on SAMRecords. */
     private static enum Attr { DuplicateScore }
@@ -80,6 +86,8 @@ public class DuplicateScoringStrategy {
                         score += SAMUtils.getMateCigar(record).getReferenceLength();
                     }
                     break;
+                case RANDOM:
+                    score += (short) (hasher.hashUnencodedChars(record.getReadName()) >> 16);
             }
 
             storedScore = score;
