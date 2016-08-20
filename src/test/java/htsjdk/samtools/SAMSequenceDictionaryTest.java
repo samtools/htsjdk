@@ -27,11 +27,13 @@
 package htsjdk.samtools;
 
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Collections;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -89,4 +91,43 @@ public class SAMSequenceDictionaryTest {
         Assert.assertEquals(dict1, dict2);
     }
 
+    @DataProvider(name="testMergeDictionariesData")
+    Object[][] testMergeDictionariesData(){
+
+        final SAMSequenceRecord rec1, rec2, rec3, rec4;
+        rec1 = new SAMSequenceRecord("chr1", 100);
+        rec2 = new SAMSequenceRecord("chr1", 101);
+        rec2.setMd5("dummy");
+        rec3 = new SAMSequenceRecord("chr1", SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH);
+        rec3.setMd5("dummy2");
+
+        rec4 = new SAMSequenceRecord("chr1", 100);
+        rec4.setAttribute(SAMSequenceRecord.URI_TAG,"file://some/file/name.ok");
+
+
+        return new Object[][]{
+                new Object[]{rec1,rec2,false}
+        };
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testMergeDictionaries(final SAMSequenceRecord rec1 ,final SAMSequenceRecord rec2, boolean canMerge) throws Exception {
+        final SAMSequenceDictionary dict1 = new SAMSequenceDictionary(Collections.singletonList(rec1));
+        final SAMSequenceDictionary dict2 = new SAMSequenceDictionary(Collections.singletonList(rec2));
+
+        try {
+            SAMSequenceDictionary.mergeDictionaries(dict1, dict2, SAMSequenceDictionary.DEFAULT_DICTIONARY_EQUAL_TAG);
+        } catch (final IllegalArgumentException e) {
+            if (!canMerge){
+                throw e;
+            } else{
+                throw new Exception("Expected to be able to merge dictionaries, but wasn't");
+            }
+        }
+        if (canMerge){
+            throw new Exception("Expected to be able to merge dictionaries, but wasn't");
+        } else {
+            throw new Exception("Expected to not be able to merge dictionaries, but was able");
+        }
+    }
 }
