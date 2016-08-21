@@ -285,14 +285,29 @@ public class SAMSequenceDictionary implements Serializable {
      *
      * @param dict1 first dictionary
      * @param dict2 first dictionary
-     * @param tagsToMatch list of tags that must be equal if present in both sequence. Typical values will be MD, LN, and MD
+     * @param tagsToMatch list of tags that must be equal if present in both sequence. Typical values will be MD, and LN
      * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
      */
-    static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1, final SAMSequenceDictionary dict2, final List<String> tagsToMatch) {
+    static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
+                                                          final SAMSequenceDictionary dict2,
+                                                          final List<String> tagsToMatch) {
 
-        final SAMSequenceDictionary finalDict = new SAMSequenceDictionary(dict1.getSequences());
-        for (final SAMSequenceRecord sequence : finalDict.getSequences()) {
+        if(dict1.getSequences().size()!=dict2.getSequences().size()) {
+            throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
+                    "different number of sequences in them. Found %d and %d sequences",
+                    dict1.getSequences().size(), dict2.getSequences().size()));
+        }
+        final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
+        for (final SAMSequenceRecord sequence : dict1.getSequences()) {
+            final SAMSequenceRecord mergedSequence = new SAMSequenceRecord(sequence.getSequenceName(),
+                    UNKNOWN_SEQUENCE_LENGTH);
+            finalDict.addSequence(mergedSequence);
             final int sequenceIndex = sequence.getSequenceIndex();
+            if (!dict2.getSequence(sequenceIndex).getSequenceName().equals(sequence.getSequenceName())) {
+                throw new IllegalArgumentException(String.format("Non-equal sequence names (%s and %s) at index %d in " +
+                        "the dictionaries.",
+                        sequence.getSequenceName(), dict2.getSequence(sequenceIndex).getSequenceName(), sequenceIndex));
+            }
             final Set<String> allTags = new HashSet<>();
 
             for (SAMSequenceRecord seq : Arrays.asList(
@@ -313,7 +328,7 @@ public class SAMSequenceDictionary implements Serializable {
                 if (value1 != null && value2 != null && !value1.equals(value2)) {
                     if (tagsToMatch.contains(tag)) {
                         final String error = String.format("Cannot merge the two dictionaries. Found sequence entry for which " +
-                                        "tags differ: %s and tag %s has the two values: %s and %s",
+                                        "tag values differ: Sequence %s at tag %s has the values: %s and %s",
                                 dict1.getSequence(sequenceIndex).getSequenceName(),
                                 tag,
                                 value1,
@@ -323,14 +338,14 @@ public class SAMSequenceDictionary implements Serializable {
                         throw new IllegalArgumentException(error);
                     } else {
                         log.warn("Found sequence entry for which " +
-                                        "tags differ: %s and tag %s has the two values: %s and %s. using Value %s",
+                                        "tags differ: %s and tag %s has the two values: %s and %s. Using Value %s",
                                 dict1.getSequence(sequenceIndex).getSequenceName(),
                                 tag,
                                 value1,
                                 value2, value1);
                     }
                 }
-                sequence.setAttribute(tag, value1 == null ? value2 : value1);
+                mergedSequence.setAttribute(tag, value1 == null ? value2 : value1);
             }
 
             final int length1 = dict1.getSequence(sequenceIndex).getSequenceLength();
@@ -347,12 +362,12 @@ public class SAMSequenceDictionary implements Serializable {
                     throw new IllegalArgumentException(error);
                 } else {
                     log.warn("Found sequence entry for which " +
-                                    "lengths differ:%s has lengths %s and %s. using Value %s",
+                                    "lengths differ: Sequence %s has lengths %s and %s. Using Value %s",
                             dict1.getSequence(sequenceIndex).getSequenceName(),
                             length1, length2, length1);
                 }
             }
-            sequence.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
+            mergedSequence.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
         }
         return finalDict;
     }
