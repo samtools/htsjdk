@@ -92,9 +92,9 @@ public class SAMSequenceDictionaryTest {
     }
 
     @DataProvider(name="testMergeDictionariesData")
-    Object[][] testMergeDictionariesData(){
+    public Object[][] testMergeDictionariesData(){
 
-        final SAMSequenceRecord rec1, rec2, rec3, rec4;
+        final SAMSequenceRecord rec1, rec2, rec3, rec4, rec5;
         rec1 = new SAMSequenceRecord("chr1", 100);
         rec2 = new SAMSequenceRecord("chr1", 101);
         rec2.setMd5("dummy");
@@ -104,14 +104,26 @@ public class SAMSequenceDictionaryTest {
         rec4 = new SAMSequenceRecord("chr1", 100);
         rec4.setAttribute(SAMSequenceRecord.URI_TAG,"file://some/file/name.ok");
 
+        rec5 = new SAMSequenceRecord("chr2", 200);
+        rec4.setAttribute(SAMSequenceRecord.URI_TAG,"file://some/file/name.ok");
 
         return new Object[][]{
-                new Object[]{rec1,rec2,false}
+                new Object[]{rec1, rec1, true},
+                new Object[]{rec2, rec2, true},
+                new Object[]{rec3, rec3, true},
+                new Object[]{rec4, rec4, true},
+                new Object[]{rec1, rec2, false},//since 100 != 101 in Length
+                new Object[]{rec1, rec3, true},
+                new Object[]{rec1, rec4, true},
+                new Object[]{rec2, rec3, false}, // since MD5 is not equal
+                new Object[]{rec2, rec4, false}, //length differs
+                new Object[]{rec3, rec4, true},
+                new Object[]{rec4, rec5, false}, // different name
         };
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testMergeDictionaries(final SAMSequenceRecord rec1 ,final SAMSequenceRecord rec2, boolean canMerge) throws Exception {
+    @Test(dataProvider = "testMergeDictionariesData", expectedExceptions = IllegalArgumentException.class)
+    public void testMergeDictionaries(final SAMSequenceRecord rec1, final SAMSequenceRecord rec2, boolean canMerge) throws Exception {
         final SAMSequenceDictionary dict1 = new SAMSequenceDictionary(Collections.singletonList(rec1));
         final SAMSequenceDictionary dict2 = new SAMSequenceDictionary(Collections.singletonList(rec2));
 
@@ -125,7 +137,7 @@ public class SAMSequenceDictionaryTest {
             }
         }
         if (canMerge){
-            throw new Exception("Expected to be able to merge dictionaries, but wasn't");
+            throw new IllegalArgumentException("Expected to be able to merge dictionaries, and was indeed able to do so.");
         } else {
             throw new Exception("Expected to not be able to merge dictionaries, but was able");
         }
