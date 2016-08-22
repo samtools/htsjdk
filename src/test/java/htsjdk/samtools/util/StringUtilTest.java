@@ -67,4 +67,35 @@ public class StringUtilTest {
                 {"A:BB:C:", new String[]{"A", "BB", "C:"}, true}, 
         };
     }
+
+    @DataProvider(name="hammingDistanceProvider")
+    public Object[][] hammingDistance() {
+        return new Object[][] {
+                {"ATAC", "GCAT", 3, true},
+                {"ATAC", "GCAT", 2, false},
+                {"ATAC", "GCAT", 1, false},
+                {"ATAC", "GCAT", 0, false}
+        };
+    }
+
+    @Test(dataProvider = "hammingDistanceProvider")
+    public void testIsWithinHammingDistance(final String s1, final String s2, final int maxHammingDistance, final boolean expectedResult) {
+        Assert.assertEquals(StringUtil.isWithinHammingDistance(s1, s2, maxHammingDistance), expectedResult);
+    }
+
+    @DataProvider(name="hammingDistanceExceptionProvider")
+    public Object[][] hammingDistanceException() {
+        return new Object[][] {
+                {"ATAC", "GCT", 3, true},
+                {"ATAC", "AT", 2, false},
+                {"ATAC", "T", 1, false},
+                {"", "GCAT", 0, false}
+        };
+    }
+
+    @Test(dataProvider = "hammingDistanceExceptionProvider", expectedExceptions = IllegalArgumentException.class)
+    public void testIsWithinHammingDistanceExceptions(final String s1, final String s2, final int maxHammingDistance, final boolean expectedResult) {
+        Assert.assertEquals(StringUtil.isWithinHammingDistance(s1, s2, maxHammingDistance), expectedResult);
+    }
+
 }
