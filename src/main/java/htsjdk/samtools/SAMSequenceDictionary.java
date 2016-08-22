@@ -270,7 +270,6 @@ public class SAMSequenceDictionary implements Serializable {
     }
 
     public static final List<String> DEFAULT_DICTIONARY_EQUAL_TAG = Arrays.asList(
-            SAMSequenceRecord.URI_TAG,
             SAMSequenceRecord.MD5_TAG,
             SAMSequenceRecord.SEQUENCE_LENGTH_TAG);
 
@@ -308,18 +307,11 @@ public class SAMSequenceDictionary implements Serializable {
                         "the dictionaries.",
                         sequence.getSequenceName(), dict2.getSequence(sequenceIndex).getSequenceName(), sequenceIndex));
             }
-            final Set<String> allTags = new HashSet<>();
 
-            for (SAMSequenceRecord seq : Arrays.asList(
-                    dict1.getSequence(sequenceIndex),
-                    dict2.getSequence(sequenceIndex))) {
-
-                final Set<String> dictTags = seq
-                        .getAttributes().parallelStream()
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toSet());
-                allTags.addAll(dictTags);
-            }
+            final Set<String> allTags = new HashSet<>(dict1.getSequence(sequenceIndex).getAttributes()
+                    .stream().map(Map.Entry::getKey).collect(Collectors.toSet()));
+            allTags.addAll(dict2.getSequence(sequenceIndex).getAttributes()
+                    .stream().map(Map.Entry::getKey).collect(Collectors.toSet()));
 
             for (final String tag : allTags) {
                 final String value1 = dict1.getSequence(sequenceIndex).getAttribute(tag);
