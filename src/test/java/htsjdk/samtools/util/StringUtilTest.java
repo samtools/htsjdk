@@ -68,8 +68,8 @@ public class StringUtilTest {
         };
     }
 
-    @DataProvider(name="hammingDistanceProvider")
-    public Object[][] hammingDistance() {
+    @DataProvider(name="withinHammingDistanceProvider")
+    public Object[][] isWithinHammingDistanceProvider() {
         return new Object[][] {
                 {"ATAC", "GCAT", 3, true},
                 {"ATAC", "GCAT", 2, false},
@@ -78,13 +78,13 @@ public class StringUtilTest {
         };
     }
 
-    @Test(dataProvider = "hammingDistanceProvider")
+    @Test(dataProvider = "withinHammingDistanceProvider")
     public void testIsWithinHammingDistance(final String s1, final String s2, final int maxHammingDistance, final boolean expectedResult) {
         Assert.assertEquals(StringUtil.isWithinHammingDistance(s1, s2, maxHammingDistance), expectedResult);
     }
 
-    @DataProvider(name="hammingDistanceExceptionProvider")
-    public Object[][] hammingDistanceException() {
+    @DataProvider(name="withinHammingDistanceExceptionProvider")
+    public Object[][] isWithinHammingDistanceException() {
         return new Object[][] {
                 {"ATAC", "GCT", 3, true},
                 {"ATAC", "AT", 2, false},
@@ -94,8 +94,26 @@ public class StringUtilTest {
     }
 
     @Test(dataProvider = "hammingDistanceExceptionProvider", expectedExceptions = IllegalArgumentException.class)
-    public void testIsWithinHammingDistanceExceptions(final String s1, final String s2, final int maxHammingDistance, final boolean expectedResult) {
-        Assert.assertEquals(StringUtil.isWithinHammingDistance(s1, s2, maxHammingDistance), expectedResult);
+    public void testIsWithinHammingDistanceExceptions(final String s1, final String s2, final int maxHammingDistance) {
+        // We assert hammingDistance = 0, and isWithinHammingDistance = true because the values don't matter
+        // and we are checking to ensure that the IllegalArgumentException is thrown
+        Assert.assertEquals(StringUtil.hammingDistance(s1, s2), 0);
+        Assert.assertEquals(StringUtil.isWithinHammingDistance(s1, s2, maxHammingDistance), true);
+    }
+
+    @DataProvider(name="hammingDistanceProvider")
+    public Object[][] hammingDistance() {
+        return new Object[][] {
+                {"ATAC", "GCAT", 3},
+                {"ATAGC", "ATAGC", 0},
+                {"ATAC", "atac", 4}, // Hamming distance is case sensitive
+                {"", "", 0}
+        };
+    }
+
+    @Test(dataProvider = "hammingDistanceProvider")
+    public void testHammingDistanceExceptions(final String s1, final String s2, final int expectedResult) {
+        Assert.assertEquals(StringUtil.hammingDistance(s1, s2), expectedResult);
     }
 
 }

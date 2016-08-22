@@ -547,6 +547,29 @@ public class StringUtil {
     }
 
     /**
+     * Calculates the hamming distance between two strings s1 and s2.
+     * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
+     * the two strings are of different lengths.
+     *
+     * @param s1 The first string to compare
+     * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
+     * @return Hamming distance between s1 and s2.
+     * @throws IllegalArgumentException If the two strings have differing lengths.
+     */
+    public static int hammingDistance(final String s1, final String s2) {
+        if (s1.length() != s2.length()) {
+            throw new IllegalArgumentException("Attempted to determine Hamming distance of strings with differing lengths.");
+        }
+        int measuredDistance = 0;
+        for (int i = 0;i < s1.length();i++) {
+            if (s1.charAt(i) != s2.charAt(i)) {
+                measuredDistance++;
+            }
+        }
+        return measuredDistance;
+    }
+
+    /**
      * Determines if two strings s1 and s2 are within maxHammingDistance of ecah other using the Hamming Distance metric.
      * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
      * the two strings are of different lengths.
