@@ -25,8 +25,10 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 
@@ -42,5 +44,30 @@ public class VCFCompoundHeaderLineUnitTest extends VariantBaseTest {
 	final VCFCompoundHeaderLine headerline = new VCFInfoHeaderLine(line, VCFHeaderVersion.VCF4_2);
 	// if we don't support version fields then we should fail before we ever get here
 	Assert.assertTrue(true);
+    }
+
+    @Test (dataProvider = "BadIDFieldValues")
+    public void testMalformedIDFieldValue(String badID) {
+        // Should pass with old version specified
+        new VCFInfoHeaderLine(String.format("<ID=%s,Number=1,Type=Float,Description=\"foo\",Version=3>", badID), VCFHeaderVersion.VCF4_2);
+
+        // Should fail with new version specified
+        boolean hasCrashed = false;
+        try {
+            new VCFInfoHeaderLine(String.format("<ID=%s,Number=1,Type=Float,Description=\"foo\",Version=3>", badID), VCFHeaderVersion.VCF4_3);
+        } catch (TribbleException.InvalidHeader e) {
+            hasCrashed = true;
+        }
+        Assert.assertTrue(hasCrashed);
+    }
+
+    @DataProvider (name = "BadIDFieldValues")
+    public Object[][] getBadIDFieldValues() {
+        return new Object[][] {
+                {"3abcz"},
+                {"?ABC"},
+                {"AB;"},
+                {"AB\n9"},
+        };
     }
 }

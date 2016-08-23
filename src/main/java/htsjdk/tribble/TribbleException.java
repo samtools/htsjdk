@@ -136,4 +136,10 @@ public class TribbleException extends RuntimeException {
             setSource(f);
         }
     }
+
+    public static class VCFException extends TribbleException {
+        public VCFException(String message) {
+            super(message);
+        }
+    }
 }

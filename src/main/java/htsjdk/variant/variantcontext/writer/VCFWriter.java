@@ -26,15 +26,13 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFEncoder;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLine;
-import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.*;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -43,14 +41,17 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * this class writes VCF files
  */
 class VCFWriter extends IndexingVariantContextWriter {
+    Log logger = Log.getInstance(VCFWriter.class);
 
     private static final String VERSION_LINE =
-            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_2.getFormatString() + "=" + VCFHeaderVersion.VCF4_2.getVersionString();
+            VCFHeader.METADATA_INDICATOR + VCFHeaderVersion.VCF4_3.getFormatString() + "=" + VCFHeaderVersion.VCF4_3.getVersionString();
 
 	// Initialized when the header is written to the output stream
 	private VCFEncoder vcfEncoder = null;
@@ -155,9 +156,24 @@ class VCFWriter extends IndexingVariantContextWriter {
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
 
+            // map to check for duplicate Key-ID pairs
+            Set<String> pairSet = new HashSet<>();
+
             for (final VCFHeaderLine line : header.getMetaDataInSortedOrder() ) {
                 if ( VCFHeaderVersion.isFormatString(line.getKey()) )
                     continue;
+                if (line instanceof VCFIDHeaderLine) {
+                    String key = line.getKey() + "," + ((VCFIDHeaderLine)line).getID();
+                    if (pairSet.contains(key)) throw new TribbleException.VCFException("ID field \""+((VCFIDHeaderLine)line).getID()+"\" for key \""+line.getKey()+"\" is repeated, this is invalid");
+                    pairSet.add(key);
+                }
+
+                if ((line instanceof VCFFormatHeaderLine) || (line instanceof VCFInfoHeaderLine)) {
+                    // Checking that the line matches the VCFv4.3 spec for valid ID fields
+                    if( !( VCFCompoundHeaderLine.LEGAL_HEADER_ID_KEYS.matcher(((VCFCompoundHeaderLine) line).getID()).matches())) {
+                        throw new TribbleException.VCFException("Invalid ID field \""+ ((VCFCompoundHeaderLine) line).getID() +"\" in header line");
+                    }
+                }
 
                 writer.write(VCFHeader.METADATA_INDICATOR);
                 writer.write(line.toString());

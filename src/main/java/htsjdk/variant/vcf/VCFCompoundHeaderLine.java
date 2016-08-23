@@ -34,11 +34,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
- * a base class for compound header lines, which include info lines and format lines (so far)
+ * a base class for compound header lines, which include info lines, format lines, and pedigree lines (so far)
  */
 public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {
+
+    // regex pattern corresponding to legal info/format field keys
+    public final static Pattern LEGAL_HEADER_ID_KEYS = Pattern.compile("^[A-Za-z_][0-9A-Za-z_.]*$");
 
     public enum SupportedHeaderLineType {
         INFO(true), FORMAT(false);
@@ -126,6 +130,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         this.description = description;
         this.lineType = lineType;
         validate();
+        validateIDStrict();
     }
 
     /**
@@ -145,6 +150,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         this.description = description;
         this.lineType = lineType;
         validate();
+        validateIDStrict();
     }
 
     /**
@@ -198,6 +204,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         this.lineType = lineType;
 
         validate();
+        if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) validateIDStrict();
     }
 
     private void validate() {
@@ -297,5 +304,11 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @return true if we do, false otherwise
      */
     abstract boolean allowFlagValues();
+
+    protected void validateIDStrict() {
+        if (!VCFCompoundHeaderLine.LEGAL_HEADER_ID_KEYS.matcher(getID()).matches() ) {
+            throw new TribbleException.InvalidHeader(String.format("The %s header line ID value \"%s\" is invalid", getKey(), getID()));
+        }
+    }
 
 }

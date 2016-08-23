@@ -26,6 +26,8 @@
 package htsjdk.variant.vcf;
 
 
+import htsjdk.tribble.TribbleException;
+
 /**
  * @author ebanks
  *         <p>

@@ -35,9 +35,9 @@ import java.util.Map;
  * 
  * A class representing a key=value entry for simple VCF header types
  */
-public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {
+public class VCFSimpleHeaderLine extends VCFHeaderLine {
 
-    private String name;
+    protected String name;
     private Map<String, String> genericFields = new LinkedHashMap<String, String>();
 
     /**
@@ -119,9 +119,5 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
         result = 31 * result + name.hashCode();
         result = 31 * result + genericFields.hashCode();
         return result;
-    }
-
-    public String getID() {
-        return name;
     }
 }

@@ -62,6 +62,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
             throw new IllegalArgumentException("VCFHeaderLine: key cannot contain angle brackets");
         if ( key.contains("=") )
             throw new IllegalArgumentException("VCFHeaderLine: key cannot contain an equals sign");
+        //TODO this is where a change to the typing happens
         mKey = key;
         mValue = value;
     }
@@ -157,7 +158,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
             builder.append(entry.getKey());
             builder.append('=');
             builder.append(entry.getValue().toString().contains(",") ||
-                           entry.getValue().toString().contains(" ") ||
+                           entry.getValue().toString().contains(" ") || //TODO what exactly does this affect?
                            entry.getKey().equals("Description") ? "\""+ escapeQuotes(entry.getValue().toString()) + "\"" : entry.getValue());
         }
         builder.append('>');

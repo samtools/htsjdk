@@ -45,7 +45,7 @@ public final class VCFConstants {
     public static final String GENOTYPE_KEY = "GT";
     public static final String GENOTYPE_POSTERIORS_KEY = "GP";
     public static final String GENOTYPE_QUALITY_KEY = "GQ";
-    public static final String GENOTYPE_ALLELE_DEPTHS = "AD"; //AD isn't reserved, but is specifically handled by VariantContext
+    public static final String GENOTYPE_ALLELE_DEPTHS = "AD"; //AD is now reserved
     public static final String GENOTYPE_PL_KEY = "PL";   // phred-scaled genotype likelihoods
     public static final String EXPECTED_ALLELE_COUNT_KEY = "EC";
     @Deprecated public static final String GENOTYPE_LIKELIHOODS_KEY = "GL";         // log10 scaled genotype likelihoods
@@ -87,6 +87,7 @@ public final class VCFConstants {
     public static final String FORMAT_HEADER_START = "##FORMAT";
     public static final String INFO_HEADER_START = "##INFO";
     public static final String ALT_HEADER_START = "##ALT";
+    public static final String PEDIGREE_HEADER_START = "##PEDIGREE";
     public static final String CONTIG_HEADER_KEY = "contig";
     public static final String CONTIG_HEADER_START = "##" + CONTIG_HEADER_KEY;
 

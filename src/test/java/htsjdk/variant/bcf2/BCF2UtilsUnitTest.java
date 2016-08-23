@@ -79,13 +79,13 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
-        inputLines.add(new VCFInfoHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
-        inputLines.add(new VCFInfoHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFInfoHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFInfoHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         inputLines.add(new VCFHeaderLine("x", "misc"));
         inputLines.add(new VCFHeaderLine("y", "misc"));
         inputLines.add(new VCFSimpleHeaderLine("GATKCommandLine","z","misc"));
-        inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
-        inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFFormatHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFFormatHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         final int inputLineCounter = counter;
         final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(inputLines));
         final ArrayList<String> dict = BCF2Utils.makeDictionary(inputHeader);

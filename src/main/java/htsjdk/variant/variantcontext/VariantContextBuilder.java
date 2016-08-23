@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeaderVersion;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -71,6 +72,7 @@ public class VariantContextBuilder {
     private long start = -1;
     private long stop = -1;
     private Collection<Allele> alleles = null;
+    private VCFHeaderVersion oldVersion; //TODO add a way to set this
 
     // optional -> these are set to the appropriate default value
     private String ID = VCFConstants.EMPTY_ID_FIELD;
@@ -124,6 +126,7 @@ public class VariantContextBuilder {
         this.start = parent.getStart();
         this.stop = parent.getEnd();
         this.fullyDecoded = parent.isFullyDecoded();
+        this.oldVersion = parent.getOldVersion();
     }
 
     public VariantContextBuilder(final VariantContextBuilder parent) {
@@ -138,6 +141,7 @@ public class VariantContextBuilder {
         this.start = parent.start;
         this.stop = parent.stop;
         this.fullyDecoded = parent.fullyDecoded;
+        this.oldVersion = parent.oldVersion;
 
         this.attributes(parent.attributes);
         this.filters(parent.filters);
@@ -436,6 +440,16 @@ public class VariantContextBuilder {
     }
 
     /**
+     * sets the source version that the variant context file originated from
+     * @param version
+     * @return
+     */
+    public VariantContextBuilder sourceVersion(VCFHeaderVersion version) {
+        this.oldVersion = version;
+        return this;
+    }
+
+    /**
      * Compute the end position for this VariantContext from the alleles themselves
      *
      * assigns this builder the stop position computed.
@@ -493,6 +507,6 @@ public class VariantContextBuilder {
 
         return new VariantContext(source, ID, contig, start, stop, alleles,
                 genotypes, log10PError, filters, attributes,
-                fullyDecoded, toValidate);
+                fullyDecoded, toValidate, oldVersion);
     }
 }

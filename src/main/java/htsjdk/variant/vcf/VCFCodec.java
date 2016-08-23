@@ -28,11 +28,7 @@ package htsjdk.variant.vcf;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.LineIterator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * A feature codec for the VCF 4 specification
@@ -98,7 +94,7 @@ public class VCFCodec extends AbstractVCFCodec {
                     version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
                     if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) )
                         throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4; please use the VCF3 codec for " + lineFields[1]);
-                    if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 )
+                    if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 && version != VCFHeaderVersion.VCF4_3)
                         throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]);
                 }
                 headerStrings.add(lineIterator.next());
@@ -125,13 +121,13 @@ public class VCFCodec extends AbstractVCFCodec {
      * @param filterString the string to parse
      * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
      */
-    protected List<String> parseFilters(final String filterString) {
+    protected Set<String> parseFilters(final String filterString) {
         // null for unfiltered
         if ( filterString.equals(VCFConstants.UNFILTERED) )
             return null;
 
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
-            return Collections.emptyList();
+            return Collections.emptySet();
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
             generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
         if (filterString.isEmpty())
@@ -142,14 +138,18 @@ public class VCFCodec extends AbstractVCFCodec {
             return filterHash.get(filterString);
 
         // empty set for passes filters
-        final List<String> fFields = new LinkedList<String>();
+        final Set<String> fFields = new HashSet<>();
         // otherwise we have to parse and cache the value
         if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
             fFields.add(filterString);
-        else
-            fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
+        else {
+            String[] filters = filterString.split(VCFConstants.FILTER_CODE_SEPARATOR);
+            for (int i = 0; i < filters.length; i++) {
+                if (!fFields.add(filters[i])) logger.warn(String.format("The VCF specification disallows duplicate filter arguments; filter field was \"%s\" in the vicinity of %d",filterString, lineNo));
+            }
+        }
 
-        filterHash.put(filterString, Collections.unmodifiableList(fFields));
+        filterHash.put(filterString, Collections.unmodifiableSet(fFields));
 
         return fFields;
     }

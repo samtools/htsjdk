@@ -30,6 +30,7 @@ import htsjdk.tribble.readers.LineIterator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -97,24 +98,24 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @param filterString the string to parse
      * @return a set of the filters applied
      */
-    protected List<String> parseFilters(String filterString) {
+    protected HashSet<String> parseFilters(String filterString) {
 
         // null for unfiltered
         if ( filterString.equals(VCFConstants.UNFILTERED) )
             return null;
 
         // empty set for passes filters
-        List<String> fFields = new ArrayList<String>();
+        HashSet<String> fFields = new HashSet<String>();
 
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
-            return new ArrayList<String>(fFields);
+            return new HashSet<String>(fFields);
 
         if (filterString.isEmpty())
             generateException("The VCF specification requires a valid filter status");
 
         // do we have the filter string cached?
         if ( filterHash.containsKey(filterString) )
-            return new ArrayList<String>(filterHash.get(filterString));
+            return new HashSet<String>(filterHash.get(filterString));
 
         // otherwise we have to parse and cache the value
         if ( filterString.indexOf(VCFConstants.FILTER_CODE_SEPARATOR) == -1 )

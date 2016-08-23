@@ -32,7 +32,7 @@ import java.util.Arrays;
  * 
  * A class representing a key=value entry for FILTER fields in the VCF header
  */
-public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
+public class VCFFilterHeaderLine extends VCFSimpleHeaderLine implements VCFIDHeaderLine {
 
     /**
      * create a VCF filter header line
@@ -65,5 +65,9 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
     @Override
     public boolean shouldBeAddedToDictionary() {
         return true;
+    }
+
+    public String getID() {
+        return name;
     }
 }
