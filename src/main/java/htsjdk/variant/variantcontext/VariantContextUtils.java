@@ -215,8 +215,8 @@ public class VariantContextUtils {
          * @throws IllegalArgumentException if either argument is {@code null}
          */
         public JexlVCMatchExp(String name, Expression exp) {
-            if(name==null){ throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null name."); }
-            if(exp==null) { throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null expression."); }
+            if (name == null) { throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null name."); }
+            if (exp  == null) { throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null expression."); }
 
             this.name = name;
             this.exp = exp;

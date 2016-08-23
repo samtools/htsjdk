@@ -17,12 +17,12 @@ import java.util.Set;
  */
 
 class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
-
-    // our context
-    private JexlContext jContext = null;
     // our variant context and/or Genotype
     private final VariantContext vc;
     private final Genotype g;
+
+    // our context
+    private JexlContext jContext = null;
 
     /**
      * our mapping from {@link JexlVCMatchExp} to {@link Boolean}s, which will be set to {@code NULL}
@@ -47,12 +47,14 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      *                                  when any of the JexlVCMatchExp (i.e. keys) contains invalid Jexl expressions.
      */
     public Boolean get(Object o) {
-        if(o == null){
+        if (o == null) {
             throw new IllegalArgumentException("Query key is null");
         }
 
         // if we've already determined the value, return it
-        if (jexl.containsKey(o) && jexl.get(o) != null) return jexl.get(o);
+        if (jexl.containsKey(o) && jexl.get(o) != null) {
+            return jexl.get(o);
+        }
 
         // otherwise cast the expression and try again
         final JexlVCMatchExp e = (JexlVCMatchExp) o;
@@ -131,7 +133,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      */
     private void evaluateExpression(final JexlVCMatchExp exp) {
         // if the context is null, we need to create it to evaluate the JEXL expression
-        if (this.jContext == null){
+        if (this.jContext == null) {
             createContext();
         }
 
@@ -139,13 +141,12 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
             final Boolean value = (Boolean) exp.exp.evaluate(jContext);
             // treat errors as no match
             jexl.put(exp, value == null ? false : value);
-        } catch (final JexlException.Variable e){
+        } catch (final JexlException.Variable e) {
             // if exception happens because variable is undefined (i.e. field in expression is not present), evaluate to FALSE
             jexl.put(exp,false);
         } catch (final JexlException e) {
             // todo - might be better if no exception is caught here but let's user decide how to deal with them; note this will propagate to get() and values()
-            throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s with message %s",
-                    exp.name, e.getMessage()));
+            throw new IllegalArgumentException(String.format("Invalid JEXL expression detected for %s", exp.name), e);
         }
     }
 
@@ -154,13 +155,11 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * This code is where new JEXL context variables should get added.
      */
     private void createContext() {
-        if ( vc == null ) {
+        if (vc == null) {
             jContext = new MapContext(Collections.emptyMap());
-        }
-        else if (g == null) {
+        } else if (g == null) {
             jContext = new VariantJEXLContext(vc);
-        }
-        else {
+        } else {
             jContext = new GenotypeJEXLContext(vc, g);
         }
     }
