@@ -30,6 +30,11 @@ public class CRAMCRAIIndexerTest {
                 refSource,
                 ValidationStringency.STRICT);
         SAMFileHeader samHeader = reader.getFileHeader();
+        Iterator<SAMRecord> it = reader.getIterator();
+        while(it.hasNext()) {
+            SAMRecord samRec = it.next();
+        }
+
         reader.close();
 
         FileInputStream fis = new FileInputStream(CRAMFile);
