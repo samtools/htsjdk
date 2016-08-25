@@ -547,9 +547,10 @@ public class StringUtil {
     }
 
     /**
-     * Calculates the hamming distance between two strings s1 and s2.
+     * Calculates the Hamming distance (number of character mismatches) between two strings s1 and s2.
      * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
-     * the two strings are of different lengths.
+     * the two strings are of different lengths.  Hamming distance is case sensitive.  Also note that when
+     * used to compare two DNA strings that contain Ns mathing Ns will not be counted as mismatches.
      *
      * @param s1 The first string to compare
      * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
@@ -558,7 +559,8 @@ public class StringUtil {
      */
     public static int hammingDistance(final String s1, final String s2) {
         if (s1.length() != s2.length()) {
-            throw new IllegalArgumentException("Attempted to determine Hamming distance of strings with differing lengths.");
+            throw new IllegalArgumentException("Attempted to determine Hamming distance of strings with differing lengths. " +
+                    "The first string has length " + s1.length() + " and the second string has length " + s2.length() + ".");
         }
         int measuredDistance = 0;
         for (int i = 0;i < s1.length();i++) {
@@ -570,9 +572,10 @@ public class StringUtil {
     }
 
     /**
-     * Determines if two strings s1 and s2 are within maxHammingDistance of ecah other using the Hamming Distance metric.
+     * Determines if two strings s1 and s2 are within maxHammingDistance of each other using the Hamming distance metric.
      * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
-     * the two strings are of different lengths.
+     * the two strings are of different lengths.  Hamming distance is case sensitive.  Also note that when
+     * used to compare two DNA strings that contain Ns mathing Ns will not be counted as mismatches.
      *
      * @param s1 The first string to compare
      * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
