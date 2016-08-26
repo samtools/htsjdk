@@ -358,13 +358,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end1.setMappingQuality(255);
         end1.setReadPairedFlag(true);
         end1.setProperPairFlag(true);
-        end1.setMateReferenceIndex(contig);
-        end1.setAttribute(SAMTag.MC.name(), readLength + "M");
-        end1.setMateAlignmentStart(start2);
-        end1.setMateNegativeStrandFlag(true);
         end1.setFirstOfPairFlag(end1IsFirstOfPair);
         end1.setSecondOfPairFlag(!end1IsFirstOfPair);
-        end1.setInferredInsertSize((int) CoordMath.getLength(start1, CoordMath.getEnd(start2, this.readLength)));
         end1.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
         if (programRecord != null) {
             end1.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
@@ -383,13 +378,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setMappingQuality(255);
         end2.setReadPairedFlag(true);
         end2.setProperPairFlag(true);
-        end2.setMateReferenceIndex(contig);
-        end2.setAttribute(SAMTag.MC.name(), readLength + "M");
-        end2.setMateAlignmentStart(start1);
-        end2.setMateNegativeStrandFlag(false);
         end2.setFirstOfPairFlag(!end1IsFirstOfPair);
         end2.setSecondOfPairFlag(end1IsFirstOfPair);
-        end2.setInferredInsertSize(end1.getInferredInsertSize());
         end2.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
         if (programRecord != null) {
             end2.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
@@ -398,6 +388,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             end2.setAttribute(SAMTag.RG.name(), readGroup.getReadGroupId());
         }
         fillInBasesAndQualities(end2);
+
+        // set mate info
+        SamPairUtil.setMateInfo(end1, end2, true);
 
         this.records.add(end1);
         this.records.add(end2);
@@ -487,7 +480,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             end1.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
         }
         if (this.unmappedHasBasesAndQualities) {
-        fillInBasesAndQualities(end1);
+            fillInBasesAndQualities(end1);
         }
 
         end2.setReadName(name);
@@ -503,7 +496,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             end2.setAttribute(SAMTag.PG.name(), programRecord.getProgramGroupId());
         }
         if (this.unmappedHasBasesAndQualities) {
-        fillInBasesAndQualities(end2);
+            fillInBasesAndQualities(end2);
         }
 
         this.records.add(end1);
