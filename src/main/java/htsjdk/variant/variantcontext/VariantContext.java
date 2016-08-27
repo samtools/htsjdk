@@ -37,7 +37,6 @@ import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,7 +44,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -269,10 +267,10 @@ public class VariantContext implements Feature, Serializable {
     /* cached monomorphic value: null -> not yet computed, False, True */
     private Boolean monomorphic = null;
 
-    /*
-* Determine which genotype fields are in use in the genotypes in VC
-* @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
-*/
+    /**
+     * Determine which genotype fields are in use in the genotypes in VC
+     * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
+     */
     public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
         final Set<String> keys = new HashSet<String>();
 
@@ -1709,7 +1707,7 @@ public class VariantContext implements Feature, Serializable {
      * Lookup the index of allele in this variant context
      *
      * @param allele the allele whose index we want to get
-     * @return the index of the allele into getAlleles(), or -1 if it cannot be found
+     * @return the index of the allele into getAlleleIndices(), or -1 if it cannot be found
      */
     public int getAlleleIndex(final Allele allele) {
         return getAlleles().indexOf(allele);
@@ -1730,6 +1728,6 @@ public class VariantContext implements Feature, Serializable {
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
         final int index = getAlleleIndex(targetAllele);
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
-        return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
+        return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
 }
