@@ -48,6 +48,9 @@ class VariantJEXLContext implements JexlContext {
     // our stored variant context
     private VariantContext vc;
 
+    static final String true_string = "1";
+    static final String false_string = "0";
+
     private interface AttributeGetter {
         public Object get(VariantContext vc);
     }
@@ -62,7 +65,7 @@ class VariantJEXLContext implements JexlContext {
         attributes.put("QUAL", (VariantContext vc) -> -10 * vc.getLog10PError());
         attributes.put("ALLELES", VariantContext::getAlleles);
         attributes.put("N_ALLELES", VariantContext::getNAlleles);
-        attributes.put("FILTER", (VariantContext vc) -> vc.isFiltered() ? "1" : "0");
+        attributes.put("FILTER", (VariantContext vc) -> vc.isFiltered() ? true_string : false_string);
 
         attributes.put("homRefCount", VariantContext::getHomRefCount);
         attributes.put("hetCount", VariantContext::getHetCount);
@@ -80,7 +83,7 @@ class VariantJEXLContext implements JexlContext {
         } else if ( vc.hasAttribute(name)) {
             result = vc.getAttribute(name);
         } else if ( vc.getFilters().contains(name) ) {
-            result = "1";
+            result = true_string;
         }
 
         return result;
@@ -90,11 +93,10 @@ class VariantJEXLContext implements JexlContext {
         return get(name) != null;
     }
 
+    /**
+     * @throws UnsupportedOperationException
+     */
     public void	set(String name, Object value) {
         throw new UnsupportedOperationException("remove() not supported on a VariantJEXLContext");
     }
 }
-
-
-
-
