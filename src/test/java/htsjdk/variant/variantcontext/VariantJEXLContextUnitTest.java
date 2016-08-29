@@ -221,12 +221,12 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
         final VariantJEXLContext jEXLContext = getJEXLContext();
 
-        // These two are not tested because there's no simple test for equality for Genotype or VariantContext,
+        // This is not tested because there's no simple test for equality for VariantContext,
         // except exhaustive attributes testing, which is what happening below.
-//        Assert.assertEquals( ((Genotype) jEXLContext.get("g")).compareTo(new GenotypeBuilder("DummySample", Arrays.asList(Aref, Talt)).make()), 0); // OK really ugly but directly testing two genotypes equal always return false
 //        Assert.assertEquals(jEXLContext.get("vc"), new VariantContextBuilder("test", "chr1", 10, 10, Arrays.asList(Aref, Talt)).make());
 
         // GenotypeJEXLContext
+        Assert.assertTrue( ((Genotype) jEXLContext.get("g")).sameGenotype(gt, false));
         Assert.assertEquals(jEXLContext.get("isHom"), VariantJEXLContext.false_string);
         Assert.assertEquals(jEXLContext.get("isHomRef"), VariantJEXLContext.false_string);
         Assert.assertEquals(jEXLContext.get("isHomVar"), VariantJEXLContext.false_string);
