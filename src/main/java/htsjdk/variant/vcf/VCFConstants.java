@@ -63,7 +63,10 @@ public final class VCFConstants {
     public static final String SOMATIC_KEY = "SOMATIC";
     public static final String VALIDATED_KEY = "VALIDATED";
     public static final String THOUSAND_GENOMES_KEY = "1000G";
-
+    
+    // reserved INFO for structural variants
+    /** INFO Type of structural variant */
+    public static final String SVTYPE = "SVTYPE";    
 
     // separators
     public static final String FORMAT_FIELD_SEPARATOR = ":";
