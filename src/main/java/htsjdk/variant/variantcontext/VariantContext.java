@@ -1737,7 +1737,7 @@ public class VariantContext implements Feature, Serializable {
      * Search for the INFO=SVTYPE and return the type of Structural Variant 
      * @return the StructuralVariantType of null if there is no property SVTYPE 
      * */
-    public StructuralVariantType geStructuralVariantType() {
+    public StructuralVariantType getStructuralVariantType() {
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
         return svType == null ? null : StructuralVariantType.valueOf(svType);
     }

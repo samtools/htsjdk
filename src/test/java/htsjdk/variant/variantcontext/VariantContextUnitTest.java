@@ -1470,7 +1470,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
             iter = reader.iterator();
             while(iter.hasNext()) {
                 final VariantContext ctx = iter.next();
-                final StructuralVariantType st = ctx.geStructuralVariantType();
+                final StructuralVariantType st = ctx.getStructuralVariantType();
                 Assert.assertNotNull(st);
             }
         } finally {
