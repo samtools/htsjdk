@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,8 @@ import java.util.List;
  * via setSamFilters().
  *
  * @author alecw@broadinstitute.org
+ * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ * 
  */
 
 public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K extends AbstractLocusInfo<T>> implements Iterable<K>, CloseableIterator<K> {
@@ -183,7 +185,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
     public Iterator<K> iterator() {
         if (samIterator != null) {
-            throw new IllegalStateException("Cannot call iterator() more than once on SamLocusIterator");
+            throw new IllegalStateException("Cannot call iterator() more than once on " + this.getClass().getSimpleName());
         }
         CloseableIterator<SAMRecord> tempIterator;
         if (intervals != null) {
@@ -377,7 +379,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * @param type        BEGIN or END type of RecordAndOffset
      * @return RecordAndOffset
      */
-    abstract T createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPosition, TypedRecordAndOffset.Type type);
+    abstract T createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPosition, EdgingRecordAndOffset.Type type);
 
     /**
      * Create the next relevant zero-coverage AbstractLocusInfo<T>

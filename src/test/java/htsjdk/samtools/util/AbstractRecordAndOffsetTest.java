@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,12 @@ import org.testng.annotations.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * 
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ *
+ */
+
 public class AbstractRecordAndOffsetTest {
 
     private final byte[] qualities = {30, 40, 50, 60, 70, 80 ,90, 70, 80, 90};
@@ -43,6 +49,7 @@ public class AbstractRecordAndOffsetTest {
         record.setReadBases(bases);
         record.setBaseQualities(qualities);
     }
+
     @Test
     public void testConstructor(){
         AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0, 10, 3);
@@ -51,29 +58,13 @@ public class AbstractRecordAndOffsetTest {
         assertEquals('A', abstractRecordAndOffset.getReadBase());
         assertEquals(30, abstractRecordAndOffset.getBaseQuality());
         assertEquals(0, abstractRecordAndOffset.getOffset());
-        assertEquals(3, abstractRecordAndOffset.getRefPos());
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testWrongLengthException(){
-        new AbstractRecordAndOffset(record, 2, 101, 3);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testWrongOffsetException(){
-        new AbstractRecordAndOffset(record, 101, 10, 3);
+        assertEquals(0, abstractRecordAndOffset.getRefPos());
     }
 
     @Test
     public void testGetQualityByReferenceIndex(){
         AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0, 10, 0);
         assertEquals(80, abstractRecordAndOffset.getBaseQuality(5));
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testGetQualityByWrongIndexIndex(){
-        AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0, 10, 0);
-        abstractRecordAndOffset.getBaseQuality(15);
     }
 
 }

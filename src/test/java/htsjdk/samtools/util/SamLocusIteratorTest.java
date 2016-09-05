@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author alecw@broadinstitute.org
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
 

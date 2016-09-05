@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,18 +37,18 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests check that for each alignment block of processed reads, iterator returns a <code>TypedRecordAndOffset</code>
- * with type <code>BEGIN</code> for the reference position of read start and a <code>TypedRecordAndOffset</code> with
+ * Tests check that for each alignment block of processed reads, iterator returns a <code>EdgingRecordAndOffset</code>
+ * with type <code>BEGIN</code> for the reference position of read start and a <code>EdgingRecordAndOffset</code> with
  * type <code>END</code> for the reference position + 1 of read end.
  */
-public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
+public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
     @Override
     @Test
     public void testBasicIterator() {
-        final ReadEndsIterator sli = new ReadEndsIterator(createSamFileReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(createSamFileReader());
         int pos = 1;
-        for (final AbstractLocusInfo<TypedRecordAndOffset> li : sli) {
+        for (final AbstractLocusInfo<EdgingRecordAndOffset> li : sli) {
             if (pos == 1 || pos == 37) {
                 assertEquals(pos++, li.getPosition());
                 assertEquals(2, li.getRecordAndPositions().size());
@@ -61,7 +61,7 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
     }
 
     /**
-     * Since ReadEndsIterator does not support emitting uncovered loci, this test just check that
+     * Since EdgeReadIterator does not support emitting uncovered loci, this test just check that
      * iterator return correctly aligned objects for start and end of a read.
      */
     @Override
@@ -75,7 +75,7 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
             builder.addFrag("record" + i, 0, startPosition, true, false, "36M", null, 10);
         }
         final int coveredEnd = CoordMath.getEnd(startPosition, readLength) +1;
-        final ReadEndsIterator sli = new ReadEndsIterator(builder.getSamReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(builder.getSamReader());
 
         int pos = 1;
         final int coveredStart = 165;
@@ -104,16 +104,16 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
             // add a negative-strand fragment mapped on chrM with base quality of 10
             builder.addFrag("record" + i, 0, startPosition, true, false, "3S3M3N3M3D3M3I1N18M3S", null, 10);
         }
-        final ReadEndsIterator sli = new ReadEndsIterator(builder.getSamReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(builder.getSamReader());
         while (sli.hasNext()) {
-            AbstractLocusInfo<TypedRecordAndOffset> info = sli.next();
+            AbstractLocusInfo<EdgingRecordAndOffset> info = sli.next();
             int pos = info.getPosition();
             if (pos == startPosition || pos == startPosition + 6 || pos == startPosition + 12 || pos == startPosition + 16) {
-                assertEquals(TypedRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(0).getType());
-                assertEquals(TypedRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(1).getType());
+                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(0).getType());
+                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(1).getType());
             } else if (pos == startPosition + 3 || pos == startPosition + 9 || pos == startPosition + 15 || pos == startPosition + 34) {
-                assertEquals(TypedRecordAndOffset.Type.END, info.getRecordAndPositions().get(0).getType());
-                assertEquals(TypedRecordAndOffset.Type.END, info.getRecordAndPositions().get(1).getType());
+                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndPositions().get(0).getType());
+                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndPositions().get(1).getType());
             }
         }
     }
@@ -132,7 +132,7 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
         builder.addFrag("record1", 0, startPosition, true, false, "18M10D18M", null, 10);
         builder.addFrag("record2", 0, 41, true, false, "36M", null, 10);
 
-        final ReadEndsIterator sli = new ReadEndsIterator(builder.getSamReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(builder.getSamReader());
         // 5 base overlap btw the two reads
         final int numBasesCovered = 81;
         final int[] expectedReferencePositions = new int[numBasesCovered];
@@ -195,17 +195,17 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
         }
 
         i = 0;
-        for (final AbstractLocusInfo<TypedRecordAndOffset> li : sli) {
+        for (final AbstractLocusInfo<EdgingRecordAndOffset> li : sli) {
             Assert.assertEquals(li.getRecordAndPositions().size(), expectedDepths[i]);
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
             Assert.assertEquals(li.getRecordAndPositions().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
                 Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j]);
                 if (start.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), TypedRecordAndOffset.Type.BEGIN);
+                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), EdgingRecordAndOffset.Type.BEGIN);
                 }
                 if (end.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), TypedRecordAndOffset.Type.END);
+                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), EdgingRecordAndOffset.Type.END);
                 }
             }
             ++i;
@@ -217,28 +217,28 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testSetQualityCutOff() {
-        final ReadEndsIterator sli = new ReadEndsIterator(createSamFileReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(createSamFileReader());
 
         sli.setQualityScoreCutoff(10);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testSetMaxReadsToAccumulatePerLocus() {
-        final ReadEndsIterator sli = new ReadEndsIterator(createSamFileReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(createSamFileReader());
 
         sli.setMaxReadsToAccumulatePerLocus(100);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testSetEmitUncoveredLoci() {
-        final ReadEndsIterator sli = new ReadEndsIterator(createSamFileReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(createSamFileReader());
 
-        sli.setEmitUncoveredLoci(true);
+        sli.setEmitUncoveredLoci(false);
     }
 
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void testSetIncludeIndels() {
-        final ReadEndsIterator sli = new ReadEndsIterator(createSamFileReader());
+        final EdgeReadIterator sli = new EdgeReadIterator(createSamFileReader());
 
         sli.setIncludeIndels(true);
     }
@@ -253,10 +253,10 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
         IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
                 "@SQ\tSN:chrM\tLN:100\n" +
                 "chrM\t50\t60\t+\ttest");
-        ReadEndsIterator iterator = new ReadEndsIterator(samReader, intervals);
+        EdgeReadIterator iterator = new EdgeReadIterator(samReader, intervals);
         int locusPosition = 50;
         while (iterator.hasNext()) {
-            AbstractLocusInfo<TypedRecordAndOffset> next = iterator.next();
+            AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             assertEquals(locusPosition++, next.getPosition());
             assertEquals(0, next.getRecordAndPositions().size());
         }
@@ -273,15 +273,15 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
         IntervalList intervals = createIntervalList("@HD\tSO:coordinate\tVN:1.0\n" +
                 "@SQ\tSN:chrM\tLN:100\n" +
                 "chrM\t5\t15\t+\ttest");
-        ReadEndsIterator iterator = new ReadEndsIterator(samReader, intervals);
+        EdgeReadIterator iterator = new EdgeReadIterator(samReader, intervals);
         int locusPosition = 5;
         while (iterator.hasNext()) {
-            AbstractLocusInfo<TypedRecordAndOffset> next = iterator.next();
+            AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 5) {
                 assertEquals(2, next.getRecordAndPositions().size());
-                for (TypedRecordAndOffset record : next.getRecordAndPositions()) {
+                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
                     assertEquals(11, record.getLength());
                 }
             } else {
@@ -307,23 +307,23 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
                 "@SQ\tSN:chrM\tLN:100\n" +
                 "chrM\t40\t80\t+\ttest");
 
-        ReadEndsIterator iterator = new ReadEndsIterator(builder.getSamReader(), intervals);
+        EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int locusPosition = 40;
         while (iterator.hasNext()) {
-            AbstractLocusInfo<TypedRecordAndOffset> next = iterator.next();
+            AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 40) {
                 assertEquals(1, next.getRecordAndPositions().size());
-                for (TypedRecordAndOffset record : next.getRecordAndPositions()) {
+                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
                     assertEquals(36, record.getLength());
-                    assertEquals(TypedRecordAndOffset.Type.BEGIN, record.getType());
+                    assertEquals(EdgingRecordAndOffset.Type.BEGIN, record.getType());
                 }
             } else if (position == 76) {
                 assertEquals(1, next.getRecordAndPositions().size());
-                for (TypedRecordAndOffset record : next.getRecordAndPositions()) {
+                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
                     assertEquals(36, record.getLength());
-                    assertEquals(TypedRecordAndOffset.Type.END, record.getType());
+                    assertEquals(EdgingRecordAndOffset.Type.END, record.getType());
                 }
             } else {
                 assertEquals(0, next.getRecordAndPositions().size());
@@ -349,25 +349,25 @@ public class ReadEndsIteratorTest extends AbstractLocusIteratorTestTemplate {
                 "@SQ\tSN:chrM\tLN:100\n" +
                 "chrM\t5\t20\t+\ttest");
 
-        ReadEndsIterator iterator = new ReadEndsIterator(builder.getSamReader(), intervals);
+        EdgeReadIterator iterator = new EdgeReadIterator(builder.getSamReader(), intervals);
         int locusPosition = 5;
         int[] expectedLength = new int[]{6, 7};
         int i = 0;
         while (iterator.hasNext()) {
-            AbstractLocusInfo<TypedRecordAndOffset> next = iterator.next();
+            AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 5 || position == 14) {
                 assertEquals(1, next.getRecordAndPositions().size());
-                for (TypedRecordAndOffset record : next.getRecordAndPositions()) {
+                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
                     assertEquals(expectedLength[i], record.getLength());
-                    assertEquals(TypedRecordAndOffset.Type.BEGIN, record.getType());
+                    assertEquals(EdgingRecordAndOffset.Type.BEGIN, record.getType());
                 }
             } else if (position == 11) {
                 assertEquals(1, next.getRecordAndPositions().size());
-                for (TypedRecordAndOffset record : next.getRecordAndPositions()) {
+                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
                     assertEquals(expectedLength[i], record.getLength());
-                    assertEquals(TypedRecordAndOffset.Type.END, record.getType());
+                    assertEquals(EdgingRecordAndOffset.Type.END, record.getType());
                 }
                 i++;
             } else {

@@ -112,7 +112,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
                 if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readOffset] >= minQuality) {
                     // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
                     final int refOffset = refStart + i - accOffset;
-                    accumulator.get(refOffset).add(createRecordAndOffset(rec, readOffset, 1, -1, null));
+                    accumulator.get(refOffset).add(new RecordAndOffset(rec, readOffset));
                 }
             }
         }
@@ -156,10 +156,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
     }
 
     /**
-     * 582
-     * +     * Ensure that the queue is populated and get the accumulator offset for the current record
-     * 583
-     * +
+     * Ensure that the queue is populated and get the accumulator offset for the current record
      */
     private int getAccumulatorOffset(SAMRecord rec) {
         final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
@@ -189,7 +186,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      * @return created RecordAndOffset
      */
     @Override
-    RecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, TypedRecordAndOffset.Type type) {
+    RecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, EdgingRecordAndOffset.Type type) {
         return new RecordAndOffset(rec, readOffset);
     }
 
@@ -214,14 +211,11 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
     public static class RecordAndOffset extends AbstractRecordAndOffset {
 
         /**
-         * For this implementation <code>length</code> = 1, as it represents only one aligned base
-         * and reference offset = -1, as we do not use this field.
-         *
          * @param record inner <code>SAMRecord</code>
          * @param offset 0-based offset from the start of <code>SAMRecord</code>
          */
         public RecordAndOffset(final SAMRecord record, final int offset) {
-            super(record, offset, 1, -1);
+            super(record, offset);
         }
     }
 
@@ -231,7 +225,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      * two more List_s_ of ReadAndOffset objects include reads that overlap the locus with insertions and deletions
      * respectively
      */
-    public static class LocusInfo extends AbstractLocusInfo<RecordAndOffset> {
+    public static final class LocusInfo extends AbstractLocusInfo<RecordAndOffset> {
 
         private List<RecordAndOffset> deletedInRecord = null;
         private List<RecordAndOffset> insertedInRecord = null;
@@ -274,12 +268,21 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         public List<RecordAndOffset> getInsertedInRecord() {
             return (insertedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(insertedInRecord);
         }
+        
+        /** 
+         * @return the number of records overlapping the position, with deletions included if they are being tracked. 
+         */
+        @Override
+        public int size() { 
+            return super.size() + ((deletedInRecord == null) ? 0 : deletedInRecord.size()); 
+        }
+
 
         /**
          * @return <code>true</code> if all the RecordAndOffset lists are empty;
          * <code>false</code> if at least one have records
          */
-
+        @Override
         public boolean isEmpty() {
             return getRecordAndPositions().isEmpty() &&
                     (deletedInRecord == null || deletedInRecord.isEmpty()) &&

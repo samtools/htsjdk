@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,9 @@ import htsjdk.samtools.SAMSequenceRecord;
 
 /**
  * Common template for testing classes, that extend AbstractLocusIterator.
+ * 
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ * 
  */
 public abstract class AbstractLocusIteratorTestTemplate {
 

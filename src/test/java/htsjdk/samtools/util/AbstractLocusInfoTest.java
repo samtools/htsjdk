@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -31,11 +32,15 @@ import org.testng.annotations.Test;
 
 import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ */
+
 public class AbstractLocusInfoTest {
     private final byte[] qualities = {30, 50, 50, 60, 60, 70, 70, 70, 80, 90, 30, 50, 50, 60, 60, 70, 70, 70, 80, 90};
     private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C', 'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
-    private TypedRecordAndOffset typedRecordAndOffset;
-    private TypedRecordAndOffset typedRecordAndOffsetEnd;
+    private EdgingRecordAndOffset typedRecordAndOffset;
+    private EdgingRecordAndOffset typedRecordAndOffsetEnd;
     private SAMSequenceRecord sequence = new SAMSequenceRecord("chrM", 100);
 
     @BeforeTest
@@ -44,13 +49,13 @@ public class AbstractLocusInfoTest {
         record.setReadName("testRecord");
         record.setReadBases(bases);
         record.setBaseQualities(qualities);
-        typedRecordAndOffset = new TypedRecordAndOffset(record, 10, 10, 10, TypedRecordAndOffset.Type.BEGIN);
-        typedRecordAndOffsetEnd = new TypedRecordAndOffset(record, 10, 10, 0, TypedRecordAndOffset.Type.END);
+        typedRecordAndOffset = new EdgingRecordAndOffset(record, 10, 10, 10, EdgingRecordAndOffset.Type.BEGIN);
+        typedRecordAndOffsetEnd = new EdgingRecordAndOffset(record, 10, 10, 0, EdgingRecordAndOffset.Type.END);
     }
 
     @Test
     public void testConstructor() {
-        AbstractLocusInfo<TypedRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 1);
+        AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 1);
         assertEquals("chrM", info.getSequenceName());
         assertEquals(0, info.getRecordAndPositions().size());
         assertEquals(100, info.getSequenceLength());
@@ -59,7 +64,7 @@ public class AbstractLocusInfoTest {
 
     @Test
     public void testAdd() {
-        AbstractLocusInfo<TypedRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 10);
+        AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 10);
         info.add(typedRecordAndOffset);
         info.add(typedRecordAndOffsetEnd);
         assertEquals(2, info.getRecordAndPositions().size());

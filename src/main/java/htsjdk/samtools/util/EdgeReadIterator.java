@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +36,11 @@ import htsjdk.samtools.SamReader;
  * By default duplicate reads and non-primary alignments are filtered out.  Filtering may be changed
  * via setSamFilters(). Difference from SamLocusIterator is that this implementation accumulates data
  * only about start and end of alignment blocks from reads, not about each aligned base.
+ * 
+ * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ * 
  */
-public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset, AbstractLocusInfo<TypedRecordAndOffset>> {
+public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffset, AbstractLocusInfo<EdgingRecordAndOffset>> {
 
     /**
      * Prepare to iterate through the given SAM records, skipping non-primary alignments.  Do not use
@@ -45,19 +48,18 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      *
      * @param samReader must be coordinate sorted
      */
-    public ReadEndsIterator(final SamReader samReader) {
+    public EdgeReadIterator(final SamReader samReader) {
         this(samReader, null);
     }
 
     /**
-     * Prepare to iterate through the given SAM records, skipping non-primary alignments.  Do not use
-     * BAM index even if available.
+     * Prepare to iterate through the given SAM records, skipping non-primary alignments.
      *
      * @param samReader    must be coordinate sorted
      * @param intervalList Either the list of desired intervals, or null.  Note that if an intervalList is
      *                     passed in that is not coordinate sorted, it will eventually be coordinated sorted by this class.
      */
-    public ReadEndsIterator(final SamReader samReader, final IntervalList intervalList) {
+    public EdgeReadIterator(final SamReader samReader, final IntervalList intervalList) {
         this(samReader, intervalList, samReader.hasIndex());
     }
 
@@ -71,13 +73,13 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      *                     It is no longer the case the useIndex==true can make performance worse.  It should always perform at least
      *                     as well as useIndex==false, and generally will be much faster.
      */
-    public ReadEndsIterator(final SamReader samReader, final IntervalList intervalList, final boolean useIndex) {
+    public EdgeReadIterator(final SamReader samReader, final IntervalList intervalList, final boolean useIndex) {
         super(samReader, intervalList, useIndex);
     }
 
     /**
-     * Capture the loci covered by the given SAMRecord in the LocusInfos in the accumulator,
-     * creating new LocusInfos as needed. TypedRecordAndOffset object are created only for start
+     * Capture the loci covered by the given SAMRecord in the AbstractLocusInfos in the accumulator,
+     * creating new AbstractLocusInfos as needed. EdgingRecordAndOffset object are created only for start
      * and end of each alignment block of SAMRecord.
      * If list of intervals is defined, start or/and length of alignment block are shifted to match the interval, to
      * prevent exceeding the interval.
@@ -98,29 +100,38 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
             int refOffsetEnd = refPos - rec.getAlignmentStart() + alignmentBlock.getLength();
 
 
-            // Ensure there are LocusInfos up to and including this position
+            // Ensure there are AbstractLocusInfos up to and including this position
             for (int j = accumulator.size(); j <= refOffsetEnd; ++j) {
                 accumulator.add(createLocusInfo(getReferenceSequence(rec.getReferenceIndex()),
                         rec.getAlignmentStart() + j));
             }
 
-            int refOffsetInterval = refOffset;
+            /* Let's assume an alignment block starts in some locus. 
+             * We put two records to the accumulator. The first one has the "begin" type which corresponds to the locus 
+             * where the block starts. The second one has the "end" type which corresponds to the other locus where the block ends. 
+            */
+            int refOffsetInterval = refOffset; // corresponds to the beginning of the alignment block 
             int refOffsetEndInterval = refOffsetEnd;
             int startShift = 0;
 
+            // intersect intervals and alignment block
             if (getIntervals() != null) {
+                // get the current interval we're proceeding 
                 Interval interval = getCurrentInterval();
                 if (interval != null) {
                     final int intervalEnd = interval.getEnd();
                     final int intervalStart = interval.getStart();
+                    // check if an interval and the alignment block overlap 
                     if ((refPos < intervalStart && refPos + alignmentBlock.getLength() < intervalStart)
                             || (refPos > intervalEnd && refPos + alignmentBlock.getLength() > intervalEnd)) {
                         continue;
                     }
+                    // if the alignment block starts out of an interval shift the starting position
                     if (refPos < intervalStart) {
                         startShift = intervalStart - refPos;
                         refOffsetInterval = refOffsetInterval + startShift;
                     }
+                    // if the alignment block ends out of an interval shift the ending position
                     if (refPos + alignmentBlock.getLength() > intervalEnd) {
                         refOffsetEndInterval = refOffsetEndInterval - (refPos + alignmentBlock.getLength() - intervalEnd) + 1;
                     }
@@ -128,10 +139,13 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
 
             }
             int length = refOffsetEndInterval - refOffsetInterval;
-            TypedRecordAndOffset recordAndOffset = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, TypedRecordAndOffset.Type.BEGIN);
+            // add the alignment block to the accumulator when it starts and when it ends 
+            EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, EdgingRecordAndOffset.Type.BEGIN);
+            // accumulate start of the alignment block
             accumulator.get(refOffsetInterval).add(recordAndOffset);
-            TypedRecordAndOffset recordAndOffsetEnd = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, TypedRecordAndOffset.Type.END);
+            EdgingRecordAndOffset recordAndOffsetEnd = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, EdgingRecordAndOffset.Type.END);
             recordAndOffsetEnd.setStart(recordAndOffset);
+            // accumulate end of the alignment block
             accumulator.get(refOffsetEndInterval).add(recordAndOffsetEnd);
         }
     }
@@ -142,18 +156,18 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
     }
 
     /**
-     * Creates a new <code>TypedRecordAndOffset</code> for given input values
+     * Creates a new <code>EdgingRecordAndOffset</code> for given input values
      *
      * @param rec        aligned SamRecord
      * @param readOffset offset from start of read
      * @param length     length of alignment block
      * @param refPos     position in the reference sequence
      * @param type       BEGIN or END type of RecordAndOffset
-     * @return created <code>TypedRecordAndOffset</code>
+     * @return created <code>EdgingRecordAndOffset</code>
      */
     @Override
-    TypedRecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, TypedRecordAndOffset.Type type) {
-        return new TypedRecordAndOffset(rec, readOffset, length, refPos, type);
+    EdgingRecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, EdgingRecordAndOffset.Type type) {
+        return new EdgingRecordAndOffset(rec, readOffset, length, refPos, type);
     }
 
     /**
@@ -162,7 +176,7 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      * @return <code>AbstractLocusInfo<T></code> for the lastPosition
      */
     @Override
-    AbstractLocusInfo<TypedRecordAndOffset> createLocusInfo(SAMSequenceRecord referenceSequence, int lastPosition) {
+    AbstractLocusInfo<EdgingRecordAndOffset> createLocusInfo(SAMSequenceRecord referenceSequence, int lastPosition) {
         return new AbstractLocusInfo<>(referenceSequence, lastPosition);
     }
 
@@ -174,13 +188,15 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
      */
     @Override
     public void setMaxReadsToAccumulatePerLocus(int maxReadsToAccumulatePerLocus) {
-        throw new UnsupportedOperationException("Locus cap is not supported for " + getClass().getSimpleName() + ".");
+        if (getMaxReadsToAccumulatePerLocus() != maxReadsToAccumulatePerLocus) {
+            throw new UnsupportedOperationException("Locus cap is not supported for " + getClass().getSimpleName() + ".");
+        }
     }
 
     /**
      * This method isn't supported in current implementation.
      *
-     * @param qualityScoreCutoff the minimum bae quality to include in <code>AbstractLocusInfo</code>.
+     * @param qualityScoreCutoff the minimum base quality to include in <code>AbstractLocusInfo</code>.
      */
     @Override
     public void setQualityScoreCutoff(int qualityScoreCutoff) {
@@ -188,20 +204,24 @@ public class ReadEndsIterator extends AbstractLocusIterator<TypedRecordAndOffset
     }
 
     /**
-     * For correct work of <code>ReadEndsIterator</code> value <code>emitUncoveredLoci</code> must be true.
+     * For correct work of <code>EdgeReadIterator</code> value <code>emitUncoveredLoci</code> must be true.
      *
      * @param emitUncoveredLoci if false, iterator will skip uncovered loci in reference sequence, otherwise
      *                          empty <code>AbstractLocusInfo</code> will be created for each loci.
      */
     @Override
     public void setEmitUncoveredLoci(boolean emitUncoveredLoci) {
-        throw new UnsupportedOperationException(getClass().getSimpleName() + " doesn't support work with skipping " +
-                "uncovered bases.");
+        if (isEmitUncoveredLoci() != emitUncoveredLoci) {
+            throw new UnsupportedOperationException(getClass().getSimpleName() + " doesn't support work with skipping " +
+                    "uncovered bases.");
+        }
     }
 
 
     @Override
     public void setIncludeIndels(boolean includeIndels) {
-        throw new UnsupportedOperationException("Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
+        if (isIncludeIndels() != includeIndels) {
+            throw new UnsupportedOperationException("Indels accumulation is not supported for " + getClass().getSimpleName() + ".");
+        }
     }
 }

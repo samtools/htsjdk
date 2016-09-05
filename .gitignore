@@ -17,3 +17,4 @@ src/htsjdk.iml
 #gradle stuff
 .gradle/
 build/
+/bin/

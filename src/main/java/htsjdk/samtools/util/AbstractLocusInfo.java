@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,9 @@ import java.util.List;
  * If <code>RecordAndOffset</code> class is used, one object represents one aligned read that overlaps the locus.
  * If <code>TypedRecordAndOffset</code> class is used, one object represents one aligned read,
  * that starts or ends at the locus.
+ *
+ * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ *
  */
 public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus {
     /**
@@ -117,11 +120,16 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
         return referenceSequence.getSequenceLength();
     }
 
-    /**
-     * @return <code>true</code> if all the RecordAndOffset lists are empty;
-     * <code>false</code> if at least one have records
+    /** 
+     * @return the number of records overlapping the position
      */
+    public int size() { 
+        return this.recordAndOffsets.size(); 
+    }
 
+    /**
+     * @return <code>true</code> if RecordAndOffset list is empty;
+     */
     public boolean isEmpty() {
         return getRecordAndPositions().isEmpty();
     }

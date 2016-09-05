@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,26 +31,20 @@ import htsjdk.samtools.SAMRecord;
  * to the base and quality at the genomic position described the containing AbstractLocusInfo. One object represents
  * one base for <code>SamLocusIterator.RecordAndOffset</code> implementation or one alignment block of
  * <code>SAMRecord</code> for <code>TypedRecordAndOffset</code> implementation.
+ * 
+ * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ * 
  */
 public class AbstractRecordAndOffset {
 
     /**
      * A SAMRecord aligned to reference position
      */
-    private final SAMRecord record;
+    protected final SAMRecord record;
     /**
      * Zero-based offset into the read corresponding to the current position in AbstractLocusInfo
      */
-    private final int offset;
-    /**
-     * Length of alignment block of the read
-     */
-    private final int length;
-    /**
-     * A reference position to which read offset is aligned.
-     */
-    private final int refPos;
-    private int hash = 0;
+    protected final int offset;
 
     /**
      * @param record inner SAMRecord
@@ -59,14 +53,16 @@ public class AbstractRecordAndOffset {
      * @param refPos corresponding to read offset reference position
      */
     public AbstractRecordAndOffset(final SAMRecord record, final int offset, int length, int refPos) {
-        validateIndex(offset, record.getBaseQualities());
-        if (length > record.getReadLength()) {
-            throw new IllegalArgumentException("Block length cannot be larger than whole read length");
-        }
+        this(record, offset);
+    }
+
+    /**
+     * @param record inner SAMRecord
+     * @param offset from the start of the read
+     */
+    public AbstractRecordAndOffset(final SAMRecord record, final int offset) {
         this.offset = offset;
         this.record = record;
-        this.length = length;
-        this.refPos = refPos;
     }
 
     /**
@@ -91,24 +87,17 @@ public class AbstractRecordAndOffset {
     }
 
     /**
-     * @return the base quality according to <code>offset</code>.
-     */
-    public byte getBaseQuality() {
-        return record.getBaseQualities()[offset];
-    }
-
-    /**
      * @return the length of alignment block represented by the object.
      */
     public int getLength() {
-        return length;
+        return 1;
     }
 
     /**
      * @return the position in reference sequence, to which the start of alignment block is aligned.
      */
     public int getRefPos() {
-        return refPos;
+        return 0;
     }
 
     /**
@@ -124,41 +113,20 @@ public class AbstractRecordAndOffset {
     public byte[] getBaseQualities() {
         return record.getBaseQualities();
     }
-
+    
+    /**
+     * @return the base quality according to <code>offset</code>.
+     */
+    public byte getBaseQuality() {
+        return record.getBaseQualities()[offset];
+    }
 
     /**
      * @param position in the reference
      * @return base quality of a read base, corresponding to a given reference position
      */
     public byte getBaseQuality(int position) {
-        int index = getRelativeOffset(position);
-        byte[] baseQualities = record.getBaseQualities();
-        validateIndex(index, baseQualities);
-        return baseQualities[index];
-    }
-
-    private void validateIndex(int index, byte[] array) {
-        if (index < 0 || index >= array.length) {
-            throw new IllegalArgumentException("The requested position is not covered by this AbstractRecordAndOffset" +
-                    " object.");
-        }
-    }
-
-    private int getRelativeOffset(int position) {
-        if (refPos == -1) {
-            return position - offset;
-        }
-        return position - refPos + offset;
-    }
-
-    @Override
-    public int hashCode() {
-        if (hash != 0) return hash;
-        hash = record.hashCode();
-        hash = 31 * hash + length;
-        hash = 31 * hash + offset;
-        hash = 31 * hash + refPos;
-        return hash;
+        return record.getBaseQualities()[position - offset];
     }
 
 }
