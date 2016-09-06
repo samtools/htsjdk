@@ -588,8 +588,9 @@ public class SamFileValidator {
     }
 
     /**
-     * @deprecated use setIndexValidationStringency instead
+     * @deprecated use {@link #setIndexValidationStringency} instead
      */
+    @Deprecated
     public SamFileValidator setValidateIndex(final boolean validateIndex) {
         // The SAMFileReader must also have IndexCaching enabled to have the index validated,
         return this.setIndexValidationStringency(validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);

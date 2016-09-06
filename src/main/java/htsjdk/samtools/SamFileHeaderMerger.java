@@ -122,8 +122,9 @@ public class SamFileHeaderMerger {
      *
      * @param readers   sam file readers to combine
      * @param sortOrder sort order new header should have
-     * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
+     * @deprecated replaced by{@link #SamFileHeaderMerger(SAMFileHeader.SortOrder, Collection, boolean)}
      */
+    @Deprecated
     public SamFileHeaderMerger(final Collection<SamReader> readers, final SAMFileHeader.SortOrder sortOrder) {
         this(readers, sortOrder, false);
     }
@@ -135,8 +136,9 @@ public class SamFileHeaderMerger {
      * @param sortOrder         sort order new header should have
      * @param mergeDictionaries If true, merge sequence dictionaries in new header.  If false, require that
      *                          all input sequence dictionaries be identical.
-     * @deprecated replaced by SamFileHeaderMerger(Collection<SAMFileHeader>, SAMFileHeader.SortOrder, boolean)
+     * @deprecated replaced by {@link #SamFileHeaderMerger(SAMFileHeader.SortOrder, Collection, boolean)}
      */
+    @Deprecated
     public SamFileHeaderMerger(final Collection<SamReader> readers, final SAMFileHeader.SortOrder sortOrder, final boolean mergeDictionaries) {
         this(sortOrder, getHeadersFromReaders(readers), mergeDictionaries);
         this.readers = readers;
@@ -188,7 +190,7 @@ public class SamFileHeaderMerger {
         }
     }
 
-    // Utilility method to make use with old constructor
+    // Utility method to make use with old constructor
     private static List<SAMFileHeader> getHeadersFromReaders(final Collection<SamReader> readers) {
         final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>(readers.size());
         for (final SamReader reader : readers) {
@@ -585,7 +587,7 @@ public class SamFileHeaderMerger {
                 // Since sequenceRecord already exists in resultingDict, don't need to add it.
                 // Add in all the sequences prior to it that have been held in holder.
                 resultingDict.addAll(loc, holder);
-                // Remember the index of sequenceRecord so can check for merge imcompatibility.
+                // Remember the index of sequenceRecord so can check for merge incompatibility.
                 prevloc = loc + holder.size();
                 previouslyMerged = sequenceRecord;
                 holder.clear();
@@ -622,12 +624,12 @@ public class SamFileHeaderMerger {
      * @param masterDictionary the superset dictionary we've created.
      */
     private void createSequenceMapping(final Collection<SAMFileHeader> headers, final SAMSequenceDictionary masterDictionary) {
-        final LinkedList<String> resultingDictStr = new LinkedList<String>();
+        final LinkedList<String> resultingDictStr = new LinkedList<>();
         for (final SAMSequenceRecord r : masterDictionary.getSequences()) {
             resultingDictStr.add(r.getSequenceName());
         }
         for (final SAMFileHeader header : headers) {
-            final Map<Integer, Integer> seqMap = new HashMap<Integer, Integer>();
+            final Map<Integer, Integer> seqMap = new HashMap<>();
             final SAMSequenceDictionary dict = header.getSequenceDictionary();
             for (final SAMSequenceRecord rec : dict.getSequences()) {
                 seqMap.put(rec.getSequenceIndex(), resultingDictStr.indexOf(rec.getSequenceName()));
@@ -640,8 +642,9 @@ public class SamFileHeaderMerger {
     /**
      * Returns the read group id that should be used for the input read and RG id.
      *
-     * @deprecated replaced by getReadGroupId(SAMFileHeader, String)
+     * @deprecated replaced by {@link #getReadGroupId(SAMFileHeader, String)}
      */
+    @Deprecated
     public String getReadGroupId(final SamReader reader, final String originalReadGroupId) {
         return getReadGroupId(reader.getFileHeader(), originalReadGroupId);
     }
@@ -655,8 +658,9 @@ public class SamFileHeaderMerger {
      * @param reader                 one of the input files
      * @param originalProgramGroupId a program group ID from the above input file
      * @return new ID from the merged list of program groups in the output file
-     * @deprecated replaced by getProgramGroupId(SAMFileHeader, String)
+     * @deprecated replaced by {@link #getProgramGroupId(SAMFileHeader, String)}
      */
+    @Deprecated
     public String getProgramGroupId(final SamReader reader, final String originalProgramGroupId) {
         return getProgramGroupId(reader.getFileHeader(), originalProgramGroupId);
     }
@@ -693,8 +697,9 @@ public class SamFileHeaderMerger {
     /**
      * Returns the collection of readers that this header merger is working with. May return null.
      *
-     * @deprecated replaced by getHeaders()
+     * @deprecated replaced by {@link #getHeaders()}
      */
+    @Deprecated
     public Collection<SamReader> getReaders() {
         return this.readers;
     }
@@ -712,8 +717,9 @@ public class SamFileHeaderMerger {
      * @param reader                    the reader
      * @param oldReferenceSequenceIndex the old sequence (also called reference) index
      * @return the new index value
-     * @deprecated replaced by getMergedSequenceIndex(SAMFileHeader, Integer)
+     * @deprecated replaced by {@link #getMergedSequenceIndex(SAMFileHeader, Integer)}
      */
+    @Deprecated
     public Integer getMergedSequenceIndex(final SamReader reader, final Integer oldReferenceSequenceIndex) {
         return this.getMergedSequenceIndex(reader.getFileHeader(), oldReferenceSequenceIndex);
     }
@@ -745,7 +751,7 @@ public class SamFileHeaderMerger {
      * Implementations of this interface are used by mergeHeaderRecords(..) to instantiate
      * specific subclasses of AbstractSAMHeaderRecord.
      */
-    private static interface HeaderRecordFactory<RecordType extends AbstractSAMHeaderRecord> {
+    private interface HeaderRecordFactory<RecordType extends AbstractSAMHeaderRecord> {
 
         /**
          * Constructs a new instance of RecordType.
@@ -753,7 +759,7 @@ public class SamFileHeaderMerger {
          * @param id        The id of the new record.
          * @param srcRecord Except for the id, the new record will be a copy of this source record.
          */
-        public RecordType createRecord(final String id, RecordType srcRecord);
+        RecordType createRecord(final String id, RecordType srcRecord);
     }
 
     /**

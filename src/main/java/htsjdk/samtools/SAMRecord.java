@@ -985,9 +985,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * the query sequence itself is unmapped.  This method name is misspelled.
-     * Use setReadUnmappedFlag instead.
+     * Use {@link #setReadUnmappedFlag} instead.
      * @deprecated
      */
+    @Deprecated
     public void setReadUmappedFlag(final boolean flag) {
         setReadUnmappedFlag(flag);
     }
@@ -1648,8 +1649,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @return String representation of this.
      * @deprecated This method is not guaranteed to return a valid SAM text representation of the SAMRecord.
-     * To get standard SAM text representation, use htsjdk.samtools.SAMRecord#getSAMString().
+     * To get standard SAM text representation, {@link SAMRecord#getSAMString}.
      */
+    @Deprecated
     public String format() {
         final StringBuilder buffer = new StringBuilder();
         addField(buffer, getReadName(), null, null);
