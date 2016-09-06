@@ -541,7 +541,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     /**
      * Creates samFileReader from the data in instance of this class
      *
-     * @return SAMFileReader
+     * @return SamReader
      */
     public SamReader getSamReader() {
 

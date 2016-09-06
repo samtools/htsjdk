@@ -318,7 +318,7 @@ public class SamFileValidator {
                 addError(new SAMValidationError(Type.INVALID_QUALITY_FORMAT, e.getMessage(), null));
             }
         } catch (SAMFormatException e) {
-            // increment record number because the iterator behind the SAMFileReader
+            // increment record number because the iterator behind the SamReader
             // reads one record ahead so we will get this failure one record ahead
             final String msg = "SAMFormatException on record " + progress.getCount() + 1;
             out.println(msg);
@@ -592,7 +592,7 @@ public class SamFileValidator {
      */
     @Deprecated
     public SamFileValidator setValidateIndex(final boolean validateIndex) {
-        // The SAMFileReader must also have IndexCaching enabled to have the index validated,
+        // The SamReader must also have IndexCaching enabled to have the index validated,
         return this.setIndexValidationStringency(validateIndex ? IndexValidationStringency.EXHAUSTIVE : IndexValidationStringency.NONE);
     }
 

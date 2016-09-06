@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 
 /**
- * Tests for the implementation of SAMRecordIterator in SAMFileReader
+ * Tests for the implementation of {@link SAMRecordIterator} in {@link SamReader}
  *
  * @author ktibbett@broadinstitute.org
  */

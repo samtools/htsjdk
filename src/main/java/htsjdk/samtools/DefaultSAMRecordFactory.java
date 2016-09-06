@@ -1,7 +1,7 @@
 package htsjdk.samtools;
 
 /**
- * Default factory for creating SAM and BAM records used by the SAMFileReader classes.
+ * Default factory for creating SAM and BAM records used by the {@link SamReader} classes.
  *
  * @author Tim Fennell
  */

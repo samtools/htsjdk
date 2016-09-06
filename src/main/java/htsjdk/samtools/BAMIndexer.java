@@ -282,7 +282,7 @@ public class BAMIndexer {
     /**
      * Generates a BAM index file from an input BAM file
      *
-     * @param reader SAMFileReader for input BAM file
+     * @param reader SamReader for input BAM file
      * @param output File for output index file
      */
     public static void createIndex(SamReader reader, File output) {
@@ -292,7 +292,7 @@ public class BAMIndexer {
     /**
      * Generates a BAM index file from an input BAM file
      *
-     * @param reader SAMFileReader for input BAM file
+     * @param reader SamReader for input BAM file
      * @param output File for output index file
      */
     public static void createIndex(SamReader reader, File output, Log log) {

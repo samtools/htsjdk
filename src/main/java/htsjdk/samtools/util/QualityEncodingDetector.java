@@ -23,9 +23,9 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 
 /**
- * Utility for determining the type of quality encoding/format (see FastqQualityFormat) used in a SAM/BAM or Fastq.
+ * Utility for determining the type of quality encoding/format (see {@link FastqQualityFormat}) used in a SAM/BAM or Fastq.
  * <p/>
- * To use this class, invoke the detect() method with a SAMFileReader or FastqReader, as appropriate.  The consumer is
+ * To use this class, invoke the detect() method with a {@link SamReader} or {@link FastqReader}, as appropriate.  The consumer is
  * responsible for closing readers.
  *
  * @author mccowan@broadinstitute.org
@@ -116,10 +116,10 @@ public class QualityEncodingDetector {
          * Adds the SAMRecord's quality scores.
          * <p/>
          * Does not assume Phred quality encoding (for obvious reasons); getBaseQualityString() is used to read the
-         * unmodified ASCII score.  To elaborate, SAMFileReader, which is generating these SAMRecords, builds the
+         * unmodified ASCII score.  To elaborate, the {@link SamReader}, which is generating these {@link SAMRecord}s, builds the
          * SAMRecord by subtracting a value from each quality score and storing that transformed value internally.
          * Since we desire original scores here (whatever was in the file to begin with), we effectively undo this
-         * transformation by asking SAMRecord to convert the quality back into the ASCII that was read in the file.
+         * transformation by asking {@link SAMRecord} to convert the quality back into the ASCII that was read in the file.
          */
         public void add(final SAMRecord samRecord, final boolean useOriginalQualities) {
             addAsciiQuality(useOriginalQualities && samRecord.getOriginalBaseQualities() != null
