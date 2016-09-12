@@ -23,15 +23,12 @@
  */
 package htsjdk.tribble.bed;
 
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
-import org.apache.commons.compress.compressors.FileNameUtil;
-import org.apache.commons.compress.utils.IOUtils;
 
 import java.util.regex.Pattern;
 
@@ -43,6 +40,9 @@ import java.util.regex.Pattern;
  *         Date: Dec 20, 2009
  */
 public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
+
+    /** Default extension for BED files. */
+    public static final String BED_EXTENSION = ".bed";
 
     private static final Pattern SPLIT_PATTERN = Pattern.compile("\\t|( +)");
     private final int startOffsetValue;
@@ -207,7 +207,7 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
         } else {
             toDecode = path;
         }
-        return toDecode.toLowerCase().endsWith(".bed");
+        return toDecode.toLowerCase().endsWith(BED_EXTENSION);
     }
 
     public int getStartOffset() {
