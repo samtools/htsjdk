@@ -23,11 +23,15 @@
  */
 package htsjdk.tribble.bed;
 
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
+import org.apache.commons.compress.compressors.FileNameUtil;
+import org.apache.commons.compress.utils.IOUtils;
 
 import java.util.regex.Pattern;
 
@@ -197,7 +201,13 @@ public class BEDCodec extends AsciiFeatureCodec<BEDFeature> {
 
     @Override
     public boolean canDecode(final String path) {
-        return path.toLowerCase().endsWith(".bed");
+        final String toDecode;
+        if (AbstractFeatureReader.hasBlockCompressedExtension(path)) {
+            toDecode = path.substring(0, path.lastIndexOf("."));
+        } else {
+            toDecode = path;
+        }
+        return toDecode.toLowerCase().endsWith(".bed");
     }
 
     public int getStartOffset() {
