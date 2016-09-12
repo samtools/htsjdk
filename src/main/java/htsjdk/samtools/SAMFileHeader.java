@@ -120,6 +120,12 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         setAttribute(VERSION_TAG, CURRENT_VERSION);
     }
 
+    /** Constructor that initializes the sequence dictionary with the provided one. */
+    public SAMFileHeader(final SAMSequenceDictionary dict) {
+        this();
+        setSequenceDictionary(dict);
+    }
+
     public String getVersion() {
         return (String) getAttribute("VN");
     }
