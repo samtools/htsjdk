@@ -26,14 +26,13 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.DynamicIndexCreator;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.IndexFactory;
-import htsjdk.tribble.index.TribbleIndexCreator;
+import htsjdk.samtools.util.PositionalOutputStream;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
 
@@ -139,9 +138,7 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
 
             // close the index stream (keep it separate to help debugging efforts)
             if (indexer != null) {
-                if (indexer instanceof TribbleIndexCreator) {
-                    setIndexSequenceDictionary((TribbleIndexCreator)indexer, refDict);
-                }
+                indexer.setIndexSequenceDictionary(refDict);
                 final Index index = indexer.finalizeIndex(locationSource.getPosition());
                 index.writeBasedOnFeatureFile(location);
             }
@@ -179,52 +176,5 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      */
     protected static final String writerName(final File location, final OutputStream stream) {
         return location == null ? stream.toString() : location.getAbsolutePath();
-    }
-
-    // a constant we use for marking sequence dictionary entries in the Tribble index property list
-    private static final String SequenceDictionaryPropertyPredicate = "DICT:";
-
-    private static void setIndexSequenceDictionary(final TribbleIndexCreator indexCreator, final SAMSequenceDictionary dict) {
-        for (final SAMSequenceRecord seq : dict.getSequences()) {
-            final String contig = SequenceDictionaryPropertyPredicate + seq.getSequenceName();
-            final String length = String.valueOf(seq.getSequenceLength());
-            indexCreator.addProperty(contig,length);
-        }
-    }
-}
-
-/**
- * Wraps output stream in a manner which keeps track of the position within the file and allowing writes
- * at arbitrary points
- */
-final class PositionalOutputStream extends OutputStream implements LocationAware
-{
-    private final OutputStream out;
-    private long position = 0;
-
-    public PositionalOutputStream(final OutputStream out) {
-        this.out = out;
-    }
-
-    public final void write(final byte[] bytes) throws IOException {
-        write(bytes, 0, bytes.length);
-    }
-
-    public final void write(final byte[] bytes, final int startIndex, final int numBytes) throws IOException {
-        position += numBytes;
-        out.write(bytes, startIndex, numBytes);
-    }
-
-    public final void write(final int c)  throws IOException {
-        position++;
-        out.write(c);
-    }
-
-    public final long getPosition() { return position; }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-        out.close();
     }
 }
