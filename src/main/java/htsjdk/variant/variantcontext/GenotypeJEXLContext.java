@@ -26,16 +26,16 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         attributes.put("g", (Genotype g) -> g);
         attributes.put(VCFConstants.GENOTYPE_KEY, Genotype::getGenotypeString);
 
-        attributes.put("isHom", (Genotype g) -> g.isHom() ? "1" : "0");
-        attributes.put("isHomRef", (Genotype g) -> g.isHomRef() ? "1" : "0");
-        attributes.put("isHet", (Genotype g) -> g.isHet() ? "1" : "0");
-        attributes.put("isHomVar", (Genotype g) -> g.isHomVar() ? "1" : "0");
-        attributes.put("isCalled", (Genotype g) -> g.isCalled() ? "1" : "0");
-        attributes.put("isNoCall", (Genotype g) -> g.isNoCall() ? "1" : "0");
-        attributes.put("isMixed", (Genotype g) -> g.isMixed() ? "1" : "0");
-        attributes.put("isAvailable", (Genotype g) -> g.isAvailable() ? "1" : "0");
-        attributes.put("isPassFT", (Genotype g) -> g.isFiltered() ? "0" : "1");
-        attributes.put(VCFConstants.GENOTYPE_FILTER_KEY, (Genotype g) -> g.isFiltered()?  g.getFilters() : "PASS");
+        attributes.put("isHom", (Genotype g) -> g.isHom() ? true_string : false_string);
+        attributes.put("isHomRef", (Genotype g) -> g.isHomRef() ? true_string : false_string);
+        attributes.put("isHet", (Genotype g) -> g.isHet() ? true_string : false_string);
+        attributes.put("isHomVar", (Genotype g) -> g.isHomVar() ? true_string : false_string);
+        attributes.put("isCalled", (Genotype g) -> g.isCalled() ? true_string : false_string);
+        attributes.put("isNoCall", (Genotype g) -> g.isNoCall() ? true_string : false_string);
+        attributes.put("isMixed", (Genotype g) -> g.isMixed() ? true_string : false_string);
+        attributes.put("isAvailable", (Genotype g) -> g.isAvailable() ? true_string : false_string);
+        attributes.put("isPassFT", (Genotype g) -> g.isFiltered() ? false_string : true_string);
+        attributes.put(VCFConstants.GENOTYPE_FILTER_KEY, (Genotype g) -> g.isFiltered()?  g.getFilters() : VCFConstants.PASSES_FILTERS_v4);
         attributes.put(VCFConstants.GENOTYPE_QUALITY_KEY, Genotype::getGQ);
     }
 
@@ -44,14 +44,15 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         this.g = g;
     }
 
+    @Override
     public Object get(String name) {
         //should matching genotype attributes always supersede vc?
         if ( attributes.containsKey(name) ) { // dynamic resolution of name -> value via map
             return attributes.get(name).get(g);
         } else if ( g.hasAnyAttribute(name) ) {
             return g.getAnyAttribute(name);
-        } else if ( g.getFilters().contains(name) ) {
-            return "1";
+        } else if ( g.getFilters() != null && g.getFilters().contains(name) ) {
+            return true_string;
         } else
             return super.get(name);
     }
