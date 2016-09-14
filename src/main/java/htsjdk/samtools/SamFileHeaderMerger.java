@@ -122,7 +122,7 @@ public class SamFileHeaderMerger {
      *
      * @param readers   sam file readers to combine
      * @param sortOrder sort order new header should have
-     * @deprecated replaced by{@link #SamFileHeaderMerger(SAMFileHeader.SortOrder, Collection, boolean)}
+     * @deprecated replaced by {@link #SamFileHeaderMerger(SAMFileHeader.SortOrder, Collection, boolean)}
      */
     @Deprecated
     public SamFileHeaderMerger(final Collection<SamReader> readers, final SAMFileHeader.SortOrder sortOrder) {
