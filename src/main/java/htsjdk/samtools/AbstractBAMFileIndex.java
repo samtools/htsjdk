@@ -387,8 +387,9 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     }
 
     /**
-     * @deprecated Invoke htsjdk.samtools.Chunk#optimizeChunkList(java.util.List<htsjdk.samtools.Chunk>, long) directly.
+     * @deprecated Invoke {@link Chunk#optimizeChunkList} directly.
      */
+    @Deprecated
     protected List<Chunk> optimizeChunkList(final List<Chunk> chunks, final long minimumOffset) {
         return Chunk.optimizeChunkList(chunks, minimumOffset);
     }

@@ -74,10 +74,11 @@ public class SRAAccession implements Serializable {
     }
 
     /**
-     * @deprecated
      * @return true if SRA successfully loaded native libraries and fully initialized,
      * false otherwise
+     * @deprecated use {@link #checkIfInitialized} instead
      */
+    @Deprecated
     public static boolean isSupported() {
         return checkIfInitialized() == null;
     }
