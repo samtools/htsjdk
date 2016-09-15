@@ -58,7 +58,7 @@ public class AbstractRecordAndOffsetTest {
         assertEquals('A', abstractRecordAndOffset.getReadBase());
         assertEquals(30, abstractRecordAndOffset.getBaseQuality());
         assertEquals(0, abstractRecordAndOffset.getOffset());
-        assertEquals(0, abstractRecordAndOffset.getRefPos());
+        assertEquals(-1, abstractRecordAndOffset.getRefPos());
     }
 
     @Test

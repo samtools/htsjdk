@@ -71,7 +71,6 @@ public class EdgingRecordAndOffset extends AbstractRecordAndOffset {
      */
     public EdgingRecordAndOffset(SAMRecord record, int offset, int length, int refPos, Type type) {
         super(record, offset);
-//        validateOffset(offset, record.getBaseQualities());
         if (length > record.getReadLength()) {
             throw new IllegalArgumentException("Block length cannot be larger than whole read length");
         }
@@ -162,10 +161,4 @@ public class EdgingRecordAndOffset extends AbstractRecordAndOffset {
         return position - refPos + offset;
     }
 
-    private void validateOffset(int offset, byte[] array) {
-        if (offset < 0 || offset >= array.length) {
-            throw new IllegalArgumentException("The requested position is not covered by this AbstractRecordAndOffset" +
-                    " object.");
-        }
-    }
 }

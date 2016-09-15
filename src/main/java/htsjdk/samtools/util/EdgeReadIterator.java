@@ -116,7 +116,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
 
             // intersect intervals and alignment block
             if (getIntervals() != null) {
-                // get the current interval we're proceeding 
+                // get the current interval we're processing 
                 Interval interval = getCurrentInterval();
                 if (interval != null) {
                     final int intervalEnd = interval.getEnd();
