@@ -285,7 +285,9 @@ public class IndexFactory {
      * @param idx
      * @param idxFile
      * @throws IOException
+     * @deprecated use {@link Index#write(File)} instead
      */
+    @Deprecated
     public static void writeIndex(final Index idx, final File idxFile) throws IOException {
         idx.write(idxFile);
     }
