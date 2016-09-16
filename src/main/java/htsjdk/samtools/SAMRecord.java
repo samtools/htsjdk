@@ -1396,7 +1396,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
      * @deprecated
      * The attribute type and value checks have been moved directly into
-     * {@code SAMBinaryTagAndValue}.
+     * {@link SAMBinaryTagAndValue}.
      */
     @Deprecated
     protected static boolean isAllowedAttributeValue(final Object value) {

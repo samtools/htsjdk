@@ -417,6 +417,19 @@ public class SAMRecordUnitTest {
         Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(Integer.MIN_VALUE - 1L)));
     }
 
+    @Test()
+    public void test_setAttribute_empty_string() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
+        record.setAttribute(SAMTag.MD.name(), "");
+        Assert.assertNotNull(record.getStringAttribute(SAMTag.MD.name()));
+        Assert.assertEquals(record.getStringAttribute(SAMTag.MD.name()),"");
+        record.setAttribute(SAMTag.MD.name(), null);
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
+    }
+
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_setAttribute_unsigned_int_negative() {
         SAMFileHeader header = new SAMFileHeader();
