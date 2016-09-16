@@ -202,13 +202,9 @@ public class TabixIndex implements Index {
      * @param tabixFile Where to write the index.
      */
     @Override
-    public void write(final File tabixFile) {
-        final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(tabixFile));
-        try {
+    public void write(final File tabixFile) throws IOException {
+        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(tabixFile))) {
             write(los);
-            los.close();
-        } catch (final IOException e) {
-            throw new TribbleException("Exception writing " + tabixFile.getAbsolutePath(), e);
         }
     }
 

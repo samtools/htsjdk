@@ -344,11 +344,8 @@ public abstract class AbstractIndex implements MutableIndex {
 
     @Override
     public void write(final File idxFile) throws IOException {
-        final LittleEndianOutputStream idxStream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
-        try {
+        try(final LittleEndianOutputStream idxStream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)))) {
             write(idxStream);
-        } finally {
-            idxStream.close();
         }
     }
 
