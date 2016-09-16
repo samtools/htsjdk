@@ -102,9 +102,14 @@ public class IntervalList implements Iterable<Interval> {
         }
     }
 
-    /** Sorts the internal collection of intervals by coordinate. */
-    @Deprecated // Use sorted() instead of sort(). The sort() function modifies the object in-place and
-    // is therefore difficult to work with. sorted() returns a new IntervalList that is sorted
+    /**
+     * Sorts the internal collection of intervals by coordinate.
+     *
+     * Note: this function modifies the object in-place and is therefore difficult to work with.
+     *
+     * @deprecated use {@link #sorted()} instead.
+     */
+    @Deprecated
     public void sort() {
         Collections.sort(this.intervals, new IntervalCoordinateComparator(this.header));
         this.header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
@@ -154,19 +159,27 @@ public class IntervalList implements Iterable<Interval> {
         return value;
     }
 
-    /** Sorts and uniques the list of intervals held within this interval list. */
-    @Deprecated//use uniqued() instead. This function modifies the object in-place and
-    // is therefore difficult to work with.
+    /**
+     * Sorts and uniques the list of intervals held within this interval list.
+     *
+     * Note: this function modifies the object in-place and is therefore difficult to work with.
+     *
+     * @deprecated use {@link #uniqued()} instead.
+     */
+    @Deprecated
     public void unique() {
         unique(true);
     }
 
     /**
      * Sorts and uniques the list of intervals held within this interval list.
+     *
+     * Note: this function modifies the object in-place and is therefore difficult to work with.
+     *
      * @param concatenateNames If false, interval names are not concatenated when merging intervals to save space.
+     * @deprecated use {@link #uniqued(boolean)} instead.
      */
-    @Deprecated//use uniqued() instead. This function modifies the object in-place and
-    // is therefore difficult to work with
+    @Deprecated
     public void unique(final boolean concatenateNames) {
         sort();
         final List<Interval> tmp = getUniqueIntervals(concatenateNames);
@@ -186,10 +199,12 @@ public class IntervalList implements Iterable<Interval> {
      *
      * Note: has the side-effect of sorting the stored intervals in coordinate order if not already sorted.
      *
+     * Note: this function modifies the object in-place and is therefore difficult to work with.
+     *
      * @return the set of unique intervals condensed from the contained intervals
+     * @deprecated use {@link #uniqued()#getIntervals()} instead.
      */
-    @Deprecated//use uniqued().getIntervals() instead. This function modifies the object in-place and
-    // is therefore difficult to work with
+    @Deprecated
     public List<Interval> getUniqueIntervals() {
         return getUniqueIntervals(true);
     }
@@ -249,14 +264,14 @@ public class IntervalList implements Iterable<Interval> {
     }
 
     /**
-     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
-     * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
+     * Merges list of intervals and reduces them like {@link #getUniqueIntervals()}.
+     *
+     * Note: this function modifies the object in-place and is therefore difficult to work with.
+     *
+     * @param concatenateNames If false, the merged interval has the name of the earlier interval. This keeps name shorter.
+     * @deprecated use {@link #uniqued(boolean)#getIntervals()} or {@link #getUniqueIntervals(IntervalList, boolean)} instead.
      */
-    @Deprecated //use uniqued(concatenateNames).getIntervals() or the static version instead to avoid changing the underlying object.
-    /**
-     * Merges list of intervals and reduces them like htsjdk.samtools.util.IntervalList#getUniqueIntervals()
-     * @param concatenateNames If false, the merged interval has the name of the earlier interval.  This keeps name shorter.
-     */
+    @Deprecated
     public List<Interval> getUniqueIntervals(final boolean concatenateNames) {
         if (getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             sort();
