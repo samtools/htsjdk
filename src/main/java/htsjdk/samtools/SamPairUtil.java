@@ -182,6 +182,15 @@ public class SamPairUtil {
     }
 
     /**
+     * Write the mate info for two SAMRecords.  This will always clear/remove any mate cigar tag that is present.
+     * @param rec1 the first SAM record
+     * @param rec2 the second SAM record
+     */
+    public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2) {
+        setMateInfo(rec1, rec2, false);
+    }
+
+    /**
      * Write the mate info for two SAMRecords
      * @param rec1 the first SAM record. Must have a non-null SAMFileHeader.
      * @param rec2 the second SAM record. Must have a non-null SAMFileHeader.
@@ -270,6 +279,7 @@ public class SamPairUtil {
      * @param rec2 the second SAM record
      * @param header the SAM file header
      * @param setMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+     * @deprecated use {@link #setMateInfo(SAMRecord, SAMRecord, boolean)} instead
      */
     @Deprecated
     public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header, final boolean setMateCigar) {
@@ -281,9 +291,11 @@ public class SamPairUtil {
      * @param rec1 the first SAM record
      * @param rec2 the second SAM record
      * @param header the SAM file header
+     * @deprecated use {@link #setMateInfo(SAMRecord, SAMRecord)} instead
      */
+    @Deprecated
     public static void setMateInfo(final SAMRecord rec1, final SAMRecord rec2, final SAMFileHeader header) {
-        setMateInfo(rec1, rec2, false);
+        setMateInfo(rec1, rec2);
     }
 
     /**
@@ -322,11 +334,13 @@ public class SamPairUtil {
 
     /**
      * This method will clear any mate cigar already present.
+     * @deprecated use {@link #setProperPairAndMateInfo(SAMRecord, SAMRecord, List)} instead
      */
+    @Deprecated
     public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
                                                 final SAMFileHeader header,
                                                 final List<PairOrientation> exepectedOrientations) {
-        setProperPairAndMateInfo(rec1, rec2, header, exepectedOrientations, false);
+        setProperPairAndMateInfo(rec1, rec2, exepectedOrientations, false);
     }
 
     /**
@@ -335,12 +349,34 @@ public class SamPairUtil {
      * @param header
      * @param exepectedOrientations
      * @param addMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+     * @deprecated use {@link #setProperPairAndMateInfo(SAMRecord, SAMRecord, List, boolean)}
      */
+    @Deprecated
     public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
                                                 final SAMFileHeader header,
                                                 final List<PairOrientation> exepectedOrientations,
                                                 final boolean addMateCigar) {
-        setMateInfo(rec1, rec2, header, addMateCigar);
+        setProperPairAndMateInfo(rec1, rec2, exepectedOrientations, addMateCigar);
+    }
+
+    /**
+     * This method will clear any mate cigar already present.
+     */
+    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
+                                                final List<PairOrientation> exepectedOrientations) {
+        setProperPairAndMateInfo(rec1, rec2, exepectedOrientations, false);
+    }
+
+    /**
+     * @param rec1
+     * @param rec2
+     * @param exepectedOrientations
+     * @param addMateCigar true if we are to update/create the Mate CIGAR (MC) optional tag, false if we are to clear any mate cigar tag that is present.
+     */
+    public static void setProperPairAndMateInfo(final SAMRecord rec1, final SAMRecord rec2,
+                                                final List<PairOrientation> exepectedOrientations,
+                                                final boolean addMateCigar) {
+        setMateInfo(rec1, rec2, addMateCigar);
         setProperPairFlags(rec1, rec2, exepectedOrientations);
     }
 
