@@ -59,7 +59,7 @@ class VariantJEXLContext implements JexlContext {
 
     static {
         attributes.put("vc", (VariantContext vc) -> vc);
-        attributes.put("CHROM", VariantContext::getChr);
+        attributes.put("CHROM", VariantContext::getContig);
         attributes.put("POS", VariantContext::getStart);
         attributes.put("TYPE", (VariantContext vc) -> vc.getType().toString());
         attributes.put("QUAL", (VariantContext vc) -> -10 * vc.getLog10PError());

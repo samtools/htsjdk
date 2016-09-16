@@ -77,7 +77,7 @@ public class GeliTextTest {
             GeliTextFeature feat = iter.next();
             // check the first records contents
             // 22 14438070 A   0 0     GG      33.2618 33.2618 0       0       0       0     0 0       0       33.2618 0       0
-            Assert.assertTrue("22".equals(feat.getChr()));
+            Assert.assertTrue("22".equals(feat.getContig()));
             Assert.assertEquals(feat.getStart(), 14438070);
             Assert.assertEquals('A', feat.getRefBase());
             Assert.assertEquals(feat.getDepthOfCoverage(), 0.0, 0.0001);

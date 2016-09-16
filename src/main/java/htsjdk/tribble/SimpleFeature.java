@@ -39,11 +39,6 @@ public class SimpleFeature implements Feature {
         this.end = end;
     }
 
-    @Deprecated
-    public String getChr() {
-        return contig;
-    }
-
     public String getContig() {
         return contig;
     }

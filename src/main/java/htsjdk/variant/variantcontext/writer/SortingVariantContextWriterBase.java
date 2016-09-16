@@ -118,11 +118,11 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
            since there is no implicit ordering of chromosomes:
          */
         VCFRecord firstRec = queue.peek();
-        if (firstRec != null && !vc.getChr().equals(firstRec.vc.getChr())) { // if we hit a new contig, flush the queue
-            if (finishedChromosomes.contains(vc.getChr()))
-                throw new IllegalArgumentException("Added a record at " + vc.getChr() + ":" + vc.getStart() + ", but already finished with chromosome" + vc.getChr());
+        if (firstRec != null && !vc.getContig().equals(firstRec.vc.getContig())) { // if we hit a new contig, flush the queue
+            if (finishedChromosomes.contains(vc.getContig()))
+                throw new IllegalArgumentException("Added a record at " + vc.getContig() + ":" + vc.getStart() + ", but already finished with chromosome" + vc.getContig());
 
-            finishedChromosomes.add(firstRec.vc.getChr());
+            finishedChromosomes.add(firstRec.vc.getContig());
             stopWaitingToSort();
         }
 
@@ -159,7 +159,7 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
     protected void noteCurrentRecord(VariantContext vc) {
         // did the user break the contract by giving a record too late?
         if (mostUpstreamWritableLoc != null && vc.getStart() < mostUpstreamWritableLoc) // went too far back, since may have already written anything that is <= mostUpstreamWritableLoc
-            throw new IllegalArgumentException("Permitted to write any record upstream of position " + mostUpstreamWritableLoc + ", but a record at " + vc.getChr() + ":" + vc.getStart() + " was just added.");
+            throw new IllegalArgumentException("Permitted to write any record upstream of position " + mostUpstreamWritableLoc + ", but a record at " + vc.getContig() + ":" + vc.getStart() + " was just added.");
     }
 
     // --------------------------------------------------------------------------------

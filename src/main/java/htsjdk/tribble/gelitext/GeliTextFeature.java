@@ -83,12 +83,6 @@ public class GeliTextFeature implements Feature {
         this.likelihoods = likelihoods;
     }
 
-    /** Return the features reference sequence name, e.g chromosome or contig */
-    @Deprecated
-    public String getChr() {
-        return getContig();
-    }
-
     @Override
     public String getContig() {
         return this.contig;

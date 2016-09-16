@@ -342,7 +342,7 @@ public class VariantContext implements Feature, Serializable {
      * @param other the VariantContext to copy
      */
     protected VariantContext(VariantContext other) {
-        this(other.getSource(), other.getID(), other.getChr(), other.getStart(), other.getEnd(),
+        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
                 other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
                 other.getFiltersMaybeNull(),
                 other.getAttributes(),
@@ -1653,10 +1653,6 @@ public class VariantContext implements Feature, Serializable {
     // tribble integration routines -- not for public consumption
     //
     // ---------------------------------------------------------------------------------------------------------
-    @Deprecated
-    public String getChr() {
-        return getContig();
-    }
 
     @Override
     public String getContig() {

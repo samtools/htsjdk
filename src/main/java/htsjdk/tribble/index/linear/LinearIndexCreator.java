@@ -66,14 +66,14 @@ public class LinearIndexCreator  extends TribbleIndexCreator {
      */
     public void addFeature(final Feature feature, final long filePosition) {
         // fi we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
-        if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getChr())) {
+        if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the blocks to the old chrIndex
             if (!chrList.isEmpty())
                 for (int x = 0; x < blocks.size(); x++) {
                     blocks.get(x).setEndPosition((x + 1 == blocks.size()) ? filePosition : blocks.get(x + 1).getStartPosition());
                     chrList.getLast().addBlock(blocks.get(x));
                 }
-            chrList.add(new LinearIndex.ChrIndex(feature.getChr(),binWidth));
+            chrList.add(new LinearIndex.ChrIndex(feature.getContig(),binWidth));
             blocks.clear();
 
             // Add the first block

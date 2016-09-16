@@ -189,7 +189,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(Aref, T);
         VariantContext vc = snpBuilder.alleles(alleles).make();
 
-        Assert.assertEquals(vc.getChr(), snpLoc);
+        Assert.assertEquals(vc.getContig(), snpLoc);
         Assert.assertEquals(vc.getStart(), snpLocStart);
         Assert.assertEquals(vc.getEnd(), snpLocStop);
         Assert.assertEquals(vc.getType(), VariantContext.Type.SNP);
@@ -217,7 +217,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(Aref);
         VariantContext vc = snpBuilder.alleles(alleles).make();
 
-        Assert.assertEquals(vc.getChr(), snpLoc);
+        Assert.assertEquals(vc.getContig(), snpLoc);
         Assert.assertEquals(vc.getStart(), snpLocStart);
         Assert.assertEquals(vc.getEnd(), snpLocStop);
         Assert.assertEquals(VariantContext.Type.NO_VARIATION, vc.getType());
@@ -244,7 +244,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(ATCref, del);
         VariantContext vc = new VariantContextBuilder("test", delLoc, delLocStart, delLocStop, alleles).make();
 
-        Assert.assertEquals(vc.getChr(), delLoc);
+        Assert.assertEquals(vc.getContig(), delLoc);
         Assert.assertEquals(vc.getStart(), delLocStart);
         Assert.assertEquals(vc.getEnd(), delLocStop);
         Assert.assertEquals(vc.getType(), VariantContext.Type.INDEL);
@@ -272,7 +272,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(Tref, ATC);
         VariantContext vc = new VariantContextBuilder("test", insLoc, insLocStart, insLocStop, alleles).make();
 
-        Assert.assertEquals(vc.getChr(), insLoc);
+        Assert.assertEquals(vc.getContig(), insLoc);
         Assert.assertEquals(vc.getStart(), insLocStart);
         Assert.assertEquals(vc.getEnd(), insLocStop);
         Assert.assertEquals(vc.getType(), VariantContext.Type.INDEL);
@@ -310,7 +310,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         List<Allele> alleles = Arrays.asList(delRef, ATC);
         VariantContext vc = insBuilder.alleles(alleles).make();
 
-        Assert.assertEquals(vc.getChr(), insLoc);
+        Assert.assertEquals(vc.getContig(), insLoc);
         Assert.assertEquals(vc.getStart(), insLocStart);
         Assert.assertEquals(vc.getEnd(), insLocStop);
         Assert.assertEquals(vc.getType(), VariantContext.Type.INDEL);
@@ -737,7 +737,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
     @Test(dataProvider = "SitesAndGenotypesVC")
     public void runModifyVCTests(SitesAndGenotypesVC cfg) {
         VariantContext modified = new VariantContextBuilder(cfg.vc).loc("chr2", 123, 123).make();
-        Assert.assertEquals(modified.getChr(), "chr2");
+        Assert.assertEquals(modified.getContig(), "chr2");
         Assert.assertEquals(modified.getStart(), 123);
         Assert.assertEquals(modified.getEnd(), 123);
 
@@ -757,7 +757,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(modified.getAttribute("AC"), 1);
 
         // test the behavior when the builder's attribute object is not initialized
-        modified = new VariantContextBuilder(modified.getSource(), modified.getChr(), modified.getStart(), modified.getEnd(), modified.getAlleles()).attribute("AC", 1).make();
+        modified = new VariantContextBuilder(modified.getSource(), modified.getContig(), modified.getStart(), modified.getEnd(), modified.getAlleles()).attribute("AC", 1).make();
 
         // test normal attribute modification
         modified = new VariantContextBuilder(cfg.vc).attribute("AC", 1).make();
@@ -775,7 +775,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertTrue(modified.getGenotypes().isEmpty());
 
         // test that original hasn't changed
-        Assert.assertEquals(cfg.vc.getChr(), cfg.copy.getChr());
+        Assert.assertEquals(cfg.vc.getContig(), cfg.copy.getContig());
         Assert.assertEquals(cfg.vc.getStart(), cfg.copy.getStart());
         Assert.assertEquals(cfg.vc.getEnd(), cfg.copy.getEnd());
         Assert.assertEquals(cfg.vc.getAlleles(), cfg.copy.getAlleles());
@@ -837,7 +837,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         VariantContext sub = vc.subContextFromSamples(cfg.samples, cfg.updateAlleles);
 
         // unchanged attributes should be the same
-        Assert.assertEquals(sub.getChr(), vc.getChr());
+        Assert.assertEquals(sub.getContig(), vc.getContig());
         Assert.assertEquals(sub.getStart(), vc.getStart());
         Assert.assertEquals(sub.getEnd(), vc.getEnd());
         Assert.assertEquals(sub.getLog10PError(), vc.getLog10PError());

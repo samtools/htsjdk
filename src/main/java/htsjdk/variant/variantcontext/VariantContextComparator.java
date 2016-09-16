@@ -84,7 +84,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 		// present. This error checking should already have been done in the constructor but it's left
 		// in as defence anyway.
 		final int contigCompare =
-				this.contigIndexLookup.get(firstVariantContext.getChr()) - this.contigIndexLookup.get(secondVariantContext.getChr());
+				this.contigIndexLookup.get(firstVariantContext.getContig()) - this.contigIndexLookup.get(secondVariantContext.getContig());
 		return contigCompare != 0
 				? contigCompare
 				: firstVariantContext.getStart() - secondVariantContext.getStart();
