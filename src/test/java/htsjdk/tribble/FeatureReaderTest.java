@@ -134,7 +134,7 @@ public class FeatureReaderTest {
                 idxFile.delete();
             }
             final Index idx = IndexFactory.createIndex(featureFile, codec, indexType);
-            IndexFactory.writeIndex(idx, idxFile);
+            idx.write(idxFile);
 
             idxFile.deleteOnExit();
         } // else  let's just hope the index exists, and if so use it

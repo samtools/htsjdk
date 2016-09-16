@@ -343,13 +343,16 @@ public abstract class AbstractIndex implements MutableIndex {
     }
 
     @Override
+    public void write(final File idxFile) throws IOException {
+        try(final LittleEndianOutputStream idxStream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)))) {
+            write(idxStream);
+        }
+    }
+
+    @Override
     public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
         if (!featureFile.isFile()) return;
-        final LittleEndianOutputStream idxStream =
-                new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(Tribble.indexFile(featureFile))));
-        write(idxStream);
-        idxStream.close();
-
+        write(Tribble.indexFile(featureFile));
     }
 
     public void read(final LittleEndianInputStream dis) throws IOException {
