@@ -117,45 +117,4 @@ public class IndexFactoryTest {
                     "Tabix indexed (bgzipped) VCF does not contain sequence: " + samSequenceRecord.getSequenceName());
         }
     }
-
-    @Test
-    public void testWriteIndex() throws Exception {
-        // temp directory for this test
-        final File tempDir = IOUtil.createTempDir("writeIndex", null);
-
-        final OutputStream nullOutputStrem = new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {
-
-            }
-        };
-
-        // LINEAR INDEX
-        final File inputFileVcf =
-                new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf");
-        final LinearIndex linearIndex =
-                IndexFactory.createLinearIndex(inputFileVcf, new VCFCodec());
-        // write to a file
-        final File tempLineraIndex = new File(tempDir, "linearIndex.idx");
-        Assert.assertFalse(tempLineraIndex.exists());
-        linearIndex.write(tempLineraIndex);
-        Assert.assertTrue(tempLineraIndex.exists());
-        // write to an stream does not thrown an error
-        linearIndex.write(new LittleEndianOutputStream(nullOutputStrem));
-
-        // TABIX INDEX
-        final File inputFileVcfGz =
-                new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz");
-        final TabixIndex tabixIndexVcfGz =
-                IndexFactory
-                        .createTabixIndex(inputFileVcfGz, new VCFCodec(), TabixFormat.VCF, null);
-        // wirte to a file
-        final File tempTabixIndex = new File(tempDir, "tabixIndex.tbi");
-        Assert.assertFalse(tempTabixIndex.exists());
-        tabixIndexVcfGz.write(tempTabixIndex);
-        Assert.assertTrue(tempTabixIndex.exists());
-        // write to an stream does not thrown an error
-        tabixIndexVcfGz.write(new LittleEndianOutputStream(nullOutputStrem));
-
-    }
 }
