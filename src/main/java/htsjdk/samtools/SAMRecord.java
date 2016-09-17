@@ -249,7 +249,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     public void setReadBases(final byte[] value) {
-        mReadBases = value;
+        if (value == null) {
+            mReadBases = NULL_SEQUENCE;
+        } else {
+            mReadBases = value;
+        }
     }
 
     /**

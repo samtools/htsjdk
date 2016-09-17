@@ -960,4 +960,15 @@ public class SAMRecordUnitTest {
         SAMRecord.resolveNameFromIndex(1, null);
     }
 
+    @Test
+    public void testNullBases() {
+        SAMRecord sam = new SAMRecordSetBuilder().addUnmappedFragment("nullRecord");
+        // set the bases to null
+        sam.setReadBases(null);
+        // the sequence should be byte[0]
+        Assert.assertEquals(sam.getReadBases(), SAMRecord.NULL_SEQUENCE);
+        // check that toString() is not blowing up
+        sam.toString();
+    }
+
 }
