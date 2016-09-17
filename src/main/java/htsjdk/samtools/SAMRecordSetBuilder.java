@@ -334,8 +334,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     /**
      * Adds an unmapped fragment read to the builder.
      */
-    public void addUnmappedFragment(final String name) {
-        addFrag(name, -1, -1, false, true, null, null, -1, false);
+    public SAMRecord addUnmappedFragment(final String name) {
+        return addFrag(name, -1, -1, false, true, null, null, -1, false);
     }
 
 
