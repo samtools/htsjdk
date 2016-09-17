@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 
+import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
@@ -37,6 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -253,6 +256,40 @@ public final class CommonInfo implements Serializable {
         if ( o instanceof List ) return (List<Object>)o;
         if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
         return Collections.singletonList(o);
+    }
+
+    private <T> List<T> getAttributeAsList(String key, Function<Object, T> transformer) {
+        return getAttributeAsList(key).stream().map(transformer).collect(Collectors.toList());
+    }
+
+    public List<String> getAttributeAsStringList(String key, String defaultValue) {
+        return getAttributeAsList(key, x -> (x == null) ? defaultValue : String.valueOf(x));
+    }
+
+    public List<Integer> getAttributeAsIntList(String key, int defaultValue) {
+        return getAttributeAsList(key, x -> {
+                            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                                return defaultValue;
+                            } else if (x instanceof Integer) {
+                                return (Integer) x;
+                            } else {
+                                return Integer.valueOf((String)x); // throws an exception if this isn't a string
+                            }
+                        }
+                );
+    }
+
+    public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
+        return getAttributeAsList(key, x -> {
+                    if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                        return defaultValue;
+                    } else if (x instanceof Double) {
+                        return (Double) x;
+                    } else {
+                        return Double.valueOf((String)x); // throws an exception if this isn't a string
+                    }
+                }
+        );
     }
 
     public String getAttributeAsString(String key, String defaultValue) {
