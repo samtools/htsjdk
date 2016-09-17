@@ -26,7 +26,7 @@
 package htsjdk.variant.variantcontext;
 
 
-import htsjdk.tribble.util.ParsingUtils;
+
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
