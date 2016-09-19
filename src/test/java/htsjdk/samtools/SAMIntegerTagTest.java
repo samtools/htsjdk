@@ -98,6 +98,52 @@ public class SAMIntegerTagTest {
         Assert.assertEquals(rec.getIntegerAttribute(INTEGER_TAG).intValue(), 1);
     }
 
+
+    @DataProvider
+    public Object[][] formatsAndValues(){
+        return new Object[][]{
+                new Object[]{"sam","Hello World!"},
+                new Object[]{"bam","Hello World!"},
+                new Object[]{"cram","Hello World!"},
+                new Object[]{"cram",""},
+                new Object[]{"bam",""},
+                new Object[]{"sam",""},
+        };
+    }
+    /**
+     * Should be able to write empty and non-empty strings
+     */
+    @Test(dataProvider = "formatsAndValues")
+    public void testWriteAndReadStrings(final String format,final String value) throws Exception {
+        final SAMRecord rec = createSamRecord();
+        rec.setAttribute(STRING_TAG, value);
+        writeAndReadSamRecord(format, rec);
+        Assert.assertEquals(rec.getStringAttribute(STRING_TAG),value);
+    }
+
+
+    @DataProvider
+    public Object[][] formatsAndValues2(){
+        return new Object[][]{
+                new Object[]{"sam",'a'},
+                new Object[]{"bam",'a'},
+                new Object[]{"cram",'a'},
+                new Object[]{"cram",null},
+                new Object[]{"bam",null},
+                new Object[]{"sam",null},
+        };
+    }
+    /**
+     * Should be able to write empty and non-empty strings
+     */
+    @Test(dataProvider = "formatsAndValues2")
+    public void testWriteAndReadCharacters(final String format,final Character value) throws Exception {
+        final SAMRecord rec = createSamRecord();
+        rec.setAttribute(STRING_TAG, value);
+        writeAndReadSamRecord(format, rec);
+        Assert.assertEquals(rec.getCharacterAttribute(STRING_TAG),value);
+    }
+
     /**
      * Should be an exception if a typed attribute call is made for the wrong type.
      */
