@@ -549,8 +549,8 @@ public class StringUtil {
     /**
      * Calculates the Hamming distance (number of character mismatches) between two strings s1 and s2.
      * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
-     * the two strings are of different lengths.  Hamming distance is case sensitive.  Also note that when
-     * used to compare two DNA strings that contain Ns mathing Ns will not be counted as mismatches.
+     * the two strings are of different lengths.  Hamming distance is case sensitive and does not have
+     * any special treatment for DNA.
      *
      * @param s1 The first string to compare
      * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
@@ -574,8 +574,8 @@ public class StringUtil {
     /**
      * Determines if two strings s1 and s2 are within maxHammingDistance of each other using the Hamming distance metric.
      * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
-     * the two strings are of different lengths.  Hamming distance is case sensitive.  Also note that when
-     * used to compare two DNA strings that contain Ns mathing Ns will not be counted as mismatches.
+     * the two strings are of different lengths.  Hamming distance is case sensitive and does not have any
+     * special treatment for DNA.
      *
      * @param s1 The first string to compare
      * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
