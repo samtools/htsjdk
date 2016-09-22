@@ -32,8 +32,10 @@ import org.testng.annotations.Test;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -130,10 +132,10 @@ public class SAMSequenceDictionaryTest {
         try {
             SAMSequenceDictionary.mergeDictionaries(dict1, dict2, SAMSequenceDictionary.DEFAULT_DICTIONARY_EQUAL_TAG);
         } catch (final IllegalArgumentException e) {
-            if (!canMerge){
+            if (canMerge) {
+                throw new Exception("Expected to be able to merge dictionaries, but wasn't:" , e);
+            } else {
                 throw e;
-            } else{
-                throw new Exception("Expected to be able to merge dictionaries, but wasn't");
             }
         }
         if (canMerge){
