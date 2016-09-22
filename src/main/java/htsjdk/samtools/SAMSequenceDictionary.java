@@ -29,13 +29,15 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
-import static htsjdk.samtools.SAMSequenceRecord.UNKNOWN_SEQUENCE_LENGTH;
+import static htsjdk.samtools.SAMSequenceRecord.*;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Collection of SAMSequenceRecords.
@@ -279,87 +281,73 @@ public class SAMSequenceDictionary implements Serializable {
      * Requires that dictionaries have the same SAMSequence records in the same order.
      * For each sequenceIndex, the union of the tags from both sequences will be added to the new sequence, mismatching
      * values (for tags that are in both) will generate a warning, and the value from dict1 will be used.
-     * For tags that are in tagsToEquate. an unequal value will generate an error (an IllegalArgumentException will
-     * be thrown.)
+     * For tags that are in tagsToEquate an unequal value will generate an error (an IllegalArgumentException will
+     * be thrown.) tagsToEquate must include LN and MD.
      *
      * @param dict1 first dictionary
      * @param dict2 first dictionary
-     * @param tagsToMatch list of tags that must be equal if present in both sequence. Typical values will be MD, and LN
+     * @param tagsToMatch list of tags that must be equal if present in both sequence. Must contain MD, and LN
      * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
      */
     static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
                                                           final SAMSequenceDictionary dict2,
                                                           final List<String> tagsToMatch) {
 
-        if(dict1.getSequences().size()!=dict2.getSequences().size()) {
-            throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
-                    "different number of sequences in them. Found %d and %d sequences",
-                    dict1.getSequences().size(), dict2.getSequences().size()));
+        // We require MD and LN to match.
+        if (!tagsToMatch.contains(MD5_TAG) || !tagsToMatch.contains(SEQUENCE_LENGTH_TAG)) {
+            throw new IllegalArgumentException("Both " + MD5_TAG + " and " + SEQUENCE_LENGTH_TAG + " must be matched " +
+                    "when merging dictionaries. Found: " + String.join(",", tagsToMatch));
         }
-        final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
-        for (final SAMSequenceRecord sequence : dict1.getSequences()) {
-            final SAMSequenceRecord mergedSequence = new SAMSequenceRecord(sequence.getSequenceName(),
-                    UNKNOWN_SEQUENCE_LENGTH);
-            finalDict.addSequence(mergedSequence);
-            final int sequenceIndex = sequence.getSequenceIndex();
-            if (!dict2.getSequence(sequenceIndex).getSequenceName().equals(sequence.getSequenceName())) {
-                throw new IllegalArgumentException(String.format("Non-equal sequence names (%s and %s) at index %d in " +
-                        "the dictionaries.",
-                        sequence.getSequenceName(), dict2.getSequence(sequenceIndex).getSequenceName(), sequenceIndex));
-            }
 
-            final Set<String> allTags = new HashSet<>(dict1.getSequence(sequenceIndex).getAttributes()
-                    .stream().map(Map.Entry::getKey).collect(Collectors.toSet()));
-            allTags.addAll(dict2.getSequence(sequenceIndex).getAttributes()
-                    .stream().map(Map.Entry::getKey).collect(Collectors.toSet()));
+        if (!dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()).equals(
+                dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()))) {
+
+            throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
+                            "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
+                    String.join(", ", dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList())),
+                    String.join(", ", dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList()))));
+        }
+
+        final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
+        for (int sequenceIndex = 0; sequenceIndex < dict1.getSequences().size(); sequenceIndex++) {
+            final SAMSequenceRecord s1 = dict1.getSequence(sequenceIndex);
+            final SAMSequenceRecord s2 = dict2.getSequence(sequenceIndex);
+
+            final String sName = s1.getSequenceName();
+            final SAMSequenceRecord sMerged = new SAMSequenceRecord(sName, UNKNOWN_SEQUENCE_LENGTH);
+            finalDict.addSequence(sMerged);
+
+            final Set<String> allTags = new HashSet<>();
+            s1.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
+            s2.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
 
             for (final String tag : allTags) {
-                final String value1 = dict1.getSequence(sequenceIndex).getAttribute(tag);
-                final String value2 = dict2.getSequence(sequenceIndex).getAttribute(tag);
+                final String value1 = s1.getAttribute(tag);
+                final String value2 = s2.getAttribute(tag);
 
                 if (value1 != null && value2 != null && !value1.equals(value2)) {
-                    if (tagsToMatch.contains(tag)) {
-                        final String error = String.format("Cannot merge the two dictionaries. Found sequence entry for which " +
-                                        "tag values differ: Sequence %s at tag %s has the values: %s and %s",
-                                dict1.getSequence(sequenceIndex).getSequenceName(),
-                                tag,
-                                value1,
-                                value2);
+                    String baseMessage = String.format("Found sequence entry for which " +
+                                    "tags differ: %s and tag %s has the two values: %s and %s.",
+                            sName, tag, value1, value2);
 
-                        log.error(error);
-                        throw new IllegalArgumentException(error);
+                    if (tagsToMatch.contains(tag)) {
+                        log.error("Cannot merge dictionaries. ", baseMessage);
+                        throw new IllegalArgumentException("Cannot merge dictionaries. " + baseMessage);
                     } else {
-                        log.warn("Found sequence entry for which " +
-                                        "tags differ: %s and tag %s has the two values: %s and %s. Using Value %s",
-                                dict1.getSequence(sequenceIndex).getSequenceName(),
-                                tag,
-                                value1,
-                                value2, value1);
+                        log.warn(baseMessage, " Using ", value1);
                     }
                 }
-                mergedSequence.setAttribute(tag, value1 == null ? value2 : value1);
+                sMerged.setAttribute(tag, value1 == null ? value2 : value1);
             }
 
-            final int length1 = dict1.getSequence(sequenceIndex).getSequenceLength();
-            final int length2 = dict2.getSequence(sequenceIndex).getSequenceLength();
+            final int length1 = s1.getSequenceLength();
+            final int length2 = s2.getSequenceLength();
 
             if (length1 != UNKNOWN_SEQUENCE_LENGTH && length2 != UNKNOWN_SEQUENCE_LENGTH && length1 != length2) {
-                if (tagsToMatch.contains(SAMSequenceRecord.SEQUENCE_LENGTH_TAG)) {
-                    final String error = String.format("Cannot merge the two dictionaries. Found sequence entry for which " +
-                                    "lengths differ: %s has lengths %s and %s",
-                            dict1.getSequence(sequenceIndex).getSequenceName(),
-                            length1, length2);
-
-                    log.error(error);
-                    throw new IllegalArgumentException(error);
-                } else {
-                    log.warn("Found sequence entry for which " +
-                                    "lengths differ: Sequence %s has lengths %s and %s. Using Value %s",
-                            dict1.getSequence(sequenceIndex).getSequenceName(),
-                            length1, length2, length1);
-                }
+                throw new IllegalArgumentException(String.format("Cannot merge the two dictionaries. " +
+                        "Found sequence entry for which " + "lengths differ: %s has lengths %s and %s", sName, length1, length2));
             }
-            mergedSequence.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
+            sMerged.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
         }
         return finalDict;
     }
