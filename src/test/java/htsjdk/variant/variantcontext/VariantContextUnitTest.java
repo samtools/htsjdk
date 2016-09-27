@@ -38,7 +38,6 @@ import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.tribble.TribbleException;
-import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFFileReader;
 
@@ -1477,5 +1476,72 @@ public class VariantContextUnitTest extends VariantBaseTest {
             CloserUtil.close(iter);
             CloserUtil.close(reader);
         }
+    }
+
+    @Test
+    public void testGetAttributeAsIntList() {
+        final VariantContext context = basicBuilder
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test as integer
+        Assert.assertEquals(context.getAttributeAsIntList("DefaultIntegerList", 5), Arrays.asList(0, 0, 0, 0, 0));
+        Assert.assertEquals(context.getAttributeAsIntList("ListWithMissing", 5), Arrays.asList(1, 5, 5));
+        Assert.assertEquals(context.getAttributeAsIntList("IntegerList", 5), Arrays.asList(0, 1, 2, 3));
+        Assert.assertEquals(context.getAttributeAsIntList("DoubleList", 5), Arrays.asList(1, 1, 2));
+        Assert.assertEquals(context.getAttributeAsIntList("StringList", 5), Arrays.asList(1, 2));
+        try {
+            context.getAttributeAsIntList("NotNumeric", 5);
+            Assert.fail();
+        } catch (Exception e) {
+
+        }
+    }
+
+    @Test
+    public void testGetAttributeAsDoubleList() {
+        final VariantContext context = basicBuilder
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test as integer
+        Assert.assertEquals(context.getAttributeAsDoubleList("DefaultIntegerList", 5), Arrays.asList(0d, 0d, 0d, 0d, 0d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("ListWithMissing", 5), Arrays.asList(1d, 5d, 5d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("IntegerList", 5), Arrays.asList(0d, 1d, 2d, 3d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("DoubleList", 5), Arrays.asList(1.8, 1.6, 2.1));
+        Assert.assertEquals(context.getAttributeAsDoubleList("StringList", 5), Arrays.asList(1d, 2d));
+        try {
+            context.getAttributeAsIntList("NotNumeric", 5);
+            Assert.fail();
+        } catch (Exception e) {
+
+        }
+    }
+
+    @Test
+    public void testGetAttributeAsStringList() {
+        final VariantContext context = basicBuilder
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test as integer
+        Assert.assertEquals(context.getAttributeAsStringList("DefaultIntegerList", "empty"), Arrays.asList("0", "0", "0", "0", "0"));
+        Assert.assertEquals(context.getAttributeAsStringList("ListWithMissing", "empty"), Arrays.asList("1", "empty", "empty"));
+        Assert.assertEquals(context.getAttributeAsStringList("IntegerList", "empty"), Arrays.asList("0", "1", "2", "3"));
+        Assert.assertEquals(context.getAttributeAsStringList("DoubleList", "empty"), Arrays.asList("1.8", "1.6", "2.1"));
+        Assert.assertEquals(context.getAttributeAsStringList("StringList", "empty"), Arrays.asList("1", "2"));
+        Assert.assertEquals(context.getAttributeAsStringList("NotNumeric", "empty"), Arrays.asList("A", "B"));
     }
 }

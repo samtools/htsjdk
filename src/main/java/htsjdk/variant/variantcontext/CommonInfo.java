@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 
-
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
@@ -40,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
@@ -254,7 +254,14 @@ public final class CommonInfo implements Serializable {
         Object o = getAttribute(key);
         if ( o == null ) return Collections.emptyList();
         if ( o instanceof List ) return (List<Object>)o;
-        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        if ( o.getClass().isArray() ) {
+            if (o instanceof int[]) {
+                return Arrays.stream((int[])o).boxed().collect(Collectors.toList());
+            } else if (o instanceof double[]) {
+                return Arrays.stream((double[])o).boxed().collect(Collectors.toList());
+            }
+            return Arrays.asList((Object[])o);
+        }
         return Collections.singletonList(o);
     }
 
@@ -266,12 +273,12 @@ public final class CommonInfo implements Serializable {
         return getAttributeAsList(key, x -> (x == null) ? defaultValue : String.valueOf(x));
     }
 
-    public List<Integer> getAttributeAsIntList(String key, int defaultValue) {
+    public List<Integer> getAttributeAsIntList(String key, Integer defaultValue) {
         return getAttributeAsList(key, x -> {
                             if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
                                 return defaultValue;
-                            } else if (x instanceof Integer) {
-                                return (Integer) x;
+                            } else if (x instanceof Number) {
+                                return ((Number) x).intValue();
                             } else {
                                 return Integer.valueOf((String)x); // throws an exception if this isn't a string
                             }
@@ -283,8 +290,8 @@ public final class CommonInfo implements Serializable {
         return getAttributeAsList(key, x -> {
                     if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
                         return defaultValue;
-                    } else if (x instanceof Double) {
-                        return (Double) x;
+                    } else if (x instanceof Number) {
+                        return ((Number) x).doubleValue();
                     } else {
                         return Double.valueOf((String)x); // throws an exception if this isn't a string
                     }
