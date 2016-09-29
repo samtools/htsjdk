@@ -39,11 +39,26 @@ public class SAMRecordUtil {
 
     /**
      * Reverse-complement bases and reverse quality scores along with known optional attributes that
-     * need the same treatment.  See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
+     * need the same treatment. This does not make a deep copy of the bases, qualities or attributes:
+     * for safe reverseComplement see {@link #reverseComplement(SAMRecord, boolean)}.
+     * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
      * for the default set of tags that are handled.
      */
     public static void reverseComplement(final SAMRecord rec) {
-        reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE);
+        reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, true);
+    }
+
+    /**
+     * Reverse-complement bases and reverse quality scores along with known optional attributes that
+     * need the same treatment. Optionally makes a deep copy of the bases, qualities or attributes.
+     * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
+     * for the default set of tags that are handled.
+     *
+     * @param rec Record to reverse complement.
+     * @param unsafe Setting this to false will clone all attributes, bases and qualities before changing the values.
+     */
+    public static void reverseComplement(final SAMRecord rec, boolean unsafe) {
+        reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, unsafe);
     }
 
     /**
@@ -51,11 +66,11 @@ public class SAMRecordUtil {
      * non-null attributes specified by tagsToRevcomp and reverse and non-null attributes
      * specified by tagsToReverse.
      */
-    public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse) {
-        final byte[] readBases = rec.getReadBases();
+    public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean unsafe) {
+        final byte[] readBases = unsafe ? rec.getReadBases() : rec.getReadBases().clone();
         SequenceUtil.reverseComplement(readBases);
         rec.setReadBases(readBases);
-        final byte qualities[] = rec.getBaseQualities();
+        final byte qualities[] = unsafe ? rec.getBaseQualities() : rec.getBaseQualities().clone();
         reverseArray(qualities);
         rec.setBaseQualities(qualities);
 
@@ -64,8 +79,13 @@ public class SAMRecordUtil {
             for (final String tag: tagsToRevcomp) {
                 Object value = rec.getAttribute(tag);
                 if (value != null) {
-                    if (value instanceof byte[]) SequenceUtil.reverseComplement((byte[]) value);
-                    else if (value instanceof String) value = SequenceUtil.reverseComplement((String) value);
+                    if (value instanceof byte[]) {
+                        value = unsafe ? value : ((byte[]) value).clone();
+                        SequenceUtil.reverseComplement((byte[]) value);
+                    }
+                    else if (value instanceof String) {
+                        value = SequenceUtil.reverseComplement((String) value);
+                    }
                     else throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
                     rec.setAttribute(tag, value);
                 }
@@ -81,10 +101,22 @@ public class SAMRecordUtil {
                         value = StringUtil.reverseString((String) value);
                     }
                     else if (value.getClass().isArray()) {
-                        if (value instanceof byte[]) reverseArray((byte[]) value);
-                        else if (value instanceof short[]) reverseArray((short[]) value);
-                        else if (value instanceof int[]) reverseArray((int[]) value);
-                        else if (value instanceof float[]) reverseArray((float[]) value);
+                        if (value instanceof byte[]) {
+                            value = unsafe ? value : ((byte[]) value).clone();
+                            reverseArray((byte[]) value);
+                        }
+                        else if (value instanceof short[]) {
+                            value = unsafe ? value : ((short[]) value).clone();
+                            reverseArray((short[]) value);
+                        }
+                        else if (value instanceof int[]) {
+                            value = unsafe ? value : ((int[]) value).clone();
+                            reverseArray((int[]) value);
+                        }
+                        else if (value instanceof float[]) {
+                            value = unsafe ? value : ((float[]) value).clone();
+                            reverseArray((float[]) value);
+                        }
                         else throw new UnsupportedOperationException("Reversing array attribute of type " + value.getClass().getComponentType() + " not supported.");
                     }
                     else throw new UnsupportedOperationException("Don't know how to reverse: " + value);
