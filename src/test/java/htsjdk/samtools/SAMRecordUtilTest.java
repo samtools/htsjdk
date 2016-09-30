@@ -24,8 +24,8 @@ public class SAMRecordUtilTest {
     @Test public void testSafeReverseComplement() throws CloneNotSupportedException {
         final SAMRecord original = createTestSamRec();
         final SAMRecord cloneOfOriginal = (SAMRecord) original.clone();
-        //Runs an unsafe reverseComplement
-        SAMRecordUtil.reverseComplement(cloneOfOriginal, Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), true);
+        //Runs a safe reverseComplement
+        SAMRecordUtil.reverseComplement(cloneOfOriginal, Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), false);
 
         Assert.assertEquals(original.getReadString(), "ACACACACAC");
         Assert.assertEquals(original.getBaseQualityString(), "HHHHHIIIII");
