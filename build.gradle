@@ -42,6 +42,7 @@ dependencies {
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
 
     testCompile "org.testng:testng:6.9.9"
+    testCompile "com.google.jimfs:jimfs:1.1"
 }
 
 sourceCompatibility = 1.8

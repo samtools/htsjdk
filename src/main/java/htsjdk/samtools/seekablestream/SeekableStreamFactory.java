@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.IOUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -78,6 +79,8 @@ public class SeekableStreamFactory{
                 return new SeekableFTPStream(new URL(path));
             } else if (path.startsWith("file:")) {
                 return new SeekableFileStream(new File(new URL(path).getPath()));
+            } else if (IOUtil.hasScheme(path)) {
+                return new SeekablePathStream(IOUtil.getPath(path));
             } else {
                 return new SeekableFileStream(new File(path));
             }
