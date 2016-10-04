@@ -2112,8 +2112,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Note that this does a shallow copy of everything, except for the attribute list, for which a copy of the list
      * is made, but the attributes themselves are copied by reference.  This should be safe because callers should
-     * never modify a mutable value returned by any of the get() methods anyway. If one of the cloned records SEQ or
-     * QUAL needs to be modified, a deeper copy should be made, or other precautions taken (Eg. Reverse Complement).
+     * never modify a mutable value returned by any of the get() methods anyway. If one of the cloned record's SEQ or
+     * QUAL needs to be modified, a deeper copy should be made (e.g. Reverse Complement).
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
