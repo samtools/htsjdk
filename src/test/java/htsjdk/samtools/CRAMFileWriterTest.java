@@ -248,6 +248,7 @@ public class CRAMFileWriterTest {
             SAMRecord record1 = iterator.next();
             SAMRecord record2 = records.get(i++);
             Assert.assertEquals(record1.getInferredInsertSize(), record2.getInferredInsertSize(), record1.getReadName());
+            Assert.assertEquals(record1, record2, record1.getReadName());
         }
         Assert.assertEquals(records.size(), i);
     }
