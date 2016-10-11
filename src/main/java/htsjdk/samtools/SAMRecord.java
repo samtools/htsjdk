@@ -2258,7 +2258,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Reverse-complement bases and reverse quality scores along with known optional attributes that
      * need the same treatment. Changes made after making a copy of the bases, qualities,
-     * and attributes. If in-place update is needed use {@link #reverseComplement(SAMRecord, boolean)}.
+     * and any attributes that will be altered. If in-place update is needed use
+     * {@link #reverseComplement(SAMRecord, boolean)}.
      * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
      * for the default set of tags that are handled.
      */
@@ -2300,12 +2301,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                     if (value instanceof byte[]) {
                         value = inplace ? value : ((byte[]) value).clone();
                         SequenceUtil.reverseComplement((byte[]) value);
-                    }
-                    else if (value instanceof String) {
+                    } else if (value instanceof String) {
                         //SequenceUtil.reverseComplement is in-place for bytes but copies Strings since they are immutable.
                         value = SequenceUtil.reverseComplement((String) value);
+                    } else {
+                        throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
                     }
-                    else throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
                     rec.setAttribute(tag, value);
                 }
             }
@@ -2318,27 +2319,25 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 if (value != null) {
                     if (value instanceof String) {
                         value = StringUtil.reverseString((String) value);
-                    }
-                    else if (value.getClass().isArray()) {
+                    } else if (value.getClass().isArray()) {
                         if (value instanceof byte[]) {
                             value = inplace ? value : ((byte[]) value).clone();
                             reverseArray((byte[]) value);
-                        }
-                        else if (value instanceof short[]) {
+                        } else if (value instanceof short[]) {
                             value = inplace ? value : ((short[]) value).clone();
                             reverseArray((short[]) value);
-                        }
-                        else if (value instanceof int[]) {
+                        } else if (value instanceof int[]) {
                             value = inplace ? value : ((int[]) value).clone();
                             reverseArray((int[]) value);
-                        }
-                        else if (value instanceof float[]) {
+                        } else if (value instanceof float[]) {
                             value = inplace ? value : ((float[]) value).clone();
                             reverseArray((float[]) value);
+                        } else {
+                            throw new UnsupportedOperationException("Reversing array attribute of type " + value.getClass().getComponentType() + " not supported.");
                         }
-                        else throw new UnsupportedOperationException("Reversing array attribute of type " + value.getClass().getComponentType() + " not supported.");
+                    } else {
+                        throw new UnsupportedOperationException("Don't know how to reverse: " + value);
                     }
-                    else throw new UnsupportedOperationException("Don't know how to reverse: " + value);
 
                     rec.setAttribute(tag, value);
                 }
