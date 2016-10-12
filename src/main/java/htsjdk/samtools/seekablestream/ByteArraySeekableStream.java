@@ -27,7 +27,11 @@ public class ByteArraySeekableStream extends SeekableStream {
 
     @Override
     public void seek(long position) throws IOException {
-        this.position = position;
+        if (position < 0) {
+			throw new IOException("Negative seek offset");
+		} else {
+			this.position = position;
+		}
     }
 
     @Override
