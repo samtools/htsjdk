@@ -23,16 +23,15 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SAMTextHeaderCodec;
-import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.*;
+import htsjdk.samtools.reference.ReferenceSequence;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -428,5 +427,26 @@ public class SequenceUtilTest {
                 {"Simple:Name Blank /1", "Simple:Name"},
                 {"Name/1/2",             "Name"}
         };
+    }
+
+    @Test
+    public void testCalculateNmTag() {
+        final File TEST_DIR = new File("src/test/resources/htsjdk/samtools/SequenceUtil");
+        final File referenceFile = new File(TEST_DIR, "reference_with_lower_and_uppercase.fasta");
+        final File samFile = new File(TEST_DIR, "upper_and_lowercase_read.sam");
+
+        SamReader reader = SamReaderFactory.makeDefault().open(samFile);
+        ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(referenceFile);
+
+        reader.iterator().stream().forEach(r -> {
+            Integer nm = SequenceUtil.calculateSamNmTag(r, ref.getSequence(r.getContig()).getBases());
+            String md = r.getStringAttribute(SAMTag.MD.name());
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with read \'" + r.getReadName() + "\':");
+            SequenceUtil.calculateMdAndNmTags(r, ref.getSequence(r.getContig()).getBases(), true, true);
+
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with read \'" + r.getReadName() + "\':");
+            Assert.assertEquals(r.getStringAttribute(SAMTag.MD.name()), md, "problem with read \'" + r.getReadName() + "\':");
+
+        });
     }
 }
