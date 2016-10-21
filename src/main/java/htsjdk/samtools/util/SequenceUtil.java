@@ -903,66 +903,63 @@ public class SequenceUtil {
         final Cigar cigar = record.getCigar();
         final List<CigarElement> cigarElements = cigar.getCigarElements();
         final byte[] seq = record.getReadBases();
-        final int start = record.getAlignmentStart() - 1;
-        int i, x, y, u = 0;
-        int nm = 0;
-        final StringBuilder str = new StringBuilder();
+        final int alignmentStart = record.getAlignmentStart() - 1;
+        int cigarIndex, blockRefPos, blockReadStart, matchCount = 0;
+        int nmCount = 0;
+        final StringBuilder mdString = new StringBuilder();
 
-        final int size = cigarElements.size();
-        for (i = y = 0, x = start; i < size; ++i) {
-            final CigarElement ce = cigarElements.get(i);
-            int j;
-            final int length = ce.getLength();
+        final int nElements = cigarElements.size();
+        for (cigarIndex = blockReadStart = 0, blockRefPos = alignmentStart; cigarIndex < nElements; ++cigarIndex) {
+            final CigarElement ce = cigarElements.get(cigarIndex);
+            int inBlockOffset;
+            final int blockLength = ce.getLength();
             final CigarOperator op = ce.getOperator();
             if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ
                     || op == CigarOperator.X) {
-                for (j = 0; j < length; ++j) {
-                    final int z = y + j;
+                for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
+                    final int readOffset = blockReadStart + inBlockOffset;
 
-                    if (ref.length <= x + j) break; // out of boundary
+                    if (ref.length <= blockRefPos + inBlockOffset) break; // out of boundary
 
-                    int c1 = 0;
-                    int c2 = 0;
-                    // try {
-                    c1 = seq[z];
-                    c2 = ref[x + j];
+                    final byte readBase = seq[readOffset];
+                    final byte refBase = ref[blockRefPos + inBlockOffset];
 
-                    if ((c1 == c2) || c1 == 0) {
+                    if ((bases[readBase] == bases[refBase]) || readBase == 0) {
                         // a match
-                        ++u;
+                        ++matchCount;
                     } else {
-                        str.append(u);
-                        str.appendCodePoint(ref[x + j]);
-                        u = 0;
-                        ++nm;
+                        mdString.append(matchCount);
+                        mdString.appendCodePoint(refBase);
+                        matchCount = 0;
+                        ++nmCount;
                     }
                 }
-                if (j < length) break;
-                x += length;
-                y += length;
+                if (inBlockOffset < blockLength) break;
+                blockRefPos += blockLength;
+                blockReadStart += blockLength;
             } else if (op == CigarOperator.DELETION) {
-                str.append(u);
-                str.append('^');
-                for (j = 0; j < length; ++j) {
-                    if (ref[x + j] == 0) break;
-                    str.appendCodePoint(ref[x + j]);
+                mdString.append(matchCount);
+                mdString.append('^');
+                for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
+                    if (ref[blockRefPos + inBlockOffset] == 0) break;
+                    mdString.appendCodePoint(ref[blockRefPos + inBlockOffset]);
                 }
-                u = 0;
-                if (j < length) break;
-                x += length;
-                nm += length;
+                matchCount = 0;
+                if (inBlockOffset < blockLength) break;
+                blockRefPos += blockLength;
+                nmCount += blockLength;
             } else if (op == CigarOperator.INSERTION
                     || op == CigarOperator.SOFT_CLIP) {
-                y += length;
-                if (op == CigarOperator.INSERTION) nm += length;
+                blockReadStart += blockLength;
+                if (op == CigarOperator.INSERTION) nmCount += blockLength;
             } else if (op == CigarOperator.SKIPPED_REGION) {
-                x += length;
+                blockRefPos += blockLength;
             }
         }
-        str.append(u);
+        mdString.append(matchCount);
 
-        if (calcMD) record.setAttribute(SAMTag.MD.name(), str.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM.name(), nm);
+        if (calcMD) record.setAttribute(SAMTag.MD.name(), mdString.toString());
+        if (calcNM) record.setAttribute(SAMTag.NM.name(), nmCount);
     }
 
     public static byte upperCase(final byte base) {

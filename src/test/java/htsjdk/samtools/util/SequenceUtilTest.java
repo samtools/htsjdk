@@ -441,12 +441,13 @@ public class SequenceUtilTest {
         reader.iterator().stream().forEach(r -> {
             Integer nm = SequenceUtil.calculateSamNmTag(r, ref.getSequence(r.getContig()).getBases());
             String md = r.getStringAttribute(SAMTag.MD.name());
-            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with read \'" + r.getReadName() + "\':");
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with NM in read \'" + r.getReadName() + "\':");
             SequenceUtil.calculateMdAndNmTags(r, ref.getSequence(r.getContig()).getBases(), true, true);
 
-            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with read \'" + r.getReadName() + "\':");
-            Assert.assertEquals(r.getStringAttribute(SAMTag.MD.name()), md, "problem with read \'" + r.getReadName() + "\':");
-
+            Assert.assertEquals(r.getIntegerAttribute(SAMTag.NM.name()), nm, "problem with NM in read \'" + r.getReadName() + "\':");
+            if (md != null) {
+                Assert.assertEquals(r.getStringAttribute(SAMTag.MD.name()), md, "problem with MD in read \'" + r.getReadName() + "\':");
+            }
         });
     }
 }
