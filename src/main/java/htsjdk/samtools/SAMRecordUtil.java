@@ -31,6 +31,10 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ *
+ * Use {@link SAMRecord#reverseComplement()} instead, which defaults to making a copy of attributes for reverse
+ * complement rather than changing them in-place.
+ *
  * @author alecw@broadinstitute.org
  */
 @Deprecated
@@ -46,7 +50,7 @@ public class SAMRecordUtil {
      * for the default set of tags that are handled.
      */
     public static void reverseComplement(final SAMRecord rec) {
-        SAMRecord.reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, true);
+        rec.reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, true);
     }
 
     /**
@@ -59,7 +63,7 @@ public class SAMRecordUtil {
      * @param inplace Setting this to false will clone all attributes, bases and qualities before changing the values.
      */
     public static void reverseComplement(final SAMRecord rec, boolean inplace) {
-        SAMRecord.reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
+        rec.reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
     }
 
     /**
@@ -68,6 +72,6 @@ public class SAMRecordUtil {
      * specified by tagsToReverse.
      */
     public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean inplace) {
-        SAMRecord.reverseComplement(rec, tagsToRevcomp, tagsToReverse, inplace);
+        rec.reverseComplement(tagsToRevcomp, tagsToReverse, inplace);
     }
 }
