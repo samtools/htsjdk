@@ -1,0 +1,3 @@
+@HD	VN:1.5	SO:unsorted
+@SQ	SN:chr1	LN:16	M5:56b74a652b3ed2f610263b8bb423167c	UR:file:src/test/resources/htsjdk/samtools/SequenceUtil/reference_with_lower_and_uppercase.fasta
+@SQ	SN:chr2	LN:16	M5:b835d2c026aa66c52a05838dcc0b59d4	UR:file:src/test/resources/htsjdk/samtools/SequenceUtil/reference_with_lower_and_uppercase.fasta

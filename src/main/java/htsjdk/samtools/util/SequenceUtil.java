@@ -442,33 +442,6 @@ public class SequenceUtil {
     }
 
     /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    private static int countMismatches(final SAMRecord read, final char[] referenceBases, final int referenceOffset) {
-        int mismatches = 0;
-
-        final byte[] readBases = read.getReadBases();
-
-        for (final AlignmentBlock block : read.getAlignmentBlocks()) {
-            final int readBlockStart = block.getReadStart() - 1;
-            final int referenceBlockStart = block.getReferenceStart() - 1 - referenceOffset;
-            final int length = block.getLength();
-
-            for (int i = 0; i < length; ++i) {
-                if (!basesEqual(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
-                    ++mismatches;
-                }
-            }
-        }
-        return mismatches;
-    }
-
-    /**
      * Calculates the sum of qualities for mismatched bases in the read.
      *
      * @param referenceBases Array of ASCII bytes in which the 0th position in the array corresponds
@@ -530,41 +503,6 @@ public class SequenceUtil {
                             referenceBases[referenceBlockStart + i])) {
                         qualities += readQualities[readBlockStart + i];
                     }
-                }
-            }
-        }
-
-        return qualities;
-    }
-
-    /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    public static int sumQualitiesOfMismatches(final SAMRecord read, final char[] referenceBases,
-                                               final int referenceOffset) {
-        int qualities = 0;
-
-        final byte[] readBases = read.getReadBases();
-        final byte[] readQualities = read.getBaseQualities();
-
-        if (read.getAlignmentStart() <= referenceOffset) {
-            throw new IllegalArgumentException("read.getAlignmentStart(" + read.getAlignmentStart() +
-                    ") <= referenceOffset(" + referenceOffset + ")");
-        }
-
-        for (final AlignmentBlock block : read.getAlignmentBlocks()) {
-            final int readBlockStart = block.getReadStart() - 1;
-            final int referenceBlockStart = block.getReferenceStart() - 1 - referenceOffset;
-            final int length = block.getLength();
-
-            for (int i = 0; i < length; ++i) {
-                if (!basesEqual(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
-                    qualities += readQualities[readBlockStart + i];
                 }
             }
         }
@@ -652,26 +590,6 @@ public class SequenceUtil {
             if ( el.getOperator() == CigarOperator.X ||
                  el.getOperator() == CigarOperator.INSERTION ||
                  el.getOperator() == CigarOperator.DELETION) {
-                samNm += el.getLength();
-            }
-        }
-        return samNm;
-    }
-
-
-    /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    public static int calculateSamNmTag(final SAMRecord read, final char[] referenceBases,
-                                        final int referenceOffset) {
-        int samNm = countMismatches(read, referenceBases, referenceOffset);
-        for (final CigarElement el : read.getCigar().getCigarElements()) {
-            if (el.getOperator() == CigarOperator.INSERTION || el.getOperator() == CigarOperator.DELETION) {
                 samNm += el.getLength();
             }
         }
@@ -1059,7 +977,7 @@ public class SequenceUtil {
 
     /** Generates all possible unambiguous kmers (upper-case) of length and returns them as byte[]s. */
     public static List<byte[]> generateAllKmers(final int length) {
-        final List<byte[]> sofar = new LinkedList<byte[]>();
+        final List<byte[]> sofar = new LinkedList<>();
 
         if (sofar.isEmpty()) {
             sofar.add(new byte[length]);
