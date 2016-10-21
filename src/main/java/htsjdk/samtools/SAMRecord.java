@@ -2259,12 +2259,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Reverse-complement bases and reverse quality scores along with known optional attributes that
      * need the same treatment. Changes made after making a copy of the bases, qualities,
      * and any attributes that will be altered. If in-place update is needed use
-     * {@link #reverseComplement(SAMRecord, boolean)}.
+     * {@link #reverseComplement(boolean)}.
      * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
      * for the default set of tags that are handled.
      */
-    public static void reverseComplement(final SAMRecord rec) {
-        reverseComplement(rec, false);
+    public void reverseComplement() {
+        reverseComplement(false);
     }
 
     /**
@@ -2273,11 +2273,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * of altering them in-place. See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
      * for the default set of tags that are handled.
      *
-     * @param rec Record to reverse complement.
      * @param inplace Setting this to false will clone all attributes, bases and qualities before changing the values.
      */
-    public static void reverseComplement(final SAMRecord rec, boolean inplace) {
-        reverseComplement(rec, TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
+    public void reverseComplement(boolean inplace) {
+        reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
     }
 
     /**
@@ -2285,18 +2284,18 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * non-null attributes specified by tagsToRevcomp and reverse and non-null attributes
      * specified by tagsToReverse.
      */
-    public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean inplace) {
-        final byte[] readBases = inplace ? rec.getReadBases() : rec.getReadBases().clone();
+    public void reverseComplement(final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean inplace) {
+        final byte[] readBases = inplace ? getReadBases() : getReadBases().clone();
         SequenceUtil.reverseComplement(readBases);
-        rec.setReadBases(readBases);
-        final byte qualities[] = inplace ? rec.getBaseQualities() : rec.getBaseQualities().clone();
+        setReadBases(readBases);
+        final byte qualities[] = inplace ? getBaseQualities() : getBaseQualities().clone();
         reverseArray(qualities);
-        rec.setBaseQualities(qualities);
+        setBaseQualities(qualities);
 
         // Deal with tags that need to be reverse complemented
         if (tagsToRevcomp != null) {
             for (final String tag: tagsToRevcomp) {
-                Object value = rec.getAttribute(tag);
+                Object value = getAttribute(tag);
                 if (value != null) {
                     if (value instanceof byte[]) {
                         value = inplace ? value : ((byte[]) value).clone();
@@ -2307,7 +2306,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                     } else {
                         throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
                     }
-                    rec.setAttribute(tag, value);
+                    setAttribute(tag, value);
                 }
             }
         }
@@ -2315,7 +2314,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         // Deal with tags that needed to just be reversed
         if (tagsToReverse != null) {
             for (final String tag : tagsToReverse) {
-                Object value = rec.getAttribute(tag);
+                Object value = getAttribute(tag);
                 if (value != null) {
                     if (value instanceof String) {
                         value = StringUtil.reverseString((String) value);
@@ -2339,7 +2338,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                         throw new UnsupportedOperationException("Don't know how to reverse: " + value);
                     }
 
-                    rec.setAttribute(tag, value);
+                    setAttribute(tag, value);
                 }
             }
         }
