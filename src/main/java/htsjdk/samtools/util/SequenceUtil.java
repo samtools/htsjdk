@@ -890,10 +890,11 @@ public class SequenceUtil {
     /**
      * Calculate MD and NM similarly to Samtools, except that N->N is a match.
      *
-     * @param record
-     * @param ref
-     * @param calcMD
-     * @return
+     * @param record Input record for which to calculate NM and MD.
+     *               The appropriate tags will be added/updated in the record
+     * @param ref    The reference bases for the sequence to which the record is mapped
+     * @param calcMD A flag indicating whether to update the MD tag in the record
+     * @param calcNM A flag indicating whether to update the NM tag in the record
      */
     public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
                                             final boolean calcMD, final boolean calcNM) {
