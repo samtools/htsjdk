@@ -32,7 +32,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
-public class SAMFileReaderTest {
+public class SamReaderTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "variousFormatReaderTestCases")

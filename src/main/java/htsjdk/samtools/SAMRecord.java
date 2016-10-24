@@ -2047,7 +2047,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Gets the source of this SAM record -- both the reader that retrieved the record and the position on disk from
      * whence it came. 
-     * @return The file source.  Note that the reader will be null if not activated using SAMFileReader.enableFileSource().
+     * @return The file source.  Note that the reader will be null if the reader source has not be set.
      */
     public SAMFileSource getFileSource() {
         return mFileSource;
