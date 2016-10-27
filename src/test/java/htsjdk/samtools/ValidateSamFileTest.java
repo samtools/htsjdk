@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2009-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
@@ -61,6 +62,18 @@ public class ValidateSamFileTest {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "valid.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
+    }
+
+    @Test
+    public void testValidCRAMFileWithoutSeqDict() throws Exception {
+        final SamReader samReader = SamReaderFactory.
+                makeDefault().
+                validationStringency(ValidationStringency.SILENT).
+                referenceSequence(new File(TEST_DATA_DIR, "nm_tag_validation.fa")).
+                open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
+        final ReferenceSequenceFile reference = new FastaSequenceFile(new File(TEST_DATA_DIR, "nm_tag_validation.fa"), true);
+        final Histogram<String> results = executeValidation(samReader, reference, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertTrue(!results.isEmpty());
     }
 
     @Test
@@ -231,26 +244,32 @@ public class ValidateSamFileTest {
         final Histogram<String> results = executeValidation(samBuilder.getSamReader(), new ReferenceSequenceFile() {
             private int index = 0;
 
+            @Override
             public SAMSequenceDictionary getSequenceDictionary() {
                 return null;
             }
 
+            @Override
             public ReferenceSequence nextSequence() {
                 final byte[] bases = new byte[10000];
                 Arrays.fill(bases, (byte) 'A');
                 return new ReferenceSequence("foo", index++, bases);
             }
 
+            @Override
             public void reset() {
                 this.index = 0;
             }
 
+            @Override
             public boolean isIndexed() { return false; }
 
+            @Override
             public ReferenceSequence getSequence(final String contig) {
                 throw new UnsupportedOperationException();
             }
 
+            @Override
             public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
                 throw new UnsupportedOperationException();
             }
