@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2015 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -31,10 +32,10 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.FileInputStream;
 import java.util.Arrays;
 
 /**
@@ -47,7 +48,7 @@ public class CRAMFileReaderTest {
     private static final File CRAM_WITHOUT_CRAI = new File(TEST_DATA_DIR, "cram_query_sorted.cram");
     private static final ReferenceSource REFERENCE = createReferenceSource();
     private static final File INDEX_FILE = new File(TEST_DATA_DIR, "cram_with_crai_index.cram.crai");
-
+    private static final File UNMAPPED_CRAM = new File(TEST_DATA_DIR, "unmapped.cram");
 
     @BeforeClass
     public void initClass() {
@@ -64,19 +65,41 @@ public class CRAMFileReaderTest {
 
     // constructor 1: CRAMFileReader(final File cramFile, final InputStream inputStream)
 
-    @Test(description = "Test CRAMReader 1 reference required", expectedExceptions = IllegalStateException.class)
+    @Test(description = "Test CRAMReader 1 reference required", expectedExceptions = CRAMException.class)
     public void testCRAMReader1_ReferenceRequired() {
         InputStream bis = null;
         // assumes that reference_fasta property is not set and the download service is not enabled
-        new CRAMFileReader(CRAM_WITH_CRAI, bis);
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, bis);
+        testIterator(reader);
+        reader.close();
     }
+
+    @Test(description = "Test CRAMReader 1 input required", expectedExceptions = IllegalArgumentException.class)
+    public void testCRAMReader1_InputRequired() throws IOException {
+        InputStream bis = null;
+        // assumes that reference_fasta property is not set and the download service is not enabled
+        new CRAMFileReader(null, bis);
+    }
+
+    @Test
+    public void testCRAMReader1_ShouldWorkWithUnmappedCram() {
+        InputStream bis =  null;
+        CRAMFileReader reader = new CRAMFileReader(UNMAPPED_CRAM, bis);
+        testIterator(reader);
+        reader.close();
+    }
+
 
     // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
 
-    @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader2ReferenceRequired() {
+    @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader2_ReferenceRequired() {
         InputStream bis =  null;
-        new CRAMFileReader(CRAM_WITH_CRAI, bis, null);
+        ReferenceSource referenceSource = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, bis, referenceSource);
+        testIterator(reader);
+        reader.close();
+
     }
 
     @Test(description = "Test CRAMReader 2 input required", expectedExceptions = IllegalArgumentException.class)
@@ -84,6 +107,15 @@ public class CRAMFileReaderTest {
         File file = null;
         InputStream bis =  null;
         new CRAMFileReader(file, bis, createReferenceSource());
+    }
+
+    @Test
+    public void testCRAMReader2_ShouldWorkWithUnmappedCram() {
+        InputStream bis =  null;
+        ReferenceSource referenceSource = null;
+        CRAMFileReader reader = new CRAMFileReader(UNMAPPED_CRAM, bis, referenceSource);
+        testIterator(reader);
+        reader.close();
     }
 
     @Test
@@ -101,13 +133,15 @@ public class CRAMFileReaderTest {
         reader.getIndex();
     }
 
-    // constructor 3: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource)
+    // constructor 3: CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource)
 
-    @Test(description = "Test CRAMReader 3 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader3_RequiredReference() {
+    @Test(description = "Test CRAMReader 3 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader3_RequiredReference() throws IOException {
         File indexFile = null;
         ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, indexFile, refSource);
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, indexFile, refSource);
+        testIterator(reader);
+        reader.close();
     }
 
     @Test(description = "Test CRAMReader 3 input required", expectedExceptions = IllegalArgumentException.class)
@@ -140,12 +174,23 @@ public class CRAMFileReaderTest {
         reader.getIndex();
     }
 
-    // constructor 4: CRAMFileReader(final File cramFile, final ReferenceSource referenceSource)
-
-    @Test(description = "Test CRAMReader 4 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader4_ReferenceRequired() {
+    @Test
+    public void testCRAMReader3_ShouldWorkWithUnmappedCram() throws IOException {
+        File indexFile = null;
         ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, refSource);
+        CRAMFileReader reader = new CRAMFileReader(UNMAPPED_CRAM, indexFile, refSource);
+        testIterator(reader);
+        reader.close();
+    }
+
+    // constructor 4: CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource)
+
+    @Test(description = "Test CRAMReader 4 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader4_ReferenceRequired() throws IOException {
+        ReferenceSource refSource = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, refSource);
+        testIterator(reader);
+        reader.close();
     }
 
     @Test(description = "Test CRAMReader 4 input required", expectedExceptions = IllegalArgumentException.class)
@@ -167,14 +212,25 @@ public class CRAMFileReaderTest {
         reader.getIndex();
     }
 
-    // constructor 5: CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
-    //          final ReferenceSource referenceSource, final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 5 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader5_ReferenceRequired() throws IOException {
-        InputStream bis = new ByteArrayInputStream(new byte[0]);
-        SeekableFileStream sfs = null;
+    @Test
+    public void testCRAMReader4_ShouldWorkWithUnmappedCram() throws IOException {
         ReferenceSource refSource = null;
-        new CRAMFileReader(bis, sfs, refSource, ValidationStringency.STRICT);
+        CRAMFileReader reader = new CRAMFileReader(UNMAPPED_CRAM, refSource);
+        testIterator(reader);
+        reader.close();
+    }
+
+    // constructor 5: CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
+    //                final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency)
+
+    @Test(description = "Test CRAMReader 5 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader5_ReferenceRequired() throws IOException {
+        InputStream bis = new FileInputStream(CRAM_WITH_CRAI);
+        SeekableFileStream sfs = null;
+        ReferenceSource ref = null;
+        CRAMFileReader reader = new CRAMFileReader(bis, sfs, ref, ValidationStringency.STRICT);
+        testIterator(reader);
+        reader.close();
     }
 
     @Test(description = "Test CRAMReader 5 input required", expectedExceptions = IllegalArgumentException.class)
@@ -184,14 +240,27 @@ public class CRAMFileReaderTest {
         new CRAMFileReader(bis, sfs, createReferenceSource(), ValidationStringency.STRICT);
     }
 
-    // constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final ReferenceSource referenceSource,
-    //                final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 6 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader6_ReferenceRequired() throws IOException {
-        InputStream bis = new ByteArrayInputStream(new byte[0]);
-        File file = null;
+    @Test
+    public void testCRAMReader5_ShouldWorkWithUnmappedCram() throws IOException {
+        InputStream bis = new FileInputStream(UNMAPPED_CRAM);
+        SeekableFileStream sfs = null;
         ReferenceSource refSource = null;
-        new CRAMFileReader(bis, file, refSource, ValidationStringency.STRICT);
+        CRAMFileReader reader = new CRAMFileReader(bis, sfs, refSource, ValidationStringency.DEFAULT_STRINGENCY);
+        testIterator(reader);
+        reader.close();
+    }
+
+    //constructor 6: CRAMFileReader(final InputStream stream, final File indexFile, final CRAMReferenceSource referenceSource,
+    //               final ValidationStringency validationStringency)
+
+    @Test(description = "Test CRAMReader 6 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader6_ReferenceRequired() throws IOException {
+        InputStream bis = new FileInputStream(CRAM_WITH_CRAI);
+        File indexFile = null;
+        ReferenceSource ref = null;
+        CRAMFileReader reader = new CRAMFileReader(bis, indexFile, ref, ValidationStringency.STRICT);
+        testIterator(reader);
+        reader.close();
     }
 
     @Test(description = "Test CRAMReader 6 input required", expectedExceptions = IllegalArgumentException.class)
@@ -201,12 +270,44 @@ public class CRAMFileReaderTest {
         new CRAMFileReader(bis, file, createReferenceSource(), ValidationStringency.STRICT);
     }
 
-    // constructor 7: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource,
-    //                final ValidationStringency validationStringency)
-    @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader7_ReferenceRequired() throws IOException {
+    @Test
+    public void testCRAMReader6_ShouldWorkWithUnmappedCram() throws IOException {
+        InputStream bis = new FileInputStream(UNMAPPED_CRAM);
+        File indexFile = null;
         ReferenceSource refSource = null;
-        new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
+        CRAMFileReader reader = new CRAMFileReader(bis, indexFile, refSource, ValidationStringency.DEFAULT_STRINGENCY);
+        testIterator(reader);
+        reader.close();
+    }
+
+
+    // constructor 7: CRAMFileReader(final File cramFile, final File indexFile, final CRAMReferenceSource referenceSource,
+    //                final ValidationStringency validationStringency)
+
+    @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = CRAMException.class)
+    public void testCRAMReader7_ReferenceRequired() throws IOException {
+        File indexFile = null;
+        ReferenceSource referenceSource = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, indexFile, referenceSource, ValidationStringency.STRICT);
+        testIterator(reader);
+        reader.close();
+    }
+
+    @Test
+    public void testCRAMReader7_ShouldWorkWithUnmappedCram() throws IOException {
+        File indexFile = null;
+        ReferenceSource refSource = null;
+        CRAMFileReader reader = new CRAMFileReader(UNMAPPED_CRAM, indexFile, refSource, ValidationStringency.DEFAULT_STRINGENCY);
+        testIterator(reader);
+        reader.close();
+    }
+
+    private static void testIterator(CRAMFileReader reader) {
+        try (SAMRecordIterator iterator = reader.getIterator()) {
+            while (iterator.hasNext()) {
+                iterator.next();
+            }
+        }
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2013 EMBL-EBI
+ * Copyright 2016 EMBL-EBI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,13 +90,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (cramFile == null && inputStream == null) {
             throw new IllegalArgumentException("Either file or input stream is required.");
         }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
-
         this.cramFile = cramFile;
         this.inputStream = inputStream;
-        this.referenceSource = referenceSource;
+        this.referenceSource = tryToFindReferenceSource(referenceSource);
         if (cramFile != null) {
             mIndexFile = findIndexForFile(null, cramFile);
         }
@@ -117,13 +113,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                           final CRAMReferenceSource referenceSource) {
         if (cramFile == null)
             throw new IllegalArgumentException("File is required.");
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
 
         this.cramFile = cramFile;
         mIndexFile = findIndexForFile(indexFile, cramFile);
-        this.referenceSource = referenceSource;
+        this.referenceSource = tryToFindReferenceSource(referenceSource);
 
         getIterator();
     }
@@ -139,14 +132,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
     public CRAMFileReader(final File cramFile, final CRAMReferenceSource referenceSource) {
         if (cramFile == null)
             throw new IllegalArgumentException("CRAM file cannot be null.");
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
 
         this.cramFile = cramFile;
-        this.referenceSource = referenceSource;
+        this.referenceSource = tryToFindReferenceSource(referenceSource);
         mIndexFile = findIndexForFile(null, cramFile);
-
         getIterator();
     }
 
@@ -170,7 +159,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (referenceSource == null) {
             throw new IllegalArgumentException("A reference is required for CRAM readers");
         }
-        this.referenceSource = referenceSource;
+        this.referenceSource = tryToFindReferenceSource(referenceSource);
         initWithStreams(inputStream, indexInputStream, validationStringency);
     }
 
@@ -242,6 +231,10 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                     " is older than CRAM " + cramFile.getAbsolutePath());
         }
         return indexFile;
+    }
+
+    private CRAMReferenceSource tryToFindReferenceSource(CRAMReferenceSource referenceSource) {
+        return referenceSource == null ? ReferenceSource.getDefaultCRAMReferenceSource() : referenceSource;
     }
 
     @Override

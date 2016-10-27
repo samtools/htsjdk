@@ -1,6 +1,6 @@
 /**
  * ****************************************************************************
- * Copyright 2013 EMBL-EBI
+ * Copyright 2016 EMBL-EBI
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -91,22 +92,19 @@ public class ReferenceSource implements CRAMReferenceSource {
      * <li>ENA Reference Service if it is enabled</li>
      * </ul>
      */
-     public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
+    public static CRAMReferenceSource getDefaultCRAMReferenceSource() {
         if (null != Defaults.REFERENCE_FASTA) {
             if (Defaults.REFERENCE_FASTA.exists()) {
                 return new ReferenceSource(Defaults.REFERENCE_FASTA);
-            }
-            else {
+            } else {
                 throw new IllegalArgumentException(
                         "The file specified by the reference_fasta property does not exist: " + Defaults.REFERENCE_FASTA.getName());
             }
-        }
-        else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
+        } else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
             return new ReferenceSource();
-        }
-        else {
-            throw new IllegalStateException(
-                    "A valid CRAM reference was not supplied and one cannot be acquired via the property settings reference_fasta or use_cram_ref_download");
+        } else {
+            log.warn("A valid CRAM reference was not supplied and one cannot be acquired via the property settings reference_fasta or use_cram_ref_download");
+            return new ReferenceSource();
         }
     }
 
@@ -181,7 +179,9 @@ public class ReferenceSource implements CRAMReferenceSource {
                 }
             }
         }
-
+        if (rsFile == null) {
+            throw new CRAMException("A reference file is required.");
+        }
         // sequence not found, give up:
         return null;
     }

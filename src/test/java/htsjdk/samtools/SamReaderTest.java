@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2010 The Broad Institute
+ * Copyright (c) 2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -132,7 +132,7 @@ public class SamReaderTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
-    @Test(dataProvider = "cramTestCases", expectedExceptions=IllegalStateException.class)
+    @Test(dataProvider = "cramTestCases", expectedExceptions = CRAMException.class)
     public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
