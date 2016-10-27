@@ -27,8 +27,6 @@ package htsjdk.variant.vcf;
 
 import java.util.Arrays;
 
-import htsjdk.samtools.util.StringUtil;
-
 /**
  * @author ebanks
  * 
@@ -73,10 +71,9 @@ public class VCFFilterHeaderLine extends VCFSimpleHeaderLine  {
     
     /**
      * get the "Description" field
-     * @return the "Description" or the Filter ID if the description is null or empty 
+     * @return the "Description" field
      */
     public String getDescription() {
-        final String desc = getGenericFieldValue("Description");
-        return ( StringUtil.isBlank(desc) ? getID() : desc );
+        return getGenericFieldValue("Description");
     }
 }
