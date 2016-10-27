@@ -30,6 +30,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTextHeaderCodec;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CloserUtil;
@@ -76,7 +77,7 @@ public class SAMSequenceDictionaryExtractor {
                 }
             }
         },
-        SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
+        SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION, CramIO.CRAM_FILE_EXTENSION) {
             @Override
             SAMSequenceDictionary extractDictionary(final File sam) {
                 return SamReaderFactory.makeDefault().getFileHeader(sam).getSequenceDictionary();
