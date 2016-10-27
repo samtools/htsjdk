@@ -464,6 +464,8 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(4, vc.getCalledChrCount(T));
         Assert.assertEquals(3, vc.getCalledChrCount(ATC));
         Assert.assertEquals(2, vc.getCalledChrCount(Allele.NO_CALL));
+
+        Assert.assertEquals(T, vc.getAltAlleleWithHighestAlleleCount());
     }
 
     @Test
