@@ -27,6 +27,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Log;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -42,13 +43,18 @@ import java.util.Arrays;
 public class CRAMFileReaderTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final File CRAM_WITH_CRAI = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
+    private static final File CRAM_WITHOUT_CRAI = new File(TEST_DATA_DIR, "cram_query_sorted.cram");
+    private static final ReferenceSource REFERENCE = createReferenceSource();
+    private static final File INDEX_FILE = new File(TEST_DATA_DIR, "cram_with_crai_index.cram.crai");
+
 
     @BeforeClass
     public void initClass() {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
     }
 
-    private ReferenceSource createReferenceSource() {
+    private static ReferenceSource createReferenceSource() {
         byte[] refBases = new byte[10 * 10];
         Arrays.fill(refBases, (byte) 'A');
         InMemoryReferenceSequenceFile rsf = new InMemoryReferenceSequenceFile();
@@ -60,19 +66,17 @@ public class CRAMFileReaderTest {
 
     @Test(description = "Test CRAMReader 1 reference required", expectedExceptions = IllegalStateException.class)
     public void testCRAMReader1_ReferenceRequired() {
-        File file = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
         InputStream bis = null;
         // assumes that reference_fasta property is not set and the download service is not enabled
-        new CRAMFileReader(file, bis);
+        new CRAMFileReader(CRAM_WITH_CRAI, bis);
     }
 
     // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
 
     @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader2ReferenceRequired() {
-        File file = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
         InputStream bis =  null;
-        new CRAMFileReader(file, bis, null);
+        new CRAMFileReader(CRAM_WITH_CRAI, bis, null);
     }
 
     @Test(description = "Test CRAMReader 2 input required", expectedExceptions = IllegalArgumentException.class)
@@ -82,37 +86,85 @@ public class CRAMFileReaderTest {
         new CRAMFileReader(file, bis, createReferenceSource());
     }
 
+    @Test
+    public void testCRAMReader2_ShouldAutomaticallyFindCRAMIndex() {
+        InputStream inputStream = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, inputStream, REFERENCE);
+        reader.getIndex();
+        Assert.assertTrue(reader.hasIndex(), "Can't find CRAM existing index.");
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testCRAMReader2_WithoutCRAMIndex() {
+        InputStream inputStream = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, inputStream, REFERENCE);
+        reader.getIndex();
+    }
+
     // constructor 3: CRAMFileReader(final File cramFile, final File indexFile, final ReferenceSource referenceSource)
 
     @Test(description = "Test CRAMReader 3 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader3_RequiredReference() {
-        File inputFile = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
+        File indexFile = null;
+        ReferenceSource refSource = null;
+        new CRAMFileReader(CRAM_WITH_CRAI, indexFile, refSource);
+    }
+
+    @Test(description = "Test CRAMReader 3 input required", expectedExceptions = IllegalArgumentException.class)
+    public void testCRAMReader3_InputRequired() {
+        File inputFile = null;
         File indexFile = null;
         ReferenceSource refSource = null;
         new CRAMFileReader(inputFile, indexFile, refSource);
     }
 
-    @Test(description = "Test CRAMReader 3 input required", expectedExceptions = IllegalArgumentException.class)
-    public void testCRAMReader3_InputRequirted() {
-        File inputFile = null;
+    @Test
+    public void testCRAMReader3_ShouldAutomaticallyFindCRAMIndex() {
         File indexFile = null;
-        ReferenceSource refSource = null;
-        new CRAMFileReader(inputFile, indexFile, refSource);
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, indexFile, REFERENCE);
+        reader.getIndex();
+        Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
+    }
+
+    @Test
+    public void testCRAMReader3_ShouldUseCRAMIndex() {
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, INDEX_FILE, REFERENCE);
+        reader.getIndex();
+        Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testCRAMReader3_WithoutCRAMIndex() {
+        File indexFile = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE);
+        reader.getIndex();
     }
 
     // constructor 4: CRAMFileReader(final File cramFile, final ReferenceSource referenceSource)
 
     @Test(description = "Test CRAMReader 4 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader4_ReferenceRequired() {
-        File inputFile = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
         ReferenceSource refSource = null;
-        new CRAMFileReader(inputFile, refSource);
+        new CRAMFileReader(CRAM_WITH_CRAI, refSource);
     }
 
     @Test(description = "Test CRAMReader 4 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader4_InputRequired() {
         File inputFile = null;
         new CRAMFileReader(inputFile, createReferenceSource());
+    }
+
+    @Test
+    public void testCRAMReader4_ShouldAutomaticallyFindCRAMIndex() {
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, REFERENCE);
+        reader.getIndex();
+        Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testCRAMReader4_WithoutCRAMIndex() {
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, REFERENCE);
+        reader.getIndex();
     }
 
     // constructor 5: CRAMFileReader(final InputStream inputStream, final SeekableStream indexInputStream,
@@ -146,7 +198,6 @@ public class CRAMFileReaderTest {
     public void testCRAMReader6_InputRequired() throws IOException {
         InputStream bis = null;
         File file = null;
-        ReferenceSource refSource = null;
         new CRAMFileReader(bis, file, createReferenceSource(), ValidationStringency.STRICT);
     }
 
@@ -154,10 +205,27 @@ public class CRAMFileReaderTest {
     //                final ValidationStringency validationStringency)
     @Test(description = "Test CRAMReader 7 reference required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader7_ReferenceRequired() throws IOException {
-        InputStream bis = new ByteArrayInputStream(new byte[0]);
-        File file = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");
         ReferenceSource refSource = null;
-        new CRAMFileReader(file, file, refSource, ValidationStringency.STRICT);
+        new CRAMFileReader(CRAM_WITH_CRAI, CRAM_WITH_CRAI, refSource, ValidationStringency.STRICT);
     }
 
+    @Test
+    public void testCRAMReader7_ShouldAutomaticallyFindCRAMIndex()throws IOException {
+        File indexFile = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
+        Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
+    }
+
+    @Test
+    public void testCRAMReader7_ShouldUseCRAMIndex() throws IOException {
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITH_CRAI, INDEX_FILE, REFERENCE, ValidationStringency.STRICT);
+        Assert.assertTrue(reader.hasIndex(), "Can't find existing CRAM index.");
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testCRAMReader7_WithoutCRAMIndex() throws IOException {
+        File indexFile = null;
+        CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
+        reader.getIndex();
+    }
 }
