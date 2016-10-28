@@ -89,7 +89,6 @@ public class CRAMFileReaderTest {
         reader.close();
     }
 
-
     // constructor 2: CRAMFileReader(final File cramFile, final InputStream inputStream, final ReferenceSource referenceSource)
 
     @Test(description = "Test CRAMReader 2 reference required", expectedExceptions = CRAMException.class)
