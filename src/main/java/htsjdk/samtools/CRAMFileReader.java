@@ -156,9 +156,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (inputStream == null) {
             throw new IllegalArgumentException("Input stream can not be null for CRAM reader");
         }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
         this.referenceSource = tryToFindReferenceSource(referenceSource);
         initWithStreams(inputStream, indexInputStream, validationStringency);
     }
@@ -198,11 +195,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         if (cramFile == null) {
             throw new IllegalArgumentException("Input file can not be null for CRAM reader");
         }
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required for CRAM readers");
-        }
         this.cramFile = cramFile;
-        this.referenceSource = referenceSource;
+        this.referenceSource = tryToFindReferenceSource(referenceSource);
         this.mIndexFile = findIndexForFile(indexFile, cramFile);
         final SeekableFileStream indexStream = this.mIndexFile == null ? null : new SeekableFileStream(this.mIndexFile);
         initWithStreams(new FileInputStream(cramFile), indexStream, validationStringency);
@@ -331,9 +325,9 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             if (cramFile != null) {
                 newIterator = new CRAMIterator(new FileInputStream(cramFile),
                         referenceSource, validationStringency);
-            } else
+            } else {
                 newIterator = new CRAMIterator(inputStream, referenceSource, validationStringency);
-
+            }
             iterator = newIterator;
             return iterator;
         } catch (final Exception e) {
