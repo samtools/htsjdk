@@ -28,12 +28,7 @@ package htsjdk.variant.variantcontext;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFConstants;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A builder class for genotypes
@@ -379,6 +374,15 @@ public final class GenotypeBuilder {
             return filter(filters.get(0));
         else
             return filter(ParsingUtils.join(";", ParsingUtils.sortList(filters)));
+    }
+
+    public GenotypeBuilder filters(final Set<String> filters) {
+        if ( filters.isEmpty() )
+            return filter(null);
+        else if ( filters.size() == 1 )
+            return filter((String)filters.toArray()[0]);
+        else
+            return filters(new ArrayList<String>(filters));
     }
 
     /**

@@ -1,4 +1,4 @@
-##fileformat=VCFv4.0
+##fileformat=VCFv4.3
 ##FILTER=<ID=ABFilter,Description="AB  0.75 && DP  40">
 ##FILTER=<ID=DPFilter,Description="DP  120 || SB  -0.10">
 ##FILTER=<ID=FDRtranche0.00to0.10,Description="FDR tranche level at qual 0.06">
@@ -9,6 +9,7 @@
 ##FILTER=<ID=HARD_TO_VALIDATE,Description="MQ0 = 4 && ((MQ0 / (1.0 * DP))  0.1)">
 ##FILTER=<ID=Indel,Description="Overlaps a user-input mask">
 ##FILTER=<ID=LowQual,Description="Low quality">
+##FILTER=<ID=LowQual,Description="QUAL  50.0">
 ##FILTER=<ID=SnpCluster,Description="SNPs found in clusters">
 ##FORMAT=<ID=AD,Number=.,Type=Integer,Description="Allelic depths for the ref and alt alleles in the order listed">
 ##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth (only filtered reads used for calling)">

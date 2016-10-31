@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -60,6 +61,7 @@ import java.util.zip.GZIPInputStream;
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
     public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
+    protected final static Log logger = Log.getInstance(AbstractVCFCodec.class);
 
     protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th column
 
@@ -80,7 +82,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected final String[] locParts = new String[6];
 
     // for performance we cache the hashmap of filter encodings for quick lookup
-    protected HashMap<String,List<String>> filterHash = new HashMap<String,List<String>>();
+    protected HashMap<String,Set<String>> filterHash = new HashMap<String,Set<String>>();
 
     // we store a name to give to each of the variant contexts we emit
     protected String name = "Unknown";
@@ -135,7 +137,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param filterString the string to parse
      * @return a set of the filters applied
      */
-    protected abstract List<String> parseFilters(String filterString);
+    protected abstract Set<String> parseFilters(String filterString);
 
     /**
      * create a VCF header from a set of header record lines
@@ -197,20 +199,23 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
             } else {
                 if ( str.startsWith(VCFConstants.INFO_HEADER_START) ) {
-                    final VCFInfoHeaderLine info = new VCFInfoHeaderLine(str.substring(7), version);
-                    metaData.add(info);
+                    final VCFInfoHeaderLine info = getInfoHeaderLineHandler(str.substring(7), version);
+                    addAndFilterIDFields(metaData, info);
                 } else if ( str.startsWith(VCFConstants.FILTER_HEADER_START) ) {
-                    final VCFFilterHeaderLine filter = new VCFFilterHeaderLine(str.substring(9), version);
-                    metaData.add(filter);
+                    final VCFFilterHeaderLine filter = getFilterHeaderLineHandler(str.substring(9), version);
+                    addAndFilterIDFields(metaData, filter);
                 } else if ( str.startsWith(VCFConstants.FORMAT_HEADER_START) ) {
-                    final VCFFormatHeaderLine format = new VCFFormatHeaderLine(str.substring(9), version);
-                    metaData.add(format);
+                    final VCFFormatHeaderLine format = getFormatHeaderLineHandler(str.substring(9), version);
+                    addAndFilterIDFields(metaData, format);
                 } else if ( str.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
                     final VCFContigHeaderLine contig = new VCFContigHeaderLine(str.substring(9), version, VCFConstants.CONTIG_HEADER_START.substring(2), contigCounter++);
-                    metaData.add(contig);
+                    addAndFilterIDFields(metaData, contig);
                 } else if ( str.startsWith(VCFConstants.ALT_HEADER_START) ) {
-                    final VCFSimpleHeaderLine alt = new VCFSimpleHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"));
-                    metaData.add(alt);
+                    final VCFAltHeaderLine alt = new VCFAltHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"));
+                    addAndFilterIDFields(metaData, alt);
+                } else if ( str.startsWith(VCFConstants.PEDIGREE_HEADER_START) ) {
+                    final VCFPedigreeHeaderLine pedigree = new VCFPedigreeHeaderLine(str.substring(11), version);
+                    addAndFilterIDFields(metaData, pedigree);
                 } else {
                     int equals = str.indexOf('=');
                     if ( equals != -1 )
@@ -225,7 +230,65 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return this.header;
     }
 
-	/**
+    private void addAndFilterIDFields(Set<VCFHeaderLine> metaData, VCFIDHeaderLine line) {
+        // Checking that INFO and FORMAT header, warn for older versions
+        if (!(version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3))
+                && (line instanceof VCFFormatHeaderLine|| line instanceof VCFInfoHeaderLine)) {
+
+            if( VCFCompoundHeaderLine.LEGAL_HEADER_ID_KEYS.matcher(line.getID()).matches()) {
+                logger.warn("Invalid ID field \""+ line.getID() +"\" in header line");
+            }
+        }
+        // Checking that compound header lines don't duplicate ID Fields
+        for (VCFHeaderLine stored : metaData) {
+            if (stored.getKey().equals(((VCFHeaderLine) line).getKey()) && stored instanceof VCFIDHeaderLine) {
+                if (((VCFIDHeaderLine) stored).getID().equals(line.getID()) ){
+                    if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                        throw new TribbleException.VCFException("ID field for header line type ##"+ ((VCFHeaderLine) line).getKey() +" must be unique for all instances; the key \""+line.getID()+"\" is duplicated;");
+                    } else {
+                        logger.warn("ID field for header line type ##"+ ((VCFHeaderLine) line).getKey() +" should be unique for all instances; the key \""+line.getID()+"\" is duplicated; Duplicate fields will be ignored");
+                    }
+                }
+            }
+        }
+        metaData.add((VCFHeaderLine) line);
+    }
+
+
+    /**
+     * Subclasses can override this in order to provide custom FILTER line handling.
+     *
+     * @param filterLine VCF FILTER header line being parsed
+     * @param version VCFVersion for being parsed
+     * @return a VCFFilterHeaderLine handler
+     */
+    public VCFFilterHeaderLine getFilterHeaderLineHandler(String filterLine, VCFHeaderVersion version) {
+        return new VCFFilterHeaderLine(filterLine, version);
+    }
+
+    /**
+     * Subclasses can override this in order to provide custom INFO line handling.
+     *
+     * @param infoLine VCF INFO header line being parsed
+     * @param version VCFVersion for being parsed
+     * @return a VCFInfoHeaderLine handler
+     */
+    public VCFInfoHeaderLine getInfoHeaderLineHandler(String infoLine, VCFHeaderVersion version) {
+        return new VCFInfoHeaderLine(infoLine, version);
+    }
+
+    /**
+     * Allow subclasses to override this in order to provide custom FORMAT line handling.
+     *
+     * @param formatLine VCF header line being parsed
+     * @param version VCFVersion for being parsed
+     * @return a VCFFormatHeaderLine handler
+     */
+    public VCFFormatHeaderLine getFormatHeaderLineHandler(String formatLine, VCFHeaderVersion version) {
+        return new VCFFormatHeaderLine(formatLine, version);
+    }
+
+    /**
 	 * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
 	 * and the version state stored in this instance; conversely, reading the header from a file will
 	 * overwrite whatever is set here. The returned header may not be identical to the header argument
@@ -288,6 +351,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     private VariantContext parseVCFLine(final String[] parts, final boolean includeGenotypes) {
         VariantContextBuilder builder = new VariantContextBuilder();
+        builder.sourceVersion(version);
         builder.source(getName());
 
         // increment the line count
@@ -317,8 +381,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final String alts = getCachedString(parts[4]);
         builder.log10PError(parseQual(parts[5]));
 
-        final List<String> filters = parseFilters(getCachedString(parts[6]));
-        if ( filters != null ) builder.filters(new HashSet<String>(filters));
+        final Set<String> filters = parseFilters(getCachedString(parts[6]));
+        if ( filters != null ) builder.filters(filters);
         final Map<String, Object> attrs = parseInfo(parts[7]);
         builder.attributes(attrs);
 
@@ -403,10 +467,16 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             generateException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
-            if ( infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1 )
-                generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
+            if ( infoField.indexOf('\t') != -1 ) {
+                generateException("The VCF specification does not allow for tab characters in the INFO field. Offending field value was \"" + infoField + "\"");
+
+            } else if (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) && infoField.indexOf(' ') != -1) {
+                generateException("Old VCF specification versions do not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
+
+            }
 
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
+
             for (int i = 0; i < infoFields.size(); i++) {
                 String key;
                 Object value;
@@ -447,6 +517,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 // this line ensures that key/value pairs that look like key=; are parsed correctly as MISSING
                 if ( "".equals(value) ) value = VCFConstants.MISSING_VALUE_v4;
 
+                if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3) && attributes.containsKey(key)) {
+                    generateException("The VCF specification does not allow for duplicate INFO info fields; Offending field value was \"" + infoField + "\"");
+                }
                 attributes.put(key, value);
             }
         }
@@ -691,13 +764,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     final String gtKey = genotypeKeys.get(i);
                     boolean missing = i >= genotypeValues.size();
 
-                    // todo -- all of these on the fly parsing of the missing value should be static constants
                     if (gtKey.equals(VCFConstants.GENOTYPE_KEY)) {
                         genotypeAlleleLocation = i;
                     } else if ( missing ) {
                         // if its truly missing (there no provided value) skip adding it to the attributes
                     } else if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-                        final List<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
+                        final Set<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
                         if ( filters != null ) gb.filters(filters);
                     } else if ( genotypeValues.get(i).equals(VCFConstants.MISSING_VALUE_v4) ) {
                         // don't add missing values to the map

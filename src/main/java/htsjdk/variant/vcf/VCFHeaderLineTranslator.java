@@ -43,6 +43,7 @@ public class VCFHeaderLineTranslator {
         mapping.put(VCFHeaderVersion.VCF4_0,new VCF4Parser());
         mapping.put(VCFHeaderVersion.VCF4_1,new VCF4Parser());
         mapping.put(VCFHeaderVersion.VCF4_2,new VCF4Parser());
+        mapping.put(VCFHeaderVersion.VCF4_3,new VCF4Parser());
         mapping.put(VCFHeaderVersion.VCF3_3,new VCF3Parser());
         mapping.put(VCFHeaderVersion.VCF3_2,new VCF3Parser());
     }

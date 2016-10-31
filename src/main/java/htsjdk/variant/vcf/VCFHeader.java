@@ -98,6 +98,8 @@ public class VCFHeader implements Serializable {
     private boolean writeEngineHeaders = true;
     private boolean writeCommandLine = true;
 
+    private VCFHeaderVersion oldVersion;
+
     /**
      * Create an empty VCF header with no header lines and no samples
      */
@@ -355,6 +357,7 @@ public class VCFHeader implements Serializable {
             if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                 System.err.println("Found duplicate VCF header lines for " + key + "; keeping the first only" );
             }
+            //TODO check if there is anything to be doing right here
             return false;
         }
 
@@ -403,7 +406,7 @@ public class VCFHeader implements Serializable {
 
     private static Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
-        lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_3.getFormatString(), VCFHeaderVersion.VCF4_3.getVersionString()));
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);
     }

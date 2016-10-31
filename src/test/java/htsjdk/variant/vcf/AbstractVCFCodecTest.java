@@ -57,4 +57,28 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 		Assert.assertEquals(new VCFCodec().getTabixFormat(), TabixFormat.VCF);
 		Assert.assertEquals(new VCF3Codec().getTabixFormat(), TabixFormat.VCF);
 	}
+
+	@Test (expectedExceptions = TribbleException.MalformedFeatureFile.class)
+	public void testDuplicatedHeaderFieldCrash() {
+		final File originalVCF = new File("src/test/resources/htsjdk/variant/HiSeq.10000.duplicatedField.vcf");
+		final VCFFileReader reader = new VCFFileReader(originalVCF, false);
+		final VCFHeader header = reader.getFileHeader();
+		reader.close();
+	}
+
+	@Test (expectedExceptions = TribbleException.class)
+	public void testDuplicatedInfoFieldCrash() {
+		final File originalVCF = new File("src/test/resources/htsjdk/variant/ex2.duplicatedInfo.vcf");
+		final VCFFileReader reader = new VCFFileReader(originalVCF, false);
+		final VCFHeader header = reader.getFileHeader();
+		reader.iterator().next(); // This should crash due to duplicated DB info tag
+	}
+
+	@Test
+	public void testSpacesInInfoField() {
+		final File originalVCF = new File("src/test/resources/htsjdk/variant/ex2.spacesInfoField.vcf");
+		final VCFFileReader reader = new VCFFileReader(originalVCF, false);
+		final VCFHeader header = reader.getFileHeader();
+		reader.iterator().next(); // This should not crash despite having a space in the info field
+	}
 }

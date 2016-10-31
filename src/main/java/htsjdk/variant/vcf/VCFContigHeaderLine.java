@@ -30,6 +30,7 @@ import htsjdk.tribble.TribbleException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * A special class representing a contig VCF header line.  Knows the true contig order and sorts on that
@@ -38,8 +39,9 @@ import java.util.Map;
  *
  * @author mdepristo
  */
-public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
+public class VCFContigHeaderLine extends VCFSimpleHeaderLine implements VCFIDHeaderLine {
     final Integer contigIndex;
+    final static Pattern VALID_ID_TAG_EXPRESSION = Pattern.compile("");//TODO figure out this regex
 
     /**
      * create a VCF contig header line
@@ -52,12 +54,14 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
         super(line, version, key, null);
 	    if (contigIndex < 0) throw new TribbleException("The contig index is less than zero.");
         this.contigIndex = contigIndex;
+        assertValidID();
     }
 
     public VCFContigHeaderLine(final Map<String, String> mapping, final int contigIndex) {
         super(VCFHeader.CONTIG_KEY, mapping);
 	    if (contigIndex < 0) throw new TribbleException("The contig index is less than zero.");
         this.contigIndex = contigIndex;
+        assertValidID();
     }
 
 	VCFContigHeaderLine(final SAMSequenceRecord sequenceRecord, final String assembly) {
@@ -69,6 +73,7 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
 			if ( assembly != null ) this.put("assembly", assembly);
 		}});
 		this.contigIndex = sequenceRecord.getSequenceIndex();
+        assertValidID();
 	}
 
     public Integer getContigIndex() {
@@ -113,6 +118,16 @@ public class VCFContigHeaderLine extends VCFSimpleHeaderLine {
             return contigIndex.compareTo(((VCFContigHeaderLine) other).contigIndex);
         else {
             return super.compareTo(other);
+        }
+    }
+
+    public String getID() {
+        return name;
+    }
+
+    private void assertValidID() {
+        if (VALID_ID_TAG_EXPRESSION.matcher(getID()).matches()) {
+            throw new TribbleException.InvalidHeader("Illegal characters contig header ID field \""+getID()+"\"");
         }
     }
 }
