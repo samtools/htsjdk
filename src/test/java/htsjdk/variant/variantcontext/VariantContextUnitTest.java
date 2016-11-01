@@ -26,6 +26,9 @@
 package htsjdk.variant.variantcontext;
 
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+
 // the imports for unit testing.
 
 import htsjdk.samtools.util.TestUtil;
@@ -37,6 +40,8 @@ import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -1446,5 +1451,31 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void testExtraStrictValidationFailure(final VariantContext vc, final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
         // extraStrictValidation throws exceptions if it fails, so no Asserts here...
         vc.extraStrictValidation(reportedReference, observedReference, rsIDs);
+    }
+    
+    
+    @DataProvider(name = "structuralVariationsTestData")
+    public Object[][] getStructuralVariationsTestData() {
+        return new Object[][] {
+         {new File("src/test/resources/htsjdk/variant/structuralvariants.vcf")}
+        };
+    }
+    
+    @Test(dataProvider = "structuralVariationsTestData")
+    public void testExtractStructuralVariationsData(final File vcfFile) {
+        VCFFileReader reader = null;
+        CloseableIterator<VariantContext> iter = null;
+        try {
+            reader = new VCFFileReader(vcfFile , false );
+            iter = reader.iterator();
+            while(iter.hasNext()) {
+                final VariantContext ctx = iter.next();
+                final StructuralVariantType st = ctx.getStructuralVariantType();
+                Assert.assertNotNull(st);
+            }
+        } finally {
+            CloserUtil.close(iter);
+            CloserUtil.close(reader);
+        }
     }
 }

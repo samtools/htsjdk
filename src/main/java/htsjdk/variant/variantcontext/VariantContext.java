@@ -1732,4 +1732,13 @@ public class VariantContext implements Feature, Serializable {
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
         return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
     }
+    
+    /** 
+     * Search for the INFO=SVTYPE and return the type of Structural Variant 
+     * @return the StructuralVariantType of null if there is no property SVTYPE 
+     * */
+    public StructuralVariantType getStructuralVariantType() {
+        final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
+        return svType == null ? null : StructuralVariantType.valueOf(svType);
+    }
 }
