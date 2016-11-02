@@ -128,6 +128,7 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
         /**
          * @return type of object
          */
+        @Override
         public Type getType() {
             return BEGIN;
         }
@@ -136,17 +137,9 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
          * @return <code>EdgingRecordAndOffset</code> that represents the start of alignment block of the read
          * for object with type END. For object with type BEGIN will return null.
          */
+        @Override
         public EdgingRecordAndOffset getStart() {
             return null;
-        }
-
-        /**
-         * Method can be called only for an object with type END.
-         * @param start <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read,
-         *              must have type <code>BEGIN</code>.
-         */
-        public void setStart(EdgingRecordAndOffset start) {
-            throw new IllegalArgumentException("The start object must have type BEGIN.");
         }
 
         @Override
@@ -204,6 +197,7 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
         /**
          * @return type of object
          */
+        @Override
         public Type getType() {
             return END;
         }
@@ -212,6 +206,7 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
          * @return <code>EdgingRecordAndOffset</code> that represents the start of alignment block of the read
          * for object with type END
          */
+        @Override
         public EdgingRecordAndOffset getStart() {
             return start;
         }
