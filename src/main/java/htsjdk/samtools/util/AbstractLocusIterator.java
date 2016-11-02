@@ -376,10 +376,9 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * @param readOffset  offset from start of read
      * @param length      length of aligned block
      * @param refPosition position in the reference sequence
-     * @param type        BEGIN or END type of RecordAndOffset
      * @return RecordAndOffset
      */
-    abstract T createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPosition, EdgingRecordAndOffset.Type type);
+    abstract T createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPosition);
 
     /**
      * Create the next relevant zero-coverage AbstractLocusInfo<T>

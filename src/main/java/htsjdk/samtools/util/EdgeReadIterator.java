@@ -38,6 +38,7 @@ import htsjdk.samtools.SamReader;
  * only about start and end of alignment blocks from reads, not about each aligned base.
  * 
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * 
  */
 public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffset, AbstractLocusInfo<EdgingRecordAndOffset>> {
@@ -90,14 +91,14 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
         // interpret the CIGAR string and add the base info
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
             // 0-based offset into the read of the current base
-            int readOffset = alignmentBlock.getReadStart() - 1;
+            final int readOffset = alignmentBlock.getReadStart() - 1;
             // 1-based reference position that the current base aligns to
-            int refPos = alignmentBlock.getReferenceStart();
+            final int refPos = alignmentBlock.getReferenceStart();
 
             // 0-based offset from the aligned position of the first base in the read to the aligned position
             // of the current base.
-            int refOffset = refPos - rec.getAlignmentStart();
-            int refOffsetEnd = refPos - rec.getAlignmentStart() + alignmentBlock.getLength();
+            final int refOffset = refPos - rec.getAlignmentStart();
+            final int refOffsetEnd = refPos - rec.getAlignmentStart() + alignmentBlock.getLength();
 
 
             // Ensure there are AbstractLocusInfos up to and including this position
@@ -121,30 +122,28 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
                 if (interval != null) {
                     final int intervalEnd = interval.getEnd();
                     final int intervalStart = interval.getStart();
-                    // check if an interval and the alignment block overlap 
-                    if ((refPos < intervalStart && refPos + alignmentBlock.getLength() < intervalStart)
-                            || (refPos > intervalEnd && refPos + alignmentBlock.getLength() > intervalEnd)) {
+                    // check if an interval and the alignment block overlap
+                    if (!CoordMath.overlaps(refPos, refPos + alignmentBlock.getLength(), intervalStart, intervalEnd)) {
                         continue;
                     }
-                    // if the alignment block starts out of an interval shift the starting position
+                    // if the alignment block starts out of an interval, shift the starting position
                     if (refPos < intervalStart) {
                         startShift = intervalStart - refPos;
                         refOffsetInterval = refOffsetInterval + startShift;
                     }
-                    // if the alignment block ends out of an interval shift the ending position
+                    // if the alignment block ends out of an interval, shift the ending position
+                    final int readEnd = refPos + alignmentBlock.getLength();
                     if (refPos + alignmentBlock.getLength() > intervalEnd) {
-                        refOffsetEndInterval = refOffsetEndInterval - (refPos + alignmentBlock.getLength() - intervalEnd) + 1;
+                        refOffsetEndInterval = refOffsetEndInterval - (readEnd - intervalEnd) + 1;
                     }
                 }
-
             }
-            int length = refOffsetEndInterval - refOffsetInterval;
+            final int length = refOffsetEndInterval - refOffsetInterval;
             // add the alignment block to the accumulator when it starts and when it ends 
-            EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, EdgingRecordAndOffset.Type.BEGIN);
+            final EdgingRecordAndOffset recordAndOffset = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift);
             // accumulate start of the alignment block
             accumulator.get(refOffsetInterval).add(recordAndOffset);
-            EdgingRecordAndOffset recordAndOffsetEnd = createRecordAndOffset(rec, readOffset + startShift, length, refPos + startShift, EdgingRecordAndOffset.Type.END);
-            recordAndOffsetEnd.setStart(recordAndOffset);
+            final EdgingRecordAndOffset recordAndOffsetEnd = createRecordAndOffset(recordAndOffset);
             // accumulate end of the alignment block
             accumulator.get(refOffsetEndInterval).add(recordAndOffsetEnd);
         }
@@ -162,12 +161,15 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
      * @param readOffset offset from start of read
      * @param length     length of alignment block
      * @param refPos     position in the reference sequence
-     * @param type       BEGIN or END type of RecordAndOffset
      * @return created <code>EdgingRecordAndOffset</code>
      */
     @Override
-    EdgingRecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, EdgingRecordAndOffset.Type type) {
-        return new EdgingRecordAndOffset(rec, readOffset, length, refPos, type);
+    EdgingRecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos) {
+        return EdgingRecordAndOffset.createBeginRecord(rec, readOffset, length, refPos);
+    }
+
+    EdgingRecordAndOffset createRecordAndOffset(EdgingRecordAndOffset startRecord) {
+        return EdgingRecordAndOffset.createEndRecord(startRecord);
     }
 
     /**
@@ -188,7 +190,7 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
      */
     @Override
     public void setMaxReadsToAccumulatePerLocus(int maxReadsToAccumulatePerLocus) {
-        if (getMaxReadsToAccumulatePerLocus() != maxReadsToAccumulatePerLocus) {
+        if (getMaxReadsToAccumulatePerLocus() != 0) {
             throw new UnsupportedOperationException("Locus cap is not supported for " + getClass().getSimpleName() + ".");
         }
     }
@@ -216,7 +218,6 @@ public class EdgeReadIterator extends AbstractLocusIterator<EdgingRecordAndOffse
                     "uncovered bases.");
         }
     }
-
 
     @Override
     public void setIncludeIndels(boolean includeIndels) {

@@ -49,8 +49,8 @@ public class AbstractLocusInfoTest {
         record.setReadName("testRecord");
         record.setReadBases(bases);
         record.setBaseQualities(qualities);
-        typedRecordAndOffset = new EdgingRecordAndOffset(record, 10, 10, 10, EdgingRecordAndOffset.Type.BEGIN);
-        typedRecordAndOffsetEnd = new EdgingRecordAndOffset(record, 10, 10, 0, EdgingRecordAndOffset.Type.END);
+        typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 10, 10, 10);
+        typedRecordAndOffsetEnd = EdgingRecordAndOffset.createEndRecord(typedRecordAndOffset);
     }
 
     @Test

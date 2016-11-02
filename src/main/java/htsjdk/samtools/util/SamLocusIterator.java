@@ -186,7 +186,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      * @return created RecordAndOffset
      */
     @Override
-    RecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos, EdgingRecordAndOffset.Type type) {
+    RecordAndOffset createRecordAndOffset(SAMRecord rec, int readOffset, int length, int refPos) {
         return new RecordAndOffset(rec, readOffset);
     }
 

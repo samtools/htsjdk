@@ -54,7 +54,7 @@ public class EdgingRecordAndOffsetTest {
 
     @Test
     public void testConstructor(){
-        EdgingRecordAndOffset typedRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
+        EdgingRecordAndOffset typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 3);
         assertArrayEquals(qualities, typedRecordAndOffset.getBaseQualities());
         assertArrayEquals(bases, typedRecordAndOffset.getRecord().getReadBases());
         assertEquals('A', typedRecordAndOffset.getReadBase());
@@ -65,44 +65,30 @@ public class EdgingRecordAndOffsetTest {
 
     @Test
     public void  testGetSetStart(){
-        EdgingRecordAndOffset typedRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
-        EdgingRecordAndOffset typedRecordAndOffsetEnd = new EdgingRecordAndOffset(record, 9, 10, 3, EdgingRecordAndOffset.Type.END);
-        typedRecordAndOffsetEnd.setStart(typedRecordAndOffset);
+        EdgingRecordAndOffset typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 3);
+        EdgingRecordAndOffset typedRecordAndOffsetEnd = EdgingRecordAndOffset.createEndRecord(typedRecordAndOffset);
         assertEquals(typedRecordAndOffset, typedRecordAndOffsetEnd.getStart());
+        assertEquals(EdgingRecordAndOffset.Type.END, typedRecordAndOffsetEnd.getType());
     }
 
     @Test
     public void testNotEqualsTypedRecords(){
-        EdgingRecordAndOffset typedRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
-        EdgingRecordAndOffset secondEdgingRecordAndOffset = new EdgingRecordAndOffset(record, 5, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
+        EdgingRecordAndOffset typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 3);
+        EdgingRecordAndOffset secondEdgingRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 5, 10, 3);
         assertNotSame(typedRecordAndOffset.getBaseQuality(), secondEdgingRecordAndOffset.getBaseQuality());
         assertArrayEquals(typedRecordAndOffset.getBaseQualities(), secondEdgingRecordAndOffset.getBaseQualities());
     }
 
     @Test
     public void testGetOffset(){
-        EdgingRecordAndOffset secondEdgingRecordAndOffset = new EdgingRecordAndOffset(record, 5, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
+        EdgingRecordAndOffset secondEdgingRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 5, 10, 3);
         assertEquals(70, secondEdgingRecordAndOffset.getBaseQuality());
         assertEquals('C', secondEdgingRecordAndOffset.getReadBase());
     }
 
     @Test
     public void testGetQualityAtPosition(){
-        EdgingRecordAndOffset secondEdgingRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 1, EdgingRecordAndOffset.Type.BEGIN);
+        EdgingRecordAndOffset secondEdgingRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 1);
         assertEquals(50, secondEdgingRecordAndOffset.getBaseQuality(2));
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testWrongSetStart(){
-        EdgingRecordAndOffset typedRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 3, EdgingRecordAndOffset.Type.BEGIN);
-        EdgingRecordAndOffset typedRecordAndOffsetEnd = new EdgingRecordAndOffset(record, 9, 10, 3, EdgingRecordAndOffset.Type.END);
-        typedRecordAndOffset.setStart(typedRecordAndOffsetEnd);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testWrongSetStartWithTypeEnd(){
-        EdgingRecordAndOffset typedRecordAndOffset = new EdgingRecordAndOffset(record, 0, 10, 3, EdgingRecordAndOffset.Type.END);
-        EdgingRecordAndOffset typedRecordAndOffsetEnd = new EdgingRecordAndOffset(record, 9, 10, 3, EdgingRecordAndOffset.Type.END);
-        typedRecordAndOffset.setStart(typedRecordAndOffsetEnd);
     }
 }

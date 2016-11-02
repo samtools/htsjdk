@@ -33,7 +33,7 @@ import htsjdk.samtools.SAMRecord;
  * <code>SAMRecord</code> for <code>TypedRecordAndOffset</code> implementation.
  * 
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
- * 
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 public class AbstractRecordAndOffset {
 

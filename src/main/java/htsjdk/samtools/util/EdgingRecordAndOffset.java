@@ -35,108 +35,31 @@ import static htsjdk.samtools.util.EdgingRecordAndOffset.Type.END;
  * This is implementation for EdgeReadIterator, field <code>type</code> added to indicate whether object
  * represents the start or the end of an alignment block.
  * <p>
- * Types BEGIN and END are used in EdgeReadIterator to distinguish starting and ending of the alignment block
+ * Subclasses StartEdgingRecordAndOffset and EndEdgingRecordAndOffset are used in EdgeReadIterator to
+ * distinguish starting and ending of the alignment block
  * as for each alignment block two objects of <code>EdgingRecordAndOffset</code> are created with two different types.
  * The main idea of using EdgeReadIterator is to process alignment block starting from locus where BEGIN type occurs,
  * aggregate information per locus and keep it until END type occurs, then remove alignment block from consideration.
  * 
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
- * 
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
-public class EdgingRecordAndOffset extends AbstractRecordAndOffset {
-    /**
-     * Length of alignment block of the read
-     */
-    private final int length;
-    /**
-     * A reference position to which read offset is aligned.
-     */
-    private final int refPos;
-    /**
-     * Indicates whether object represents the start or the end of an alignment block.
-     */
-    private Type type;
-    private int hash = 0;
+public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
 
-    /**
-     * For object with type END this fields holds the reference to object with type BEGIN for the read.
-     */
-    private EdgingRecordAndOffset start;
-
-    /**
-     * @param record inner SAMRecord
-     * @param offset from the start of the read
-     * @param length of alignment block
-     * @param refPos corresponding to read offset reference position
-     */
-    public EdgingRecordAndOffset(SAMRecord record, int offset, int length, int refPos, Type type) {
+    private EdgingRecordAndOffset(SAMRecord record, int offset) {
         super(record, offset);
-        if (length > record.getReadLength()) {
-            throw new IllegalArgumentException("Block length cannot be larger than whole read length");
-        }
-        this.type = type;
-        this.length = length;
-        this.refPos = refPos;
     }
 
-    /**
-     * @return <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read
-     * for object with type END. For object with type BEGIN will return null.
-     */
-    public EdgingRecordAndOffset getStart() {
-        return start;
+    public abstract EdgingRecordAndOffset getStart();
+
+    public abstract Type getType();
+
+    public static EdgingRecordAndOffset createBeginRecord(SAMRecord record, int offset, int length, int refPos) {
+        return new StartEdgingRecordAndOffset(record, offset, length, refPos);
     }
 
-
-    /**
-     * Method can be called only for an object with type END.
-     * @param start <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read,
-     *              must have type <code>BEGIN</code>.
-     */
-    public void setStart(EdgingRecordAndOffset start) {
-        if (type != END) {
-            throw new IllegalArgumentException("Start field can be set only for object with type END.");
-        }
-        if (start.type != BEGIN) {
-            throw new IllegalArgumentException("The start object must have type BEGIN.");
-        }
-        this.start = start;
-    }
-    
-    /**
-     * @param position in the reference
-     * @return base quality of a read base, corresponding to a given reference position
-     */
-    @Override
-    public byte getBaseQuality(int position) {
-        int rOffset = getRelativeOffset(position);
-        byte[] baseQualities = record.getBaseQualities();
-        validateOffset(rOffset, baseQualities);
-        return baseQualities[rOffset];
-    }
-    
-    /**
-     * @return the length of alignment block represented by the object.
-     */
-    @Override
-    public int getLength() {
-        return length;
-    }
-
-    /**
-     * @return the position in reference sequence, to which the start of alignment block is aligned.
-     */
-    @Override
-    public int getRefPos() {
-        return refPos;
-    }
-
-
-    /**
-     * @return type of object
-     */
-    public Type getType() {
-        return type;
+    public static EdgingRecordAndOffset createEndRecord(EdgingRecordAndOffset startRecord) {
+        return new EndEdgingRecordAndOffset(startRecord);
     }
 
     /**
@@ -146,19 +69,156 @@ public class EdgingRecordAndOffset extends AbstractRecordAndOffset {
     public enum Type {
         BEGIN, END
     }
-    
-    @Override
-    public int hashCode() {
-        if (hash != 0) return hash;
-        hash = record.hashCode();
-        hash = 31 * hash + length;
-        hash = 31 * hash + offset;
-        hash = 31 * hash + refPos;
-        return hash;
+
+    private static class StartEdgingRecordAndOffset extends EdgingRecordAndOffset {
+        /**
+         * Length of alignment block of the read
+         */
+        private final int length;
+        /**
+         * A reference position to which read offset is aligned.
+         */
+        private final int refPos;
+
+        private int hash = 0;
+
+        /**
+         * @param record inner SAMRecord
+         * @param offset from the start of the read
+         * @param length of alignment block
+         * @param refPos corresponding to read offset reference position
+         */
+        protected StartEdgingRecordAndOffset(SAMRecord record, int offset, int length, int refPos) {
+            super(record, offset);
+            if (length > record.getReadLength()) {
+                throw new IllegalArgumentException("Block length cannot be larger than whole read length");
+            }
+            this.length = length;
+            this.refPos = refPos;
+        }
+
+        /**
+         * @param position in the reference
+         * @return base quality of a read base, corresponding to a given reference position
+         */
+        @Override
+        public byte getBaseQuality(int position) {
+            int rOffset = getRelativeOffset(position);
+            byte[] baseQualities = record.getBaseQualities();
+            validateOffset(rOffset, baseQualities);
+            return baseQualities[rOffset];
+        }
+
+        /**
+         * @return the length of alignment block represented by the object.
+         */
+        @Override
+        public int getLength() {
+            return length;
+        }
+
+        /**
+         * @return the position in reference sequence, to which the start of alignment block is aligned.
+         */
+        @Override
+        public int getRefPos() {
+            return refPos;
+        }
+
+        /**
+         * @return type of object
+         */
+        public Type getType() {
+            return BEGIN;
+        }
+
+        /**
+         * @return <code>EdgingRecordAndOffset</code> that represents the start of alignment block of the read
+         * for object with type END. For object with type BEGIN will return null.
+         */
+        public EdgingRecordAndOffset getStart() {
+            return null;
+        }
+
+        /**
+         * Method can be called only for an object with type END.
+         * @param start <code>TypedRecordAndOffset</code> that represents the start of alignment block of the read,
+         *              must have type <code>BEGIN</code>.
+         */
+        public void setStart(EdgingRecordAndOffset start) {
+            throw new IllegalArgumentException("The start object must have type BEGIN.");
+        }
+
+        @Override
+        public int hashCode() {
+            if (hash != 0) return hash;
+            hash = record.hashCode();
+            hash = 31 * hash + length;
+            hash = 31 * hash + offset;
+            hash = 31 * hash + refPos;
+            return hash;
+        }
+
+        private int getRelativeOffset(int position) {
+            return position - refPos + offset;
+        }
     }
 
-    private int getRelativeOffset(int position) {
-        return position - refPos + offset;
-    }
+    private static class EndEdgingRecordAndOffset extends EdgingRecordAndOffset {
 
+        /**
+         * For object with type END this fields holds the reference to object with type BEGIN for the read.
+         */
+        final private EdgingRecordAndOffset start;
+
+        EndEdgingRecordAndOffset(EdgingRecordAndOffset record) {
+            super(record.getRecord(), record.getOffset());
+            this.start = record;
+        }
+
+        /**
+         * @param position in the reference
+         * @return base quality of a read base, corresponding to a given reference position
+         */
+        @Override
+        public byte getBaseQuality(int position) {
+            return start.getBaseQuality(position);
+        }
+
+        /**
+         * @return the length of alignment block represented by the object.
+         */
+        @Override
+        public int getLength() {
+            return start.getLength();
+        }
+
+        /**
+         * @return the position in reference sequence, to which the start of alignment block is aligned.
+         */
+        @Override
+        public int getRefPos() {
+            return start.getRefPos();
+        }
+
+        /**
+         * @return type of object
+         */
+        public Type getType() {
+            return END;
+        }
+
+        /**
+         * @return <code>EdgingRecordAndOffset</code> that represents the start of alignment block of the read
+         * for object with type END
+         */
+        public EdgingRecordAndOffset getStart() {
+            return start;
+        }
+
+        @Override
+        public int hashCode() {
+            return start.hashCode();
+        }
+    }
 }
