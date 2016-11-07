@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 
 /**
@@ -248,7 +249,16 @@ public final class CommonInfo implements Serializable {
 
     /** returns the value as an empty list if the key was not found,
         as a java.util.List if the value is a List or an Array,
-        as a Collections.singletonList if there is only one value */
+        as a Collections.singletonList if there is only one value
+     */
+    /**
+     * Gets the attributes from a key as a list.
+     *
+     * Note: int[] and double[] arrays are boxed.
+     *
+     * @return empty list if the key was not found; {@link Collections#singletonList(Object)} if
+     * there is only one value; a list containing the values if the value is a {@link List} or array.
+     */
     @SuppressWarnings("unchecked")
     public List<Object> getAttributeAsList(String key) {
         Object o = getAttribute(key);
