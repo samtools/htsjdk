@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -246,11 +244,7 @@ public final class CommonInfo implements Serializable {
         else
             return defaultValue;
     }
-
-    /** returns the value as an empty list if the key was not found,
-        as a java.util.List if the value is a List or an Array,
-        as a Collections.singletonList if there is only one value
-     */
+    
     /**
      * Gets the attributes from a key as a list.
      *
@@ -285,15 +279,14 @@ public final class CommonInfo implements Serializable {
 
     public List<Integer> getAttributeAsIntList(String key, Integer defaultValue) {
         return getAttributeAsList(key, x -> {
-                            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
-                                return defaultValue;
-                            } else if (x instanceof Number) {
-                                return ((Number) x).intValue();
-                            } else {
-                                return Integer.valueOf((String)x); // throws an exception if this isn't a string
-                            }
-                        }
-                );
+            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                return defaultValue;
+            } else if (x instanceof Number) {
+                return ((Number) x).intValue();
+            } else {
+                return Integer.valueOf((String)x); // throws an exception if this isn't a string
+            }
+        });
     }
 
     public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
