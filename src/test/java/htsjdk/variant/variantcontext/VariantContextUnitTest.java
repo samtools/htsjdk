@@ -491,7 +491,14 @@ public class VariantContextUnitTest extends VariantBaseTest {
             Assert.assertEquals(2, vc.getCalledChrCount(Allele.NO_CALL));
 
             //bi allelic, only one alt allele
-            Assert.assertEquals(T, vc.getAltAlleleWithHighestAlleleCount());
+            Allele expected;
+            if (alleles.size()>1) {
+                expected = alleles.get(1);
+            } else {
+                expected = null;
+            }
+
+            Assert.assertEquals( vc.getAltAlleleWithHighestAlleleCount(), expected);
         }
     }
 
