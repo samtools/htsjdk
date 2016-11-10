@@ -43,7 +43,7 @@ public final class Log {
     /** Enumeration for setting log levels. */
     public static enum LogLevel { ERROR, WARNING, INFO, DEBUG }
 
-    private static LogLevel globalLogLevel = LogLevel.DEBUG;
+    private static LogLevel globalLogLevel = LogLevel.INFO;
 
     private final Class<?> clazz;
     private final String className;
