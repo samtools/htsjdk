@@ -1,6 +1,6 @@
 /**
  * ****************************************************************************
- * Copyright 2013 EMBL-EBI
+ * Copyright 2013-2016 EMBL-EBI
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,9 +49,6 @@ public class CramNormalizer {
     }
 
     public CramNormalizer(final SAMFileHeader header, final CRAMReferenceSource referenceSource) {
-        if (referenceSource == null) {
-            throw new IllegalArgumentException("A reference is required.");
-        }
         this.header = header;
         this.referenceSource = referenceSource;
     }

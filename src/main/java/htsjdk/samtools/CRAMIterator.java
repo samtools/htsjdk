@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2013 EMBL-EBI
+ * Copyright 2013-2016 EMBL-EBI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,9 +76,6 @@ public class CRAMIterator implements SAMRecordIterator {
 
     public CRAMIterator(final InputStream inputStream, final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency)
             throws IOException {
-        if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
-        }
         this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
@@ -95,9 +92,6 @@ public class CRAMIterator implements SAMRecordIterator {
 
     public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates, final ValidationStringency validationStringency)
             throws IOException {
-        if (null == referenceSource) {
-            throw new CRAMException("A reference source is required for CRAM files");
-        }
         this.countingInputStream = new CountingInputStream(seekableStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;

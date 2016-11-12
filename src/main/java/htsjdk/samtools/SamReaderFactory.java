@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2016 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package htsjdk.samtools;
 
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
@@ -50,7 +73,13 @@ import java.util.zip.GZIPInputStream;
 public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
-    
+
+    private static File referenceSequenceFromCmd = null;
+
+    public static void setReferenceSequenceFromCmd(File reference) {
+        referenceSequenceFromCmd = reference;
+    }
+
     abstract public SamReader open(final File file);
 
     public SamReader open(final Path path) {
@@ -122,7 +151,7 @@ public abstract class SamReaderFactory {
     }
 
     private static class SamReaderFactoryImpl extends SamReaderFactory {
-        private final static Log LOG = Log.getInstance(SamReaderFactory.class);
+        private final static Log log = Log.getInstance(SamReaderFactory.class);
         private final EnumSet<Option> enabledOptions;
         private ValidationStringency validationStringency;
         private boolean asynchronousIO = Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS;
@@ -187,7 +216,9 @@ public abstract class SamReaderFactory {
 
         @Override
         public SamReaderFactory referenceSequence(final File referenceSequence) {
-            this.referenceSource = new ReferenceSource(referenceSequence);
+            if (referenceSequence != null) {
+                this.referenceSource = new ReferenceSource(referenceSequence);
+            }
             return this;
         }
 
@@ -226,6 +257,14 @@ public abstract class SamReaderFactory {
 
         @Override
         public SamReader open(final SamInputResource resource) {
+            if (referenceSequenceFromCmd != null) {
+                final ReferenceSource referenceSourceFromCmd = new ReferenceSource(referenceSequenceFromCmd);
+                if (referenceSource != null && referenceSourceFromCmd != referenceSource) {
+                    log.warn("Reference already exists and it differs from the reference from the command line");
+                }
+                referenceSource = referenceSourceFromCmd;
+            }
+
             final SamReader.PrimitiveSamReader primitiveSamReader;
             try {
                 final InputResource data = resource.data();
@@ -269,7 +308,7 @@ public abstract class SamReaderFactory {
                                 bufferedIndexStream, referenceSource, validationStringency);
                     } else {
                         // assume its a SAM file/no index
-                        LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
+                        log.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
                         primitiveSamReader = new SAMTextReader(
                                 IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
                                 validationStringency, this.samRecordFactory);
@@ -512,10 +551,10 @@ public abstract class SamReaderFactory {
         }
 
         private static void logDebugIgnoringOption(final SamReader r, final Option option) {
-            LOG.debug(String.format("Ignoring %s option; does not apply to %s readers.", option, r.getClass().getSimpleName()));
+            log.debug(String.format("Ignoring %s option; does not apply to %s readers.", option, r.getClass().getSimpleName()));
         }
 
-        private final static Log LOG = Log.getInstance(Option.class);
+        private final static Log log = Log.getInstance(Option.class);
 
         abstract void applyTo(final BAMFileReader underlyingReader, final SamReader reader);
 
