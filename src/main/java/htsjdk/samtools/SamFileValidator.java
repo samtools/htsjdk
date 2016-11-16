@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2009-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -81,25 +81,40 @@ import java.util.Set;
  * @see SAMRecord#isValid()
  */
 public class SamFileValidator {
-    private Histogram<Type> errorsByType = new Histogram<Type>();
-    private final PrintWriter out;
-    private PairEndInfoMap pairEndInfoByName;
-    private ReferenceSequenceFileWalker refFileWalker = null;
-    private boolean verbose = false;
-    private int maxVerboseOutput = 100;
-    private SAMSortOrderChecker orderChecker;
-    private Set<Type> errorsToIgnore = EnumSet.noneOf(Type.class);
-    private boolean ignoreWarnings = false;
-    private boolean bisulfiteSequenced = false;
-    private IndexValidationStringency indexValidationStringency = IndexValidationStringency.NONE;
-    private boolean sequenceDictionaryEmptyAndNoWarningEmitted = false;
-    private final int maxTempFiles;
 
     private final static Log log = Log.getInstance(SamFileValidator.class);
+
+    private final PrintWriter out;
+    private Histogram<Type> errorsByType;
+    private PairEndInfoMap pairEndInfoByName;
+    private ReferenceSequenceFileWalker refFileWalker;
+    private boolean verbose;
+    private int maxVerboseOutput;
+    private SAMSortOrderChecker orderChecker;
+    private Set<Type> errorsToIgnore;
+    private boolean ignoreWarnings;
+    private boolean bisulfiteSequenced;
+    private IndexValidationStringency indexValidationStringency;
+    private boolean sequenceDictionaryEmptyAndNoWarningEmitted;
+
+    private final int maxTempFiles;
 
     public SamFileValidator(final PrintWriter out, final int maxTempFiles) {
         this.out = out;
         this.maxTempFiles = maxTempFiles;
+        this.errorsByType = new Histogram<>();
+        this.refFileWalker = null;
+        this.maxVerboseOutput = 100;
+        this.indexValidationStringency = IndexValidationStringency.NONE;
+        this.errorsToIgnore = EnumSet.noneOf(Type.class);
+        this.verbose = false;
+        this.ignoreWarnings = false;
+        this.bisulfiteSequenced = false;
+        this.sequenceDictionaryEmptyAndNoWarningEmitted = false;
+    }
+
+    Histogram<Type> getErrorsByType() {
+        return errorsByType;
     }
 
     /**
