@@ -70,6 +70,10 @@ public class SAMTextHeaderCodec {
 
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
 
+    void setWriter(BufferedWriter writer) {
+        this.writer = writer;
+    }
+
     /**
      * Reads text SAM header and converts to a SAMFileHeader object.
      * @param reader Where to get header text from.
@@ -80,8 +84,8 @@ public class SAMTextHeaderCodec {
         mFileHeader = new SAMFileHeader();
         mReader = reader;
         mSource = source;
-        sequences = new ArrayList<SAMSequenceRecord>();
-        readGroups = new ArrayList<SAMReadGroupRecord>();
+        sequences = new ArrayList<>();
+        readGroups = new ArrayList<>();
 
         while (advanceLine() != null) {
             final ParsedHeaderLine parsedHeaderLine = new ParsedHeaderLine(mCurrentLine);
@@ -437,8 +441,8 @@ public class SAMTextHeaderCodec {
         println(StringUtil.join(FIELD_SEPARATOR, fields));
     }
 
-    private void writeSQLine(final SAMSequenceRecord sequenceRecord) {
-        final int numAttributes =sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
+    void writeSQLine(final SAMSequenceRecord sequenceRecord) {
+        final int numAttributes = sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
         final String[] fields = new String[3 + numAttributes];
         fields[0] = HEADER_LINE_START + HeaderRecordType.SQ;
         fields[1] = SAMSequenceRecord.SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + sequenceRecord.getSequenceName();
