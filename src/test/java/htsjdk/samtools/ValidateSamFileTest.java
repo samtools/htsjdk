@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2009-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,8 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileReader;
@@ -45,6 +47,8 @@ import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -55,6 +59,8 @@ import java.util.Iterator;
  */
 public class ValidateSamFileTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/ValidateSamFileTest");
+    private static final int TERMINATION_GZIP_BLOCK_SIZE = 28;
+    private static final int RANDOM_NUMBER_TRUNC_BYTE = 128;
 
     @Test
     public void testValidSamFile() throws Exception {
@@ -412,21 +418,6 @@ public class ValidateSamFileTest {
 
     }
 
-    private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference, final IndexValidationStringency stringency) throws IOException {
-        final File outFile = File.createTempFile("validation", ".txt");
-        outFile.deleteOnExit();
-        final PrintWriter out = new PrintWriter(outFile);
-        new SamFileValidator(out, 8000).setIndexValidationStringency(stringency).validateSamFileSummary(samReader, reference);
-        final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
-        if (reader.readLine().equals("No errors found")) {
-            return new Histogram<String>();
-        }
-        final MetricsFile<MetricBase, String> outputFile = new MetricsFile<MetricBase, String>();
-        outputFile.read(new FileReader(outFile));
-        Assert.assertNotNull(outputFile.getHistogram());
-        return outputFile.getHistogram();
-    }
-    
     private void testHeaderVersion(final String version, final boolean expectValid) throws Exception {
         final File samFile = File.createTempFile("validateHeader.", ".sam");
         samFile.deleteOnExit();
@@ -467,5 +458,90 @@ public class ValidateSamFileTest {
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertFalse(results.isEmpty());
         Assert.assertEquals(results.get(SAMValidationError.Type.MATES_ARE_SAME_END.getHistogramString()).getValue(), 2.0);
+    }
+
+
+    @DataProvider(name = "TagCorrectlyProcessData")
+    public Object[][] tagCorrectlyProcessData() throws IOException {
+        final String E2TagCorrectlyProcessTestData =
+                "@HD\tVN:1.0\tSO:unsorted\n" +
+                        "@SQ\tSN:chr1\tLN:101\n" +
+                        "@RG\tID:0\tSM:Hi,Mom!\n" +
+                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tE2:Z:CAA";
+
+        final String U2TagCorrectlyProcessTestData =
+                "@HD\tVN:1.0\tSO:unsorted\n" +
+                        "@SQ\tSN:chr1\tLN:101\n" +
+                        "@RG\tID:0\tSM:Hi,Mom!\n" +
+                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
+
+        return new Object[][]{
+                {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.E2_BASE_EQUALS_PRIMARY_BASE},
+                {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH},
+                {U2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH}
+        };
+    }
+
+    @Test(dataProvider = "TagCorrectlyProcessData")
+    public void tagCorrectlyProcessTest(byte[] bytesFromFile,
+                                        SAMValidationError.Type errorType) throws Exception {
+        final SamReader samReader = SamReaderFactory
+                .makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .open(
+                        SamInputResource.of(
+                                new ByteArrayInputStream(bytesFromFile)
+                        )
+                );
+        final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertEquals(results.get(errorType.getHistogramString()).getValue(), 1.0);
+    }
+
+    @DataProvider(name = "validateBamFileTerminationData")
+    public Object[][] validateBamFileTerminationData() throws IOException {
+        return new Object[][]{
+                {getBrokenFile(TERMINATION_GZIP_BLOCK_SIZE), SAMValidationError.Type.BAM_FILE_MISSING_TERMINATOR_BLOCK},
+                {getBrokenFile(RANDOM_NUMBER_TRUNC_BYTE), SAMValidationError.Type.TRUNCATED_FILE}
+        };
+    }
+
+    @Test(dataProvider = "validateBamFileTerminationData")
+    public void validateBamFileTerminationTest(File file, SAMValidationError.Type errorType) throws IOException {
+        final SamFileValidator samFileValidator = new SamFileValidator(new PrintWriter(System.out), 8000);
+        samFileValidator.validateBamFileTermination(file);
+        Assert.assertEquals(samFileValidator.getErrorsByType().get(errorType).getValue(), 1.0);
+    }
+
+    private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference,
+                                                final IndexValidationStringency stringency) throws IOException {
+        return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST);
+    }
+
+    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader, final ReferenceSequenceFile reference,
+                                                                 final IndexValidationStringency stringency, Collection<SAMValidationError.Type> ignoringError) throws IOException {
+        final File outFile = File.createTempFile("validation", ".txt");
+        outFile.deleteOnExit();
+
+        final PrintWriter out = new PrintWriter(outFile);
+        final SamFileValidator samFileValidator = new SamFileValidator(out, 8000);
+        samFileValidator.setIndexValidationStringency(stringency).setErrorsToIgnore(ignoringError);
+        samFileValidator.validateSamFileSummary(samReader, reference);
+
+        final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
+        if (reader.readLine().equals("No errors found")) {
+            return new Histogram<>();
+        }
+        final MetricsFile<MetricBase, String> outputFile = new MetricsFile<>();
+        outputFile.read(new FileReader(outFile));
+        Assert.assertNotNull(outputFile.getHistogram());
+        return outputFile.getHistogram();
+    }
+
+    private File getBrokenFile(int truncByte) throws IOException {
+        final FileChannel stream = FileChannel.open(new File(TEST_DATA_DIR + "/test_samfile_version_1pt5.bam").toPath());
+        final File breakingFile = File.createTempFile("trunc", ".bam");
+        breakingFile.deleteOnExit();
+        FileChannel.open(breakingFile.toPath(), StandardOpenOption.WRITE).transferFrom(stream, 0, stream.size() - truncByte);
+        return breakingFile;
     }
 }
