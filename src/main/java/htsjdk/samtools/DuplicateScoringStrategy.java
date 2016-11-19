@@ -46,10 +46,11 @@ public class DuplicateScoringStrategy {
     private static enum Attr { DuplicateScore }
 
     /** Calculates a score for the read which is the sum of scores over Q15. */
-    private static short getSumOfBaseQualities(final SAMRecord rec) {
-        short score = 0;
+    private static int getSumOfBaseQualities(final SAMRecord rec) {
+
+        int score = 0;
         for (final byte b : rec.getBaseQualities()) {
-            if (b >= 15) score += b;
+            if (b >= 15 ) score += b;
         }
 
         return score;
@@ -64,6 +65,8 @@ public class DuplicateScoringStrategy {
 
     /**
      * Returns the duplicate score computed from the given fragment.
+     * value should be capped by Short.MAX_VALUE since the score from two reads will be
+     * added and an overflow will be
      *
      * If true is given to assumeMateCigar, then any score that can use the mate cigar to compute the mate's score will return the score
      * computed on both ends.
@@ -72,13 +75,12 @@ public class DuplicateScoringStrategy {
         Short storedScore = (Short) record.getTransientAttribute(Attr.DuplicateScore);
 
         if (storedScore == null) {
-            // make sure that filter-failing records are heavily discounted. Dividing by 10 to be far from
-            // overflow when adding score from multiple fragments
-            short score = record.getReadFailsVendorQualityCheckFlag() ? (short)(Short.MIN_VALUE/10):0;
-
+            short score=0;
             switch (scoringStrategy) {
                 case SUM_OF_BASE_QUALITIES:
-                    score += getSumOfBaseQualities(record);
+                    // two (very) long reads worth of high-quality bases can go over Short.MAX_VALUE/2
+                    // and risk overflow.
+                    score += (short) Math.min(getSumOfBaseQualities(record), Short.MAX_VALUE / 2);
                     break;
                 case TOTAL_MAPPED_REFERENCE_LENGTH:
                     if (!record.getReadUnmappedFlag()) {
@@ -89,8 +91,22 @@ public class DuplicateScoringStrategy {
                     }
                     break;
                 case RANDOM:
-                    score += (short) (hasher.hashUnencodedChars(record.getReadName()) >> 16);
+                    // start with a random number between Short.MIN_VALUE/4 and Short.MAX_VALUE/4
+                    score += (short) (hasher.hashUnencodedChars(record.getReadName()) & 0b11_1111_1111_1111);
+                    // subtract Short.MIN_VALUE/4 from it to end up with a number between
+                    // 0 and Short.MAX_VALUE/2. This number can be then discounted in case the read is
+                    // not passing filters. We need to stay far from overflow so that when we add the two
+                    // scores from a read-pair we do not overflow since that could cause us to chose the
+                    // Failing read-pair instead of a passing one.
+                    score -= Short.MIN_VALUE/4;
             }
+
+            // make sure that filter-failing records are heavily discounted. Dividing by 2 to be far from
+            // overflow when adding score from both fragments of a read-pair
+
+            // a long read with high quality bases may overflow and
+            score = (short) Math.max(Short.MIN_VALUE, score);
+            score += record.getReadFailsVendorQualityCheckFlag() ? (short) (Short.MIN_VALUE / 2) : 0;
 
             storedScore = score;
             record.setTransientAttribute(Attr.DuplicateScore, storedScore);
