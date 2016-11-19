@@ -111,11 +111,6 @@ public class DuplicateScoringStrategy {
     public static int compare(final SAMRecord rec1, final SAMRecord rec2, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
         int cmp;
 
-        // always prefer passing filter over non-passing filter
-        if (rec1.getReadFailsVendorQualityCheckFlag() != rec2.getReadFailsVendorQualityCheckFlag()) {
-            return rec1.getReadFailsVendorQualityCheckFlag() ? 1 : -1;
-        }
-
         // always prefer paired over non-paired
         if (rec1.getReadPairedFlag() != rec2.getReadPairedFlag()) return rec1.getReadPairedFlag() ? 1 : -1;
 
