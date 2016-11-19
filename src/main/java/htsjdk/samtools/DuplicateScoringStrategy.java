@@ -72,7 +72,9 @@ public class DuplicateScoringStrategy {
         Short storedScore = (Short) record.getTransientAttribute(Attr.DuplicateScore);
 
         if (storedScore == null) {
-            short score = 0;
+            // make sure that filter-failing records are heavily discounted. Dividing by 10 to be far from
+            // overflow when adding score from multiple fragments
+            short score = record.getReadFailsVendorQualityCheckFlag() ? (short)(Short.MIN_VALUE/10):0;
 
             switch (scoringStrategy) {
                 case SUM_OF_BASE_QUALITIES:
@@ -109,6 +111,11 @@ public class DuplicateScoringStrategy {
     public static int compare(final SAMRecord rec1, final SAMRecord rec2, final ScoringStrategy scoringStrategy, final boolean assumeMateCigar) {
         int cmp;
 
+        // always prefer passing filter over non-passing filter
+        if (rec1.getReadFailsVendorQualityCheckFlag() != rec2.getReadFailsVendorQualityCheckFlag()) {
+            return rec1.getReadFailsVendorQualityCheckFlag() ? 1 : -1;
+        }
+
         // always prefer paired over non-paired
         if (rec1.getReadPairedFlag() != rec2.getReadPairedFlag()) return rec1.getReadPairedFlag() ? 1 : -1;
 
@@ -125,7 +132,7 @@ public class DuplicateScoringStrategy {
     }
 
     /**
-     * Compare two records based on their duplicate scores.  The duplicate scores for each record is assume to be
+     * Compare two records based on their duplicate scores.  The duplicate scores for each record is assumed to be
      * pre-computed by computeDuplicateScore and stored in the "DS" tag.  If the scores are equal, we break
      * ties based on mapping quality (added to the mate's mapping quality if paired and mapped), then library/read name.
      *
