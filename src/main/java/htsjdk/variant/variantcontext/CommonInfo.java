@@ -244,7 +244,7 @@ public final class CommonInfo implements Serializable {
         else
             return defaultValue;
     }
-    
+
     /**
      * Gets the attributes from a key as a list.
      *
@@ -291,15 +291,14 @@ public final class CommonInfo implements Serializable {
 
     public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
         return getAttributeAsList(key, x -> {
-                    if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
-                        return defaultValue;
-                    } else if (x instanceof Number) {
-                        return ((Number) x).doubleValue();
-                    } else {
-                        return Double.valueOf((String)x); // throws an exception if this isn't a string
-                    }
-                }
-        );
+            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                return defaultValue;
+            } else if (x instanceof Number) {
+                return ((Number) x).doubleValue();
+            } else {
+                return Double.valueOf((String)x); // throws an exception if this isn't a string
+            }
+        });
     }
 
     public String getAttributeAsString(String key, String defaultValue) {
