@@ -397,7 +397,7 @@ public class SAMTextHeaderCodec {
 
     /**
      * Encode {@link SAMSequenceRecord}.
-     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows you to implement recording on the fly.
+     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows to implement recording on the fly.
      * @throws IllegalStateException, if writer is null.
      */
     void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
@@ -409,7 +409,7 @@ public class SAMTextHeaderCodec {
 
     /**
      * Encode HD line.
-     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows you to implement recording on the fly.
+     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows to implement recording on the fly.
      * @throws IllegalStateException, if writer is null.
      */
     void encodeHeaderLine(final boolean keepExistingVersionNumber) {
