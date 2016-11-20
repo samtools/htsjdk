@@ -70,8 +70,12 @@ public class SAMTextHeaderCodec {
 
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
 
-    void setWriter(BufferedWriter writer) {
+    void setWriter(final BufferedWriter writer) {
         this.writer = writer;
+    }
+
+    void setmFileHeader(final SAMFileHeader header) {
+        this.mFileHeader = header;
     }
 
     /**
@@ -391,6 +395,30 @@ public class SAMTextHeaderCodec {
         }
     }
 
+    /**
+     * Encode {@link SAMSequenceRecord}.
+     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows you to implement recording on the fly.
+     * @throws IllegalStateException, if writer is null.
+     */
+    void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
+        if (writer == null) {
+            throw new IllegalStateException("writer couldn't be null");
+        }
+        writeSQLine(sequenceRecord);
+    }
+
+    /**
+     * Encode HD line.
+     * Designed for using in {@link SAMSequenceDictionaryCodec}, allows you to implement recording on the fly.
+     * @throws IllegalStateException, if writer is null.
+     */
+    void encodeHeaderLine(final boolean keepExistingVersionNumber) {
+        if (writer == null) {
+            throw new IllegalStateException("writer couldn't be null");
+        }
+        writeHDLine(keepExistingVersionNumber);
+    }
+
     private void println(final String s) {
         try {
             writer.append(s);
@@ -441,7 +469,7 @@ public class SAMTextHeaderCodec {
         println(StringUtil.join(FIELD_SEPARATOR, fields));
     }
 
-    void writeSQLine(final SAMSequenceRecord sequenceRecord) {
+    private void writeSQLine(final SAMSequenceRecord sequenceRecord) {
         final int numAttributes = sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
         final String[] fields = new String[3 + numAttributes];
         fields[0] = HEADER_LINE_START + HeaderRecordType.SQ;

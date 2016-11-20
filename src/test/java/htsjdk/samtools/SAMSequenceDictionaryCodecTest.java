@@ -62,15 +62,15 @@ public class SAMSequenceDictionaryCodecTest {
     public void testEncodeDecode() throws Exception {
         LineReader reader = null;
         try {
+            codec.encodeHeaderLine(false);
             codec.encode(dictionary);
             bufferedWriter.close();
             reader = new StringLineReader(writer.toString());
             SAMSequenceDictionary actual = codec.decode(reader, null);
             assertEquals(actual, dictionary);
-        }finally {
+        } finally {
             assert reader != null;
             reader.close();
         }
     }
-
 }

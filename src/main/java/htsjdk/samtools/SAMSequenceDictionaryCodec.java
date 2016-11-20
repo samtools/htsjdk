@@ -25,14 +25,10 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.LineReader;
-import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.Writer;
 
 /**
- * "On fly" codec SAMSequenceDictionaryCodec.
+ * "On the fly" codec SAMSequenceDictionaryCodec.
  * Encodes each sequence and directly writes it to the Dictionary file.
  *
  * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
@@ -50,8 +46,17 @@ public class SAMSequenceDictionaryCodec {
      * Write {@link SAMSequenceRecord}.
      * @param sequenceRecord object to be converted to text.
      */
-    public void encodeSQLine(final SAMSequenceRecord sequenceRecord) {
-        codec.writeSQLine(sequenceRecord);
+    public void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
+        codec.encodeSequenceRecord(sequenceRecord);
+    }
+
+    /**
+     * Write Header line.
+     * @param keepExistingVersionNumber boolean flag to keep existing version number.
+     */
+    public void encodeHeaderLine(final boolean keepExistingVersionNumber) {
+        codec.setmFileHeader(new SAMFileHeader());
+        codec.encodeHeaderLine(keepExistingVersionNumber);
     }
 
     /**
@@ -69,8 +74,8 @@ public class SAMSequenceDictionaryCodec {
      * @param dictionary object to be converted to text.
      */
     public void encode(final SAMSequenceDictionary dictionary) {
-        dictionary.getSequences().forEach(this::encodeSQLine);
-
+        encodeHeaderLine(false);
+        dictionary.getSequences().forEach(this::encodeSequenceRecord);
     }
 
     public void setValidationStringency(final ValidationStringency validationStringency) {
