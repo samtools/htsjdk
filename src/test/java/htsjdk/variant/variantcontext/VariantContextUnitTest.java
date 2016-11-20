@@ -1547,6 +1547,6 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(context.getAttributeAsStringList("StringList", "empty"), Arrays.asList("1", "2"));
         Assert.assertEquals(context.getAttributeAsStringList("NotNumeric", "empty"), Arrays.asList("A", "B"));
         // test the case of a missing key
-        Assert.assertTrue(context.getAttributeAsStringList("MissingList", "empy").isEmpty());
+        Assert.assertTrue(context.getAttributeAsStringList("MissingList", "empty").isEmpty());
     }
 }
