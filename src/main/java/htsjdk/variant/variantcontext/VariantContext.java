@@ -747,7 +747,9 @@ public class VariantContext implements Feature, Serializable {
         as a java.util.List if the value is a List or an Array,
         as a Collections.singletonList if there is only one value */
     public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-
+    public List<String> getAttributeAsStringList(String key, String defaultValue) { return commonInfo.getAttributeAsStringList(key, defaultValue); }
+    public List<Integer> getAttributeAsIntList(String key, int defaultValue) { return commonInfo.getAttributeAsIntList(key, defaultValue); }
+    public List<Double> getAttributeAsDoubleList(String key, double defaultValue) { return commonInfo.getAttributeAsDoubleList(key, defaultValue); }
     public CommonInfo getCommonInfo() {
         return commonInfo;
     }

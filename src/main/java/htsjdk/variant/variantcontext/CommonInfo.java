@@ -37,6 +37,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -243,16 +245,60 @@ public final class CommonInfo implements Serializable {
             return defaultValue;
     }
 
-    /** returns the value as an empty list if the key was not found,
-        as a java.util.List if the value is a List or an Array,
-        as a Collections.singletonList if there is only one value */
+    /**
+     * Gets the attributes from a key as a list.
+     *
+     * Note: int[] and double[] arrays are boxed.
+     *
+     * @return empty list if the key was not found; {@link Collections#singletonList(Object)} if
+     * there is only one value; a list containing the values if the value is a {@link List} or array.
+     */
     @SuppressWarnings("unchecked")
     public List<Object> getAttributeAsList(String key) {
         Object o = getAttribute(key);
         if ( o == null ) return Collections.emptyList();
         if ( o instanceof List ) return (List<Object>)o;
-        if ( o.getClass().isArray() ) return Arrays.asList((Object[])o);
+        if ( o.getClass().isArray() ) {
+            if (o instanceof int[]) {
+                return Arrays.stream((int[])o).boxed().collect(Collectors.toList());
+            } else if (o instanceof double[]) {
+                return Arrays.stream((double[])o).boxed().collect(Collectors.toList());
+            }
+            return Arrays.asList((Object[])o);
+        }
         return Collections.singletonList(o);
+    }
+
+    private <T> List<T> getAttributeAsList(String key, Function<Object, T> transformer) {
+        return getAttributeAsList(key).stream().map(transformer).collect(Collectors.toList());
+    }
+
+    public List<String> getAttributeAsStringList(String key, String defaultValue) {
+        return getAttributeAsList(key, x -> (x == null) ? defaultValue : String.valueOf(x));
+    }
+
+    public List<Integer> getAttributeAsIntList(String key, Integer defaultValue) {
+        return getAttributeAsList(key, x -> {
+            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                return defaultValue;
+            } else if (x instanceof Number) {
+                return ((Number) x).intValue();
+            } else {
+                return Integer.valueOf((String)x); // throws an exception if this isn't a string
+            }
+        });
+    }
+
+    public List<Double> getAttributeAsDoubleList(String key, Double defaultValue) {
+        return getAttributeAsList(key, x -> {
+            if (x == null || x == VCFConstants.MISSING_VALUE_v4) {
+                return defaultValue;
+            } else if (x instanceof Number) {
+                return ((Number) x).doubleValue();
+            } else {
+                return Double.valueOf((String)x); // throws an exception if this isn't a string
+            }
+        });
     }
 
     public String getAttributeAsString(String key, String defaultValue) {
