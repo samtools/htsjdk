@@ -1,6 +1,7 @@
 package htsjdk.tribble.readers;
 
 
+import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -142,7 +143,7 @@ public class TabixReaderTest {
      */
     @Test
     public void testRemoteQuery() throws IOException {
-        String tabixFile = "http://www.broadinstitute.org/~picard/testdata/igvdata/tabix/trioDup.vcf.gz";
+        String tabixFile = TestUtil.BASE_URL_FOR_HTTP_TESTS +"igvdata/tabix/trioDup.vcf.gz";
 
         TabixReader tabixReader = new TabixReader(tabixFile);
 

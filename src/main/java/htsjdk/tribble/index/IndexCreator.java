@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.Feature;
 
 /**
@@ -45,6 +46,12 @@ public interface IndexCreator {
      * @return an index object
      */
     public Index finalizeIndex(long finalFilePosition);
+
+    /**
+     * Set the sequence dictionary for the index. Default implementation does nothing.
+     * @param dict the dictionary to add to the index.
+     */
+    public default void setIndexSequenceDictionary(final SAMSequenceDictionary dict) { }
 }
 
 

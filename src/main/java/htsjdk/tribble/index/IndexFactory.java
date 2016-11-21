@@ -41,16 +41,13 @@ import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.LittleEndianInputStream;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -260,11 +257,25 @@ public class IndexFactory {
     public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
                                                                                 final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                 final IndexType type) {
+        return createIndex(inputFile, codec, type, null);
+    }
+
+    /**
+     * Create an index of the specified type with default binning parameters
+     *
+     * @param inputFile the input file to load features from
+     * @param codec     the codec to use for decoding records
+     * @param type      the type of index to create
+     * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
+     */
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
+                                                                                final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+                                                                                final IndexType type,
+                                                                                final SAMSequenceDictionary sequenceDictionary) {
         switch (type) {
             case INTERVAL_TREE: return createIntervalIndex(inputFile, codec);
             case LINEAR:        return createLinearIndex(inputFile, codec);
-            // Tabix index initialization requires additional information, so this construction method won't work.
-            case TABIX:         throw new UnsupportedOperationException("Tabix indices cannot be created through a generic interface");
+            case TABIX:         return createTabixIndex(inputFile, codec, sequenceDictionary);
         }
         throw new IllegalArgumentException("Unrecognized IndexType " + type);
     }
@@ -274,18 +285,11 @@ public class IndexFactory {
      * @param idx
      * @param idxFile
      * @throws IOException
+     * @deprecated use {@link Index#write(File)} instead
      */
+    @Deprecated
     public static void writeIndex(final Index idx, final File idxFile) throws IOException {
-        LittleEndianOutputStream stream = null;
-        try {
-            stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
-            idx.write(stream);
-        }
-        finally {
-            if(stream != null) {
-                stream.close();
-            }
-        }
+        idx.write(idxFile);
     }
 
     /**
@@ -318,7 +322,18 @@ public class IndexFactory {
         return (TabixIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
     }
 
-
+    /**
+     * @param inputFile The file to be indexed.
+     * @param codec the codec to use for decoding records
+     * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation.  Features
+     *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
+     *
+     */
+    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
+            final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
+            final SAMSequenceDictionary sequenceDictionary) {
+        return createTabixIndex(inputFile, codec, codec.getTabixFormat(), sequenceDictionary);
+    }
 
     private static Index createIndex(final File inputFile, final FeatureIterator iterator, final IndexCreator creator) {
         Feature lastFeature = null;

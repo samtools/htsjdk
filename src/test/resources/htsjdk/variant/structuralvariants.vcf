@@ -1,0 +1,22 @@
+##fileformat=VCFv4.2
+##INFO=<ID=END,Number=1,Type=Integer,Description="End position of the variant described in this record">
+##INFO=<ID=END_CHR,Number=A,Type=String,Description="End chromosome of the variant described in this record">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=SVLEN,Number=A,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=SVTYPE,Number=A,Type=String,Description="Type of structural variant">
+##INFO=<ID=STRAND_1,Number=1,Type=String,Description="Strand Orientation of SV Start">
+##INFO=<ID=STRAND_2,Number=1,Type=String,Description="Strand Orientation of SV End">
+##INFO=<ID=METHOD,Number=1,Type=String,Description="SV Caller used to predict">
+##INFO=<ID=DP,Number=1,Type=String,Description="combined depth across samples">
+##ALT=<ID=DEL,Description="Deletion">
+##ALT=<ID=DUP,Description="Duplication">
+##ALT=<ID=INS,Description="Insertion of novel sequence">
+##ALT=<ID=INV,Description="Inversion">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AO,Number=1,Type=Integer,Description="Alternate Allele Observations">
+##contig=<ID=1,length=14640000>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE1
+1	20	.	N	<DUP>	1	.	IMPRECISE;SVTYPE=DUP;END=4641652;END_CHR=1;STRAND_1=-;STRAND_2=+;SVLEN=4641632;METHOD=LUMPY;DP=90	GT:AO	1/1:90
+1	33	.	N	<DUP>	1	.	IMPRECISE;SVTYPE=DUP;END=2640388;END_CHR=1;STRAND_1=-;STRAND_2=+;SVLEN=2640355;METHOD=LUMPY;DP=3	GT:AO	1/1:3
+1	70	.	N	<DEL>	1	.	IMPRECISE;SVTYPE=DEL;END=4641583;END_CHR=1;STRAND_1=+;STRAND_2=-;SVLEN=-4641513;METHOD=LUMPY;DP=1	GT:AO	1/1:1
+1	101	.	N	<INV>	1	.	IMPRECISE;SVTYPE=INV;END=1988714;END_CHR=1;STRAND_1=-;STRAND_2=-;SVLEN=1988613;METHOD=LUMPY;DP=2	GT:AO	1/1:2

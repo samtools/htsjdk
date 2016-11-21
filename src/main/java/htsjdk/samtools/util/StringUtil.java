@@ -545,4 +545,59 @@ public class StringUtil {
 
         return i;
     }
+
+    /**
+     * Calculates the Hamming distance (number of character mismatches) between two strings s1 and s2.
+     * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
+     * the two strings are of different lengths.  Hamming distance is case sensitive and does not have
+     * any special treatment for DNA.
+     *
+     * @param s1 The first string to compare
+     * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
+     * @return Hamming distance between s1 and s2.
+     * @throws IllegalArgumentException If the two strings have differing lengths.
+     */
+    public static int hammingDistance(final String s1, final String s2) {
+        if (s1.length() != s2.length()) {
+            throw new IllegalArgumentException("Attempted to determine Hamming distance of strings with differing lengths. " +
+                    "The first string has length " + s1.length() + " and the second string has length " + s2.length() + ".");
+        }
+        int measuredDistance = 0;
+        for (int i = 0;i < s1.length();i++) {
+            if (s1.charAt(i) != s2.charAt(i)) {
+                measuredDistance++;
+            }
+        }
+        return measuredDistance;
+    }
+
+    /**
+     * Determines if two strings s1 and s2 are within maxHammingDistance of each other using the Hamming distance metric.
+     * Since Hamming distance is not defined for strings of differing lengths, we throw an exception if
+     * the two strings are of different lengths.  Hamming distance is case sensitive and does not have any
+     * special treatment for DNA.
+     *
+     * @param s1 The first string to compare
+     * @param s2 The second string to compare, note that if s1 and s2 are swapped the value returned will be identical.
+     * @param maxHammingDistance The largest Hamming distance the strings can have for this function to return true.
+     * @return true if the two strings are within maxHammingDistance of each other, false otherwise.
+     * @throws IllegalArgumentException If the two strings have differing lengths.
+     */
+    public static boolean isWithinHammingDistance(final String s1, final String s2, final int maxHammingDistance) {
+        if (s1.length() != s2.length()) {
+            throw new IllegalArgumentException("Attempted to determine if two strings of different length were within a specified edit distance.");
+        }
+        int measuredDistance = 0;
+        for (int i = 0;i < s1.length();i++) {
+            if (s1.charAt(i) != s2.charAt(i)) {
+                measuredDistance++;
+                // If the measuredDistance is larger than the maxHammingDistance we can short circuit and return
+                // false, there is no need to continue evaluating the distance.
+                if (measuredDistance > maxHammingDistance) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

@@ -1,5 +1,6 @@
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -29,10 +30,10 @@ public class SeekableStreamFactoryTest {
                         new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath() },
                 { new URL("file://" + new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath()).toExternalForm(),
                         new File(TEST_DATA_DIR, "cram_with_bai_index.cram").getAbsolutePath() },
-                { new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam").toExternalForm(),
-                        new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam").toExternalForm() },
-                { new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam.bai").toExternalForm(),
-                       new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam.bai").toExternalForm() }
+                { new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm(),
+                        new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam").toExternalForm() },
+                { new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm(),
+                       new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai").toExternalForm() }
         };
     }
 

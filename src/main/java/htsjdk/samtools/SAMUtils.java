@@ -41,12 +41,18 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 
 /**
  * Utilty methods.
  */
 public final class SAMUtils {
+    /** regex for semicolon, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    private static final Pattern SEMICOLON_PAT = Pattern.compile("[;]");
+    /** regex for comma, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    private static final Pattern COMMA_PAT = Pattern.compile("[,]");
+
     // Representation of bases, one for when in low-order nybble, one for when in high-order nybble.
     private static final byte COMPRESSED_EQUAL_LOW = 0;
     private static final byte COMPRESSED_A_LOW = 1;
@@ -415,8 +421,9 @@ public final class SAMUtils {
      *
      * @param beg 0-based start of read (inclusive)
      * @param end 0-based end of read (exclusive)
-     * @deprecated Use GenomicIndexUtil.regionToBin
+     * @deprecated Use {@link GenomicIndexUtil#regionToBin}
      */
+    @Deprecated
     static int reg2bin(final int beg, final int end) {
         return GenomicIndexUtil.regionToBin(beg, end);
     }
@@ -1095,5 +1102,125 @@ public final class SAMUtils {
      */
     public static boolean isValidUnsignedIntegerAttribute(long value) {
         return value >= 0 && value <= BinaryCodec.MAX_UINT;
+    }
+
+    /**
+     * Extract a List of 'other canonical alignments' from a SAM record. Those alignments are stored as a string in the 'SA' tag as defined
+     * in the SAM specification.
+     * The name, sequence and qualities, mate data are copied from the original record.
+     * @param record must be non null and must have a non-null associated header.
+     * @return a list of 'other canonical alignments' SAMRecords. The list is empty if the 'SA' attribute is missing.
+     */
+    public static List<SAMRecord> getOtherCanonicalAlignments(final SAMRecord record) {
+        if( record == null ) throw new IllegalArgumentException("record is null");
+        if( record.getHeader() == null ) throw new IllegalArgumentException("record.getHeader() is null");
+        /* extract value of SA tag */
+        final Object saValue = record.getAttribute( SAMTagUtil.getSingleton().SA );
+        if( saValue == null ) return Collections.emptyList();
+        if( ! (saValue instanceof String) ) throw new SAMException(
+                "Expected a String for attribute 'SA' but got " + saValue.getClass() );
+
+        final SAMRecordFactory samReaderFactory = new DefaultSAMRecordFactory();
+
+        /* the spec says: "Other canonical alignments in a chimeric alignment, formatted as a
+         * semicolon-delimited list: (rname,pos,strand,CIGAR,mapQ,NM;)+.
+         * Each element in the list represents a part of the chimeric alignment.
+         * Conventionally, at a supplementary line, the  1rst element points to the primary line.
+         */
+
+        /* break string using semicolon */
+        final String semiColonStrs[] = SEMICOLON_PAT.split((String)saValue);
+
+        /* the result list */
+        final List<SAMRecord> alignments = new ArrayList<>( semiColonStrs.length );
+
+        /* base SAM flag */
+        int record_flag = record.getFlags() ;
+        record_flag &= ~SAMFlag.PROPER_PAIR.flag;
+        record_flag &= ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
+        record_flag &= ~SAMFlag.READ_REVERSE_STRAND.flag;
+
+
+        for(int i=0; i< semiColonStrs.length;++i  ) {
+            final String semiColonStr = semiColonStrs[i];
+            /* ignore empty string */
+            if( semiColonStr.isEmpty() ) continue;
+
+            /* break string using comma */
+            final String commaStrs[] = COMMA_PAT.split(semiColonStr);
+            if( commaStrs.length != 6 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr);
+
+            /* create the new record */
+            final SAMRecord otherRec = samReaderFactory.createSAMRecord( record.getHeader() );
+
+            /* copy fields from the original record */
+            otherRec.setReadName( record.getReadName() );
+            otherRec.setReadBases( record.getReadBases() );
+            otherRec.setBaseQualities( record.getBaseQualities() );
+            if( record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
+                otherRec.setMateReferenceIndex( record.getMateReferenceIndex() );
+                otherRec.setMateAlignmentStart( record.getMateAlignmentStart() );
+            }
+
+
+            /* get reference sequence */
+            final int tid = record.getHeader().getSequenceIndex( commaStrs[0] );
+            if( tid == -1 ) throw new SAMException("Unknown contig in " + semiColonStr);
+            otherRec.setReferenceIndex( tid );
+
+            /* fill POS */
+            final int alignStart;
+            try {
+                alignStart = Integer.parseInt(commaStrs[1]);
+            } catch( final NumberFormatException err ) {
+                throw new SAMException("bad POS in "+semiColonStr, err);
+            }
+
+            otherRec.setAlignmentStart( alignStart );
+
+            /* set TLEN */
+            if( record.getReadPairedFlag() &&
+                !record.getMateUnmappedFlag() &&
+                record.getMateReferenceIndex() == tid ) {
+                otherRec.setInferredInsertSize( record.getMateAlignmentStart() - alignStart );
+            }
+
+            /* set FLAG */
+           int other_flag = record_flag;
+           other_flag |= (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) ;
+           /* spec: Conventionally, at a supplementary line, the  1st element points to the primary line */
+           if( !( record.getSupplementaryAlignmentFlag() && i==0 ) ) {
+               other_flag |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
+           }
+           otherRec.setFlags(other_flag);
+
+           /* set CIGAR */
+           otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
+
+            /* set MAPQ */
+            try {
+                otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
+            } catch (final NumberFormatException err) {
+                throw new SAMException("bad MAPQ in "+semiColonStr, err);
+            }
+
+            /* fill NM */
+            try {
+                if (!commaStrs[5].equals("*")) {
+                    otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]));
+                }
+            } catch (final NumberFormatException err) {
+                throw new SAMException("bad NM in "+semiColonStr, err);
+            }
+
+            /* if strand is not the same: reverse-complement */
+            if( otherRec.getReadNegativeStrandFlag() != record.getReadNegativeStrandFlag() ) {
+                SAMRecordUtil.reverseComplement(otherRec);
+            }
+
+            /* add the alignment */
+            alignments.add( otherRec );
+        }
+        return alignments;
     }
 }

@@ -26,17 +26,12 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -160,6 +155,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * abs(insertSize) must be <= this
      */
     public static final int MAX_INSERT_SIZE = 1<<29;
+
+    /**
+     * Tags that are known to need the reverse complement if the read is reverse complemented.
+     */
+    public static List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
+
+    /**
+     * Tags that are known to need the reverse if the read is reverse complemented.
+     */
+    public static List<String> TAGS_TO_REVERSE = Arrays.asList(SAMTag.OQ.name(), SAMTag.U2.name());
 
     private String mReadName = null;
     private byte[] mReadBases = NULL_SEQUENCE;
@@ -985,9 +990,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * the query sequence itself is unmapped.  This method name is misspelled.
-     * Use setReadUnmappedFlag instead.
+     * Use {@link #setReadUnmappedFlag} instead.
      * @deprecated
      */
+    @Deprecated
     public void setReadUmappedFlag(final boolean flag) {
         setReadUnmappedFlag(flag);
     }
@@ -1396,7 +1402,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
      * @deprecated
      * The attribute type and value checks have been moved directly into
-     * {@code SAMBinaryTagAndValue}.
+     * {@link SAMBinaryTagAndValue}.
      */
     @Deprecated
     protected static boolean isAllowedAttributeValue(final Object value) {
@@ -1648,8 +1654,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @return String representation of this.
      * @deprecated This method is not guaranteed to return a valid SAM text representation of the SAMRecord.
-     * To get standard SAM text representation, use htsjdk.samtools.SAMRecord#getSAMString().
+     * To get standard SAM text representation, {@link SAMRecord#getSAMString}.
      */
+    @Deprecated
     public String format() {
         final StringBuilder buffer = new StringBuilder();
         addField(buffer, getReadName(), null, null);
@@ -2045,7 +2052,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Gets the source of this SAM record -- both the reader that retrieved the record and the position on disk from
      * whence it came. 
-     * @return The file source.  Note that the reader will be null if not activated using SAMFileReader.enableFileSource().
+     * @return The file source.  Note that the reader will be null if the reader source has not be set.
      */
     public SAMFileSource getFileSource() {
         return mFileSource;
@@ -2110,7 +2117,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Note that this does a shallow copy of everything, except for the attribute list, for which a copy of the list
      * is made, but the attributes themselves are copied by reference.  This should be safe because callers should
-     * never modify a mutable value returned by any of the get() methods anyway.
+     * never modify a mutable value returned by any of the get() methods anyway. If one of the cloned record's SEQ or
+     * QUAL needs to be modified, a deeper copy should be made (e.g. Reverse Complement).
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
@@ -2246,5 +2254,125 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         if (this.transientAttributes != null) return this.transientAttributes.remove(key);
         else return null;
     }
-}
 
+    /**
+     * Reverse-complement bases and reverse quality scores along with known optional attributes that
+     * need the same treatment. Changes made after making a copy of the bases, qualities,
+     * and any attributes that will be altered. If in-place update is needed use
+     * {@link #reverseComplement(boolean)}.
+     * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
+     * for the default set of tags that are handled.
+     */
+    public void reverseComplement() {
+        reverseComplement(false);
+    }
+
+    /**
+     * Reverse-complement bases and reverse quality scores along with known optional attributes that
+     * need the same treatment. Optionally makes a copy of the bases, qualities or attributes instead
+     * of altering them in-place. See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
+     * for the default set of tags that are handled.
+     *
+     * @param inplace Setting this to false will clone all attributes, bases and qualities before changing the values.
+     */
+    public void reverseComplement(boolean inplace) {
+        reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
+    }
+
+    /**
+     * Reverse complement bases and reverse quality scores. In addition reverse complement any
+     * non-null attributes specified by tagsToRevcomp and reverse and non-null attributes
+     * specified by tagsToReverse.
+     */
+    public void reverseComplement(final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean inplace) {
+        final byte[] readBases = inplace ? getReadBases() : getReadBases().clone();
+        SequenceUtil.reverseComplement(readBases);
+        setReadBases(readBases);
+        final byte qualities[] = inplace ? getBaseQualities() : getBaseQualities().clone();
+        reverseArray(qualities);
+        setBaseQualities(qualities);
+
+        // Deal with tags that need to be reverse complemented
+        if (tagsToRevcomp != null) {
+            for (final String tag: tagsToRevcomp) {
+                Object value = getAttribute(tag);
+                if (value != null) {
+                    if (value instanceof byte[]) {
+                        value = inplace ? value : ((byte[]) value).clone();
+                        SequenceUtil.reverseComplement((byte[]) value);
+                    } else if (value instanceof String) {
+                        //SequenceUtil.reverseComplement is in-place for bytes but copies Strings since they are immutable.
+                        value = SequenceUtil.reverseComplement((String) value);
+                    } else {
+                        throw new UnsupportedOperationException("Don't know how to reverse complement: " + value);
+                    }
+                    setAttribute(tag, value);
+                }
+            }
+        }
+
+        // Deal with tags that needed to just be reversed
+        if (tagsToReverse != null) {
+            for (final String tag : tagsToReverse) {
+                Object value = getAttribute(tag);
+                if (value != null) {
+                    if (value instanceof String) {
+                        value = StringUtil.reverseString((String) value);
+                    } else if (value.getClass().isArray()) {
+                        if (value instanceof byte[]) {
+                            value = inplace ? value : ((byte[]) value).clone();
+                            reverseArray((byte[]) value);
+                        } else if (value instanceof short[]) {
+                            value = inplace ? value : ((short[]) value).clone();
+                            reverseArray((short[]) value);
+                        } else if (value instanceof int[]) {
+                            value = inplace ? value : ((int[]) value).clone();
+                            reverseArray((int[]) value);
+                        } else if (value instanceof float[]) {
+                            value = inplace ? value : ((float[]) value).clone();
+                            reverseArray((float[]) value);
+                        } else {
+                            throw new UnsupportedOperationException("Reversing array attribute of type " + value.getClass().getComponentType() + " not supported.");
+                        }
+                    } else {
+                        throw new UnsupportedOperationException("Don't know how to reverse: " + value);
+                    }
+
+                    setAttribute(tag, value);
+                }
+            }
+        }
+    }
+
+    private static void reverseArray(final byte[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final byte tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final short[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final short tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final int[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final int tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+
+    private static void reverseArray(final float[] array) {
+        for (int i=0, j=array.length-1; i<j; ++i, --j) {
+            final float tmp = array[i];
+            array[i] = array[j];
+            array[j] = tmp;
+        }
+    }
+}

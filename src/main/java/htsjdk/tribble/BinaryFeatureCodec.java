@@ -3,6 +3,7 @@ package htsjdk.tribble;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.RuntimeIOException;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 
 import java.io.IOException;
@@ -39,5 +40,13 @@ abstract public class BinaryFeatureCodec<T extends Feature> implements FeatureCo
         } catch (final IOException e) {
             throw new RuntimeIOException("Failure reading from stream.", e);
         }
+    }
+
+    /**
+     * Marked as final because binary features could not be tabix indexed
+     */
+    @Override
+    public final TabixFormat getTabixFormat() {
+        throw new TribbleException("Binary codecs does not support tabix");
     }
 }

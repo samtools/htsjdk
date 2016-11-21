@@ -56,9 +56,7 @@ public class DataReaderFactory {
                 final DataSeries dataSeries = field.getAnnotation(DataSeries.class);
                 final EncodingKey key = dataSeries.key();
                 final DataSeriesType type = dataSeries.type();
-                if (header.encodingMap.get(key) == null) {
-                    log.debug("Encoding not found for key: " + key);
-                } else {
+                if (header.encodingMap.get(key) != null) {
                     try {
                         field.set(reader,
                                 createReader(type, header.encodingMap.get(key), bitInputStream, inputMap));

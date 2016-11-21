@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -123,13 +124,23 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
+    // Upper case and normalize (-> ACGTN) in-place, and add to the cache
+    private byte[] addToCache(final String sequenceName, final byte[] bases) {
+        for (int i = 0; i < bases.length; i++) {
+            bases[i] = Utils.normalizeBase(bases[i]);
+        }
+        cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
+        return bases;
+    }
+
     public synchronized byte[] getReferenceBases(final SAMSequenceRecord record,
                                                  final boolean tryNameVariants) {
         { // check cache by sequence name:
             final String name = record.getSequenceName();
             final byte[] bases = findInCache(name);
-            if (bases != null)
+            if (bases != null) {
                 return bases;
+            }
         }
 
         final String md5 = record.getAttribute(SAMSequenceRecord.MD5_TAG);
@@ -152,10 +163,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         { // try to fetch sequence by name:
             bases = findBasesByName(record.getSequenceName(), tryNameVariants);
             if (bases != null) {
-                SequenceUtil.upperCase(bases);
-                cacheW.put(record.getSequenceName(), new WeakReference<byte[]>(
-                        bases));
-                return bases;
+                return addToCache(record.getSequenceName(), bases);
             }
         }
 
@@ -169,9 +177,7 @@ public class ReferenceSource implements CRAMReferenceSource {
                     }
                 }
                 if (bases != null) {
-                    SequenceUtil.upperCase(bases);
-                    cacheW.put(md5, new WeakReference<byte[]>(bases));
-                    return bases;
+                    return addToCache(md5, bases);
                 }
             }
         }

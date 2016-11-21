@@ -5,12 +5,7 @@ import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.util.Iterables;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.StopWatch;
-
-import java.nio.file.Path;
+import htsjdk.samtools.util.*;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -21,9 +16,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -159,8 +154,8 @@ public class SamReaderFactoryTest {
 
     {
         try {
-            bamUrl = new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam");
-            bamIndexUrl = new URL("http://www.broadinstitute.org/~picard/testdata/index_test.bam.bai");
+            bamUrl = new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam");
+            bamIndexUrl = new URL(TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam.bai");
         } catch (final MalformedURLException e) {
             throw new RuntimeException(e);
         }

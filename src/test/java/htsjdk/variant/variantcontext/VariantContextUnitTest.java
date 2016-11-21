@@ -26,6 +26,9 @@
 package htsjdk.variant.variantcontext;
 
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+
 // the imports for unit testing.
 
 import htsjdk.samtools.util.TestUtil;
@@ -35,8 +38,9 @@ import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.tribble.TribbleException;
-import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
+
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
@@ -1446,5 +1450,103 @@ public class VariantContextUnitTest extends VariantBaseTest {
     public void testExtraStrictValidationFailure(final VariantContext vc, final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
         // extraStrictValidation throws exceptions if it fails, so no Asserts here...
         vc.extraStrictValidation(reportedReference, observedReference, rsIDs);
+    }
+    
+    
+    @DataProvider(name = "structuralVariationsTestData")
+    public Object[][] getStructuralVariationsTestData() {
+        return new Object[][] {
+         {new File("src/test/resources/htsjdk/variant/structuralvariants.vcf")}
+        };
+    }
+    
+    @Test(dataProvider = "structuralVariationsTestData")
+    public void testExtractStructuralVariationsData(final File vcfFile) {
+        VCFFileReader reader = null;
+        CloseableIterator<VariantContext> iter = null;
+        try {
+            reader = new VCFFileReader(vcfFile , false );
+            iter = reader.iterator();
+            while(iter.hasNext()) {
+                final VariantContext ctx = iter.next();
+                final StructuralVariantType st = ctx.getStructuralVariantType();
+                Assert.assertNotNull(st);
+            }
+        } finally {
+            CloserUtil.close(iter);
+            CloserUtil.close(reader);
+        }
+    }
+
+    @Test
+    public void testGetAttributeAsIntList() {
+        final VariantContext context = basicBuilder
+                .attribute("Empty", new int[0])
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test an empty value
+        Assert.assertTrue(context.getAttributeAsIntList("Empty", 5).isEmpty());
+        // test as integer
+        Assert.assertEquals(context.getAttributeAsIntList("DefaultIntegerList", 5), Arrays.asList(0, 0, 0, 0, 0));
+        Assert.assertEquals(context.getAttributeAsIntList("ListWithMissing", 5), Arrays.asList(1, 5, 5));
+        Assert.assertEquals(context.getAttributeAsIntList("IntegerList", 5), Arrays.asList(0, 1, 2, 3));
+        Assert.assertEquals(context.getAttributeAsIntList("DoubleList", 5), Arrays.asList(1, 1, 2));
+        Assert.assertEquals(context.getAttributeAsIntList("StringList", 5), Arrays.asList(1, 2));
+        Assert.assertThrows(() -> context.getAttributeAsIntList("NotNumeric", 5));
+        // test the case of a missing key
+        Assert.assertTrue(context.getAttributeAsIntList("MissingList", 5).isEmpty());
+    }
+
+    @Test
+    public void testGetAttributeAsDoubleList() {
+        final VariantContext context = basicBuilder
+                .attribute("Empty", new int[0])
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test an empty value
+        Assert.assertTrue(context.getAttributeAsDoubleList("Empty", 5).isEmpty());
+        // test as double
+        Assert.assertEquals(context.getAttributeAsDoubleList("DefaultIntegerList", 5), Arrays.asList(0d, 0d, 0d, 0d, 0d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("ListWithMissing", 5), Arrays.asList(1d, 5d, 5d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("IntegerList", 5), Arrays.asList(0d, 1d, 2d, 3d));
+        Assert.assertEquals(context.getAttributeAsDoubleList("DoubleList", 5), Arrays.asList(1.8, 1.6, 2.1));
+        Assert.assertEquals(context.getAttributeAsDoubleList("StringList", 5), Arrays.asList(1d, 2d));
+        Assert.assertThrows(() -> context.getAttributeAsDoubleList("NotNumeric", 5));
+        // test the case of a missing key
+        Assert.assertTrue(context.getAttributeAsDoubleList("MissingList", 5).isEmpty());
+    }
+
+    @Test
+    public void testGetAttributeAsStringList() {
+        final VariantContext context = basicBuilder
+                .attribute("Empty", new int[0])
+                .attribute("DefaultIntegerList", new int[5])
+                .attribute("ListWithMissing", new Object[]{1, null, null})
+                .attribute("IntegerList", new int[]{0, 1, 2, 3})
+                .attribute("DoubleList", new double[]{1.8, 1.6, 2.1})
+                .attribute("StringList", new String[]{"1", "2"})
+                .attribute("NotNumeric", new String[]{"A", "B"})
+                .make();
+        // test an empty value
+        Assert.assertTrue(context.getAttributeAsStringList("Empty", "empty").isEmpty());
+        // test as string
+        Assert.assertEquals(context.getAttributeAsStringList("DefaultIntegerList", "empty"), Arrays.asList("0", "0", "0", "0", "0"));
+        Assert.assertEquals(context.getAttributeAsStringList("ListWithMissing", "empty"), Arrays.asList("1", "empty", "empty"));
+        Assert.assertEquals(context.getAttributeAsStringList("IntegerList", "empty"), Arrays.asList("0", "1", "2", "3"));
+        Assert.assertEquals(context.getAttributeAsStringList("DoubleList", "empty"), Arrays.asList("1.8", "1.6", "2.1"));
+        Assert.assertEquals(context.getAttributeAsStringList("StringList", "empty"), Arrays.asList("1", "2"));
+        Assert.assertEquals(context.getAttributeAsStringList("NotNumeric", "empty"), Arrays.asList("A", "B"));
+        // test the case of a missing key
+        Assert.assertTrue(context.getAttributeAsStringList("MissingList", "empty").isEmpty());
     }
 }

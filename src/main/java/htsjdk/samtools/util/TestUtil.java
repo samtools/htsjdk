@@ -29,6 +29,11 @@ import java.io.*;
 
 public class TestUtil {
 
+    /**
+     * Base url where all test files for http tests are found
+     */
+    public static final String BASE_URL_FOR_HTTP_TESTS = "https://personal.broadinstitute.org/picard/testdata/";
+
     public static File getTempDirectory(final String prefix, final String suffix) {
         final File tempDirectory;
         try {
@@ -45,8 +50,9 @@ public class TestUtil {
     }
 
     /**
-     * @deprecated Use properly spelled method.
+     * @deprecated Use properly spelled method. {@link #getTempDirectory}
      */
+    @Deprecated
     public static File getTempDirecory(final String prefix, final String suffix) {
         return getTempDirectory(prefix, suffix);
     }

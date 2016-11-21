@@ -50,8 +50,9 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
      * Otherwise, the value will be converted to a String with toString.
      * @param key attribute name
      * @param value attribute value
-     * @deprecated Use the version that takes a String value instead
+     * @deprecated Use {@link #setAttribute(String, String) instead
      */
+    @Deprecated
     public void setAttribute(final String key, final Object value) {
         setAttribute(key, value == null? null: value.toString());
     }

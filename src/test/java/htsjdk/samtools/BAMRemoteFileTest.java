@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -42,7 +43,7 @@ import static org.testng.Assert.*;
 public class BAMRemoteFileTest {
     private final File BAM_INDEX_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
-    private final String BAM_URL_STRING = "http://www.broadinstitute.org/~picard/testdata/index_test.bam";
+    private final String BAM_URL_STRING = TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam";
     private final URL bamURL;
 
     private final boolean mVerbose = false;

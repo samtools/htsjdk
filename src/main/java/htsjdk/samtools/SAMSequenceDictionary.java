@@ -23,19 +23,21 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+
+import static htsjdk.samtools.SAMSequenceRecord.*;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Collection of SAMSequenceRecords.
@@ -63,6 +65,8 @@ public class SAMSequenceDictionary implements Serializable {
     public List<SAMSequenceRecord> getSequences() {
         return Collections.unmodifiableList(mSequences);
     }
+
+    private static Log log = Log.getInstance(SAMSequenceDictionary.class);
 
     public SAMSequenceRecord getSequence(final String name) {
         return mSequenceMap.get(name);
@@ -135,7 +139,7 @@ public class SAMSequenceDictionary implements Serializable {
         }
         return len;
     }
-    
+
     /**
      * @return true is the dictionary is empty
      */
@@ -146,7 +150,7 @@ public class SAMSequenceDictionary implements Serializable {
     private static String DICT_MISMATCH_TEMPLATE = "SAM dictionaries are not the same: %s.";
     /**
      * Non-comprehensive {@link #equals(Object)}-assertion: instead of calling {@link SAMSequenceRecord#equals(Object)} on constituent
-     * {@link SAMSequenceRecord}s in this dictionary against its pair in the target dictionary, in order,  call 
+     * {@link SAMSequenceRecord}s in this dictionary against its pair in the target dictionary, in order,  call
      * {@link SAMSequenceRecord#isSameSequence(SAMSequenceRecord)}.
      * Aliases are ignored.
      *
@@ -154,7 +158,7 @@ public class SAMSequenceDictionary implements Serializable {
      */
     public void assertSameDictionary(final SAMSequenceDictionary that) {
         if (this == that) return;
-        
+
         final Iterator<SAMSequenceRecord> thatSequences = that.mSequences.iterator();
         for (final SAMSequenceRecord thisSequence : mSequences) {
             if (!thatSequences.hasNext())
@@ -189,7 +193,7 @@ public class SAMSequenceDictionary implements Serializable {
      * alternate names fo a given contig. e.g:
      * <code>1,chr1,chr01,01,CM000663,NC_000001.10</code> e.g:
      * <code>MT,chrM</code>
-     * 
+     *
      * @param originalName
      *            existing contig name
      * @param altName
@@ -219,11 +223,11 @@ public class SAMSequenceDictionary implements Serializable {
     /**
      * return a MD5 sum for ths dictionary, the checksum is re-computed each
      * time this method is called.
-     * 
+     *
      * <pre>
      * md5( (seq1.md5_if_available) + ' '+(seq2.name+seq2.length) + ' '+...)
      * </pre>
-     * 
+     *
      * @return a MD5 checksum for this dictionary or the empty string if it is
      *         empty
      */
@@ -265,6 +269,87 @@ public class SAMSequenceDictionary implements Serializable {
         return "SAMSequenceDictionary:( sequences:"+ size()+
                 " length:"+ getReferenceLength()+" "+
                 " md5:"+md5()+")";
+    }
+
+    public static final List<String> DEFAULT_DICTIONARY_EQUAL_TAG = Arrays.asList(
+            SAMSequenceRecord.MD5_TAG,
+            SAMSequenceRecord.SEQUENCE_LENGTH_TAG);
+
+    /**
+     * Will merge dictionaryTags from two dictionaries into one focusing on merging the tags rather than the sequences.
+     *
+     * Requires that dictionaries have the same SAMSequence records in the same order.
+     * For each sequenceIndex, the union of the tags from both sequences will be added to the new sequence, mismatching
+     * values (for tags that are in both) will generate a warning, and the value from dict1 will be used.
+     * For tags that are in tagsToEquate an unequal value will generate an error (an IllegalArgumentException will
+     * be thrown.) tagsToEquate must include LN and MD.
+     *
+     * @param dict1 first dictionary
+     * @param dict2 first dictionary
+     * @param tagsToMatch list of tags that must be equal if present in both sequence. Must contain MD, and LN
+     * @return dictionary consisting of the same sequences as the two inputs with the merged values of tags.
+     */
+    static public SAMSequenceDictionary mergeDictionaries(final SAMSequenceDictionary dict1,
+                                                          final SAMSequenceDictionary dict2,
+                                                          final List<String> tagsToMatch) {
+
+        // We require MD and LN to match.
+        if (!tagsToMatch.contains(MD5_TAG) || !tagsToMatch.contains(SEQUENCE_LENGTH_TAG)) {
+            throw new IllegalArgumentException("Both " + MD5_TAG + " and " + SEQUENCE_LENGTH_TAG + " must be matched " +
+                    "when merging dictionaries. Found: " + String.join(",", tagsToMatch));
+        }
+
+        if (!dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()).equals(
+                dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(Collectors.toList()))) {
+
+            throw new IllegalArgumentException(String.format("Do not use this function to merge dictionaries with " +
+                            "different sequences in them. Sequences must be in the same order as well. Found [%s] and [%s].",
+                    String.join(", ", dict1.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList())),
+                    String.join(", ", dict2.getSequences().stream().map(SAMSequenceRecord::getSequenceName).collect(toList()))));
+        }
+
+        final SAMSequenceDictionary finalDict = new SAMSequenceDictionary();
+        for (int sequenceIndex = 0; sequenceIndex < dict1.getSequences().size(); sequenceIndex++) {
+            final SAMSequenceRecord s1 = dict1.getSequence(sequenceIndex);
+            final SAMSequenceRecord s2 = dict2.getSequence(sequenceIndex);
+
+            final String sName = s1.getSequenceName();
+            final SAMSequenceRecord sMerged = new SAMSequenceRecord(sName, UNKNOWN_SEQUENCE_LENGTH);
+            finalDict.addSequence(sMerged);
+
+            final Set<String> allTags = new HashSet<>();
+            s1.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
+            s2.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
+
+            for (final String tag : allTags) {
+                final String value1 = s1.getAttribute(tag);
+                final String value2 = s2.getAttribute(tag);
+
+                if (value1 != null && value2 != null && !value1.equals(value2)) {
+                    String baseMessage = String.format("Found sequence entry for which " +
+                                    "tags differ: %s and tag %s has the two values: %s and %s.",
+                            sName, tag, value1, value2);
+
+                    if (tagsToMatch.contains(tag)) {
+                        log.error("Cannot merge dictionaries. ", baseMessage);
+                        throw new IllegalArgumentException("Cannot merge dictionaries. " + baseMessage);
+                    } else {
+                        log.warn(baseMessage, " Using ", value1);
+                    }
+                }
+                sMerged.setAttribute(tag, value1 == null ? value2 : value1);
+            }
+
+            final int length1 = s1.getSequenceLength();
+            final int length2 = s2.getSequenceLength();
+
+            if (length1 != UNKNOWN_SEQUENCE_LENGTH && length2 != UNKNOWN_SEQUENCE_LENGTH && length1 != length2) {
+                throw new IllegalArgumentException(String.format("Cannot merge the two dictionaries. " +
+                        "Found sequence entry for which " + "lengths differ: %s has lengths %s and %s", sName, length1, length2));
+            }
+            sMerged.setSequenceLength(length1 == UNKNOWN_SEQUENCE_LENGTH ? length2 : length1);
+        }
+        return finalDict;
     }
 }
 

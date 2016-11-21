@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Create an iterator over a SAMFileReader that only returns reads that overlap one of the intervals
+ * Create an iterator over a {@link SamReader} that only returns reads that overlap one of the intervals
  * in an interval list.
  *
  * @author alecw@broadinstitute.org

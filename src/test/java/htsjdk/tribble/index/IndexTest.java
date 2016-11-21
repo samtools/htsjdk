@@ -1,13 +1,23 @@
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
+import htsjdk.tribble.Tribble;
+import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.linear.LinearIndex;
+import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.index.tabix.TabixIndex;
+import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.util.TabixUtils;
+import htsjdk.variant.vcf.VCFCodec;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,4 +57,41 @@ public class IndexTest {
 
         Assert.assertTrue(allSize >= Math.max(leftSize,rightSize), "Expected size of joint query " + allSize + " to be at least >= max of left " + leftSize + " and right queries " + rightSize);
     }
+
+
+    @DataProvider(name = "writeIndexData")
+    public Object[][] writeIndexData() {
+        return new Object[][]{
+                {new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf"), IndexFactory.IndexType.LINEAR, new VCFCodec()},
+                {new File("src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz"), IndexFactory.IndexType.TABIX, new VCFCodec()},
+                {new File("src/test/resources/htsjdk/tribble/test.bed"), IndexFactory.IndexType.LINEAR, new BEDCodec()}
+        };
+    }
+
+    private final static OutputStream nullOutputStrem = new OutputStream() {
+        @Override
+        public void write(int b) throws IOException { }
+    };
+
+    @Test(dataProvider = "writeIndexData")
+    public void testWriteIndex(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
+        // temp index file for this test
+        final File tempIndex = File.createTempFile("index", (type == IndexFactory.IndexType.TABIX) ? TabixUtils.STANDARD_INDEX_EXTENSION : Tribble.STANDARD_INDEX_EXTENSION);
+        tempIndex.delete();
+        tempIndex.deleteOnExit();
+        // create the index
+        final Index index = IndexFactory.createIndex(inputFile, codec, type);
+        Assert.assertFalse(tempIndex.exists());
+        // write the index to a file
+        index.write(tempIndex);
+        Assert.assertTrue(tempIndex.exists());
+        // load the generated index
+        final Index loadedIndex = IndexFactory.loadIndex(tempIndex.getAbsolutePath());
+        // tess that the sequences and properties are the same
+        Assert.assertEquals(loadedIndex.getSequenceNames(), index.getSequenceNames());
+        Assert.assertEquals(loadedIndex.getProperties(), index.getProperties());
+        // test that write to a stream does not blows ip
+        index.write(new LittleEndianOutputStream(nullOutputStrem));
+    }
+
 }

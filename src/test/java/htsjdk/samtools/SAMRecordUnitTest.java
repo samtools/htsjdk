@@ -417,6 +417,19 @@ public class SAMRecordUnitTest {
         Assert.assertFalse(SAMRecord.isAllowedAttributeValue(new Long(Integer.MIN_VALUE - 1L)));
     }
 
+    @Test()
+    public void test_setAttribute_empty_string() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
+        record.setAttribute(SAMTag.MD.name(), "");
+        Assert.assertNotNull(record.getStringAttribute(SAMTag.MD.name()));
+        Assert.assertEquals(record.getStringAttribute(SAMTag.MD.name()),"");
+        record.setAttribute(SAMTag.MD.name(), null);
+        Assert.assertNull(record.getStringAttribute(SAMTag.MD.name()));
+    }
+
+
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void test_setAttribute_unsigned_int_negative() {
         SAMFileHeader header = new SAMFileHeader();
@@ -960,4 +973,69 @@ public class SAMRecordUnitTest {
         SAMRecord.resolveNameFromIndex(1, null);
     }
 
+    @Test
+    public void testReverseComplement() {
+        final SAMRecord rec = createTestSamRec();
+
+        rec.reverseComplement(Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), false);
+        Assert.assertEquals(rec.getReadString(), "GTGTGTGTGT");
+        Assert.assertEquals(rec.getBaseQualityString(), "IIIIIHHHHH");
+        Assert.assertEquals(rec.getByteArrayAttribute("X1"), new byte[] {5,4,3,2,1});
+        Assert.assertEquals(rec.getSignedShortArrayAttribute("X2"), new short[] {5,4,3,2,1});
+        Assert.assertEquals(rec.getSignedIntArrayAttribute("X3"), new int[] {5,4,3,2,1});
+        Assert.assertEquals(rec.getFloatArrayAttribute("X4"), new float[] {5.0f,4.0f,3.0f,2.0f,1.0f});
+        Assert.assertEquals(rec.getStringAttribute("Y1"), "GTTTTCTTTT");
+    }
+
+    /**
+     * Note that since strings are immutable the Y1 attribute, which is a String, is not reversed in the original even
+     * if an in-place reverse complement occurred. The bases and qualities are byte[] so they are reversed if in-place
+     * is true.
+     */
+    @DataProvider
+    public Object [][] reverseComplementData() {
+        return new Object[][]{
+                {false, "ACACACACAC", "HHHHHIIIII", "AAAAGAAAAC", new byte[] {1,2,3,4,5}, new short[] {1,2,3,4,5}, new int[] {1,2,3,4,5}, new float[] {1,2,3,4,5}},
+                {true, "GTGTGTGTGT", "IIIIIHHHHH", "AAAAGAAAAC", new byte[] {5,4,3,2,1}, new short[] {5,4,3,2,1}, new int[] {5,4,3,2,1}, new float[] {5,4,3,2,1}},
+        };
+    }
+
+    @Test(dataProvider = "reverseComplementData")
+    public void testSafeReverseComplement(boolean inplace, String bases, String quals, String y1, byte[] x1, short[] x2, int[] x3, float[] x4) throws CloneNotSupportedException {
+        final SAMRecord original = createTestSamRec();
+        final SAMRecord cloneOfOriginal = (SAMRecord) original.clone();
+        //Runs a copy (rather than in-place) reverseComplement
+        cloneOfOriginal.reverseComplement(Arrays.asList("Y1"), Arrays.asList("X1", "X2", "X3", "X4", "X5"), inplace);
+
+        Assert.assertEquals(original.getReadString(), bases);
+        Assert.assertEquals(original.getBaseQualityString(), quals);
+        Assert.assertEquals(original.getByteArrayAttribute("X1"), x1);
+        Assert.assertEquals(original.getSignedShortArrayAttribute("X2"), x2);
+        Assert.assertEquals(original.getSignedIntArrayAttribute("X3"), x3);
+        Assert.assertEquals(original.getFloatArrayAttribute("X4"), x4);
+        Assert.assertEquals(original.getStringAttribute("Y1"), y1);
+
+        Assert.assertEquals(cloneOfOriginal.getReadString(), "GTGTGTGTGT");
+        Assert.assertEquals(cloneOfOriginal.getBaseQualityString(), "IIIIIHHHHH");
+        Assert.assertEquals(cloneOfOriginal.getByteArrayAttribute("X1"), new byte[] {5,4,3,2,1});
+        Assert.assertEquals(cloneOfOriginal.getSignedShortArrayAttribute("X2"), new short[] {5,4,3,2,1});
+        Assert.assertEquals(cloneOfOriginal.getSignedIntArrayAttribute("X3"), new int[] {5,4,3,2,1});
+        Assert.assertEquals(cloneOfOriginal.getFloatArrayAttribute("X4"), new float[] {5.0f,4.0f,3.0f,2.0f,1.0f});
+        Assert.assertEquals(cloneOfOriginal.getStringAttribute("Y1"), "GTTTTCTTTT");
+
+    }
+
+    public SAMRecord createTestSamRec() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord rec = new SAMRecord(header);
+        rec.setReadString("ACACACACAC");
+        rec.setBaseQualityString("HHHHHIIIII");
+        rec.setAttribute("X1", new byte[] {1,2,3,4,5});
+        rec.setAttribute("X2", new short[] {1,2,3,4,5});
+        rec.setAttribute("X3", new int[] {1,2,3,4,5});
+        rec.setAttribute("X4", new float[] {1.0f,2.0f,3.0f,4.0f,5.0f});
+        rec.setAttribute("Y1", "AAAAGAAAAC");
+
+        return(rec);
+    }
 }

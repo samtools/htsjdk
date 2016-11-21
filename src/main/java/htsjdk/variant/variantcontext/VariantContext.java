@@ -747,7 +747,9 @@ public class VariantContext implements Feature, Serializable {
         as a java.util.List if the value is a List or an Array,
         as a Collections.singletonList if there is only one value */
     public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-
+    public List<String> getAttributeAsStringList(String key, String defaultValue) { return commonInfo.getAttributeAsStringList(key, defaultValue); }
+    public List<Integer> getAttributeAsIntList(String key, int defaultValue) { return commonInfo.getAttributeAsIntList(key, defaultValue); }
+    public List<Double> getAttributeAsDoubleList(String key, double defaultValue) { return commonInfo.getAttributeAsDoubleList(key, defaultValue); }
     public CommonInfo getCommonInfo() {
         return commonInfo;
     }
@@ -1731,5 +1733,14 @@ public class VariantContext implements Feature, Serializable {
         final int index = getAlleleIndex(targetAllele);
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
         return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
+    }
+    
+    /** 
+     * Search for the INFO=SVTYPE and return the type of Structural Variant 
+     * @return the StructuralVariantType of null if there is no property SVTYPE 
+     * */
+    public StructuralVariantType getStructuralVariantType() {
+        final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
+        return svType == null ? null : StructuralVariantType.valueOf(svType);
     }
 }

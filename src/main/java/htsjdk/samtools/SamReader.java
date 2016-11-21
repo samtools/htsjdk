@@ -1,3 +1,27 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2016 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
@@ -133,7 +157,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public Indexing indexing();
 
     /**
-     * Iterate through file in order.  For a SAMFileReader constructed from an InputStream, and for any SAM file,
+     * Iterate through file in order.  For a SamReader constructed from an InputStream, and for any SAM file,
      * a 2nd iteration starts where the 1st one left off.  For a BAM constructed from a SeekableStream or File, each new iteration
      * starts at the first record.
      * <p/>
@@ -145,8 +169,8 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * Iterate over records that match the given interval.  Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
-     * a second iteration, the first one must be closed first.  You can use a second SAMFileReader to iterate
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
+     * a second iteration, the first one must be closed first.  You can use a second SamReader to iterate
      * in parallel over the same underlying file.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -167,7 +191,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * Iterate over records that overlap the given interval.  Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -186,7 +210,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * Iterate over records that are contained in the given interval.  Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -208,8 +232,8 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * <p/>
      * Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
-     * a second iteration, the first one must be closed first.  You can use a second SAMFileReader to iterate
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
+     * a second iteration, the first one must be closed first.  You can use a second SamReader to iterate
      * in parallel over the same underlying file.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -233,7 +257,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * <p/>
      * Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -253,7 +277,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * <p/>
      * Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -274,7 +298,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /**
      * Iterate over records that map to the given sequence and start at the given position.  Only valid to call this if hasIndex() == true.
      * <p/>
-     * Only a single open iterator on a given SAMFileReader may be extant at any one time.  If you want to start
+     * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
      * <p/>
      * Note that indexed lookup is not perfectly efficient in terms of disk I/O.  I.e. some SAMRecords may be read
@@ -295,9 +319,9 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * mate information.  This method iterates over the SAM file, so there may not be an unclosed
      * iterator on the SAM file when this method is called.
      * <p/>
-     * Note that it is not possible to call queryMate when iterating over the SAMFileReader, because queryMate
-     * requires its own iteration, and there cannot be two simultaneous iterations on the same SAMFileReader.  The
-     * work-around is to open a second SAMFileReader on the same input file, and call queryMate on the second
+     * Note that it is not possible to call queryMate when iterating over the SamReader, because queryMate
+     * requires its own iteration, and there cannot be two simultaneous iterations on the same SamReader.  The
+     * work-around is to open a second SamReader on the same input file, and call queryMate on the second
      * reader.
      *
      * @param rec Record for which mate is sought.  Must be a paired read.

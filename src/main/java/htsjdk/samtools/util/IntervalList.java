@@ -71,10 +71,13 @@ public class IntervalList implements Iterable<Interval> {
 
     /** Constructs a new interval list using the supplied header information. */
     public IntervalList(final SAMFileHeader header) {
-        if (header == null) {
-            throw new IllegalArgumentException("SAMFileHeader must be supplied.");
-        }
+        if (header == null) throw new IllegalArgumentException("SAMFileHeader must be supplied.");
         this.header = header;
+    }
+
+    /** Constructs a new interval list using the supplied header information. */
+    public IntervalList(final SAMSequenceDictionary dict) {
+        this(new SAMFileHeader(dict));
     }
 
     /** Gets the header (if there is one) for the interval list. */

@@ -37,6 +37,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 
 public class TabixIndexTest {
@@ -71,7 +72,7 @@ public class TabixIndexTest {
     }
 
     @Test
-    public void testQueryProvidedItemsAmount() {
+    public void testQueryProvidedItemsAmount() throws IOException {
         final String VCF = "src/test/resources/htsjdk/tribble/tabix/YRI.trio.2010_07.indel.sites.vcf";
         // Note that we store only compressed files
         final File plainTextVcfInputFile = new File(VCF);

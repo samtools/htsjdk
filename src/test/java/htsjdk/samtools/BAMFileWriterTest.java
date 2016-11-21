@@ -50,7 +50,7 @@ public class BAMFileWriterTest {
      * Parse some SAM text into a SAM object, then write as BAM.  If SAM text was presorted, then the BAM file can
      * be read and compared with the SAM object.
      *
-     * @param samRecordSetBuilder source of input SAMFileReader to be written and compared with
+     * @param samRecordSetBuilder source of input {@link SamReader} to be written and compared with
      * @param sortOrder           How the BAM should be written
      * @param presorted           If true, samText is in the order specified by sortOrder
      */

@@ -25,16 +25,18 @@
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.samtools.util.Log;
+import htsjdk.tribble.SimpleFeature;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -43,178 +45,230 @@ import java.util.Map;
  * 
  * @author aaron
  * @author bimber
- * 
- * Class VariantJEXLContextUnitTest
+ * @author hyq
+ *
  *
  * Test out parts of the VariantJEXLContext and GenotypeJEXLContext
  */
 public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
-    private static String expression = "QUAL > 500.0";
-    private static VariantContextUtils.JexlVCMatchExp exp;
+    private static final VariantContextUtils.JexlVCMatchExp exp
+            = new VariantContextUtils.JexlVCMatchExp("name", VariantContextUtils.engine.get().createExpression("QUAL > 500.0"));
 
-    Allele A, Aref, T, Tref;
+    // SNP alleles: A[ref]/T[alt] at chr1:10. One (crappy) sample, one (bare minimum) VC.
+    private static final SimpleFeature eventLoc = new SimpleFeature("chr1", 10, 10);
+    private static final Allele Aref = Allele.create("A", true);
+    private static final Allele Talt = Allele.create("T");
+    private static final Genotype gt = new GenotypeBuilder("DummySample", Arrays.asList(Aref, Talt))
+                                            .phased(false)
+                                            .DP(2)
+                                            .noGQ()
+                                            .noAD()
+                                            .noPL()
+                                            .filter("lowDP")
+                                            .attribute("WA", "whatEver")
+                                            .make();
+    private static final VariantContext vc = new VariantContextBuilder("test", eventLoc.getContig(), eventLoc.getStart(), eventLoc.getEnd(), Arrays.asList(Aref, Talt))
+                                                .genotypes(gt)
+                                                .noID()
+                                                .filter("q10")
+                                                .attribute("attr", "notEmpty")
+                                                .make();
 
-    Allele ATC, ATCref;
-    // A [ref] / T at 10
-
-    // - / ATC [ref] from 20-23
-
-    @BeforeClass
-    public void beforeClass() {
-        try {
-            exp = new VariantContextUtils.JexlVCMatchExp("name", VariantContextUtils.engine.get().createExpression(expression));
-        } catch (Exception e) {
-            Assert.fail("Unable to create expression" + e.getMessage());
-        }
-    }
-
-    @BeforeMethod
-    public void before() {
-        A = Allele.create("A");
-        Aref = Allele.create("A", true);
-        T = Allele.create("T");
-        Tref = Allele.create("T", true);
-
-        ATC = Allele.create("ATC");
-        ATCref = Allele.create("ATC", true);
-    }
-
-
+    //////////////////////// testing JEXLMap ////////////////////////
     @Test
     public void testGetValue() {
-        Map<VariantContextUtils.JexlVCMatchExp, Boolean> map = getVarContext();
+        final Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap = getJEXLMap();
 
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 1);
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 1);
 
         // eval our known expression
-        Assert.assertTrue(!map.get(exp));
+        Assert.assertTrue(!jexlMap.get(exp));
     }
     
     // Testing the new 'FT' and 'isPassFT' expressions in the JEXL map
     @Test
     public void testJEXLGenotypeFilters() {
     	
-    	JexlVCMatchExp passFlag = new VariantContextUtils.JexlVCMatchExp(
+    	final JexlVCMatchExp passFlag = new VariantContextUtils.JexlVCMatchExp(
     			"passFlag", VariantContextUtils.engine.get().createExpression("isPassFT==1"));
-    	JexlVCMatchExp passFT = new VariantContextUtils.JexlVCMatchExp(
+    	final JexlVCMatchExp passFT = new VariantContextUtils.JexlVCMatchExp(
     			"FTPASS", VariantContextUtils.engine.get().createExpression("FT==\"PASS\""));
-    	JexlVCMatchExp failFT = new VariantContextUtils.JexlVCMatchExp(
+    	final JexlVCMatchExp failFT = new VariantContextUtils.JexlVCMatchExp(
     			"FTBadCall", VariantContextUtils.engine.get().createExpression("FT==\"BadCall\""));
-        JexlVCMatchExp AD1 = new VariantContextUtils.JexlVCMatchExp(
+        final JexlVCMatchExp AD1 = new VariantContextUtils.JexlVCMatchExp(
                 "AD1", VariantContextUtils.engine.get().createExpression("g.hasAD() && g.getAD().0==1"));
-        JexlVCMatchExp AD2 = new VariantContextUtils.JexlVCMatchExp(
+        final JexlVCMatchExp AD2 = new VariantContextUtils.JexlVCMatchExp(
                 "AD2", VariantContextUtils.engine.get().createExpression("g.hasAD() && g.getAD().1==2"));
 
-    	List<JexlVCMatchExp> jexlTests = Arrays.asList(passFlag, passFT, failFT, AD1, AD2);
-    	Map<VariantContextUtils.JexlVCMatchExp, Boolean> map;
-    	
-    	List<Allele> alleles = Arrays.asList(Aref, T);
-    	VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10, 10, alleles);
-        VariantContext vcPass = vcb.filters("PASS").make();
-        VariantContext vcFail = vcb.filters("BadVariant").make();
-        GenotypeBuilder gb = new GenotypeBuilder("SAMPLE", alleles);
+    	final List<JexlVCMatchExp> jexlTests = Arrays.asList(passFlag, passFT, failFT, AD1, AD2);
 
-        Genotype genoNull = gb.make();
-        Genotype genoPass = gb.filters("PASS").AD(new int[]{1,2}).DP(3).make();
-        Genotype genoFail = gb.filters("BadCall").AD(null).DP(0).make();
+    	final List<Allele> alleles = Arrays.asList(Aref, Talt);
+    	final VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10, 10, alleles);
+        final VariantContext vcPass = vcb.filters("PASS").make();
+        final VariantContext vcFail = vcb.filters("BadVariant").make();
+        final GenotypeBuilder gb = new GenotypeBuilder("SAMPLE", alleles);
+
+        final Genotype genoNull = gb.make();
+        final Genotype genoPass = gb.filters("PASS").AD(new int[]{1,2}).DP(3).make();
+        final Genotype genoFail = gb.filters("BadCall").AD(null).DP(0).make();
+
+        Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap;
 
         // Create the JEXL Maps using the combinations above of vc* and geno*
-        map = new JEXLMap(jexlTests,vcPass, genoPass);
+        jexlMap = new JEXLMap(jexlTests, vcPass, genoPass);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertTrue(map.get(passFlag));
-        Assert.assertTrue(map.get(passFT));
-        Assert.assertFalse(map.get(failFT));
-        Assert.assertTrue(map.get(AD1));
-        Assert.assertTrue(map.get(AD2));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertTrue(jexlMap.get(passFlag));
+        Assert.assertTrue(jexlMap.get(passFT));
+        Assert.assertFalse(jexlMap.get(failFT));
+        Assert.assertTrue(jexlMap.get(AD1));
+        Assert.assertTrue(jexlMap.get(AD2));
 
-        map = new JEXLMap(jexlTests, vcPass, genoFail);
+        jexlMap = new JEXLMap(jexlTests, vcPass, genoFail);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertFalse(map.get(passFlag));
-        Assert.assertFalse(map.get(passFT));
-        Assert.assertTrue(map.get(failFT));
-        Assert.assertFalse(map.get(AD1));
-        Assert.assertFalse(map.get(AD2));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertFalse(jexlMap.get(passFlag));
+        Assert.assertFalse(jexlMap.get(passFT));
+        Assert.assertTrue(jexlMap.get(failFT));
+        Assert.assertFalse(jexlMap.get(AD1));
+        Assert.assertFalse(jexlMap.get(AD2));
 
         // Null genotype filter is equivalent to explicit "FT==PASS"
-        map = new JEXLMap(jexlTests, vcPass, genoNull);
+        jexlMap = new JEXLMap(jexlTests, vcPass, genoNull);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertTrue(map.get(passFlag));
-        Assert.assertTrue(map.get(passFT));
-        Assert.assertFalse(map.get(failFT));
-        Assert.assertFalse(map.get(AD1));
-        Assert.assertFalse(map.get(AD2));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertTrue(jexlMap.get(passFlag));
+        Assert.assertTrue(jexlMap.get(passFT));
+        Assert.assertFalse(jexlMap.get(failFT));
+        Assert.assertFalse(jexlMap.get(AD1));
+        Assert.assertFalse(jexlMap.get(AD2));
         
         // Variant-level filters should have no effect here
-        map = new JEXLMap(jexlTests,vcFail, genoPass);
+        jexlMap = new JEXLMap(jexlTests, vcFail, genoPass);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertTrue(map.get(passFlag));
-        Assert.assertTrue(map.get(passFT));
-        Assert.assertFalse(map.get(failFT));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertTrue(jexlMap.get(passFlag));
+        Assert.assertTrue(jexlMap.get(passFT));
+        Assert.assertFalse(jexlMap.get(failFT));
         
-        map = new JEXLMap(jexlTests,vcFail, genoFail);
+        jexlMap = new JEXLMap(jexlTests, vcFail, genoFail);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertFalse(map.get(passFlag));
-        Assert.assertFalse(map.get(passFT));
-        Assert.assertTrue(map.get(failFT));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertFalse(jexlMap.get(passFlag));
+        Assert.assertFalse(jexlMap.get(passFT));
+        Assert.assertTrue(jexlMap.get(failFT));
         
-        map = new JEXLMap(jexlTests,vcFail, genoNull);
+        jexlMap = new JEXLMap(jexlTests, vcFail, genoNull);
         // make sure the context has a value
-        Assert.assertTrue(!map.isEmpty());
-        Assert.assertEquals(map.size(), 5);
-        Assert.assertTrue(map.get(passFlag));
-        Assert.assertTrue(map.get(passFT));
-        Assert.assertFalse(map.get(failFT));
+        Assert.assertTrue(!jexlMap.isEmpty());
+        Assert.assertEquals(jexlMap.size(), 5);
+        Assert.assertTrue(jexlMap.get(passFlag));
+        Assert.assertTrue(jexlMap.get(passFT));
+        Assert.assertFalse(jexlMap.get(failFT));
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
     public void testContainsValue() {
-        Map<VariantContextUtils.JexlVCMatchExp, Boolean> map = getVarContext();
+        final Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap = getJEXLMap();
 
-        map.containsValue(exp);
+        jexlMap.containsValue(exp);
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
     public void testRemove() {
-        Map<VariantContextUtils.JexlVCMatchExp, Boolean> map = getVarContext();
+        final Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap = getJEXLMap();
 
-        map.remove(exp);
+        jexlMap.remove(exp);
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
     public void testEntrySet() {
-        Map<VariantContextUtils.JexlVCMatchExp, Boolean> map = getVarContext();
+        final Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap = getJEXLMap();
 
-        map.entrySet();
+        jexlMap.entrySet();
     }
 
     @Test(expectedExceptions=UnsupportedOperationException.class)
     public void testClear() {
-        Map<VariantContextUtils.JexlVCMatchExp, Boolean> map = getVarContext();
+        final Map<VariantContextUtils.JexlVCMatchExp, Boolean> jexlMap = getJEXLMap();
 
-        map.clear();
+        jexlMap.clear();
     }
 
     /**
-     * helper method
-     * @return a VariantJEXLContext
+     * @return a JEXLMap for use by actual tests
      */
-    private JEXLMap getVarContext() {
-        List<Allele> alleles = Arrays.asList(Aref, T);
+    private JEXLMap getJEXLMap() {
+        return new JEXLMap(Collections.singletonList(exp), vc);
+    }
 
-        VariantContext vc = new VariantContextBuilder("test", "chr1", 10, 10, alleles).make();
-        return new JEXLMap(Arrays.asList(exp),vc);
+    //////////////////////// testing GenotypeJEXLContext and its base VariantJEXLContext ////////////////////////
+
+    /**
+     * Test the various if-else cases in {@link GenotypeJEXLContext#get(String)} and {@link VariantJEXLContext#get(String)}
+     * {@link GenotypeJEXLContext#has(String)} is not tested because it simply checks if get() will return null.
+     */
+    @Test
+    public void testVariantJEXLContextGetMethod() {
+
+        final VariantJEXLContext jEXLContext = getJEXLContext();
+
+        // This is not tested because there's no simple test for equality for VariantContext,
+        // except exhaustive attributes testing, which is what happening below.
+//        Assert.assertEquals(jEXLContext.get("vc"), new VariantContextBuilder("test", "chr1", 10, 10, Arrays.asList(Aref, Talt)).make());
+
+        // GenotypeJEXLContext
+        Assert.assertTrue( ((Genotype) jEXLContext.get("g")).sameGenotype(gt, false));
+        Assert.assertEquals(jEXLContext.get("isHom"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get("isHomRef"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get("isHomVar"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get("isHet"), VariantJEXLContext.true_string);
+        Assert.assertEquals(jEXLContext.get("isCalled"), VariantJEXLContext.true_string);
+        Assert.assertEquals(jEXLContext.get("isNoCall"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get("isMixed"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get("isAvailable"), VariantJEXLContext.true_string);
+        Assert.assertEquals(jEXLContext.get("isPassFT"), VariantJEXLContext.false_string);
+        Assert.assertEquals(jEXLContext.get(VCFConstants.GENOTYPE_KEY), gt.getGenotypeString());
+        Assert.assertEquals(jEXLContext.get(VCFConstants.GENOTYPE_FILTER_KEY),"lowDP");
+        Assert.assertEquals(jEXLContext.get(VCFConstants.GENOTYPE_QUALITY_KEY),Integer.valueOf(VCFConstants.MISSING_GENOTYPE_QUALITY_v3));
+        Assert.assertEquals(jEXLContext.get("WA"),"whatEver"); // hasAnyAttribute->getAnyAttribute
+        Assert.assertEquals(jEXLContext.get("lowDP"),VariantJEXLContext.true_string); // getFilters()!=null
+
+        // VariantJEXLContext
+        Assert.assertEquals(jEXLContext.get("CHROM"), eventLoc.getContig());
+        Assert.assertEquals(jEXLContext.get("POS"), eventLoc.getStart());
+        Assert.assertEquals(jEXLContext.get("TYPE"), VariantContext.Type.SNP.name());
+        Assert.assertEquals(jEXLContext.get("QUAL"), -10.0); // because of noGQ() when building the genotype
+        Assert.assertEquals(jEXLContext.get("ALLELES"), vc.getAlleles());
+        Assert.assertEquals(jEXLContext.get("N_ALLELES"), vc.getNAlleles());
+        Assert.assertEquals(jEXLContext.get("FILTER"), VariantJEXLContext.true_string);
+        Assert.assertEquals(jEXLContext.get("homRefCount"), 0);
+        Assert.assertEquals(jEXLContext.get("homVarCount"), 0);
+        Assert.assertEquals(jEXLContext.get("hetCount"), 1);
+        Assert.assertEquals(jEXLContext.get("attr"), "notEmpty"); // hasAnyAttribute->getAnyAttribute
+        Assert.assertEquals(jEXLContext.get("q10"), VariantJEXLContext.true_string); // getFilters()!=null
+
+        // all if-else fall through
+        Assert.assertNull(jEXLContext.get("mustBeNull"));
+    }
+
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public void testVariantJEXLContextSetMethodException(){
+        getJEXLContext().set("noMatterWhat", "willBlowup");
+    }
+
+    /**
+     * @return a GenotypeJEXLContext for use by actual tests
+     */
+    private VariantJEXLContext getJEXLContext(){
+        return new GenotypeJEXLContext(vc, gt);
     }
 }

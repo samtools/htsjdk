@@ -442,33 +442,6 @@ public class SequenceUtil {
     }
 
     /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    private static int countMismatches(final SAMRecord read, final char[] referenceBases, final int referenceOffset) {
-        int mismatches = 0;
-
-        final byte[] readBases = read.getReadBases();
-
-        for (final AlignmentBlock block : read.getAlignmentBlocks()) {
-            final int readBlockStart = block.getReadStart() - 1;
-            final int referenceBlockStart = block.getReferenceStart() - 1 - referenceOffset;
-            final int length = block.getLength();
-
-            for (int i = 0; i < length; ++i) {
-                if (!basesEqual(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
-                    ++mismatches;
-                }
-            }
-        }
-        return mismatches;
-    }
-
-    /**
      * Calculates the sum of qualities for mismatched bases in the read.
      *
      * @param referenceBases Array of ASCII bytes in which the 0th position in the array corresponds
@@ -530,41 +503,6 @@ public class SequenceUtil {
                             referenceBases[referenceBlockStart + i])) {
                         qualities += readQualities[readBlockStart + i];
                     }
-                }
-            }
-        }
-
-        return qualities;
-    }
-
-    /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    public static int sumQualitiesOfMismatches(final SAMRecord read, final char[] referenceBases,
-                                               final int referenceOffset) {
-        int qualities = 0;
-
-        final byte[] readBases = read.getReadBases();
-        final byte[] readQualities = read.getBaseQualities();
-
-        if (read.getAlignmentStart() <= referenceOffset) {
-            throw new IllegalArgumentException("read.getAlignmentStart(" + read.getAlignmentStart() +
-                    ") <= referenceOffset(" + referenceOffset + ")");
-        }
-
-        for (final AlignmentBlock block : read.getAlignmentBlocks()) {
-            final int readBlockStart = block.getReadStart() - 1;
-            final int referenceBlockStart = block.getReferenceStart() - 1 - referenceOffset;
-            final int length = block.getLength();
-
-            for (int i = 0; i < length; ++i) {
-                if (!basesEqual(readBases[readBlockStart + i], StringUtil.charToByte(referenceBases[referenceBlockStart + i]))) {
-                    qualities += readQualities[readBlockStart + i];
                 }
             }
         }
@@ -652,26 +590,6 @@ public class SequenceUtil {
             if ( el.getOperator() == CigarOperator.X ||
                  el.getOperator() == CigarOperator.INSERTION ||
                  el.getOperator() == CigarOperator.DELETION) {
-                samNm += el.getLength();
-            }
-        }
-        return samNm;
-    }
-
-
-    /**
-     * Sadly, this is a duplicate of the method above, except that it takes char[] for referenceBases rather
-     * than byte[].  This is because GATK needs it this way.
-     * <p/>
-     * TODO: Remove this method when GATK map method is changed to take refseq as byte[].
-     * TODO: UPDATE: Seems to be removed from GATK. Deprecated now to be removed in a future version.
-     */
-    @Deprecated
-    public static int calculateSamNmTag(final SAMRecord read, final char[] referenceBases,
-                                        final int referenceOffset) {
-        int samNm = countMismatches(read, referenceBases, referenceOffset);
-        for (final CigarElement el : read.getCigar().getCigarElements()) {
-            if (el.getOperator() == CigarOperator.INSERTION || el.getOperator() == CigarOperator.DELETION) {
                 samNm += el.getLength();
             }
         }
@@ -972,10 +890,11 @@ public class SequenceUtil {
     /**
      * Calculate MD and NM similarly to Samtools, except that N->N is a match.
      *
-     * @param record
-     * @param ref
-     * @param calcMD
-     * @return
+     * @param record Input record for which to calculate NM and MD.
+     *               The appropriate tags will be added/updated in the record
+     * @param ref    The reference bases for the sequence to which the record is mapped
+     * @param calcMD A flag indicating whether to update the MD tag in the record
+     * @param calcNM A flag indicating whether to update the NM tag in the record
      */
     public static void calculateMdAndNmTags(final SAMRecord record, final byte[] ref,
                                             final boolean calcMD, final boolean calcNM) {
@@ -985,66 +904,63 @@ public class SequenceUtil {
         final Cigar cigar = record.getCigar();
         final List<CigarElement> cigarElements = cigar.getCigarElements();
         final byte[] seq = record.getReadBases();
-        final int start = record.getAlignmentStart() - 1;
-        int i, x, y, u = 0;
-        int nm = 0;
-        final StringBuilder str = new StringBuilder();
+        final int alignmentStart = record.getAlignmentStart() - 1;
+        int cigarIndex, blockRefPos, blockReadStart, matchCount = 0;
+        int nmCount = 0;
+        final StringBuilder mdString = new StringBuilder();
 
-        final int size = cigarElements.size();
-        for (i = y = 0, x = start; i < size; ++i) {
-            final CigarElement ce = cigarElements.get(i);
-            int j;
-            final int length = ce.getLength();
+        final int nElements = cigarElements.size();
+        for (cigarIndex = blockReadStart = 0, blockRefPos = alignmentStart; cigarIndex < nElements; ++cigarIndex) {
+            final CigarElement ce = cigarElements.get(cigarIndex);
+            int inBlockOffset;
+            final int blockLength = ce.getLength();
             final CigarOperator op = ce.getOperator();
             if (op == CigarOperator.MATCH_OR_MISMATCH || op == CigarOperator.EQ
                     || op == CigarOperator.X) {
-                for (j = 0; j < length; ++j) {
-                    final int z = y + j;
+                for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
+                    final int readOffset = blockReadStart + inBlockOffset;
 
-                    if (ref.length <= x + j) break; // out of boundary
+                    if (ref.length <= blockRefPos + inBlockOffset) break; // out of boundary
 
-                    int c1 = 0;
-                    int c2 = 0;
-                    // try {
-                    c1 = seq[z];
-                    c2 = ref[x + j];
+                    final byte readBase = seq[readOffset];
+                    final byte refBase = ref[blockRefPos + inBlockOffset];
 
-                    if ((c1 == c2) || c1 == 0) {
+                    if ((bases[readBase] == bases[refBase]) || readBase == 0) {
                         // a match
-                        ++u;
+                        ++matchCount;
                     } else {
-                        str.append(u);
-                        str.appendCodePoint(ref[x + j]);
-                        u = 0;
-                        ++nm;
+                        mdString.append(matchCount);
+                        mdString.appendCodePoint(refBase);
+                        matchCount = 0;
+                        ++nmCount;
                     }
                 }
-                if (j < length) break;
-                x += length;
-                y += length;
+                if (inBlockOffset < blockLength) break;
+                blockRefPos += blockLength;
+                blockReadStart += blockLength;
             } else if (op == CigarOperator.DELETION) {
-                str.append(u);
-                str.append('^');
-                for (j = 0; j < length; ++j) {
-                    if (ref[x + j] == 0) break;
-                    str.appendCodePoint(ref[x + j]);
+                mdString.append(matchCount);
+                mdString.append('^');
+                for (inBlockOffset = 0; inBlockOffset < blockLength; ++inBlockOffset) {
+                    if (ref[blockRefPos + inBlockOffset] == 0) break;
+                    mdString.appendCodePoint(ref[blockRefPos + inBlockOffset]);
                 }
-                u = 0;
-                if (j < length) break;
-                x += length;
-                nm += length;
+                matchCount = 0;
+                if (inBlockOffset < blockLength) break;
+                blockRefPos += blockLength;
+                nmCount += blockLength;
             } else if (op == CigarOperator.INSERTION
                     || op == CigarOperator.SOFT_CLIP) {
-                y += length;
-                if (op == CigarOperator.INSERTION) nm += length;
+                blockReadStart += blockLength;
+                if (op == CigarOperator.INSERTION) nmCount += blockLength;
             } else if (op == CigarOperator.SKIPPED_REGION) {
-                x += length;
+                blockRefPos += blockLength;
             }
         }
-        str.append(u);
+        mdString.append(matchCount);
 
-        if (calcMD) record.setAttribute(SAMTag.MD.name(), str.toString());
-        if (calcNM) record.setAttribute(SAMTag.NM.name(), nm);
+        if (calcMD) record.setAttribute(SAMTag.MD.name(), mdString.toString());
+        if (calcNM) record.setAttribute(SAMTag.NM.name(), nmCount);
     }
 
     public static byte upperCase(final byte base) {
@@ -1059,7 +975,7 @@ public class SequenceUtil {
 
     /** Generates all possible unambiguous kmers (upper-case) of length and returns them as byte[]s. */
     public static List<byte[]> generateAllKmers(final int length) {
-        final List<byte[]> sofar = new LinkedList<byte[]>();
+        final List<byte[]> sofar = new LinkedList<>();
 
         if (sofar.isEmpty()) {
             sofar.add(new byte[length]);

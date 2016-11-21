@@ -41,6 +41,7 @@ import java.util.Map;
  * instance is used in multiple threads.
  */
 public class TextTagCodec {
+    // 3 fields for non-empty strings 2 fields if the string is empty.
     private static final int NUM_TAG_FIELDS = 3;
 
     /**
@@ -149,12 +150,12 @@ public class TextTagCodec {
      */
     public Map.Entry<String, Object> decode(final String tag) {
         final int numFields = StringUtil.splitConcatenateExcessTokens(tag, fields, ':');
-        if (numFields != TextTagCodec.NUM_TAG_FIELDS) {
+        if (numFields != TextTagCodec.NUM_TAG_FIELDS && numFields != TextTagCodec.NUM_TAG_FIELDS - 1) {
             throw new SAMFormatException("Not enough fields in tag '" + tag + "'");
         }
         final String key = fields[0];
         final String type = fields[1];
-        final String stringVal = fields[2];
+        final String stringVal = numFields == TextTagCodec.NUM_TAG_FIELDS ? fields[2] : "";
         final Object val = convertStringToObject(type, stringVal);
         return new Map.Entry<String, Object>() {
             public String getKey() {

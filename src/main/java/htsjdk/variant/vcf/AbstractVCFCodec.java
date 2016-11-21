@@ -30,6 +30,7 @@ import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
 import htsjdk.tribble.TribbleException;
+import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
@@ -781,5 +782,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     protected static void generateException(String message, int lineNo) {
         throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
+    }
+
+    @Override
+    public TabixFormat getTabixFormat() {
+        return TabixFormat.VCF;
     }
 }

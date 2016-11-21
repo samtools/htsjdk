@@ -19,6 +19,7 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.tribble.index.tabix.TabixFormat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,4 +120,17 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * @return true if potentialInput can be parsed, false otherwise
      */
     public boolean canDecode(final String path);
+
+    /**
+     * Define the tabix format for the feature, used for indexing. Default implementation throws an exception.
+     *
+     * Note that only {@link AsciiFeatureCodec} could read tabix files as defined in
+     * {@link AbstractFeatureReader#getFeatureReader(String, String, FeatureCodec, boolean)}
+     *
+     * @return the format to use with tabix
+     * @throws TribbleException if the format is not defined
+     */
+    default public TabixFormat getTabixFormat() {
+        throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
+    }
 }

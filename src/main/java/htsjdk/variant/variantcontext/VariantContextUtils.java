@@ -202,7 +202,7 @@ public class VariantContextUtils {
     }
 
     /**
-     * A simple but common wrapper for matching VariantContext objects using JEXL expressions
+     * A simple but common wrapper for matching {@link VariantContext} objects using JEXL expressions
      */
     public static class JexlVCMatchExp {
         public String name;
@@ -212,8 +212,12 @@ public class VariantContextUtils {
          * Create a new matcher expression with name and JEXL expression exp
          * @param name name
          * @param exp  expression
+         * @throws IllegalArgumentException if either argument is {@code null}
          */
         public JexlVCMatchExp(String name, Expression exp) {
+            if (name == null) { throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null name."); }
+            if (exp  == null) { throw new IllegalArgumentException("Cannot create JexlVCMatchExp with null expression."); }
+
             this.name = name;
             this.exp = exp;
         }
@@ -258,7 +262,6 @@ public class VariantContextUtils {
         return initializeMatchExps(names.toArray(nameArray), exps.toArray(expArray));
     }
 
-
     /**
      * Method for creating JexlVCMatchExp from input walker arguments mapping from names to exps.  These two arrays contain
      * the name associated with each JEXL expression. initializeMatchExps will parse each expression and return
@@ -288,51 +291,52 @@ public class VariantContextUtils {
     }
 
     /**
-     * Returns true if exp match VC.  See {@link #match(VariantContext, Collection)} for full docs.
+     * Returns true if {@code exp} match {@code vc}.
+     * See {@link #match(VariantContext, Collection)} for full docs.
      * @param vc    variant context
      * @param exp   expression
-     * @return true if there is a match
+     * @return      true if there is a match
      */
     public static boolean match(VariantContext vc, JexlVCMatchExp exp) {
         return match(vc, Collections.singletonList(exp)).get(exp);
     }
 
     /**
-     * Matches each JexlVCMatchExp exp against the data contained in vc, and returns a map from these
-     * expressions to true (if they matched) or false (if they didn't).  This the best way to apply JEXL
-     * expressions to VariantContext records.  Use initializeMatchExps() to create the list of JexlVCMatchExp
-     * expressions.
+     * Matches each {@link JexlVCMatchExp} exp against the data contained in {@code vc},
+     * and returns a map from these expressions to {@code true} (if they matched) or {@code false} (if they didn't).
+     * This the best way to apply JEXL expressions to {@link VariantContext} records.
+     * Use the various {@code initializeMatchExps()}'s to create the list of {@link JexlVCMatchExp} expressions.
      *
-     * @param vc   variant context
-     * @param exps expressions
-     * @return true if there is a match
+     * @param vc    variant context
+     * @param exps  expressions
+     * @return      true if there is a match
      */
     public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Collection<JexlVCMatchExp> exps) {
         return new JEXLMap(exps,vc);
-
     }
 
     /**
-     * Returns true if exp match VC/g.  See {@link #match(VariantContext, Collection)} for full docs.
-     * @param vc   variant context
-     * @param g    genotype
+     * Returns true if {@code exp} match {@code vc}, {@code g}.
+     * See {@link #match(VariantContext, Genotype, Collection)} for full docs.
+     * @param vc    variant context
+     * @param g     genotype
      * @param exp   expression
-     * @return true if there is a match
+     * @return      true if there is a match
      */
     public static boolean match(VariantContext vc, Genotype g, JexlVCMatchExp exp) {
         return match(vc,g, Collections.singletonList(exp)).get(exp);
     }
 
     /**
-     * Matches each JexlVCMatchExp exp against the data contained in vc/g, and returns a map from these
-     * expressions to true (if they matched) or false (if they didn't).  This the best way to apply JEXL
-     * expressions to VariantContext records/genotypes.  Use initializeMatchExps() to create the list of JexlVCMatchExp
-     * expressions.
+     * Matches each {@link JexlVCMatchExp} exp against the data contained in {@code vc}, {@code g},
+     * and returns a map from these expressions to {@code true} (if they matched) or {@code false} (if they didn't).
+     * This the best way to apply JEXL expressions to {@link VariantContext} records.
+     * Use the various {@code initializeMatchExps()}'s to create the list of {@link JexlVCMatchExp} expressions.
      *
-     * @param vc   variant context
-     * @param g    genotype
-     * @param exps expressions
-     * @return true if there is a match
+     * @param vc    variant context
+     * @param g     genotype
+     * @param exps  expressions
+     * @return      true if there is a match
      */
     public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps) {
         return new JEXLMap(exps,vc,g);
@@ -361,7 +365,6 @@ public class VariantContextUtils {
      * @throws IllegalArgumentException if vc is monomorphic, not a SNP or not bi-allelic.
 
           */
-
     static public boolean isTransition(final VariantContext vc) throws IllegalArgumentException {
         final byte refAllele = vc.getReference().getBases()[0];
         final Collection<Allele> altAlleles = vc.getAlternateAlleles();
@@ -385,7 +388,6 @@ public class VariantContextUtils {
                 || (refAllele == 'C' && altAllele == 'T')
                 || (refAllele == 'T' && altAllele == 'C');
     }
-
 
     /**
      * Returns a newly allocated VC that is the same as VC, but without genotypes
