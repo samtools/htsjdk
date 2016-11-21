@@ -131,6 +131,7 @@ public class CRAMFileBAIIndexTest extends HtsjdkTest {
             Assert.assertEquals(samRecord.getReferenceName(), cramRecord.getReferenceName(), s1 + s2);
             // default 'overlap' is true, so test records intersect the query:
             Assert.assertTrue(CoordMath.overlaps(cramRecord.getAlignmentStart(), cramRecord.getAlignmentEnd(), samRecord.getAlignmentStart(), samRecord.getAlignmentEnd()), s1 + s2);
+            iterator.close();
         }
         samRecordIterator.close();
         reader.close();

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2015 The Broad Institute
+ * Copyright (c) 2015-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,13 +30,16 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Log;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Additional tests for CRAMFileReader are in CRAMFileIndexTest
@@ -48,6 +51,10 @@ public class CRAMFileReaderTest extends HtsjdkTest {
     private static final File CRAM_WITHOUT_CRAI = new File(TEST_DATA_DIR, "cram_query_sorted.cram");
     private static final ReferenceSource REFERENCE = createReferenceSource();
     private static final File INDEX_FILE = new File(TEST_DATA_DIR, "cram_with_crai_index.cram.crai");
+
+    private static final File CRAM_QUERY_WITH_CRAI = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram");
+    private static final File CRAM_QUERY_INDEX = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram.crai");
+    private static final File CRAM_QUERY_REFERENCE = new File(TEST_DATA_DIR, "cram/human_g1k_v37.20.21.10M-10M200k.fasta");
 
 
     @BeforeClass
@@ -228,5 +235,64 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         File indexFile = null;
         CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
         reader.getIndex();
+    }
+
+    @DataProvider(name = "cramTestCases")
+    public Object[][] cramTestPositiveCases() throws IOException {
+        final List<Chunk> chunks = Arrays.asList(new Chunk(0, 59128983), new Chunk(59128983, 59141089));
+        return new Object[][]{
+                {"getIterator", "getIterator", new Class[] {}, new Object[] {}},
+                {"getIterator", "queryUnmapped", new Class[] {}, new Object[] {}},
+                {"queryUnmapped", "getIterator", new Class[] {}, new Object[] {}},
+                {"queryAlignmentStart", "getIterator", new Class[] {String.class, Integer.TYPE}, new Object[] {"20", 1500}},
+                {"query", "getIterator", new Class[] {QueryInterval[].class, Boolean.TYPE},
+                        new Object[] {new QueryInterval[] {new QueryInterval(0, 100009, 100009)}, false}},
+                {"iterator", "getIterator", new Class[] {SAMFileSpan.class}, new Object[] {new BAMFileSpan(chunks)}}
+        };
+    }
+
+    @Test(dataProvider = "cramTestCases", expectedExceptions = InvocationTargetException.class)
+    public void readerShouldThrowIfGetIteratorTwice(final String method1, final String method2,
+                                                    final Class[] cArgs, final Object[] args)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
+        final CRAMFileReader reader = new CRAMFileReader(
+                CRAM_QUERY_WITH_CRAI,
+                CRAM_QUERY_INDEX,
+                new ReferenceSource(CRAM_QUERY_REFERENCE),
+                ValidationStringency.STRICT);
+        reader.getClass().getMethod(method1, cArgs).invoke(reader, args);
+        reader.getClass().getMethod(method2).invoke(reader);
+    }
+
+    @Test(dataProvider = "cramTestCases")
+    public void readerShouldNotThrowIfGetIteratorTwiceAfterClose(final String method1, final String method2,
+                                                                 final Class[] cArgs, final Object[] args)
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, IOException {
+        final CRAMFileReader reader = new CRAMFileReader(
+                CRAM_QUERY_WITH_CRAI,
+                CRAM_QUERY_INDEX,
+                new ReferenceSource(CRAM_QUERY_REFERENCE),
+                ValidationStringency.STRICT);
+        SAMRecordIterator iterator = (SAMRecordIterator) reader.getClass().getMethod(method1, cArgs).invoke(reader, args);
+        iterator.close();
+        reader.getClass().getMethod(method2).invoke(reader);
+    }
+
+    @DataProvider(name = "cramFileReadersOnFiles")
+        public Object[][] cramFileReadersOnFiles() {
+        ReferenceSource referenceSource = new ReferenceSource(CRAM_QUERY_REFERENCE);
+            return new Object[][] {
+                    {new CRAMFileReader(CRAM_QUERY_WITH_CRAI, referenceSource)},
+                    {new CRAMFileReader(CRAM_QUERY_WITH_CRAI, CRAM_QUERY_INDEX, referenceSource)},
+            };
+        }
+
+    @Test(dataProvider = "cramFileReadersOnFiles")
+    public void readerOnFileShouldGetIteratorCorrectly(CRAMFileReader reader) {
+        final SAMRecordIterator samRecordIterator = reader.getIterator();
+        Assert.assertTrue(samRecordIterator.hasNext());
+        while (samRecordIterator.hasNext()) {
+            Assert.assertNotNull(samRecordIterator.next());
+        }
     }
 }

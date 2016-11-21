@@ -41,7 +41,7 @@ import java.util.List;
 
 import htsjdk.samtools.cram.CRAMException;
 
-public class CRAMIterator implements SAMRecordIterator {
+public class CRAMIterator implements CRAMFileReader.IsClosableSAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
     private CramHeader cramHeader;
@@ -52,7 +52,7 @@ public class CRAMIterator implements SAMRecordIterator {
     private int prevSeqId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
     public Container container;
     private SamReader mReader;
-    long firstContainerOffset = 0;
+    final long firstContainerOffset;
     private Iterator<Container> containerIterator;
 
     private ContainerParser parser;
@@ -61,6 +61,7 @@ public class CRAMIterator implements SAMRecordIterator {
     private Iterator<SAMRecord> iterator = Collections.<SAMRecord>emptyList().iterator();
 
     private ValidationStringency validationStringency = ValidationStringency.DEFAULT_STRINGENCY;
+    private boolean isClosed = false;
 
     public ValidationStringency getValidationStringency() {
         return validationStringency;
@@ -74,27 +75,43 @@ public class CRAMIterator implements SAMRecordIterator {
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
 
-    public CRAMIterator(final InputStream inputStream, final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency)
-            throws IOException {
+    CRAMIterator(final InputStream inputStream,
+                 final CRAMReferenceSource referenceSource,
+                 final ValidationStringency validationStringency,
+                 final CramHeader cramHeader) throws IOException {
         if (null == referenceSource) {
             throw new CRAMException("A reference source is required for CRAM files");
         }
         this.countingInputStream = new CountingInputStream(inputStream);
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
-        final CramContainerIterator containerIterator = new CramContainerIterator(this.countingInputStream);
-        cramHeader = containerIterator.getCramHeader();
+        CramContainerIterator containerIterator;
+        if (cramHeader == null) {
+            containerIterator = new CramContainerIterator(this.countingInputStream);
+            this.cramHeader = containerIterator.getCramHeader();
+        } else {
+            containerIterator = new CramContainerIterator(this.countingInputStream, cramHeader);
+            this.cramHeader = cramHeader;
+        }
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(10000);
-        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
-                referenceSource);
-        parser = new ContainerParser(cramHeader.getSamFileHeader());
+        records = new ArrayList<>(10000);
+        normalizer = new CramNormalizer(this.cramHeader.getSamFileHeader(), referenceSource);
+        parser = new ContainerParser(this.cramHeader.getSamFileHeader());
     }
 
-    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates, final ValidationStringency validationStringency)
+    @Deprecated
+    public CRAMIterator(final InputStream inputStream, final CRAMReferenceSource referenceSource, final ValidationStringency validationStringency)
             throws IOException {
+        this(inputStream, referenceSource, validationStringency, null);
+    }
+
+    CRAMIterator(final SeekableStream seekableStream,
+                 final CRAMReferenceSource referenceSource,
+                 final long[] coordinates,
+                 final ValidationStringency validationStringency,
+                 final CramHeader cramHeader) throws IOException {
         if (null == referenceSource) {
             throw new CRAMException("A reference source is required for CRAM files");
         }
@@ -102,18 +119,24 @@ public class CRAMIterator implements SAMRecordIterator {
         this.referenceSource = referenceSource;
         this.validationStringency = validationStringency;
         final CramSpanContainerIterator containerIterator = CramSpanContainerIterator.fromFileSpan(seekableStream, coordinates);
-        cramHeader = containerIterator.getCramHeader();
+        this.cramHeader = (cramHeader == null) ? containerIterator.getCramHeader() : cramHeader;
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(10000);
-        normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
-                referenceSource);
-        parser = new ContainerParser(cramHeader.getSamFileHeader());
+        records = new ArrayList<>(10000);
+        normalizer = new CramNormalizer(this.cramHeader.getSamFileHeader(), referenceSource);
+        parser = new ContainerParser(this.cramHeader.getSamFileHeader());
     }
 
     @Deprecated
-    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates)
+    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates, final ValidationStringency validationStringency)
+            throws IOException {
+        this(seekableStream, referenceSource, coordinates, validationStringency, null);
+    }
+
+    @Deprecated
+    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource,
+                        final long[] coordinates)
             throws IOException {
         this(seekableStream, referenceSource, coordinates, ValidationStringency.DEFAULT_STRINGENCY);
     }
@@ -282,12 +305,7 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public void close() {
         records.clear();
-        //noinspection EmptyCatchBlock
-        try {
-            if (countingInputStream != null)
-                countingInputStream.close();
-        } catch (final IOException e) {
-        }
+        isClosed = true;
     }
 
     @Override
@@ -307,4 +325,8 @@ public class CRAMIterator implements SAMRecordIterator {
         return cramHeader.getSamFileHeader();
     }
 
+    @Override
+    public boolean isClosed() {
+        return isClosed;
+    }
 }

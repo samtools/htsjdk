@@ -40,6 +40,7 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
             SAMRecord record = iterator.next();
             Assert.assertEquals(record.getReferenceName(), sequenceRecord.getSequenceName());
             Assert.assertEquals(record.getAlignmentStart(), 1);
+            iterator.close();
         }
     }
 

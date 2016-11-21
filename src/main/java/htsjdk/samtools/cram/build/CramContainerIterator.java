@@ -20,8 +20,12 @@ public class CramContainerIterator implements Iterator<Container> {
     private long offset = 0;
 
     public CramContainerIterator(final InputStream inputStream) throws IOException {
-        cramHeader = CramIO.readCramHeader(inputStream);
+        this(inputStream, CramIO.readCramHeader(inputStream));
+    }
+
+    public CramContainerIterator(final InputStream inputStream, final CramHeader cramHeader) {
         this.inputStream = inputStream;
+        this.cramHeader = cramHeader;
     }
 
     void readNextContainer() {

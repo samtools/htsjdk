@@ -163,6 +163,7 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
                         samRecord.getAlignmentStart(),
                         samRecord.getAlignmentEnd()),
                         sam1 + sam2);
+                iterator.close();
             }
             Assert.assertEquals(counter, nofMappedReads);
             cramReader.close();

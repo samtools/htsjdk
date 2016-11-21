@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.FakeReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -138,17 +139,20 @@ public class CRAMCRAIIndexerTest extends HtsjdkTest {
         );
         Assert.assertTrue(cramReader.hasIndex());
 
-        Iterator<SAMRecord> it = cramReader.query(new QueryInterval[]{new QueryInterval(0, 0, 5)}, false);
+        CloseableIterator<SAMRecord> it = cramReader.query(new QueryInterval[]{new QueryInterval(0, 0, 5)}, false);
         long count = getIteratorCount(it);
         Assert.assertEquals(count, 1);
+        it.close();
 
         it = cramReader.query(new QueryInterval[]{new QueryInterval(1, 0, 5)}, false);
         count = getIteratorCount(it);
         Assert.assertEquals(count, 3);
+        it.close();
 
         it = cramReader.query(new QueryInterval[]{new QueryInterval(2, 0, 5)}, false);
         count = getIteratorCount(it);
         Assert.assertEquals(count, 2);
+        it.close();
     }
 
     private static SAMRecord createSAMRecord(SAMFileHeader header, int recordIndex, int seqId, int start) {
