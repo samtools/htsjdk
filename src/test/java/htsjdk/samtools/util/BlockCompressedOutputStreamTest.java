@@ -23,12 +23,16 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,11 +41,13 @@ import java.util.zip.Deflater;
 
 public class BlockCompressedOutputStreamTest {
 
+    private static final String HTSJDK_TRIBBLE_RESOURCES = "src/test/resources/htsjdk/tribble/";
+
     @Test
     public void testBasic() throws Exception {
         final File f = File.createTempFile("BCOST.", ".gz");
         f.deleteOnExit();
-        final List<String> linesWritten = new ArrayList<String>();
+        final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
         String s = "Hi, Mom!\n";
@@ -76,11 +82,54 @@ public class BlockCompressedOutputStreamTest {
         bcis2.close();
     }
 
-    @Test
-    public void testOverflow() throws Exception {
+    @DataProvider(name = "seekReadExceptionsData")
+    private Object[][] seekReadExceptionsData()
+    {
+        return new Object[][]{
+                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", FileTruncatedException.class,
+                        BlockCompressedInputStream.PREMATURE_END_MSG + System.getProperty("user.dir") + "/" +
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", true, false, 0},
+                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", IOException.class,
+                        BlockCompressedInputStream.INCORRECT_HEADER_SIZE_MSG + System.getProperty("user.dir") + "/" +
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", true, false, 0},
+                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
+                        BlockCompressedInputStream.CANNOT_SEEK_STREAM_MSG, false, true, 0},
+                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
+                        BlockCompressedInputStream.INVALID_FILE_PTR_MSG + 1000 + " for " + System.getProperty("user.dir") + "/" +
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", true, true, 1000 }
+        };
+    }
+
+    @Test(dataProvider = "seekReadExceptionsData")
+    public void testSeekReadExceptions(final String filePath, final Class c, final String msg, final boolean isFile, final boolean isSeek, final int pos) throws Exception {
+
+        final BlockCompressedInputStream bcis = isFile ?
+                new BlockCompressedInputStream(new File(filePath)) :
+                new BlockCompressedInputStream(new FileInputStream(filePath));
+        boolean haveException = false;
+        try {
+            if ( isSeek ) {
+                bcis.seek(pos);
+            } else {
+                final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis));
+                reader.readLine();
+            }
+        } catch (final Exception e) {
+            if ( e.getClass().equals(c) ) {
+                haveException = true;
+                Assert.assertEquals(e.getMessage(), msg);
+            }
+        }
+
+        if ( !haveException ) {
+            Assert.fail("Expected " + c.getSimpleName());
+        }
+    }
+
+    @Test public void testOverflow() throws Exception {
         final File f = File.createTempFile("BCOST.", ".gz");
         f.deleteOnExit();
-        final List<String> linesWritten = new ArrayList<String>();
+        final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
         final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
         Random r = new Random(15555);
