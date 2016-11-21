@@ -37,18 +37,7 @@ import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -1701,10 +1690,8 @@ public class VariantContext implements Feature, Serializable {
             return getAlternateAllele(0);
 
         return getAlternateAlleles().stream()
-                .map(allele -> new Tuple<>(allele, getCalledChrCount(allele)))
-                .max((alleleAndCount1, alleleAndCount2) -> Integer.compare(alleleAndCount1.b, alleleAndCount2.b))
-                .get()
-                .a;
+                .max(Comparator.comparing(this::getCalledChrCount))
+                .orElse(null);
     }
 
     /**

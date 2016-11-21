@@ -468,6 +468,8 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(4, vc.getCalledChrCount(T));
         Assert.assertEquals(3, vc.getCalledChrCount(ATC));
         Assert.assertEquals(2, vc.getCalledChrCount(Allele.NO_CALL));
+
+        Assert.assertEquals(T, vc.getAltAlleleWithHighestAlleleCount());
     }
 
     @Test
@@ -491,6 +493,16 @@ public class VariantContextUnitTest extends VariantBaseTest {
             Assert.assertEquals(4, vc.getCalledChrCount(Aref));
             Assert.assertEquals(0, vc.getCalledChrCount(T));
             Assert.assertEquals(2, vc.getCalledChrCount(Allele.NO_CALL));
+
+            //bi allelic, only one alt allele
+            Allele expected;
+            if (alleles.size()>1) {
+                expected = alleles.get(1);
+            } else {
+                expected = null;
+            }
+
+            Assert.assertEquals( vc.getAltAlleleWithHighestAlleleCount(), expected);
         }
     }
 
@@ -603,6 +615,21 @@ public class VariantContextUnitTest extends VariantBaseTest {
         Assert.assertEquals(2, vc14.getCalledChrCount(Aref));
         Assert.assertEquals(4, vc125.getCalledChrCount(Aref));
     }
+
+    @Test
+    public void testMonomorphicVariant() {
+        Genotype g1 = GenotypeBuilder.create("AA", Arrays.asList(Aref, Aref));
+        Genotype g2 = GenotypeBuilder.create("BB", Arrays.asList(Aref, Allele.NO_CALL));
+        Genotype g3 = GenotypeBuilder.create("CC", Arrays.asList(Allele.NO_CALL,Allele.NO_CALL));
+        GenotypesContext gc = GenotypesContext.create(g1, g2, g3);
+        VariantContext vc = new VariantContextBuilder("genotypes", snpLoc, snpLocStart, snpLocStop, Collections.singletonList(Aref)).genotypes(gc).make();
+
+        Assert.assertEquals(vc.getType(), VariantContext.Type.NO_VARIATION);
+        Assert.assertNull(vc.getAltAlleleWithHighestAlleleCount());
+        Assert.assertEquals(vc.getCalledChrCount(Aref), 3);
+
+    }
+
 
     public void testGetGenotypeMethods() {
         Genotype g1 = GenotypeBuilder.create("AA", Arrays.asList(Aref, Aref));
