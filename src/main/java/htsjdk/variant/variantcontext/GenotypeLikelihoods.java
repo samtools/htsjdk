@@ -25,16 +25,11 @@
 
 package htsjdk.variant.variantcontext;
 
+import java.util.*;
+
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.vcf.VCFConstants;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class GenotypeLikelihoods {
     private final static int NUM_LIKELIHOODS_CACHE_N_ALLELES = 5;
@@ -257,7 +252,8 @@ public class GenotypeLikelihoods {
             String[] strings = GLString.split(",");
             double[] likelihoodsAsVector = new double[strings.length];
             for ( int i = 0; i < strings.length; i++ ) {
-                likelihoodsAsVector[i] = Double.parseDouble(strings[i]);
+                String string = strings[i];
+                likelihoodsAsVector[i] = VCFConstants.MISSING_VALUE_v4.equals(string) ? Double.NaN : Double.parseDouble(strings[i]);
             }
             return likelihoodsAsVector;
         }
