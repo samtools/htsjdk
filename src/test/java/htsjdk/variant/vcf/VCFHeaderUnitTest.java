@@ -196,7 +196,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCFHeaderAddFilterLine() {
         final VCFHeader header = getHiSeqVCFHeader();
-        final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine");
+        final String filterDesc = "TestFilterLine Description";
+        final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine",filterDesc);
+        Assert.assertEquals(filterDesc,filterLine.getDescription());
         header.addMetaDataLine(filterLine);
 
         Assert.assertTrue(header.getFilterLines().contains(filterLine), "TestFilterLine not found in filter header lines");
