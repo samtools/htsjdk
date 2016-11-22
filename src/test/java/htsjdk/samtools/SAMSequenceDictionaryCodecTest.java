@@ -40,7 +40,7 @@ import static org.testng.Assert.*;
  */
 public class SAMSequenceDictionaryCodecTest {
 
-    private static final Random RANDOM = new Random();
+    private static final Random random = new Random();
     private SAMSequenceDictionary dictionary;
     private StringWriter writer;
     private SAMSequenceDictionaryCodec codec;
@@ -51,7 +51,7 @@ public class SAMSequenceDictionaryCodecTest {
         String[] seqs = new String[]{"chr1", "chr2", "chr12", "chr16", "chrX"};
         dictionary = new SAMSequenceDictionary();
         for (String seq : seqs) {
-            dictionary.addSequence(new SAMSequenceRecord(seq, RANDOM.nextInt(10_000_000)));
+            dictionary.addSequence(new SAMSequenceRecord(seq, random.nextInt(10_000_000)));
         }
         writer = new StringWriter(10);
         bufferedWriter = new BufferedWriter(writer);

@@ -31,14 +31,45 @@ import java.io.BufferedWriter;
  * "On the fly" codec SAMSequenceDictionaryCodec.
  * Encodes each sequence and directly writes it to the Dictionary file.
  *
+ * To use this class you should provide BufferedWriter to it, and so you should close it as you stop using this class.
+ * You can work with this class as shown below.
+ *
+ * Example of using this class:
+ *
+ * List<SAMSequenceRecord> dict = ...;
+ *
+ * //open BufferedReader and close in try-with-resources
+ * try(BufferedWriter writer = new BufferedWriter(new FileWriter("path/to/file"))) {
+ *      SAMSequenceDictionaryCodec codec = new SAMSequenceDictionaryCodec(writer);
+ *
+ *      //we have list of sequences, so encode header line and after that encode each sequence
+ *      codec.encodeHeaderLine(false);
+ *      dict.forEach(codec::encodeSequenceRecord);
+ *}
+ *
+ * or
+ *
+ * SAMSequenceDictionary dict = ...;
+ *
+ * //open BufferedReader and close in try-with-resources
+ * try(BufferedWriter writer = new BufferedWriter(new FileWriter("path/to/file"))) {
+ *      SAMSequenceDictionaryCodec codec = new SAMSequenceDictionaryCodec(writer);
+ *
+ *      //we have complete SAMSequenceDictionary, so just encode it.
+ *      codec.encode(dict);
+ *}
+ *
  * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 public class SAMSequenceDictionaryCodec {
+
+    private static final SAMFileHeader EMPTY_HEADER = new SAMFileHeader();
 
     private final SAMTextHeaderCodec codec;
 
     public SAMSequenceDictionaryCodec(final BufferedWriter writer) {
         codec = new SAMTextHeaderCodec();
+        codec.setmFileHeader(EMPTY_HEADER);
         codec.setWriter(writer);
     }
 
@@ -55,7 +86,6 @@ public class SAMSequenceDictionaryCodec {
      * @param keepExistingVersionNumber boolean flag to keep existing version number.
      */
     public void encodeHeaderLine(final boolean keepExistingVersionNumber) {
-        codec.setmFileHeader(new SAMFileHeader());
         codec.encodeHeaderLine(keepExistingVersionNumber);
     }
 
