@@ -29,8 +29,10 @@ import htsjdk.samtools.util.StringLineReader;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.sound.sampled.Line;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Random;
 
 import static org.testng.Assert.*;
@@ -53,24 +55,69 @@ public class SAMSequenceDictionaryCodecTest {
         for (String seq : seqs) {
             dictionary.addSequence(new SAMSequenceRecord(seq, random.nextInt(10_000_000)));
         }
-        writer = new StringWriter(10);
+        writer = new StringWriter();
         bufferedWriter = new BufferedWriter(writer);
         codec = new SAMSequenceDictionaryCodec(bufferedWriter);
     }
 
     @Test
-    public void testEncodeDecode() throws Exception {
-        LineReader reader = null;
+    public void testEncodeDecodeDictionary() throws Exception {
+        LineReader readerOne = null;
+        LineReader readerTwo = null;
         try {
             codec.encodeHeaderLine(false);
             codec.encode(dictionary);
             bufferedWriter.close();
-            reader = new StringLineReader(writer.toString());
-            SAMSequenceDictionary actual = codec.decode(reader, null);
+            readerOne = new StringLineReader(writer.toString());
+            SAMSequenceDictionary actual = codec.decode(readerOne, null);
             assertEquals(actual, dictionary);
+
+            readerTwo = new StringLineReader(writer.toString());
+
+            String line = readerTwo.readLine();
+            assertTrue(line.startsWith("@HD"));
+
+            line = readerTwo.readLine();
+            while (line != null) {
+                assertTrue(line.startsWith("@SQ"));
+                line = readerTwo.readLine();
+            }
         } finally {
-            assert reader != null;
-            reader.close();
+            assert readerOne != null;
+            assert readerTwo != null;
+            readerOne.close();
+            readerTwo.close();
+        }
+    }
+
+    @Test
+    public void testEncodeDecodeListOfSeqs() throws Exception {
+        LineReader readerOne = null;
+        LineReader readerTwo = null;
+
+        try {
+            List<SAMSequenceRecord> sequences = dictionary.getSequences();
+            codec.encodeHeaderLine(false);
+            sequences.forEach(codec::encodeSequenceRecord);
+            bufferedWriter.close();
+            readerOne = new StringLineReader(writer.toString());
+            SAMSequenceDictionary actual = codec.decode(readerOne, null);
+            assertEquals(actual, dictionary);
+            readerTwo = new StringLineReader(writer.toString());
+
+            String line = readerTwo.readLine();
+            assertTrue(line.startsWith("@HD"));
+
+            line = readerTwo.readLine();
+            while (line != null) {
+                assertTrue(line.startsWith("@SQ"));
+                line = readerTwo.readLine();
+            }
+        } finally {
+            assert readerOne != null;
+            assert readerTwo != null;
+            readerOne.close();
+            readerTwo.close();
         }
     }
 }

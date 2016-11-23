@@ -55,7 +55,8 @@ import java.io.BufferedWriter;
  * try(BufferedWriter writer = new BufferedWriter(new FileWriter("path/to/file"))) {
  *      SAMSequenceDictionaryCodec codec = new SAMSequenceDictionaryCodec(writer);
  *
- *      //we have complete SAMSequenceDictionary, so just encode it.
+ *      //we have complete SAMSequenceDictionary, so encode header line and {@link SAMSequenceDictionary}.
+ *      codec.encodeHeaderLine(false);
  *      codec.encode(dict);
  *}
  *
@@ -104,7 +105,6 @@ public class SAMSequenceDictionaryCodec {
      * @param dictionary object to be converted to text.
      */
     public void encode(final SAMSequenceDictionary dictionary) {
-        encodeHeaderLine(false);
         dictionary.getSequences().forEach(this::encodeSequenceRecord);
     }
 
