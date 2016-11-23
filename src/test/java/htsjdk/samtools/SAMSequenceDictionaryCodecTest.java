@@ -65,7 +65,6 @@ public class SAMSequenceDictionaryCodecTest {
         LineReader readerOne = null;
         LineReader readerTwo = null;
         try {
-            codec.encodeHeaderLine(false);
             codec.encode(dictionary);
             bufferedWriter.close();
             readerOne = new StringLineReader(writer.toString());
