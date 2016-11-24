@@ -90,24 +90,6 @@ public class HTTPHelper implements URLHelper {
         return new WrapperInputStream(connection, connection.getInputStream());
     }
 
-
-    /**
-     * Open an input stream for the requested byte range.  Its the client's responsibility to close the stream.
-     *
-     * @param start start of range in bytes
-     * @param end   end of range ni bytes
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    public InputStream openInputStreamForRange(long start, long end) throws IOException {
-
-        HttpURLConnection connection = openConnection();
-        String byteRange = "bytes=" + start + "-" + end;
-        connection.setRequestProperty("Range", byteRange);
-        return new WrapperInputStream(connection, connection.getInputStream());
-    }
-
     private HttpURLConnection openConnection() throws IOException {
         HttpURLConnection connection;
         if (proxy == null) {

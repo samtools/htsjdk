@@ -21,6 +21,7 @@ package htsjdk.tribble.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import javax.naming.OperationNotSupportedException;
 
 /**
  * Interface defining a helper class for dealing with URL resources.  Purpose of this class is to provide the
@@ -38,18 +39,6 @@ public interface URLHelper {
     long getContentLength() throws IOException;
 
     InputStream openInputStream() throws IOException;
-
-    /**
-     * May throw an OperationUnsupportedException
-     * @deprecated Will be removed in a future release, as is somewhat fragile
-     * and not used.
-     * @param start
-     * @param end
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    InputStream openInputStreamForRange(long start, long end) throws IOException;
 
     public boolean exists() throws IOException;
 
