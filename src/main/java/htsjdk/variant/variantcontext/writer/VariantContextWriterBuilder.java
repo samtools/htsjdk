@@ -53,7 +53,6 @@ import java.util.EnumSet;
  * 
  * <p>
  * Provides methods for creating <code>VariantContextWriter</code>s using the Builder pattern.
- * Replaces <code>VariantContextWriterFactory</code>.
  * </p>
  * <p>
  * The caller must choose an output file or an output stream for the <code>VariantContextWriter</code> to write to.
