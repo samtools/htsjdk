@@ -57,7 +57,7 @@ public class AbstractLocusInfoTest {
     public void testConstructor() {
         AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 1);
         assertEquals("chrM", info.getSequenceName());
-        assertEquals(0, info.getRecordAndPositions().size());
+        assertEquals(0, info.getRecordAndOffsets().size());
         assertEquals(100, info.getSequenceLength());
         assertEquals(1, info.getPosition());
     }
@@ -67,13 +67,13 @@ public class AbstractLocusInfoTest {
         AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 10);
         info.add(typedRecordAndOffset);
         info.add(typedRecordAndOffsetEnd);
-        assertEquals(2, info.getRecordAndPositions().size());
-        assertEquals(typedRecordAndOffset, info.getRecordAndPositions().get(0));
-        assertEquals(typedRecordAndOffsetEnd, info.getRecordAndPositions().get(1));
+        assertEquals(2, info.getRecordAndOffsets().size());
+        assertEquals(typedRecordAndOffset, info.getRecordAndOffsets().get(0));
+        assertEquals(typedRecordAndOffsetEnd, info.getRecordAndOffsets().get(1));
         assertEquals(10, info.getPosition());
-        assertEquals('A', info.getRecordAndPositions().get(0).getReadBase());
-        assertEquals('A', info.getRecordAndPositions().get(1).getReadBase());
-        assertEquals(30, info.getRecordAndPositions().get(0).getBaseQuality());
-        assertEquals(30, info.getRecordAndPositions().get(1).getBaseQuality());
+        assertEquals('A', info.getRecordAndOffsets().get(0).getReadBase());
+        assertEquals('A', info.getRecordAndOffsets().get(1).getReadBase());
+        assertEquals(30, info.getRecordAndOffsets().get(0).getBaseQuality());
+        assertEquals(30, info.getRecordAndOffsets().get(1).getBaseQuality());
     }
 }

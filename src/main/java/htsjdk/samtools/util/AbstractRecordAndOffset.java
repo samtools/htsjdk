@@ -42,7 +42,7 @@ public class AbstractRecordAndOffset {
      */
     protected final SAMRecord record;
     /**
-     * Zero-based offset into the read corresponding to the current position in AbstractLocusInfo
+     * Zero-based offset in the read corresponding to the current position in AbstractLocusInfo
      */
     protected final int offset;
 
@@ -121,15 +121,15 @@ public class AbstractRecordAndOffset {
         return record.getBaseQualities()[offset];
     }
 
-    /**
-     * @param position in the reference
-     * @return base quality of a read base, corresponding to a given reference position
-     */
-    public byte getBaseQuality(int position) {
-        validateOffset(position - offset, record.getBaseQualities());
-        return record.getBaseQualities()[position - offset];
-    }
-
+//    /**
+//     * @param position in the reference
+//     * @return base quality of a read base, corresponding to a given reference position
+//     */
+//    public byte getBaseQuality(int position) {
+//        validateOffset(position - offset, record.getBaseQualities());
+//        return record.getBaseQualities()[position - offset];
+//    }
+//
     protected void validateOffset(int offset, final byte[] array) {
         if (offset < 0 || offset >= array.length) {
             throw new IllegalArgumentException("The requested position is not covered by this " + this.getClass().getSimpleName() +

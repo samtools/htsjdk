@@ -95,9 +95,19 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
     }
 
     /**
+     * @deprecated since name of the method can be confusing, new implementation should be used
+     *          {@code getRecordAndOffsets()}
      * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
      */
+    @Deprecated
     public List<E> getRecordAndPositions() {
+        return Collections.unmodifiableList(recordAndOffsets);
+    }
+
+    /**
+     * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
+     */
+    public List<E> getRecordAndOffsets() {
         return Collections.unmodifiableList(recordAndOffsets);
     }
 
@@ -131,6 +141,6 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
      * @return <code>true</code> if RecordAndOffset list is empty;
      */
     public boolean isEmpty() {
-        return getRecordAndPositions().isEmpty();
+        return getRecordAndOffsets().isEmpty();
     }
 }

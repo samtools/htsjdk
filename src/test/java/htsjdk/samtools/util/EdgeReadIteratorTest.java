@@ -51,10 +51,10 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         for (final AbstractLocusInfo<EdgingRecordAndOffset> li : sli) {
             if (pos == 1 || pos == 37) {
                 assertEquals(pos++, li.getPosition());
-                assertEquals(2, li.getRecordAndPositions().size());
+                assertEquals(2, li.getRecordAndOffsets().size());
             } else {
                 assertEquals(pos++, li.getPosition());
-                assertEquals(0, li.getRecordAndPositions().size());
+                assertEquals(0, li.getRecordAndOffsets().size());
             }
         }
 
@@ -87,7 +87,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             } else {
                 expectedReads = 0;
             }
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReads);
         }
         Assert.assertEquals(pos, 100001);
     }
@@ -109,11 +109,11 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             AbstractLocusInfo<EdgingRecordAndOffset> info = sli.next();
             int pos = info.getPosition();
             if (pos == startPosition || pos == startPosition + 6 || pos == startPosition + 12 || pos == startPosition + 16) {
-                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(0).getType());
-                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndPositions().get(1).getType());
+                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndOffsets().get(0).getType());
+                assertEquals(EdgingRecordAndOffset.Type.BEGIN, info.getRecordAndOffsets().get(1).getType());
             } else if (pos == startPosition + 3 || pos == startPosition + 9 || pos == startPosition + 15 || pos == startPosition + 34) {
-                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndPositions().get(0).getType());
-                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndPositions().get(1).getType());
+                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndOffsets().get(0).getType());
+                assertEquals(EdgingRecordAndOffset.Type.END, info.getRecordAndOffsets().get(1).getType());
             }
         }
     }
@@ -196,16 +196,16 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         i = 0;
         for (final AbstractLocusInfo<EdgingRecordAndOffset> li : sli) {
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedDepths[i]);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedDepths[i]);
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReadOffsets[i].length);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
-                Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j]);
+                Assert.assertEquals(li.getRecordAndOffsets().get(j).getOffset(), expectedReadOffsets[i][j]);
                 if (start.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), EdgingRecordAndOffset.Type.BEGIN);
+                    Assert.assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.BEGIN);
                 }
                 if (end.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndPositions().get(j).getType(), EdgingRecordAndOffset.Type.END);
+                    Assert.assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.END);
                 }
             }
             ++i;
@@ -258,7 +258,7 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         while (iterator.hasNext()) {
             AbstractLocusInfo<EdgingRecordAndOffset> next = iterator.next();
             assertEquals(locusPosition++, next.getPosition());
-            assertEquals(0, next.getRecordAndPositions().size());
+            assertEquals(0, next.getRecordAndOffsets().size());
         }
         assertEquals(61, locusPosition);
     }
@@ -280,12 +280,12 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 5) {
-                assertEquals(2, next.getRecordAndPositions().size());
-                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
+                assertEquals(2, next.getRecordAndOffsets().size());
+                for (EdgingRecordAndOffset record : next.getRecordAndOffsets()) {
                     assertEquals(11, record.getLength());
                 }
             } else {
-                assertEquals(0, next.getRecordAndPositions().size());
+                assertEquals(0, next.getRecordAndOffsets().size());
             }
         }
         assertEquals(16, locusPosition);
@@ -314,19 +314,19 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 40) {
-                assertEquals(1, next.getRecordAndPositions().size());
-                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
+                assertEquals(1, next.getRecordAndOffsets().size());
+                for (EdgingRecordAndOffset record : next.getRecordAndOffsets()) {
                     assertEquals(36, record.getLength());
                     assertEquals(EdgingRecordAndOffset.Type.BEGIN, record.getType());
                 }
             } else if (position == 76) {
-                assertEquals(1, next.getRecordAndPositions().size());
-                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
+                assertEquals(1, next.getRecordAndOffsets().size());
+                for (EdgingRecordAndOffset record : next.getRecordAndOffsets()) {
                     assertEquals(36, record.getLength());
                     assertEquals(EdgingRecordAndOffset.Type.END, record.getType());
                 }
             } else {
-                assertEquals(0, next.getRecordAndPositions().size());
+                assertEquals(0, next.getRecordAndOffsets().size());
             }
         }
         assertEquals(81, locusPosition);
@@ -358,20 +358,20 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
             int position = next.getPosition();
             assertEquals(locusPosition++, position);
             if (position == 5 || position == 14) {
-                assertEquals(1, next.getRecordAndPositions().size());
-                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
+                assertEquals(1, next.getRecordAndOffsets().size());
+                for (EdgingRecordAndOffset record : next.getRecordAndOffsets()) {
                     assertEquals(expectedLength[i], record.getLength());
                     assertEquals(EdgingRecordAndOffset.Type.BEGIN, record.getType());
                 }
             } else if (position == 11) {
-                assertEquals(1, next.getRecordAndPositions().size());
-                for (EdgingRecordAndOffset record : next.getRecordAndPositions()) {
+                assertEquals(1, next.getRecordAndOffsets().size());
+                for (EdgingRecordAndOffset record : next.getRecordAndOffsets()) {
                     assertEquals(expectedLength[i], record.getLength());
                     assertEquals(EdgingRecordAndOffset.Type.END, record.getType());
                 }
                 i++;
             } else {
-                assertEquals(0, next.getRecordAndPositions().size());
+                assertEquals(0, next.getRecordAndOffsets().size());
             }
         }
         assertEquals(21, locusPosition);

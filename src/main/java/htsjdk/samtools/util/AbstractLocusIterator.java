@@ -51,9 +51,8 @@ import java.util.List;
  * By default duplicate reads and non-primary alignments are filtered out.  Filtering may be changed
  * via setSamFilters().
  *
- * @author alecw@broadinstitute.org
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
- * 
+ * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 
 public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K extends AbstractLocusInfo<T>> implements Iterable<K>, CloseableIterator<K> {
@@ -347,7 +346,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
 
     private boolean surpassedAccumulationThreshold() {
-        final boolean surpassesThreshold = !accumulator.isEmpty() && accumulator.get(0).getRecordAndPositions().size() >= maxReadsToAccumulatePerLocus;
+        final boolean surpassesThreshold = !accumulator.isEmpty() && accumulator.get(0).getRecordAndOffsets().size() >= maxReadsToAccumulatePerLocus;
         if (surpassesThreshold && !enforcedAccumulationLimit) {
             LOG.warn("We have encountered greater than " + maxReadsToAccumulatePerLocus + " reads at position " + accumulator.get(0).toString() + " and will ignore the remaining reads at this position.  Note that further warnings will be suppressed.");
             enforcedAccumulationLimit = true;

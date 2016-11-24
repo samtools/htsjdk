@@ -60,11 +60,4 @@ public class AbstractRecordAndOffsetTest {
         assertEquals(0, abstractRecordAndOffset.getOffset());
         assertEquals(-1, abstractRecordAndOffset.getRefPos());
     }
-
-    @Test
-    public void testGetQualityByReferenceIndex(){
-        AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0, 10, 0);
-        assertEquals(80, abstractRecordAndOffset.getBaseQuality(5));
-    }
-
 }

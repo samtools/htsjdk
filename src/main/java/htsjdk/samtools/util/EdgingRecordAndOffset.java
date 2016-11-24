@@ -54,6 +54,8 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
 
     public abstract Type getType();
 
+    public abstract byte getBaseQuality(int position);
+
     public static EdgingRecordAndOffset createBeginRecord(SAMRecord record, int offset, int length, int refPos) {
         return new StartEdgingRecordAndOffset(record, offset, length, refPos);
     }
@@ -101,7 +103,6 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
          * @param position in the reference
          * @return base quality of a read base, corresponding to a given reference position
          */
-        @Override
         public byte getBaseQuality(int position) {
             int rOffset = getRelativeOffset(position);
             byte[] baseQualities = record.getBaseQualities();
@@ -173,7 +174,6 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
          * @param position in the reference
          * @return base quality of a read base, corresponding to a given reference position
          */
-        @Override
         public byte getBaseQuality(int position) {
             return start.getBaseQuality(position);
         }
