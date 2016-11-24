@@ -193,12 +193,8 @@ public class CountRecords {
         //    return new VCFCodec();
         if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();
-        //if (featureFile.getName().endsWith(".snp") || featureFile.getName().endsWith(".rod") )
-        //    return new OldDbSNPCodec();
         if (featureFile.getName().endsWith(".geli.calls") || featureFile.getName().endsWith(".geli") )
             return new GeliTextCodec();
-        //if (featureFile.getName().endsWith(".txt") || featureFile.getName().endsWith(".TXT") )
-        //    return new SoapSNPCodec();
         throw new IllegalArgumentException("Unable to determine correct file type based on the file name, for file -> " + featureFile);
     }
 }
