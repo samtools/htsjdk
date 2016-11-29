@@ -136,7 +136,7 @@ task testSRA(type: Test) {
 
 task wrapper(type: Wrapper) {
     description = "Regenerate the gradle wrapper"
-    gradleVersion = '3.1'
+    gradleVersion = '3.2.1'
 }
 
 // This is a hack to disable the java 8 default javadoc lint until we fix the html formatting
