@@ -116,24 +116,6 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
     }
 
-    BAMFileReader(final InputStream stream,
-        final SeekableStream indexStream,
-        final boolean eagerDecode,
-        final boolean useAsynchronousIO,
-        final ValidationStringency validationStringency,
-        final SAMRecordFactory factory)
-        throws IOException {
-        this.useAsynchronousIO = useAsynchronousIO;
-        mIndexStream = indexStream;
-        mIsSeekable = true;
-        mCompressedInputStream = new BlockCompressedInputStream(stream);
-        mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
-        this.eagerDecode = eagerDecode;
-        this.mValidationStringency = validationStringency;
-        this.samRecordFactory = factory;
-        this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
-    }
-
     /**
      * Prepare to read BAM from a file (seekable)
      * @param file source of bytes.

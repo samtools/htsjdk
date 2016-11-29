@@ -42,10 +42,6 @@ dependencies {
     compile "org.tukaani:xz:1.5"
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
 
-    // temporary, for testing
-    compile 'com.google.cloud:google-cloud-nio:0.5.1:shaded'
-
-
     testCompile "org.testng:testng:6.9.9"
 }
 
@@ -54,7 +50,7 @@ targetCompatibility = 1.8
 
 final isRelease = Boolean.getBoolean("release")
 final gitVersion = gitVersion().replaceAll(".dirty", "")
-version = isRelease ? gitVersion : gitVersion + "-B-" + "-SNAPSHOT"
+version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
 group = 'com.github.samtools'
