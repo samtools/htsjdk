@@ -116,6 +116,24 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
     }
 
+    BAMFileReader(final InputStream stream,
+        final SeekableStream indexStream,
+        final boolean eagerDecode,
+        final boolean useAsynchronousIO,
+        final ValidationStringency validationStringency,
+        final SAMRecordFactory factory)
+        throws IOException {
+        this.useAsynchronousIO = useAsynchronousIO;
+        mIndexStream = indexStream;
+        mIsSeekable = true;
+        mCompressedInputStream = new BlockCompressedInputStream(stream);
+        mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
+        this.eagerDecode = eagerDecode;
+        this.mValidationStringency = validationStringency;
+        this.samRecordFactory = factory;
+        this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, null);
+    }
+
     /**
      * Prepare to read BAM from a file (seekable)
      * @param file source of bytes.
@@ -136,6 +154,31 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         }
         // Provide better error message when there is an error reading.
         mStream.setInputFileName(file.getAbsolutePath());
+    }
+
+
+
+    private BAMFileReader(final File file,
+        final SeekableStream indexStream,
+        final boolean eagerDecode,
+        final boolean useAsynchronousIO,
+        final ValidationStringency validationStringency,
+        final SAMRecordFactory factory,
+        String onlyThereSoTheSignatureIsntAmbiguous)
+        throws IOException {
+        this(new BlockCompressedInputStream(file), indexStream, eagerDecode, useAsynchronousIO, indexStream.getSource(), validationStringency, factory);
+        // Provide better error message when there is an error reading.
+        mStream.setInputFileName(file.getAbsolutePath());
+    }
+
+    static BAMFileReader fromFileAndSeekable(final File file,
+        final SeekableStream indexStream,
+        final boolean eagerDecode,
+        final boolean useAsynchronousIO,
+        final ValidationStringency validationStringency,
+        final SAMRecordFactory factory)
+        throws IOException {
+        return new BAMFileReader(file, indexStream, eagerDecode, useAsynchronousIO, validationStringency, factory, "please");
     }
 
     BAMFileReader(final SeekableStream strm,

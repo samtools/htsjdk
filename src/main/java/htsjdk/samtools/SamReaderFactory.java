@@ -311,10 +311,25 @@ public abstract class SamReaderFactory {
                     if (SamStreams.isBAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
                             // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                            primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            if (indexFile!=null) {
+                                primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            } else {
+                                // index is not representable as a file (perhaps it's a NIO Path), get the stream instead.
+                                // do not close bufferedStream because that's the same stream we're about to pass on to the BAMFileReader
+                                // (asUnbufferedSeekableStream does not re-open). Instead, rewind it to the beginning.
+                                SeekableStream sourceSeekable = data.asUnbufferedSeekableStream();
+                                sourceSeekable.seek(0);
+                                primitiveSamReader = new BAMFileReader(
+                                    sourceSeekable, indexMaybe.asUnbufferedSeekableStream(), false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            }
                         } else {
                             bufferedStream.close();
-                            primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            if (indexFile!=null) {
+                                primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            } else {
+                                // index is not representable as a file (perhaps it's a NIO Path), get the stream instead.
+                                primitiveSamReader = BAMFileReader.fromFileAndSeekable(sourceFile, indexMaybe.asUnbufferedSeekableStream(), false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            }
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
