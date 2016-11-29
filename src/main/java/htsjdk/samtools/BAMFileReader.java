@@ -212,7 +212,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                           final SAMRecordFactory factory)
         throws IOException {
         mIndexStream = indexStream;
-        mIsSeekable = true;
+        mIsSeekable = null != indexStream;
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
