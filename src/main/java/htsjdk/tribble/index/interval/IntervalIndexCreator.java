@@ -42,14 +42,14 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
      */
     private int featuresPerInterval = DEFAULT_FEATURE_COUNT;
 
-    private final LinkedList<ChrIndex> chrList = new LinkedList<ChrIndex>();
+    private final LinkedList<ChrIndex> chrList = new LinkedList<>();
 
     /**
      * Instance variable for the number of features we currently are storing in the interval
      */
     private int featureCount = 0;
 
-    private final ArrayList<MutableInterval> intervals = new ArrayList<MutableInterval>();
+    private final ArrayList<MutableInterval> intervals = new ArrayList<>();
 
     File inputFile;
 

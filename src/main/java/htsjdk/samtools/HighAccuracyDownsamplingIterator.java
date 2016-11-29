@@ -44,7 +44,7 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
     private final Iterator<SAMRecord> underlyingIterator;
     private final Random random;
     private SAMRecord nextRecord;
-    private final Map<String, Boolean> decisions = new HashMap<String, Boolean>();
+    private final Map<String, Boolean> decisions = new HashMap<>();
 
     private double targetAccuracy = 0.0001;
     private long totalTemplates, keptTemplates;
@@ -143,8 +143,8 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
      */
     protected boolean bufferNextChunkOfRecords(final double proportion, final double accuracy) {
         final int templatesToRead = (int) Math.ceil(1 / accuracy);
-        final Set<String> names = new HashSet<String>();
-        final List<SAMRecord> recs = new ArrayList<SAMRecord>(templatesToRead);
+        final Set<String> names = new HashSet<>();
+        final List<SAMRecord> recs = new ArrayList<>(templatesToRead);
 
         readFromUnderlyingIterator(recs, names, templatesToRead);
 
@@ -154,7 +154,7 @@ class HighAccuracyDownsamplingIterator extends DownsamplingIterator {
 
         // Randomly shuffle a list of all the template names, and then remove some from the set
         final int templatesToDiscard = templatesRead - templatesToKeep;
-        final List<String> tmp    = new ArrayList<String>(names);
+        final List<String> tmp    = new ArrayList<>(names);
         Collections.shuffle(tmp, this.random);
         for (int i = 0; i < templatesToDiscard; ++i) names.remove(tmp.get(i));
 

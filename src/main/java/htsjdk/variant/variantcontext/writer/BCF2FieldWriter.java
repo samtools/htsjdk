@@ -175,7 +175,7 @@ public abstract class BCF2FieldWriter {
         @Override
         public void start(final BCF2Encoder encoder, final VariantContext vc) throws IOException {
             // the only value that is dynamic are integers
-            final List<Integer> values = new ArrayList<Integer>(vc.getNSamples());
+            final List<Integer> values = new ArrayList<>(vc.getNSamples());
             for ( final Genotype g : vc.getGenotypes() ) {
                 for ( final Integer i : BCF2Utils.toList(Integer.class, g.getExtendedAttribute(getField(), null)) ) {
                     if ( i != null ) values.add(i);
@@ -243,7 +243,7 @@ public abstract class BCF2FieldWriter {
     }
 
     public static class GTWriter extends GenotypesWriter {
-        final Map<Allele, Integer> alleleMapForTriPlus = new HashMap<Allele, Integer>(5);
+        final Map<Allele, Integer> alleleMapForTriPlus = new HashMap<>(5);
         Allele ref, alt1;
 
         public GTWriter(final VCFHeader header, final BCF2FieldEncoder fieldEncoder) {

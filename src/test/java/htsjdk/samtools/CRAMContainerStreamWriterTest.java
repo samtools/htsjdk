@@ -31,7 +31,7 @@ public class CRAMContainerStreamWriterTest {
     }
 
     private List<SAMRecord> createRecords(int count) {
-        final List<SAMRecord> list = new ArrayList<SAMRecord>(count);
+        final List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new IllegalStateException("Read group expected in the header");

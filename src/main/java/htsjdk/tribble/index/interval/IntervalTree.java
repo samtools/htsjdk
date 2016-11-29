@@ -80,7 +80,7 @@ public class IntervalTree {
             return Collections.emptyList();
         }
 
-        List<Interval> results = new ArrayList<Interval>();
+        List<Interval> results = new ArrayList<>();
         searchAll(interval, root(), results);
         return results;
     }
@@ -112,7 +112,7 @@ public class IntervalTree {
         if (root().isNull()) {
             return Collections.emptyList();
         }
-        List<Interval> results = new ArrayList<Interval>(size);
+        List<Interval> results = new ArrayList<>(size);
         getAll(root(), results);
         return results;
     }
@@ -499,7 +499,7 @@ public class IntervalTree {
         public String toString() {
 
             // Make some shorthand for the nodes
-            Map<Interval, Integer> keys = new LinkedHashMap<Interval, Integer>();
+            Map<Interval, Integer> keys = new LinkedHashMap<>();
 
             if (this == NIL) {
                 return "nil";

@@ -30,7 +30,7 @@ public class CRAIIndexTest {
 
     @Test
     public void testFind() throws IOException, CloneNotSupportedException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final List<CRAIEntry> index = new ArrayList<>();
 
         final int sequenceId = 1;
         CRAIEntry e = new CRAIEntry();
@@ -105,7 +105,7 @@ public class CRAIIndexTest {
     }
 
     private void doCRAITest(BiFunction<SAMSequenceDictionary, List<CRAIEntry>, SeekableStream> getBaiStreamForIndex) throws IOException {
-        final ArrayList<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final ArrayList<CRAIEntry> index = new ArrayList<>();
         final CRAIEntry entry = new CRAIEntry();
         entry.sequenceId = 0;
         entry.alignmentStart = 1;
@@ -171,7 +171,7 @@ public class CRAIIndexTest {
 
     @Test
     public void testGetLeftmost() throws CloneNotSupportedException {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertNull(CRAIIndex.getLeftmost(index));
 
         final CRAIEntry e1 = new CRAIEntry();
@@ -193,7 +193,7 @@ public class CRAIIndexTest {
 
     @Test
     public void testFindLastAlignedEntry() {
-        final List<CRAIEntry> index = new ArrayList<CRAIEntry>();
+        final List<CRAIEntry> index = new ArrayList<>();
         Assert.assertEquals(-1, CRAIIndex.findLastAlignedEntry(index));
 
         // Scan all allowed combinations of 10 mapped/unmapped entries and assert the found last aligned entry:

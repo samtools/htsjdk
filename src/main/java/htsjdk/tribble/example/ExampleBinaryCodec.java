@@ -70,7 +70,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
     public FeatureCodecHeader readHeader(final PositionalBufferedStream stream) throws IOException {
         // Construct a reader that does not read ahead (because we don't want to consume data from the stream that is not the header)
         final AsciiLineReader nonReadAheadLineReader = new AsciiLineReader(stream);
-        final List<String> headerLines = new ArrayList<String>();
+        final List<String> headerLines = new ArrayList<>();
         long headerLengthInBytes = 0;
         while (stream.peek() == ('#' & 0xff)) { // Look for header lines, which are prefixed by '#'.
             headerLines.add(nonReadAheadLineReader.readLine());

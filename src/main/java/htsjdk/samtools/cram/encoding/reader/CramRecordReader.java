@@ -103,7 +103,7 @@ public class CramRecordReader extends AbstractReader {
                 // reading read features:
                 final int size = numberOfReadFeaturesCodec.readData();
                 int prevPos = 0;
-                final java.util.List<ReadFeature> readFeatures = new LinkedList<ReadFeature>();
+                final java.util.List<ReadFeature> readFeatures = new LinkedList<>();
                 cramRecord.readFeatures = readFeatures;
                 for (int i = 0; i < size; i++) {
                     final Byte operator = readFeatureCodeCodec.readData();

@@ -97,8 +97,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
-        metaData = new HashSet<VCFHeaderLine>();
-        additionalColumns = new HashSet<String>();
+        metaData = new HashSet<>();
+        additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         final VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -161,8 +161,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     }
 
     private VariantContext createVCGeneral(final VCFHeader header, final String chrom, final int position) {
-        final List<Allele> alleles = new ArrayList<Allele>();
-        final Map<String, Object> attributes = new HashMap<String,Object>();
+        final List<Allele> alleles = new ArrayList<>();
+        final Map<String, Object> attributes = new HashMap<>();
         final GenotypesContext genotypes = GenotypesContext.create(header.getGenotypeSamples().size());
 
         alleles.add(Allele.create("A",true));
@@ -201,8 +201,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void TestWritingLargeVCF(final String extension) throws FileNotFoundException, InterruptedException {
 
-        final Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        final Set<String> Columns = new HashSet<String>();
+        final Set<VCFHeaderLine> metaData = new HashSet<>();
+        final Set<String> Columns = new HashSet<>();
         for (int i = 0; i < 123; i++) {
 
             Columns.add(String.format("SAMPLE_%d", i));

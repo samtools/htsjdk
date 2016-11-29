@@ -41,7 +41,7 @@ import java.util.Set;
 public class ReadNameFilter implements SamRecordFilter {
 
     private boolean includeReads = false;
-    private Set<String> readNameFilterSet = new HashSet<String>();
+    private Set<String> readNameFilterSet = new HashSet<>();
 
     public ReadNameFilter(final File readNameFilterFile, final boolean includeReads) {
 

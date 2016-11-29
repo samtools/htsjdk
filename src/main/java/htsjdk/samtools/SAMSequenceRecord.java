@@ -68,8 +68,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * The standard tags are stored in text header without type information, because the type of these tags is known.
      */
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, MD5_TAG, URI_TAG,
-                                                SPECIES_TAG));
+            new HashSet<>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, MD5_TAG, URI_TAG,
+                    SPECIES_TAG));
 
     // Split on any whitespace
     private static Pattern SEQUENCE_NAME_SPLITTER = Pattern.compile("\\s");

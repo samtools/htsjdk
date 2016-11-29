@@ -45,7 +45,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
     /**
      * Store the entries.  Use a LinkedHashMap for consistent iteration in insertion order.
      */
-    private final Map<String,FastaSequenceIndexEntry> sequenceEntries = new LinkedHashMap<String,FastaSequenceIndexEntry>();
+    private final Map<String,FastaSequenceIndexEntry> sequenceEntries = new LinkedHashMap<>();
 
     /**
      * Build a sequence index from the specified file.

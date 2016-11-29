@@ -359,7 +359,7 @@ public final class GenotypeBuilder {
      */
     public GenotypeBuilder attribute(final String key, final Object value) {
         if ( extendedAttributes == null )
-            extendedAttributes = new HashMap<String, Object>(initialAttributeMapSize);
+            extendedAttributes = new HashMap<>(initialAttributeMapSize);
         extendedAttributes.put(key, value);
         return this;
     }

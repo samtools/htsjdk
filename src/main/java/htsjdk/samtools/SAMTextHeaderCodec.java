@@ -258,7 +258,7 @@ public class SAMTextHeaderCodec {
      */
     private class ParsedHeaderLine {
         private HeaderRecordType mHeaderRecordType;
-        private final Map<String, String> mKeyValuePairs = new LinkedHashMap<String, String>();
+        private final Map<String, String> mKeyValuePairs = new LinkedHashMap<>();
         private boolean lineValid = false;
 
         ParsedHeaderLine(final String line) {

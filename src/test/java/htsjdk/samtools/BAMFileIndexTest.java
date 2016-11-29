@@ -238,8 +238,8 @@ public class BAMFileIndexTest {
         final List<String> referenceNames = getReferenceNames(BAM_FILE);
 
         final QueryInterval[] intervals = generateRandomIntervals(referenceNames.size(), 1000, new Random());
-        final Set<SAMRecord> multiIntervalRecords = new HashSet<SAMRecord>();
-        final Set<SAMRecord> singleIntervalRecords = new HashSet<SAMRecord>();
+        final Set<SAMRecord> multiIntervalRecords = new HashSet<>();
+        final Set<SAMRecord> singleIntervalRecords = new HashSet<>();
         final SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE);
         for (final QueryInterval interval : intervals) {
             consumeAll(singleIntervalRecords, reader.query(referenceNames.get(interval.referenceIndex), interval.start, interval.end, contained));
@@ -372,7 +372,7 @@ public class BAMFileIndexTest {
 
     private List<String> getReferenceNames(final File bamFile) {
         final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
-        final List<String> result = new ArrayList<String>();
+        final List<String> result = new ArrayList<>();
         final List<SAMSequenceRecord> seqRecords = reader.getFileHeader().getSequenceDictionary().getSequences();
         for (final SAMSequenceRecord seqRecord : seqRecords) {
             if (seqRecord.getSequenceName() != null) {

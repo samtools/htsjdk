@@ -73,7 +73,7 @@ public class QualityScorePreservation {
     }
 
     private static List<PreservationPolicy> parsePolicies(final String spec) {
-        final List<PreservationPolicy> policyList = new ArrayList<PreservationPolicy>();
+        final List<PreservationPolicy> policyList = new ArrayList<>();
         for (final String string : spec.split("-")) {
             if (string.isEmpty())
                 continue;
@@ -100,7 +100,7 @@ public class QualityScorePreservation {
 
     private static PreservationPolicy parseSinglePolicy(final String spec) {
         final PreservationPolicy preservationPolicy = new PreservationPolicy();
-        final LinkedList<Character> list = new LinkedList<Character>();
+        final LinkedList<Character> list = new LinkedList<>();
         for (final char character : spec.toCharArray())
             list.add(character);
 
@@ -201,7 +201,7 @@ public class QualityScorePreservation {
             for (int i = 0; i < scores.length; i++) {
                 if (scores[i] > -1) {
                     if (cramRecord.readFeatures == null)
-                        cramRecord.readFeatures = new LinkedList<ReadFeature>();
+                        cramRecord.readFeatures = new LinkedList<>();
                     cramRecord.readFeatures.add(new BaseQualityScore(i + 1, scores[i]));
                 }
             }

@@ -37,7 +37,7 @@ import java.util.Map;
  */
 public class FTPUtils {
 
-    static Map<String, String> userCredentials = new HashMap<String, String>();
+    static Map<String, String> userCredentials = new HashMap<>();
 
     static int TIMEOUT = 10000;
 

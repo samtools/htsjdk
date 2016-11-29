@@ -137,7 +137,7 @@ public class BAMRemoteFileTest {
 
         final SamReader reader = SamReaderFactory.makeDefault().open(SamInputResource.of(bamFile.openStream()));
 
-        final List<String> result = new ArrayList<String>();
+        final List<String> result = new ArrayList<>();
         final List<SAMSequenceRecord> seqRecords = reader.getFileHeader().getSequenceDictionary().getSequences();
         for (final SAMSequenceRecord seqRecord : seqRecords) {
             if (seqRecord.getSequenceName() != null) {
@@ -159,8 +159,8 @@ public class BAMRemoteFileTest {
         final Iterator<SAMRecord> iter1 = reader1.query(sequence, startPos, endPos, contained);
         final Iterator<SAMRecord> iter2 = reader2.query(sequence, startPos, endPos, contained);
 
-        final List<SAMRecord> records1 = new ArrayList<SAMRecord>();
-        final List<SAMRecord> records2 = new ArrayList<SAMRecord>();
+        final List<SAMRecord> records1 = new ArrayList<>();
+        final List<SAMRecord> records2 = new ArrayList<>();
 
         while (iter1.hasNext()) {
             records1.add(iter1.next());

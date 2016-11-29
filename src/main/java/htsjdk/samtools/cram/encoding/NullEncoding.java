@@ -51,7 +51,7 @@ public class NullEncoding<T> implements Encoding<T> {
     @Override
     public BitCodec<T> buildCodec(final Map<Integer, InputStream> inputMap,
                                   final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new NullCodec<T>();
+        return new NullCodec<>();
     }
 
 }

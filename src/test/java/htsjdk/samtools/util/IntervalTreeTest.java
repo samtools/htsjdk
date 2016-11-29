@@ -36,7 +36,7 @@ public class IntervalTreeTest {
     public void testNoMatches()
     {
         // Test empty tree
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
+        final IntervalTree<String> intervalTree = new IntervalTree<>();
         Iterator<IntervalTree.Node<String>> results = intervalTree.overlappers(1, 500);
         Assert.assertEquals(countElements(results), 0, "Testing with no left-hand set failed.");
 
@@ -60,7 +60,7 @@ public class IntervalTreeTest {
     @Test
     public void testMatches()
     {
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
+        final IntervalTree<String> intervalTree = new IntervalTree<>();
         intervalTree.put(1, 10, "foo1");
         intervalTree.put(2, 9, "foo2");
         intervalTree.put(3, 8, "foo3");
@@ -94,7 +94,7 @@ public class IntervalTreeTest {
     @Test
     public void testNearEnds()
     {
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
+        final IntervalTree<String> intervalTree = new IntervalTree<>();
         intervalTree.put(10, 20, "foo");
         Assert.assertEquals(countElements(intervalTree.overlappers(10, 10)), 1, "Test overlap (no buffers) at near end exactly");
         Assert.assertEquals(countElements(intervalTree.overlappers(9, 10)), 1, "Test overlap (no buffers) at near end exactly");
@@ -107,7 +107,7 @@ public class IntervalTreeTest {
     @Test
     public void performanceTest()
     {
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
+        final IntervalTree<String> intervalTree = new IntervalTree<>();
         final long start = System.currentTimeMillis();
         for (int i = 1; i <= 50000; i++)  intervalTree.put(i, i, "frob");
         System.out.println("Time to construct a tree with 50000 nodes: " + (System.currentTimeMillis() - start) + " milliseconds" );
@@ -124,7 +124,7 @@ public class IntervalTreeTest {
     @Test
     public void testHandlingOfDuplicateMappings()
     {
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
+        final IntervalTree<String> intervalTree = new IntervalTree<>();
         intervalTree.put(1, 10, "foo1");
         // This call replaces foo1 with foo2
         Assert.assertEquals(intervalTree.put(1, 10, "foo2"), "foo1");
@@ -177,7 +177,7 @@ public class IntervalTreeTest {
                 {46379440, 46379674},
                 {46391117, 46391351},
         };
-        IntervalTree<String> intervalTree = new IntervalTree<String>();
+        IntervalTree<String> intervalTree = new IntervalTree<>();
         for (int[] add : adds) {
             intervalTree.put(add[0], add[1], "frob");
         }

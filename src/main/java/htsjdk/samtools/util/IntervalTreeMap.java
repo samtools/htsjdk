@@ -44,7 +44,7 @@ import java.util.Set;
 public class IntervalTreeMap<T>
     extends AbstractMap<Interval, T>
 {
-    private final Map<String, IntervalTree<T>> mSequenceMap = new HashMap<String, IntervalTree<T>>();
+    private final Map<String, IntervalTree<T>> mSequenceMap = new HashMap<>();
     private final EntrySet mEntrySet = new EntrySet();
 
     public IntervalTree<T> debugGetTree(final String sequence) {
@@ -126,7 +126,7 @@ public class IntervalTreeMap<T>
     public T put(final Interval key, final T value) {
         IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree == null) {
-            tree = new IntervalTree<T>();
+            tree = new IntervalTree<>();
             mSequenceMap.put(key.getContig(), tree);
         }
         return tree.put(key.getStart(), key.getEnd(), value);
@@ -167,7 +167,7 @@ public class IntervalTreeMap<T>
     
     
     public Collection<T> getOverlapping(final Interval key) {
-        final List<T> result = new ArrayList<T>();
+        final List<T> result = new ArrayList<>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree != null) {
             final Iterator<IntervalTree.Node<T>> iterator = tree.overlappers(key.getStart(), key.getEnd());
@@ -197,7 +197,7 @@ public class IntervalTreeMap<T>
     
     
     public Collection<T> getContained(final Interval key) {
-        final List<T> result = new ArrayList<T>();
+        final List<T> result = new ArrayList<>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree != null) {
             final Iterator<IntervalTree.Node<T>> iterator = tree.overlappers(key.getStart(), key.getEnd());

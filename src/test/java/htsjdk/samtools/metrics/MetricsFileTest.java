@@ -85,7 +85,7 @@ public class MetricsFileTest {
 
     @Test
     public void testFloatingPointEquality() throws IOException {
-        MetricsFile<FloatingPointMetric,Integer> file = new MetricsFile<FloatingPointMetric,Integer>();
+        MetricsFile<FloatingPointMetric,Integer> file = new MetricsFile<>();
 
         FloatingPointMetric metric = new FloatingPointMetric();
         metric.DOUBLE_PRIMITIVE = .0000000000000000001d;
@@ -103,7 +103,7 @@ public class MetricsFileTest {
 
     @Test
     public void testWriteMetricsFile() throws IOException, ClassNotFoundException {
-        MetricsFile<TestMetric,Integer> file = new MetricsFile<TestMetric,Integer>();
+        MetricsFile<TestMetric,Integer> file = new MetricsFile<>();
         TestMetric metric = new TestMetric();
         metric.STRING_PROP       = "Hello World";
         metric.DATE_PROP         = new FormatUtil().parseDate("2008-12-31");
@@ -146,7 +146,7 @@ public class MetricsFileTest {
         Assert.assertEquals(file, file2);
 
         // Now add a Histogram and make sure it still works
-        Histogram<Integer> histo = new Histogram<Integer>();
+        Histogram<Integer> histo = new Histogram<>();
         histo.setBinLabel("small_number");
         histo.setValueLabel("big_number");
         histo.increment(1, 101);
@@ -203,7 +203,7 @@ public class MetricsFileTest {
         FileWriter out = new FileWriter(f);
         in.write(out);
 
-        MetricsFile<METRIC,Integer> retval = new MetricsFile<METRIC,Integer>();
+        MetricsFile<METRIC,Integer> retval = new MetricsFile<>();
         retval.read(new FileReader(f));
         return retval;
     }

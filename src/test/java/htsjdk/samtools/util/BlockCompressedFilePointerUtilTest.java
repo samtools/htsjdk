@@ -36,7 +36,7 @@ public class BlockCompressedFilePointerUtilTest
     @Test
     public void basicTest() 
     {
-        List<Long> pointers = new ArrayList<Long>();
+        List<Long> pointers = new ArrayList<>();
         pointers.add(makeFilePointer(0, 0));
         pointers.add(makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET));
         final long BIG_BLOCK_ADDRESS = 1L << 46;

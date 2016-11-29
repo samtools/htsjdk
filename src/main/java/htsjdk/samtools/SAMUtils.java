@@ -465,7 +465,7 @@ public final class SAMUtils {
     }
 
     private static final SAMHeaderRecordComparator<SAMReadGroupRecord> HEADER_RECORD_COMPARATOR =
-            new SAMHeaderRecordComparator<SAMReadGroupRecord>(
+            new SAMHeaderRecordComparator<>(
                     SAMReadGroupRecord.PLATFORM_UNIT_TAG,
                     SAMReadGroupRecord.LIBRARY_TAG,
                     SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG,
@@ -494,11 +494,11 @@ public final class SAMUtils {
 
         // Sort the read group records by their first
         final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(referenceFasta).open(input);
-        final List<SAMReadGroupRecord> sortedRecords = new ArrayList<SAMReadGroupRecord>(reader.getFileHeader().getReadGroups());
+        final List<SAMReadGroupRecord> sortedRecords = new ArrayList<>(reader.getFileHeader().getReadGroups());
         Collections.sort(sortedRecords, HEADER_RECORD_COMPARATOR);
 
         for (final SAMReadGroupRecord rgRecord : sortedRecords) {
-            final TreeMap<String, String> sortedAttributes = new TreeMap<String, String>();
+            final TreeMap<String, String> sortedAttributes = new TreeMap<>();
             for (final Map.Entry<String, String> attributeEntry : rgRecord.getAttributes()) {
                 sortedAttributes.put(attributeEntry.getKey(), attributeEntry.getValue());
             }
@@ -536,7 +536,7 @@ public final class SAMUtils {
 
         final List<SAMProgramRecord> pgs = header.getProgramRecords();
         if (!pgs.isEmpty()) {
-            final List<String> referencedIds = new ArrayList<String>();
+            final List<String> referencedIds = new ArrayList<>();
             for (final SAMProgramRecord pg : pgs) {
                 if (pg.getPreviousProgramGroupId() != null) {
                     referencedIds.add(pg.getPreviousProgramGroupId());
@@ -687,7 +687,7 @@ public final class SAMUtils {
     public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
         if (cigar == null) return Collections.emptyList();
 
-        final List<AlignmentBlock> alignmentBlocks = new ArrayList<AlignmentBlock>();
+        final List<AlignmentBlock> alignmentBlocks = new ArrayList<>();
         int readBase = 1;
         int refBase = alignmentStart;
 
@@ -913,7 +913,7 @@ public final class SAMUtils {
         if (referenceIndex != SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
             SAMFileHeader samHeader = rec.getHeader();
             if (null == samHeader) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
                         cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
             }
@@ -922,7 +922,7 @@ public final class SAMUtils {
                 final int referenceSequenceLength = sequence.getSequenceLength();
                 for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
                     if (alignmentBlock.getReferenceStart() + alignmentBlock.getLength() - 1 > referenceSequenceLength) {
-                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE,
                                 cigarTypeName + " M operator maps off end of reference", rec.getReadName(), recordNumber));
                         break;
@@ -951,7 +951,7 @@ public final class SAMUtils {
                 }
             } else {
                 if (getMateCigarString(rec) != null) {
-                    ret = new ArrayList<SAMValidationError>();
+                    ret = new ArrayList<>();
                     if (!rec.getReadPairedFlag()) {
                         // If the read is not paired, and the Mate Cigar String (MC Attribute) exists, that is a validation error
                         ret.add(new SAMValidationError(SAMValidationError.Type.MATE_CIGAR_STRING_INVALID_PRESENCE,

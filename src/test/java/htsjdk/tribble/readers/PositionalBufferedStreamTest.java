@@ -88,7 +88,7 @@ public class PositionalBufferedStreamTest {
 
     @DataProvider(name = "ReadBytesTestData")
     public Object[][] createReadBytesTestData() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
         for ( int byteReadSize : Arrays.asList(5, 10, 100, 255) )
             for ( int bufSize : Arrays.asList(1, 10, 100, 1000) )

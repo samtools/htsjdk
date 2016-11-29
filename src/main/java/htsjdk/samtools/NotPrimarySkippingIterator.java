@@ -35,7 +35,7 @@ public class NotPrimarySkippingIterator {
     private final PeekIterator<SAMRecord> it;
 
     public NotPrimarySkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
-        it = new PeekIterator<SAMRecord>(underlyingIt);
+        it = new PeekIterator<>(underlyingIt);
         skipAnyNotprimary();
     }
 

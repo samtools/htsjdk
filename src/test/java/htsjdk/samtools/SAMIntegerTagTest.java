@@ -275,7 +275,7 @@ public class SAMIntegerTagTest {
                 .open(inputFile);
 
         final SAMRecord rec = reader.iterator().next();
-        final Map<String, Number> expectedTags = new HashMap<String, Number>();
+        final Map<String, Number> expectedTags = new HashMap<>();
         expectedTags.put("SB", -128);
         expectedTags.put("UB", 129);
         expectedTags.put("SS", 32767);
@@ -292,7 +292,7 @@ public class SAMIntegerTagTest {
 
     @DataProvider(name = "valid_set")
     public static Object[][] valid_set() {
-        List<Object[]> params = new ArrayList<Object[]>();
+        List<Object[]> params = new ArrayList<>();
         for (FORMAT format:FORMAT.values()) {
             for (ValidationStringency stringency:ValidationStringency.values()) {
                 params.add(new Object[]{0, format, stringency});
@@ -313,7 +313,7 @@ public class SAMIntegerTagTest {
 
     @DataProvider(name = "invalid_set")
     public static Object[][] invalid_set() {
-        List<Object[]> params = new ArrayList<Object[]>();
+        List<Object[]> params = new ArrayList<>();
         for (FORMAT format:FORMAT.values()) {
             for (ValidationStringency stringency:ValidationStringency.values()) {
                 params.add(new Object[]{(long)Integer.MIN_VALUE -1L, format, stringency});

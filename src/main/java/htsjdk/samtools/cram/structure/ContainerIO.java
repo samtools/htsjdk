@@ -88,7 +88,7 @@ public class ContainerIO {
         if (fromSlice > 0) //noinspection ResultOfMethodCallIgnored
             inputStream.skip(container.landmarks[fromSlice]);
 
-        final List<Slice> slices = new ArrayList<Slice>();
+        final List<Slice> slices = new ArrayList<>();
         for (int sliceCount = fromSlice; sliceCount < howManySlices - fromSlice; sliceCount++) {
             final Slice slice = new Slice();
             SliceIO.read(major, slice, inputStream);
@@ -182,7 +182,7 @@ public class ContainerIO {
         block.write(version.major, byteArrayOutputStream);
         container.blockCount = 1;
 
-        final List<Integer> landmarks = new ArrayList<Integer>();
+        final List<Integer> landmarks = new ArrayList<>();
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
             landmarks.add(byteArrayOutputStream.size());

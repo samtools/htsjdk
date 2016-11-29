@@ -895,7 +895,7 @@ public class IOUtil {
     private static List<String> tokenSlurp(final InputStream is, final Charset charSet, final String delimiterPattern) {
         try {
             final Scanner s = new Scanner(is, charSet.toString()).useDelimiter(delimiterPattern);
-            final LinkedList<String> tokens = new LinkedList<String>();
+            final LinkedList<String> tokens = new LinkedList<>();
             while (s.hasNext()) {
                 tokens.add(s.next());
             }
@@ -912,8 +912,8 @@ public class IOUtil {
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
         if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
 
-        final Stack<File> stack = new Stack<File>();
-        final List<File> output = new ArrayList<File>();
+        final Stack<File> stack = new Stack<>();
+        final List<File> output = new ArrayList<>();
         stack.addAll(inputs);
 
         while (!stack.empty()) {

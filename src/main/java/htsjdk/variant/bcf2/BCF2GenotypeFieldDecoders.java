@@ -50,7 +50,7 @@ public class BCF2GenotypeFieldDecoders {
     private final static int MIN_SAMPLES_FOR_FASTPATH_GENOTYPES = 0; // TODO -- update to reasonable number
 
     // initialized once per writer to allow parallel writers to work
-    private final HashMap<String, Decoder> genotypeFieldDecoder = new HashMap<String, Decoder>();
+    private final HashMap<String, Decoder> genotypeFieldDecoder = new HashMap<>();
     private final Decoder defaultDecoder = new GenericDecoder();
 
     public BCF2GenotypeFieldDecoders(final VCFHeader header) {
@@ -188,7 +188,7 @@ public class BCF2GenotypeFieldDecoders {
                     assert encoded.length > 0;
 
                     // we have at least some alleles to decode
-                    final List<Allele> gt = new ArrayList<Allele>(encoded.length);
+                    final List<Allele> gt = new ArrayList<>(encoded.length);
 
                     // note that the auto-pruning of fields magically handles different
                     // ploidy per sample at a site

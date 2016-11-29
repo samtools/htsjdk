@@ -119,7 +119,7 @@ public class LinearIndex extends AbstractIndex {
 
     public List<String> getSequenceNames() {
         return (chrIndices == null ? Collections.EMPTY_LIST :
-                Collections.unmodifiableList(new ArrayList<String>(chrIndices.keySet())));
+                Collections.unmodifiableList(new ArrayList<>(chrIndices.keySet())));
     }
 
     @Override
@@ -167,7 +167,7 @@ public class LinearIndex extends AbstractIndex {
         ChrIndex(final String name, final int binWidth) {
             this.name = name;
             this.binWidth = binWidth;
-            this.blocks = new ArrayList<Block>(100);
+            this.blocks = new ArrayList<>(100);
             this.longestFeature = 0;
             //this.largestBlockSize = 0;
             this.nFeatures = 0;
@@ -265,7 +265,7 @@ public class LinearIndex extends AbstractIndex {
             nFeatures = dis.readInt();
 
             // note the code below accounts for > 60% of the total time to read an index
-            blocks = new ArrayList<Block>(nBins);
+            blocks = new ArrayList<>(nBins);
             long pos = dis.readLong();
             for (int binNumber = 0; binNumber < nBins; binNumber++) {
                 final long nextPos = dis.readLong();
@@ -393,7 +393,7 @@ public class LinearIndex extends AbstractIndex {
     public Index optimize(final double threshold) {
         if (enableAdaptiveIndexing) {
 
-            final List<ChrIndex> newIndices = new ArrayList<ChrIndex>(this.chrIndices.size());
+            final List<ChrIndex> newIndices = new ArrayList<>(this.chrIndices.size());
             for (final String name : chrIndices.keySet()) {
                 final LinearIndex.ChrIndex oldIdx = (LinearIndex.ChrIndex) chrIndices.get(name);
                 final LinearIndex.ChrIndex newIdx = oldIdx.optimize(threshold);

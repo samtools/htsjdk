@@ -209,7 +209,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     public BAMIndexMetaData getMetaData(final int reference) {
         seek(4);
 
-        final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
+        final List<Chunk> metaDataChunks = new ArrayList<>();
 
         final int sequenceCount = readInteger();
 
@@ -258,7 +258,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
         seek(4);
 
-        final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
+        final List<Chunk> metaDataChunks = new ArrayList<>();
 
         final int sequenceCount = readInteger();
 
@@ -283,7 +283,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
             // System.out.println("# bin[" + i + "] = " + indexBin + ", nChunks = " + nChunks);
             Chunk lastChunk = null;
             if (regionBins.get(indexBin)) {
-            	chunks = new ArrayList<Chunk>(nChunks);
+            	chunks = new ArrayList<>(nChunks);
                 for (int ci = 0; ci < nChunks; ci++) {
                     final long chunkBegin = readLong();
                     final long chunkEnd = readLong();

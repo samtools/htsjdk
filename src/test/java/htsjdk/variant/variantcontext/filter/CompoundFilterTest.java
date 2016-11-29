@@ -27,7 +27,7 @@ public class CompoundFilterTest {
 
     @DataProvider
     Iterator<Object[]> testCompoundFilterProvider() {
-        final List<Object[]> filters = new ArrayList<Object[]>(10);
+        final List<Object[]> filters = new ArrayList<>(10);
 
         // requireAll = TRUE
         { // all pass

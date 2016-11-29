@@ -270,7 +270,7 @@ public class GenotypeLikelihoodsUnitTest extends VariantBaseTest {
     @Test(dataProvider = "testCalculateAnyploidPLcacheData")
     public void testInitializeAnyploidPLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> expected) {
         if ( altAlleles >= 1 && ploidy >= 1 ) { // Bypass test with bad data
-            Map<Integer, List<List<Integer>>> expectedMap = new HashMap<Integer, List<List<Integer>>>();
+            Map<Integer, List<List<Integer>>> expectedMap = new HashMap<>();
             expectedMap.put(ploidy, expected);
             for (Map.Entry<Integer, List<List<Integer>>> entry : GenotypeLikelihoods.anyploidPloidyToPLIndexToAlleleIndices.entrySet()) {
                 if (expectedMap.containsKey(entry.getKey()))

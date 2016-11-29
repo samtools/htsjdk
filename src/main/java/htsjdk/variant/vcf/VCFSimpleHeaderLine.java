@@ -38,7 +38,7 @@ import java.util.Map;
 public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {
 
     private String name;
-    private Map<String, String> genericFields = new LinkedHashMap<String, String>();
+    private Map<String, String> genericFields = new LinkedHashMap<>();
 
     /**
      * create a VCF filter header line
@@ -49,7 +49,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
      */
     public VCFSimpleHeaderLine(String key, String name, String description) {
         super(key, "");
-        Map<String, String> map = new LinkedHashMap<String, String>(1);
+        Map<String, String> map = new LinkedHashMap<>(1);
         map.put("Description", description);
         initialize(name, map);
     }
@@ -93,7 +93,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     }
 
     protected String toStringEncoding() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("ID", name);
         map.putAll(genericFields);
         return getKey() + "=" + VCFHeaderLine.toStringEncoding(map);

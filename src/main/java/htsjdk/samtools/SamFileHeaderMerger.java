@@ -74,7 +74,7 @@ public class SamFileHeaderMerger {
 
     //Translation of old group ids to new group ids
     private final Map<SAMFileHeader, Map<String, String>> samReadGroupIdTranslation =
-            new IdentityHashMap<SAMFileHeader, Map<String, String>>();
+            new IdentityHashMap<>();
 
     //the read groups from different files use the same group ids
     private boolean hasReadGroupCollisions = false;
@@ -84,7 +84,7 @@ public class SamFileHeaderMerger {
 
     //Translation of old program group ids to new program group ids
     private final Map<SAMFileHeader, Map<String, String>> samProgramGroupIdTranslation =
-            new IdentityHashMap<SAMFileHeader, Map<String, String>>();
+            new IdentityHashMap<>();
 
     private boolean hasMergedSequenceDictionary = false;
 
@@ -94,7 +94,7 @@ public class SamFileHeaderMerger {
     // the regular HashMap would fold them together, but the value stored in each of the two
     // Map entries will be the same, so it should not hurt anything.
     private final Map<SAMFileHeader, Map<Integer, Integer>> samSeqDictionaryIdTranslationViaHeader =
-            new IdentityHashMap<SAMFileHeader, Map<Integer, Integer>>();
+            new IdentityHashMap<>();
 
     //HeaderRecordFactory that creates SAMReadGroupRecord instances.
     private static final HeaderRecordFactory<SAMReadGroupRecord> READ_GROUP_RECORD_FACTORY = new HeaderRecordFactory<SAMReadGroupRecord>() {
@@ -153,7 +153,7 @@ public class SamFileHeaderMerger {
      *                          all input sequence dictionaries be identical.
      */
     public SamFileHeaderMerger(final SAMFileHeader.SortOrder sortOrder, final Collection<SAMFileHeader> headers, final boolean mergeDictionaries) {
-        this.headers = new LinkedHashSet<SAMFileHeader>(headers);
+        this.headers = new LinkedHashSet<>(headers);
         this.mergedHeader = new SAMFileHeader();
 
         SAMSequenceDictionary sequenceDictionary;
@@ -192,7 +192,7 @@ public class SamFileHeaderMerger {
 
     // Utility method to make use with old constructor
     private static List<SAMFileHeader> getHeadersFromReaders(final Collection<SamReader> readers) {
-        final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>(readers.size());
+        final List<SAMFileHeader> headers = new ArrayList<>(readers.size());
         for (final SamReader reader : readers) {
             headers.add(reader.getFileHeader());
         }
@@ -209,21 +209,21 @@ public class SamFileHeaderMerger {
      */
     private List<SAMReadGroupRecord> mergeReadGroups(final Collection<SAMFileHeader> headers) {
         //prepare args for mergeHeaderRecords(..) call
-        final HashSet<String> idsThatAreAlreadyTaken = new HashSet<String>();
+        final HashSet<String> idsThatAreAlreadyTaken = new HashSet<>();
 
-        final List<HeaderRecordAndFileHeader<SAMReadGroupRecord>> readGroupsToProcess = new LinkedList<HeaderRecordAndFileHeader<SAMReadGroupRecord>>();
+        final List<HeaderRecordAndFileHeader<SAMReadGroupRecord>> readGroupsToProcess = new LinkedList<>();
         for (final SAMFileHeader header : headers) {
             for (final SAMReadGroupRecord readGroup : header.getReadGroups()) {
                 //verify that there are no existing id collisions in this input file
                 if (!idsThatAreAlreadyTaken.add(readGroup.getId()))
                     throw new SAMException("Input file: " + header + " contains more than one RG with the same id (" + readGroup.getId() + ")");
 
-                readGroupsToProcess.add(new HeaderRecordAndFileHeader<SAMReadGroupRecord>(readGroup, header));
+                readGroupsToProcess.add(new HeaderRecordAndFileHeader<>(readGroup, header));
             }
             idsThatAreAlreadyTaken.clear();
         }
 
-        final List<SAMReadGroupRecord> result = new LinkedList<SAMReadGroupRecord>();
+        final List<SAMReadGroupRecord> result = new LinkedList<>();
 
         recordCounter = 0;
         hasReadGroupCollisions = mergeHeaderRecords(readGroupsToProcess, READ_GROUP_RECORD_FACTORY, idsThatAreAlreadyTaken, samReadGroupIdTranslation, result);
@@ -244,20 +244,20 @@ public class SamFileHeaderMerger {
      */
     private List<SAMProgramRecord> mergeProgramGroups(final Collection<SAMFileHeader> headers) {
 
-        final List<SAMProgramRecord> overallResult = new LinkedList<SAMProgramRecord>();
+        final List<SAMProgramRecord> overallResult = new LinkedList<>();
 
         //this Set will accumulate all SAMProgramRecord ids that have been encountered so far.
-        final HashSet<String> idsThatAreAlreadyTaken = new HashSet<String>();
+        final HashSet<String> idsThatAreAlreadyTaken = new HashSet<>();
 
         //need to process all program groups
-        List<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsLeftToProcess = new LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>>();
+        List<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsLeftToProcess = new LinkedList<>();
         for (final SAMFileHeader header : headers) {
             for (final SAMProgramRecord programGroup : header.getProgramRecords()) {
                 //verify that there are no existing id collisions in this input file
                 if (!idsThatAreAlreadyTaken.add(programGroup.getId()))
                     throw new SAMException("Input file: " + header + " contains more than one PG with the same id (" + programGroup.getId() + ")");
 
-                programGroupsLeftToProcess.add(new HeaderRecordAndFileHeader<SAMProgramRecord>(programGroup, header));
+                programGroupsLeftToProcess.add(new HeaderRecordAndFileHeader<>(programGroup, header));
             }
             idsThatAreAlreadyTaken.clear();
         }
@@ -273,7 +273,7 @@ public class SamFileHeaderMerger {
         //and so on until all program group headers are processed.
 
         //currentProgramGroups is the list of records to merge next. Start by merging the programGroups that don't have a PP attribute (eg. the tree roots).
-        List<HeaderRecordAndFileHeader<SAMProgramRecord>> currentProgramGroups = new LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>>();
+        List<HeaderRecordAndFileHeader<SAMProgramRecord>> currentProgramGroups = new LinkedList<>();
         for (final Iterator<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsLeftToProcessIterator = programGroupsLeftToProcess.iterator(); programGroupsLeftToProcessIterator.hasNext(); ) {
             final HeaderRecordAndFileHeader<SAMProgramRecord> pair = programGroupsLeftToProcessIterator.next();
             if (pair.getHeaderRecord().getAttribute(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG) == null) {
@@ -284,7 +284,7 @@ public class SamFileHeaderMerger {
 
         //merge currentProgramGroups
         while (!currentProgramGroups.isEmpty()) {
-            final List<SAMProgramRecord> currentResult = new LinkedList<SAMProgramRecord>();
+            final List<SAMProgramRecord> currentResult = new LinkedList<>();
 
             hasProgramGroupCollisions |= mergeHeaderRecords(currentProgramGroups, PROGRAM_RECORD_FACTORY, idsThatAreAlreadyTaken, samProgramGroupIdTranslation, currentResult);
 
@@ -297,7 +297,7 @@ public class SamFileHeaderMerger {
 
             //find all records in programGroupsLeftToProcess whose ppId points to a record that was just processed (eg. a record that's in currentProgramGroups),
             //and move them to the list of programGroupsToProcessNext.
-            final LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsToProcessNext = new LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>>();
+            final LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsToProcessNext = new LinkedList<>();
             for (final Iterator<HeaderRecordAndFileHeader<SAMProgramRecord>> programGroupsLeftToProcessIterator = programGroupsLeftToProcess.iterator(); programGroupsLeftToProcessIterator.hasNext(); ) {
                 final HeaderRecordAndFileHeader<SAMProgramRecord> pairLeftToProcess = programGroupsLeftToProcessIterator.next();
                 final Object ppIdOfRecordLeftToProcess = pairLeftToProcess.getHeaderRecord().getAttribute(SAMProgramRecord.PREVIOUS_PROGRAM_GROUP_ID_TAG);
@@ -350,7 +350,7 @@ public class SamFileHeaderMerger {
             final boolean translatePpIds) {
 
         //go through programGroups and translate any IDs and PPs based on the idTranslationTable.
-        final List<HeaderRecordAndFileHeader<SAMProgramRecord>> result = new LinkedList<HeaderRecordAndFileHeader<SAMProgramRecord>>();
+        final List<HeaderRecordAndFileHeader<SAMProgramRecord>> result = new LinkedList<>();
         for (final HeaderRecordAndFileHeader<SAMProgramRecord> pair : programGroups) {
             final SAMProgramRecord record = pair.getHeaderRecord();
             final String id = record.getProgramGroupId();
@@ -380,7 +380,7 @@ public class SamFileHeaderMerger {
             }
 
             if (translatedRecord != null) {
-                result.add(new HeaderRecordAndFileHeader<SAMProgramRecord>(translatedRecord, header));
+                result.add(new HeaderRecordAndFileHeader<>(translatedRecord, header));
             } else {
                 result.add(pair); //keep the original record
             }
@@ -418,7 +418,7 @@ public class SamFileHeaderMerger {
         //header records which have both identical ids and identical attributes. The List of
         //SAMFileHeaders keeps track of which readers these header record(s) came from.
         final Map<String, Map<RecordType, List<SAMFileHeader>>> idToRecord =
-                new LinkedHashMap<String, Map<RecordType, List<SAMFileHeader>>>();
+                new LinkedHashMap<>();
 
         //Populate the idToRecord and seenIds data structures
         for (final HeaderRecordAndFileHeader<RecordType> pair : headerRecords) {
@@ -427,13 +427,13 @@ public class SamFileHeaderMerger {
             final String recordId = record.getId();
             Map<RecordType, List<SAMFileHeader>> recordsWithSameId = idToRecord.get(recordId);
             if (recordsWithSameId == null) {
-                recordsWithSameId = new LinkedHashMap<RecordType, List<SAMFileHeader>>();
+                recordsWithSameId = new LinkedHashMap<>();
                 idToRecord.put(recordId, recordsWithSameId);
             }
 
             List<SAMFileHeader> fileHeaders = recordsWithSameId.get(record);
             if (fileHeaders == null) {
-                fileHeaders = new LinkedList<SAMFileHeader>();
+                fileHeaders = new LinkedList<>();
                 recordsWithSameId.put(record, fileHeaders);
             }
 
@@ -473,7 +473,7 @@ public class SamFileHeaderMerger {
                 for (final SAMFileHeader fileHeader : fileHeaders) {
                     Map<String, String> readerTranslationTable = idTranslationTable.get(fileHeader);
                     if (readerTranslationTable == null) {
-                        readerTranslationTable = new HashMap<String, String>();
+                        readerTranslationTable = new HashMap<>();
                         idTranslationTable.put(fileHeader, readerTranslationTable);
                     }
                     readerTranslationTable.put(recordId, newId);
@@ -558,10 +558,10 @@ public class SamFileHeaderMerger {
     private SAMSequenceDictionary mergeSequences(final SAMSequenceDictionary mergeIntoDict, final SAMSequenceDictionary mergeFromDict) {
 
         // a place to hold the sequences that we haven't found a home for, in the order the appear in mergeFromDict.
-        final LinkedList<SAMSequenceRecord> holder = new LinkedList<SAMSequenceRecord>();
+        final LinkedList<SAMSequenceRecord> holder = new LinkedList<>();
 
         // Return value will be created from this.
-        final LinkedList<SAMSequenceRecord> resultingDict = new LinkedList<SAMSequenceRecord>();
+        final LinkedList<SAMSequenceRecord> resultingDict = new LinkedList<>();
         for (final SAMSequenceRecord sequenceRecord : mergeIntoDict.getSequences()) {
             resultingDict.add(sequenceRecord);
         }

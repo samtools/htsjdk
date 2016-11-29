@@ -81,10 +81,10 @@ public class VariantContextTestProvider {
     final private static List<Integer> TWENTY_INTS = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
 
     private static VCFHeader syntheticHeader;
-    final static List<VariantContextTestData> TEST_DATAs = new ArrayList<VariantContextTestData>();
+    final static List<VariantContextTestData> TEST_DATAs = new ArrayList<>();
     private static VariantContext ROOT;
 
-    private final static List<File> testSourceVCFs = new ArrayList<File>();
+    private final static List<File> testSourceVCFs = new ArrayList<>();
     static {
         testSourceVCFs.add(new File(VariantBaseTest.variantTestDataRoot + "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf"));
         testSourceVCFs.add(new File(VariantBaseTest.variantTestDataRoot + "ex2.vcf"));
@@ -142,7 +142,7 @@ public class VariantContextTestProvider {
         }
 
         public VariantContextTestData(final VCFHeader header, final List<VariantContext> vcs) {
-            final Set<String> samples = new HashSet<String>();
+            final Set<String> samples = new HashSet<>();
             for ( final VariantContext vc : vcs )
                 if ( vc.hasGenotypes() )
                     samples.addAll(vc.getSampleNames());
@@ -193,7 +193,7 @@ public class VariantContextTestProvider {
             for ( final File file : testSourceVCFs ) {
                 VCFCodec codec = new VCFCodec();
                 VariantContextContainer x = readAllVCs( file, codec );
-                List<VariantContext> fullyDecoded = new ArrayList<VariantContext>();
+                List<VariantContext> fullyDecoded = new ArrayList<>();
 
                 for ( final VariantContext raw : x.getVCs() ) {
                     if ( raw != null )
@@ -218,7 +218,7 @@ public class VariantContextTestProvider {
     }
 
     private static void createSyntheticHeader() {
-        Set<VCFHeaderLine> metaData = new TreeSet<VCFHeaderLine>();
+        Set<VCFHeaderLine> metaData = new TreeSet<>();
 
         addHeaderLine(metaData, "STRING1", 1, VCFHeaderLineType.String);
         addHeaderLine(metaData, "END", 1, VCFHeaderLineType.Integer);
@@ -336,7 +336,7 @@ public class VariantContextTestProvider {
     }
 
     private static void addGenotypesToTestData() {
-        final ArrayList<VariantContext> sites = new ArrayList<VariantContext>();
+        final ArrayList<VariantContext> sites = new ArrayList<>();
 
         sites.add(builder().alleles("A").make());
         sites.add(builder().alleles("A", "C", "T").make());
@@ -391,7 +391,7 @@ public class VariantContextTestProvider {
             addGenotypeTests(site, homRef, het, homVar);
 
             // test no GT at all
-            addGenotypeTests(site, new GenotypeBuilder("noGT", new ArrayList<Allele>(0)).attribute("INT1", 10).make());
+            addGenotypeTests(site, new GenotypeBuilder("noGT", new ArrayList<>(0)).attribute("INT1", 10).make());
 
             final List<Allele> noCall = Arrays.asList(Allele.NO_CALL, Allele.NO_CALL);
 
@@ -598,12 +598,12 @@ public class VariantContextTestProvider {
                 final Allele ref = site.getReference();
 
                 // base genotype is ref/.../ref up to ploidy
-                final List<Allele> baseGenotype = new ArrayList<Allele>(ploidy);
+                final List<Allele> baseGenotype = new ArrayList<>(ploidy);
                 for ( int i = 0; i < ploidy; i++) baseGenotype.add(ref);
                 final int nPLs = GenotypeLikelihoods.numLikelihoods(nAlleles, ploidy);
 
                 // ada is 0, 1, ..., nAlleles - 1
-                final List<Integer> ada = new ArrayList<Integer>(nAlleles);
+                final List<Integer> ada = new ArrayList<>(nAlleles);
                 for ( int i = 0; i < nAlleles - 1; i++ ) ada.add(i);
 
                 // pl is 0, 1, ..., up to nPLs (complex calc of nAlleles and ploidy)
@@ -650,9 +650,9 @@ public class VariantContextTestProvider {
             final EnumSet<Options> options = EnumSet.of(Options.INDEX_ON_THE_FLY);
             final VariantContextWriter writer = tester.makeWriter(tmpFile, options);
 
-            final Set<String> samplesInVCF = new HashSet<String>(data.header.getGenotypeSamples());
+            final Set<String> samplesInVCF = new HashSet<>(data.header.getGenotypeSamples());
             final List<String> missingSamples = Arrays.asList("MISSING1", "MISSING2");
-            final List<String> allSamples = new ArrayList<String>(missingSamples);
+            final List<String> allSamples = new ArrayList<>(missingSamples);
             allSamples.addAll(samplesInVCF);
 
             final VCFHeader header = new VCFHeader(data.header.getMetaDataInInputOrder(), allSamples);
@@ -885,7 +885,7 @@ public class VariantContextTestProvider {
     }
 
     private static void assertAttributesEquals(final Map<String, Object> actual, Map<String, Object> expected) {
-        final Set<String> expectedKeys = new HashSet<String>(expected.keySet());
+        final Set<String> expectedKeys = new HashSet<>(expected.keySet());
 
         for ( final Map.Entry<String, Object> act : actual.entrySet() ) {
             final Object actualValue = act.getValue();
@@ -948,7 +948,7 @@ public class VariantContextTestProvider {
                 final List<Allele> siteAlleles = allAlleles.subList(0, nAlleles);
 
                 // possible alleles for genotypes
-                final List<Allele> possibleGenotypeAlleles = new ArrayList<Allele>(siteAlleles);
+                final List<Allele> possibleGenotypeAlleles = new ArrayList<>(siteAlleles);
                 possibleGenotypeAlleles.add(Allele.NO_CALL);
 
                 // there are n^ploidy possible genotypes
@@ -959,14 +959,14 @@ public class VariantContextTestProvider {
 
                 // first test -- create n copies of each genotype
                 for ( int i = 0; i < nPossibleGenotypes; i++ ) {
-                    final List<Genotype> samples = new ArrayList<Genotype>(3);
+                    final List<Genotype> samples = new ArrayList<>(3);
                     samples.add(GenotypeBuilder.create("sample" + i, possibleGenotypes.get(i)));
                     add(vb.genotypes(samples));
                 }
 
                 // second test -- create one sample with each genotype
                 {
-                    final List<Genotype> samples = new ArrayList<Genotype>(nPossibleGenotypes);
+                    final List<Genotype> samples = new ArrayList<>(nPossibleGenotypes);
                     for ( int i = 0; i < nPossibleGenotypes; i++ ) {
                         samples.add(GenotypeBuilder.create("sample" + i, possibleGenotypes.get(i)));
                     }
@@ -976,7 +976,7 @@ public class VariantContextTestProvider {
                 // test mixed ploidy
                 for ( int i = 0; i < nPossibleGenotypes; i++ ) {
                     for ( int ploidy = 1; ploidy < highestPloidy; ploidy++ ) {
-                        final List<Genotype> samples = new ArrayList<Genotype>(highestPloidy);
+                        final List<Genotype> samples = new ArrayList<>(highestPloidy);
                         final List<Allele> genotype = possibleGenotypes.get(i).subList(0, ploidy);
                         samples.add(GenotypeBuilder.create("sample" + i, genotype));
                         add(vb.genotypes(samples));
@@ -995,8 +995,8 @@ public class VariantContextTestProvider {
 
         // for some reason set.equals() is returning false but all paired elements are .equals().  Perhaps compare to is busted?
         //Assert.assertEquals(actual.getMetaDataInInputOrder(), expected.getMetaDataInInputOrder());
-        final List<VCFHeaderLine> actualLines = new ArrayList<VCFHeaderLine>(actual.getMetaDataInSortedOrder());
-        final List<VCFHeaderLine> expectedLines = new ArrayList<VCFHeaderLine>(expected.getMetaDataInSortedOrder());
+        final List<VCFHeaderLine> actualLines = new ArrayList<>(actual.getMetaDataInSortedOrder());
+        final List<VCFHeaderLine> expectedLines = new ArrayList<>(expected.getMetaDataInSortedOrder());
         for ( int i = 0; i < actualLines.size(); i++ ) {
             Assert.assertEquals(actualLines.get(i), expectedLines.get(i), "VCF header lines");
         }

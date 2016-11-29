@@ -27,7 +27,7 @@ public class CramSpanContainerIterator implements Iterator<Container> {
         this.cramHeader = CramIO.readCramHeader(seekableStream);
         firstContainerOffset = seekableStream.position();
 
-        final List<Boundary> boundaries = new ArrayList<Boundary>();
+        final List<Boundary> boundaries = new ArrayList<>();
         for (int i = 0; i < coordinates.length; i += 2) {
             boundaries.add(new Boundary(coordinates[i], coordinates[i + 1]));
         }

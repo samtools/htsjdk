@@ -50,8 +50,8 @@ public class SAMSequenceDictionary implements Serializable {
     getter because the later wraps the list into an unmodifiable List 
     see http://tech.joshuacummings.com/2010/10/problems-with-defensive-collection.html */
     @XmlElement(name="Reference")
-    private List<SAMSequenceRecord> mSequences = new ArrayList<SAMSequenceRecord>();
-    private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<String, SAMSequenceRecord>();
+    private List<SAMSequenceRecord> mSequences = new ArrayList<>();
+    private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<>();
 
     public SAMSequenceDictionary() {
     }

@@ -76,7 +76,7 @@ public class TabixIndex implements Index {
             throw new IllegalArgumentException("sequenceNames.size() != indices.length");
         }
         this.formatSpec = formatSpec.clone();
-        this.sequenceNames = Collections.unmodifiableList(new ArrayList<String>(sequenceNames));
+        this.sequenceNames = Collections.unmodifiableList(new ArrayList<>(sequenceNames));
         this.indices = indices;
     }
 
@@ -112,7 +112,7 @@ public class TabixIndex implements Index {
         final int nameBlockSize = dis.readInt();
         final byte[] nameBlock = new byte[nameBlockSize];
         if (dis.read(nameBlock) != nameBlockSize) throw new EOFException("Premature end of file reading Tabix header");
-        final List<String> sequenceNames = new ArrayList<String>(numSequences);
+        final List<String> sequenceNames = new ArrayList<>(numSequences);
         int startPos = 0;
         for (int i = 0; i < numSequences; ++i) {
             int endPos = startPos;
@@ -290,7 +290,7 @@ public class TabixIndex implements Index {
         final int numBins = dis.readInt();
         if (numBins == 0) return null;
         int nonNullBins = 0;
-        final ArrayList<Bin> bins = new ArrayList<Bin>();
+        final ArrayList<Bin> bins = new ArrayList<>();
         for (int i = 0; i < numBins; ++i) {
             final Bin bin = loadBin(referenceSequenceIndex, dis);
             if (bin != null) {
@@ -328,7 +328,7 @@ public class TabixIndex implements Index {
         final int binNumber = dis.readInt();
         final Bin ret = new Bin(referenceSequenceIndex, binNumber);
         final int numChunks = dis.readInt();
-        final List<Chunk> chunkList = new ArrayList<Chunk>(numChunks);
+        final List<Chunk> chunkList = new ArrayList<>(numChunks);
         for (int i = 0; i < numChunks; ++i) {
             chunkList.add(loadChunk(dis));
         }

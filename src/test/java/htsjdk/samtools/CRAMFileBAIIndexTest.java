@@ -181,7 +181,7 @@ public class CRAMFileBAIIndexTest {
         Assert.assertNotNull(secondContainer);
         final Map<Integer, AlignmentSpan> references = new ContainerParser(it.getCramHeader().getSamFileHeader()).getReferences(secondContainer, ValidationStringency.STRICT);
         it.close();
-        int refId = new TreeSet<Integer>(references.keySet()).iterator().next();
+        int refId = new TreeSet<>(references.keySet()).iterator().next();
         final AlignmentSpan alignmentSpan = references.get(refId);
 
         CRAMFileReader reader = new CRAMFileReader(new ByteArraySeekableStream(cramBytes), new ByteArraySeekableStream(baiBytes), source, ValidationStringency.SILENT);

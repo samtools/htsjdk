@@ -361,7 +361,7 @@ public class IntHashMap<T> {
         }
 
         // Creates the new entry.
-        final Entry<T> entry = new Entry<T>(key, key, value, tab[index]);
+        final Entry<T> entry = new Entry<>(key, key, value, tab[index]);
         tab[index] = entry;
         count++;
         return null;

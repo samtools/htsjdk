@@ -63,15 +63,15 @@ public class VCFHeader implements Serializable {
     }
 
     // the associated meta data
-    private final Set<VCFHeaderLine> mMetaData = new LinkedHashSet<VCFHeaderLine>();
-    private final Map<String, VCFInfoHeaderLine> mInfoMetaData = new LinkedHashMap<String, VCFInfoHeaderLine>();
-    private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<String, VCFFormatHeaderLine>();
-    private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<String, VCFFilterHeaderLine>();
-    private final Map<String, VCFHeaderLine> mOtherMetaData = new LinkedHashMap<String, VCFHeaderLine>();
-    private final List<VCFContigHeaderLine> contigMetaData = new ArrayList<VCFContigHeaderLine>();
+    private final Set<VCFHeaderLine> mMetaData = new LinkedHashSet<>();
+    private final Map<String, VCFInfoHeaderLine> mInfoMetaData = new LinkedHashMap<>();
+    private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<>();
+    private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<>();
+    private final Map<String, VCFHeaderLine> mOtherMetaData = new LinkedHashMap<>();
+    private final List<VCFContigHeaderLine> contigMetaData = new ArrayList<>();
 
     // the list of auxillary tags
-    private final List<String> mGenotypeSampleNames = new ArrayList<String>();
+    private final List<String> mGenotypeSampleNames = new ArrayList<>();
 
     // the character string that indicates meta data
     public static final String METADATA_INDICATOR = "##";
@@ -132,13 +132,13 @@ public class VCFHeader implements Serializable {
      * @param genotypeSampleNames the sample names
      */
     public VCFHeader(final Set<VCFHeaderLine> metaData, final Set<String> genotypeSampleNames) {
-        this(metaData, new ArrayList<String>(genotypeSampleNames));
+        this(metaData, new ArrayList<>(genotypeSampleNames));
     }
 
     public VCFHeader(final Set<VCFHeaderLine> metaData, final List<String> genotypeSampleNames) {
         this(metaData);
 
-        if ( genotypeSampleNames.size() != new HashSet<String>(genotypeSampleNames).size() )
+        if ( genotypeSampleNames.size() != new HashSet<>(genotypeSampleNames).size() )
             throw new TribbleException.InvalidHeader("BUG: VCF header has duplicate sample names");
 
         mGenotypeSampleNames.addAll(genotypeSampleNames);
@@ -155,8 +155,8 @@ public class VCFHeader implements Serializable {
      * @param genotypeSampleNamesInAppearenceOrder genotype sample names, must iterator in order of appearance
      */
     private void buildVCFReaderMaps(final Collection<String> genotypeSampleNamesInAppearenceOrder) {
-        sampleNamesInOrder = new ArrayList<String>(genotypeSampleNamesInAppearenceOrder.size());
-        sampleNameToOffset = new HashMap<String, Integer>(genotypeSampleNamesInAppearenceOrder.size());
+        sampleNamesInOrder = new ArrayList<>(genotypeSampleNamesInAppearenceOrder.size());
+        sampleNameToOffset = new HashMap<>(genotypeSampleNamesInAppearenceOrder.size());
 
         int i = 0;
         for (final String name : genotypeSampleNamesInAppearenceOrder) {
@@ -200,7 +200,7 @@ public class VCFHeader implements Serializable {
         final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
         if (contigHeaderLines.isEmpty()) return null;
 
-        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
+        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<>(contigHeaderLines.size());
         for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
             sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
         }
@@ -215,7 +215,7 @@ public class VCFHeader implements Serializable {
         this.contigMetaData.clear();
 
         // Also need to remove contig record lines from mMetaData
-        final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
+        final List<VCFHeaderLine> toRemove = new ArrayList<>();
         for (final VCFHeaderLine line : mMetaData) {
             if (line instanceof VCFContigHeaderLine) {
                 toRemove.add(line);
@@ -237,7 +237,7 @@ public class VCFHeader implements Serializable {
      * @return all of the VCF FILTER lines in their original file order, or an empty list if none were present
      */
     public List<VCFFilterHeaderLine> getFilterLines() {
-        final List<VCFFilterHeaderLine> filters = new ArrayList<VCFFilterHeaderLine>();
+        final List<VCFFilterHeaderLine> filters = new ArrayList<>();
         for (final VCFHeaderLine line : mMetaData) {
             if ( line instanceof VCFFilterHeaderLine )  {
                 filters.add((VCFFilterHeaderLine)line);
@@ -250,7 +250,7 @@ public class VCFHeader implements Serializable {
      * @return all of the VCF FILTER lines in their original file order, or an empty list if none were present
      */
     public List<VCFIDHeaderLine> getIDHeaderLines() {
-        final List<VCFIDHeaderLine> filters = new ArrayList<VCFIDHeaderLine>();
+        final List<VCFIDHeaderLine> filters = new ArrayList<>();
         for (final VCFHeaderLine line : mMetaData) {
             if (line instanceof VCFIDHeaderLine)  {
                 filters.add((VCFIDHeaderLine)line);
@@ -263,7 +263,7 @@ public class VCFHeader implements Serializable {
      * Remove all lines with a VCF version tag from the provided set of header lines
      */
     private void removeVCFVersionLines( final Set<VCFHeaderLine> headerLines ) {
-        final List<VCFHeaderLine> toRemove = new ArrayList<VCFHeaderLine>();
+        final List<VCFHeaderLine> toRemove = new ArrayList<>();
         for (final VCFHeaderLine line : headerLines) {
             if (VCFHeaderVersion.isFormatString(line.getKey())) {
                 toRemove.add(line);
@@ -385,7 +385,7 @@ public class VCFHeader implements Serializable {
      * @return a set of the header fields, in order
      */
     public Set<HEADER_FIELDS> getHeaderFields() {
-        return new LinkedHashSet<HEADER_FIELDS>(Arrays.asList(HEADER_FIELDS.values()));
+        return new LinkedHashSet<>(Arrays.asList(HEADER_FIELDS.values()));
     }
 
     /**
@@ -398,11 +398,11 @@ public class VCFHeader implements Serializable {
     }
 
     public Set<VCFHeaderLine> getMetaDataInSortedOrder() {
-        return makeGetMetaDataSet(new TreeSet<VCFHeaderLine>(mMetaData));
+        return makeGetMetaDataSet(new TreeSet<>(mMetaData));
     }
 
     private static Set<VCFHeaderLine> makeGetMetaDataSet(final Set<VCFHeaderLine> headerLinesInSomeOrder) {
-        final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>();
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>();
         lines.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
         lines.addAll(headerLinesInSomeOrder);
         return Collections.unmodifiableSet(lines);

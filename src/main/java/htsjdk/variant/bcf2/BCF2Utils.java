@@ -85,8 +85,8 @@ public final class BCF2Utils {
      * @return a non-null dictionary of elements, may be empty
      */
     public static ArrayList<String> makeDictionary(final VCFHeader header) {
-        final Set<String> seen = new HashSet<String>();
-        final ArrayList<String> dict = new ArrayList<String>();
+        final Set<String> seen = new HashSet<>();
+        final ArrayList<String> dict = new ArrayList<>();
 
         // special case the special PASS field which doesn't show up in the FILTER field definitions
         seen.add(VCFConstants.PASSES_FILTERS_v4);
@@ -281,7 +281,7 @@ public final class BCF2Utils {
         else if ( o instanceof List ) return (List<T>)o;
         else if ( o.getClass().isArray() ) {
             final int arraySize = Array.getLength(o);
-            final List<T> list = new ArrayList<T>(arraySize);
+            final List<T> list = new ArrayList<>(arraySize);
             for (int i=0; i<arraySize; i++)
                 list.add((T)Array.get(o, i));
             return list;

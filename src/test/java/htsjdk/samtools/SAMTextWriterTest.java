@@ -83,7 +83,7 @@ public class SAMTextWriterTest {
         SamReader inputSAM = recordSetBuilder.getSamReader();
         final File samFile = File.createTempFile("tmp.", ".sam");
         samFile.deleteOnExit();
-        final Map<String, Object> tagMap = new HashMap<String, Object>();
+        final Map<String, Object> tagMap = new HashMap<>();
         tagMap.put("XC", new Character('q'));
         tagMap.put("XI", 12345);
         tagMap.put("XF", 1.2345f);

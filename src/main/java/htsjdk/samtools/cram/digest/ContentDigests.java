@@ -20,17 +20,17 @@ public class ContentDigests {
             KNOWN_DIGESTS.BD, KNOWN_DIGESTS.SD);
 
     private static final Log log = Log.getInstance(ContentDigests.class);
-    private List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
+    private List<Digester> digesters = new LinkedList<>();
 
     public static ContentDigests create(final EnumSet<KNOWN_DIGESTS> requestedDigests) {
-        final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
+        final List<Digester> digesters = new LinkedList<>();
         for (final KNOWN_DIGESTS digest : requestedDigests)
             digesters.add(digest.createDigester());
         return new ContentDigests(digesters);
     }
 
     public static ContentDigests create(final SAMBinaryTagAndValue binaryTags) {
-        final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
+        final List<Digester> digesters = new LinkedList<>();
         SAMBinaryTagAndValue binaryTag = binaryTags;
         while (binaryTag != null) {
             final String tagID = SAMTagUtil.getSingleton().makeStringTag(

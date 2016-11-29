@@ -69,7 +69,7 @@ public class ContainerFactory {
 
         header.readNamesIncluded = preserveReadNames;
 
-        final List<Slice> slices = new ArrayList<Slice>();
+        final List<Slice> slices = new ArrayList<>();
 
         final Container container = new Container();
         container.header = header;
@@ -126,7 +126,7 @@ public class ContainerFactory {
                                     final CompressionHeader header)
             throws IllegalArgumentException, IllegalAccessException,
             IOException {
-        final Map<Integer, ExposedByteArrayOutputStream> map = new HashMap<Integer, ExposedByteArrayOutputStream>();
+        final Map<Integer, ExposedByteArrayOutputStream> map = new HashMap<>();
         for (final int id : header.externalIds) {
             map.put(id, new ExposedByteArrayOutputStream());
         }
@@ -186,7 +186,7 @@ public class ContainerFactory {
         bitOutputStream.close();
         slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray());
 
-        slice.external = new HashMap<Integer, Block>();
+        slice.external = new HashMap<>();
         for (final Integer key : map.keySet()) {
             final ExposedByteArrayOutputStream os = map.get(key);
 

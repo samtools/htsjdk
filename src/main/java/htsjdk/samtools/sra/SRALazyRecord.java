@@ -213,7 +213,7 @@ public class SRALazyRecord extends SAMRecord {
     private static Map<Short, LazyAttribute> lazyAttributeTags;
     static
     {
-        lazyAttributeTags = new HashMap<Short, LazyAttribute>();
+        lazyAttributeTags = new HashMap<>();
         lazyAttributeTags.put(SAMTagUtil.getSingleton().RG, LazyAttribute.RG);
     }
 

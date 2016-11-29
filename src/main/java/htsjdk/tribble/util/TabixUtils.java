@@ -96,7 +96,7 @@ public class TabixUtils {
             buf = new byte[len];
             is.read(buf);
 
-            final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
+            final List<SAMSequenceRecord> sequences = new ArrayList<>();
             for (i = j = 0; i < buf.length; ++i) {
                 if (buf[i] == 0) {
                     byte[] b = new byte[i - j];

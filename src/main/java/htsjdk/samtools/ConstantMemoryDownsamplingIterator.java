@@ -51,7 +51,7 @@ class ConstantMemoryDownsamplingIterator extends DownsamplingIterator {
     ConstantMemoryDownsamplingIterator(final Iterator<SAMRecord> iterator, final double proportion, final int seed) {
         super(proportion);
         this.hasher = new Murmur3(seed);
-        this.underlyingIterator = new PeekableIterator<SAMRecord>(iterator);
+        this.underlyingIterator = new PeekableIterator<>(iterator);
 
         final long range = (long) Integer.MAX_VALUE - (long) Integer.MIN_VALUE;
         this.maxHashValue = Integer.MIN_VALUE + (int) Math.round(range * proportion);

@@ -39,7 +39,7 @@ public class SamSpecIntTest {
 
     @Test
     public void testSamIntegers() throws IOException {
-        final List<String> errorMessages = new ArrayList<String>();
+        final List<String> errorMessages = new ArrayList<>();
         final SamReader samReader = SamReaderFactory.makeDefault().open(SAM_INPUT);
         final File bamOutput = File.createTempFile("test", ".bam");
         final File samOutput = File.createTempFile("test", ".sam");
@@ -68,7 +68,7 @@ public class SamSpecIntTest {
 
     @Test
     public void testBamIntegers() throws IOException {
-        final List<String> errorMessages = new ArrayList<String>();
+        final List<String> errorMessages = new ArrayList<>();
         final SamReader bamReader = SamReaderFactory.makeDefault().open(BAM_INPUT);
         final File bamOutput = File.createTempFile("test", ".bam");
         final File samOutput = File.createTempFile("test", ".sam");

@@ -208,7 +208,7 @@ public class IndexFactory {
                                                                                       final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                       final int binSize) {
         final LinearIndexCreator indexCreator = new LinearIndexCreator(inputFile, binSize);
-        return (LinearIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (LinearIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -234,7 +234,7 @@ public class IndexFactory {
                                                                                         final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                         final int featuresPerInterval) {
         final IntervalIndexCreator indexCreator = new IntervalIndexCreator(inputFile, featuresPerInterval);
-        return (IntervalTreeIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (IntervalTreeIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -304,7 +304,7 @@ public class IndexFactory {
                                                                                        final IndexBalanceApproach iba) {
         // get a list of index creators
         final DynamicIndexCreator indexCreator = new DynamicIndexCreator(inputFile, iba);
-        return createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -319,7 +319,7 @@ public class IndexFactory {
                                                                                      final TabixFormat tabixFormat,
                                                                                      final SAMSequenceDictionary sequenceDictionary) {
         final TabixIndexCreator indexCreator = new TabixIndexCreator(sequenceDictionary, tabixFormat);
-        return (TabixIndex)createIndex(inputFile, new FeatureIterator<FEATURE_TYPE, SOURCE_TYPE>(inputFile, codec), indexCreator);
+        return (TabixIndex)createIndex(inputFile, new FeatureIterator<>(inputFile, codec), indexCreator);
     }
 
     /**
@@ -338,7 +338,7 @@ public class IndexFactory {
     private static Index createIndex(final File inputFile, final FeatureIterator iterator, final IndexCreator creator) {
         Feature lastFeature = null;
         Feature currentFeature;
-        final Map<String, Feature> visitedChromos = new HashMap<String, Feature>(40);
+        final Map<String, Feature> visitedChromos = new HashMap<>(40);
         while (iterator.hasNext()) {
             final long position = iterator.getPosition();
             currentFeature = iterator.next();

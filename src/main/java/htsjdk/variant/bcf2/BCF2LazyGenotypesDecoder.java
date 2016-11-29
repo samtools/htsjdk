@@ -87,7 +87,7 @@ public class BCF2LazyGenotypesDecoder implements LazyGenotypesContext.LazyParser
                 }
             }
 
-            final ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nSamples);
+            final ArrayList<Genotype> genotypes = new ArrayList<>(nSamples);
             for ( final GenotypeBuilder gb : builders )
                 genotypes.add(gb.make());
 

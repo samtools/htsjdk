@@ -108,7 +108,7 @@ class SliceIO {
     }
 
     private static void readSliceBlocks(final int major, final Slice slice, final InputStream inputStream) throws IOException {
-        slice.external = new HashMap<Integer, Block>();
+        slice.external = new HashMap<>();
         for (int i = 0; i < slice.nofBlocks; i++) {
             final Block block = Block.readFromInputStream(major, inputStream);
 

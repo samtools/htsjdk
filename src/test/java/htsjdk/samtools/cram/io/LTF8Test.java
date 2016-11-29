@@ -34,7 +34,7 @@ public class LTF8Test {
 
     @DataProvider(name = "testLTF8")
     public static Object[][] testValues() {
-        List<Long> list = new ArrayList<Long>() ;
+        List<Long> list = new ArrayList<>() ;
 
         // basics:
         list.add(0L);

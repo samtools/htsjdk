@@ -67,7 +67,7 @@ public class SamFileHeaderMergerTest {
     public void testMergedException() {
         File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
                 new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
-        final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headers = new ArrayList<>();
         for (final File inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
             headers.add(SamReaderFactory.makeDefault().getFileHeader(inFile));
@@ -80,8 +80,8 @@ public class SamFileHeaderMergerTest {
     public void testMerging() {
         File INPUT[] = {new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome1to10.bam"),
                 new File(TEST_DATA_DIR, "SamFileHeaderMergerTest/Chromosome5to9.bam")};
-        final List<SamReader> readers = new ArrayList<SamReader>();
-        final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
+        final List<SamReader> readers = new ArrayList<>();
+        final List<SAMFileHeader> headers = new ArrayList<>();
         for (final File inFile : INPUT) {
             IOUtil.assertFileIsReadable(inFile);
             // We are now checking for zero-length reads, so suppress complaint about that.
@@ -96,7 +96,7 @@ public class SamFileHeaderMergerTest {
         headerMerger.getMergedHeader();
 
         // count the total reads, and record read counts for each sequence
-        Map<Integer, Integer> seqCounts = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> seqCounts = new HashMap<>();
         int totalCount = 0;
 
         while (iterator.hasNext()) {
@@ -160,8 +160,8 @@ public class SamFileHeaderMergerTest {
             expected_output += line + "\n";
         }
 
-        final List<SamReader> readers = new ArrayList<SamReader>();
-        final List<SAMFileHeader> headers = new ArrayList<SAMFileHeader>();
+        final List<SamReader> readers = new ArrayList<>();
+        final List<SAMFileHeader> headers = new ArrayList<>();
         for (final File inFile : inputFiles) {
             IOUtil.assertFileIsReadable(inFile);
 
@@ -205,7 +205,7 @@ public class SamFileHeaderMergerTest {
 
     private static final boolean headersEquivalent(String a, String b) {
         if (a.length() != b.length()) return false;
-        List<String> remaining = new LinkedList<String>(Arrays.asList(a.split("\\t")));
+        List<String> remaining = new LinkedList<>(Arrays.asList(a.split("\\t")));
         for (final String item : b.split("\\t")) {
             if (!remaining.remove(item)) return false;
         }
@@ -259,7 +259,7 @@ public class SamFileHeaderMergerTest {
 
     @Test(dataProvider = "fourDigitBase36StrPositiveData")
     public void fourDigitBase36StrPositiveTest(final int toConvert, final String expectedValue) {
-        final SamFileHeaderMerger headerMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, new ArrayList<SAMFileHeader>(), true);
+        final SamFileHeaderMerger headerMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, new ArrayList<>(), true);
         Assert.assertEquals(expectedValue, headerMerger.positiveFourDigitBase36Str(toConvert));
     }
 }

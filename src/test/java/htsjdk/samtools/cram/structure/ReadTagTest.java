@@ -90,7 +90,7 @@ public class ReadTagTest {
         // For now, roll our own.
         final Object[][] allArgs = getParallelReadTagData();
         final long timeout = 1000L * 5; // just in case
-        final List<Thread> threads = new ArrayList<Thread>(allArgs.length);
+        final List<Thread> threads = new ArrayList<>(allArgs.length);
         final Map<Object[], Exception> results = Collections.synchronizedMap(new HashMap<Object[], Exception>());
         for (final Object[] argLine: allArgs) {
             threads.add(new Thread() {

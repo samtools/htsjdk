@@ -31,7 +31,7 @@ import java.util.Iterator;
 public class IntervalTreeMapTest {
     @Test
     public void testBasic() {
-        IntervalTreeMap<Interval> m=new IntervalTreeMap<Interval>();
+        IntervalTreeMap<Interval> m= new IntervalTreeMap<>();
 
         Interval chr1Interval = new Interval("chr1", 10,100);
         m.put(chr1Interval, chr1Interval);

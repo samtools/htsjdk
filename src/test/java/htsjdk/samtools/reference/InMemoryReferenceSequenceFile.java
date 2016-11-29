@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class InMemoryReferenceSequenceFile implements
         ReferenceSequenceFile {
-    Map<String, ReferenceSequence> map = new HashMap<String, ReferenceSequence>();
+    Map<String, ReferenceSequence> map = new HashMap<>();
     List<String> index;
     int current = 0;
 

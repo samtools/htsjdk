@@ -66,21 +66,21 @@ public class Sam2CramRecordFactory {
 
     private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
-    private final Map<String, Integer> readGroupMap = new HashMap<String, Integer>();
+    private final Map<String, Integer> readGroupMap = new HashMap<>();
 
     private long landedRefMaskScores = 0;
     private long landedTotalScores = 0;
 
     public boolean captureAllTags = false;
     public boolean preserveReadNames = false;
-    public final Set<String> captureTags = new TreeSet<String>();
-    public final Set<String> ignoreTags = new TreeSet<String>();
+    public final Set<String> captureTags = new TreeSet<>();
+    public final Set<String> ignoreTags = new TreeSet<>();
 
     {
         ignoreTags.add(SAMTag.RG.name());
     }
 
-    private final List<ReadTag> readTagList = new ArrayList<ReadTag>();
+    private final List<ReadTag> readTagList = new ArrayList<>();
 
     private long baseCount = 0;
     private long featureCount = 0;
@@ -202,7 +202,7 @@ public class Sam2CramRecordFactory {
     }
 
     private List<ReadFeature> createVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
-        final List<ReadFeature> features = new LinkedList<ReadFeature>();
+        final List<ReadFeature> features = new LinkedList<>();
         int zeroBasedPositionInRead = 0;
         int alignmentStartOffset = 0;
         int cigarElementLength;

@@ -38,7 +38,7 @@ import javax.xml.bind.annotation.XmlTransient;
 public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 
-    private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
+    private final Map<String,String> mAttributes = new LinkedHashMap<>();
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);

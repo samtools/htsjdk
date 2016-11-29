@@ -107,23 +107,23 @@ public class DataReaderFactory {
         encoding.fromByteArray(params.params);
 
         //noinspection ConstantConditions
-        return collectStats ? new DataReaderWithStats(new DefaultDataReader<T>(
+        return collectStats ? new DataReaderWithStats(new DefaultDataReader<>(
                 encoding.buildCodec(inputMap, null), bitInputStream))
-                : new DefaultDataReader<T>(encoding.buildCodec(inputMap, null),
+                : new DefaultDataReader<>(encoding.buildCodec(inputMap, null),
                 bitInputStream);
     }
 
     private static <T> DataReader<T> buildNullReader(final DataSeriesType valueType) {
         switch (valueType) {
             case BYTE:
-                return (DataReader<T>) new SingleValueReader<Byte>((byte) 0);
+                return (DataReader<T>) new SingleValueReader<>((byte) 0);
             case INT:
-                return (DataReader<T>) new SingleValueReader<Integer>(
+                return (DataReader<T>) new SingleValueReader<>(
                         0);
             case LONG:
-                return (DataReader<T>) new SingleValueReader<Long>((long) 0);
+                return (DataReader<T>) new SingleValueReader<>((long) 0);
             case BYTE_ARRAY:
-                return (DataReader<T>) new SingleValueReader<byte[]>(new byte[]{});
+                return (DataReader<T>) new SingleValueReader<>(new byte[]{});
 
             default:
                 throw new RuntimeException("Unknown data type: " + valueType.name());
@@ -196,7 +196,7 @@ public class DataReaderFactory {
 
     public Map<String, DataReaderWithStats> getStats(final CramRecordReader reader)
             throws IllegalArgumentException, IllegalAccessException {
-        final Map<String, DataReaderWithStats> map = new TreeMap<String, DataReaderFactory.DataReaderWithStats>();
+        final Map<String, DataReaderWithStats> map = new TreeMap<>();
         //noinspection ConstantConditions,PointlessBooleanExpression
         if (!collectStats)
             return map;

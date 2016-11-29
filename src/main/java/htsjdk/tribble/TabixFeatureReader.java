@@ -52,7 +52,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public TabixFeatureReader(final String featureFile, final AsciiFeatureCodec codec) throws IOException {
         super(featureFile, codec);
         tabixReader = new TabixReader(featureFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
+        sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }
 
@@ -66,7 +66,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec) throws IOException {
         super(featureFile, codec);
         tabixReader = new TabixReader(featureFile, indexFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
+        sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }
 
@@ -115,17 +115,17 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         if (mp == null) throw new TribbleException.TabixReaderFailure("Unable to find sequence named " + chr +
                 " in the tabix index. ", path);
         if (!mp.contains(chr)) {
-            return new EmptyIterator<T>();
+            return new EmptyIterator<>();
         }
         final TabixIteratorLineReader lineReader = new TabixIteratorLineReader(tabixReader.query(tabixReader.chr2tid(chr), start - 1, end));
-        return new FeatureIterator<T>(lineReader, start - 1, end);
+        return new FeatureIterator<>(lineReader, start - 1, end);
     }
 
     public CloseableTribbleIterator<T> iterator() throws IOException {
         final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
-        return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
+        return new FeatureIterator<>(reader, 0, Integer.MAX_VALUE);
     }
 
     public void close() throws IOException {

@@ -31,7 +31,7 @@ public class SnpFilterTest {
     public Iterator<Object[]> variantProvider() {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Collections.<Allele>emptyList());
-        final List<Object[]> variants = new ArrayList<Object[]>(10);
+        final List<Object[]> variants = new ArrayList<>(10);
 
         variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, G))         .make(), true});    // SNP
         variants.add(new Object[]{vc_builder.alleles(Arrays.asList(refA, G, T))      .make(), true});    // SNP

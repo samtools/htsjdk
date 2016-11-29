@@ -444,7 +444,7 @@ public class LiftOverTest {
         File outFile = File.createTempFile("test.", ".chain");
         outFile.deleteOnExit();
         PrintWriter pw = new PrintWriter(outFile);
-        final Map<Integer, Chain> originalChainMap = new TreeMap<Integer, Chain>();
+        final Map<Integer, Chain> originalChainMap = new TreeMap<>();
         for (final Chain chain : chains.getAll()) {
             chain.write(pw);
             originalChainMap.put(chain.id, chain);
@@ -452,7 +452,7 @@ public class LiftOverTest {
         pw.close();
 
         final OverlapDetector<Chain> newChains = Chain.loadChains(outFile);
-        final Map<Integer, Chain> newChainMap = new TreeMap<Integer, Chain>();
+        final Map<Integer, Chain> newChainMap = new TreeMap<>();
         for (final Chain chain : newChains.getAll()) {
             newChainMap.put(chain.id, chain);
         }

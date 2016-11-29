@@ -115,7 +115,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
     
     /** Returns the list of headers with the specified type. */
     public List<Header> getHeaders(final Class<? extends Header> type) {
-        List<Header> tmp = new ArrayList<Header>();
+        List<Header> tmp = new ArrayList<>();
         for (final Header h : this.headers) {
             if (h.getClass().equals(type)) {
                 tmp.add(h);
@@ -238,7 +238,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
 
     /** Prints the histogram if one is present. */
     private void printHistogram(final BufferedWriter out, final FormatUtil formatter) throws IOException {
-        final List<Histogram<HKEY>> nonEmptyHistograms = new ArrayList<Histogram<HKEY>>();
+        final List<Histogram<HKEY>> nonEmptyHistograms = new ArrayList<>();
         for (final Histogram<HKEY> histo : this.histograms) {
             if (!histo.isEmpty()) nonEmptyHistograms.add(histo);
         }
@@ -248,7 +248,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
         }
 
         // Build a combined key set.  Assume comparator is the same for all Histograms
-        final java.util.Set<HKEY> keys = new TreeSet<HKEY>(nonEmptyHistograms.get(0).comparator());
+        final java.util.Set<HKEY> keys = new TreeSet<>(nonEmptyHistograms.get(0).comparator());
         for (final Histogram<HKEY> histo : nonEmptyHistograms) {
             if (histo != null) keys.addAll(histo.keySet());
         }
@@ -421,7 +421,7 @@ public class MetricsFile<BEAN extends MetricBase, HKEY extends Comparable> imple
                     // Read the next line with the bin and value labels
                     final String[] labels = in.readLine().split(SEPARATOR);
                     for (int i=1; i<labels.length; ++i) {
-                        this.histograms.add(new Histogram<HKEY>(labels[0], labels[i]));
+                        this.histograms.add(new Histogram<>(labels[0], labels[i]));
                     }
 
                     // Read the entries in the histograms

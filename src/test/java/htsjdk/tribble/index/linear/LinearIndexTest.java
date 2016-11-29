@@ -194,7 +194,7 @@ public class LinearIndexTest {
     public void testOverlappingFeatures() throws Exception {
         //chr2:179,222,066-179,262,059<- CONTAINS TTN
 
-        final Set<String> names = new HashSet<String>(Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987",
+        final Set<String> names = new HashSet<>(Arrays.asList("Hs.134602", "Hs.620337", "Hs.609465", "Hs.623987",
                 "Hs.594545", "LONG_FEATURE"));
 
         final String bedFile = TestUtils.DATA_DIR + "bed/Unigene.sample.bed";

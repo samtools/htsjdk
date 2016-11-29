@@ -358,7 +358,7 @@ public class SamPairUtil {
      */
     public static class SetMateInfoIterator extends PeekableIterator<SAMRecord> {
 
-        private final Queue<SAMRecord> records = new LinkedList<SAMRecord>();
+        private final Queue<SAMRecord> records = new LinkedList<>();
         private final boolean setMateCigar;
         private final boolean ignoreMissingMates;
         private long numMateCigarsAdded = 0;

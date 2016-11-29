@@ -48,11 +48,11 @@ import java.util.Map;
 import java.util.Set;
 
 public class VariantContextUtils {
-    private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<String>();
+    private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<>();
 
     /** Use a {@link Lazy} {@link JexlEngine} instance to avoid class-loading issues. (Applications that access this class are otherwise
      * forced to build a {@link JexlEngine} instance, which depends on some apache logging libraries that mightn't be packaged.) */
-    final public static Lazy<JexlEngine> engine = new Lazy<JexlEngine>(new Lazy.LazyInitializer<JexlEngine>() {
+    final public static Lazy<JexlEngine> engine = new Lazy<>(new Lazy.LazyInitializer<JexlEngine>() {
         @Override
         public JexlEngine make() {
             final JexlEngine jexl = new JexlEngine();
@@ -95,7 +95,7 @@ public class VariantContextUtils {
      * @return the attributes map provided as input, returned for programming convenience
      */
     public static Map<String, Object> calculateChromosomeCounts(VariantContext vc, Map<String, Object> attributes, boolean removeStaleValues) {
-        return calculateChromosomeCounts(vc, attributes,  removeStaleValues, new HashSet<String>(0));
+        return calculateChromosomeCounts(vc, attributes,  removeStaleValues, new HashSet<>(0));
     }
 
     /**
@@ -128,9 +128,9 @@ public class VariantContextUtils {
 
             // if there are alternate alleles, record the relevant tags
             if (!vc.getAlternateAlleles().isEmpty()) {
-                ArrayList<Double> alleleFreqs = new ArrayList<Double>();
-                ArrayList<Integer> alleleCounts = new ArrayList<Integer>();
-                ArrayList<Integer> foundersAlleleCounts = new ArrayList<Integer>();
+                ArrayList<Double> alleleFreqs = new ArrayList<>();
+                ArrayList<Integer> alleleCounts = new ArrayList<>();
+                ArrayList<Integer> foundersAlleleCounts = new ArrayList<>();
                 double totalFoundersChromosomes = (double)vc.getCalledChrCount(founderIds);
                 int foundersAltChromosomes;
                 for ( Allele allele : vc.getAlternateAlleles() ) {
@@ -240,7 +240,7 @@ public class VariantContextUtils {
         if ( names.length != exps.length )
             throw new IllegalArgumentException("Inconsistent number of provided filter names and expressions: names=" + Arrays.toString(names) + " exps=" + Arrays.toString(exps));
 
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for ( int i = 0; i < names.length; i++ ) { map.put(names[i], exps[i]); }
 
         return VariantContextUtils.initializeMatchExps(map);
@@ -404,7 +404,7 @@ public class VariantContextUtils {
      * @return new VCs without genotypes
      */
     public static Collection<VariantContext> sitesOnlyVariantContexts(Collection<VariantContext> vcs) {
-        List<VariantContext> r = new ArrayList<VariantContext>();
+        List<VariantContext> r = new ArrayList<>();
         for ( VariantContext vc : vcs )
             r.add(sitesOnlyVariantContext(vc));
         return r;
@@ -415,7 +415,7 @@ public class VariantContextUtils {
     }
 
     public static Set<String> genotypeNames(final Collection<Genotype> genotypes) {
-        final Set<String> names = new HashSet<String>(genotypes.size());
+        final Set<String> names = new HashSet<>(genotypes.size());
         for ( final Genotype g : genotypes )
             names.add(g.getSampleName());
         return names;

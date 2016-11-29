@@ -397,8 +397,8 @@ public class IntervalListTest {
         //assert that the intervals correspond
         Assert.assertEquals(intervals, compIntervals);
 
-        final List<String> intervalNames = new LinkedList<String>();
-        final List<String> compIntervalNames = new LinkedList<String>();
+        final List<String> intervalNames = new LinkedList<>();
+        final List<String> compIntervalNames = new LinkedList<>();
 
         for (final Interval interval : intervals) {
             intervalNames.add(interval.getName());

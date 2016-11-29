@@ -74,7 +74,7 @@ public class QueryInterval implements Comparable<QueryInterval> {
         if (inputIntervals.length == 0) return EMPTY_QUERY_INTERVAL_ARRAY;
         Arrays.sort(inputIntervals);
 
-        final List<QueryInterval> unique = new ArrayList<QueryInterval>();
+        final List<QueryInterval> unique = new ArrayList<>();
         QueryInterval previous = inputIntervals[0];
 
 

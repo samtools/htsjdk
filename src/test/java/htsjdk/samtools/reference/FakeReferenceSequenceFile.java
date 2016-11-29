@@ -17,8 +17,8 @@ import java.util.Map;
  */
 public class FakeReferenceSequenceFile implements
         ReferenceSequenceFile {
-    Map<String, SAMSequenceRecord> map = new HashMap<String, SAMSequenceRecord>();
-    List<String> index= new ArrayList<String>() ;
+    Map<String, SAMSequenceRecord> map = new HashMap<>();
+    List<String> index= new ArrayList<>() ;
     int current = 0;
 
     public FakeReferenceSequenceFile(List<SAMSequenceRecord> sequences) {

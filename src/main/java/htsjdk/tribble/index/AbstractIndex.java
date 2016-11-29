@@ -148,8 +148,8 @@ public abstract class AbstractIndex implements MutableIndex {
      */
     public AbstractIndex() {
         this.version = VERSION; // <= is overriden when file is read
-        this.properties = new LinkedHashMap<String, String>();
-        chrIndices = new LinkedHashMap<String, ChrIndex>();
+        this.properties = new LinkedHashMap<>();
+        chrIndices = new LinkedHashMap<>();
     }
 
     /**
@@ -307,7 +307,7 @@ public abstract class AbstractIndex implements MutableIndex {
     }
 
     public List<String> getSequenceNames() {
-        return new ArrayList<String>(chrIndices.keySet());
+        return new ArrayList<>(chrIndices.keySet());
     }
 
     public List<Block> getBlocks(final String chr, final int start, final int end) {
@@ -360,7 +360,7 @@ public abstract class AbstractIndex implements MutableIndex {
             readHeader(dis);
 
             int nChromosomes = dis.readInt();
-            chrIndices = new LinkedHashMap<String, ChrIndex>(nChromosomes);
+            chrIndices = new LinkedHashMap<>(nChromosomes);
 
             while (nChromosomes-- > 0) {
                 final ChrIndex chrIdx = (ChrIndex) getChrIndexClass().newInstance();

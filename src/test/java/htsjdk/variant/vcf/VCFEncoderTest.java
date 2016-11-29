@@ -22,7 +22,7 @@ public class VCFEncoderTest {
 
 	@DataProvider(name = "VCFWriterDoubleFormatTestData")
 	public Object[][] makeVCFWriterDoubleFormatTestData() {
-		final List<Object[]> tests = new ArrayList<Object[]>();
+		final List<Object[]> tests = new ArrayList<>();
 		tests.add(new Object[]{1.0, "1.00"});
 		tests.add(new Object[]{10.1, "10.10"});
 		tests.add(new Object[]{10.01, "10.01"});
@@ -61,13 +61,13 @@ public class VCFEncoderTest {
         final VCFEncoder keepMissing = new VCFEncoder(header, false, true);
         final VariantContextBuilder baseVC = new VariantContextBuilder().chr("1").start(1).stop(1).noID().passFilters().log10PError(1).alleles("A", "C");
         final GenotypeBuilder baseGT = new GenotypeBuilder("Sample1").alleles(Arrays.asList(Allele.NO_CALL, Allele.NO_CALL));
-        final Map<Allele, String> alleleMap = new HashMap<Allele, String>(3);
+        final Map<Allele, String> alleleMap = new HashMap<>(3);
         final List<String> formatKeys = Arrays.asList("GT", "AA", "BB");
         alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE);
         alleleMap.put(Allele.create("A", true), "0");
         alleleMap.put(Allele.create("C", false), "1");
 
-        final List<Object[]> tests = new ArrayList<Object[]>();
+        final List<Object[]> tests = new ArrayList<>();
 
         VariantContext vc = baseVC.genotypes(baseGT.attribute("AA", "a").make()).make();
         tests.add(new Object[]{dropMissing, vc, "./.:a", alleleMap, formatKeys});
@@ -103,7 +103,7 @@ public class VCFEncoderTest {
     }
 
     private Set<VCFHeaderLine> createSyntheticMetadata() {
-        final Set<VCFHeaderLine> metaData = new TreeSet<VCFHeaderLine>();
+        final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
         metaData.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
 

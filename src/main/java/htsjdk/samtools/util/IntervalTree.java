@@ -74,7 +74,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
 
         if ( mRoot == null )
         {
-            mRoot = new Node<V>(start,end,value);
+            mRoot = new Node<>(start, end, value);
         }
         else
         {
@@ -531,7 +531,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
 
         Node<V1> insertLeft( final int start, final int end, final V1 value, final Node<V1> root )
         {
-            mLeft = new Node<V1>(this,start,end,value);
+            mLeft = new Node<>(this, start, end, value);
             return insertFixup(mLeft,root);
         }
 
@@ -542,7 +542,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
 
         Node<V1> insertRight( final int start, final int end, final V1 value, final Node<V1> root )
         {
-            mRight = new Node<V1>(this,start,end,value);
+            mRight = new Node<>(this, start, end, value);
             return insertFixup(mRight,root);
         }
 

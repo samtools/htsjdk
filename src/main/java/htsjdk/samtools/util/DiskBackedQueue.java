@@ -94,7 +94,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         this.tmpDirs = tmpDirs;
         this.codec = codec;
         this.maxRecordsInRamQueue = (maxRecordsInRam == 0) ? 0 : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
-        this.ramRecords = new ArrayDeque<E>(this.maxRecordsInRamQueue);
+        this.ramRecords = new ArrayDeque<>(this.maxRecordsInRamQueue);
     }
 
     /**
@@ -107,7 +107,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
     public static <T> DiskBackedQueue<T> newInstance(final SortingCollection.Codec<T> codec,
                                                      final int maxRecordsInRam,
                                                      final List<File> tmpDir) {
-        return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir);
+        return new DiskBackedQueue<>(codec, maxRecordsInRam, tmpDir);
     }
 
     public boolean canAdd() {

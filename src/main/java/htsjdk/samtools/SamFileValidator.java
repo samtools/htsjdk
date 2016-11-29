@@ -150,7 +150,7 @@ public class SamFileValidator {
             for (final Histogram.Bin<Type> bin : errorsByType.values()) {
                 errorsAndWarningsByType.increment(bin.getId().getHistogramString(), bin.getValue());
             }
-            final MetricsFile<ValidationMetrics, String> metricsFile = new MetricsFile<ValidationMetrics, String>();
+            final MetricsFile<ValidationMetrics, String> metricsFile = new MetricsFile<>();
             errorsByType.setBinLabel("Error Type");
             errorsByType.setValueLabel("Count");
             metricsFile.setHistogram(errorsAndWarningsByType);
@@ -537,7 +537,7 @@ public class SamFileValidator {
         }
 
         final List<SAMReadGroupRecord> rgs = fileHeader.getReadGroups();
-        final Set<String> readGroupIDs = new HashSet<String>();
+        final Set<String> readGroupIDs = new HashSet<>();
 
         for (final SAMReadGroupRecord record : rgs) {
             final String readGroupID = record.getReadGroupId();
@@ -679,7 +679,7 @@ public class SamFileValidator {
         }
 
         public List<SAMValidationError> validateMates(final PairEndInfo mate, final String readName) {
-            final List<SAMValidationError> errors = new ArrayList<SAMValidationError>();
+            final List<SAMValidationError> errors = new ArrayList<>();
             validateMateFields(this, mate, readName, errors);
             validateMateFields(mate, this, readName, errors);
             // Validations that should not be repeated on both ends
@@ -755,7 +755,7 @@ public class SamFileValidator {
 
     private class CoordinateSortedPairEndInfoMap implements PairEndInfoMap {
         private final CoordinateSortedPairInfoMap<String, PairEndInfo> onDiskMap =
-                new CoordinateSortedPairInfoMap<String, PairEndInfo>(maxTempFiles, new Codec());
+                new CoordinateSortedPairInfoMap<>(maxTempFiles, new Codec());
 
         public void put(int mateReferenceIndex, String key, PairEndInfo value) {
             onDiskMap.put(mateReferenceIndex, key, value);
@@ -836,7 +836,7 @@ public class SamFileValidator {
     }
 
     private static class InMemoryPairEndInfoMap implements PairEndInfoMap {
-        private final Map<String, PairEndInfo> map = new HashMap<String, PairEndInfo>();
+        private final Map<String, PairEndInfo> map = new HashMap<>();
 
         public void put(int mateReferenceIndex, String key, PairEndInfo value) {
             if (mateReferenceIndex != value.mateReferenceIndex)

@@ -50,7 +50,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * static constant value for an empty GenotypesContext.  Useful since so many VariantContexts have no genotypes
      */
     public final static GenotypesContext NO_GENOTYPES =
-            new GenotypesContext(new ArrayList<Genotype>(0), new HashMap<String, Integer>(0), Collections.<String>emptyList()).immutable();
+            new GenotypesContext(new ArrayList<>(0), new HashMap<>(0), Collections.<String>emptyList()).immutable();
 
     /**
      *sampleNamesInOrder a list of sample names, one for each genotype in genotypes, sorted in alphabetical order
@@ -118,7 +118,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * Create an empty GenotypeContext, with initial capacity for n elements
      */
     protected GenotypesContext(final int n) {
-        this(new ArrayList<Genotype>(n));
+        this(new ArrayList<>(n));
     }
 
     /**
@@ -205,7 +205,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @return an mutable GenotypeContext containing genotypes
      */
     public static final GenotypesContext create(final Genotype... genotypes) {
-        return create(new ArrayList<Genotype>(Arrays.asList(genotypes)));
+        return create(new ArrayList<>(Arrays.asList(genotypes)));
     }
 
     /**
@@ -215,7 +215,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @return an mutable GenotypeContext containing genotypes
      */
     public static final GenotypesContext copy(final GenotypesContext toCopy) {
-        return create(new ArrayList<Genotype>(toCopy.getGenotypes()));
+        return create(new ArrayList<>(toCopy.getGenotypes()));
     }
 
     /**
@@ -226,7 +226,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
      * @return an mutable GenotypeContext containing genotypes
      */
     public static final GenotypesContext copy(final Collection<Genotype> toCopy) {
-        return toCopy == null ? NO_GENOTYPES : create(new ArrayList<Genotype>(toCopy));
+        return toCopy == null ? NO_GENOTYPES : create(new ArrayList<>(toCopy));
     }
 
     // ---------------------------------------------------------------------------
@@ -265,7 +265,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
 
     protected void ensureSampleOrdering() {
         if ( sampleNamesInOrder == null ) {
-            sampleNamesInOrder = new ArrayList<String>(size());
+            sampleNamesInOrder = new ArrayList<>(size());
 
             for ( int i = 0; i < size(); i++ ) {
                 sampleNamesInOrder.add(getGenotypes().get(i).getSampleName());
@@ -276,7 +276,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
 
     protected void ensureSampleNameMap() {
         if ( sampleNameToOffset == null ) {
-            sampleNameToOffset = new HashMap<String, Integer>(size());
+            sampleNameToOffset = new HashMap<>(size());
 
             for ( int i = 0; i < size(); i++ ) {
                 sampleNameToOffset.put(getGenotypes().get(i).getSampleName(), i);
@@ -690,7 +690,7 @@ public class GenotypesContext implements List<Genotype>, Serializable {
 
     @Override
     public String toString() {
-        final List<String> gS = new ArrayList<String>();
+        final List<String> gS = new ArrayList<>();
         for ( final Genotype g : this.iterateInSampleNameOrder() )
             gS.add(g.toString());
         return "[" + join(",", gS) + "]";

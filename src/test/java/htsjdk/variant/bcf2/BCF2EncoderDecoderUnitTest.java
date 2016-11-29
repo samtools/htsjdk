@@ -45,9 +45,9 @@ import java.util.List;
 
 public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
     private final double FLOAT_TOLERANCE = 1e-6;
-    final List<BCF2TypedValue> primitives = new ArrayList<BCF2TypedValue>();
-    final List<BCF2TypedValue> basicTypes = new ArrayList<BCF2TypedValue>();
-    final List<BCF2TypedValue> forCombinations = new ArrayList<BCF2TypedValue>();
+    final List<BCF2TypedValue> primitives = new ArrayList<>();
+    final List<BCF2TypedValue> basicTypes = new ArrayList<>();
+    final List<BCF2TypedValue> forCombinations = new ArrayList<>();
 
     @BeforeSuite
     public void before() {
@@ -179,7 +179,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "BCF2EncodingTestProviderBasicTypes")
     public Object[][] BCF2EncodingTestProviderBasicTypes() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         for ( BCF2TypedValue tv : basicTypes )
             tests.add(new Object[]{Arrays.asList(tv)});
         return tests.toArray(new Object[][]{});
@@ -271,7 +271,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "BCF2EncodingTestProviderSingletons")
     public Object[][] BCF2EncodingTestProviderSingletons() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         for ( BCF2TypedValue tv : primitives )
             tests.add(new Object[]{Arrays.asList(tv)});
         return tests.toArray(new Object[][]{});
@@ -291,7 +291,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "BCF2EncodingTestProviderSequences")
     public Object[][] BCF2EncodingTestProviderSequences() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         for ( BCF2TypedValue tv1 : forCombinations )
             for ( BCF2TypedValue tv2 : forCombinations )
                 for ( BCF2TypedValue tv3 : forCombinations )
@@ -336,7 +336,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "ListOfStrings")
     public Object[][] listOfStringsProvider() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{Arrays.asList("s1", "s2"), ",s1,s2"});
         tests.add(new Object[]{Arrays.asList("s1", "s2", "s3"), ",s1,s2,s3"});
         tests.add(new Object[]{Arrays.asList("s1", "s2", "s3", "s4"), ",s1,s2,s3,s4"});
@@ -358,7 +358,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "BestIntTypeTests")
     public Object[][] BestIntTypeTests() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{Arrays.asList(1), BCF2Type.INT8});
         tests.add(new Object[]{Arrays.asList(1, 10), BCF2Type.INT8});
         tests.add(new Object[]{Arrays.asList(1, 10, 100), BCF2Type.INT8});
@@ -427,7 +427,7 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
         // test combining the streams
         final byte[] combined = combineRecords(record1, record2);
-        final List<BCF2TypedValue> combinedObjects = new ArrayList<BCF2TypedValue>(block1);
+        final List<BCF2TypedValue> combinedObjects = new ArrayList<>(block1);
         combinedObjects.addAll(block2);
 
         // the combined bytes is the same as the combined objects
@@ -458,13 +458,13 @@ public class BCF2EncoderDecoderUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "IntArrays")
     public Object[][] makeIntArrays() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
         for ( int nValues : Arrays.asList(0, 1, 2, 5, 10, 100) ) {
             for ( int nPad : Arrays.asList(0, 1, 2, 5, 10, 100) ) {
                 int nElements = nValues + nPad;
 
-                List<Integer> values = new ArrayList<Integer>(nElements);
+                List<Integer> values = new ArrayList<>(nElements);
 
                 // add nValues from 0 to nValues - 1
                 for ( int i = 0; i < nValues; i++ )

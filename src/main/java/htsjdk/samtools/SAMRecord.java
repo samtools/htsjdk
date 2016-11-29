@@ -1500,7 +1500,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     public List<SAMTagAndValue> getAttributes() {
         SAMBinaryTagAndValue binaryAttributes = getBinaryAttributes();
-        final List<SAMTagAndValue> ret = new ArrayList<SAMTagAndValue>();
+        final List<SAMTagAndValue> ret = new ArrayList<>();
         while (binaryAttributes != null) {
             ret.add(new SAMTagAndValue(SAMTagUtil.getSingleton().makeStringTag(binaryAttributes.tag),
                     binaryAttributes.value));
@@ -1859,32 +1859,32 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         ArrayList<SAMValidationError> ret = null;
         if (!getReadPairedFlag()) {
             if (getProperPairFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR, "Proper pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getMateUnmappedFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED, "Mate unmapped flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getMateNegativeStrandFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_NEG_STRAND, "Mate negative strand flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getFirstOfPairFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR, "First of pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getSecondOfPairFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR, "Second of pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (null != getHeader() && getMateReferenceIndex() != NO_ALIGNMENT_REFERENCE_INDEX) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_MATE_REF_INDEX, "MRNM should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
@@ -1893,16 +1893,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                     getMateAlignmentStart(), true, firstOnly);
             if (errors != null) {
                 if (firstOnly) return errors;
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.addAll(errors);
             }
             if (!hasMateReferenceName() && !getMateUnmappedFlag()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED, "Mapped mate should have mate reference name", getReadName()));
                 if (firstOnly) return ret;
             }
             if (!getFirstOfPairFlagUnchecked() && !getSecondOfPairFlagUnchecked()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND,
                         "Paired read should be marked as first of pair or second of pair.", getReadName()));
                 if (firstOnly) return ret;
@@ -1918,23 +1918,23 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 */
         }
         if (getInferredInsertSize() > MAX_INSERT_SIZE || getInferredInsertSize() < -MAX_INSERT_SIZE) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
+            if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INSERT_SIZE, "Insert size out of range", getReadName()));
             if (firstOnly) return ret;
         }
         if (getReadUnmappedFlag()) {
             if (getNotPrimaryAlignmentFlag()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT, "Not primary alignment flag should not be set for unmapped read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getSupplementaryAlignmentFlag()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT, "Supplementary alignment flag should not be set for unmapped read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getMappingQuality() != 0) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_MAPPING_QUALITY, "MAPQ should be 0 for unmapped read.", getReadName()));
                 if (firstOnly) return ret;
             }
@@ -1949,12 +1949,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 */
         } else {
             if (getMappingQuality() >= 256) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_MAPPING_QUALITY, "MAPQ should be < 256.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getCigarLength() == 0) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR, "CIGAR should have > zero elements for mapped read.", getReadName()));
             /* todo - will uncomment once unit tests are added
             } else if (getCigar().getReadLength() != getReadLength()) {
@@ -1964,12 +1964,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 if (firstOnly) return ret;
             }
             if (getHeader() != null && getHeader().getSequenceDictionary().isEmpty()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_SEQUENCE_DICTIONARY, "Empty sequence dictionary.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (!hasReferenceName()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_READ_UNMAPPED, "Mapped read should have valid reference name", getReadName()));
                 if (firstOnly) return ret;
             }
@@ -1987,14 +1987,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         // Validate the RG ID is found in header
         final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
         if (rgId != null && getHeader() != null && getHeader().getReadGroup(rgId) == null) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
                         "RG ID on SAMRecord not found in header: " + rgId, getReadName()));
                 if (firstOnly) return ret;
         }
         final List<SAMValidationError> errors = isValidReferenceIndexAndPosition(mReferenceIndex, mReferenceName, getAlignmentStart(), false);
         if (errors != null) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
+            if (ret == null) ret = new ArrayList<>();
             ret.addAll(errors);
             if (firstOnly) return ret;
         }
@@ -2005,7 +2005,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 final String cq = (String)getAttribute(SAMTagUtil.getSingleton().CQ);
                 final String cs = (String)getAttribute(SAMTagUtil.getSingleton().CS);
                 if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
+                    if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
                             "Zero-length read without FZ, CS or CQ tag", getReadName()));
                     if (firstOnly) return ret;
@@ -2019,7 +2019,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                         }
                     }
                     if (!hasIndel) {
-                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,
                                 "Colorspace read with zero-length bases but no indel", getReadName()));
                         if (firstOnly) return ret;
@@ -2028,7 +2028,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             }
         }
         if (this.getReadLength() != getBaseQualities().length &&  !Arrays.equals(getBaseQualities(), NULL_QUALS)) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
+            if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_QUALS_LENGTH,
                     "Read length does not match quals length", getReadName()));
             if (firstOnly) return ret;
@@ -2036,7 +2036,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
         if (this.getAlignmentStart() != NO_ALIGNMENT_START && this.getIndexingBin() != null &&
                 this.computeIndexingBin() != this.getIndexingBin()) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
+            if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
                     "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
                     getReadName()));
@@ -2080,13 +2080,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         ArrayList<SAMValidationError> ret = null;
         if (!hasReference) {
             if (alignmentStart != 0) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start should be 0 because reference name = *.", isMate), getReadName()));
                 if (firstOnly) return ret;
             }
         } else {
             if (alignmentStart == 0) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start should != 0 because reference name != *.", isMate), getReadName()));
                 if (firstOnly) return ret;
             }
@@ -2094,12 +2094,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 final SAMSequenceRecord sequence =
                         (referenceIndex != null? getHeader().getSequence(referenceIndex): getHeader().getSequence(referenceName));
                 if (sequence == null) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
+                    if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_REFERENCE_INDEX, buildMessage("Reference sequence not found in sequence dictionary.", isMate), getReadName()));
                     if (firstOnly) return ret;
                 } else {
                     if (alignmentStart > sequence.getSequenceLength()) {
-                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_ALIGNMENT_START, buildMessage("Alignment start (" + alignmentStart + ") must be <= reference sequence length (" +
                                 sequence.getSequenceLength() + ") on reference " + sequence.getSequenceName(), isMate), getReadName()));
                         if (firstOnly) return ret;
@@ -2242,7 +2242,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * then stored as transient attributes to avoid frequent re-computation.
      */
     public final Object setTransientAttribute(final Object key, final Object value) {
-        if (this.transientAttributes == null) this.transientAttributes = new HashMap<Object,Object>();
+        if (this.transientAttributes == null) this.transientAttributes = new HashMap<>();
         return this.transientAttributes.put(key, value);
     }
 

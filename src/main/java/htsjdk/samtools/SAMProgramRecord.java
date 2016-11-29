@@ -40,7 +40,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     public static final String PREVIOUS_PROGRAM_GROUP_ID_TAG = "PP";
     private String mProgramGroupId;
     public static final Set<String> STANDARD_TAGS = Collections.unmodifiableSet(
-            new HashSet<String>(Arrays.asList(PROGRAM_GROUP_ID_TAG,
+            new HashSet<>(Arrays.asList(PROGRAM_GROUP_ID_TAG,
                     PROGRAM_NAME_TAG,
                     PROGRAM_VERSION_TAG,
                     COMMAND_LINE_TAG,

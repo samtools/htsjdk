@@ -193,7 +193,7 @@ public class SRAIndex implements BrowseableBAMIndex {
     public BAMFileSpan getSpanOverlapping(int referenceIndex, int startPos, int endPos) {
         BinList binList = getBinsOverlapping(referenceIndex, startPos, endPos);
         BAMFileSpan result = new BAMFileSpan();
-        Set<Chunk> savedChunks = new HashSet<Chunk>();
+        Set<Chunk> savedChunks = new HashSet<>();
         for (Bin bin : binList) {
             List<Chunk> chunks = getSpanOverlapping(bin).getChunks();
             for (Chunk chunk : chunks) {
@@ -247,7 +247,7 @@ public class SRAIndex implements BrowseableBAMIndex {
         long binGlobalOffset = binNumber * SRA_BIN_SIZE + refOffset;
         long firstChunkNumber = (binGlobalOffset + firstChunkCorrection) / SRA_CHUNK_SIZE;
         long lastChunkNumber = (binGlobalOffset + SRA_BIN_SIZE - 1) / SRA_CHUNK_SIZE;
-        List<Chunk> chunks = new ArrayList<Chunk>();
+        List<Chunk> chunks = new ArrayList<>();
         for (long chunkNumber = firstChunkNumber; chunkNumber <= lastChunkNumber; chunkNumber++) {
             chunks.add(new Chunk(chunkNumber * SRA_CHUNK_SIZE, (chunkNumber + 1) * SRA_CHUNK_SIZE));
         }

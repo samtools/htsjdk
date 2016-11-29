@@ -22,7 +22,7 @@ import java.util.List;
 
 public class PreservationPolicy {
     public ReadCategory readCategory;
-    public final List<BaseCategory> baseCategories = new ArrayList<BaseCategory>();
+    public final List<BaseCategory> baseCategories = new ArrayList<>();
 
     public QualityScoreTreatment treatment;
 

@@ -44,7 +44,7 @@ import java.util.List;
 public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
     @DataProvider(name = "getStandardLines")
     public Object[][] makeGetStandardLines() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
         // info
         tests.add(new Object[]{"AC", "info", true});
@@ -159,7 +159,7 @@ public class VCFStandardHeaderLinesUnitTest extends VariantBaseTest {
         final VCFFormatHeaderLine standardGT = VCFStandardHeaderLines.getFormatLine("GT");
         final VCFFormatHeaderLine goodGT = new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "x");
 
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
         tests.add(new Object[]{new RepairHeaderTest( standardGT, standardGT)});
         tests.add(new Object[]{new RepairHeaderTest( goodGT, goodGT )});

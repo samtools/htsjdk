@@ -182,7 +182,7 @@ public class CRAMFileWriterWithIndexTest {
             }
         }
 
-        List<SAMRecord> list = new ArrayList<SAMRecord>(readPairsPerSequence);
+        List<SAMRecord> list = new ArrayList<>(readPairsPerSequence);
         list.addAll(builder.getRecords());
         Collections.sort(list, new SAMRecordCoordinateComparator());
 

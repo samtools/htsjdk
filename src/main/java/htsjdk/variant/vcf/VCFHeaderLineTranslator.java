@@ -39,7 +39,7 @@ public class VCFHeaderLineTranslator {
     private static Map<VCFHeaderVersion,VCFLineParser> mapping;
 
     static {
-        mapping = new HashMap<VCFHeaderVersion,VCFLineParser>();
+        mapping = new HashMap<>();
         mapping.put(VCFHeaderVersion.VCF4_0,new VCF4Parser());
         mapping.put(VCFHeaderVersion.VCF4_1,new VCF4Parser());
         mapping.put(VCFHeaderVersion.VCF4_2,new VCF4Parser());
@@ -69,7 +69,7 @@ class VCF4Parser implements VCFLineParser {
      */
     public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
-        Map<String, String> ret = new LinkedHashMap<String, String>();
+        Map<String, String> ret = new LinkedHashMap<>();
 
         // a builder to store up characters as we go
         StringBuilder builder = new StringBuilder();
@@ -147,7 +147,7 @@ class VCF3Parser implements VCFLineParser {
 
     public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
-        Map<String, String> ret = new LinkedHashMap<String, String>();
+        Map<String, String> ret = new LinkedHashMap<>();
 
         // a builder to store up characters as we go
         StringBuilder builder = new StringBuilder();

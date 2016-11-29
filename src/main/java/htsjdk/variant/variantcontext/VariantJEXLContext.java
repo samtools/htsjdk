@@ -55,7 +55,7 @@ class VariantJEXLContext implements JexlContext {
         public Object get(VariantContext vc);
     }
 
-    private static Map<String, AttributeGetter> attributes = new HashMap<String, AttributeGetter>();
+    private static Map<String, AttributeGetter> attributes = new HashMap<>();
 
     static {
         attributes.put("vc", (VariantContext vc) -> vc);

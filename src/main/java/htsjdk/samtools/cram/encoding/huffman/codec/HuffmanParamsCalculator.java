@@ -86,8 +86,8 @@ class HuffmanParamsCalculator {
             tree = HuffmanCode.buildTree(frequencies, autobox(values));
         }
 
-        final List<Integer> valueList = new ArrayList<Integer>();
-        final List<Integer> lens = new ArrayList<Integer>();
+        final List<Integer> valueList = new ArrayList<>();
+        final List<Integer> lens = new ArrayList<>();
         HuffmanCode.getValuesAndBitLengths(valueList, lens, tree);
 
         // the following sorting is not really required, but whatever:

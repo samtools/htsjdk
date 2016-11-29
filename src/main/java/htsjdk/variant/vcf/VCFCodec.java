@@ -82,7 +82,7 @@ public class VCFCodec extends AbstractVCFCodec {
      */
     @Override
     public Object readActualHeader(final LineIterator lineIterator) {
-        final List<String> headerStrings = new ArrayList<String>();
+        final List<String> headerStrings = new ArrayList<>();
 
         String line;
         boolean foundHeaderVersion = false;
@@ -142,7 +142,7 @@ public class VCFCodec extends AbstractVCFCodec {
             return filterHash.get(filterString);
 
         // empty set for passes filters
-        final List<String> fFields = new LinkedList<String>();
+        final List<String> fFields = new LinkedList<>();
         // otherwise we have to parse and cache the value
         if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
             fFields.add(filterString);

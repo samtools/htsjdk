@@ -57,7 +57,7 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @return the number of header lines
      */
     public Object readActualHeader(final LineIterator reader) {
-        final List<String> headerStrings = new ArrayList<String>();
+        final List<String> headerStrings = new ArrayList<>();
 
         VCFHeaderVersion version = null;
         boolean foundHeaderVersion = false;
@@ -104,17 +104,17 @@ public class VCF3Codec extends AbstractVCFCodec {
             return null;
 
         // empty set for passes filters
-        List<String> fFields = new ArrayList<String>();
+        List<String> fFields = new ArrayList<>();
 
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
-            return new ArrayList<String>(fFields);
+            return new ArrayList<>(fFields);
 
         if (filterString.isEmpty())
             generateException("The VCF specification requires a valid filter status");
 
         // do we have the filter string cached?
         if ( filterHash.containsKey(filterString) )
-            return new ArrayList<String>(filterHash.get(filterString));
+            return new ArrayList<>(filterHash.get(filterString));
 
         // otherwise we have to parse and cache the value
         if ( filterString.indexOf(VCFConstants.FILTER_CODE_SEPARATOR) == -1 )

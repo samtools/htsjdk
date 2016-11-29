@@ -48,7 +48,7 @@ public class DuplicateSetIteratorTest {
         records.addFrag("UNSS0", 1, 1, false, true, "50M", null, DEFAULT_BASE_QUALITY, true, true);
         records.addFrag("UNSS1", 1, 1, false, true, "50M", null, DEFAULT_BASE_QUALITY, true, true);
 
-        Map<String, DuplicateSet> allSets = new HashMap<String, DuplicateSet>();
+        Map<String, DuplicateSet> allSets = new HashMap<>();
 
         DuplicateSetIterator duplicateSetIterator = new DuplicateSetIterator(records.iterator(), getSAMRecordSetBuilder().getHeader(), false);
         while (duplicateSetIterator.hasNext()) {

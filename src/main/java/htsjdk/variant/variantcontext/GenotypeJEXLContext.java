@@ -20,7 +20,7 @@ public class GenotypeJEXLContext extends VariantJEXLContext {
         public Object get(Genotype g);
     }
 
-    private static Map<String, AttributeGetter> attributes = new HashMap<String, AttributeGetter>();
+    private static Map<String, AttributeGetter> attributes = new HashMap<>();
 
     static {
         attributes.put("g", (Genotype g) -> g);

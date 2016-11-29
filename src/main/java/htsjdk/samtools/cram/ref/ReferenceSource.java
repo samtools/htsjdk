@@ -55,7 +55,7 @@ public class ReferenceSource implements CRAMReferenceSource {
     private ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
-    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
+    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
 
     private ReferenceSource() {
     }
@@ -129,7 +129,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         for (int i = 0; i < bases.length; i++) {
             bases[i] = Utils.normalizeBase(bases[i]);
         }
-        cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
+        cacheW.put(sequenceName, new WeakReference<>(bases));
         return bases;
     }
 
@@ -249,7 +249,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             Pattern.CASE_INSENSITIVE);
 
     List<String> getVariants(final String name) {
-        final List<String> variants = new ArrayList<String>();
+        final List<String> variants = new ArrayList<>();
 
         if (name.equals("M"))
             variants.add("MT");
