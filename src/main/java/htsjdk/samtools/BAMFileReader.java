@@ -138,31 +138,6 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         mStream.setInputFileName(file.getAbsolutePath());
     }
 
-
-
-    private BAMFileReader(final File file,
-        final SeekableStream indexStream,
-        final boolean eagerDecode,
-        final boolean useAsynchronousIO,
-        final ValidationStringency validationStringency,
-        final SAMRecordFactory factory,
-        String onlyThereSoTheSignatureIsntAmbiguous)
-        throws IOException {
-        this(new BlockCompressedInputStream(file), indexStream, eagerDecode, useAsynchronousIO, indexStream.getSource(), validationStringency, factory);
-        // Provide better error message when there is an error reading.
-        mStream.setInputFileName(file.getAbsolutePath());
-    }
-
-    static BAMFileReader fromFileAndSeekable(final File file,
-        final SeekableStream indexStream,
-        final boolean eagerDecode,
-        final boolean useAsynchronousIO,
-        final ValidationStringency validationStringency,
-        final SAMRecordFactory factory)
-        throws IOException {
-        return new BAMFileReader(file, indexStream, eagerDecode, useAsynchronousIO, validationStringency, factory, "please");
-    }
-
     BAMFileReader(final SeekableStream strm,
                   final File indexFile,
                   final boolean eagerDecode,
@@ -212,7 +187,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                           final SAMRecordFactory factory)
         throws IOException {
         mIndexStream = indexStream;
-        mIsSeekable = null != indexStream;
+        mIsSeekable = true;
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
