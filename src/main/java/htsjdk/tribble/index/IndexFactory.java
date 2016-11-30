@@ -345,8 +345,8 @@ public class IndexFactory {
 
             checkSorted(inputFile, lastFeature, currentFeature);
             //should only visit chromosomes once
-            final String curChr = currentFeature.getChr();
-            final String lastChr = lastFeature != null ? lastFeature.getChr() : null;
+            final String curChr = currentFeature.getContig();
+            final String lastChr = lastFeature != null ? lastFeature.getContig() : null;
             if(!curChr.equals(lastChr)){
                 if(visitedChromos.containsKey(curChr)){
                     String msg = "Input file must have contiguous chromosomes.";
@@ -369,15 +369,15 @@ public class IndexFactory {
     }
 
     private static String featToString(final Feature feature){
-        return feature.getChr() + ":" + feature.getStart() + "-" + feature.getEnd();
+        return feature.getContig() + ":" + feature.getStart() + "-" + feature.getEnd();
     }
 
     private static void checkSorted(final File inputFile, final Feature lastFeature, final Feature currentFeature){
         // if the last currentFeature is after the current currentFeature, exception out
-        if (lastFeature != null && currentFeature.getStart() < lastFeature.getStart() && lastFeature.getChr().equals(currentFeature.getChr()))
+        if (lastFeature != null && currentFeature.getStart() < lastFeature.getStart() && lastFeature.getContig().equals(currentFeature.getContig()))
             throw new TribbleException.MalformedFeatureFile("Input file is not sorted by start position. \n" +
-                    "We saw a record with a start of " + currentFeature.getChr() + ":" + currentFeature.getStart() +
-                    " after a record with a start of " + lastFeature.getChr() + ":" + lastFeature.getStart(), inputFile.getAbsolutePath());
+                    "We saw a record with a start of " + currentFeature.getContig() + ":" + currentFeature.getStart() +
+                    " after a record with a start of " + lastFeature.getContig() + ":" + lastFeature.getStart(), inputFile.getAbsolutePath());
     }
 
 

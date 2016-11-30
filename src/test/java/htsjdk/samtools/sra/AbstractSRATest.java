@@ -18,7 +18,7 @@ public abstract class AbstractSRATest {
 
     @BeforeGroups(groups = "sra")
     public final void checkIfCanResolve() {
-        if (!SRAAccession.isSupported()) {
+        if (SRAAccession.checkIfInitialized() != null) {
             return;
         }
         canResolveNetworkAccession = SRAAccession.isValid(checkAccession);
@@ -26,7 +26,7 @@ public abstract class AbstractSRATest {
 
     @BeforeMethod
     public final void assertSRAIsSupported() {
-        if(!SRAAccession.isSupported()){
+        if(SRAAccession.checkIfInitialized() != null){
             throw new SkipException("Skipping SRA Test because SRA native code is unavailable.");
         }
     }

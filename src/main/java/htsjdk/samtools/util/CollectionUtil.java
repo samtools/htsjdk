@@ -104,8 +104,10 @@ public class CollectionUtil {
     /**
      * Partitions a collection into groups based on a characteristics of that group.  Partitions are embodied in a map, whose keys are the
      * value of that characteristic, and the values are the partition of elements whose characteristic evaluate to that key.
+     *
+     * @deprecated use java8 .stream().collect(Collectors.groupingBy(()-> function)) instead
      */
-    @Deprecated //use java8 .stream().collect(Collectors.groupingBy(()-> function)) instead
+    @Deprecated
     public static <K, V> Map<K, Collection<V>> partition(final Collection<V> collection, final Partitioner<V, K> p) {
         final MultiMap<K, V> partitionToValues = new MultiMap<>();
         for (final V entry : collection) {
@@ -113,7 +115,11 @@ public class CollectionUtil {
         }
         return partitionToValues;
     }
-    @Deprecated //not needed, use Collectors.groupingBy instead
+
+    /**
+     * @deprecated use Collectors.groupingBy instead
+     */
+    @Deprecated
     public static abstract class Partitioner<V, K> {
         public abstract K getPartition(final V v);
     }

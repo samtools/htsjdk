@@ -73,7 +73,7 @@ public class TabixIndexCreator implements IndexCreator {
 
     @Override
     public void addFeature(final Feature feature, final long filePosition) {
-        final String sequenceName = feature.getChr();
+        final String sequenceName = feature.getContig();
         final int referenceIndex;
         if (sequenceName.equals(currentSequenceName)) {
             referenceIndex = sequenceNames.size() - 1;

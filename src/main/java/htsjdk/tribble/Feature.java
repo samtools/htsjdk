@@ -36,6 +36,8 @@ public interface Feature extends Locatable {
      * @deprecated use getContig() instead
      */
     @Deprecated
-    public String getChr();
+    default public String getChr() {
+        return getContig();
+    }
 
 }

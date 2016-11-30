@@ -71,7 +71,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class IOUtil {
     /**
-     * @deprecated Use Defaults.NON_ZERO_BUFFER_SIZE instead.
+     * @deprecated Use {@link Defaults#NON_ZERO_BUFFER_SIZE} instead.
      */
     @Deprecated
     public static final int STANDARD_BUFFER_SIZE = Defaults.NON_ZERO_BUFFER_SIZE;

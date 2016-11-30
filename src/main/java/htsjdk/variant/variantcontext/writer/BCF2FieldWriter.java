@@ -255,7 +255,7 @@ public abstract class BCF2FieldWriter {
             if ( vc.getNAlleles() > BCF2Utils.MAX_ALLELES_IN_GENOTYPES )
                 throw new IllegalStateException("Current BCF2 encoder cannot handle sites " +
                         "with > " + BCF2Utils.MAX_ALLELES_IN_GENOTYPES + " alleles, but you have "
-                        + vc.getNAlleles() + " at " + vc.getChr() + ":" + vc.getStart());
+                        + vc.getNAlleles() + " at " + vc.getContig() + ":" + vc.getStart());
 
             encodingType = BCF2Type.INT8;
             buildAlleleMap(vc);

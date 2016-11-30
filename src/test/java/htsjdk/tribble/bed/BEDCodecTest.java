@@ -52,17 +52,17 @@ public class BEDCodecTest {
         BEDFeature feature;
 
         feature = codec.decode("chr1 1");
-        Assert.assertEquals(feature.getChr(), "chr1");
+        Assert.assertEquals(feature.getContig(), "chr1");
         Assert.assertEquals(feature.getStart(), 2);
         Assert.assertEquals(feature.getEnd(), 2);
 
         feature = codec.decode("chr1 1 2");
-        Assert.assertEquals(feature.getChr(), "chr1");
+        Assert.assertEquals(feature.getContig(), "chr1");
         Assert.assertEquals(feature.getStart(), 2);
         Assert.assertEquals(feature.getEnd(), 2);
 
         feature = codec.decode("chr1 1 3");
-        Assert.assertEquals(feature.getChr(), "chr1");
+        Assert.assertEquals(feature.getContig(), "chr1");
         Assert.assertEquals(feature.getStart(), 2);
         Assert.assertEquals(feature.getEnd(), 3);
     }
@@ -77,7 +77,7 @@ public class BEDCodecTest {
         // Borrowed samples from Example: on http://genome.ucsc.edu/FAQ/FAQformat#format1
 
         feature = (FullBEDFeature) codec.decode("chr22 1000 5000 cloneA 960 + 1000 5000 0 2 567,488, 0,3512");
-        Assert.assertEquals(feature.getChr(), "chr22");
+        Assert.assertEquals(feature.getContig(), "chr22");
         Assert.assertEquals(feature.getStart(), 1001);
         Assert.assertEquals(feature.getEnd(), 5000);
         Assert.assertEquals(feature.getName(), "cloneA");
@@ -103,7 +103,7 @@ public class BEDCodecTest {
         Assert.assertEquals(exons.get(1).getCodingLength(), 488);
 
         feature = (FullBEDFeature) codec.decode("chr22 2000 6000 cloneB 900 - 2000 6000 0 2 433,399, 0,3601");
-        Assert.assertEquals(feature.getChr(), "chr22");
+        Assert.assertEquals(feature.getContig(), "chr22");
         Assert.assertEquals(feature.getStart(), 2001);
         Assert.assertEquals(feature.getEnd(), 6000);
         Assert.assertEquals(feature.getName(), "cloneB");
@@ -150,23 +150,23 @@ public class BEDCodecTest {
         Iterable<Feature> iter = reader.iterator();
         int count = 0;
         for (Feature feat : iter) {
-            Assert.assertTrue(feat.getChr().length() > 0);
+            Assert.assertTrue(feat.getContig().length() > 0);
             Assert.assertTrue(feat.getEnd() >= feat.getStart());
 
             if (count == 0) {
-                Assert.assertEquals("1", feat.getChr());
+                Assert.assertEquals("1", feat.getContig());
                 Assert.assertEquals(25592413 + 1, feat.getStart());
                 Assert.assertEquals(25657872, feat.getEnd());
             }
 
             if (count == 3) {
-                Assert.assertEquals("1", feat.getChr());
+                Assert.assertEquals("1", feat.getContig());
                 Assert.assertEquals(152555536 + 1, feat.getStart());
                 Assert.assertEquals(152587611, feat.getEnd());
             }
 
             if (count == 28) {
-                Assert.assertEquals("14", feat.getChr());
+                Assert.assertEquals("14", feat.getContig());
                 Assert.assertEquals(73996607 + 1, feat.getStart());
                 Assert.assertEquals(74025282, feat.getEnd());
             }

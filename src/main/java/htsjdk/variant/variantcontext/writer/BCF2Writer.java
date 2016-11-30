@@ -234,9 +234,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
     //
     // --------------------------------------------------------------------------------
     private byte[] buildSitesData( VariantContext vc ) throws IOException {
-        final int contigIndex = contigDictionary.get(vc.getChr());
+        final int contigIndex = contigDictionary.get(vc.getContig());
         if ( contigIndex == -1 )
-            throw new IllegalStateException(String.format("Contig %s not found in sequence dictionary from reference", vc.getChr()));
+            throw new IllegalStateException(String.format("Contig %s not found in sequence dictionary from reference", vc.getContig()));
 
         // note use of encodeRawValue to not insert the typing byte
         encoder.encodeRawValue(contigIndex, BCF2Type.INT32);
@@ -391,7 +391,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
      */
     private void errorUnexpectedFieldToWrite(final VariantContext vc, final String field, final String fieldType) {
         throw new IllegalStateException("Found field " + field + " in the " + fieldType + " fields of VariantContext at " +
-                vc.getChr() + ":" + vc.getStart() + " from " + vc.getSource() + " but this hasn't been defined in the VCFHeader");
+                vc.getContig() + ":" + vc.getStart() + " from " + vc.getSource() + " but this hasn't been defined in the VCFHeader");
     }
 
     // --------------------------------------------------------------------------------

@@ -118,7 +118,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
         Iterator<FEATURE_TYPE> it = reader.iterator();
         while ( it.hasNext() ) {
             final Feature f = it.next();
-            dos.writeUTF(f.getChr());
+            dos.writeUTF(f.getContig());
             dos.writeInt(f.getStart());
             dos.writeInt(f.getEnd());
         }

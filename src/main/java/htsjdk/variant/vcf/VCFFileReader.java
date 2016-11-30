@@ -116,7 +116,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
                 final Integer intervalEnd=vc.getCommonInfo().getAttributeAsInt("END",vc.getEnd());
                 if(".".equals(name) || name == null)
                     name = "interval-" + (++intervals);
-                list.add(new Interval(vc.getChr(), vc.getStart(), intervalEnd, false, name));
+                list.add(new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name));
             }
         }
 

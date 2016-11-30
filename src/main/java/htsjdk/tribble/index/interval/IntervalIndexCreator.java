@@ -64,13 +64,13 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
 
     public void addFeature(final Feature feature, final long filePosition) {
         // if we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
-        if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getChr())) {
+        if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the intervals to the old chrIndex
             if (!chrList.isEmpty())
                 addIntervalsToLastChr(filePosition);
 
             // create a new chr index for the current contig
-            chrList.add(new ChrIndex(feature.getChr()));
+            chrList.add(new ChrIndex(feature.getContig()));
             intervals.clear();
         }
 
