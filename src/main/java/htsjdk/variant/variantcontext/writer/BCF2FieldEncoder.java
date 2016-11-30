@@ -296,7 +296,7 @@ public abstract class BCF2FieldEncoder {
                 final List<String> l = (List<String>)value;
                 return BCF2Utils.collapseStringList(l);
             } else if ( value.getClass().isArray() ) {
-                final List<String> l = new ArrayList<String>();
+                final List<String> l = new ArrayList<>();
                 Collections.addAll(l, (String[])value);
                 return BCF2Utils.collapseStringList(l);
             } else

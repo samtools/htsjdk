@@ -52,7 +52,7 @@ public class AsyncBufferedIteratorTest {
     }
     @Test
     public void testWrapUnderlying() {
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(new TestCloseableIterator(new int[] { 0, 1, 2, 3}), 1, 1);
+        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(new TestCloseableIterator(new int[]{0, 1, 2, 3}), 1, 1);
         for (int i = 0; i < 4; i++) {
             Assert.assertEquals(i, (int)abi.next());
         }
@@ -61,7 +61,7 @@ public class AsyncBufferedIteratorTest {
     @Test
     public void testClose() {
         TestCloseableIterator tci = new TestCloseableIterator(new int[] { 0, 1, 2, 3});
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(tci, 1, 1);
+        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(tci, 1, 1);
         abi.close();
         Assert.assertTrue(tci.isClosed);
     }
@@ -71,7 +71,7 @@ public class AsyncBufferedIteratorTest {
     @Test
     public void testBackgroundBlocks() throws InterruptedException {
         TestCloseableIterator it = new TestCloseableIterator(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundBlocks");
+        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(it, 3, 2, "testBackgroundBlocks");
         Assert.assertNotNull(getThreadWithName("testBackgroundBlocks"));
         Thread.sleep(10); // how do we write this test and not be subject to race conditions?
         // should have read 9 records: 2*3 in the buffers, and another 3 read but
@@ -82,7 +82,7 @@ public class AsyncBufferedIteratorTest {
     @Test
     public void testBackgroundThreadCompletes() throws InterruptedException {
         TestCloseableIterator it = new TestCloseableIterator(new int[] { 0, 1, 2, 3, 4, 5 });
-        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundThreadCompletes");
+        AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<>(it, 3, 2, "testBackgroundThreadCompletes");
         Assert.assertNotNull(getThreadWithName("testBackgroundThreadCompletes"));
         // both buffers should be full
         // clear out one buffer so the background thread can write the end of stream indicator

@@ -124,7 +124,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderDictionaryMerging() {
         VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false).getFileHeader();
         VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
-        final List<String> sampleList = new ArrayList<String>();
+        final List<String> sampleList = new ArrayList<>();
         sampleList.addAll(headerOne.getSampleNamesInOrder());
 
         // Check that the two dictionaries start out the same

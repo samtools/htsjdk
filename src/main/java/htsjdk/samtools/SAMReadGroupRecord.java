@@ -60,7 +60,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     }
 
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
+            new HashSet<>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
                     DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
                     PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));

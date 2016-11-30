@@ -106,7 +106,7 @@ public class VCFEncoder {
 				.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
 
 		// INFO
-		final Map<String, String> infoFields = new TreeMap<String, String>();
+		final Map<String, String> infoFields = new TreeMap<>();
 		for (final Map.Entry<String, Object> field : context.getAttributes().entrySet() ) {
 			if ( ! this.header.hasInfoLine(field.getKey())) fieldIsMissingFromHeaderError(context, field.getKey(), "INFO");
 
@@ -255,7 +255,7 @@ public class VCFEncoder {
 			Genotype g = vc.getGenotype(sample);
 			if (g == null) g = GenotypeBuilder.createMissing(sample, ploidy);
 
-			final List<String> attrs = new ArrayList<String>(genotypeFormatKeys.size());
+			final List<String> attrs = new ArrayList<>(genotypeFormatKeys.size());
 			for (final String field : genotypeFormatKeys) {
 				if (field.equals(VCFConstants.GENOTYPE_KEY)) {
 					if ( ! g.isAvailable()) {
@@ -362,7 +362,7 @@ public class VCFEncoder {
 	}
 
 	public Map<Allele, String> buildAlleleStrings(final VariantContext vc) {
-		final Map<Allele, String> alleleMap = new HashMap<Allele, String>(vc.getAlleles().size()+1);
+		final Map<Allele, String> alleleMap = new HashMap<>(vc.getAlleles().size() + 1);
 		alleleMap.put(Allele.NO_CALL, VCFConstants.EMPTY_ALLELE); // convenience for lookup
 
 		final List<Allele> alleles = vc.getAlleles();

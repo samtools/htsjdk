@@ -52,7 +52,7 @@ public class CompressionHeader {
 
     public Map<EncodingKey, EncodingParams> encodingMap;
     public Map<Integer, EncodingParams> tMap;
-    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<Integer, ExternalCompressor>();
+    public final Map<Integer, ExternalCompressor> externalCompressors = new HashMap<>();
 
     public SubstitutionMatrix substitutionMatrix;
 
@@ -68,11 +68,11 @@ public class CompressionHeader {
     }
 
     private byte[][][] parseDictionary(final byte[] bytes) {
-        final List<List<byte[]>> dictionary = new ArrayList<List<byte[]>>();
+        final List<List<byte[]>> dictionary = new ArrayList<>();
         {
             int i = 0;
             while (i < bytes.length) {
-                final List<byte[]> list = new ArrayList<byte[]>();
+                final List<byte[]> list = new ArrayList<>();
                 while (bytes[i] != 0) {
                     list.add(Arrays.copyOfRange(bytes, i, i + 3));
                     i += 3;
@@ -163,7 +163,7 @@ public class CompressionHeader {
             final ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
             final int mapSize = ITF8.readUnsignedITF8(buffer);
-            encodingMap = new TreeMap<EncodingKey, EncodingParams>();
+            encodingMap = new TreeMap<>();
             for (final EncodingKey encodingKey : EncodingKey.values())
                 encodingMap.put(encodingKey, NullEncoding.toParam());
 
@@ -194,7 +194,7 @@ public class CompressionHeader {
             final ByteBuffer buf = ByteBuffer.wrap(bytes);
 
             final int mapSize = ITF8.readUnsignedITF8(buf);
-            tMap = new TreeMap<Integer, EncodingParams>();
+            tMap = new TreeMap<>();
             for (int i = 0; i < mapSize; i++) {
                 final int key = ITF8.readUnsignedITF8(buf);
 

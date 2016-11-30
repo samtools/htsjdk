@@ -160,7 +160,7 @@ public class VariantContextBuilder {
     }
 
     public VariantContextBuilder alleles(final List<String> alleleStrings) {
-        final List<Allele> alleles = new ArrayList<Allele>(alleleStrings.size());
+        final List<Allele> alleles = new ArrayList<>(alleleStrings.size());
 
         for ( int i = 0; i < alleleStrings.size(); i++ ) {
             alleles.add(Allele.create(alleleStrings.get(i), i == 0));
@@ -174,7 +174,7 @@ public class VariantContextBuilder {
     }
 
     public List<Allele> getAlleles() {
-        return new ArrayList<Allele>(alleles);
+        return new ArrayList<>(alleles);
     }
 
     /**
@@ -244,9 +244,9 @@ public class VariantContextBuilder {
         if ( ! attributesCanBeModified ) {
             this.attributesCanBeModified = true;
             if (attributes == null) {
-            	this.attributes = new HashMap<String, Object>();
+            	this.attributes = new HashMap<>();
             } else {
-            	this.attributes = new HashMap<String, Object>(attributes);
+            	this.attributes = new HashMap<>(attributes);
             }
         }
     }
@@ -269,12 +269,12 @@ public class VariantContextBuilder {
      * @return
      */
     public VariantContextBuilder filters(final String ... filters) {
-        filters(new LinkedHashSet<String>(Arrays.asList(filters)));
+        filters(new LinkedHashSet<>(Arrays.asList(filters)));
         return this;
     }
 
     public VariantContextBuilder filter(final String filter) {
-        if ( this.filters == null ) this.filters = new LinkedHashSet<String>(1);
+        if ( this.filters == null ) this.filters = new LinkedHashSet<>(1);
         this.filters.add(filter);
         return this;
     }

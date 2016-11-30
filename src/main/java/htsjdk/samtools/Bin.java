@@ -121,7 +121,7 @@ public class Bin implements Comparable<Bin> {
      * Adds the first chunk to the bin
      */
     public void addInitialChunk(final Chunk newChunk){
-        final List<Chunk> oldChunks = new ArrayList<Chunk>();
+        final List<Chunk> oldChunks = new ArrayList<>();
         setChunkList(oldChunks);
         setLastChunk(newChunk);
         oldChunks.add(newChunk);

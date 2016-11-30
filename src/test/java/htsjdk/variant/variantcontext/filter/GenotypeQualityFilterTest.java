@@ -47,7 +47,7 @@ public class GenotypeQualityFilterTest {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Arrays.asList(refA, G));
         final GenotypeBuilder gt_builder = new GenotypeBuilder("test").alleles(Arrays.asList(refA, G));
-        final List<Object[]> variants = new ArrayList<Object[]>(10);
+        final List<Object[]> variants = new ArrayList<>(10);
 
         //without gq
         variants.add(new Object[]{vc_builder.genotypes(gt_builder.make()).make(), null, false});
@@ -78,7 +78,7 @@ public class GenotypeQualityFilterTest {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Arrays.asList(refA, G));
         final GenotypeBuilder gt_builder = new GenotypeBuilder();
-        final List<Object[]> hets = new ArrayList<Object[]>(10);
+        final List<Object[]> hets = new ArrayList<>(10);
 
         hets.add(new Object[]{vc_builder.make(), null});
         hets.add(new Object[]{vc_builder.genotypes(Arrays.asList(gt_builder.name("test1").make(), gt_builder.name("test2").make())).make(), "notNull"});

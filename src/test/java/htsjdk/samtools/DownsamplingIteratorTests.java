@@ -46,7 +46,7 @@ public class DownsamplingIteratorTests {
 
             for (final double p : new double[]{0, 0.01, 0.1, 0.5, 0.9, 1}) {
                 final DownsamplingIterator iterator = DownsamplingIteratorFactory.make(recs.iterator(), strategy, p, accuracy, 42);
-                final List<SAMRecord> out = new ArrayList<SAMRecord>();
+                final List<SAMRecord> out = new ArrayList<>();
                 while (iterator.hasNext()) out.add(iterator.next());
 
                 final String testcase = name + ": strategy=" + strategy.name() + ", p=" + p + ", accuracy=" + accuracy;

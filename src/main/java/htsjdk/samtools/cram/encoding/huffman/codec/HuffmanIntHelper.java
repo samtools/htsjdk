@@ -50,7 +50,7 @@ class HuffmanIntHelper {
         buildCodeBook();
         buildCodes();
 
-        final ArrayList<HuffmanBitCode> list = new ArrayList<HuffmanBitCode>(
+        final ArrayList<HuffmanBitCode> list = new ArrayList<>(
                 codes.size());
         list.addAll(codes.values());
         Collections.sort(list, bitCodeComparator);
@@ -86,12 +86,12 @@ class HuffmanIntHelper {
     }
 
     private void buildCodeBook() {
-        codeBook = new TreeMap<Integer, SortedSet<Integer>>();
+        codeBook = new TreeMap<>();
         for (int i = 0; i < values.length; i++) {
             if (codeBook.containsKey(bitLengths[i]))
                 codeBook.get(bitLengths[i]).add(values[i]);
             else {
-                final TreeSet<Integer> entry = new TreeSet<Integer>();
+                final TreeSet<Integer> entry = new TreeSet<>();
                 entry.add(values[i]);
                 codeBook.put(bitLengths[i], entry);
             }
@@ -99,7 +99,7 @@ class HuffmanIntHelper {
     }
 
     private void buildCodes() {
-        codes = new TreeMap<Integer, HuffmanBitCode>();
+        codes = new TreeMap<>();
         int codeLength = 0, codeValue = -1;
         for (final Object key : codeBook.keySet()) { // Iterate over code lengths
 

@@ -35,7 +35,7 @@ public abstract class TribbleIndexCreator implements IndexCreator {
     // a constant we use for marking sequence dictionary entries in the Tribble index property list
     private static final String SEQUENCE_DICTIONARY_PROPERTY_PREDICATE = "DICT:";
 
-    protected LinkedHashMap<String, String> properties = new LinkedHashMap<String, String>();
+    protected LinkedHashMap<String, String> properties = new LinkedHashMap<>();
 
     public void addProperty(final String key, final String value) {
         properties.put(key, value);

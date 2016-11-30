@@ -27,10 +27,10 @@ import java.util.TreeMap;
 public class HuffmanCode {
 
     public static <T> HuffmanTree<T> buildTree(final int[] charFrequencies, final T[] values) {
-        final LinkedList<HuffmanTree<T>> list = new LinkedList<HuffmanTree<T>>();
+        final LinkedList<HuffmanTree<T>> list = new LinkedList<>();
         for (int i = 0; i < charFrequencies.length; i++)
             if (charFrequencies[i] > 0)
-                list.add(new HuffmanLeaf<T>(charFrequencies[i], values[i]));
+                list.add(new HuffmanLeaf<>(charFrequencies[i], values[i]));
 
         final Comparator<HuffmanTree<T>> comparator = new Comparator<HuffmanTree<T>>() {
 
@@ -45,15 +45,15 @@ public class HuffmanCode {
             // dumpList(list) ;
             final HuffmanTree<T> left = list.remove();
             final HuffmanTree<T> right = list.remove();
-            list.add(new HuffmanNode<T>(left, right));
+            list.add(new HuffmanNode<>(left, right));
         }
         return list.isEmpty() ? null : list.remove();
     }
 
     public static <T> void getValuesAndBitLengths(final List<T> values,
                                                   final List<Integer> lens, final HuffmanTree<T> tree) {
-        final TreeMap<T, HuffmanBitCode<T>> codes = new TreeMap<T, HuffmanBitCode<T>>();
-        getBitCode(tree, new HuffmanBitCode<T>(), codes);
+        final TreeMap<T, HuffmanBitCode<T>> codes = new TreeMap<>();
+        getBitCode(tree, new HuffmanBitCode<>(), codes);
 
         for (final T value : codes.keySet()) {
             final HuffmanBitCode<T> code = codes.get(value);
@@ -71,7 +71,7 @@ public class HuffmanCode {
                                        final HuffmanBitCode<T> code, final Map<T, HuffmanBitCode<T>> codes) {
         if (tree instanceof HuffmanLeaf) {
             final HuffmanLeaf<T> leaf = (HuffmanLeaf<T>) tree;
-            final HuffmanBitCode<T> readyCode = new HuffmanBitCode<T>();
+            final HuffmanBitCode<T> readyCode = new HuffmanBitCode<>();
             readyCode.bitCode = code.bitCode;
             readyCode.bitLength = code.bitLength;
             codes.put(leaf.value, readyCode);

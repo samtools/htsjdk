@@ -47,7 +47,7 @@ public class HeterozygosityFilterTest {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Arrays.asList(refA, G));
         final GenotypeBuilder gt_builder = new GenotypeBuilder("test");
-        final List<Object[]> hets = new ArrayList<Object[]>(10);
+        final List<Object[]> hets = new ArrayList<>(10);
 
         hets.add(new Object[]{vc_builder.genotypes(gt_builder.alleles(Arrays.asList(refA, G)).make()).make(), null, true});
         hets.add(new Object[]{vc_builder.genotypes(gt_builder.alleles(Arrays.asList(refA, G)).make()).make(), "test", true});
@@ -71,7 +71,7 @@ public class HeterozygosityFilterTest {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Arrays.asList(refA, G));
         final GenotypeBuilder gt_builder = new GenotypeBuilder();
-        final List<Object[]> hets = new ArrayList<Object[]>(10);
+        final List<Object[]> hets = new ArrayList<>(10);
 
         hets.add(new Object[]{vc_builder.make(), null});
         hets.add(new Object[]{vc_builder.genotypes(Arrays.asList(gt_builder.name("test1").make(), gt_builder.name("test2").make())).make(), "notNull"});
@@ -93,7 +93,7 @@ public class HeterozygosityFilterTest {
 
         final VariantContextBuilder vc_builder = new VariantContextBuilder("testCode", "chr1", 1, 1, Arrays.asList(refA, G));
         final GenotypeBuilder gt_builder = new GenotypeBuilder("test");
-        final List<VariantContext> vcs = new ArrayList<VariantContext>(10);
+        final List<VariantContext> vcs = new ArrayList<>(10);
 
         //hets:
         vcs.add(vc_builder.genotypes(gt_builder.alleles(Arrays.asList(refA, G)).make()).make());

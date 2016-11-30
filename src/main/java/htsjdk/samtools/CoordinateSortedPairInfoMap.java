@@ -63,7 +63,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
     private final Codec<KEY, REC> elementCodec;
     // Key is reference index (which is in the range [-1 .. max sequence index].
     // Value is the number of records on disk for this index.
-    private final Map<Integer, Integer> sizeOfMapOnDisk = new HashMap<Integer, Integer>();
+    private final Map<Integer, Integer> sizeOfMapOnDisk = new HashMap<>();
 
     // No other methods may be called when iteration is in progress, because iteration depends on and changes
     // internal state.
@@ -108,7 +108,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
                     mapInRam.clear();
                 }
             } else {
-                mapInRam = new HashMap<KEY, REC>();
+                mapInRam = new HashMap<>();
             }
 
             sequenceIndexOfMapInRam = sequenceIndex;
@@ -210,7 +210,7 @@ public class CoordinateSortedPairInfoMap<KEY, REC> implements Iterable<Map.Entry
 
     private class MapIterator implements CloseableIterator<Map.Entry<KEY, REC>> {
         private boolean closed = false;
-        private Set<Integer> referenceIndices = new HashSet<Integer>(sizeOfMapOnDisk.keySet());
+        private Set<Integer> referenceIndices = new HashSet<>(sizeOfMapOnDisk.keySet());
         private final Iterator<Integer> referenceIndexIterator;
         private Iterator<Map.Entry<KEY, REC>> currentReferenceIterator = null;
 

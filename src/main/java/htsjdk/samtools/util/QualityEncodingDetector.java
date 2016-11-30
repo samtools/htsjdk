@@ -99,7 +99,7 @@ public class QualityEncodingDetector {
      * "raw-est", read unmodified from the file.
      */
     private static class QualityRecordAggregator {
-        private Set<Integer> observedAsciiQualities = new HashSet<Integer>();
+        private Set<Integer> observedAsciiQualities = new HashSet<>();
 
         public Set<Integer> getObservedAsciiQualities() {
             return Collections.unmodifiableSet(observedAsciiQualities);
@@ -229,7 +229,7 @@ public class QualityEncodingDetector {
 
         for (final QualityScheme scheme : QualityScheme.values()) {
             final Iterator<Integer> qualityBinIterator = observedAsciiQualities.iterator();
-            final Collection<Range> remainingExpectedValueRanges = new ArrayList<Range>(scheme.expectedAsciiRanges);
+            final Collection<Range> remainingExpectedValueRanges = new ArrayList<>(scheme.expectedAsciiRanges);
             while (qualityBinIterator.hasNext()) {
                 final int quality = qualityBinIterator.next();
                 if (!scheme.asciiRange.contains(quality)) {
@@ -262,7 +262,7 @@ public class QualityEncodingDetector {
      */
     private static Iterator<FastqRecord> generateInterleavedFastqIterator(final FastqReader... readers) {
         return new Iterator<FastqRecord>() {
-            private Queue<Iterator<FastqRecord>> queue = new LinkedList<Iterator<FastqRecord>>();
+            private Queue<Iterator<FastqRecord>> queue = new LinkedList<>();
 
             {
                 for (final FastqReader reader : readers) {

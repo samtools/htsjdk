@@ -180,7 +180,7 @@ public class SRAAlignmentIterator implements CloseableIterator<SAMRecord> {
     }
 
     private List<Chunk> getReferenceChunks(final Chunk chunk) {
-        List<Chunk> referencesChunks = new ArrayList<Chunk>();
+        List<Chunk> referencesChunks = new ArrayList<>();
         long refOffset = 0;
         for (Long refLen : referencesLengths) {
             if (chunk.getChunkStart() - refOffset >= refLen || chunk.getChunkEnd() - refOffset <= 0) {

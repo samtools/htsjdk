@@ -546,7 +546,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
             }
         } else {
             // If only binary sequences are present, copy them into samFileHeader
-            final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>(sequenceCount);
+            final List<SAMSequenceRecord> sequences = new ArrayList<>(sequenceCount);
             for (int i = 0; i < sequenceCount; i++) {
                 sequences.add(readSequenceRecord(stream, source));
             }

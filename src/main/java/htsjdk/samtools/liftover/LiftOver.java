@@ -140,7 +140,7 @@ public class LiftOver {
     }
 
     public List<PartialLiftover> diagnosticLiftover(final Interval interval) {
-        final List<PartialLiftover> ret = new ArrayList<PartialLiftover>();
+        final List<PartialLiftover> ret = new ArrayList<>();
         if (interval.length() == 0) {
             throw new IllegalArgumentException("Zero-length interval cannot be lifted over.  Interval: " +
                     interval.getName());

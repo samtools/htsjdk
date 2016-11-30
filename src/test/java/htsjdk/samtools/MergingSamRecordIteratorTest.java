@@ -58,11 +58,11 @@ public class MergingSamRecordIteratorTest {
         samReader2.getFileHeader().setSortOrder(SAMFileHeader.SortOrder.coordinate);
 
 
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
@@ -102,11 +102,11 @@ public class MergingSamRecordIteratorTest {
         final SamReader samReader2 = builder2.getSamReader();
 
 
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
@@ -146,11 +146,11 @@ public class MergingSamRecordIteratorTest {
         final SamReader samReader2 = builder2.getSamReader();
 
 
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
@@ -196,11 +196,11 @@ public class MergingSamRecordIteratorTest {
         samReader2.getFileHeader().addSequence(sRec);
 
 
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
@@ -227,11 +227,11 @@ public class MergingSamRecordIteratorTest {
         builder2.addFrag("read_28833_29006_6945", 20, 30000, false); // ok
         builder2.addFrag("read_28701_28881_323c", 22, 28835, false); // ok
 
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader);
         readerList.add(samReader2);
 
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader.getFileHeader());
         headerList.add(samReader2.getFileHeader());
 
@@ -245,7 +245,7 @@ public class MergingSamRecordIteratorTest {
     public void testHeaderCommentMerge() throws Exception {
         final String[] comments1 = {"@CO\tHi, Mom!", "@CO\tHi, Dad!"};
         final String[] comments2 = {"@CO\tHello, World!", "@CO\tGoodbye, Cruel World!"};
-        final Set<String> bothComments = new HashSet<String>();
+        final Set<String> bothComments = new HashSet<>();
         bothComments.addAll(Arrays.asList(comments1));
         bothComments.addAll(Arrays.asList(comments2));
         final SAMRecordSetBuilder builder1 = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
@@ -293,10 +293,10 @@ public class MergingSamRecordIteratorTest {
         // get a merging iterator with a merged header
         final SamReader samReader1 = builder1.getSamReader();
         final SamReader samReader2 = builder2.getSamReader();
-        final List<SamReader> readerList = new ArrayList<SamReader>();
+        final List<SamReader> readerList = new ArrayList<>();
         readerList.add(samReader1);
         readerList.add(samReader2);
-        final List<SAMFileHeader> headerList = new ArrayList<SAMFileHeader>();
+        final List<SAMFileHeader> headerList = new ArrayList<>();
         headerList.add(samReader1.getFileHeader());
         headerList.add(samReader2.getFileHeader());
         final SamFileHeaderMerger samFileHeaderMerger = new SamFileHeaderMerger(SAMFileHeader.SortOrder.coordinate, headerList, true);

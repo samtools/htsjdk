@@ -43,8 +43,8 @@ import java.util.Map;
  * @since 06/12
  */
 public class BCF2FieldWriterManager {
-    final Map<String, BCF2FieldWriter.SiteWriter> siteWriters = new HashMap<String, BCF2FieldWriter.SiteWriter>();
-    final Map<String, BCF2FieldWriter.GenotypesWriter> genotypesWriters = new HashMap<String, BCF2FieldWriter.GenotypesWriter>();
+    final Map<String, BCF2FieldWriter.SiteWriter> siteWriters = new HashMap<>();
+    final Map<String, BCF2FieldWriter.GenotypesWriter> genotypesWriters = new HashMap<>();
     final IntGenotypeFieldAccessors intGenotypeFieldAccessors = new IntGenotypeFieldAccessors();
 
     public BCF2FieldWriterManager() { }

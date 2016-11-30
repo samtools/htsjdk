@@ -76,8 +76,8 @@ public class SamPairUtilTest {
         final SAMFileHeader header = new SAMFileHeader();
         header.addSequence(new SAMSequenceRecord("chr1", 100000000));
 
-        final List<SAMRecord> records = new ArrayList<SAMRecord>();
-        final List<String> mateCigarList = new ArrayList<String>();
+        final List<SAMRecord> records = new ArrayList<>();
+        final List<String> mateCigarList = new ArrayList<>();
         final SAMRecord rec;
 
 

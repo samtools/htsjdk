@@ -52,7 +52,7 @@ public class CigarUtil {
     // package visible so can be unit-tested
     public static List<CigarElement> softClipEndOfRead(final int clipFrom, final List<CigarElement> oldCigar) {
         final int clippedBases = (int)CoordMath.getLength(clipFrom, Cigar.getReadLength(oldCigar));
-        List<CigarElement> newCigar = new LinkedList<CigarElement>();
+        List<CigarElement> newCigar = new LinkedList<>();
         int pos = 1;
 
         for (CigarElement c : oldCigar) {
@@ -117,7 +117,7 @@ public class CigarUtil {
         }
         if (negativeStrand){
             // Can't just use Collections.reverse() here because oldCigar is unmodifiable
-            oldCigar = new ArrayList<CigarElement>(oldCigar);
+            oldCigar = new ArrayList<>(oldCigar);
             Collections.reverse(oldCigar);
         }
         List<CigarElement> newCigarElems = CigarUtil.softClipEndOfRead(clipFrom, oldCigar);
@@ -217,7 +217,7 @@ public class CigarUtil {
     public static Cigar addSoftClippedBasesToEndsOfCigar(Cigar cigar, boolean negativeStrand,
                                                          final int threePrimeEnd, final int fivePrimeEnd) {
 
-        List<CigarElement> newCigar = new ArrayList<CigarElement>(cigar.getCigarElements());
+        List<CigarElement> newCigar = new ArrayList<>(cigar.getCigarElements());
         if (negativeStrand) {
             Collections.reverse(newCigar);
         }

@@ -114,7 +114,7 @@ public final class CommonInfo implements Serializable {
 
     public void addFilter(String filter) {
         if ( filters == null ) // immutable -> mutable
-            filters = new HashSet<String>();
+            filters = new HashSet<>();
 
         if ( filter == null ) throw new IllegalArgumentException("BUG: Attempting to add null filter " + this);
         if ( getFilters().contains(filter) ) throw new IllegalArgumentException("BUG: Attempting to add duplicate filter " + filter + " at " + this);
@@ -169,7 +169,7 @@ public final class CommonInfo implements Serializable {
     //
     // ---------------------------------------------------------------------------------------------------------
     public void clearAttributes() {
-        attributes = new HashMap<String, Object>();
+        attributes = new HashMap<>();
     }
 
     /**
@@ -195,14 +195,14 @@ public final class CommonInfo implements Serializable {
             throw new IllegalStateException("Attempting to overwrite key->value binding: key = " + key + " this = " + this);
 
         if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-            attributes = new HashMap<String, Object>();
+            attributes = new HashMap<>();
 
         attributes.put(key, value);
     }
 
     public void removeAttribute(String key) {
         if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-            attributes = new HashMap<String, Object>();
+            attributes = new HashMap<>();
         attributes.remove(key);
     }
 
@@ -211,7 +211,7 @@ public final class CommonInfo implements Serializable {
             // for efficiency, we can skip the validation if the map is empty
             if (attributes.isEmpty()) {
                 if ( attributes == NO_ATTRIBUTES ) // immutable -> mutable
-                    attributes = new HashMap<String, Object>();
+                    attributes = new HashMap<>();
                 attributes.putAll(map);
             } else {
                 for ( Map.Entry<String, ?> elt : map.entrySet() ) {

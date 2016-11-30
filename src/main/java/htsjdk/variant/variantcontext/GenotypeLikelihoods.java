@@ -79,7 +79,7 @@ public class GenotypeLikelihoods {
      * For example, for a ploidy of 3, the allele lists for each PL index is:
      * {0,0,0}, {0,0,1}, {0,1,1}, {1,1,1}, {0,0,2}, {0,1,2}, {1,1,2}, {0,2,2}, {1,2,2}, {2,2,2}
      */
-    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<Integer, List<List<Integer>>>();
+    protected final static Map<Integer, List<List<Integer>>> anyploidPloidyToPLIndexToAlleleIndices = new HashMap<>();
 
     public final static GenotypeLikelihoods fromPLField(String PLs) {
         return new GenotypeLikelihoods(PLs);
@@ -165,7 +165,7 @@ public class GenotypeLikelihoods {
         double[] likelihoods = normalizeFromLog10 ? GeneralUtils.normalizeFromLog10(getAsVector()) : getAsVector();
         if(likelihoods == null)
             return null;
-        EnumMap<GenotypeType,Double> likelihoodsMap = new EnumMap<GenotypeType, Double>(GenotypeType.class);
+        EnumMap<GenotypeType,Double> likelihoodsMap = new EnumMap<>(GenotypeType.class);
         likelihoodsMap.put(GenotypeType.HOM_REF,likelihoods[GenotypeType.HOM_REF.ordinal()-1]);
         likelihoodsMap.put(GenotypeType.HET,likelihoods[GenotypeType.HET.ordinal()-1]);
         likelihoodsMap.put(GenotypeType.HOM_VAR, likelihoods[GenotypeType.HOM_VAR.ordinal() - 1]);
@@ -382,7 +382,7 @@ public class GenotypeLikelihoods {
     private static void calculatePLIndexToAlleleIndices(final int altAlleles, final int ploidy, final List<List<Integer>> anyploidPLIndexToAlleleIndices,
                                                    final List<Integer> genotype) {
         for (int a=0; a <= altAlleles; a++) {
-            final List<Integer> gt = new ArrayList<Integer>(Arrays.asList(a));
+            final List<Integer> gt = new ArrayList<>(Arrays.asList(a));
             gt.addAll(genotype);
             if ( ploidy == 1 ) {// have all ploidy alleles for a PL index
                 anyploidPLIndexToAlleleIndices.add(gt);
@@ -402,8 +402,8 @@ public class GenotypeLikelihoods {
      * @return The alleles for each PL index for a ploidy
      */
     protected static List<List<Integer>> calculateAnyploidPLcache(final int altAlleles, final int ploidy) {
-        List<List<Integer>> anyploidPLIndexToAlleleIndices = new ArrayList<List<Integer>>();
-        calculatePLIndexToAlleleIndices(altAlleles, ploidy, anyploidPLIndexToAlleleIndices, new ArrayList<Integer>());
+        List<List<Integer>> anyploidPLIndexToAlleleIndices = new ArrayList<>();
+        calculatePLIndexToAlleleIndices(altAlleles, ploidy, anyploidPLIndexToAlleleIndices, new ArrayList<>());
         return anyploidPLIndexToAlleleIndices;
     }
 

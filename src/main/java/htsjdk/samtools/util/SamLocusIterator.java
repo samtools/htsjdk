@@ -69,7 +69,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     public static final class LocusInfo implements Locus {
         private final SAMSequenceRecord referenceSequence;
         private final int position;
-        private final List<RecordAndOffset> recordAndOffsets = new ArrayList<RecordAndOffset>(100);
+        private final List<RecordAndOffset> recordAndOffsets = new ArrayList<>(100);
         private List<RecordAndOffset> deletedInRecord = null;
         private List<RecordAndOffset> insertedInRecord = null;
 
@@ -143,7 +143,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      * LocusInfos on this list are ready to be returned by iterator.  All reads that overlap
      * the locus have been accumulated before the LocusInfo is moved into this list.
      */
-    private final ArrayList<LocusInfo> complete = new ArrayList<LocusInfo>(100);
+    private final ArrayList<LocusInfo> complete = new ArrayList<>(100);
 
     /**
      * LocusInfos for which accumulation is in progress.  When {@link #accumulateSamRecord(SAMRecord)} is called
@@ -157,7 +157,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
      *   ii) any uncovered positions between the last LocusInfo and the first aligned base of the new read
      *       have LocusInfos created and added to {@link #complete} if we are emitting uncovered loci
      */
-    private final ArrayList<LocusInfo> accumulator = new ArrayList<LocusInfo>(100);
+    private final ArrayList<LocusInfo> accumulator = new ArrayList<>(100);
 
     private int qualityScoreCutoff = Integer.MIN_VALUE;
     private int mappingQualityScoreCutoff = Integer.MIN_VALUE;
@@ -197,7 +197,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
     // Set to true when past all aligned reads in input SAM file
     private boolean finishedAlignedReads = false;
 
-    private final LocusComparator<Locus> locusComparator = new LocusComparator<Locus>();
+    private final LocusComparator<Locus> locusComparator = new LocusComparator<>();
 
 
     /**
@@ -260,7 +260,7 @@ public class SamLocusIterator implements Iterable<SamLocusIterator.LocusInfo>, C
         if (samFilters != null) {
             tempIterator = new FilteringSamIterator(tempIterator, new AggregateFilter(samFilters));
         }
-        samIterator = new PeekableIterator<SAMRecord>(tempIterator);
+        samIterator = new PeekableIterator<>(tempIterator);
         return this;
     }
 

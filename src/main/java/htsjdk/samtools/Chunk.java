@@ -143,7 +143,7 @@ public class Chunk implements Cloneable, Serializable,Comparable<Chunk> {
     public static List<Chunk> optimizeChunkList(final List<Chunk> chunks, final long minimumOffset) {
         Chunk lastChunk = null;
         Collections.sort(chunks);
-        final List<Chunk> result = new ArrayList<Chunk>();
+        final List<Chunk> result = new ArrayList<>();
         for (final Chunk chunk : chunks) {
             if (chunk.getChunkEnd() <= minimumOffset) {
                 continue;               // linear index optimization

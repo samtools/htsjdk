@@ -194,7 +194,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @return list of strings of the contig names
      */
     public List<String> getSequenceNames() {
-        return !this.hasIndex() ? new ArrayList<String>() : new ArrayList<String>(index.getSequenceNames());
+        return !this.hasIndex() ? new ArrayList<>() : new ArrayList<>(index.getSequenceNames());
     }
 
     @Override
@@ -262,7 +262,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final List<Block> blocks = index.getBlocks(chr, start - 1, end);
             return new QueryIterator(chr, start, end, blocks);
         } else {
-            return new EmptyIterator<T>();
+            return new EmptyIterator<>();
         }
     }
 

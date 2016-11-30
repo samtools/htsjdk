@@ -28,7 +28,7 @@ public class CoordSpanInputSteam extends InputStream {
     public CoordSpanInputSteam(SeekableStream delegate, long[] coords) throws IOException {
         this.delegate = delegate;
 
-        List<Chunk> chunks = new ArrayList<Chunk>();
+        List<Chunk> chunks = new ArrayList<>();
         for (int i = 0; i < coords.length; i += 2) {
             if (coords[i] > delegate.length()) throw new RuntimeException("Chunk start is passed EOF: " + coords[i]);
             Chunk chunk = new Chunk(coords[i], coords[i + 1] > delegate.length() ? delegate.length() : coords[i + 1]);

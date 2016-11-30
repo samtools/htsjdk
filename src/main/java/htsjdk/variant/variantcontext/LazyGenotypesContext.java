@@ -88,7 +88,7 @@ public class LazyGenotypesContext extends GenotypesContext {
         }
     }
 
-    private final static ArrayList<Genotype> EMPTY = new ArrayList<Genotype>(0);
+    private final static ArrayList<Genotype> EMPTY = new ArrayList<>(0);
 
     /**
      * Simple lazy parser interface.  Provide an object implementing this

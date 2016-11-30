@@ -87,7 +87,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<>(10000);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -106,7 +106,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<>(10000);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -147,11 +147,11 @@ public class CRAMIterator implements SAMRecordIterator {
         }
 
         if (records == null)
-            records = new ArrayList<SAMRecord>(container.nofRecords);
+            records = new ArrayList<>(container.nofRecords);
         else
             records.clear();
         if (cramRecords == null)
-            cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
+            cramRecords = new ArrayList<>(container.nofRecords);
         else
             cramRecords.clear();
 

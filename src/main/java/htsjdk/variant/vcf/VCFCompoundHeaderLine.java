@@ -222,7 +222,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * @return a string representation
      */
     protected String toStringEncoding() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
+        Map<String, Object> map = new LinkedHashMap<>();
         map.put("ID", name);
         Object number;
         switch (countType) {

@@ -87,7 +87,7 @@ class Chain {
     final int toChainEnd;
     /** ID of chain in file.  */
     final int id;
-    private final List<ContinuousBlock> blockList = new ArrayList<ContinuousBlock>();
+    private final List<ContinuousBlock> blockList = new ArrayList<>();
 
     /**
      * Construct a Chain from the parsed header fields.
@@ -313,7 +313,7 @@ class Chain {
      */
     static OverlapDetector<Chain> loadChains(final File chainFile) {
         final BufferedLineReader reader = new BufferedLineReader(IOUtil.openFileForReading(chainFile));
-        final OverlapDetector<Chain> ret = new OverlapDetector<Chain>(0, 0);
+        final OverlapDetector<Chain> ret = new OverlapDetector<>(0, 0);
         Chain chain;
         while ((chain = Chain.loadChain(reader, chainFile.toString())) != null) {
             ret.addLhs(chain, chain.interval);

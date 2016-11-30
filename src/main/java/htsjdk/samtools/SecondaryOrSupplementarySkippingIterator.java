@@ -13,7 +13,7 @@ public class SecondaryOrSupplementarySkippingIterator {
     private final PeekIterator<SAMRecord> it;
 
     public SecondaryOrSupplementarySkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
-        it = new PeekIterator<SAMRecord>(underlyingIt);
+        it = new PeekIterator<>(underlyingIt);
         skipAnyNotprimary();
     }
 

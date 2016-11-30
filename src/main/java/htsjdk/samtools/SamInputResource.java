@@ -213,7 +213,7 @@ abstract class InputResource {
 class FileInputResource extends InputResource {
 
     final File fileResource;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Lazy.LazyInitializer<SeekableStream>() {
         @Override
         public SeekableStream make() {
             try {
@@ -268,7 +268,7 @@ class FileInputResource extends InputResource {
 class PathInputResource extends InputResource {
 
     final Path pathResource;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Lazy.LazyInitializer<SeekableStream>() {
         @Override
         public SeekableStream make() {
             try {
@@ -327,11 +327,14 @@ class PathInputResource extends InputResource {
 class UrlInputResource extends InputResource {
 
     final URL urlResource;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Lazy.LazyInitializer<SeekableStream>() {
         @Override
         public SeekableStream make() {
-            try { return SeekableStreamFactory.getInstance().getStreamFor(urlResource); }
-            catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
+            try {
+                return SeekableStreamFactory.getInstance().getStreamFor(urlResource);
+            } catch (final IOException ioe) {
+                throw new RuntimeIOException(ioe);
+            }
         }
     });
 

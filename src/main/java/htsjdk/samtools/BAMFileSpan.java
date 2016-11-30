@@ -53,7 +53,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * Create a new empty list of chunks.
      */
     public BAMFileSpan() {
-        this.chunks = new ArrayList<Chunk>();
+        this.chunks = new ArrayList<>();
     }
 
     /**
@@ -62,7 +62,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * @param chunk Chunk to use as the sole region in this span.
      */
     public BAMFileSpan(final Chunk chunk) {
-        this.chunks = new ArrayList<Chunk>();
+        this.chunks = new ArrayList<>();
         chunks.add(chunk);
     }
 
@@ -71,7 +71,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * @param chunks Constituent chunks.
      */
     public BAMFileSpan(final List<Chunk> chunks) {
-        this.chunks = new ArrayList<Chunk>(chunks);
+        this.chunks = new ArrayList<>(chunks);
     }
 
     /**
@@ -257,7 +257,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * and contained chunks are intelligently merged, and the chunks are sorted.
      */
     public static BAMFileSpan merge(final BAMFileSpan[] spans) {
-        final ArrayList<Chunk> inputChunks = new ArrayList<Chunk>();
+        final ArrayList<Chunk> inputChunks = new ArrayList<>();
         for (final BAMFileSpan span : spans) {
             if(span != null){
                 inputChunks.addAll(span.chunks);

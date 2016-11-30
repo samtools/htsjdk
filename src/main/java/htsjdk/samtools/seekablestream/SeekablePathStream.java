@@ -107,7 +107,7 @@ public class SeekablePathStream extends SeekableStream {
     }
 
     public static synchronized void closeAllInstances() {
-        Collection<SeekablePathStream> clonedInstances = new HashSet<SeekablePathStream>();
+        Collection<SeekablePathStream> clonedInstances = new HashSet<>();
         clonedInstances.addAll(ALL_INSTANCES);
         for (SeekablePathStream sfs : clonedInstances) {
             try {

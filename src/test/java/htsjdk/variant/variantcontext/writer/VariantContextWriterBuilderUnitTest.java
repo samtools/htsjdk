@@ -74,8 +74,8 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         unknown = File.createTempFile(TEST_BASENAME, ".unknown");
         unknown.deleteOnExit();
 
-        blockCompressedVCFs = new ArrayList<File>();
-        blockCompressedIndices = new ArrayList<File>();
+        blockCompressedVCFs = new ArrayList<>();
+        blockCompressedIndices = new ArrayList<>();
         for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
             final File blockCompressed = File.createTempFile(TEST_BASENAME, ".vcf" + extension);
             blockCompressed.deleteOnExit();

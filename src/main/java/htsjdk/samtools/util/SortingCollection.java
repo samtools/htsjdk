@@ -124,7 +124,7 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * List of files in tmpDir containing sorted records
      */
-    private final List<File> files = new ArrayList<File>();
+    private final List<File> files = new ArrayList<>();
 
     private boolean destructiveIteration = true;
 
@@ -297,7 +297,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final File... tmpDir) {
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+        return new SortingCollection<>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
 
     }
 
@@ -315,11 +315,11 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final Collection<File> tmpDirs) {
-        return new SortingCollection<T>(componentType,
-                                        codec,
-                                        comparator,
-                                        maxRecordsInRAM,
-                                        tmpDirs.toArray(new File[tmpDirs.size()]));
+        return new SortingCollection<>(componentType,
+                codec,
+                comparator,
+                maxRecordsInRAM,
+                tmpDirs.toArray(new File[tmpDirs.size()]));
 
     }
 
@@ -338,7 +338,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final int maxRecordsInRAM) {
 
         final File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+        return new SortingCollection<>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
     }
 
     /**
@@ -396,7 +396,7 @@ public class SortingCollection<T> implements Iterable<T> {
         private final TreeSet<PeekFileRecordIterator> queue;
 
         MergingIterator() {
-            this.queue = new TreeSet<PeekFileRecordIterator>(new PeekFileRecordIteratorComparator());
+            this.queue = new TreeSet<>(new PeekFileRecordIteratorComparator());
             int n = 0;
             for (final File f : SortingCollection.this.files) {
                 final FileRecordIterator it = new FileRecordIterator(f);

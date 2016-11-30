@@ -67,7 +67,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     /**
      * Maps offsets (encoded in BCF) into contig names (from header) for the CHROM field
      */
-    private final ArrayList<String> contigNames = new ArrayList<String>();
+    private final ArrayList<String> contigNames = new ArrayList<>();
 
     /**
      * Maps header string names (encoded in VCF) into strings found in the BCF header
@@ -335,7 +335,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
      */
     private List<Allele> decodeAlleles( final VariantContextBuilder builder, final int pos, final int nAlleles ) throws IOException {
         // TODO -- probably need inline decoder for efficiency here (no sense in going bytes -> string -> vector -> bytes
-        List<Allele> alleles = new ArrayList<Allele>(nAlleles);
+        List<Allele> alleles = new ArrayList<>(nAlleles);
         String ref = null;
 
         for ( int i = 0; i < nAlleles; i++ ) {
@@ -391,7 +391,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
             // fast path, don't bother doing any work if there are no fields
             return;
 
-        final Map<String, Object> infoFieldEntries = new HashMap<String, Object>(numInfoFields);
+        final Map<String, Object> infoFieldEntries = new HashMap<>(numInfoFields);
         for ( int i = 0; i < numInfoFields; i++ ) {
             final String key = getDictionaryString();
             Object value = decoder.decodeTypedValue();

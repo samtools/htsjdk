@@ -62,7 +62,7 @@ public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex
         if(queryResults == null)
             return null;
 
-        List<Chunk> chunkList = new ArrayList<Chunk>();
+        List<Chunk> chunkList = new ArrayList<>();
         for(final Chunk chunk: queryResults.getAllChunks())
             chunkList.add(chunk.clone());
         chunkList = Chunk.optimizeChunkList(chunkList,queryResults.getLinearIndex().getMinimumOffset(startPos));

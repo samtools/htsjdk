@@ -41,7 +41,7 @@ import java.util.List;
 public class Cigar implements Serializable, Iterable<CigarElement> {
     public static final long serialVersionUID = 1L;
 
-    private final List<CigarElement> cigarElements = new ArrayList<CigarElement>();
+    private final List<CigarElement> cigarElements = new ArrayList<>();
 
     public Cigar() {
     }
@@ -148,7 +148,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
         for (int i = 0; i < cigarElements.size(); ++i) {
             final CigarElement element = cigarElements.get(i);
             if (element.getLength() == 0) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                         "CIGAR element with zero length", readName, recordNumber));
             }
@@ -157,7 +157,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
             if (isClippingOperator(op)) {
                 if (op == CigarOperator.H) {
                     if (i != 0 && i != cigarElements.size() - 1) {
-                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                                 "Hard clipping operator not at start or end of CIGAR", readName, recordNumber));
                     }
@@ -170,20 +170,20 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                             // Handle funky special case in which S operator is both one from the beginning and one
                             // from the end.
                         } else if (cigarElements.get(0).getOperator() != CigarOperator.H) {
-                            if (ret == null) ret = new ArrayList<SAMValidationError>();
+                            if (ret == null) ret = new ArrayList<>();
                             ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                                 "Soft clipping CIGAR operator can only be inside of hard clipping operator",
                                     readName, recordNumber));
                         }
                     } else if (i == cigarElements.size() - 2) {
                         if (cigarElements.get(cigarElements.size() - 1).getOperator() != CigarOperator.H) {
-                            if (ret == null) ret = new ArrayList<SAMValidationError>();
+                            if (ret == null) ret = new ArrayList<>();
                             ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                                 "Soft clipping CIGAR operator can only be inside of hard clipping operator",
                                     readName, recordNumber));
                         }
                     } else {
-                        if (ret == null) ret = new ArrayList<SAMValidationError>();
+                        if (ret == null) ret = new ArrayList<>();
                         ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                             "Soft clipping CIGAR operator can at start or end of read, or be inside of hard clipping operator",
                                 readName, recordNumber));
@@ -202,7 +202,7 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                             break;
                         }
                         if (isInDelOperator(nextOperator) && op == nextOperator) {
-                            if (ret == null) ret = new ArrayList<SAMValidationError>();
+                            if (ret == null) ret = new ArrayList<>();
                             ret.add(new SAMValidationError(SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR,
                                     "No M or N operator between pair of " + op.name() + " operators in CIGAR", readName, recordNumber));
                         }
@@ -216,19 +216,19 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
                      * position on the unpadded reference.
                     */
                 } else if (i == cigarElements.size() - 1) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
+                    if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                             "Padding operator not valid at end of CIGAR", readName, recordNumber));
                 } else if (!isRealOperator(cigarElements.get(i-1).getOperator()) ||
                         !isRealOperator(cigarElements.get(i+1).getOperator())) {
-                    if (ret == null) ret = new ArrayList<SAMValidationError>();
+                    if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                             "Padding operator not between real operators in CIGAR", readName, recordNumber));
                 }
             }
         }
         if (!seenRealOperator) {
-            if (ret == null) ret = new ArrayList<SAMValidationError>();
+            if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,
                     "No real operator (M|I|D|N) in CIGAR", readName, recordNumber));
         }

@@ -81,8 +81,8 @@ public class VariantBaseTest {
     }
 
     public static final <T> void assertEqualsSet(final Set<T> actual, final Set<T> expected, final String info) {
-        final Set<T> actualSet = new HashSet<T>(actual);
-        final Set<T> expectedSet = new HashSet<T>(expected);
+        final Set<T> actualSet = new HashSet<>(actual);
+        final Set<T> expectedSet = new HashSet<>(expected);
         Assert.assertTrue(actualSet.equals(expectedSet), info); // note this is necessary due to testng bug for set comps
     }
 
@@ -108,7 +108,7 @@ public class VariantBaseTest {
         final int[] contigLengths = { 249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022,
                                       141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753,
                                       81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566, 16569 };
-        List<SAMSequenceRecord> contigs = new ArrayList<SAMSequenceRecord>();
+        List<SAMSequenceRecord> contigs = new ArrayList<>();
 
         for ( int contig = 1; contig <= 22; contig++ ) {
             contigs.add(new SAMSequenceRecord(Integer.toString(contig), contigLengths[contig - 1]));
@@ -198,7 +198,7 @@ public class VariantBaseTest {
      * @param expected expected mapping of attributes
      */
     private static void assertAttributesEquals(final Map<String, Object> actual, Map<String, Object> expected) {
-        final Set<String> expectedKeys = new HashSet<String>(expected.keySet());
+        final Set<String> expectedKeys = new HashSet<>(expected.keySet());
 
         for ( final Map.Entry<String, Object> act : actual.entrySet() ) {
             final Object actualValue = act.getValue();

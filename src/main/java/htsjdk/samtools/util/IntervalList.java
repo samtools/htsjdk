@@ -65,7 +65,7 @@ public class IntervalList implements Iterable<Interval> {
     public static final String INTERVAL_LIST_FILE_EXTENSION = ".interval_list";
 
     private final SAMFileHeader header;
-    private final List<Interval> intervals = new ArrayList<Interval>();
+    private final List<Interval> intervals = new ArrayList<>();
 
     private static final Log log = Log.getInstance(IntervalList.class);
 
@@ -234,8 +234,8 @@ public class IntervalList implements Iterable<Interval> {
             intervals = list.intervals;
         }
 
-        final List<Interval> unique = new ArrayList<Interval>();
-        final TreeSet<Interval> toBeMerged = new TreeSet<Interval>();
+        final List<Interval> unique = new ArrayList<>();
+        final TreeSet<Interval> toBeMerged = new TreeSet<>();
         Interval current = null;
 
         for (final Interval next : intervals) {
@@ -291,7 +291,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return list of intervals that are broken up
      */
     public static List<Interval> breakIntervalsAtBandMultiples(final List<Interval> intervals, final int bandMultiple) {
-        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+        final List<Interval> brokenUpIntervals = new ArrayList<>();
         for (final Interval interval : intervals) {
             if (interval.getEnd() >= interval.getStart()) {       // Normal, non-empty intervals
                 final int startIndex = interval.getStart() / bandMultiple;
@@ -320,7 +320,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return list of intervals that are broken up
      */
     private static List<Interval> breakIntervalAtBandMultiples(final Interval interval, final int bandMultiple) {
-        final List<Interval> brokenUpIntervals = new ArrayList<Interval>();
+        final List<Interval> brokenUpIntervals = new ArrayList<>();
 
         int startPos = interval.getStart();
         final int startOfIntervalIndex = startPos / bandMultiple;
@@ -346,7 +346,7 @@ public class IntervalList implements Iterable<Interval> {
         int start = intervals.first().getStart();
         int end   = intervals.last().getEnd();
         final boolean neg  = intervals.first().isNegativeStrand();
-        final LinkedHashSet<String> names = new LinkedHashSet<String>();
+        final LinkedHashSet<String> names = new LinkedHashSet<>();
         final String name;
 
         for (final Interval i : intervals) {
@@ -424,7 +424,7 @@ public class IntervalList implements Iterable<Interval> {
      * Calls {@link #fromFile(java.io.File)} on the provided files, and returns their {@link #union(java.util.Collection)}.
      */
     public static IntervalList fromFiles(final Collection<File> intervalListFiles) {
-        final Collection<IntervalList> intervalLists = new ArrayList<IntervalList>();
+        final Collection<IntervalList> intervalLists = new ArrayList<>();
         for (final File file : intervalListFiles) {
             intervalLists.add(IntervalList.fromFile(file));
         }
@@ -566,7 +566,7 @@ public class IntervalList implements Iterable<Interval> {
 
         result = new IntervalList(list1.getHeader().clone());
 
-        final OverlapDetector<Interval> detector = new OverlapDetector<Interval>(0, 0);
+        final OverlapDetector<Interval> detector = new OverlapDetector<>(0, 0);
 
         detector.addAll(list1.getIntervals(), list1.getIntervals());
 
@@ -657,7 +657,7 @@ public class IntervalList implements Iterable<Interval> {
     public static IntervalList invert(final IntervalList list) {
         final IntervalList inverse = new IntervalList(list.header.clone());
 
-        final ListMap<Integer,Interval> map = new ListMap<Integer,Interval>();
+        final ListMap<Integer,Interval> map = new ListMap<>();
 
         //add all the intervals (uniqued and therefore also sorted) to a ListMap from sequenceIndex to a list of Intervals
         for(final Interval i : list.uniqued().getIntervals()){

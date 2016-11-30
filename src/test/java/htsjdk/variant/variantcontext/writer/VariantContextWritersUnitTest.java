@@ -59,7 +59,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "VariantContextTest_SingleContexts")
     public Object[][] SiteVCsTest() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         for ( VariantContextTestProvider.VariantContextTestData testData : VariantContextTestProvider.generateSiteTests() )
             tests.add(new Object[]{testData});
         return tests.toArray(new Object[][]{});
@@ -132,7 +132,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
 
         @Override
         public List<VariantContext> postprocess(final VCFHeader header, final List<VariantContext> vcsAfterIO) {
-            final List<VariantContext> fullyDecoded = new ArrayList<VariantContext>(vcsAfterIO.size());
+            final List<VariantContext> fullyDecoded = new ArrayList<>(vcsAfterIO.size());
 
             for ( final VariantContext withStrings : vcsAfterIO )
                 fullyDecoded.add(withStrings.fullyDecode(header, false));

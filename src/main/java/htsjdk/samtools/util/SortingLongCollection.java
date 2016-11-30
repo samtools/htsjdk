@@ -89,7 +89,7 @@ public class SortingLongCollection {
     /**
      * List of files in tmpDir containing sorted values
      */
-    private final List<File> files = new ArrayList<File>();
+    private final List<File> files = new ArrayList<>();
 
     // for in-memory iteration
     private int iterationIndex = 0;
@@ -145,7 +145,7 @@ public class SortingLongCollection {
             spillToDisk();
         }
 
-        this.priorityQueue = new PriorityQueue<PeekFileValueIterator>(files.size(),
+        this.priorityQueue = new PriorityQueue<>(files.size(),
                 new PeekFileValueIteratorComparator());
         for (final File f : files) {
             final FileValueIterator it = new FileValueIterator(f);

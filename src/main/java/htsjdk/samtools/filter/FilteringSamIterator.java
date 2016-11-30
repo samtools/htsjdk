@@ -64,7 +64,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
             ((SAMRecordIterator)iterator).assertSorted(SAMFileHeader.SortOrder.queryname);
         }
 
-        this.iterator = new PeekableIterator<SAMRecord>(iterator);
+        this.iterator = new PeekableIterator<>(iterator);
         this.filter = filter;
         this.filterReadPairs = filterByPair;
         next = getNextRecord();
@@ -77,7 +77,7 @@ public class FilteringSamIterator implements CloseableIterator<SAMRecord> {
      * @param filter   the filter (which may be a FilterAggregator)
      */
     public FilteringSamIterator(final Iterator<SAMRecord> iterator, final SamRecordFilter filter) {
-        this.iterator = new PeekableIterator<SAMRecord>(iterator);
+        this.iterator = new PeekableIterator<>(iterator);
         this.filter = filter;
         next = getNextRecord();
     }

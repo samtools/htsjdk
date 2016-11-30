@@ -71,11 +71,11 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
      */
     public SortingVariantContextWriterBase(VariantContextWriter innerWriter, boolean takeOwnershipOfInner) {
         this.innerWriter = innerWriter;
-        this.finishedChromosomes = new TreeSet<String>();
+        this.finishedChromosomes = new TreeSet<>();
         this.takeOwnershipOfInner = takeOwnershipOfInner;
 
         // has to be PriorityBlockingQueue to be thread-safe
-        this.queue = new PriorityBlockingQueue<VCFRecord>(50, new VariantContextComparator());
+        this.queue = new PriorityBlockingQueue<>(50, new VariantContextComparator());
 
         this.mostUpstreamWritableLoc = BEFORE_MOST_UPSTREAM_LOC;
     }

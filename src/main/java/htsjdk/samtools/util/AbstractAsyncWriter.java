@@ -28,7 +28,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
     private final BlockingQueue<T> queue;
     private final Thread writer;
     private final WriterRunnable writerRunnable;
-    private final AtomicReference<Throwable> ex = new AtomicReference<Throwable>(null);
+    private final AtomicReference<Throwable> ex = new AtomicReference<>(null);
 
     /** Returns the prefix to use when naming threads. */
     protected abstract String getThreadNamePrefix();
@@ -42,7 +42,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * internal queue and write records into the synchronous writer.
      */
     protected AbstractAsyncWriter(final int queueSize) {
-        this.queue = new ArrayBlockingQueue<T>(queueSize);
+        this.queue = new ArrayBlockingQueue<>(queueSize);
         this.writerRunnable = new WriterRunnable();
         this.writer = new Thread(writerRunnable, getThreadNamePrefix() + threadsCreated++);
         this.writer.setDaemon(true);

@@ -53,7 +53,7 @@ import java.util.List;
 public final class BCF2UtilsUnitTest extends VariantBaseTest {
     @DataProvider(name = "CollapseExpandTest")
     public Object[][] makeCollapseExpandTest() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{Arrays.asList("A"), "A", false});
         tests.add(new Object[]{Arrays.asList("A", "B"), ",A,B", true});
         tests.add(new Object[]{Arrays.asList("AB"), "AB", false});
@@ -73,7 +73,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
 
     @Test
     public void testCreateDictionary() {
-        final List<VCFHeaderLine> inputLines = new ArrayList<VCFHeaderLine>();
+        final List<VCFHeaderLine> inputLines = new ArrayList<>();
         int counter = 0;
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
@@ -87,7 +87,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         final int inputLineCounter = counter;
-        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(inputLines));
+        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<>(inputLines));
         final ArrayList<String> dict = BCF2Utils.makeDictionary(inputHeader);
         final int dict_size = dict.size();
         Assert.assertEquals(7,dict_size);
@@ -111,8 +111,8 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "HeaderOrderTestProvider")
     public Object[][] makeHeaderOrderTestProvider() {
-        final List<VCFHeaderLine> inputLines = new ArrayList<VCFHeaderLine>();
-        final List<VCFHeaderLine> extraLines = new ArrayList<VCFHeaderLine>();
+        final List<VCFHeaderLine> inputLines = new ArrayList<>();
+        final List<VCFHeaderLine> extraLines = new ArrayList<>();
 
         int counter = 0;
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
@@ -124,7 +124,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         final int inputLineCounter = counter;
-        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(inputLines));
+        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<>(inputLines));
 
         extraLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         extraLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
@@ -133,7 +133,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         extraLines.add(new VCFHeaderLine("x", "misc"));
         extraLines.add(new VCFHeaderLine("y", "misc"));
 
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
         for ( final int extrasToTake : Arrays.asList(0, 1, 2, 3) ) {
             final List<VCFHeaderLine> empty = Collections.emptyList();
             final List<List<VCFHeaderLine>> permutations = extrasToTake == 0
@@ -141,11 +141,11 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
                     : GeneralUtils.makePermutations(extraLines, extrasToTake, false);
             for ( final List<VCFHeaderLine> permutation : permutations ) {
                 for ( int i = -1; i < inputLines.size(); i++ ) {
-                    final List<VCFHeaderLine> allLines = new ArrayList<VCFHeaderLine>(inputLines);
+                    final List<VCFHeaderLine> allLines = new ArrayList<>(inputLines);
                     if ( i >= 0 )
                         allLines.remove(i);
                     allLines.addAll(permutation);
-                    final VCFHeader testHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(allLines));
+                    final VCFHeader testHeader = new VCFHeader(new LinkedHashSet<>(allLines));
                     final boolean expectedConsistent = expectedConsistent(testHeader, inputLineCounter);
                     tests.add(new Object[]{new HeaderOrderTestCase(inputHeader, testHeader, expectedConsistent)});
                 }
@@ -177,7 +177,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     }
 
     private static boolean expectedConsistent(final VCFHeader combinationHeader, final int minCounterForInputLines) {
-        final List<Integer> ids = new ArrayList<Integer>();
+        final List<Integer> ids = new ArrayList<>();
         for ( final VCFHeaderLine line : combinationHeader.getMetaDataInInputOrder() ) {
             if ( line instanceof VCFIDHeaderLine) {
                 ids.add(Integer.valueOf(((VCFIDHeaderLine) line).getID()));
@@ -211,7 +211,7 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "toListTestProvider")
     public Object[][] makeToListTest() {
-        final List<Object[]> tests = new ArrayList<Object[]>();
+        final List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{Object.class, null, Collections.emptyList()});
         tests.add(new Object[]{Integer.class, 1, Arrays.asList(1)});
         tests.add(new Object[]{Integer.class, new int[]{1, 2, 3}, Arrays.asList(1, 2, 3)});

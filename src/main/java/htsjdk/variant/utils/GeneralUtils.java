@@ -167,7 +167,7 @@ public class GeneralUtils {
     }
 
     public static <T> List<T> cons(final T elt, final List<T> l) {
-        List<T> l2 = new ArrayList<T>();
+        List<T> l2 = new ArrayList<>();
         l2.add(elt);
         if (l != null) l2.addAll(l);
         return l2;
@@ -187,7 +187,7 @@ public class GeneralUtils {
      * @return
      */
     public static <T> List<List<T>> makePermutations(final List<T> objects, final int n, final boolean withReplacement) {
-        final List<List<T>> combinations = new ArrayList<List<T>>();
+        final List<List<T>> combinations = new ArrayList<>();
 
         if ( n <= 0 )
             ;
@@ -237,7 +237,7 @@ public class GeneralUtils {
     }
 
     static public final <T> List<T> reverse(final List<T> l) {
-        final List<T> newL = new ArrayList<T>(l);
+        final List<T> newL = new ArrayList<>(l);
         Collections.reverse(newL);
         return newL;
     }

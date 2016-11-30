@@ -138,7 +138,7 @@ public class ReaderTest {
     private void testLineReader(final String lines) throws IOException {
         // read all of the lines into the
         final BufferedReader br = new BufferedReader(new StringReader(lines));
-        final List<String> eachLine = new ArrayList<String>();
+        final List<String> eachLine = new ArrayList<>();
         while (true) {
             final String line = br.readLine();
             if ( line == null ) break;

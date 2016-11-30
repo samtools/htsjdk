@@ -23,7 +23,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 	private static final long serialVersionUID = 1L;
 
 	public static List<String> getSequenceNameList(final SAMSequenceDictionary dictionary) {
-		final List<String> list = new ArrayList<String>();
+		final List<String> list = new ArrayList<>();
 		for (final SAMSequenceRecord record : dictionary.getSequences()) {
 			list.add(record.getSequenceName());
 		}
@@ -36,7 +36,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 	public VariantContextComparator(final List<String> contigs) {
 		if (contigs.isEmpty()) throw new IllegalArgumentException("One or more contigs must be in the contig list.");
 
-		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
+		final Map<String, Integer> protoContigIndexLookup = new HashMap<>();
 		int index = 0;
 		for (final String contig : contigs) {
 			protoContigIndexLookup.put(contig, index++);
@@ -57,7 +57,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 	public VariantContextComparator(final Collection<VCFContigHeaderLine> headerLines) {
 		if (headerLines.isEmpty()) throw new IllegalArgumentException("One or more header lines must be in the header line collection.");
 
-		final Map<String, Integer> protoContigIndexLookup = new HashMap<String, Integer>();
+		final Map<String, Integer> protoContigIndexLookup = new HashMap<>();
 		for (final VCFContigHeaderLine headerLine : headerLines) {
 			protoContigIndexLookup.put(headerLine.getID(), headerLine.getContigIndex());
 		}
@@ -66,7 +66,7 @@ public class VariantContextComparator implements Comparator<VariantContext>, Ser
 			throw new IllegalArgumentException("There are duplicate contigs/chromosomes in the input header line collection.");
 		}
 
-		final Set<Integer> protoIndexValues = new HashSet<Integer>(protoContigIndexLookup.values());
+		final Set<Integer> protoIndexValues = new HashSet<>(protoContigIndexLookup.values());
 		if (protoIndexValues.size() != headerLines.size()) {
 			throw new IllegalArgumentException("One or more contigs share the same index number.");
 		}

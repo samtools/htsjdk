@@ -46,26 +46,26 @@ public class SamHeaderRecordComparatorTest {
 
 	@Test(dataProvider="UsualSuspects")
 	public void testEqualRecords(final SAMReadGroupRecord left, final SAMReadGroupRecord right) {
-		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<SAMReadGroupRecord>(SAMReadGroupRecord.PLATFORM_UNIT_TAG);
+		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<>(SAMReadGroupRecord.PLATFORM_UNIT_TAG);
 		Assert.assertEquals(0, comparator.compare(left, left)); // see what I did there?
 	}
 
 	@Test(dataProvider="UsualSuspects")
 	public void testUnequalRecords(final SAMReadGroupRecord left, final SAMReadGroupRecord right) {
-		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<SAMReadGroupRecord>(SAMReadGroupRecord.PLATFORM_UNIT_TAG);
+		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<>(SAMReadGroupRecord.PLATFORM_UNIT_TAG);
 		Assert.assertTrue(comparator.compare(left, right) < 0);
 		Assert.assertTrue(comparator.compare(right, left) > 0);
 	}
 
 	@Test(dataProvider="UsualSuspects")
 	public void testNullAttributes(final SAMReadGroupRecord left, final SAMReadGroupRecord right) {
-		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<SAMReadGroupRecord>(SAMReadGroupRecord.FLOW_ORDER_TAG);
+		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<>(SAMReadGroupRecord.FLOW_ORDER_TAG);
 		Assert.assertEquals(0, comparator.compare(left, right)); // neither record has this attribute
 	}
 
 	@Test(dataProvider="UsualSuspects")
 	public void testOneNullAttribute(final SAMReadGroupRecord left, final SAMReadGroupRecord right) {
-		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<SAMReadGroupRecord>(SAMReadGroupRecord.DESCRIPTION_TAG);
+		final SAMHeaderRecordComparator<SAMReadGroupRecord> comparator = new SAMHeaderRecordComparator<>(SAMReadGroupRecord.DESCRIPTION_TAG);
 		Assert.assertTrue(comparator.compare(left, right) < 0);
 		Assert.assertTrue(comparator.compare(right, left) > 0);
 	}

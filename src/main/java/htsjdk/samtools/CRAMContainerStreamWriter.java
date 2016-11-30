@@ -45,7 +45,7 @@ public class CRAMContainerStreamWriter {
     private final OutputStream outputStream;
     private CRAMReferenceSource source;
 
-    private final List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
+    private final List<SAMRecord> samRecords = new ArrayList<>();
     private ContainerFactory containerFactory;
     private int refSeqIndex = REF_SEQ_INDEX_NOT_INITIALIZED;
 
@@ -54,8 +54,8 @@ public class CRAMContainerStreamWriter {
     private boolean preserveReadNames = true;
     private QualityScorePreservation preservation = null;
     private boolean captureAllTags = true;
-    private Set<String> captureTags = new TreeSet<String>();
-    private Set<String> ignoreTags = new TreeSet<String>();
+    private Set<String> captureTags = new TreeSet<>();
+    private Set<String> ignoreTags = new TreeSet<>();
 
     private CRAMBAIIndexer indexer;
     private long offset;
@@ -306,7 +306,7 @@ public class CRAMContainerStreamWriter {
             updateTracks(samRecords, tracks);
         }
 
-        final List<CramCompressionRecord> cramRecords = new ArrayList<CramCompressionRecord>(samRecords.size());
+        final List<CramCompressionRecord> cramRecords = new ArrayList<>(samRecords.size());
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refs, samFileHeader, cramVersion);
         sam2CramRecordFactory.preserveReadNames = preserveReadNames;
@@ -341,8 +341,8 @@ public class CRAMContainerStreamWriter {
         {
             if (samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate) {
                 // mating:
-                final Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<String, CramCompressionRecord>();
-                final Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<String, CramCompressionRecord>();
+                final Map<String, CramCompressionRecord> primaryMateMap = new TreeMap<>();
+                final Map<String, CramCompressionRecord> secondaryMateMap = new TreeMap<>();
                 for (final CramCompressionRecord r : cramRecords) {
                     if (!r.isMultiFragment()) {
                         r.setDetached(true);

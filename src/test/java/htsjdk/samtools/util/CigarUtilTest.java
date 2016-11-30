@@ -48,7 +48,7 @@ public class CigarUtilTest {
                           final String expectedCigar, final int expectedAdjustedStart) throws IOException {
       List<CigarElement> cigar =  TextCigarCodec.decode(inputCigar).getCigarElements();
       if (negativeStrand){
-          List<CigarElement> copiedList = new ArrayList<CigarElement>(cigar);
+          List<CigarElement> copiedList = new ArrayList<>(cigar);
           Collections.reverse(copiedList);
           cigar = copiedList;
       }

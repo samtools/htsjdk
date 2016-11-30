@@ -91,7 +91,7 @@ public class CRAIEntryTest {
 
     @Test
     public void testCompareTo () {
-        final List<CRAIEntry> list = new ArrayList<CRAIEntry>(2);
+        final List<CRAIEntry> list = new ArrayList<>(2);
         CRAIEntry e1;
         CRAIEntry e2;
 

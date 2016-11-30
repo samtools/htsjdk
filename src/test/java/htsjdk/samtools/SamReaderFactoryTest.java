@@ -163,7 +163,7 @@ public class SamReaderFactoryTest {
 
     @DataProvider
     public Object[][] composeAllPermutationsOfSamInputResource() {
-        final List<SamInputResource> sources = new ArrayList<SamInputResource>();
+        final List<SamInputResource> sources = new ArrayList<>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
             if (dataType.equals(InputResource.Type.SRA_ACCESSION))
                 continue;
@@ -210,8 +210,8 @@ public class SamReaderFactoryTest {
         }
     }
 
-    final Set<SAMFileHeader> observedHeaders = new HashSet<SAMFileHeader>();
-    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<List<SAMRecord>>();
+    final Set<SAMFileHeader> observedHeaders = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void exhaustInputResourcePermutation(final SamInputResource resource) throws IOException {
@@ -251,9 +251,9 @@ public class SamReaderFactoryTest {
     }
 
 
-    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<List<SAMRecord>>();
+    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void queryInputResourcePermutation(final SamInputResource resource) throws IOException {

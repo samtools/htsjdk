@@ -73,30 +73,30 @@ public class MergingIteratorTest {
 
 	@Test
 	public void testOrderingAndCompleteness() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
+		final Queue<Integer> queueOne = new LinkedList<>();
 		queueOne.add(1);
 		queueOne.add(3);
 		queueOne.add(5);
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
+		final Queue<Integer> queueTwo = new LinkedList<>();
 		queueTwo.add(2);
 		queueTwo.add(4);
 		queueTwo.add(6);
 
-		final Queue<Integer> queueThree = new LinkedList<Integer>();
+		final Queue<Integer> queueThree = new LinkedList<>();
 		queueThree.add(0);
 		queueThree.add(1);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
+		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<>(3);
 		Collections.addAll(
 				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo),
-				new QueueBackedIterator<Integer>(queueThree));
+                new QueueBackedIterator<>(queueOne),
+                new QueueBackedIterator<>(queueTwo),
+                new QueueBackedIterator<>(queueThree));
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+		final MergingIterator<Integer> mergingIterator = new MergingIterator<>(
+                INTEGER_COMPARATOR,
+                iterators);
 
 		int count = 0;
 		int last = -1;
@@ -113,7 +113,7 @@ public class MergingIteratorTest {
 
 	@Test
 	public void testIteratorsOfUnevenLength() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
+		final Queue<Integer> queueOne = new LinkedList<>();
 		queueOne.add(1);
 		queueOne.add(3);
 		queueOne.add(5);
@@ -122,18 +122,18 @@ public class MergingIteratorTest {
 		queueOne.add(11);
 		queueOne.add(13);
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
+		final Queue<Integer> queueTwo = new LinkedList<>();
 		queueTwo.add(2);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
+		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<>(3);
 		Collections.addAll(
 				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo));
+                new QueueBackedIterator<>(queueOne),
+                new QueueBackedIterator<>(queueTwo));
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+		final MergingIterator<Integer> mergingIterator = new MergingIterator<>(
+                INTEGER_COMPARATOR,
+                iterators);
 
 		int count = 0;
 		int last = -1;
@@ -149,23 +149,23 @@ public class MergingIteratorTest {
 
 	@Test(expectedExceptions = IllegalStateException.class)
 	public void testOutOfOrderIterators() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
+		final Queue<Integer> queueOne = new LinkedList<>();
 		queueOne.add(1);
 		queueOne.add(3);
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
+		final Queue<Integer> queueTwo = new LinkedList<>();
 		queueTwo.add(4);
 		queueTwo.add(2);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
+		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<>(3);
 		Collections.addAll(
 				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo));
+                new QueueBackedIterator<>(queueOne),
+                new QueueBackedIterator<>(queueTwo));
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+		final MergingIterator<Integer> mergingIterator = new MergingIterator<>(
+                INTEGER_COMPARATOR,
+                iterators);
 
 		Assert.assertEquals(mergingIterator.next().intValue(), 1);
 		Assert.assertEquals(mergingIterator.next().intValue(), 3);

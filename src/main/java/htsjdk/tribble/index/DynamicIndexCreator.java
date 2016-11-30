@@ -93,7 +93,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
      * @return a map of index type to the best index for that balancing approach
      */
     private Map<IndexFactory.IndexType,TribbleIndexCreator> getIndexCreators(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
-        final Map<IndexFactory.IndexType,TribbleIndexCreator> creators = new HashMap<IndexFactory.IndexType,TribbleIndexCreator>();
+        final Map<IndexFactory.IndexType,TribbleIndexCreator> creators = new HashMap<>();
 
         if (iba == IndexFactory.IndexBalanceApproach.FOR_SIZE) {
             // add a linear index with the default bin size
@@ -170,7 +170,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
     protected static LinkedHashMap<Double,TribbleIndexCreator> scoreIndexes(final double densityOfFeatures, final Map<IndexFactory.IndexType,TribbleIndexCreator> indexes, final int longestFeature, final IndexFactory.IndexBalanceApproach iba) {
         if (indexes.size() < 1) throw new IllegalArgumentException("Please specify at least one index to evaluate");
 
-        final LinkedHashMap<Double,TribbleIndexCreator> scores = new LinkedHashMap<Double,TribbleIndexCreator>();
+        final LinkedHashMap<Double,TribbleIndexCreator> scores = new LinkedHashMap<>();
 
         for (final Map.Entry<IndexFactory.IndexType,TribbleIndexCreator> entry : indexes.entrySet()) {
             // we have different scoring
@@ -192,7 +192,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
      * @return the best score <b>index value</b>
      */
     private TribbleIndexCreator getMinIndex(final Map<Double,TribbleIndexCreator> scores, final IndexFactory.IndexBalanceApproach iba) {
-        final TreeMap<Double,TribbleIndexCreator> map = new TreeMap<Double,TribbleIndexCreator>();
+        final TreeMap<Double,TribbleIndexCreator> map = new TreeMap<>();
         map.putAll(scores);
         
         // if we are optimizing for seek time, choose the lowest score (adjusted features/bin value), if for storage size, choose the opposite

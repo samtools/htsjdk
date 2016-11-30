@@ -83,7 +83,7 @@ public class CRAMComplianceTest {
         SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(t.bamFile);
 
         final SAMRecordIterator samRecordIterator = reader.iterator();
-        List<SAMRecord> samRecords = new ArrayList<SAMRecord>();
+        List<SAMRecord> samRecords = new ArrayList<>();
         while (samRecordIterator.hasNext())
             samRecords.add(samRecordIterator.next());
         SAMFileHeader samFileHeader = reader.getFileHeader();

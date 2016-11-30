@@ -374,7 +374,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
      * @return
      */
     protected List<String> getAlleleStrings() {
-        final List<String> al = new ArrayList<String>(getPloidy());
+        final List<String> al = new ArrayList<>(getPloidy());
         for ( Allele a : getAlleles() )
             al.add(a.getBaseString());
 
@@ -426,8 +426,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         Collection<Allele> otherAlleles = other.getAlleles();
 
         if (ignorePhase) { // do not care about order, only identity of Alleles
-            thisAlleles = new TreeSet<Allele>(thisAlleles);   //implemented Allele.compareTo()
-            otherAlleles = new TreeSet<Allele>(otherAlleles);
+            thisAlleles = new TreeSet<>(thisAlleles);   //implemented Allele.compareTo()
+            otherAlleles = new TreeSet<>(otherAlleles);
         }
 
         return thisAlleles.equals(otherAlleles);
@@ -542,14 +542,14 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return getGQ();
         } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
             if (hasAD()) {
-                final List<Integer> intList = new ArrayList<Integer>(getAD().length);
+                final List<Integer> intList = new ArrayList<>(getAD().length);
                 for(int i : getAD()) intList.add(i);
                 return intList;
             }
             return Collections.EMPTY_LIST;
         } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
             if (hasPL()) {
-                final List<Integer> intList = new ArrayList<Integer>(getPL().length);
+                final List<Integer> intList = new ArrayList<>(getPL().length);
                 for(int i : getPL()) intList.add(i);
                 return intList;
             }
@@ -599,10 +599,10 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
     protected static <T extends Comparable<T>, V> String sortedString(Map<T, V> c) {
 
         // NOTE -- THIS IS COPIED FROM GATK UTILS TO ALLOW US TO KEEP A SEPARATION BETWEEN THE GATK AND VCF CODECS
-        final List<T> t = new ArrayList<T>(c.keySet());
+        final List<T> t = new ArrayList<>(c.keySet());
         Collections.sort(t);
 
-        final List<String> pairs = new ArrayList<String>();
+        final List<String> pairs = new ArrayList<>();
         for (final T k : t) {
             pairs.add(k + "=" + c.get(k));
         }

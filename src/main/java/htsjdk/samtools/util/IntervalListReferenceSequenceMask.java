@@ -58,7 +58,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
             lastSequenceIndex = header.getSequenceIndex((lastInterval.getContig()));
             lastPosition = lastInterval.getEnd();
         }
-        intervalIterator = new PeekableIterator<Interval>(uniqueIntervals.iterator());
+        intervalIterator = new PeekableIterator<>(uniqueIntervals.iterator());
     }
 
     /**

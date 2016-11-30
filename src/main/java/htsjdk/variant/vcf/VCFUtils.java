@@ -46,7 +46,7 @@ public class VCFUtils {
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
         // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
-        final TreeMap<String, VCFHeaderLine> map = new TreeMap<String, VCFHeaderLine>(); // from KEY.NAME -> line
+        final TreeMap<String, VCFHeaderLine> map = new TreeMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
 
         // todo -- needs to remove all version headers from sources and add its own VCF version line
@@ -107,7 +107,7 @@ public class VCFUtils {
             }
         }
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
-        return new LinkedHashSet<VCFHeaderLine>(map.values());
+        return new LinkedHashSet<>(map.values());
     }
 
     /**
@@ -126,7 +126,7 @@ public class VCFUtils {
     }
 
     public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, final boolean referenceNameOnly) {
-        final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>(oldLines.size());
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>(oldLines.size());
 
         for ( final VCFHeaderLine line : oldLines ) {
             if ( line instanceof VCFContigHeaderLine )
@@ -161,7 +161,7 @@ public class VCFUtils {
      */
     public static List<VCFContigHeaderLine> makeContigHeaderLines(final SAMSequenceDictionary refDict,
                                                                   final File referenceFile) {
-        final List<VCFContigHeaderLine> lines = new ArrayList<VCFContigHeaderLine>();
+        final List<VCFContigHeaderLine> lines = new ArrayList<>();
         final String assembly = referenceFile != null ? getReferenceAssembly(referenceFile.getName()) : null;
         for ( final SAMSequenceRecord contig : refDict.getSequences() )
             lines.add(makeContigHeaderLine(contig, assembly));
@@ -169,7 +169,7 @@ public class VCFUtils {
     }
 
     private static VCFContigHeaderLine makeContigHeaderLine(final SAMSequenceRecord contig, final String assembly) {
-        final Map<String, String> map = new LinkedHashMap<String, String>(3);
+        final Map<String, String> map = new LinkedHashMap<>(3);
         map.put("ID", contig.getSequenceName());
         map.put("length", String.valueOf(contig.getSequenceLength()));
         if ( assembly != null ) map.put("assembly", assembly);
@@ -193,7 +193,7 @@ public class VCFUtils {
     /** Only displays a warning if warnings are enabled and an identical warning hasn't been already issued */
     private static final class HeaderConflictWarner {
         boolean emitWarnings;
-        Set<String> alreadyIssued = new HashSet<String>();
+        Set<String> alreadyIssued = new HashSet<>();
 
         private HeaderConflictWarner( final boolean emitWarnings ) {
             this.emitWarnings = emitWarnings;

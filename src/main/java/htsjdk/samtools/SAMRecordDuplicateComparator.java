@@ -50,7 +50,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
 
     private static final byte FF = 0, FR = 1, F = 2, RF = 3, RR = 4, R = 5;
 
-    private final Map<String, Short> libraryIds = new HashMap<String, Short>(); // from library string to library id
+    private final Map<String, Short> libraryIds = new HashMap<>(); // from library string to library id
     private short nextLibraryId = 1;
     
     private ScoringStrategy scoringStrategy = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;

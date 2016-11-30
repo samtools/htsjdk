@@ -78,7 +78,7 @@ public class SamRecordTrackingBuffer<T extends SamRecordWithOrdinal> {
         this.tmpDirs = tmpDirs;
         this.queueHeadRecordIndex = -1;
         this.queueTailRecordIndex = -1;
-        this.blocks = new ArrayDeque<BufferBlock>();
+        this.blocks = new ArrayDeque<>();
         this.header = header;
         this.clazz = clazz;
     }

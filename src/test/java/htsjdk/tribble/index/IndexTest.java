@@ -28,7 +28,7 @@ public class IndexTest {
 
     @DataProvider(name = "StartProvider")
     public Object[][] makeStartProvider() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
 //        for ( int mid = 0; mid <= end; mid += 1000000 ) {
 //            tests.add(new Object[]{0, mid, mid+1000000, end});

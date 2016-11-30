@@ -36,7 +36,7 @@ public class ITF8Test {
 
     @DataProvider(name = "testITF8")
     public static Object[][] testValues() {
-        List<Integer> list = new ArrayList<Integer>() ;
+        List<Integer> list = new ArrayList<>() ;
 
         // basics:
         list.add(0);
@@ -78,11 +78,11 @@ public class ITF8Test {
 
     @DataProvider(name = "predefined")
     public static Object[][] predefinedProvider() {
-        List<Tuple<Integer, byte[]>> list = new ArrayList<Tuple<Integer, byte[]>>() ;
-        list.add(new Tuple<Integer, byte[]>(4542278, new byte[]{(byte) (0xFF & 224), 69, 79, 70})) ;
-        list.add(new Tuple<Integer, byte[]>(16384, new byte[]{-64, 64, 0})) ;
-        list.add(new Tuple<Integer, byte[]>(192, new byte[]{-128, -64})) ;
-        list.add(new Tuple<Integer, byte[]>(-4757, new byte[]{-1, -1, -2, -42, 107})) ;
+        List<Tuple<Integer, byte[]>> list = new ArrayList<>() ;
+        list.add(new Tuple<>(4542278, new byte[]{(byte) (0xFF & 224), 69, 79, 70})) ;
+        list.add(new Tuple<>(16384, new byte[]{-64, 64, 0})) ;
+        list.add(new Tuple<>(192, new byte[]{-128, -64})) ;
+        list.add(new Tuple<>(-4757, new byte[]{-1, -1, -2, -42, 107})) ;
 
         Object[][] params = new Object[list.size()][] ;
         for (int i=0; i<params.length; i++)

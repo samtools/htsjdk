@@ -95,7 +95,7 @@ public class BinningIndexContent {
      * @return all chunks associated with all bins in this content
      */
     public List<Chunk> getAllChunks() {
-        final List<Chunk> allChunks = new ArrayList<Chunk>();
+        final List<Chunk> allChunks = new ArrayList<>();
         for (final Bin b : mBinList)
             if (b.getChunkList() != null) {
                 allChunks.addAll(b.getChunkList());
@@ -122,7 +122,7 @@ public class BinningIndexContent {
         if (overlappingBins == null) return null;
 
         // System.out.println("# Sequence target TID: " + referenceIndex);
-        final List<Chunk> chunkList = new ArrayList<Chunk>();
+        final List<Chunk> chunkList = new ArrayList<>();
 
         for (int index = overlappingBins.nextSetBit(0); index >= 0; index = overlappingBins.nextSetBit(index + 1)) {
             final Bin bin = getBins().getBin(index);

@@ -121,7 +121,7 @@ public class Cram2SamRecordFactory {
             return new Cigar(Collections.singletonList(cigarElement));
         }
 
-        final List<CigarElement> list = new ArrayList<CigarElement>();
+        final List<CigarElement> list = new ArrayList<>();
         int totalOpLen = 1;
         CigarElement cigarElement;
         CigarOperator lastOperator = CigarOperator.MATCH_OR_MISMATCH;

@@ -70,7 +70,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
         this.comparator = getComparator();
         this.readers = readers;
 
-        this.pq = new PriorityQueue<ComparableSamRecordIterator>(readers.size());
+        this.pq = new PriorityQueue<>(readers.size());
 
         for (final SamReader reader : readers) {
             if (!samHeaderMerger.getHeaders().contains(reader.getFileHeader()))

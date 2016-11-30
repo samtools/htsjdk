@@ -42,10 +42,10 @@ import java.util.Set;
  */
 public class TabixIndexCreator implements IndexCreator {
     private final TabixFormat formatSpec;
-    private final List<BinningIndexContent> indexContents = new ArrayList<BinningIndexContent>();
-    private final List<String> sequenceNames = new ArrayList<String>();
+    private final List<BinningIndexContent> indexContents = new ArrayList<>();
+    private final List<String> sequenceNames = new ArrayList<>();
     // Merely a faster way to ensure that features are added in a specific sequence name order
-    private final Set<String> sequenceNamesSeen = new HashSet<String>();
+    private final Set<String> sequenceNamesSeen = new HashSet<>();
     // A sequence dictionary is not required, but if it is provided all sequences names must be present in it.
     // It is used to determine the length of a sequence in order to optimize index memory allocation.
     private final SAMSequenceDictionary sequenceDictionary;

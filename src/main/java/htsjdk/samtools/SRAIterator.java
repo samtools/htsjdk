@@ -82,7 +82,7 @@ public class SRAIterator implements SAMRecordIterator {
             this.numberOfReads = numberOfReads;
             this.referenceLengthsAligned = referenceLengthsAligned;
 
-            referenceOffsets = new ArrayList<Long>();
+            referenceOffsets = new ArrayList<>();
 
             totalReferencesLength = 0;
             for (Long refLen : referenceLengthsAligned) {

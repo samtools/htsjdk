@@ -524,7 +524,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
      * @throws IllegalArgumentException if the keySet of this histogram is not equal to the keySet of the given divisorHistogram
      */
     public Histogram<K> divideByHistogram(final Histogram<K> divisorHistogram) {
-        final Histogram<K> output = new Histogram<K>();
+        final Histogram<K> output = new Histogram<>();
         if (!this.keySet().equals(divisorHistogram.keySet())) throw new IllegalArgumentException("Attempting to divide Histograms with non-identical bins");
         for (final K key : this.keySet()){
             final Bin<K> dividend = this.get(key);

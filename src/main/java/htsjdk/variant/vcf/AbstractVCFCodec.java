@@ -68,7 +68,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected VCFHeaderVersion version = null;
 
     // a mapping of the allele
-    protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
+    protected Map<String, List<Allele>> alleleMap = new HashMap<>(3);
     
     // for performance testing purposes
     public static boolean validate = true;
@@ -80,14 +80,14 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected final String[] locParts = new String[6];
 
     // for performance we cache the hashmap of filter encodings for quick lookup
-    protected HashMap<String,List<String>> filterHash = new HashMap<String,List<String>>();
+    protected HashMap<String,List<String>> filterHash = new HashMap<>();
 
     // we store a name to give to each of the variant contexts we emit
     protected String name = "Unknown";
 
     protected int lineNo = 0;
 
-    protected Map<String, String> stringCache = new HashMap<String, String>();
+    protected Map<String, String> stringCache = new HashMap<>();
 
     protected boolean warnedAboutNoEqualsForNonFlag = false;
 
@@ -146,8 +146,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion version ) {
         this.version = version;
 
-        Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
-        Set<String> sampleNames = new LinkedHashSet<String>();
+        Set<VCFHeaderLine> metaData = new LinkedHashSet<>();
+        Set<String> sampleNames = new LinkedHashSet<>();
         int contigCounter = 0;
         // iterate over all the passed in strings
         for ( String str : headerStrings ) {
@@ -318,7 +318,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         builder.log10PError(parseQual(parts[5]));
 
         final List<String> filters = parseFilters(getCachedString(parts[6]));
-        if ( filters != null ) builder.filters(new HashSet<String>(filters));
+        if ( filters != null ) builder.filters(new HashSet<>(filters));
         final Map<String, Object> attrs = parseInfo(parts[7]);
         builder.attributes(attrs);
 
@@ -397,7 +397,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a mapping of keys to objects
      */
     private Map<String, Object> parseInfo(String infoField) {
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
 
         if ( infoField.isEmpty() )
             generateException("The VCF specification requires a valid (non-zero length) info field");
@@ -488,7 +488,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         if ( GTAlleles == null ) {
             StringTokenizer st = new StringTokenizer(GT, VCFConstants.PHASING_TOKENS);
-            GTAlleles = new ArrayList<Allele>(st.countTokens());
+            GTAlleles = new ArrayList<>(st.countTokens());
             while ( st.hasMoreTokens() ) {
                 String genotype = st.nextToken();
                 GTAlleles.add(oneAllele(genotype, alleles));
@@ -527,7 +527,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return a list of alleles, and a pair of the shortest and longest sequence
      */
     protected static List<Allele> parseAlleles(String ref, String alts, int lineNo) {
-        List<Allele> alleles = new ArrayList<Allele>(2); // we are almost always biallelic
+        List<Allele> alleles = new ArrayList<>(2); // we are almost always biallelic
         // ref
         checkAllele(ref, true, lineNo);
         Allele refAllele = Allele.create(ref, true);
@@ -661,7 +661,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         if ( nParts != genotypeParts.length )
             generateException("there are " + (nParts-1) + " genotypes while the header requires that " + (genotypeParts.length-1) + " genotypes be present for all records at " + chr + ":" + pos, lineNo);
 
-        ArrayList<Genotype> genotypes = new ArrayList<Genotype>(nParts);
+        ArrayList<Genotype> genotypes = new ArrayList<>(nParts);
 
         // get the format keys
         List<String> genotypeKeys = ParsingUtils.split(genotypeParts[0], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
@@ -728,7 +728,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             if ( genotypeAlleleLocation > 0 )
                 generateException("Saw GT field at position " + genotypeAlleleLocation + ", but it must be at the first position for genotypes when present");
 
-            final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<Allele>(0) : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
+            final List<Allele> GTalleles = (genotypeAlleleLocation == -1 ? new ArrayList<>(0) : parseGenotypeAlleles(genotypeValues.get(genotypeAlleleLocation), alleles, alleleMap));
             gb.alleles(GTalleles);
             gb.phased(genotypeAlleleLocation != -1 && genotypeValues.get(genotypeAlleleLocation).indexOf(VCFConstants.PHASED) != -1);
 

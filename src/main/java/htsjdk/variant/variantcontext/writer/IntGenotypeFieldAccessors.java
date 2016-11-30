@@ -40,7 +40,7 @@ import java.util.HashMap;
  */
 public class IntGenotypeFieldAccessors {
     // initialized once per writer to allow parallel writers to work
-    private final HashMap<String, Accessor> intGenotypeFieldEncoders = new HashMap<String, Accessor>();
+    private final HashMap<String, Accessor> intGenotypeFieldEncoders = new HashMap<>();
 
     public IntGenotypeFieldAccessors() {
         intGenotypeFieldEncoders.put(VCFConstants.DEPTH_KEY, new IntGenotypeFieldAccessors.DPAccessor());

@@ -38,7 +38,7 @@ import java.util.WeakHashMap;
 class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
 {
     private Integer mLastReferenceRetrieved = null;
-    private final WeakHashMap<Integer,BAMIndexContent> mQueriesByReference = new WeakHashMap<Integer,BAMIndexContent>();
+    private final WeakHashMap<Integer,BAMIndexContent> mQueriesByReference = new WeakHashMap<>();
 
     public CachingBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
         super(file, dictionary);
@@ -107,7 +107,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
         final int firstLocusInBin = getFirstLocusInBin(bin);
 
         // Add the specified bin to the tree if it exists.
-        final List<Bin> binTree = new ArrayList<Bin>();
+        final List<Bin> binTree = new ArrayList<>();
         if(indexQuery.containsBin(bin))
             binTree.add(indexQuery.getBins().getBin(bin.getBinNumber()));
 
@@ -121,7 +121,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
                 binTree.add(parentBin);
         }
 
-        List<Chunk> chunkList = new ArrayList<Chunk>();
+        List<Chunk> chunkList = new ArrayList<>();
         for(final Bin coveringBin: binTree) {
             for(final Chunk chunk: coveringBin.getChunkList())
                 chunkList.add(chunk.clone());

@@ -48,7 +48,7 @@ public class ContainerParser {
     private static final Log log = Log.getInstance(ContainerParser.class);
 
     private final SAMFileHeader samFileHeader;
-    private final Map<String, Long> nanosecondsMap = new TreeMap<String, Long>();
+    private final Map<String, Long> nanosecondsMap = new TreeMap<>();
 
     public ContainerParser(final SAMFileHeader samFileHeader) {
         this.samFileHeader = samFileHeader;
@@ -60,7 +60,7 @@ public class ContainerParser {
         if (container.isEOF()) return Collections.emptyList();
         final long time1 = System.nanoTime();
         if (records == null) {
-            records = new ArrayList<CramCompressionRecord>(container.nofRecords);
+            records = new ArrayList<>(container.nofRecords);
         }
 
         for (final Slice slice : container.slices) {
@@ -111,7 +111,7 @@ public class ContainerParser {
                 break;
             case Slice.MULTI_REFERENCE:
                 final DataReaderFactory dataReaderFactory = new DataReaderFactory();
-                final Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
+                final Map<Integer, InputStream> inputMap = new HashMap<>();
                 for (final Integer exId : slice.external.keySet()) {
                     inputMap.put(exId, new ByteArrayInputStream(slice.external.get(exId)
                             .getRawContent()));
@@ -151,7 +151,7 @@ public class ContainerParser {
         }
 
         final DataReaderFactory dataReaderFactory = new DataReaderFactory();
-        final Map<Integer, InputStream> inputMap = new HashMap<Integer, InputStream>();
+        final Map<Integer, InputStream> inputMap = new HashMap<>();
         for (final Integer exId : slice.external.keySet()) {
             log.debug("Adding external data: " + exId);
             inputMap.put(exId, new ByteArrayInputStream(slice.external.get(exId)
@@ -165,7 +165,7 @@ public class ContainerParser {
                 inputMap, header, slice.sequenceId);
 
         if (records == null) {
-            records = new ArrayList<CramCompressionRecord>(slice.nofRecords);
+            records = new ArrayList<>(slice.nofRecords);
         }
 
         long readNanos = 0;

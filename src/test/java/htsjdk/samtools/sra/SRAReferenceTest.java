@@ -65,7 +65,7 @@ public class SRAReferenceTest extends AbstractSRATest {
     public void testReferenceMt(String acc, List<TestReferenceMtData> parallelTests) throws Exception {
         final ReferenceSequenceFile refSeqFile = new SRAIndexedSequenceFile(new SRAAccession(acc));
         final long timeout = 1000L * 5; // just in case
-        final List<Thread> threads = new ArrayList<Thread>(parallelTests.size());
+        final List<Thread> threads = new ArrayList<>(parallelTests.size());
         final Map<TestReferenceMtData, Exception> runErrors = Collections.synchronizedMap(new HashMap<TestReferenceMtData, Exception>());
         for (final TestReferenceMtData testData: parallelTests) {
             threads.add(new Thread() {

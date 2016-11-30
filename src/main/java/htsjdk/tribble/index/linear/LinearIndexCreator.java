@@ -45,10 +45,10 @@ public class LinearIndexCreator  extends TribbleIndexCreator {
     // the input file
     private final File inputFile;
 
-    private final LinkedList<LinearIndex.ChrIndex> chrList = new LinkedList<LinearIndex.ChrIndex>();
+    private final LinkedList<LinearIndex.ChrIndex> chrList = new LinkedList<>();
     private int longestFeature= 0;
 
-    private final ArrayList<Block> blocks = new ArrayList<Block>();
+    private final ArrayList<Block> blocks = new ArrayList<>();
 
     public LinearIndexCreator(final File inputFile, final int binSize) {
         this.inputFile = inputFile;

@@ -65,7 +65,7 @@ public class DuplicateSet {
     }
 
     public DuplicateSet(final boolean setDuplicateFlag, final SAMRecordDuplicateComparator comparator) {
-        records = new ArrayList<SAMRecord>(10);
+        records = new ArrayList<>(10);
         this.setDuplicateFlag = setDuplicateFlag;
         this.comparator = comparator;
     }

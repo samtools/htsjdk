@@ -13,7 +13,7 @@ public class Iterables {
     }
 
     public static <T> List<T> slurp(final Iterator<T> iterator) {
-        final List<T> ts = new ArrayList<T>();
+        final List<T> ts = new ArrayList<>();
         while (iterator.hasNext()) ts.add(iterator.next());
         return ts;
     }

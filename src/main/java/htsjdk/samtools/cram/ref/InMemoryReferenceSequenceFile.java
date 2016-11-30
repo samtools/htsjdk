@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
-    private Map<Integer, byte[]> sequences = new HashMap<Integer, byte[]>();
+    private Map<Integer, byte[]> sequences = new HashMap<>();
     private SAMSequenceDictionary dictionary = new SAMSequenceDictionary();
     private int currentIndex = 0;
 

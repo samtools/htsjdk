@@ -129,7 +129,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
 
     @DataProvider(name = "GenotypesContextProvider")
     public Object[][] MakeSampleNamesTest() {
-        List<Object[]> tests = new ArrayList<Object[]>();
+        List<Object[]> tests = new ArrayList<>();
 
         for ( ContextMaker maker : allMakers ) {
             for ( int i = 0; i < allGenotypes.size(); i++ ) {
@@ -190,7 +190,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         Assert.assertTrue(ParsingUtils.isSorted(gc.iterateInSampleNameOrder()));
         Assert.assertTrue(gc.containsSamples(genotypeNames));
 
-        final Set<String> withMissing = new HashSet<String>(Arrays.asList(MISSING.getSampleName()));
+        final Set<String> withMissing = new HashSet<>(Arrays.asList(MISSING.getSampleName()));
         withMissing.addAll(genotypeNames);
         Assert.assertFalse(gc.containsSamples(withMissing));
     }
@@ -218,13 +218,13 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
     }
 
     private static final List<Genotype> with(List<Genotype> genotypes, Genotype ... add) {
-        List<Genotype> l = new ArrayList<Genotype>(genotypes);
+        List<Genotype> l = new ArrayList<>(genotypes);
         l.addAll(Arrays.asList(add));
         return l;
     }
 
     private static final List<Genotype> without(List<Genotype> genotypes, Genotype ... remove) {
-        List<Genotype> l = new ArrayList<Genotype>(genotypes);
+        List<Genotype> l = new ArrayList<>(genotypes);
         l.removeAll(Arrays.asList(remove));
         return l;
     }
@@ -274,13 +274,13 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
         testGenotypesContextContainsExpectedSamples(gc, without(cfg.initialSamples, rm1, rm2));
 
         gc = cfg.makeContext();
-        HashSet<Genotype> expected = new HashSet<Genotype>();
+        HashSet<Genotype> expected = new HashSet<>();
         if ( gc.contains(rm1) ) expected.add(rm1);
         if ( gc.contains(rm2) ) expected.add(rm2);
         gc.retainAll(Arrays.asList(rm1, rm2));
 
         // ensure that the two lists are the same
-        assertEqualsSet(new HashSet<Genotype>(gc.getGenotypes()), expected, "gc genotypes vs. expected");
+        assertEqualsSet(new HashSet<>(gc.getGenotypes()), expected, "gc genotypes vs. expected");
         // because the list order can change, we use the gc's list itself
         testGenotypesContextContainsExpectedSamples(gc, gc.getGenotypes());
     }
@@ -293,7 +293,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
             GenotypesContext gc = cfg.makeContext();
             Genotype setted = gc.set(i, set);
             Assert.assertNotNull(setted);
-            ArrayList<Genotype> l = new ArrayList<Genotype>(cfg.initialSamples);
+            ArrayList<Genotype> l = new ArrayList<>(cfg.initialSamples);
             l.set(i, set);
             testGenotypesContextContainsExpectedSamples(gc, l);
         }
@@ -307,7 +307,7 @@ public class GenotypesContextUnitTest extends VariantBaseTest {
             Genotype toReplace = gc.get(i);
             Genotype replacement = GenotypeBuilder.create(toReplace.getSampleName(), Arrays.asList(Aref, Aref));
             gc.replace(replacement);
-            ArrayList<Genotype> l = new ArrayList<Genotype>(cfg.initialSamples);
+            ArrayList<Genotype> l = new ArrayList<>(cfg.initialSamples);
             l.set(i, replacement);
             Assert.assertEquals(replacement, gc.get(i));
             testGenotypesContextContainsExpectedSamples(gc, l);

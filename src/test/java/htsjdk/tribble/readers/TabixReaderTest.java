@@ -32,7 +32,7 @@ public class TabixReaderTest {
     @BeforeClass
     public void setup() throws IOException {
         tabixReader = new TabixReader(tabixFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
+        sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
     }
 
     @AfterClass

@@ -78,7 +78,7 @@ public class MergingIterator<T> implements CloseableIterator<T> {
 
 		this.comparator = comparator;
 
-		this.queue = new PriorityQueue<ComparableIterator>();
+		this.queue = new PriorityQueue<>();
 		for (final CloseableIterator<T> iterator : iterators) {
 			this.addIfNotEmpty(new ComparableIterator(iterator));
 		}

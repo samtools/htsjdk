@@ -69,7 +69,7 @@ public class SRAUtils {
      */
     public static List<Long> getReferencesLengthsAligned(ReadCollection run) throws ErrorMsg {
         ReferenceIterator refIt = run.getReferences();
-        List<Long> lengths = new ArrayList<Long>();
+        List<Long> lengths = new ArrayList<>();
         while (refIt.nextReference()) {
             long refLen = refIt.getLength();
             // lets optimize references so they always align in 5000 bases positions

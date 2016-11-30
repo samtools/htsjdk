@@ -113,7 +113,7 @@ public class SeekableFileStream extends SeekableStream {
     }
 
     public static synchronized void closeAllInstances() {
-        Collection<SeekableFileStream> clonedInstances = new HashSet<SeekableFileStream>();
+        Collection<SeekableFileStream> clonedInstances = new HashSet<>();
         clonedInstances.addAll(allInstances);
         for (SeekableFileStream sfs : clonedInstances) {
             try {

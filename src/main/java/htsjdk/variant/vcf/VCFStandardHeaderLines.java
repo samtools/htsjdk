@@ -52,15 +52,15 @@ public class VCFStandardHeaderLines {
      * Enabling this causes us to repair header lines even if only their descriptions differ.
      */
     private final static boolean REPAIR_BAD_DESCRIPTIONS = false;
-    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<VCFFormatHeaderLine>();
-    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<VCFInfoHeaderLine>();
+    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<>();
+    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<>();
 
     /**
      * Walks over the VCF header and repairs the standard VCF header lines in it, returning a freshly
      * allocated {@link VCFHeader} with standard VCF header lines repaired as necessary.
      */
     public static VCFHeader repairStandardHeaderLines(final VCFHeader header) {
-        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(header.getMetaDataInInputOrder().size());
+        final Set<VCFHeaderLine> newLines = new LinkedHashSet<>(header.getMetaDataInInputOrder().size());
         for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
             if ( line instanceof VCFFormatHeaderLine ) {
                 line = formatStandards.repair((VCFFormatHeaderLine) line);
@@ -174,7 +174,7 @@ public class VCFStandardHeaderLines {
     }
 
     private static class Standards<T extends VCFCompoundHeaderLine> {
-        private final Map<String, T> standards = new HashMap<String, T>();
+        private final Map<String, T> standards = new HashMap<>();
 
         public T repair(final T line) {
             final T standard = get(line.getID(), false);
@@ -203,7 +203,7 @@ public class VCFStandardHeaderLines {
         }
 
         public Set<String> addToHeader(final Set<VCFHeaderLine> headerLines, final Collection<String> IDs, final boolean throwErrorForMissing) {
-            final Set<String> missing = new HashSet<String>();
+            final Set<String> missing = new HashSet<>();
             for ( final String ID : IDs ) {
                 final T line = get(ID, throwErrorForMissing);
                 if ( line == null )

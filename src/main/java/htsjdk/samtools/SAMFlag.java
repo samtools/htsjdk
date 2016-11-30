@@ -100,7 +100,7 @@ public enum SAMFlag {
 
     /** @returns the java.util.Set of SAMFlag for 'flag' */
     public static Set<SAMFlag> getFlags(int flag) {
-        Set<SAMFlag> set = new HashSet<SAMFlag>();
+        Set<SAMFlag> set = new HashSet<>();
         for (SAMFlag f : values()) {
             if (f.isSet(flag))
                 set.add(f);

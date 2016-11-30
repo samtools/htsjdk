@@ -103,7 +103,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     public SAMRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder, final boolean addReadGroup,
                                final int defaultChromosomeLength, final ScoringStrategy duplicateScoringStrategy) {
-        final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
+        final List<SAMSequenceRecord> sequences = new ArrayList<>();
         for (final String chrom : chroms) {
             final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(chrom, defaultChromosomeLength);
             sequences.add(sequenceRecord);
@@ -119,16 +119,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             } else {
                 comparator = new SAMRecordCoordinateComparator();
             }
-            this.records = new TreeSet<SAMRecord>(comparator);
+            this.records = new TreeSet<>(comparator);
         } else {
-            this.records = new ArrayList<SAMRecord>();
+            this.records = new ArrayList<>();
         }
 
         if (addReadGroup) {
             final SAMReadGroupRecord readGroupRecord = new SAMReadGroupRecord(READ_GROUP_ID);
             readGroupRecord.setSample(SAMPLE);
             readGroupRecord.setPlatform("ILLUMINA");
-            final List<SAMReadGroupRecord> readGroups = new ArrayList<SAMReadGroupRecord>();
+            final List<SAMReadGroupRecord> readGroups = new ArrayList<>();
             readGroups.add(readGroupRecord);
             this.header.setReadGroups(readGroups);
         }
@@ -421,7 +421,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                                    final boolean record1Unmapped, final boolean record2Unmapped, final String cigar1,
                                    final String cigar2, final boolean strand1, final boolean strand2, final boolean record1NonPrimary,
                                    final boolean record2NonPrimary, final int defaultQuality) {
-        final List<SAMRecord> recordsList = new LinkedList<SAMRecord>();
+        final List<SAMRecord> recordsList = new LinkedList<>();
 
         final SAMRecord end1 = createReadNoFlag(name, contig1, start1, strand1, record1Unmapped, cigar1, null, defaultQuality);
         final SAMRecord end2 = createReadNoFlag(name, contig2, start2, strand2, record2Unmapped, cigar2, null, defaultQuality);

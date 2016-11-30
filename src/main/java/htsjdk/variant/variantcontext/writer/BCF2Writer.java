@@ -108,8 +108,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     private final OutputStream outputStream;      // Note: do not flush until completely done writing, to avoid issues with eventual BGZF support
     private VCFHeader header;
-    private final Map<String, Integer> contigDictionary = new HashMap<String, Integer>();
-    private final Map<String, Integer> stringDictionaryMap = new LinkedHashMap<String, Integer>();
+    private final Map<String, Integer> contigDictionary = new HashMap<>();
+    private final Map<String, Integer> stringDictionaryMap = new LinkedHashMap<>();
     private final boolean doNotWriteGenotypes;
     private String[] sampleNames = null;
 
@@ -415,7 +415,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     }
 
     private BCF2Type encodeStringsByRef(final Collection<String> strings) throws IOException {
-        final List<Integer> offsets = new ArrayList<Integer>(strings.size());
+        final List<Integer> offsets = new ArrayList<>(strings.size());
 
         // iterate over strings until we find one that needs 16 bits, and break
         for ( final String string : strings ) {

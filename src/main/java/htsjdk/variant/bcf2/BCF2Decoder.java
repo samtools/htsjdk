@@ -141,7 +141,7 @@ public final class BCF2Decoder {
             } else if ( size == 1 ) {
                 return decodeSingleValue(type);
             } else {
-                final ArrayList<Object> ints = new ArrayList<Object>(size);
+                final ArrayList<Object> ints = new ArrayList<>(size);
                 for ( int i = 0; i < size; i++ ) {
                     final Object val = decodeSingleValue(type);
                     if ( val == null ) continue; // auto-pruning.  We remove trailing nulls

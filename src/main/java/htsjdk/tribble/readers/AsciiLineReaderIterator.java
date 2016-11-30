@@ -87,7 +87,7 @@ public class AsciiLineReaderIterator implements LocationAware, LineIterator, Clo
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
-            return line == null ? null : new Tuple<String, Long>(line, position);
+            return line == null ? null : new Tuple<>(line, position);
         }
 
         /** Returns the byte position at the beginning of the next line. */

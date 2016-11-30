@@ -60,7 +60,7 @@ public class DataWriterFactory {
                 final DataSeriesMap dsm = f.getAnnotation(DataSeriesMap.class);
                 final String name = dsm.name();
                 if ("TAG".equals(name)) {
-                    final Map<Integer, DataWriter<byte[]>> map = new HashMap<Integer, DataWriter<byte[]>>();
+                    final Map<Integer, DataWriter<byte[]>> map = new HashMap<>();
                     for (final Integer key : h.tMap.keySet()) {
                         final EncodingParams params = h.tMap.get(key);
                         final DataWriter<byte[]> tagWriter = createWriter(
@@ -87,7 +87,7 @@ public class DataWriterFactory {
 
         encoding.fromByteArray(params.params);
 
-        return new DefaultDataWriter<T>(encoding.buildCodec(null, outputMap),
+        return new DefaultDataWriter<>(encoding.buildCodec(null, outputMap),
                 bitOutputStream);
     }
 

@@ -73,7 +73,7 @@ public class CRAMFileWriterTest {
     }
 
     private void unmappedSequenceAndQualityFieldHelper(boolean unmappedHasBasesAndQualities) throws Exception {
-        List<SAMRecord> list = new ArrayList<SAMRecord>(2);
+        List<SAMRecord> list = new ArrayList<>(2);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new Exception("Read group expected in the header");
@@ -92,7 +92,7 @@ public class CRAMFileWriterTest {
     }
 
     private List<SAMRecord> createRecords(int count) {
-        List<SAMRecord> list = new ArrayList<SAMRecord>(count);
+        List<SAMRecord> list = new ArrayList<>(count);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         if (builder.getHeader().getReadGroups().isEmpty()) {
             throw new IllegalStateException("Read group expected in the header");
@@ -233,7 +233,7 @@ public class CRAMFileWriterTest {
         final ReferenceSource source = new ReferenceSource(new File("src/test/resources/htsjdk/samtools/cram_tlen.fasta"));
         CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram");
         SAMRecordIterator iterator = reader.iterator();
-        List<SAMRecord> records = new ArrayList<SAMRecord>();
+        List<SAMRecord> records = new ArrayList<>();
         while (iterator.hasNext()) {
             final SAMRecord record = iterator.next();
             writer.addAlignment(record);
