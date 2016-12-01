@@ -118,7 +118,7 @@ public abstract class SamReaderFactory {
     abstract public SamReaderFactory validationStringency(final ValidationStringency validationStringency);
 
     /** Set whether readers created by this factory will use asynchronous IO.
-     * If this methods is not called, this flag will default to the value of {@link Defaults#USE_ASYNC_IO_FOR_SAMTOOLS}.
+     * If this methods is not called, this flag will default to the value of {@link Defaults#USE_ASYNC_IO_READ_FOR_SAMTOOLS}.
      * Note that this option may not be applicable to all readers returned from this factory.
      * Returns the factory itself. */
     abstract public SamReaderFactory setUseAsyncIo(final boolean asynchronousIO);

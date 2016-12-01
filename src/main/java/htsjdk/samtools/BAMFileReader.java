@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.AsyncBlockCompressedInputStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
@@ -67,10 +68,6 @@ class BAMFileReader extends SamReader.ReaderImplementation {
     // If true, all SAMRecords are fully decoded as they are read.
     private boolean eagerDecode;
 
-    // If true, the BAMFileReader will use asynchronous IO.
-    // Note: this field currently has no effect (is not hooked up anywhere), but will be in the future. See https://github.com/samtools/htsjdk/pull/576
-    private final boolean useAsynchronousIO;
-
     // For error-checking.
     private ValidationStringency mValidationStringency;
 
@@ -107,8 +104,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         throws IOException {
         mIndexFile = indexFile;
         mIsSeekable = false;
-        this.useAsynchronousIO = useAsynchronousIO;
-        mCompressedInputStream = new BlockCompressedInputStream(stream);
+        mCompressedInputStream = useAsynchronousIO ? new AsyncBlockCompressedInputStream(stream) : new BlockCompressedInputStream(stream);
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
         this.mValidationStringency = validationStringency;
@@ -129,7 +125,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(file), indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, useAsynchronousIO, file.getAbsolutePath(), validationStringency, factory);
+        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(file) : new BlockCompressedInputStream(file), indexFile!=null ? indexFile : SamFiles.findIndex(file), eagerDecode, useAsynchronousIO, file.getAbsolutePath(), validationStringency, factory);
         if (mIndexFile != null && mIndexFile.lastModified() < file.lastModified()) {
             System.err.println("WARNING: BAM index file " + mIndexFile.getAbsolutePath() +
                     " is older than BAM " + file.getAbsolutePath());
@@ -145,7 +141,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(strm), indexFile, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
+        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(strm) : new BlockCompressedInputStream(strm), indexFile, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
     }
 
     BAMFileReader(final SeekableStream strm,
@@ -155,7 +151,7 @@ class BAMFileReader extends SamReader.ReaderImplementation {
                   final ValidationStringency validationStringency,
                   final SAMRecordFactory factory)
         throws IOException {
-        this(new BlockCompressedInputStream(strm), indexStream, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
+        this(useAsynchronousIO ? new AsyncBlockCompressedInputStream(strm) : new BlockCompressedInputStream(strm), indexStream, eagerDecode, useAsynchronousIO, strm.getSource(), validationStringency, factory);
     }
 
     private BAMFileReader(final BlockCompressedInputStream compressedInputStream,
@@ -171,7 +167,6 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
-        this.useAsynchronousIO = useAsynchronousIO;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = factory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
@@ -191,7 +186,6 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         mCompressedInputStream = compressedInputStream;
         mStream = new BinaryCodec(new DataInputStream(mCompressedInputStream));
         this.eagerDecode = eagerDecode;
-        this.useAsynchronousIO = useAsynchronousIO;
         this.mValidationStringency = validationStringency;
         this.samRecordFactory = factory;
         this.mFileHeader = readHeader(this.mStream, this.mValidationStringency, source);
