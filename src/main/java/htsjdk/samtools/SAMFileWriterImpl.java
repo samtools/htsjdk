@@ -156,27 +156,13 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
             }
         } else if (!sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
             alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
-                    new BAMRecordCodec(header), makeComparator(), maxRecordsInRam, tmpDir);
+                    new BAMRecordCodec(header), sortOrder.getComparatorInstance(), maxRecordsInRam, tmpDir);
         }
     }
 
     @Override
     public SAMFileHeader getFileHeader() {
         return header;
-    }
-
-    private SAMRecordComparator makeComparator() {
-        switch (sortOrder) {
-            case coordinate:
-                return new SAMRecordCoordinateComparator();
-            case queryname:
-                return new SAMRecordQueryNameComparator();
-            case duplicate:
-                return new SAMRecordDuplicateComparator();
-            case unsorted:
-                return null;
-        }
-        throw new IllegalStateException("sortOrder should not be null");
     }
 
     /**

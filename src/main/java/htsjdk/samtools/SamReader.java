@@ -552,8 +552,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         private final CloseableIterator<SAMRecord> wrappedIterator;
-        private SAMRecord previous = null;
-        private SAMRecordComparator comparator = null;
+        private SAMSortOrderChecker checker = null;
 
         public AssertingIterator(final CloseableIterator<SAMRecord> iterator) {
             wrappedIterator = iterator;
@@ -561,35 +560,21 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
 
         @Override
         public SAMRecordIterator assertSorted(final SAMFileHeader.SortOrder sortOrder) {
-
-            if (sortOrder == null || sortOrder == SAMFileHeader.SortOrder.unsorted) {
-                comparator = null;
-                return this;
-            }
-
-            comparator = sortOrder.getComparatorInstance();
+            checker = new SAMSortOrderChecker(sortOrder);
             return this;
         }
 
         @Override
         public SAMRecord next() {
             final SAMRecord result = wrappedIterator.next();
-            if (comparator != null) {
-                if (previous != null) {
-                    if (comparator.fileOrderCompare(previous, result) > 0) {
-                        throw new IllegalStateException(MessageFormat.format(
-                                "Records {0} ({1}:{2}) should come after {3} ({4}:{5}) when sorting with {6}",
-                                previous.getReadName(),
-                                previous.getReferenceName(),
-                                previous.getAlignmentStart(),
-                                result.getReadName(),
-                                result.getReferenceName(),
-                                result.getAlignmentStart(),
-                                comparator.getClass().getName())
-                        );
-                    }
+            if (checker != null) {
+                final SAMRecord previous = checker.getPreviousRecord();
+                if (!checker.isSorted(result)) {
+                    throw new IllegalStateException(String.format(
+                            "Record %s should come after %s when sorting with %s ordering.",
+                            previous.getSAMString().trim(),
+                            result.getSAMString().trim(), checker.getSortOrder()));
                 }
-                previous = result;
             }
             return result;
         }

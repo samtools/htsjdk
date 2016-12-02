@@ -34,21 +34,7 @@ public class SAMSortOrderChecker {
 
     public SAMSortOrderChecker(final SAMFileHeader.SortOrder sortOrder) {
         this.sortOrder = sortOrder;
-        switch (sortOrder) {
-            case coordinate:
-                comparator = new SAMRecordCoordinateComparator();
-                break;
-            case queryname:
-                comparator = new SAMRecordQueryNameComparator();
-                break;
-            case duplicate:
-                comparator = new SAMRecordDuplicateComparator();
-                break;
-            case unsorted:
-            default:
-                comparator = null;
-                break;
-        }
+        this.comparator = sortOrder == null ? null : sortOrder.getComparatorInstance();
     }
 
     /**
@@ -71,19 +57,22 @@ public class SAMSortOrderChecker {
         return prev;
     }
 
+    public SAMFileHeader.SortOrder getSortOrder() {
+        return sortOrder;
+    }
+
     /**
      * Return the sort key used for the given sort order.  Useful in error messages.
+     * This should only be used in error messages and program correctness should not rely on this.
      */
     public String getSortKey(final SAMRecord rec) {
         switch (sortOrder) {
-
             case coordinate:
                 return rec.getReferenceName() + ":" + rec.getAlignmentStart();
             case queryname:
                 return rec.getReadName();
-            case unsorted:
             default:
-                return null;
+                return rec.getSAMString().trim();
         }
     }
 }

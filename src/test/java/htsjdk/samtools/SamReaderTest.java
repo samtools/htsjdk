@@ -31,6 +31,10 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class SamReaderTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -169,4 +173,84 @@ public class SamReaderTest extends HtsjdkTest {
         Assert.assertTrue(samRec.getHeader() == null);
     }
 
+    @Test
+    public void testAssertingIteratorUsesLenientOrdering(){
+        //the coordinate comparator's strict sort sorts lower mapping qualities first
+        //so this list is not sorted with respect to that comparator, but it is sorted with respect to the more lenient
+        // file order comparator which only checks the position
+        final List<SAMRecord> looselySorted = Arrays.asList(createRecord(1, 10),
+                                                         createRecord( 1, 1),
+                                                         createRecord(2, 1));
+
+        final SAMRecordCoordinateComparator coordinateComparator = new SAMRecordCoordinateComparator();
+
+        //sanity check that this really sorts differently with the file order comparator vs the full ordering coordinate order comparator
+        final List<SAMRecord> sortedWithFileOrderComparator = looselySorted.stream()
+                .sorted(coordinateComparator::fileOrderCompare)
+                .collect(Collectors.toList());
+        Assert.assertEquals(
+                sortedWithFileOrderComparator, looselySorted);
+
+        final List<SAMRecord> sortedWithFullOrderComparator = looselySorted.stream()
+                .sorted(coordinateComparator)
+                .collect(Collectors.toList());
+
+        Assert.assertFalse(sortedWithFullOrderComparator.equals(looselySorted));
+
+
+        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapInCloseableIterator(looselySorted));
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+        int count = 0;
+
+        while(iter.hasNext()){
+            iter.next();
+            count++;
+        }
+        Assert.assertEquals(count, 3);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testAssertingIteratorCorrectlyFailsWhenOutOfOrder(){
+        final List<SAMRecord> unsorted = Arrays.asList(createRecord(10, 1), createRecord( 1, 1));
+        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapInCloseableIterator(unsorted));
+        iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
+
+        while(iter.hasNext()) {
+            iter.next();
+        }
+
+    }
+
+    private static CloseableIterator<SAMRecord> wrapInCloseableIterator(final List<SAMRecord> looselySorted) {
+        return new CloseableIterator<SAMRecord>() {
+            private final Iterator<SAMRecord> iterator = looselySorted.iterator();
+
+            @Override
+            public void close() { /** Do nothing. */}
+
+            @Override
+            public boolean hasNext() { return this.iterator.hasNext(); }
+
+            @Override
+            public SAMRecord next() { return this.iterator.next(); }
+
+            @Override
+            public void remove() { this.iterator.remove(); }
+        };
+    }
+
+    private static SAMRecord createRecord(int start, int mappingQuality) {
+        final SAMRecord rec = new SAMRecord(getHeader());
+        rec.setReadName("read");
+        rec.setReferenceName("1");
+        rec.setAlignmentStart(start);
+        rec.setMappingQuality(mappingQuality);
+        return rec;
+    }
+
+    private static SAMFileHeader getHeader() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("1", 1000));
+        return header;
+    }
 }
