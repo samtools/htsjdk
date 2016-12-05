@@ -307,11 +307,27 @@ public abstract class SamReaderFactory {
                                     Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE)
                             );
                     File sourceFile = data.asFile();
+                    // calling asFile is safe even if indexMaybe is a Google Cloud Storage bucket
+                    // (in that case we just get null)
                     final File indexFile = indexMaybe == null ? null : indexMaybe.asFile();
                     if (SamStreams.isBAMFile(bufferedStream)) {
                         if (sourceFile == null || !sourceFile.isFile()) {
-                            // Handle case in which file is a named pipe, e.g. /dev/stdin or created by mkfifo
-                            primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            // check whether we can seek
+                            final SeekableStream indexSeekable = indexMaybe == null ? null : indexMaybe.asUnbufferedSeekableStream();
+                            // do not close bufferedStream, it's the same stream we're getting here.
+                            SeekableStream sourceSeekable = data.asUnbufferedSeekableStream();
+                            if (indexFile!=null || null == sourceSeekable || null == indexSeekable) {
+                                // not seekable.
+                                // it's OK that we consumed a bit of the stream already, this ctor expects it.
+                                primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            } else {
+                                // seekable.
+                                // need to return to the beginning because it's the same stream we used earlier
+                                // and read a bit from, and that form of the ctor expects the stream to start at 0.
+                                sourceSeekable.seek(0);
+                                primitiveSamReader = new BAMFileReader(
+                                    sourceSeekable, indexSeekable, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                            }
                         } else {
                             bufferedStream.close();
                             primitiveSamReader = new BAMFileReader(sourceFile, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
