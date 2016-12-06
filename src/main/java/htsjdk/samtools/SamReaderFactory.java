@@ -317,9 +317,15 @@ public abstract class SamReaderFactory {
                             // do not close bufferedStream, it's the same stream we're getting here.
                             SeekableStream sourceSeekable = data.asUnbufferedSeekableStream();
                             if (indexFile!=null || null == sourceSeekable || null == indexSeekable) {
-                                // not seekable.
-                                // it's OK that we consumed a bit of the stream already, this ctor expects it.
-                                primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                                if (null == sourceSeekable || null == indexSeekable) {
+                                    // not seekable.
+                                    // it's OK that we consumed a bit of the stream already, this ctor expects it.
+                                    primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                                } else {
+                                    sourceSeekable.seek(0);
+                                    primitiveSamReader = new BAMFileReader(
+                                            sourceSeekable, indexSeekable, false, asynchronousIO, validationStringency, this.samRecordFactory);
+                                }
                             } else {
                                 // seekable.
                                 // need to return to the beginning because it's the same stream we used earlier

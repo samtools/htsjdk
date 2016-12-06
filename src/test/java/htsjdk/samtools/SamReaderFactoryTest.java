@@ -284,7 +284,37 @@ public class SamReaderFactoryTest {
         }
         reader.close();
     }
-    
+
+    public class NeverFilePathInpurResource extends PathInputResource {
+        public NeverFilePathInpurResource(Path pathResource) {
+            super(pathResource);
+        }
+
+        @Override
+        public File asFile() {
+            return null;
+        }
+    }
+
+    @Test
+    public void streamingPathBamWithFileIndex() throws IOException {
+        InputResource bam = new NeverFilePathInpurResource(localBam.toPath());
+        InputResource index = new FileInputResource(localBamIndex);
+
+        // ensure that the index is being used, not checked in queryInputResourcePermutation
+        final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(bam, index));
+        Assert.assertTrue(reader.hasIndex());
+    }
+
+    @Test
+    public void queryStreamingPathBamWithFileIndex() throws IOException {
+        InputResource bam = new NeverFilePathInpurResource(localBam.toPath());
+        InputResource index = new FileInputResource(localBamIndex);
+
+        final SamInputResource resource = new SamInputResource(bam, index);
+        queryInputResourcePermutation(new SamInputResource(bam, index));
+    }
+
     @Test
     public void customReaderFactoryTest() throws IOException {
         try {
