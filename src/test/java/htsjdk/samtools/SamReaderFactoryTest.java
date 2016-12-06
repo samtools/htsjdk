@@ -290,7 +290,7 @@ public class SamReaderFactoryTest {
      * A path that pretends it's not based upon a file.  This helps in cases where we want to test branches
      * that apply to non-file based paths without actually having to use non-file based resources (like cloud urls)
      */
-    public static class NeverFilePathInputResource extends PathInputResource {
+    private static class NeverFilePathInputResource extends PathInputResource {
         public NeverFilePathInputResource(Path pathResource) {
             super(pathResource);
         }
