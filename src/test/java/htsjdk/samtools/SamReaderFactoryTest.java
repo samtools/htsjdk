@@ -284,7 +284,43 @@ public class SamReaderFactoryTest {
         }
         reader.close();
     }
-    
+
+
+    /**
+     * A path that pretends it's not based upon a file.  This helps in cases where we want to test branches
+     * that apply to non-file based paths without actually having to use non-file based resources (like cloud urls)
+     */
+    private static class NeverFilePathInputResource extends PathInputResource {
+        public NeverFilePathInputResource(Path pathResource) {
+            super(pathResource);
+        }
+
+        @Override
+        public File asFile() {
+            return null;
+        }
+    }
+
+    @Test
+    public void checkHasIndexForStreamingPathBamWithFileIndex() throws IOException {
+        InputResource bam = new NeverFilePathInputResource(localBam.toPath());
+        InputResource index = new FileInputResource(localBamIndex);
+
+        // ensure that the index is being used, not checked in queryInputResourcePermutation
+        try (final SamReader reader = SamReaderFactory.makeDefault().open(new SamInputResource(bam, index))) {
+            Assert.assertTrue(reader.hasIndex());
+        }
+    }
+
+    @Test
+    public void queryStreamingPathBamWithFileIndex() throws IOException {
+        InputResource bam = new NeverFilePathInputResource(localBam.toPath());
+        InputResource index = new FileInputResource(localBamIndex);
+
+        final SamInputResource resource = new SamInputResource(bam, index);
+        queryInputResourcePermutation(new SamInputResource(bam, index));
+    }
+
     @Test
     public void customReaderFactoryTest() throws IOException {
         try {
