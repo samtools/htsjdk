@@ -1259,13 +1259,34 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final VariantContext vcACSetTwoAlts =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAlts, hetVarTC);
 
+        // with AC set, and two different ALTs (T and C), with no GT, we expect a 2 count values.
+        final Map<String, Object> attributesACNoGtTwoAlts = new HashMap<String, Object>();
+        attributesACNoGtTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "1"));
+        final VariantContext vcACNoGtSetTwoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAlts, null);
+
+        // with AF set, and two different ALTs (T and C), with GT of 1/2, we expect two frequncy values.
+        // With two ALTs, a list is expected, so we set the attribute as a list of 0.5,0.5
+        final Map<String, Object> attributesAFTwoAlts = new HashMap<String, Object>();
+        attributesAFTwoAlts.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5", "0.5"));
+        final VariantContext vcAFSetTwoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFTwoAlts, hetVarTC);
+
+        // with AF set, and two different ALTs (T and C), with no GT, we expect two frequency values.
+        final Map<String, Object> attributesAFNoGtTwoAlts = new HashMap<String, Object>();
+        attributesAFNoGtTwoAlts.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5", "0.5"));
+        final VariantContext vcAFNoGtSetTwoAlts =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAlts, null);
+
         return new Object[][]{
                 {vcNoGenotypes},
                 {vcANSet},
                 {vcANSetNoCall},
                 {vcACSet},
                 {vcACSetNoAlts},
-                {vcACSetTwoAlts}
+                {vcACNoGtSetTwoAlts},
+                {vcAFSetTwoAlts},
+                {vcAFNoGtSetTwoAlts}
         };
     }
     @Test(dataProvider = "testValidateChromosomeCountsDataProvider")
@@ -1319,13 +1340,34 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final VariantContext vcACSetTwoAltsOneAltCount =
                 createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACTwoAltsOneAltCount, hetVarTC);
 
+        // with AC set, no GT, two ALTs, but only count for one ALT (we expect two items in the list: 1,1)
+        final Map<String, Object> attributesACNoGtTwoAltsOneAltCount = new HashMap<String, Object>();
+        attributesACNoGtTwoAltsOneAltCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1"));
+        final VariantContext vcACNoGtSetTwoAltsOneAltCount =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAltsOneAltCount, null);
+
+        // with AF set, two ALTs, but only frequency for one ALT (we expect two items in the list
+        final Map<String, Object> attributesAFTwoAltsWrongFreq = new HashMap<String, Object>();
+        attributesAFTwoAltsWrongFreq.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5"));
+        final VariantContext vcAFSetTwoAltsWrongFreq =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFTwoAltsWrongFreq, hetVarTC);
+
+        // with AF set, no GT, two ALTs, but only frequency for one ALT (we expect two items in the list
+        final Map<String, Object> attributesAFNoGtTwoAltsWrongCount = new HashMap<String, Object>();
+        attributesAFNoGtTwoAltsWrongCount.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5"));
+        final VariantContext vcAFNoGtSetTwoAltsWrongFreq =
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAltsWrongCount, null);
+
         return new Object[][]{
                 {vcANSet},
                 {vcANSetNoCall},
                 {vcACWrongCount},
                 {vcACSetTwoAlts},
                 {vcACSetTwoAltsWrongCount},
-                {vcACSetTwoAltsOneAltCount}
+                {vcACSetTwoAltsOneAltCount},
+                {vcACNoGtSetTwoAltsOneAltCount},
+                {vcAFSetTwoAltsWrongFreq},
+                {vcAFNoGtSetTwoAltsWrongFreq}
         };
     }
     @Test(dataProvider = "testValidateChromosomeCountsFailureDataProvider", expectedExceptions = TribbleException.class)
