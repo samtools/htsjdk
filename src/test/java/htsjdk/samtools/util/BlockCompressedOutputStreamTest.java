@@ -170,8 +170,8 @@ public class BlockCompressedOutputStreamTest {
         final int[] deflateCalls = {0}; //Note: using and array is a HACK to fool the compiler
 
         class MyDeflater extends Deflater{
-            MyDeflater(int level, boolean nowrap){
-                super(level, nowrap);
+            MyDeflater(int level, boolean gzipCompatible){
+                super(level, gzipCompatible);
             }
             @Override
             public int deflate(byte[] b, int off, int len) {
@@ -181,8 +181,8 @@ public class BlockCompressedOutputStreamTest {
 
         }
         final DeflaterFactory myDeflaterFactory= new DeflaterFactory(){
-            public Deflater makeDeflater(final int compressionLevel, final boolean nowrap) {
-                return new MyDeflater(compressionLevel, nowrap);
+            public Deflater makeDeflater(final int compressionLevel, final boolean gzipCompatible) {
+                return new MyDeflater(compressionLevel, gzipCompatible);
             }
         };
         final List<String> linesWritten = new ArrayList<>();

@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,19 +80,36 @@ public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream 
         super(stream, true);
     }
 
+    public AsyncBlockCompressedInputStream(final InputStream stream, InflaterFactory inflaterFactory) {
+        super(stream, true, inflaterFactory);
+    }
+
     public AsyncBlockCompressedInputStream(final File file)
         throws IOException {
         super(file);
+    }
+
+    public AsyncBlockCompressedInputStream(final File file, InflaterFactory inflaterFactory)
+            throws IOException {
+        super(file, inflaterFactory);
     }
 
     public AsyncBlockCompressedInputStream(final URL url) {
         super(url);
     }
 
+    public AsyncBlockCompressedInputStream(final URL url, InflaterFactory inflaterFactory) {
+        super(url, inflaterFactory);
+    }
+
     public AsyncBlockCompressedInputStream(final SeekableStream strm) {
         super(strm);
     }
-    
+
+    public AsyncBlockCompressedInputStream(final SeekableStream strm, InflaterFactory inflaterFactory) {
+        super(strm, inflaterFactory);
+    }
+
     @Override
     protected DecompressedBlock nextBlock(byte[] bufferAvailableForReuse) {
         if (bufferAvailableForReuse != null) {

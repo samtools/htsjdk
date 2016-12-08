@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -27,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.zip.Inflater;
 
 public class SamReaderFactoryTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -40,6 +42,34 @@ public class SamReaderFactoryTest {
         for (final SAMRecord ignored : reader) {
         }
         reader.close();
+    }
+
+    @Test
+    public void variousFormatReaderInflatorFactoryTest() throws IOException {
+        final String inputFile = "compressed.bam";
+        final int[] inflateCalls = {0}; //Note: using an array is a HACK to fool the compiler
+        class MyInflater extends Inflater {
+            MyInflater(boolean gzipCompatible){
+                super(gzipCompatible);
+            }
+            @Override
+            public int inflate(byte[] b, int off, int len) throws java.util.zip.DataFormatException {
+                inflateCalls[0]++;
+                return super.inflate(b, off, len);
+            }
+        }
+        final InflaterFactory myInflaterFactory = new InflaterFactory() {
+            public Inflater makeInflater(final boolean gzipCompatible) {
+                return new MyInflater(gzipCompatible);
+            }
+        };
+
+        final File input = new File(TEST_DATA_DIR, inputFile);
+        try (final SamReader reader = SamReaderFactory.makeDefault().inflaterFactory(myInflaterFactory).open(input)) {
+            for (final SAMRecord ignored : reader) { }
+            reader.close();
+        }
+        Assert.assertNotEquals(inflateCalls[0], 0, "Not using Inflater from InflateFactory on file : " + inputFile);
     }
 
     private int countRecordsInQueryInterval(final SamReader reader, final QueryInterval query) {
