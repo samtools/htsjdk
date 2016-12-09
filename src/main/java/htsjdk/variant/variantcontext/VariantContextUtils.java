@@ -235,7 +235,7 @@ public class VariantContextUtils {
             this.resultSupplier = resultSupplier;
         }
 
-        public boolean getMissingValue(){
+        boolean getMissingValue(){
             return resultSupplier.get();
         }
 
