@@ -98,7 +98,7 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
 
         Assert.assertFalse(VariantContextUtils.match(noZ, null, exp)); //default missing -> no match
-        Assert.assertFalse(VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.NO_MATCH));
+        Assert.assertFalse(VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.MISMATCH));
         Assert.assertTrue(VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.MATCH));
         Assert.assertThrows(IllegalArgumentException.class, () -> VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.THROW));
 

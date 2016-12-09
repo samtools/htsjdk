@@ -224,9 +224,23 @@ public class VariantContextUtils {
         }
     }
 
+    /**
+     *
+     */
     public enum JexlMissingValueTreatment {
-        NO_MATCH(() -> false),
+        /**
+         * Treat expressions with a missing value as a mismatch and evaluate to false
+         */
+        MISMATCH(() -> false),
+
+        /**
+         * Treat expressions with a missing value as a match and evaluate to true
+         */
         MATCH(() -> true),
+
+        /**
+         * Treat expressions with a missing value as an error and throw an {@link IllegalArgumentException}
+         */
         THROW(() -> {throw new IllegalArgumentException("Jexl Expression couldn't be evaluated because there was a missing value.");});
 
         private final Supplier<Boolean> resultSupplier;
@@ -235,7 +249,12 @@ public class VariantContextUtils {
             this.resultSupplier = resultSupplier;
         }
 
-        boolean getMissingValue(){
+        /**
+         * get the missing value that corresponds to this option or throw an exception
+         * @return the appropriate f
+         * @throws IllegalArgumentException if this should be treated as an error
+         */
+        boolean getMissingValueOrExplode(){
             return resultSupplier.get();
         }
 
@@ -343,7 +362,7 @@ public class VariantContextUtils {
      * @return      true if there is a match
      */
     public static boolean match(VariantContext vc, Genotype g, JexlVCMatchExp exp) {
-        return match(vc, g, Collections.singletonList(exp), JexlMissingValueTreatment.NO_MATCH).get(exp);
+        return match(vc, g, Collections.singletonList(exp), JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT).get(exp);
     }
 
     /**
@@ -372,7 +391,7 @@ public class VariantContextUtils {
      * @return      true if there is a match
      */
     public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps) {
-        return match(vc, g, exps, JexlMissingValueTreatment.NO_MATCH);
+        return match(vc, g, exps, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT);
     }
 
     /**
