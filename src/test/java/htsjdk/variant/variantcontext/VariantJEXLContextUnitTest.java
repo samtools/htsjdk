@@ -31,8 +31,6 @@ import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
@@ -86,6 +84,25 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
         // eval our known expression
         Assert.assertTrue(!jexlMap.get(exp));
+    }
+
+    @Test
+    public void testMissingBehavior(){
+        final JexlVCMatchExp exp = new VariantContextUtils.JexlVCMatchExp(
+                "Zis10", VariantContextUtils.engine.get().createExpression("Z==10"));
+
+        final List<Allele> alleles = Arrays.asList(Aref, Talt);
+        VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10, 10, alleles);
+        VariantContext noZ = vcb.make();
+        VariantContext hasZ = vcb.attribute("Z", 0).make();
+
+
+        Assert.assertFalse(VariantContextUtils.match(noZ, null, exp)); //default missing -> no match
+        Assert.assertFalse(VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.NO_MATCH));
+        Assert.assertTrue(VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.MATCH));
+        Assert.assertThrows(IllegalArgumentException.class, () -> VariantContextUtils.match(noZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.THROW));
+
+        Assert.assertFalse(VariantContextUtils.match(hasZ, null, exp, VariantContextUtils.JexlMissingValueTreatment.THROW)); //sanity check that we don't throw if its not missing
     }
     
     // Testing the new 'FT' and 'isPassFT' expressions in the JEXL map

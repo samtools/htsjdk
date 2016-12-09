@@ -6,7 +6,6 @@ import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * This is an implementation of a Map of {@link JexlVCMatchExp} to true or false values.
@@ -15,28 +14,11 @@ import java.util.function.Supplier;
 
 class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
 
-    public enum MissingValuesTreatment {
-        NO_MATCH(() -> false),
-        MATCH(() -> true),
-        THROW(() -> {throw new IllegalArgumentException("Jexl Expression couldn't be evaluated because there was a missing value.");});
-
-        private final Supplier<Boolean> resultSupplier;
-
-        MissingValuesTreatment(final Supplier<Boolean> resultSupplier){
-            this.resultSupplier = resultSupplier;
-        }
-
-        public boolean getMissingValue(){
-            return resultSupplier.get();
-        }
-
-    }
-
     // our variant context and/or Genotype
     private final VariantContext vc;
     private final Genotype g;
 
-    private final MissingValuesTreatment howToTreatMissingValues;
+    private final VariantContextUtils.JexlMissingValueTreatment howToTreatMissingValues;
 
     /**
      * our mapping from {@link JexlVCMatchExp} to {@link Boolean}s, which will be set to {@code NULL}
@@ -47,7 +29,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     // our context
     private JexlContext jContext = null;
 
-    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g, final MissingValuesTreatment howToTreatMissingValues) {
+    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g, final VariantContextUtils.JexlMissingValueTreatment howToTreatMissingValues) {
         this.jexl = initialize(jexlCollection);
         this.vc = vc;
         this.g = g;
@@ -55,15 +37,11 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     }
 
     public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g) {
-        this(jexlCollection, vc, g, MissingValuesTreatment.NO_MATCH);
-    }
-
-    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final MissingValuesTreatment howToTreatMissingValues) {
-        this(jexlCollection, vc, null, howToTreatMissingValues);
+        this(jexlCollection, vc, g, VariantContextUtils.JexlMissingValueTreatment.NO_MATCH);
     }
 
     public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc) {
-        this(jexlCollection, vc, MissingValuesTreatment.NO_MATCH);
+        this(jexlCollection, vc, null, VariantContextUtils.JexlMissingValueTreatment.NO_MATCH);
     }
 
     /**
