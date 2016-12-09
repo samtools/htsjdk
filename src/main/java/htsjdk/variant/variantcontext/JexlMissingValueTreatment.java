@@ -29,7 +29,7 @@ public enum JexlMissingValueTreatment {
 
     /**
      * get the missing value that corresponds to this option or throw an exception
-     * @return the appropriate f
+     * @return the value that should be used in case of a missing value
      * @throws IllegalArgumentException if this should be treated as an error
      */
     boolean getMissingValueOrExplode(){
