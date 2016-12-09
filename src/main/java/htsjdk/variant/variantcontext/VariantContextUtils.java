@@ -307,6 +307,7 @@ public class VariantContextUtils {
      * This the best way to apply JEXL expressions to {@link VariantContext} records.
      * Use the various {@code initializeMatchExps()}'s to create the list of {@link JexlVCMatchExp} expressions.
      *
+     * Expressions that contain literals not available in the VariantContext or Genotype will be treated as not matching
      * @param vc    variant context
      * @param exps  expressions
      * @return      true if there is a match
@@ -324,7 +325,36 @@ public class VariantContextUtils {
      * @return      true if there is a match
      */
     public static boolean match(VariantContext vc, Genotype g, JexlVCMatchExp exp) {
-        return match(vc,g, Collections.singletonList(exp)).get(exp);
+        return match(vc, g, Collections.singletonList(exp), JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT).get(exp);
+    }
+
+    /**
+     * Returns true if {@code exp} match {@code vc}, {@code g}.
+     * See {@link #match(VariantContext, Genotype, Collection)} for full docs.
+     * @param vc    variant context
+     * @param g     genotype
+     * @param exp   expression
+     * @param howToTreatMissingValues what to do if the jexl expression contains literals that aren't in the context
+     * @return      true if there is a match
+     */
+    public static boolean match(VariantContext vc, Genotype g, JexlVCMatchExp exp, JexlMissingValueTreatment howToTreatMissingValues) {
+        return match(vc, g, Collections.singletonList(exp), howToTreatMissingValues).get(exp);
+    }
+
+    /**
+     * Matches each {@link JexlVCMatchExp} exp against the data contained in {@code vc}, {@code g},
+     * and returns a map from these expressions to {@code true} (if they matched) or {@code false} (if they didn't).
+     * This the best way to apply JEXL expressions to {@link VariantContext} records.
+     * Use the various {@code initializeMatchExps()}'s to create the list of {@link JexlVCMatchExp} expressions.
+     *
+     * Expressions that contain literals not available in the VariantContext or Genotype will be treated as not matching
+     * @param vc    variant context
+     * @param g     genotype
+     * @param exps  expressions
+     * @return      true if there is a match
+     */
+    public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps) {
+        return match(vc, g, exps, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT);
     }
 
     /**
@@ -336,10 +366,11 @@ public class VariantContextUtils {
      * @param vc    variant context
      * @param g     genotype
      * @param exps  expressions
+     * @param howToTreatMissingValues what to do if the jexl expression contains literals that aren't in the context
      * @return      true if there is a match
      */
-    public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps) {
-        return new JEXLMap(exps,vc,g);
+    public static Map<JexlVCMatchExp, Boolean> match(VariantContext vc, Genotype g, Collection<JexlVCMatchExp> exps, JexlMissingValueTreatment howToTreatMissingValues) {
+        return new JEXLMap(exps, vc, g, howToTreatMissingValues);
     }
 
     /**

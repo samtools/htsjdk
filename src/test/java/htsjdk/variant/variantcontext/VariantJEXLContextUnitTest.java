@@ -31,14 +31,10 @@ import htsjdk.variant.variantcontext.VariantContextUtils.JexlVCMatchExp;
 
 import htsjdk.variant.vcf.VCFConstants;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -54,6 +50,10 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
 
     private static final VariantContextUtils.JexlVCMatchExp exp
             = new VariantContextUtils.JexlVCMatchExp("name", VariantContextUtils.engine.get().createExpression("QUAL > 500.0"));
+
+    private static final JexlVCMatchExp missingValueExpression = new VariantContextUtils.JexlVCMatchExp(
+            "Zis10", VariantContextUtils.engine.get().createExpression("Z==10"));
+
 
     // SNP alleles: A[ref]/T[alt] at chr1:10. One (crappy) sample, one (bare minimum) VC.
     private static final SimpleFeature eventLoc = new SimpleFeature("chr1", 10, 10);
@@ -87,7 +87,45 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
         // eval our known expression
         Assert.assertTrue(!jexlMap.get(exp));
     }
-    
+
+    @Test(dataProvider = "getMissingValueTestData")
+    public void testMissingBehaviorThroughMatch(VariantContext vc, JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
+        if(expectedException == null) {
+            Assert.assertEquals(VariantContextUtils.match(vc, null, missingValueExpression, missingValueTreatment), expected);
+        } else {
+            Assert.assertThrows(expectedException, () -> VariantContextUtils.match(vc, null, missingValueExpression, missingValueTreatment));
+        }
+    }
+
+    @Test(dataProvider = "getMissingValueTestData")
+    public void testMissingBehavior(VariantContext vc, JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
+        final JEXLMap jexlMap = new JEXLMap(Collections.singletonList(missingValueExpression), vc, null, missingValueTreatment);
+        if(expectedException == null) {
+            Assert.assertEquals((boolean) jexlMap.get(missingValueExpression), expected);
+        } else {
+            Assert.assertThrows(expectedException, () -> jexlMap.get(missingValueExpression));
+        }
+    }
+
+    @DataProvider
+    public Object[][] getMissingValueTestData(){
+        final List<Allele> alleles = Arrays.asList(Aref, Talt);
+        VariantContextBuilder vcb = new VariantContextBuilder("test", "chr1", 10, 10, alleles);
+        VariantContext noZ = vcb.make();
+        VariantContext hasZ = vcb.attribute("Z", 0).make();
+
+        return new Object[][]{
+                {noZ, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT, false, null},
+                {hasZ, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT, false, null}, //the value isn't missing but the expression is false
+                {noZ, JexlMissingValueTreatment.TREAT_AS_MATCH, true, null},
+                {hasZ, JexlMissingValueTreatment.TREAT_AS_MATCH, false, null}, //the value isn't missing but the expression is false
+                {noZ, JexlMissingValueTreatment.TREAT_AS_MISMATCH, false, null},
+                {hasZ, JexlMissingValueTreatment.TREAT_AS_MISMATCH, false, null},
+                {noZ, JexlMissingValueTreatment.THROW, false, IllegalArgumentException.class},
+                {hasZ, JexlMissingValueTreatment.THROW, false, null}
+        };
+    }
+
     // Testing the new 'FT' and 'isPassFT' expressions in the JEXL map
     @Test
     public void testJEXLGenotypeFilters() {
