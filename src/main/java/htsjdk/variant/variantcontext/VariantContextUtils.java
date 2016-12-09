@@ -46,7 +46,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 public class VariantContextUtils {
     private static Set<String> MISSING_KEYS_WARNED_ABOUT = new HashSet<String>();
@@ -222,42 +221,6 @@ public class VariantContextUtils {
             this.name = name;
             this.exp = exp;
         }
-    }
-
-    /**
-     *
-     */
-    public enum JexlMissingValueTreatment {
-        /**
-         * Treat expressions with a missing value as a mismatch and evaluate to false
-         */
-        MISMATCH(() -> false),
-
-        /**
-         * Treat expressions with a missing value as a match and evaluate to true
-         */
-        MATCH(() -> true),
-
-        /**
-         * Treat expressions with a missing value as an error and throw an {@link IllegalArgumentException}
-         */
-        THROW(() -> {throw new IllegalArgumentException("Jexl Expression couldn't be evaluated because there was a missing value.");});
-
-        private final Supplier<Boolean> resultSupplier;
-
-        JexlMissingValueTreatment(final Supplier<Boolean> resultSupplier){
-            this.resultSupplier = resultSupplier;
-        }
-
-        /**
-         * get the missing value that corresponds to this option or throw an exception
-         * @return the appropriate f
-         * @throws IllegalArgumentException if this should be treated as an error
-         */
-        boolean getMissingValueOrExplode(){
-            return resultSupplier.get();
-        }
-
     }
 
     /**

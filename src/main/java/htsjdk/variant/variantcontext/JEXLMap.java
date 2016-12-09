@@ -17,13 +17,13 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * If a JEXL expression contains values that are not available in the given context, the default behavior is to
      * treat that expression as a miss match.
      */
-    public static final VariantContextUtils.JexlMissingValueTreatment DEFAULT_MISSING_VALUE_TREATMENT = VariantContextUtils.JexlMissingValueTreatment.MISMATCH;
+    public static final JexlMissingValueTreatment DEFAULT_MISSING_VALUE_TREATMENT = JexlMissingValueTreatment.TREAT_AS_MISMATCH;
 
     // our variant context and/or Genotype
     private final VariantContext vc;
     private final Genotype g;
 
-    private final VariantContextUtils.JexlMissingValueTreatment howToTreatMissingValues;
+    private final JexlMissingValueTreatment howToTreatMissingValues;
 
     /**
      * our mapping from {@link JexlVCMatchExp} to {@link Boolean}s, which will be set to {@code NULL}
@@ -41,7 +41,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * @param g genotype to evaluate expressions against, may be null
      * @param howToTreatMissingValues how missing values in vc and g should be treated
      */
-    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g, final VariantContextUtils.JexlMissingValueTreatment howToTreatMissingValues) {
+    public JEXLMap(final Collection<JexlVCMatchExp> jexlCollection, final VariantContext vc, final Genotype g, final JexlMissingValueTreatment howToTreatMissingValues) {
         this.jexl = initializeMap(jexlCollection);
         this.vc = vc;
         this.g = g;

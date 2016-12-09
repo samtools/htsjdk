@@ -89,7 +89,7 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "getMissingValueTestData")
-    public void testMissingBehaviorThroughMatch(VariantContext vc, VariantContextUtils.JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
+    public void testMissingBehaviorThroughMatch(VariantContext vc, JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
         if(expectedException == null) {
             Assert.assertEquals(VariantContextUtils.match(vc, null, missingValueExpression, missingValueTreatment), expected);
         } else {
@@ -98,7 +98,7 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "getMissingValueTestData")
-    public void testMissingBehavior(VariantContext vc, VariantContextUtils.JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
+    public void testMissingBehavior(VariantContext vc, JexlMissingValueTreatment missingValueTreatment, boolean expected, Class<? extends Exception> expectedException){
         final JEXLMap jexlMap = new JEXLMap(Collections.singletonList(missingValueExpression), vc, null, missingValueTreatment);
         if(expectedException == null) {
             Assert.assertEquals((boolean) jexlMap.get(missingValueExpression), expected);
@@ -117,12 +117,12 @@ public class VariantJEXLContextUnitTest extends VariantBaseTest {
         return new Object[][]{
                 {noZ, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT, false, null},
                 {hasZ, JEXLMap.DEFAULT_MISSING_VALUE_TREATMENT, false, null}, //the value isn't missing but the expression is false
-                {noZ, VariantContextUtils.JexlMissingValueTreatment.MATCH, true, null},
-                {hasZ,VariantContextUtils.JexlMissingValueTreatment.MATCH, false, null}, //the value isn't missing but the expression is false
-                {noZ, VariantContextUtils.JexlMissingValueTreatment.MISMATCH, false, null},
-                {hasZ, VariantContextUtils.JexlMissingValueTreatment.MISMATCH, false, null},
-                {noZ, VariantContextUtils.JexlMissingValueTreatment.THROW, false, IllegalArgumentException.class},
-                {hasZ, VariantContextUtils.JexlMissingValueTreatment.THROW, false, null}
+                {noZ, JexlMissingValueTreatment.TREAT_AS_MATCH, true, null},
+                {hasZ, JexlMissingValueTreatment.TREAT_AS_MATCH, false, null}, //the value isn't missing but the expression is false
+                {noZ, JexlMissingValueTreatment.TREAT_AS_MISMATCH, false, null},
+                {hasZ, JexlMissingValueTreatment.TREAT_AS_MISMATCH, false, null},
+                {noZ, JexlMissingValueTreatment.THROW, false, IllegalArgumentException.class},
+                {hasZ, JexlMissingValueTreatment.THROW, false, null}
         };
     }
 
