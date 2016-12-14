@@ -268,13 +268,13 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         public List<RecordAndOffset> getInsertedInRecord() {
             return (insertedInRecord == null) ? Collections.emptyList() : Collections.unmodifiableList(insertedInRecord);
         }
-        
-        /** 
-         * @return the number of records overlapping the position, with deletions included if they are being tracked. 
+
+        /**
+         * @return the number of records overlapping the position, with deletions included if they are being tracked.
          */
         @Override
-        public int size() { 
-            return super.size() + ((deletedInRecord == null) ? 0 : deletedInRecord.size()); 
+        public int size() {
+            return super.size() + ((deletedInRecord == null) ? 0 : deletedInRecord.size());
         }
 
 
@@ -284,7 +284,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
          */
         @Override
         public boolean isEmpty() {
-            return getRecordAndPositions().isEmpty() &&
+            return getRecordAndOffsets().isEmpty() &&
                     (deletedInRecord == null || deletedInRecord.isEmpty()) &&
                     (insertedInRecord == null || insertedInRecord.isEmpty());
         }

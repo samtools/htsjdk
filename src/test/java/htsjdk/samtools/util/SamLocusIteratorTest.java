@@ -61,7 +61,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             int pos = startPosition;
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos++);
-                Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                 Assert.assertEquals(li.size(), coverage);
                 // make sure that we are not accumulating indels
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -86,7 +86,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         int pos = 165;
         for (final SamLocusIterator.LocusInfo li : sli) {
             Assert.assertEquals(li.getPosition(), pos++);
-            Assert.assertEquals(li.getRecordAndPositions().size(), 2);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), 2);
             Assert.assertEquals(li.size(), 2);
         }
     }
@@ -123,7 +123,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 } else {
                     expectedReads = 0;
                 }
-                Assert.assertEquals(li.getRecordAndPositions().size(), expectedReads);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReads);
                 Assert.assertEquals(li.size(), expectedReads);
                 // make sure that we are not accumulating indels
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -161,7 +161,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             // make sure we accumulated depth coverage for even positions, coverage/2 for odd positions
             int pos = startPosition;
             for (final SamLocusIterator.LocusInfo li : sli) {
-                Assert.assertEquals(li.getRecordAndPositions().size(), (pos % 2 == 0) ? coverage / 2 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (pos % 2 == 0) ? coverage / 2 : coverage);
                 Assert.assertEquals(li.size(), (pos % 2 == 0) ? coverage / 2 : coverage);
                 Assert.assertEquals(li.getPosition(), pos++);
                 // make sure that we are not accumulating indels
@@ -200,7 +200,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 Assert.assertEquals(li.getPosition(), pos++);
                 if (isDeletedPosition) {
                     // make sure there are no reads without indels
-                    Assert.assertEquals(li.getRecordAndPositions().size(), 0);
+                    Assert.assertEquals(li.getRecordAndOffsets().size(), 0);
                     Assert.assertEquals(li.size(), coverage); // should include deletions
 
                     // make sure that we are accumulating indels
@@ -208,7 +208,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                     Assert.assertEquals(li.getInsertedInRecord().size(), 0);
                 } else {
                     // make sure we are accumulating normal coverage
-                    Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                    Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                     Assert.assertEquals(li.size(), coverage);
 
                     // make sure that we are not accumulating indels
@@ -241,7 +241,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos++);
                 // make sure we are accumulating normal coverage
-                Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                 Assert.assertEquals(li.size(), coverage);
 
                 // make sure that we are not accumulating deletions
@@ -278,7 +278,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos);
                 // accumulation of coverage
-                Assert.assertEquals(li.getRecordAndPositions().size(), (indelPosition) ? 0 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (indelPosition) ? 0 : coverage);
                 Assert.assertEquals(li.size(), (indelPosition) ? 0 : coverage);
 
                 // no accumulation of deletions
@@ -319,7 +319,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
             for (final SamLocusIterator.LocusInfo li : sli) {
                 Assert.assertEquals(li.getPosition(), pos);
                 // accumulation of coverage
-                Assert.assertEquals(li.getRecordAndPositions().size(), (indelPosition) ? 0 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (indelPosition) ? 0 : coverage);
                 Assert.assertEquals(li.size(), (indelPosition) ? 0 : coverage);
                 // no accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -364,7 +364,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 }
                 Assert.assertEquals(li.getPosition(), pos);
                 // accumulation of coverage
-                Assert.assertEquals(li.getRecordAndPositions().size(), (pos == endN) ? 0 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (pos == endN) ? 0 : coverage);
                 Assert.assertEquals(li.size(), (pos == endN) ? 0 : coverage);
                 // no accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -416,7 +416,7 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 final boolean insideDeletion = incIndels && (pos >= startDel && pos <= endDel);
                 Assert.assertEquals(li.getPosition(), pos);
                 // accumulation of coverage
-                Assert.assertEquals(li.getRecordAndPositions().size(), (insideDeletion) ? 0 : coverage);
+                Assert.assertEquals(li.getRecordAndOffsets().size(), (insideDeletion) ? 0 : coverage);
                 Assert.assertEquals(li.size(), coverage); // either will be all deletions, or all non-deletions, but always of size `coverage`.
                 // accumulation of deletions
                 Assert.assertEquals(li.getDeletedInRecord().size(), (insideDeletion) ? coverage : 0);
@@ -506,18 +506,18 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
                 if (inDelRange) {
                     // check the coverage for insertion and normal records
                     Assert.assertEquals(li.getDeletedInRecord().size(), coverage);
-                    Assert.assertEquals(li.getRecordAndPositions().size(), 0);
+                    Assert.assertEquals(li.getRecordAndOffsets().size(), 0);
                     Assert.assertEquals(li.size(), coverage); // includes deletions
                     // check the offset for the deletion
                     Assert.assertEquals(li.getDeletedInRecord().get(0).getOffset(), expectedReadOffsets[i]);
                     Assert.assertEquals(li.getDeletedInRecord().get(1).getOffset(), expectedReadOffsets[i]);
                 } else {
                     // if it is not a deletion, perform the same test as before
-                    Assert.assertEquals(li.getRecordAndPositions().size(), coverage);
+                    Assert.assertEquals(li.getRecordAndOffsets().size(), coverage);
                     Assert.assertEquals(li.size(), coverage);
                     // Assert.assertEquals(li.getDeletedInRecord().size(), 0);
-                    Assert.assertEquals(li.getRecordAndPositions().get(0).getOffset(), expectedReadOffsets[i]);
-                    Assert.assertEquals(li.getRecordAndPositions().get(1).getOffset(), expectedReadOffsets[i]);
+                    Assert.assertEquals(li.getRecordAndOffsets().get(0).getOffset(), expectedReadOffsets[i]);
+                    Assert.assertEquals(li.getRecordAndOffsets().get(1).getOffset(), expectedReadOffsets[i]);
                 }
                 ++i;
             }
@@ -576,12 +576,12 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         i = 0;
         for (final SamLocusIterator.LocusInfo li : sli) {
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedDepths[i]);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedDepths[i]);
             Assert.assertEquals(li.size(), expectedDepths[i]);
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReadOffsets[i].length);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
-                Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j]);
+                Assert.assertEquals(li.getRecordAndOffsets().get(j).getOffset(), expectedReadOffsets[i][j]);
             }
             // make sure that we are not accumulating indels
             Assert.assertEquals(li.getDeletedInRecord().size(), 0);
@@ -652,12 +652,12 @@ public class SamLocusIteratorTest extends AbstractLocusIteratorTestTemplate {
         i = 0;
         for (final SamLocusIterator.LocusInfo li : sli) {
             // checking the same as without indels
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedDepths[i]);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedDepths[i]);
             Assert.assertEquals(li.size(), expectedDepths[i] + expectedDelDepths[i]); // include deletions
             Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
-            Assert.assertEquals(li.getRecordAndPositions().size(), expectedReadOffsets[i].length);
+            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
-                Assert.assertEquals(li.getRecordAndPositions().get(j).getOffset(), expectedReadOffsets[i][j]);
+                Assert.assertEquals(li.getRecordAndOffsets().get(j).getOffset(), expectedReadOffsets[i][j]);
             }
             // check the deletions
             Assert.assertEquals(li.getDeletedInRecord().size(), expectedDelDepths[i]);
