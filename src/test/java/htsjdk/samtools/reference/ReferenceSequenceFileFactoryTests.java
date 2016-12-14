@@ -1,6 +1,7 @@
 package htsjdk.samtools.reference;
 
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -34,6 +35,24 @@ public class ReferenceSequenceFileFactoryTests {
     @Test public void testDefaultToIndexed() {
         final ReferenceSequenceFile f = ReferenceSequenceFileFactory.getReferenceSequenceFile(hg18, true);
         Assert.assertTrue(f instanceof IndexedFastaSequenceFile, "Got non-indexed reader by default.");
+    }
+
+
+    @DataProvider
+    public Object[][] fastaNames() {
+        return new Object[][] {
+                {"break.fa", "break.dict"},
+                {"break.txt.txt", "break.txt.dict"},
+                {"break.fasta.fasta", "break.fasta.dict"},
+                {"break.fa.gz", "break.dict"},
+                {"break.txt.gz.txt.gz", "break.txt.gz.dict"},
+                {"break.fasta.gz.fasta.gz", "break.fasta.gz.dict"}
+        };
+    }
+
+    @Test(dataProvider = "fastaNames")
+    public void testGetDefaultDictionaryForReferenceSequence(final String fastaFile, final String expectedDict) throws Exception {
+        Assert.assertEquals(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(new File(fastaFile)), new File(expectedDict));
     }
 
 }
