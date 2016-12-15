@@ -6,6 +6,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
+import java.util.function.Function;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -194,7 +195,7 @@ public class SamReaderFactoryTest {
             case FILE:
                 return new FileInputResource(f);
             case PATH:
-                return new PathInputResource(f.toPath());
+                return new PathInputResource(f.toPath(), Function.identity());
             case URL:
                 return new UrlInputResource(url);
             case SEEKABLE_STREAM:

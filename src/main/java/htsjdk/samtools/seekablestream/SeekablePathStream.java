@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.function.Function;
 
 /**
  * An implementation of {@link SeekableStream} for {@link Path}.
@@ -31,6 +32,16 @@ public class SeekablePathStream extends SeekableStream {
     public SeekablePathStream(final Path path) throws IOException {
         this.path = path;
         this.sbc = Files.newByteChannel(path);
+        ALL_INSTANCES.add(this);
+    }
+
+    public SeekablePathStream(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        this.path = path;
+        if (null==wrapper) {
+            this.sbc = Files.newByteChannel(path);
+        } else {
+            this.sbc = wrapper.apply(Files.newByteChannel(path));
+        }
         ALL_INSTANCES.add(this);
     }
 

@@ -39,9 +39,11 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Function;
 
 /**
  * Describes a SAM-like resource, including its data (where the records are), and optionally an index.
@@ -89,7 +91,9 @@ public class SamInputResource {
     public static SamInputResource of(final File file) { return new SamInputResource(new FileInputResource(file)); }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final Path path) { return new SamInputResource(new PathInputResource(path)); }
+    public static SamInputResource of(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        return new SamInputResource(new PathInputResource(path, wrapper));
+    }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final InputStream inputStream) { return new SamInputResource(new InputStreamInputResource(inputStream)); }
@@ -121,7 +125,7 @@ public class SamInputResource {
 
     /** Updates the index to point at the provided resource, then returns itself. */
     public SamInputResource index(final Path path) {
-        this.index = new PathInputResource(path);
+        this.index = new PathInputResource(path, Function.identity());
         return this;
     }
 
@@ -268,11 +272,12 @@ class FileInputResource extends InputResource {
 class PathInputResource extends InputResource {
 
     final Path pathResource;
+    final Function<SeekableByteChannel, SeekableByteChannel> wrapper;
     final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
         @Override
         public SeekableStream make() {
             try {
-                return new SeekablePathStream(pathResource);
+                return new SeekablePathStream(pathResource, wrapper);
             } catch (final IOException e) {
                 throw new RuntimeIOException(e);
             }
@@ -281,8 +286,27 @@ class PathInputResource extends InputResource {
 
 
     PathInputResource(final Path pathResource) {
+        this(pathResource, Function.identity());
+    }
+
+    PathInputResource(final Path pathResource, Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         super(Type.PATH);
         this.pathResource = pathResource;
+        this.wrapper = wrapper;
+    }
+
+    /** Returns a modified PathInputResource with the specific wrapper. After calling this,
+     * do NOT use the original object anymore.
+     *
+     * @param wrapper
+     * @return wrapped PathInputResource
+     */
+    PathInputResource wrap(Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        if (lazySeekableStream.isInitialized()) {
+            // otherwise it'll be opened twice and that'll break
+            throw new IllegalStateException("Only call wrap before opening the resource");
+        }
+        return new PathInputResource(this.pathResource, wrapper);
     }
 
     @Override
