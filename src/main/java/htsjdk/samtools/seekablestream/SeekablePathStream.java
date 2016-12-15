@@ -43,6 +43,16 @@ public class SeekablePathStream extends SeekableStream {
         ALL_INSTANCES.add(this);
     }
 
+    public SeekablePathStream(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        this.path = path;
+        if (null==wrapper) {
+            this.sbc = Files.newByteChannel(path);
+        } else {
+            this.sbc = wrapper.apply(Files.newByteChannel(path));
+        }
+        ALL_INSTANCES.add(this);
+    }
+
     @Override
     public long length() {
         try {
