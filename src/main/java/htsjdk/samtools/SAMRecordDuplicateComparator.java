@@ -257,9 +257,9 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
      * mapped over fragment reads, false otherwise.
      *  
      */
-    private int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, final boolean collapseOrientation, final boolean considerNumberOfEndsMappedAndPairing) {
+    protected int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, final boolean collapseOrientation, final boolean considerNumberOfEndsMappedAndPairing, boolean compareLibraries) {
         populateTransientAttributes(samRecord1, samRecord2);
-        int cmp;
+        int cmp = 0;
 
         if (null == samRecord1.getHeader() || null == samRecord2.getHeader()) {
             throw new IllegalArgumentException("Records must have non-null SAMFileHeaders to be compared");
@@ -268,8 +268,9 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
         // temporary variables for comparisons
         int samRecord1Value, samRecord2Value;
 
+
         // library identifier
-        {
+        if (compareLibraries) {
             samRecord1Value = (Short) samRecord1.getTransientAttribute(Attr.LibraryId);
             samRecord2Value = (Short) samRecord2.getTransientAttribute(Attr.LibraryId);
             cmp = samRecord1Value - samRecord2Value;
@@ -351,13 +352,13 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
      *   R == RF, R == RR
      */
     public int duplicateSetCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
-        return fileOrderCompare(samRecord1, samRecord2, true, false);
+        return fileOrderCompare(samRecord1, samRecord2, true, false, true);
     }
 
     /**
      * Less stringent than duplicateSetCompare, such that two records are equal enough such that their ordering in a sorted SAM file would be arbitrary.
      */
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
-        return fileOrderCompare(samRecord1, samRecord2, false, true);
+        return fileOrderCompare(samRecord1, samRecord2, false, true, true);
     }
 }
