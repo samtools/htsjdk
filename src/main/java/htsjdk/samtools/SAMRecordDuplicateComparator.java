@@ -352,7 +352,24 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
      *   R == RF, R == RR
      */
     public int duplicateSetCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
-        return fileOrderCompare(samRecord1, samRecord2, true, false, true);
+        return duplicateSetCompare(samRecord1, samRecord2, true);
+    }
+
+    /**
+     * Less stringent than compare, such that two records are equal enough such that their ordering within their duplicate set would be arbitrary.
+     *
+     * Major difference between this and fileOrderCompare is how we compare the orientation byte.  Here we want:
+     *   F == FR, F == FF
+     *   R == RF, R == RR
+     *
+     *   Set compareLibraries to false if you wish to consider duplicates across different libraries
+     */
+    public int duplicateSetCompare(final SAMRecord samRecord1, final SAMRecord samRecord2, boolean compareLibraries) {
+        return fileOrderCompare(samRecord1, samRecord2, true, false, compareLibraries);
+    }
+
+    public int farp() {
+        return 0;
     }
 
     /**
