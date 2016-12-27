@@ -125,8 +125,7 @@ public class ReferenceSequenceFileFactory {
             catch (final FileNotFoundException e) {
                 throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
             }
-        }
-        else {
+        } else {
             return new FastaSequenceFile(path, truncateNamesAtWhitespace);
         }
     }

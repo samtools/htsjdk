@@ -54,5 +54,4 @@ public class ReferenceSequenceFileFactoryTests {
     public void testGetDefaultDictionaryForReferenceSequence(final String fastaFile, final String expectedDict) throws Exception {
         Assert.assertEquals(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(new File(fastaFile)), new File(expectedDict));
     }
-
 }
