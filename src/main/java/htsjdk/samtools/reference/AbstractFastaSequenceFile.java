@@ -93,29 +93,16 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         if (path == null) {
             return null;
         }
-        // Try and locate the dictionary
-        Path dictionary = path.toAbsolutePath();
-        Path dictionaryExt = path.toAbsolutePath();
-        boolean fileTypeSupported = false;
-        for (final String extension : ReferenceSequenceFileFactory.FASTA_EXTENSIONS) {
-            String filename = dictionary.getFileName().toString();
-            if (filename.endsWith(extension)) {
-                dictionaryExt = dictionary.resolveSibling(filename + IOUtil
-                    .DICT_FILE_EXTENSION);
-                String filenameNoExt = filename.substring(0, filename.lastIndexOf(extension));
-                dictionary = dictionary.resolveSibling(filenameNoExt+ IOUtil.DICT_FILE_EXTENSION);
-                fileTypeSupported = true;
-                break;
-            }
-        }
-        if (!fileTypeSupported)
-            throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());
-
-        if (Files.exists(dictionary))
+        // Try and locate the dictionary with the default method
+        final Path dictionary = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(path); path.toAbsolutePath();
+        if (Files.exists(dictionary)) {
             return dictionary;
+        }
         // try without removing the file extension
-        if (Files.exists(dictionaryExt))
+        final Path dictionaryExt = path.resolveSibling(path.getFileName().toString() + IOUtil.DICT_FILE_EXTENSION);
+        if (Files.exists(dictionaryExt)) {
             return dictionaryExt;
+        }
         else return null;
     }
 

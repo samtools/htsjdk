@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
@@ -113,24 +115,52 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final Path path, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        final String name = path.getFileName().toString();
-        for (final String ext : FASTA_EXTENSIONS) {
-            if (name.endsWith(ext)) {
-                // Using faidx requires truncateNamesAtWhitespace
-                if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(path)) {
-                    try {
-                        return new IndexedFastaSequenceFile(path);
-                    }
-                    catch (final FileNotFoundException e) {
-                        throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
-                    }
-                }
-                else {
-                    return new FastaSequenceFile(path, truncateNamesAtWhitespace);
-                }
+        // this should thrown an exception if the fasta file is not supported
+        getFastaExtension(path);
+        // Using faidx requires truncateNamesAtWhitespace
+        if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(path)) {
+            try {
+                return new IndexedFastaSequenceFile(path);
             }
+            catch (final FileNotFoundException e) {
+                throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
+            }
+        } else {
+            return new FastaSequenceFile(path, truncateNamesAtWhitespace);
         }
-
-        throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());
     }
+
+    /**
+     * Returns the default dictionary name for a FASTA file.
+     *
+     * @param file the reference sequence file on disk.
+     */
+    public static File getDefaultDictionaryForReferenceSequence(final File file) {
+        return getDefaultDictionaryForReferenceSequence(file.toPath()).toFile();
+    }
+
+    /**
+     * Returns the default dictionary name for a FASTA file.
+     *
+     * @param path the reference sequence file path.
+     */
+    public static Path getDefaultDictionaryForReferenceSequence(final Path path) {
+        final String name = path.getFileName().toString();
+        final int extensionIndex = name.length() - getFastaExtension(path).length();
+        return path.resolveSibling(name.substring(0, extensionIndex) + IOUtil.DICT_FILE_EXTENSION);
+    }
+
+    /**
+     * Returns the FASTA extension for the path.
+     *
+     * @param path the reference sequence file path.
+     *
+     * @throws IllegalArgumentException if the file is not a supported reference file.
+     */
+    public static String getFastaExtension(final Path path) {
+        final String name = path.getFileName().toString();
+        return FASTA_EXTENSIONS.stream().filter(name::endsWith).findFirst()
+                .orElseGet(() -> {throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());});
+    }
+
 }
