@@ -33,9 +33,11 @@ import htsjdk.samtools.SAMRecord;
 public class AlignedFilter implements SamRecordFilter {
 
     private boolean includeAligned = false;
+    private boolean matesMustMatch = false;
 
-    public AlignedFilter(final boolean includeAligned) {
+    public AlignedFilter(final boolean includeAligned, final boolean matesMustMatch) {
         this.includeAligned = includeAligned;
+        this.matesMustMatch = matesMustMatch;
     }
 
     /**
@@ -47,17 +49,11 @@ public class AlignedFilter implements SamRecordFilter {
      */
     public boolean filterOut(final SAMRecord record) {
         if (includeAligned) {
-            if (!record.getReadUnmappedFlag()) {
-                return false;
-            }
+            return (matesMustMatch) ? (record.getReadUnmappedFlag() || record.getMateUnmappedFlag()) : record.getReadUnmappedFlag();
         } else {
             // exclude aligned
-            if (record.getReadUnmappedFlag()) {
-                return false;
-            }
+            return (matesMustMatch) ? (!record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) : !record.getReadUnmappedFlag();
         }
-
-        return true;
     }
 
     /**
@@ -69,19 +65,12 @@ public class AlignedFilter implements SamRecordFilter {
      * @return true if the SAMRecords matches the filter, otherwise false
      */
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-
         if (includeAligned) {
             // both first and second must be mapped for it to not be filtered out
-            if (!first.getReadUnmappedFlag() && !second.getReadUnmappedFlag()) {
-                return false;
-            }
+            return filterOut(first) || filterOut(second);
         } else {
             // exclude aligned - if either first or second is unmapped don't filter it out
-            if (first.getReadUnmappedFlag() || second.getReadUnmappedFlag()) {
-                return false;
-            }
+            return filterOut(first) && filterOut(second);
         }
-
-        return true;
     }
 }
