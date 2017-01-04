@@ -52,15 +52,12 @@ public class VariantContextUtils {
 
     /** Use a {@link Lazy} {@link JexlEngine} instance to avoid class-loading issues. (Applications that access this class are otherwise
      * forced to build a {@link JexlEngine} instance, which depends on some apache logging libraries that mightn't be packaged.) */
-    final public static Lazy<JexlEngine> engine = new Lazy<JexlEngine>(new Lazy.LazyInitializer<JexlEngine>() {
-        @Override
-        public JexlEngine make() {
-            final JexlEngine jexl = new JexlEngine();
-            jexl.setSilent(false); // will throw errors now for selects that don't evaluate properly
-            jexl.setLenient(false);
-            jexl.setDebug(false);
-            return jexl;
-        }
+    final public static Lazy<JexlEngine> engine = new Lazy<>(() -> {
+        final JexlEngine jexl = new JexlEngine();
+        jexl.setSilent(false); // will throw errors now for selects that don't evaluate properly
+        jexl.setLenient(false);
+        jexl.setDebug(false);
+        return jexl;
     });
     private final static boolean ASSUME_MISSING_FIELDS_ARE_STRINGS = false;
     

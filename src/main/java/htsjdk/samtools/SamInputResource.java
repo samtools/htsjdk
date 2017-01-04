@@ -44,6 +44,7 @@ import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Describes a SAM-like resource, including its data (where the records are), and optionally an index.
@@ -223,9 +224,9 @@ abstract class InputResource {
 class FileInputResource extends InputResource {
 
     final File fileResource;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Supplier<SeekableStream>() {
         @Override
-        public SeekableStream make() {
+        public SeekableStream get() {
             try {
                 return new SeekableFileStream(fileResource);
             } catch (final FileNotFoundException e) {
@@ -279,9 +280,9 @@ class PathInputResource extends InputResource {
 
     final Path pathResource;
     final Function<SeekableByteChannel, SeekableByteChannel> wrapper;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Supplier<SeekableStream>() {
         @Override
-        public SeekableStream make() {
+        public SeekableStream get() {
             try {
                 return new SeekablePathStream(pathResource, wrapper);
             } catch (final IOException e) {
@@ -344,9 +345,9 @@ class PathInputResource extends InputResource {
 class UrlInputResource extends InputResource {
 
     final URL urlResource;
-    final Lazy<SeekableStream> lazySeekableStream = new Lazy<SeekableStream>(new Lazy.LazyInitializer<SeekableStream>() {
+    final Lazy<SeekableStream> lazySeekableStream = new Lazy<>(new Supplier<SeekableStream>() {
         @Override
-        public SeekableStream make() {
+        public SeekableStream get() {
             try { return SeekableStreamFactory.getInstance().getStreamFor(urlResource); }
             catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
         }
