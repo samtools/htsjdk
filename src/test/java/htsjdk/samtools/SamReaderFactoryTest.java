@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.ref.CRAMReferenceSourceEmpty;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -32,6 +33,7 @@ public class SamReaderFactoryTest {
     public void variousFormatReaderTest(final String inputFile) throws IOException {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        //noinspection StatementWithEmptyBody
         for (final SAMRecord ignored : reader) {
         }
         reader.close();
@@ -163,7 +165,7 @@ public class SamReaderFactoryTest {
 
     @DataProvider
     public Object[][] composeAllPermutationsOfSamInputResource() {
-        final List<SamInputResource> sources = new ArrayList<SamInputResource>();
+        final List<SamInputResource> sources = new ArrayList<>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
             if (dataType.equals(InputResource.Type.SRA_ACCESSION))
                 continue;
@@ -210,8 +212,8 @@ public class SamReaderFactoryTest {
         }
     }
 
-    final Set<SAMFileHeader> observedHeaders = new HashSet<SAMFileHeader>();
-    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<List<SAMRecord>>();
+    final Set<SAMFileHeader> observedHeaders = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void exhaustInputResourcePermutation(final SamInputResource resource) throws IOException {
@@ -251,9 +253,9 @@ public class SamReaderFactoryTest {
     }
 
 
-    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<List<SAMRecord>>();
+    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void queryInputResourcePermutation(final SamInputResource resource) throws IOException {
@@ -330,10 +332,8 @@ public class SamReaderFactoryTest {
           final SamReader reader = SamReaderFactory.makeDefault().open(
               SamInputResource.of(
               "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam"));
-          int i = 0;
-          for (@SuppressWarnings("unused") final SAMRecord ignored : reader) {
-              ++i;
-          }
+          final long i = reader.iterator().stream().count();
+
           reader.close();
   
           Assert.assertTrue(i > 0);
@@ -367,9 +367,15 @@ public class SamReaderFactoryTest {
     public void testCRAMReaderFromURL() throws IOException {
         // get a CRAM reader with an index from a URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(indexURL);},
+                (cramURL, indexURL) -> SamInputResource.of(cramURL).index(indexURL),
                 true,
                 3);
+    }
+
+    @Test
+    public void testGetCramHeaderNoReference() {
+        final File input = new File("src/test/resources/htsjdk/samtools/cram_query_sorted.cram");
+        SAMFileHeader header = SamReaderFactory.makeDefault().open(input).getFileHeader();
     }
 
     @Test
@@ -395,7 +401,7 @@ public class SamReaderFactoryTest {
     public void testCRAMReaderFromURLNoIndexFile() throws IOException {
         // get just a CRAM reader (no index) from an URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL); },
+                (cramURL, indexURL) -> SamInputResource.of(cramURL),
             false,
             11);
     }
@@ -404,7 +410,7 @@ public class SamReaderFactoryTest {
     public void testCRAMReaderFromURLBadIndexFile() throws IOException {
         // deliberately specify a bad index file to ensure we get an IOException
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(new File("nonexistent.bai")); },
+                (cramURL, indexURL) -> SamInputResource.of(cramURL).index(new File("nonexistent.bai")),
             true,
             3);
     }
@@ -464,5 +470,4 @@ public class SamReaderFactoryTest {
                 SamInputResource.of(new SeekableFileStream(samFile)));
         countRecords(reader);
     }
-
 }

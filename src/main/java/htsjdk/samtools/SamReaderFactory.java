@@ -38,6 +38,8 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.zip.GZIPInputStream;
 
+import static htsjdk.samtools.cram.ref.CRAMReferenceSourceEmpty.EMPTY_REFERENCE;
+
 /**
  * <p>Describes the functionality for producing {@link SamReader}, and offers a
  * handful of static generators.</p>
@@ -118,7 +120,7 @@ public abstract class SamReaderFactory {
     abstract public SamReaderFactory validationStringency(final ValidationStringency validationStringency);
 
     /** Set whether readers created by this factory will use asynchronous IO.
-     * If this methods is not called, this flag will default to the value of {@link Defaults#USE_ASYNC_IO_FOR_SAMTOOLS}.
+     * If this methods is not called, this flag will default to the value of {@link Defaults#USE_ASYNC_IO_READ_FOR_SAMTOOLS}.
      * Note that this option may not be applicable to all readers returned from this factory.
      * Returns the factory itself. */
     abstract public SamReaderFactory setUseAsyncIo(final boolean asynchronousIO);
@@ -159,6 +161,7 @@ public abstract class SamReaderFactory {
             this.samRecordFactory = samRecordFactory;
             this.validationStringency = validationStringency;
             this.customReaderFactory = CustomReaderFactory.getInstance();
+            this.referenceSource = EMPTY_REFERENCE;
         }
    
         @Override

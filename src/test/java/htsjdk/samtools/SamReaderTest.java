@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -46,13 +45,12 @@ public class SamReaderTest {
 
     @DataProvider(name = "variousFormatReaderTestCases")
     public Object[][] variousFormatReaderTestCases() {
-        final Object[][] scenarios = new Object[][]{
+        return new Object[][]{
                 {"block_compressed.sam.gz"},
                 {"uncompressed.sam"},
                 {"compressed.sam.gz"},
                 {"compressed.bam"},
         };
-        return scenarios;
     }
 
     // tests for CRAM indexing
@@ -74,12 +72,11 @@ public class SamReaderTest {
 
     @DataProvider(name = "SmallCRAMTest")
     public Object[][] CRAMIndexTestData() {
-        final Object[][] testFiles = new Object[][]{
+        return new Object[][]{
                 {"cram/test.cram", "cram/auxf.fa", new QueryInterval(0, 12, 13), "Jim"},
                 {"cram_with_bai_index.cram", "hg19mini.fasta", new QueryInterval(3, 700, 0), "k"},
                 {"cram_with_crai_index.cram", "hg19mini.fasta", new QueryInterval(2, 350, 0), "i"},
         };
-        return testFiles;
     }
 
     @Test(dataProvider = "NoIndexCRAMTest")
@@ -93,10 +90,9 @@ public class SamReaderTest {
 
     @DataProvider(name = "NoIndexCRAMTest")
     public Object[][] CRAMNoIndexTestData() {
-        final Object[][] testFiles = new Object[][]{
+        return new Object[][]{
                 {"cram/test2.cram", "cram/auxf.fa"},
         };
-        return testFiles;
     }
 
     // Tests for the SAMRecordFactory usage
@@ -132,10 +128,11 @@ public class SamReaderTest {
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
-    @Test(dataProvider = "cramTestCases", expectedExceptions=IllegalStateException.class)
+    @Test(dataProvider = "cramTestCases", expectedExceptions=IllegalAccessError.class)
     public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
+        //noinspection StatementWithEmptyBody
         for (final SAMRecord rec : reader) {
         }
         CloserUtil.close(reader);
@@ -143,11 +140,10 @@ public class SamReaderTest {
 
     @DataProvider(name = "cramTestCases")
     public Object[][] cramTestPositiveCases() {
-        final Object[][] scenarios = new Object[][]{
+        return new Object[][]{
                 {"cram_with_bai_index.cram", "hg19mini.fasta"},
                 {"cram_with_crai_index.cram", "hg19mini.fasta"},
         };
-        return scenarios;
     }
 
     @Test(dataProvider = "cramTestCases")
@@ -155,6 +151,7 @@ public class SamReaderTest {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final File reference = new File(TEST_DATA_DIR, referenceFile);
         final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(reference).open(input);
+        //noinspection StatementWithEmptyBody
         for (final SAMRecord rec : reader) {
         }
         CloserUtil.close(reader);

@@ -40,14 +40,16 @@ public class SAMSequenceDictionaryExtractorTest {
     @DataProvider(name = "testExtractDictionaries")
     public Object[][] dictionaries() {
         return new Object[][]{
-                new Object[]{"test1_comp.interval_list", "test1.dict"},
-                new Object[]{"test1.vcf", "test1.dict"},
-                new Object[]{"test1.dict", "test1.dict"},
-                new Object[]{"empty.interval_list", "test1.dict"},
-                new Object[]{"Homo_sapiens_assembly18.trimmed.fasta", "Homo_sapiens_assembly18.trimmed.dict"},
-                new Object[]{"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
-                new Object[]{"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
-                new Object[]{"ScreenSamReads.100.input.sam", "test4_comp.interval_list"},
+                {"test1_comp.interval_list", "test1.dict"},
+                {"test1.vcf", "test1.dict"},
+                {"test1.dict", "test1.dict"},
+                {"empty.interval_list", "test1.dict"},
+                {"Homo_sapiens_assembly18.trimmed.fasta", "Homo_sapiens_assembly18.trimmed.dict"},
+                {"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
+                {"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
+                {"ScreenSamReads.100.input.bam", "test3_comp.interval_list"},
+                {"ScreenSamReads.100.input.cram", "test3_comp.interval_list"},
+                {"ScreenSamReads.100.input.cram", "ScreenSamReads.100.input.dict"}
         };
     }
 
@@ -58,8 +60,7 @@ public class SAMSequenceDictionaryExtractorTest {
         final SAMSequenceDictionary dict1 = SAMSequenceDictionaryExtractor.extractDictionary(dictSourceFile);
         final SAMSequenceDictionary dict2 = SAMSequenceDictionaryExtractor.extractDictionary(dictExpectedFile);
 
-        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1,
-                dict2));
+        Assert.assertTrue(SequenceUtil.areSequenceDictionariesEqual(dict1, dict2));
         Assert.assertTrue(dict1.md5().equals(dict2.md5()));
     }
 }
