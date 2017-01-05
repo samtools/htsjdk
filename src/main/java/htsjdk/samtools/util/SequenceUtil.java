@@ -620,32 +620,7 @@ public class SequenceUtil {
         }
     }
 
-    /** Reverses and complements the bases in place. */
-    public static void reverseComplement(final byte[] bases) {
-        final int lastIndex = bases.length - 1;
 
-        int i, j;
-        for (i = 0, j = lastIndex; i < j; ++i, --j) {
-            final byte tmp = complement(bases[i]);
-            bases[i] = complement(bases[j]);
-            bases[j] = tmp;
-        }
-        if (bases.length % 2 == 1) {
-            bases[i] = complement(bases[i]);
-        }
-    }
-
-    /** Reverses the quals in place. */
-    public static void reverseQualities(final byte[] quals) {
-        final int lastIndex = quals.length - 1;
-
-        int i, j;
-        for (i = 0, j = lastIndex; i < j; ++i, --j) {
-            final byte tmp = quals[i];
-            quals[i] = quals[j];
-            quals[j] = tmp;
-        }
-    }
 
     /**
      * Returns true if the bases are equal OR if the mismatch can be accounted for by
@@ -834,6 +809,16 @@ public class SequenceUtil {
             return shorter;
         }
         return ret;
+    }
+
+    /** Reverses and complements the bases in place. */
+    public static void reverseComplement(final byte[] bases) {
+        reverseComplement(bases, 0, bases.length);
+    }
+
+    /** Reverses the quals in place. */
+    public static void reverseQualities(final byte[] quals) {
+        reverse(quals, 0, quals.length);
     }
 
     public static void reverse(final byte[] array, final int offset, final int len) {

@@ -492,7 +492,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
                 result = HAS_LESSER_PART;
             if ( mEnd > interval.getEnd() )
                 result |= HAS_GREATER_PART;
-            if ( mStart < interval.getEnd() && interval.getStart() < mEnd )
+            if ( mStart <= interval.getEnd() && interval.getStart() <= mEnd )
                 result |= HAS_OVERLAPPING_PART;
             return result;
         }
