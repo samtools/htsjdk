@@ -11,7 +11,6 @@ plugins {
     id 'jacoco'
     id 'com.palantir.git-version' version '0.5.1'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
-    id "com.github.kt3k.coveralls" version "2.6.3"
 }
 
 repositories {
@@ -25,7 +24,7 @@ jacocoTestReport {
     additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
 
     reports {
-        xml.enabled = true // coveralls plugin depends on xml format report
+        xml.enabled = true // codecov depends on xml format report
         html.enabled = true
     }
 }

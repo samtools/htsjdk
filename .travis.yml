@@ -10,11 +10,11 @@ cache:
     - $HOME/.m2
 jdk:
   - oraclejdk8
-script: ./gradlew jacocoTestReport testSRA;
+script: ./gradlew testSRA jacocoTestReport;
 after_success:
+  - bash <(curl -s https://codecov.io/bash)
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";
     echo "JAVA_HOME='$JAVA_HOME'";
-    ./gradlew coveralls;
     if [ "$TRAVIS_BRANCH" == "master" ]; then
        ./gradlew uploadArchives;
     fi
