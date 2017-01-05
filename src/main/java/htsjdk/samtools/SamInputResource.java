@@ -91,6 +91,12 @@ public class SamInputResource {
     public static SamInputResource of(final File file) { return new SamInputResource(new FileInputResource(file)); }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
+    public static SamInputResource of(final Path path) {
+        return new SamInputResource(new PathInputResource(path));
+    }
+
+    /** Creates a {@link SamInputResource} reading from the provided resource, with no index,
+     *  and with a wrapper to apply to the SeekableByteChannel for custom prefetching/buffering. */
     public static SamInputResource of(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         return new SamInputResource(new PathInputResource(path, wrapper));
     }
@@ -289,6 +295,7 @@ class PathInputResource extends InputResource {
         this(pathResource, Function.identity());
     }
 
+    //  wrapper applies to the SeekableByteChannel for custom prefetching/buffering.
     PathInputResource(final Path pathResource, Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
         super(Type.PATH);
         this.pathResource = pathResource;

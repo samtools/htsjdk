@@ -30,9 +30,7 @@ public class SeekablePathStream extends SeekableStream {
     private final ByteBuffer oneByteBuf = ByteBuffer.allocate(1);
 
     public SeekablePathStream(final Path path) throws IOException {
-        this.path = path;
-        this.sbc = Files.newByteChannel(path);
-        ALL_INSTANCES.add(this);
+        this(path, null);
     }
 
     public SeekablePathStream(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {

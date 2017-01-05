@@ -77,7 +77,7 @@ public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
-    protected Function<SeekableByteChannel, SeekableByteChannel> pathWrapper;
+    private Function<SeekableByteChannel, SeekableByteChannel> pathWrapper = Function.identity();
 
     abstract public SamReader open(final File file);
 
@@ -117,6 +117,10 @@ public abstract class SamReaderFactory {
         return this;
     }
 
+    /** Gets the wrapper previously set via setPathWrapper.
+     *
+     * @return the wrapper.
+     */
     public Function<SeekableByteChannel, SeekableByteChannel> getPathWrapper() {
         return pathWrapper;
     }
@@ -182,7 +186,7 @@ public abstract class SamReaderFactory {
             this.samRecordFactory = samRecordFactory;
             this.validationStringency = validationStringency;
             this.customReaderFactory = CustomReaderFactory.getInstance();
-            this.pathWrapper = wrapper;
+            setPathWrapper(wrapper);
         }
    
         @Override
@@ -413,7 +417,7 @@ public abstract class SamReaderFactory {
         }
 
         public static SamReaderFactory copyOf(final SamReaderFactoryImpl target) {
-            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory, target.pathWrapper);
+            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory, target.getPathWrapper());
         }
     }
 
