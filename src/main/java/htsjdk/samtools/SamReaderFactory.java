@@ -33,9 +33,11 @@ import htsjdk.samtools.util.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -74,11 +76,13 @@ import java.util.zip.GZIPInputStream;
 public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
-    
+
+    private Function<SeekableByteChannel, SeekableByteChannel> pathWrapper = Function.identity();
+
     abstract public SamReader open(final File file);
 
     public SamReader open(final Path path) {
-        final SamInputResource r = SamInputResource.of(path);
+        final SamInputResource r = SamInputResource.of(path, getPathWrapper());
         final Path indexMaybe = SamFiles.findIndex(path);
         if (indexMaybe != null) r.index(indexMaybe);
         return open(r);
@@ -101,6 +105,25 @@ public abstract class SamReaderFactory {
 
     /** Sets a specific Option to a boolean value. * */
     abstract public SamReaderFactory setOption(final Option option, boolean value);
+
+    /** Sets a wrapper to modify the SeekableByteChannel from an opened Path, e.g. to add
+     * buffering or prefetching. This only works on Path inputs since we need a SeekableByteChannel.
+     *
+     * @param wrapper how to modify the SeekableByteChannel (Function.identity to unset)
+     * @return this
+     */
+    public SamReaderFactory setPathWrapper(Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        this.pathWrapper = wrapper;
+        return this;
+    }
+
+    /** Gets the wrapper previously set via setPathWrapper.
+     *
+     * @return the wrapper.
+     */
+    public Function<SeekableByteChannel, SeekableByteChannel> getPathWrapper() {
+        return pathWrapper;
+    }
 
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
@@ -138,8 +161,8 @@ public abstract class SamReaderFactory {
     }
 
     /**
-     * Creates an "empty" factory with no enabled {@link Option}s, {@link ValidationStringency#DEFAULT_STRINGENCY}, and
-     * {@link htsjdk.samtools.DefaultSAMRecordFactory}.
+     * Creates an "empty" factory with no enabled {@link Option}s, {@link ValidationStringency#DEFAULT_STRINGENCY},
+     * no path wrapper, and {@link htsjdk.samtools.DefaultSAMRecordFactory}.
      */
     public static SamReaderFactory make() {
         return new SamReaderFactoryImpl(EnumSet.noneOf(Option.class), ValidationStringency.DEFAULT_STRINGENCY, DefaultSAMRecordFactory.getInstance());
@@ -155,10 +178,15 @@ public abstract class SamReaderFactory {
         private CRAMReferenceSource referenceSource;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
+            this(enabledOptions, validationStringency, samRecordFactory, Function.identity());
+        }
+
+        private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
             this.samRecordFactory = samRecordFactory;
             this.validationStringency = validationStringency;
             this.customReaderFactory = CustomReaderFactory.getInstance();
+            setPathWrapper(wrapper);
         }
    
         @Override
@@ -273,6 +301,7 @@ public abstract class SamReaderFactory {
                             // TODO: Throw an exception here?  An index _may_ have been provided, but we're ignoring it
                             bufferedIndexStream = null;
                         }
+
                         primitiveSamReader = new BAMFileReader(
                                 IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
                                 bufferedIndexStream,
@@ -388,7 +417,7 @@ public abstract class SamReaderFactory {
         }
 
         public static SamReaderFactory copyOf(final SamReaderFactoryImpl target) {
-            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory);
+            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory, target.getPathWrapper());
         }
     }
 

@@ -6,6 +6,10 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Paths;
+import java.util.function.Function;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -57,6 +61,41 @@ public class SamReaderFactoryTest {
             }
         }
         return count;
+    }
+
+    private static SeekableByteChannel addHeader(SeekableByteChannel input) {
+        try {
+        int total = (int)input.size();
+        final String comment = "@HD\tVN:1.0  SO:unsorted\n" +
+            "@SQ\tSN:chr1\tLN:101\n" +
+            "@SQ\tSN:chr2\tLN:101\n" +
+            "@SQ\tSN:chr3\tLN:101\n" +
+            "@RG\tID:0\tSM:JP was here\n";
+
+            byte[] commentBuf = comment.getBytes();
+        ByteBuffer buf = ByteBuffer.allocate(total + commentBuf.length);
+        buf.put(commentBuf);
+        input.position(0);
+        while (input.read(buf)>0) {
+            // read until EOF
+        }
+        buf.flip();
+        return new SeekableByteChannelFromBuffer(buf);
+        } catch (IOException x) {
+            throw new RuntimeException(x);
+        }
+    }
+
+    @Test
+    public void testWrap() throws IOException {
+        final Path input = Paths.get(TEST_DATA_DIR.getPath(), "noheader.sam");
+        final SamReader wrappedReader =
+            SamReaderFactory
+                .makeDefault()
+                .setPathWrapper(SamReaderFactoryTest::addHeader)
+                .open(input);
+        int records = countRecords(wrappedReader);
+        Assert.assertEquals(10, records);
     }
 
     // See https://github.com/samtools/htsjdk/issues/76
@@ -194,7 +233,7 @@ public class SamReaderFactoryTest {
             case FILE:
                 return new FileInputResource(f);
             case PATH:
-                return new PathInputResource(f.toPath());
+                return new PathInputResource(f.toPath(), Function.identity());
             case URL:
                 return new UrlInputResource(url);
             case SEEKABLE_STREAM:
