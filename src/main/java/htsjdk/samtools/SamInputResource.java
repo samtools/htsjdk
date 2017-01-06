@@ -302,20 +302,6 @@ class PathInputResource extends InputResource {
         this.wrapper = wrapper;
     }
 
-    /** Returns a modified PathInputResource with the specific wrapper. After calling this,
-     * do NOT use the original object anymore.
-     *
-     * @param wrapper
-     * @return wrapped PathInputResource
-     */
-    PathInputResource wrap(Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
-        if (lazySeekableStream.isInitialized()) {
-            // otherwise it'll be opened twice and that'll break
-            throw new IllegalStateException("Only call wrap before opening the resource");
-        }
-        return new PathInputResource(this.pathResource, wrapper);
-    }
-
     @Override
     public File asFile() {
         try {
