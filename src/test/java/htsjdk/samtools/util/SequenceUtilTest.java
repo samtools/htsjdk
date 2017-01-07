@@ -24,10 +24,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -144,9 +142,8 @@ public class SequenceUtilTest {
         rec.setReadName("test");
         rec.setReadString(readString);
         final byte[] byteArray = new byte[readString.length()];
-        for(int i =0; i< readString.length();i++){
-            byteArray[i]=(byte)33;
-        }
+
+        Arrays.fill(byteArray, (byte)33);
 
         rec.setBaseQualities(byteArray);
         rec.setCigarString(cigar);
@@ -186,44 +183,26 @@ public class SequenceUtilTest {
     @DataProvider(name="mismatchBisulfiteCountsDataProvider")
     public Object[][] mismatchBisulfiteCountsDataProvider() {
 
-        return new Object[][] {
+        List<Object[]> tests = new ArrayList<>();
+        final List<String> bases = Arrays.asList("A","C","T","G");
 
-                {"A", "1M", "A", true, 0},
-                {"A", "1M", "A", false, 0},
-                {"A", "1M", "C", true, 1},
-                {"A", "1M", "C", false, 1},
-                {"A", "1M", "T", true, 1},
-                {"A", "1M", "T", false, 1},
-                {"A", "1M", "G", true, 1},
-                {"A", "1M", "G", false, 0}, // bisulfite
+        for (final String base : bases) {
+            for (final String ref : bases) {
+                for (final Boolean strand : Arrays.asList(true, false)) {
 
-                {"C", "1M", "A", true, 1},
-                {"C", "1M", "A", false, 1},
-                {"C", "1M", "C", true, 0},
-                {"C", "1M", "C", false, 0},
-                {"C", "1M", "T", true, 1},
-                {"C", "1M", "T", false, 1},
-                {"C", "1M", "G", true, 1},
-                {"C", "1M", "G", false, 1},
+                    final Integer count;
 
-                {"T", "1M", "A", true, 1},
-                {"T", "1M", "A", false, 1},
-                {"T", "1M", "C", true, 0}, // bisulfite
-                {"T", "1M", "C", false, 1},
-                {"T", "1M", "T", true, 0},
-                {"T", "1M", "T", false, 0},
-                {"T", "1M", "G", true, 1},
-                {"T", "1M", "G", false, 1},
+                    if (base.equals(ref)) count = 0;
+                    else if (base.equals("A") && ref.equals("G") && !strand) count = 0;
+                    else if (base.equals("T") && ref.equals("C") &&  strand) count = 0;
+                    else count = 1;
 
-                {"G", "1M", "A", true, 1},
-                {"G", "1M", "A", false, 1},
-                {"G", "1M", "C", true, 1},
-                {"G", "1M", "C", false, 1},
-                {"G", "1M", "T", true, 1},
-                {"G", "1M", "T", false, 1},
-                {"G", "1M", "G", true, 0},
-                {"G", "1M", "G", false, 0}
-        };
+                    tests.add(new Object[]{base, "1M", ref, strand, count});
+
+                }
+            }
+        }
+        return tests.toArray(new Object[1][]);
     }
 
 
@@ -237,9 +216,9 @@ public class SequenceUtilTest {
         rec.setReadString(readString);
         rec.setReadNegativeStrandFlag(!positiveStrand);
         final byte[] byteArray = new byte[readString.length()];
-        for(int i = 0; i < readString.length();i++){
-            byteArray[i]=baseQuality;
-        }
+
+        Arrays.fill(byteArray,baseQuality);
+
         rec.setBaseQualities(byteArray);
         rec.setCigarString(cigar);
 

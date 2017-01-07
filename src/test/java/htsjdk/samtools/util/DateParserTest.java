@@ -72,9 +72,11 @@ webmaster
 
 package htsjdk.samtools.util;
 
+import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.text.DateFormat;
 import java.util.Date;
 
 /**
@@ -89,13 +91,20 @@ import java.util.Date;
 
 public class DateParserTest {
 
-    private static void test(String isodate) {
+    private static void test(final String isodate) {
         System.out.println("----------------------------------");
         try {
             Date date = DateParser.parse(isodate);
             System.out.println(">> " + isodate);
             System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
-            System.out.println(">> " + DateParser.getIsoDate(date));
+            final String isodateRoundTrip = DateParser.getIsoDate(date);
+            System.out.println(">> " + isodateRoundTrip);
+
+            final Date orig = DateParser.parse(isodate);
+            final Date roundTrip = DateParser.parse(isodateRoundTrip);
+
+            assertDatesAreClose(orig, roundTrip);
+
         } catch (DateParser.InvalidDateException ex) {
             System.err.println(isodate + " is invalid");
             System.err.println(ex.getMessage());
@@ -103,15 +112,19 @@ public class DateParserTest {
         System.out.println("----------------------------------");
     }
 
-    private static void test(Date date) {
+    private static void test(final Date date) {
         String isodate = null;
         System.out.println("----------------------------------");
         try {
             System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
             isodate = DateParser.getIsoDate(date);
             System.out.println(">> " + isodate);
-            date = DateParser.parse(isodate);
+            final Date dateRoundTrip = DateParser.parse(isodate);
             System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
+
+            assertDatesAreClose(date, dateRoundTrip);
+            Assert.assertTrue(Math.abs(Date.parse(date.toString())-Date.parse(dateRoundTrip.toString()))<10);
+
         } catch (DateParser.InvalidDateException ex) {
             System.err.println(isodate + " is invalid");
             System.err.println(ex.getMessage());
@@ -137,10 +150,24 @@ public class DateParserTest {
         test(string);
     }
 
+    @Test(dataProvider = "dateDate")
+    public static void testDates(final String string) {
+        test(DateParser.parse(string));
+    }
+
     @Test
     public static void testDate() {
         test(new Date());
     }
 
-
+    public static void assertDatesAreClose(final Date lhs, final Date rhs) {
+        Assert.assertEquals(lhs.getYear(), rhs.getYear());
+        Assert.assertEquals(lhs.getMonth(), rhs.getMonth());
+        Assert.assertEquals(lhs.getDate(), rhs.getDate());
+        Assert.assertEquals(lhs.getDay(), rhs.getDay());
+        Assert.assertEquals(lhs.getHours(), rhs.getHours());
+        Assert.assertEquals(lhs.getMinutes(), rhs.getMinutes());
+        Assert.assertEquals(lhs.getSeconds(), rhs.getSeconds());
+        Assert.assertEquals(lhs.getTimezoneOffset(), rhs.getTimezoneOffset());
+    }
 }
