@@ -88,7 +88,6 @@ public class IntervalTreeTest {
         }
     }
 
-
     @DataProvider(name="adjacentIntervalsTestData")
     public Object[][] adjacentIntervalsTestData() {
         return new Object[][]{
@@ -189,22 +188,21 @@ public class IntervalTreeTest {
         Assert.assertEquals(count, intervalTree.size()); // foobar1, foobar2, and foobar6
     }
 
-
     @Test
     public void testMatches()
     {
         // Single match
         Assert.assertEquals(countElements(intervalTree.overlappers(10, 10)), 1, "Test single overlap");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(10, 10), "foo1"), "Test single overlap for correct overlapee");
+        Assert.assertTrue(iteratorContains(intervalTree.overlappers(10, 10), "foo1:10"), "Test single overlap for correct overlapee");
 
         // Multiple matches
         Assert.assertEquals(countElements(intervalTree.overlappers(7, 8)), 5, "Test multiple overlap");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo1"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo2"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo3"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo4"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo6"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(!iteratorContains(intervalTree.overlappers(7, 8), "foo5"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo1:10"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo2:8"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo3:6"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo4:4"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo6:9"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue(!iteratorContains(intervalTree.overlappers(7, 8), "foo5:2"), "Test multiple overlap for correct overlapees");
     }
 
     private boolean iteratorContains(final Iterator<IntervalTree.Node<String>> nodeIterator, final String s) {
