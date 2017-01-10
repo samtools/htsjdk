@@ -46,8 +46,8 @@ public class DuplicateScoringStrategy {
     private static enum Attr { DuplicateScore }
 
     /** Calculates a score for the read which is the sum of scores over Q15. */
-    private static short getSumOfBaseQualities(final SAMRecord rec) {
-        short score = 0;
+    private static int getSumOfBaseQualities(final SAMRecord rec) {
+        int score = 0;
         for (final byte b : rec.getBaseQualities()) {
             if (b >= 15) score += b;
         }
@@ -64,6 +64,8 @@ public class DuplicateScoringStrategy {
 
     /**
      * Returns the duplicate score computed from the given fragment.
+     * value should be capped by Short.MAX_VALUE/2 since the score from two reads will be
+     * added and an overflow will be
      *
      * If true is given to assumeMateCigar, then any score that can use the mate cigar to compute the mate's score will return the score
      * computed on both ends.
@@ -72,23 +74,39 @@ public class DuplicateScoringStrategy {
         Short storedScore = (Short) record.getTransientAttribute(Attr.DuplicateScore);
 
         if (storedScore == null) {
-            short score = 0;
-
+            short score=0;
             switch (scoringStrategy) {
                 case SUM_OF_BASE_QUALITIES:
-                    score += getSumOfBaseQualities(record);
+                    // two (very) long reads worth of high-quality bases can go over Short.MAX_VALUE/2
+                    // and risk overflow.
+                    score += (short) Math.min(getSumOfBaseQualities(record), Short.MAX_VALUE / 2);
                     break;
                 case TOTAL_MAPPED_REFERENCE_LENGTH:
                     if (!record.getReadUnmappedFlag()) {
-                        score += record.getCigar().getReferenceLength();
+                        // no need to remember the score since this scoring mechanism is symmetric
+                        score = (short) Math.min(record.getCigar().getReferenceLength(), Short.MAX_VALUE / 2);
                     }
                     if (assumeMateCigar && record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
-                        score += SAMUtils.getMateCigar(record).getReferenceLength();
+                        score += (short) Math.min(SAMUtils.getMateCigar(record).getReferenceLength(), Short.MAX_VALUE / 2);
                     }
                     break;
+                // The RANDOM score gives the same score to both reads so that they get filtered together.
+                // it's not critical do use the readName since the scores from both ends get added, but it seem
+                // to be clearer this way.
                 case RANDOM:
-                    score += (short) (hasher.hashUnencodedChars(record.getReadName()) >> 16);
+                    // start with a random number between Short.MIN_VALUE/4 and Short.MAX_VALUE/4
+                    score += (short) (hasher.hashUnencodedChars(record.getReadName()) & 0b11_1111_1111_1111);
+                    // subtract Short.MIN_VALUE/4 from it to end up with a number between
+                    // 0 and Short.MAX_VALUE/2. This number can be then discounted in case the read is
+                    // not passing filters. We need to stay far from overflow so that when we add the two
+                    // scores from the two read mates we do not overflow since that could cause us to chose a
+                    // failing read-pair instead of a passing one.
+                    score -= Short.MIN_VALUE / 4;
             }
+
+            // make sure that filter-failing records are heavily discounted. (the discount can happen twice, once
+            // for each mate, so need to make sure we do not subtract more than Short.MIN_VALUE overall.)
+            score += record.getReadFailsVendorQualityCheckFlag() ? (short) (Short.MIN_VALUE / 2) : 0;
 
             storedScore = score;
             record.setTransientAttribute(Attr.DuplicateScore, storedScore);
@@ -125,7 +143,7 @@ public class DuplicateScoringStrategy {
     }
 
     /**
-     * Compare two records based on their duplicate scores.  The duplicate scores for each record is assume to be
+     * Compare two records based on their duplicate scores.  The duplicate scores for each record is assumed to be
      * pre-computed by computeDuplicateScore and stored in the "DS" tag.  If the scores are equal, we break
      * ties based on mapping quality (added to the mate's mapping quality if paired and mapped), then library/read name.
      *
