@@ -276,31 +276,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     }
 
     /**
-     * @deprecated use {@link #hasBlockCompressedExtension(String)} instead
-     */
-    //Visible for testing
-    @Deprecated
-    static boolean isGZIPPath(final String path) {
-        if (path.toLowerCase().endsWith(".gz")) {
-            return true;
-        }
-        else {
-            String uriPath = null;
-            try {
-                URI uri = new URI(path);
-                if (uri != null) {
-                    uriPath = uri.getPath();
-                    return uriPath != null && uriPath.toLowerCase().endsWith(".gz");
-                }
-                return false;
-            }
-            catch (URISyntaxException e) {
-                return false;
-            }
-        }
-    }
-
-    /**
      * Class to iterator over an entire file.
      */
     class WFIterator implements CloseableTribbleIterator<T> {
