@@ -29,7 +29,6 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.gelitext.GeliTextCodec;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
@@ -193,8 +192,6 @@ public class CountRecords {
         //    return new VCFCodec();
         if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();
-        if (featureFile.getName().endsWith(".geli.calls") || featureFile.getName().endsWith(".geli") )
-            return new GeliTextCodec();
         throw new IllegalArgumentException("Unable to determine correct file type based on the file name, for file -> " + featureFile);
     }
 }
