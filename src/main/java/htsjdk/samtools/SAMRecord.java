@@ -572,16 +572,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @return 1-based inclusive leftmost position of the sequence remaining after clipping. 
-     * If no position, as would occur e.g. for the unmapped mate of a singly mapping pair, returns 0.
+     * @return 1-based inclusive leftmost position of the sequence remaining after clipping, or 0 
+     * if there is no position, e.g. for unmapped read.
      */
     public int getAlignmentStart() {
         return mAlignmentStart;
     }
 
     /**
-     * @param value 1-based inclusive leftmost position of the sequence remaining after clipping. 
-     * If no position, e.g. for unmapped mate of a singly mapping pair, returns 0.
+     * @param value 1-based inclusive leftmost position of the sequence remaining after clipping or 0 
+     * if there is no position, e.g. for unmapped read.
      */
     public void setAlignmentStart(final int value) {
         mAlignmentStart = value;
@@ -592,8 +592,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @return 1-based inclusive rightmost position of the sequence remaining after clipping. 
-     * If no position, e.g. for unmapped mate of a singly mapping pair, returns 0.
+     * @return 1-based inclusive rightmost position of the sequence remaining after clipping or 0 
+     * if there is no position, e.g. for unmapped read.
      */
     public int getAlignmentEnd() {
         if (getReadUnmappedFlag()) {
