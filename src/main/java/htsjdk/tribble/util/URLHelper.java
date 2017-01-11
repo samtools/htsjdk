@@ -21,7 +21,6 @@ package htsjdk.tribble.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import javax.naming.OperationNotSupportedException;
 
 /**
  * Interface defining a helper class for dealing with URL resources.  Purpose of this class is to provide the
