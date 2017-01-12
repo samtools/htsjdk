@@ -40,7 +40,7 @@ import java.util.NoSuchElementException;
 /**
  * Class for reading and querying BAM files.
  */
-class BAMFileReader extends SamReader.ReaderImplementation {
+public class BAMFileReader extends SamReader.ReaderImplementation {
     // True if reading from a File rather than an InputStream
     private boolean mIsSeekable = false;
 
@@ -869,25 +869,56 @@ class BAMFileReader extends SamReader.ReaderImplementation {
         }
     }
 
-    private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
-                                                             final boolean contained) {
-
-        assertIntervalsOptimized(intervals);
-
-        // Hit the index to determine the chunk boundaries for the required data.
+    /**
+     * Use the index to determine the chunk boundaries for the required intervals.
+     * @param intervals the intervals to restrict reads to
+     * @param fileIndex the BAM index to use
+     * @return file pointer pairs corresponding to chunk boundaries
+     */
+    public static BAMFileSpan getFileSpan(QueryInterval[] intervals, BAMIndex fileIndex) {
         final BAMFileSpan[] inputSpans = new BAMFileSpan[intervals.length];
-        final BAMIndex fileIndex = getIndex();
         for (int i = 0; i < intervals.length; ++i) {
             final QueryInterval interval = intervals[i];
             final BAMFileSpan span = fileIndex.getSpanOverlapping(interval.referenceIndex, interval.start, interval.end);
             inputSpans[i] = span;
         }
-        final long[] filePointers;
+        final BAMFileSpan span;
         if (inputSpans.length > 0) {
-            filePointers = BAMFileSpan.merge(inputSpans).toCoordinateArray();
+            span = BAMFileSpan.merge(inputSpans);
         } else {
-            filePointers = null;
+            span = null;
         }
+        return span;
+    }
+
+    private CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
+                                                             final boolean contained) {
+
+        assertIntervalsOptimized(intervals);
+
+        BAMFileSpan span = getFileSpan(intervals, getIndex());
+
+        // Create an iterator over the above chunk boundaries.
+        final BAMFileIndexIterator iterator = new BAMFileIndexIterator(span == null ? null : span.toCoordinateArray());
+
+        // Add some preprocessing filters for edge-case reads that don't fit into this
+        // query type.
+        return new BAMQueryFilteringIterator(iterator, new BAMQueryMultipleIntervalsIteratorFilter(intervals, contained));
+    }
+
+    /**
+     * Prepare to iterate through SAMRecords that match the given intervals.
+     * @param intervals the intervals to restrict reads to
+     * @param contained if <code>true</code>, return records that are strictly
+     *                  contained in the intervals, otherwise return records that overlap
+     * @param filePointers file pointer pairs corresponding to chunk boundaries for the
+     *                     intervals
+     */
+    public CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
+                                                            final boolean contained,
+                                                            final long[] filePointers) {
+
+        assertIntervalsOptimized(intervals);
 
         // Create an iterator over the above chunk boundaries.
         final BAMFileIndexIterator iterator = new BAMFileIndexIterator(filePointers);
