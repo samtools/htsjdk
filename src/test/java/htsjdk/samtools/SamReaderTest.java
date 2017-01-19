@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;

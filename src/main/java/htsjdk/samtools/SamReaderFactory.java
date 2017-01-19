@@ -81,14 +81,26 @@ public abstract class SamReaderFactory {
 
     abstract public SamReader open(final File file);
 
+    /**
+     * Open the specified path (without using any wrappers).
+     *
+     * @param path the SAM or BAM file to open.
+     */
     public SamReader open(final Path path) {
-        return open(path, getPathWrapper(), Function.identity());
+        return open(path, null, null);
     }
 
+    /**
+     * Open the specified path, using the specified wrappers for prefetching/caching.
+     *
+     * @param path the SAM or BAM file to open
+     * @param dataWrapper the wrapper for the data (or null for none)
+     * @param indexWrapper the wrapper for the index (or null for none)
+     */
     public SamReader open(final Path path,
-            Function<SeekableByteChannel, SeekableByteChannel> pathWrapper,
+            Function<SeekableByteChannel, SeekableByteChannel> dataWrapper,
             Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
-        final SamInputResource r = SamInputResource.of(path, pathWrapper);
+        final SamInputResource r = SamInputResource.of(path, dataWrapper);
         final Path indexMaybe = SamFiles.findIndex(path);
         if (indexMaybe != null) r.index(indexMaybe, indexWrapper);
         return open(r);
@@ -111,25 +123,6 @@ public abstract class SamReaderFactory {
 
     /** Sets a specific Option to a boolean value. * */
     abstract public SamReaderFactory setOption(final Option option, boolean value);
-
-    /** Sets a wrapper to modify the SeekableByteChannel from an opened Path, e.g. to add
-     * buffering or prefetching. This only works on Path inputs since we need a SeekableByteChannel.
-     *
-     * @param wrapper how to modify the SeekableByteChannel (Function.identity to unset)
-     * @return this
-     */
-    public SamReaderFactory setPathWrapper(Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
-        this.pathWrapper = wrapper;
-        return this;
-    }
-
-    /** Gets the wrapper previously set via setPathWrapper.
-     *
-     * @return the wrapper.
-     */
-    public Function<SeekableByteChannel, SeekableByteChannel> getPathWrapper() {
-        return pathWrapper;
-    }
 
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
@@ -184,15 +177,10 @@ public abstract class SamReaderFactory {
         private CRAMReferenceSource referenceSource;
 
         private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory) {
-            this(enabledOptions, validationStringency, samRecordFactory, Function.identity());
-        }
-
-        private SamReaderFactoryImpl(final EnumSet<Option> enabledOptions, final ValidationStringency validationStringency, final SAMRecordFactory samRecordFactory, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
             this.enabledOptions = EnumSet.copyOf(enabledOptions);
             this.samRecordFactory = samRecordFactory;
             this.validationStringency = validationStringency;
             this.customReaderFactory = CustomReaderFactory.getInstance();
-            setPathWrapper(wrapper);
         }
    
         @Override
@@ -423,7 +411,7 @@ public abstract class SamReaderFactory {
         }
 
         public static SamReaderFactory copyOf(final SamReaderFactoryImpl target) {
-            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory, target.getPathWrapper());
+            return new SamReaderFactoryImpl(target.enabledOptions, target.validationStringency, target.samRecordFactory);
         }
     }
 
