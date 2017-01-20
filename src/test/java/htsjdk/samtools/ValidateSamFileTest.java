@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -58,7 +59,7 @@ import java.util.Iterator;
  *
  * @author Doug Voet
  */
-public class ValidateSamFileTest {
+public class ValidateSamFileTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/ValidateSamFileTest");
     private static final int TERMINATION_GZIP_BLOCK_SIZE = 28;
     private static final int RANDOM_NUMBER_TRUNC_BYTE = 128;

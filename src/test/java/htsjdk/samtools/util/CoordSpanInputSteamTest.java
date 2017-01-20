@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -15,7 +16,7 @@ import java.util.Random;
 /**
  * Created by vadim on 25/03/2015.
  */
-public class CoordSpanInputSteamTest {
+public class CoordSpanInputSteamTest extends HtsjdkTest {
 
     @Test
     public void test_first_3_bytes() throws IOException {

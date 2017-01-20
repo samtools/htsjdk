@@ -1,5 +1,6 @@
 package htsjdk.samtools.sra;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import org.testng.Assert;
@@ -12,7 +13,7 @@ import java.lang.reflect.Method;
 import java.util.NoSuchElementException;
 
 @Test(groups = "sra")
-public abstract class AbstractSRATest {
+public abstract class AbstractSRATest extends HtsjdkTest {
     private static boolean canResolveNetworkAccession = false;
     private static String checkAccession = "SRR000123";
 

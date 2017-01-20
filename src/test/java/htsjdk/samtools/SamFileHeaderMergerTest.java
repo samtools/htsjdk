@@ -25,6 +25,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
@@ -58,7 +59,7 @@ import static org.testng.Assert.assertEquals;
  * <p/>
  * Tests the ability of the SamFileHeaderMerger class to merge sequence dictionaries.
  */
-public class SamFileHeaderMergerTest {
+public class SamFileHeaderMergerTest extends HtsjdkTest {
 
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 

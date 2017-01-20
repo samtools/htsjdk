@@ -1,5 +1,6 @@
 package htsjdk.tribble.readers;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -20,7 +21,7 @@ import java.util.List;
  * User: jacob
  * Date: 2012/05/09
  */
-public class PositionalBufferedStreamTest {
+public class PositionalBufferedStreamTest extends HtsjdkTest {
 
     InputStream FileIs;
     long expectedBytes;

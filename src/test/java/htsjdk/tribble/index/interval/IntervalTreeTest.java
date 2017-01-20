@@ -18,6 +18,7 @@
 
 package htsjdk.tribble.index.interval;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
@@ -42,7 +43,7 @@ import java.util.Set;
  * User: jrobinso
  * Date: Mar 24, 2010
  */
-public class IntervalTreeTest {
+public class IntervalTreeTest extends HtsjdkTest {
 
     static IntervalTree tree;
 

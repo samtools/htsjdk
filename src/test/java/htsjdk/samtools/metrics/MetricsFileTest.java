@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.metrics;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.FormatUtil;
 import htsjdk.samtools.util.Histogram;
@@ -45,7 +46,7 @@ import java.util.Date;
  *
  * @author Tim Fennell
  */
-public class MetricsFileTest {
+public class MetricsFileTest extends HtsjdkTest {
     public enum TestEnum {One, Two, Three}
 
     public static class TestMetric extends MetricBase implements Cloneable, Serializable {

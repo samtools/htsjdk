@@ -1,5 +1,6 @@
 package htsjdk.tribble.util.ftp;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.ftp.FTPUtils;
 import org.testng.annotations.Test;
 
@@ -12,7 +13,7 @@ import static org.testng.Assert.assertTrue;
 * @author Jim Robinson
 * @since 10/4/11
 */
-public class FTPUtilsTest {
+public class FTPUtilsTest extends HtsjdkTest {
 
     @Test
     public void testResourceAvailable() throws Exception {

@@ -23,12 +23,13 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Iterator;
 
-public class IntervalTreeMapTest {
+public class IntervalTreeMapTest extends HtsjdkTest {
     @Test
     public void testBasic() {
         IntervalTreeMap<Interval> m=new IntervalTreeMap<Interval>();

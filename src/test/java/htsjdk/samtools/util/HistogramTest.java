@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -12,7 +13,7 @@ import java.util.HashSet;
 import static java.lang.Math.abs;
 import static java.lang.StrictMath.pow;
 
-public class HistogramTest {
+public class HistogramTest extends HtsjdkTest {
 
     @Test(dataProvider = "histogramData")
     public void testHistogramFunctions(final int[] values, final double mean, final double stdev, final Integer trimByWidth) {

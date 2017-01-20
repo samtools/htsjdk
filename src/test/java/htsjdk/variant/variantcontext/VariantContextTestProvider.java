@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
@@ -69,7 +70,7 @@ import java.util.TreeSet;
  * @author Your Name
  * @since Date created
  */
-public class VariantContextTestProvider {
+public class VariantContextTestProvider extends HtsjdkTest {
     final private static boolean ENABLE_GENOTYPE_TESTS = true;
     final private static boolean ENABLE_A_AND_G_TESTS = true;
     final private static boolean ENABLE_VARARRAY_TESTS = true;

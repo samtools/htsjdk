@@ -1,7 +1,7 @@
 package htsjdk.tribble;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.readers.LineIterator;
-import htsjdk.tribble.TestUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import org.testng.Assert;
@@ -9,12 +9,9 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-
-import static org.testng.Assert.assertEquals;
 
 
-public class TribbleIndexFeatureReaderTest {
+public class TribbleIndexFeatureReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "featureFileStrings")
     public Object[][] createFeatureFileStrings() {

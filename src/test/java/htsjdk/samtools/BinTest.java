@@ -24,12 +24,13 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 
-public class BinTest {
+public class BinTest extends HtsjdkTest {
     @Test
     public void testEmptyBin() {
         // Construct a new empty bin and ensure that the bin list is empty, not null.

@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -31,7 +32,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
-public class SAMTextReaderTest {
+public class SAMTextReaderTest extends HtsjdkTest {
     // Simple input, spot check that parsed correctly, and make sure nothing blows up.
     @Test
     public void testBasic() throws Exception {

@@ -1,31 +1,18 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.CRAMFileReader;
-import htsjdk.samtools.CRAMFileWriter;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  * Created by vadim on 19/02/2016.
  */
-public class LosslessRoundTripTest {
+public class LosslessRoundTripTest extends HtsjdkTest {
     @Test
     public void test_MD_NM() throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

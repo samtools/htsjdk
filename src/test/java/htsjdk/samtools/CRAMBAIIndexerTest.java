@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.ContainerFactory;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -17,7 +18,7 @@ import java.util.List;
 /**
  * Created by vadim on 12/01/2016.
  */
-public class CRAMBAIIndexerTest {
+public class CRAMBAIIndexerTest extends HtsjdkTest {
 
     private static CramCompressionRecord createRecord(int recordIndex, int seqId, int start) {
         byte[] bases = "AAAAA".getBytes();

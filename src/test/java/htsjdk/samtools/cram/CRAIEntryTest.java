@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.Slice;
 import org.testng.Assert;
@@ -12,7 +13,7 @@ import java.util.List;
 /**
  * Created by vadim on 25/08/2015.
  */
-public class CRAIEntryTest {
+public class CRAIEntryTest extends HtsjdkTest {
 
     @Test
     public void testFromContainer() {

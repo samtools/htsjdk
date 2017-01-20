@@ -23,10 +23,11 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class ChunkTest {
+public class ChunkTest extends HtsjdkTest {
     @Test
     public void testOverlaps() {
         // Test completely disjoint offsets.

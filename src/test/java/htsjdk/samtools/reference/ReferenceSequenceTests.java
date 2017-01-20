@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -38,7 +39,7 @@ import java.util.Random;
  *
  * @author Tim Fennell
  */
-public class ReferenceSequenceTests {
+public class ReferenceSequenceTests extends HtsjdkTest {
     private static final byte[] BASES = "acgtACGTN".getBytes();
     private final Random random = new Random();
 

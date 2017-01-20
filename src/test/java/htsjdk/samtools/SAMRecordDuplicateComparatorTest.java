@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * @author nhomer
  */
-public class SAMRecordDuplicateComparatorTest {
+public class SAMRecordDuplicateComparatorTest extends HtsjdkTest {
     
     private final static SAMRecordDuplicateComparator comparator = new SAMRecordDuplicateComparator();
 

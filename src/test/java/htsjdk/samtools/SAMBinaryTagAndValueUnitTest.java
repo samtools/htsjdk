@@ -1,11 +1,12 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BinaryCodec;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class SAMBinaryTagAndValueUnitTest {
+public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
 
     @DataProvider(name="allowedAttributeTypes")
     public Object[][] allowedTypes() {

@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
@@ -10,7 +11,7 @@ import java.io.File;
  * Test the fix of a bug reported by s-andrews in which the use of an arithmetic rather than a logical right shift in BinaryCigarCodec.binaryCigarToCigarElement()
  * causes an overflow in the CIGAR when reading a BAM file for a read that spans a very large intron.
  */
-public class BAMCigarOverflowTest {
+public class BAMCigarOverflowTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test

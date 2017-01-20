@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.ContainerParser;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -29,7 +30,8 @@ import java.util.TreeSet;
  * file as the source of the test data. The scan* tests check that for every records in the
  * CRAM file the query returns the same records from the CRAM file.
  */
-public class CRAMFileCRAIIndexTest {
+@Test(singleThreaded = true)
+public class CRAMFileCRAIIndexTest extends HtsjdkTest {
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
 
     private final int nofReads = 10000 ;

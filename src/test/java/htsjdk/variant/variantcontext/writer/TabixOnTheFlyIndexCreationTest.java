@@ -23,6 +23,7 @@
  */
 package htsjdk.variant.variantcontext.writer;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
@@ -36,7 +37,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.EnumSet;
 
-public class TabixOnTheFlyIndexCreationTest {
+public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
     private static final File SMALL_VCF = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
     @Test
     public void simpleTest() throws Exception {

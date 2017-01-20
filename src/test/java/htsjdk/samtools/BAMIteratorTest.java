@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -34,7 +35,7 @@ import java.io.File;
 /**
  * @author alecw@broadinstitute.org
  */
-public class BAMIteratorTest {
+public class BAMIteratorTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "dataProvider")

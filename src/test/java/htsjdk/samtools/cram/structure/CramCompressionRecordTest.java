@@ -1,11 +1,8 @@
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -14,7 +11,7 @@ import java.util.ArrayList;
 /**
  * Created by vadim on 28/09/2015.
  */
-public class CramCompressionRecordTest {
+public class CramCompressionRecordTest extends HtsjdkTest {
     @Test
     public void test_getAlignmentEnd() {
         CramCompressionRecord r = new CramCompressionRecord();

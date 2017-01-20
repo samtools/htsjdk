@@ -23,10 +23,11 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class AsyncBufferedIteratorTest {
+public class AsyncBufferedIteratorTest extends HtsjdkTest {
     private static class TestCloseableIterator implements CloseableIterator<Integer> {
         private int[] results;
         private volatile int offset = 0;

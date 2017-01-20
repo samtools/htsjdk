@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -9,7 +10,7 @@ import java.util.List;
 
 /** @author mccowan */
 
-public class RelativeIso8601DateTest {
+public class RelativeIso8601DateTest extends HtsjdkTest {
 
     // 1 second resolution is ISO date
     private final static double DELTA_FOR_TIME = 1000;

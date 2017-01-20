@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SamReader;
@@ -13,7 +14,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-public class QualityEncodingDetectorTest {
+public class QualityEncodingDetectorTest extends HtsjdkTest {
 
     private static class Testcase {
         private final File f;

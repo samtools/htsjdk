@@ -1,10 +1,11 @@
 package htsjdk.samtools.metrics;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class MetricBaseTest {
+public class MetricBaseTest extends HtsjdkTest {
 
     private static class TestMetric extends MetricBase{
         public Object anyObject;

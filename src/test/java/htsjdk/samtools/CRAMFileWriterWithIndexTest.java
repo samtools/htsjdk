@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
@@ -22,7 +23,7 @@ import java.util.Random;
 /**
  * Created by vadim on 23/03/2015.
  */
-public class CRAMFileWriterWithIndexTest {
+public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
     private byte[] cramBytes;
     private byte[] indexBytes;
     private InMemoryReferenceSequenceFile rsf;

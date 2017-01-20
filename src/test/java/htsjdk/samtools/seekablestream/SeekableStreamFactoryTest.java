@@ -1,5 +1,6 @@
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -9,7 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-public class SeekableStreamFactoryTest {
+public class SeekableStreamFactoryTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test

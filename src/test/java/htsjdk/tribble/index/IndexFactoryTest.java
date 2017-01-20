@@ -23,16 +23,14 @@
  */
 package htsjdk.tribble.index;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
-import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
@@ -40,15 +38,13 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 /**
  * User: jacob
  * Date: 2012-Aug-23
  */
-public class IndexFactoryTest {
+public class IndexFactoryTest extends HtsjdkTest {
 
     final File sortedBedFile = new File(TestUtils.DATA_DIR + "bed/Unigene.sample.bed");
     final File unsortedBedFile = new File(TestUtils.DATA_DIR + "bed/unsorted.bed");

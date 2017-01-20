@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -40,7 +41,7 @@ import java.util.Arrays;
 /**
  * Additional tests for CRAMFileReader are in CRAMFileIndexTest
  */
-public class CRAMFileReaderTest {
+public class CRAMFileReaderTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
     private static final File CRAM_WITH_CRAI = new File(TEST_DATA_DIR, "cram_with_crai_index.cram");

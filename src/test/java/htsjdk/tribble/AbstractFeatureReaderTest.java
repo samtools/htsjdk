@@ -2,6 +2,7 @@ package htsjdk.tribble;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
@@ -29,7 +30,7 @@ import static org.testng.Assert.*;
  * @author jacob
  * @date 2013-Apr-10
  */
-public class AbstractFeatureReaderTest {
+public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     final static String HTTP_INDEXED_VCF_PATH = TestUtil.BASE_URL_FOR_HTTP_TESTS + "ex2.vcf";
     final static String LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH = VariantBaseTest.variantTestDataRoot + "ex2.vcf";

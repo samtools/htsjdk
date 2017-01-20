@@ -1,9 +1,10 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class CodeUtilTest {
+public class CodeUtilTest extends HtsjdkTest {
 
     @Test
     public void getOrElseTest() {

@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.util.TabixUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 
 
-public class TribbleTest {
+public class TribbleTest extends HtsjdkTest {
 
     @Test
     public void testStandardIndex() {

@@ -2,15 +2,13 @@ package htsjdk.tribble.index;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
-import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
@@ -22,16 +20,13 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class IndexTest {
+public class IndexTest extends HtsjdkTest {
     private final static String CHR = "1";
     private final static File MassiveIndexFile = new File(TestUtils.DATA_DIR + "Tb.vcf.idx");
 

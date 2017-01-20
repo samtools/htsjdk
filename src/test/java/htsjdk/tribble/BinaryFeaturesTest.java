@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
 import htsjdk.tribble.readers.LineIterator;
@@ -13,7 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class BinaryFeaturesTest {
+public class BinaryFeaturesTest extends HtsjdkTest {
     @DataProvider(name = "BinaryFeatureSources")
     public Object[][] createData1() {
         return new Object[][] {

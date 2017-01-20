@@ -1,12 +1,13 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.*;
 
-public class OverlapDetectorTest {
+public class OverlapDetectorTest extends HtsjdkTest {
 
     @DataProvider(name="intervalsMultipleContigs")
     public Object[][] intervalsMultipleContigs(){

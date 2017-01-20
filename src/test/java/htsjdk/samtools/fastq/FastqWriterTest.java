@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -35,7 +36,7 @@ import java.util.ArrayList;
 /**
  * test fastq
  */
-public class FastqWriterTest {
+public class FastqWriterTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/util/QualityEncodingDetectorTest");
 
     @DataProvider(name = "fastqsource")

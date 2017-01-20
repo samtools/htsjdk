@@ -25,6 +25,7 @@
 
 package htsjdk.variant;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.variantcontext.Genotype;
@@ -44,7 +45,7 @@ import java.util.Set;
 /**
  * Base class for test classes within org.broadinstitute.variant
  */
-public class VariantBaseTest {
+public class VariantBaseTest extends HtsjdkTest {
 
     public static final String variantTestDataRoot = new File("src/test/resources/htsjdk/variant/").getAbsolutePath() + "/";
 

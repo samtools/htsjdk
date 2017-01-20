@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.liftover;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.OverlapDetector;
 import org.testng.Assert;
@@ -40,7 +41,7 @@ import java.util.TreeMap;
 /**
  * @author alecw@broadinstitute.org
  */
-public class LiftOverTest {
+public class LiftOverTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/liftover");
     private static final File CHAIN_FILE = new File(TEST_DATA_DIR, "hg18ToHg19.over.chain");
 

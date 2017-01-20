@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.testng.annotations.BeforeTest;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertEquals;
  *
  */
 
-public class AbstractRecordAndOffsetTest {
+public class AbstractRecordAndOffsetTest extends HtsjdkTest {
 
     private final byte[] qualities = {30, 40, 50, 60, 70, 80 ,90, 70, 80, 90};
     private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};

@@ -26,23 +26,21 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
 
-public class SAMSequenceDictionaryTest {
+public class SAMSequenceDictionaryTest extends HtsjdkTest {
     @Test
     public void testAliases() {
         final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);

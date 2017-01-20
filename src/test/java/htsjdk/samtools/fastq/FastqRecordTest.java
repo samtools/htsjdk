@@ -1,9 +1,10 @@
 package htsjdk.samtools.fastq;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class FastqRecordTest {
+public final class FastqRecordTest extends HtsjdkTest {
 
     @Test
     public void testBasic() {

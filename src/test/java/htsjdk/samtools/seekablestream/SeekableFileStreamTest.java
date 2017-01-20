@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -36,7 +37,7 @@ import java.io.File;
  * Time: 11:13:19 AM
  * To change this template use File | Settings | File Templates.
  */
-public class SeekableFileStreamTest {
+public class SeekableFileStreamTest extends HtsjdkTest {
 
     @Test
     public void testSeek() throws Exception {

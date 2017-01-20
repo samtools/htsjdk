@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class FailsVendorReadQualityFilterTest {
+public class FailsVendorReadQualityFilterTest extends HtsjdkTest {
 
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
     private final FailsVendorReadQualityFilter filter = new FailsVendorReadQualityFilter();

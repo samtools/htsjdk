@@ -24,10 +24,11 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class SAMFlagTest {
+public class SAMFlagTest extends HtsjdkTest {
     @Test
     public void testFlags() {
         Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.READ_PAIRED));

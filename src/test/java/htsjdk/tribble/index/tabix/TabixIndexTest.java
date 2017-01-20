@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.index.tabix;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.LittleEndianOutputStream;
@@ -40,7 +41,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
-public class TabixIndexTest {
+public class TabixIndexTest extends HtsjdkTest {
     private static final File SMALL_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
     private static final File BIGGER_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/bigger.vcf.gz.tbi");
 

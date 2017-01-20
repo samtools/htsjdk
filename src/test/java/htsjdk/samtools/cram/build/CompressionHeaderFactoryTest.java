@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
@@ -17,7 +18,7 @@ import java.util.List;
 /**
  * Created by vadim on 07/01/2016.
  */
-public class CompressionHeaderFactoryTest {
+public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAllEncodingsPresent() {
         final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), true);

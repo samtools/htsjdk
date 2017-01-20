@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.DownsamplingIteratorFactory.Strategy;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -14,7 +15,7 @@ import java.util.Random;
  * Tests for the downsampling iterator class.
  * @author Tim Fennell
  */
-public class DownsamplingIteratorTests {
+public class DownsamplingIteratorTests extends HtsjdkTest {
     final int NUM_TEMPLATES = 50000;
     final EnumMap<Strategy, Double> ACCURACY = new EnumMap<Strategy,Double>(Strategy.class){{
         put(Strategy.HighAccuracy, 0.001);

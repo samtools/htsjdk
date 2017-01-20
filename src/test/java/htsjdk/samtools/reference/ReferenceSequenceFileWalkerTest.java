@@ -1,5 +1,6 @@
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -11,7 +12,7 @@ import java.io.File;
 /**
  * Created by farjoun on 2/14/14.
  */
-public class ReferenceSequenceFileWalkerTest {
+public class ReferenceSequenceFileWalkerTest extends HtsjdkTest {
 
 
     @DataProvider(name = "TestReference")

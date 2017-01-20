@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -33,7 +34,7 @@ import java.net.URL;
 
 import static org.testng.Assert.assertEquals;
 
-public class SeekableBufferedStreamTest {
+public class SeekableBufferedStreamTest extends HtsjdkTest {
 
 //    private final File BAM_INDEX_FILE = new File("testdata/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");

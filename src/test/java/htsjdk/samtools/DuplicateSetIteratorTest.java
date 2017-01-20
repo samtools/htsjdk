@@ -1,12 +1,13 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class DuplicateSetIteratorTest {
+public class DuplicateSetIteratorTest extends HtsjdkTest {
     protected final static int DEFAULT_BASE_QUALITY = 10;
 
     private SAMRecordSetBuilder getSAMRecordSetBuilder() {

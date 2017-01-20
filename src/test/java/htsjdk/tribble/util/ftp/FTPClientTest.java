@@ -1,5 +1,6 @@
 package htsjdk.tribble.util.ftp;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.ftp.FTPClient;
 import htsjdk.samtools.util.ftp.FTPReply;
 import org.testng.Assert;
@@ -15,7 +16,7 @@ import java.net.UnknownHostException;
 * @author Jim Robinson
 * @since 10/3/11
 */
-public class FTPClientTest {
+public class FTPClientTest extends HtsjdkTest {
 
     static String host = "ftp.broadinstitute.org";
     static String file = "/pub/igv/TEST/test.txt";

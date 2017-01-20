@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SamSpecIntTest {
+public class SamSpecIntTest extends HtsjdkTest {
     private static final File SAM_INPUT = new File("src/test/resources/htsjdk/samtools/inttest.sam");
     private static final File BAM_INPUT = new File("src/test/resources/htsjdk/samtools/inttest.bam");
 
