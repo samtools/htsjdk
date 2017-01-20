@@ -92,44 +92,23 @@ import java.util.Date;
 public class DateParserTest {
 
     private static void test(final String isodate) {
-        System.out.println("----------------------------------");
-        try {
-            Date date = DateParser.parse(isodate);
-            System.out.println(">> " + isodate);
-            System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
-            final String isodateRoundTrip = DateParser.getIsoDate(date);
-            System.out.println(">> " + isodateRoundTrip);
+        Date date = DateParser.parse(isodate);
+        final String isodateRoundTrip = DateParser.getIsoDate(date);
 
-            final Date orig = DateParser.parse(isodate);
-            final Date roundTrip = DateParser.parse(isodateRoundTrip);
+        final Date orig = DateParser.parse(isodate);
+        final Date roundTrip = DateParser.parse(isodateRoundTrip);
 
-            assertDatesAreClose(orig, roundTrip);
-
-        } catch (DateParser.InvalidDateException ex) {
-            System.err.println(isodate + " is invalid");
-            System.err.println(ex.getMessage());
-        }
-        System.out.println("----------------------------------");
+        assertDatesAreClose(orig, roundTrip);
     }
 
     private static void test(final Date date) {
-        String isodate = null;
-        System.out.println("----------------------------------");
-        try {
-            System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
-            isodate = DateParser.getIsoDate(date);
-            System.out.println(">> " + isodate);
-            final Date dateRoundTrip = DateParser.parse(isodate);
-            System.out.println(">> " + date.toString() + " [" + date.getTime() + "]");
+        String isodate;
+        isodate = DateParser.getIsoDate(date);
+        final Date dateRoundTrip = DateParser.parse(isodate);
 
-            assertDatesAreClose(date, dateRoundTrip);
-            Assert.assertTrue(Math.abs(Date.parse(date.toString())-Date.parse(dateRoundTrip.toString()))<10);
+        assertDatesAreClose(date, dateRoundTrip);
+        Assert.assertTrue(Math.abs(Date.parse(date.toString()) - Date.parse(dateRoundTrip.toString())) < 10);
 
-        } catch (DateParser.InvalidDateException ex) {
-            System.err.println(isodate + " is invalid");
-            System.err.println(ex.getMessage());
-        }
-        System.out.println("----------------------------------");
     }
 
     @DataProvider(name="dateDate")
