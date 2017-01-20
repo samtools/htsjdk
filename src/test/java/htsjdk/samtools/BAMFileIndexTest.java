@@ -181,6 +181,21 @@ public class BAMFileIndexTest {
         CloserUtil.close(reader);
     }
 
+    @DataProvider(name = "queryIntervalsData")
+    public Object[][] queryIntervalsData(){
+        return new Object[][] {
+                {true, 1},
+                {false, 2}
+        };
+    }
+    @Test(dataProvider = "queryIntervalsData")
+    public void testQueryIntervals(final boolean contained, final int expected) {
+        final SamReader reader = SamReaderFactory.makeDefault().enable().open(BAM_FILE);
+
+        final CloseableIterator<SAMRecord> it = reader.query("chr1", 202661637, 202661812, contained);
+        Assert.assertEquals(countElements(it), expected);
+    }
+
     @Test
     public void testQueryMate() {
         final SamReader reader = SamReaderFactory.makeDefault().open(BAM_FILE);

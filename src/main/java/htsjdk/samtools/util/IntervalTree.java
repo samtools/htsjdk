@@ -482,7 +482,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
 
         public int getLength()
         {
-            return mEnd - mStart;
+            return mEnd - mStart + 1 ;
         }
 
         public int getRelationship( final Node<V1> interval )
@@ -492,14 +492,14 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
                 result = HAS_LESSER_PART;
             if ( mEnd > interval.getEnd() )
                 result |= HAS_GREATER_PART;
-            if ( mStart < interval.getEnd() && interval.getStart() < mEnd )
+            if ( mStart <= interval.getEnd() && interval.getStart() <= mEnd )
                 result |= HAS_OVERLAPPING_PART;
             return result;
         }
 
         public boolean isAdjacent( final Node<V1> interval )
         {
-            return mStart == interval.getEnd() || mEnd == interval.getStart();
+            return mStart == interval.getEnd() + 1 || mEnd + 1 == interval.getStart();
         }
 
         public V1 getValue()

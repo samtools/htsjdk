@@ -24,13 +24,18 @@
 package htsjdk.samtools.util;
 
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Iterator;
 
+import static htsjdk.samtools.util.IntervalTree.Node.HAS_OVERLAPPING_PART;
+
 /**
  * @author alecw@broadinstitute.org
  */
+@Test(singleThreaded=true) // to assure that the common resources aren't clobbered
 public class IntervalTreeTest {
     @Test
     public void testNoMatches()
@@ -57,29 +62,147 @@ public class IntervalTreeTest {
         return ret;
     }
 
+    private final IntervalTree<String> intervalTree = new IntervalTree<String>();
+
+    @BeforeMethod
+    public void init(){ //due to the destructive nature of removeMany test...
+        intervalTree.clear();
+
+        // each interval has a "name:length"
+        intervalTree.put(1, 10, "foo1:10");
+        intervalTree.put(2, 9, "foo2:8");
+        intervalTree.put(3, 8, "foo3:6");
+        intervalTree.put(4, 7, "foo4:4");
+        intervalTree.put(5, 6, "foo5:2");
+        intervalTree.put(1, 9, "foo6:9");
+    }
+
+    @Test
+    public void testLength(){
+
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.iterator();
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+
+        for (IntervalTree.Node<String> node : iterable) {
+            Assert.assertEquals(node.getLength(), Integer.parseInt(node.getValue().replaceAll(".*:", "")));
+        }
+    }
+
+    @DataProvider(name="adjacentIntervalsTestData")
+    public Object[][] adjacentIntervalsTestData() {
+        return new Object[][]{
+                {1, 4, 5, 10, true},
+                {1, 3, 5, 10, false},
+                {1, 4, 6, 10, false},
+                {1, 2, 6, 10, false},
+                {1, 10, 6, 10, false},
+                {1, 10, 11, 20, true},
+                {1, 10, 11, 20, true},
+        };
+    }
+
+    @Test(dataProvider = "adjacentIntervalsTestData")
+    public void testAdjacent(int start1, int end1, int start2, int end2, boolean areAdjacent){
+
+        final IntervalTree.Node<String> node1 = new IntervalTree.Node<>(start1, end1, "one");
+        final IntervalTree.Node<String> node2 = new IntervalTree.Node<>(start2, end2, "two");
+
+        Assert.assertTrue(node1.isAdjacent(node2) == areAdjacent);
+        Assert.assertTrue(node2.isAdjacent(node1) == areAdjacent);
+    }
+
+
+    @Test
+    public void testRank() {
+        for (IntervalTree.Node<String> node: intervalTree) {
+            Assert.assertEquals(intervalTree.findByIndex(
+                    intervalTree.getIndex(node.getStart(), node.getEnd())), node);
+        }
+    }
+
+    @Test
+    public void testIterator() {
+
+        final IntervalTree.Node<String> testNode = new IntervalTree.Node<>(3, 4, "foobar1");
+        int count = 0;
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.iterator(testNode.getStart(), testNode.getEnd());
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+        for (IntervalTree.Node<String> node : iterable) {
+            Assert.assertTrue(node.compare(testNode.getStart(), testNode.getEnd()) <= 0);
+            count++;
+        }
+        Assert.assertEquals(count, 3); // foobar3, foobar4, and foobar5 only.
+    }
+
+    @Test
+    public void testRemoveMany() {
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.reverseIterator();
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+
+        for (IntervalTree.Node<String> node : iterable) {
+            intervalTree.removeNode(node);
+        }
+        Assert.assertEquals(intervalTree.size(), 0);
+    }
+
+    @Test
+    public void testRevIterator() {
+
+        final IntervalTree.Node<String> testNode = new IntervalTree.Node<>(3, 4, "foobar1");
+        int count = 0;
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.reverseIterator(testNode.getStart(), testNode.getEnd());
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+        for (IntervalTree.Node<String> node : iterable) {
+            Assert.assertTrue(node.compare(testNode.getStart(), testNode.getEnd()) >= 0);
+            count++;
+        }
+        Assert.assertEquals(count, 3); // foobar1, foobar2, and foobar6
+    }
+
+
+    @Test
+    public void testOverlapIterator() {
+
+        final IntervalTree.Node<String> testNode = new IntervalTree.Node<>(3, 4, "foobar1");
+        int count = 0;
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.overlappers(testNode.getStart(), testNode.getEnd());
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+        for (IntervalTree.Node<String> node : iterable) {
+            Assert.assertTrue( (testNode.getRelationship(node) & HAS_OVERLAPPING_PART) != 0, String.format("%s with %s = %d", node.toString(), testNode.toString(), node.getRelationship(testNode)));
+            count++;
+        }
+        Assert.assertEquals(count, 5); // foobar1, foobar2, foobar3, foobar4, and foobar6
+    }
+
+
+    @Test
+    public void testTotalRevIterator() {
+
+        int count = 0;
+        Iterator<IntervalTree.Node<String>> iterator = intervalTree.reverseIterator();
+        Iterable<IntervalTree.Node<String>> iterable = () -> iterator;
+
+        for (IntervalTree.Node<String> ignored : iterable) {
+            count++;
+        }
+        Assert.assertEquals(count, intervalTree.size()); // foobar1, foobar2, and foobar6
+    }
+
     @Test
     public void testMatches()
     {
-        final IntervalTree<String> intervalTree = new IntervalTree<String>();
-        intervalTree.put(1, 10, "foo1");
-        intervalTree.put(2, 9, "foo2");
-        intervalTree.put(3, 8, "foo3");
-        intervalTree.put(4, 7, "foo4");
-        intervalTree.put(5, 6, "foo5");
-        intervalTree.put(1, 9, "foo6");
-
         // Single match
         Assert.assertEquals(countElements(intervalTree.overlappers(10, 10)), 1, "Test single overlap");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(10, 10), "foo1"), "Test single overlap for correct overlapee");
+        Assert.assertTrue(iteratorContains(intervalTree.overlappers(10, 10), "foo1:10"), "Test single overlap for correct overlapee");
 
         // Multiple matches
         Assert.assertEquals(countElements(intervalTree.overlappers(7, 8)), 5, "Test multiple overlap");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo1"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo2"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo3"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo4"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(iteratorContains(intervalTree.overlappers(7, 8), "foo6"), "Test multiple overlap for correct overlapees");
-        Assert.assertTrue(!iteratorContains(intervalTree.overlappers(7, 8), "foo5"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo1:10"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo2:8"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo3:6"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo4:4"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue( iteratorContains(intervalTree.overlappers(7, 8), "foo6:9"), "Test multiple overlap for correct overlapees");
+        Assert.assertTrue(!iteratorContains(intervalTree.overlappers(7, 8), "foo5:2"), "Test multiple overlap for correct overlapees");
     }
 
     private boolean iteratorContains(final Iterator<IntervalTree.Node<String>> nodeIterator, final String s) {
@@ -184,4 +307,6 @@ public class IntervalTreeTest {
         Assert.assertEquals(intervalTree.remove(46402360, 46402594), "frob");
         intervalTree.checkMaxEnds();
     }
+
+
 }

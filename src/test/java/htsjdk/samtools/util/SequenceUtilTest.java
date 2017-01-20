@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.*;
-import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import org.testng.Assert;
@@ -32,9 +31,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author alecw@broadinstitute.org
@@ -144,12 +141,20 @@ public class SequenceUtilTest {
         final SAMRecord rec = new SAMRecord(null);
         rec.setReadName("test");
         rec.setReadString(readString);
+        final byte[] byteArray = new byte[readString.length()];
+
+        Arrays.fill(byteArray, (byte)33);
+
+        rec.setBaseQualities(byteArray);
         rec.setCigarString(cigar);
 
         final byte[] refBases = StringUtil.stringToBytes(reference);
 
         final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, false, false);
         Assert.assertEquals(nExact, expectedMismatchesExact);
+
+        final int sumMismatchesQualityExact = SequenceUtil.sumQualitiesOfMismatches(rec, refBases, -1, false);
+        Assert.assertEquals(sumMismatchesQualityExact, expectedMismatchesExact * 33);
 
         final int nAmbiguous = SequenceUtil.countMismatches(rec, refBases, -1, false, true);
         Assert.assertEquals(nAmbiguous, expectedMismatchesAmbiguous);
@@ -173,6 +178,58 @@ public class SequenceUtilTest {
                 {"R", "1M", "R", 0, 0},
                 {"N", "1M", "N", 0, 0}
         };
+    }
+
+    @DataProvider(name="mismatchBisulfiteCountsDataProvider")
+    public Object[][] mismatchBisulfiteCountsDataProvider() {
+
+        List<Object[]> tests = new ArrayList<>();
+        final List<String> bases = Arrays.asList("A","C","T","G");
+
+        for (final String base : bases) {
+            for (final String ref : bases) {
+                for (final Boolean strand : Arrays.asList(true, false)) {
+
+                    final Integer count;
+
+                    if (base.equals(ref)) count = 0;
+                    else if (base.equals("A") && ref.equals("G") && !strand) count = 0;
+                    else if (base.equals("T") && ref.equals("C") &&  strand) count = 0;
+                    else count = 1;
+
+                    tests.add(new Object[]{base, "1M", ref, strand, count});
+
+                }
+            }
+        }
+        return tests.toArray(new Object[1][]);
+    }
+
+
+    @Test(dataProvider = "mismatchBisulfiteCountsDataProvider")
+    public void testMismatchBisulfiteCounts(final String readString, final String cigar, final String reference,
+                                            final boolean positiveStrand, final int expectedMismatches) {
+
+        final byte baseQuality = 30;
+        final SAMRecord rec = new SAMRecord(null);
+        rec.setReadName("test");
+        rec.setReadString(readString);
+        rec.setReadNegativeStrandFlag(!positiveStrand);
+        final byte[] byteArray = new byte[readString.length()];
+
+        Arrays.fill(byteArray,baseQuality);
+
+        rec.setBaseQualities(byteArray);
+        rec.setCigarString(cigar);
+
+        final byte[] refBases = StringUtil.stringToBytes(reference);
+
+        final int nExact = SequenceUtil.countMismatches(rec, refBases, -1, true, false);
+        Assert.assertEquals(nExact, expectedMismatches);
+
+        final int sumMismatchesQualityExact = SequenceUtil.sumQualitiesOfMismatches(rec, refBases, -1, true);
+        Assert.assertEquals(sumMismatchesQualityExact, expectedMismatches * baseQuality);
+
     }
 
     @Test(dataProvider = "countInsertedAndDeletedBasesTestCases")
@@ -449,5 +506,59 @@ public class SequenceUtilTest {
                 Assert.assertEquals(r.getStringAttribute(SAMTag.MD.name()), md, "problem with MD in read \'" + r.getReadName() + "\':");
             }
         });
+    }
+
+    @DataProvider(name = "testNmFromCigarProvider")
+    Object[][] testNmFromCigar() {
+        return new Object[][]{
+                {"1M", 0},
+                {"1S1D", 1},
+                {"1H3X", 3},
+                {"1H5=3M2X", 2},
+                {"5P5M", 0},
+                {"5S8I", 8}
+        };
+    }
+
+    @Test(dataProvider = "testNmFromCigarProvider")
+    public void testNmTagFromCigar(final String cigarString, final int expectedNmValue) {
+        final SAMRecord rec = new SAMRecord(null);
+        rec.setReadName("test");
+        rec.setCigarString(cigarString);
+
+        Assert.assertEquals(SequenceUtil.calculateSamNmTagFromCigar(rec),expectedNmValue);
+    }
+
+    @Test
+    public void testReverseComplement() {
+        Assert.assertEquals(SequenceUtil.reverseComplement("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),"ZYXWVUASRQPONMLKJIHCFEDGBT");
+        Assert.assertEquals(SequenceUtil.reverseComplement("abcdefghijklmnopqrstuvwxy"),"yxwvuasrqponmlkjihcfedgbt"); //missing "z" on purpose so that we test both even-lengthed and odd-lengthed strings
+    }
+
+    @Test
+    public void testUpperCase() {
+        Assert.assertEquals(SequenceUtil.upperCase(StringUtil.stringToBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ")), StringUtil.stringToBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        Assert.assertEquals(SequenceUtil.upperCase(StringUtil.stringToBytes("abcdefghijklmnopqrstuvwxyz")), StringUtil.stringToBytes("ABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        Assert.assertEquals(SequenceUtil.upperCase(StringUtil.stringToBytes("1234567890!@#$%^&*()")), StringUtil.stringToBytes("1234567890!@#$%^&*()"));
+    }
+
+    @Test
+    public void testReverseQualities() {
+
+        final byte[] qualities1 = new byte[] {10, 20, 30, 40};
+        SequenceUtil.reverseQualities(qualities1);
+        assertEquals(qualities1, new byte[] {40, 30, 20, 10});
+
+        final byte[] qualities2 = {10, 20, 30};
+        SequenceUtil.reverseQualities(qualities2);
+        assertEquals(qualities2, new byte[]{30, 20, 10});
+    }
+
+    private void assertEquals(final byte[] actual, final byte[] expected) {
+        Assert.assertEquals(actual.length, expected.length, "Arrays do not have equal lengths");
+
+        for (int i = 0; i < actual.length; ++i) {
+            Assert.assertEquals(actual[i], expected[i], "Array differ at position " + i);
+        }
     }
 }
