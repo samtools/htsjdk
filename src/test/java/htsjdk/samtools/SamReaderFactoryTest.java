@@ -6,6 +6,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Paths;
@@ -92,8 +93,7 @@ public class SamReaderFactoryTest {
         final SamReader wrappedReader =
             SamReaderFactory
                 .makeDefault()
-                .setPathWrapper(SamReaderFactoryTest::addHeader)
-                .open(input);
+                .open(input, SamReaderFactoryTest::addHeader, null);
         int records = countRecords(wrappedReader);
         Assert.assertEquals(10, records);
     }
@@ -288,7 +288,6 @@ public class SamReaderFactoryTest {
             Assert.assertEquals(fileHeader, expectedFileHeader);
         }
     }
-
 
     final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<List<SAMRecord>>();
     final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<List<SAMRecord>>();

@@ -133,7 +133,13 @@ public class SamInputResource {
 
     /** Updates the index to point at the provided resource, then returns itself. */
     public SamInputResource index(final Path path) {
-        this.index = new PathInputResource(path, Function.identity());
+        this.index = new PathInputResource(path);
+        return this;
+    }
+
+    /** Updates the index to point at the provided resource, with the provided wrapper, then returns itself. */
+    public SamInputResource index(final Path path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) {
+        this.index = new PathInputResource(path, wrapper);
         return this;
     }
 
