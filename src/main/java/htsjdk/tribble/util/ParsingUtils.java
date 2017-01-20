@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.util;
 
+import htsjdk.samtools.util.IOUtil;
 import java.awt.Color;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +32,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,6 +85,8 @@ public class ParsingUtils {
 
         if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
             inputStream = getURLHelper(new URL(path)).openInputStream();
+        } else if (IOUtil.hasScheme(path)) {
+            inputStream = Files.newInputStream(IOUtil.getPath(path));
         } else {
             File file = new File(path);
             inputStream = new FileInputStream(file);
@@ -400,6 +404,8 @@ public class ParsingUtils {
             }
             URLHelper helper = getURLHelper(url);
             return helper.exists();
+        } else if (IOUtil.hasScheme(resource)) {
+            return Files.exists(IOUtil.getPath(resource));
         } else {
             return (new File(resource)).exists();
         }

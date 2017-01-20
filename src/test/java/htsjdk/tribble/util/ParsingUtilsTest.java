@@ -1,6 +1,16 @@
 package htsjdk.tribble.util;
 
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+import htsjdk.samtools.util.IOUtil;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -118,6 +128,37 @@ public class ParsingUtilsTest {
     }
 
     @Test
+    public void testFileDoesExist() throws IOException{
+        File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
+        tempFile.deleteOnExit();
+        tstExists(tempFile.getAbsolutePath(), true);
+        tstExists(tempFile.toURI().toString(), true);
+    }
+
+    @Test
+    public void testFileDoesNotExist() throws IOException{
+        File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
+        tempFile.delete();
+        tstExists(tempFile.getAbsolutePath(), false);
+        tstExists(tempFile.toURI().toString(), false);
+    }
+
+    @Test
+    public void testInMemoryNioFileDoesExist() throws IOException{
+        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+        Path file = fs.getPath("/file");
+        Files.createFile(file);
+        tstExists(file.toUri().toString(), true);
+    }
+
+    @Test
+    public void testInMemoryNioFileDoesNotExist() throws IOException{
+        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+        Path file = fs.getPath("/file");
+        tstExists(file.toUri().toString(), false);
+    }
+
+    @Test
     public void testFTPDoesExist() throws IOException{
         tstExists(AVAILABLE_FTP_URL, true);
     }
@@ -140,6 +181,26 @@ public class ParsingUtilsTest {
     private void tstExists(String path, boolean expectExists) throws IOException{
         boolean exists = ParsingUtils.resourceExists(path);
         Assert.assertEquals(exists, expectExists);
+    }
+
+    @Test
+    public void testFileOpenInputStream() throws IOException{
+        File tempFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
+        tempFile.deleteOnExit();
+        OutputStream os = IOUtil.openFileForWriting(tempFile);
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(os));
+        writer.write("hello");
+        writer.close();
+        tstStream(tempFile.getAbsolutePath());
+        tstStream(tempFile.toURI().toString());
+    }
+
+    @Test
+    public void testInMemoryNioFileOpenInputStream() throws IOException{
+        FileSystem fs = Jimfs.newFileSystem(Configuration.unix());
+        Path file = fs.getPath("/file");
+        Files.write(file, "hello".getBytes("UTF-8"));
+        tstStream(file.toUri().toString());
     }
 
     @Test

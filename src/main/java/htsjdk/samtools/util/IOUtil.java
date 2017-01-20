@@ -48,14 +48,20 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -942,5 +948,43 @@ public class IOUtil {
         Collections.reverse(output);
 
         return output;
+    }
+
+    /**
+     * Check if the given URI has a scheme.
+     *
+     * @param uriString the URI to check
+     * @return <code>true</code> if the given URI has a scheme, <code>false</code> if
+     * not, or if the URI is malformed.
+     */
+    public static boolean hasScheme(String uriString) {
+        try {
+            return new URI(uriString).getScheme() != null;
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Converts the given URI to a {@link Path} object. If the filesystem cannot be found in the usual way, then attempt
+     * to load the filesystem provider using the thread context classloader. This is needed when the filesystem
+     * provider is loaded using a URL classloader (e.g. in spark-submit).
+     *
+     * @param uriString the URI to convert
+     * @return the resulting {@code Path}
+     * @throws IOException an I/O error occurs creating the file system
+     */
+    public static Path getPath(String uriString) throws IOException {
+        URI uri = URI.create(uriString);
+        try {
+            // if the URI has no scheme, then treat as a local file, otherwise use the scheme to determine the filesystem to use
+            return uri.getScheme() == null ? Paths.get(uriString) : Paths.get(uri);
+        } catch (FileSystemNotFoundException e) {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                throw e;
+            }
+            return FileSystems.newFileSystem(uri, new HashMap<>(), cl).provider().getPath(uri);
+        }
     }
 }

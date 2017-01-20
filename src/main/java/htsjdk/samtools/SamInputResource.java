@@ -29,6 +29,7 @@ import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.sra.SRAAccession;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -366,8 +367,8 @@ class UrlInputResource extends InputResource {
     @Override
     public Path asPath() {
         try {
-            return Paths.get(urlResource.toURI());
-        } catch (URISyntaxException | IllegalArgumentException |
+            return IOUtil.getPath(urlResource.toExternalForm());
+        } catch (IOException | IllegalArgumentException |
             FileSystemNotFoundException | SecurityException e) {
             return null;
         }
