@@ -83,7 +83,11 @@ public class CompressionHeaderFactory {
 
         builder.addExternalIntegerRansOrderZeroEncoding(EncodingKey.AP_AlignmentPositionOffset);
         builder.addExternalByteRansOrderOneEncoding(EncodingKey.BA_Base);
+
         // BB is not used
+        builder.addExternalByteArrayStopTabGzipEncoding(EncodingKey.BB_bases);
+
+
         builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.BF_BitFlags);
         builder.addExternalByteGzipEncoding(EncodingKey.BS_BaseSubstitutionCode);
         builder.addExternalIntegerRansOrderOneEncoding(EncodingKey.CF_CompressionBitFlags);

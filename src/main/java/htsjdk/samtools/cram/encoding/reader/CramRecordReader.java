@@ -36,6 +36,8 @@ import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.LinkedList;
 
 public class CramRecordReader extends AbstractReader {
@@ -156,7 +158,8 @@ public class CramRecordReader extends AbstractReader {
                             readFeatures.add(baseQualityScore);
                             break;
                         case Bases.operator:
-                            final Bases bases = new Bases(pos, basesCodec.readData());
+                            byte[] bb = basesCodec.readData();
+                            final Bases bases = new Bases(pos, bb);
                             readFeatures.add(bases);
                             break;
                         case Scores.operator:

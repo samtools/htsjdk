@@ -20,17 +20,7 @@ package htsjdk.samtools.cram.encoding.writer;
 import htsjdk.samtools.cram.encoding.DataSeries;
 import htsjdk.samtools.cram.encoding.DataSeriesMap;
 import htsjdk.samtools.cram.encoding.DataSeriesType;
-import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
-import htsjdk.samtools.cram.encoding.readfeatures.Padding;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingKey;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -80,6 +70,9 @@ public class Writer {
 
     @DataSeries(key = EncodingKey.BA_Base, type = DataSeriesType.BYTE)
     public DataWriter<Byte> baseCodec;
+
+    @DataSeries(key = EncodingKey.BB_bases, type = DataSeriesType.BYTE_ARRAY)
+    public DataWriter<byte[]> basesCodec;
 
     @DataSeries(key = EncodingKey.QS_QualityScore, type = DataSeriesType.BYTE)
     public DataWriter<Byte> qualityScoreCodec;
@@ -240,6 +233,11 @@ public class Writer {
                         final BaseQualityScore bqs = (BaseQualityScore) f;
                         qualityScoreCodec.writeData(bqs.getQualityScore());
                         break;
+                    case Bases.operator:
+                        System.out.println("writing bases: " + new String(((Bases) f).getBases()));
+                        basesCodec.writeData(((Bases) f).getBases());
+                        break;
+
                     default:
                         throw new RuntimeException("Unknown read feature operator: " + (char) f.getOperator());
                 }

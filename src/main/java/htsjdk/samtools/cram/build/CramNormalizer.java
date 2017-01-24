@@ -19,15 +19,7 @@ package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Insertion;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
@@ -298,6 +290,13 @@ public class CramNormalizer {
                 case ReadBase.operator:
                     final ReadBase readBase = (ReadBase) variation;
                     bases[variation.getPosition() - 1] = readBase.getBase();
+                    break;
+                case Bases.operator:
+                    final Bases bb = (Bases) variation;
+                    int i=variation.getPosition() - 1;
+                    for (byte b:bb.getBases()) {
+                        bases[i++] = b;
+                    }
                     break;
                 default:
                     break;

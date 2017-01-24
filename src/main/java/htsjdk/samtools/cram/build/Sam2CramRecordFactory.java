@@ -26,19 +26,12 @@ import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Padding;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
 
+import javax.rmi.CORBA.Util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -146,12 +139,22 @@ public class Sam2CramRecordFactory {
             else if (record.getSecondOfPairFlag()) cramRecord.setLastSegment(true);
         }
 
-        if (!record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
-            cramRecord.readFeatures = checkedCreateVariations(cramRecord, record);
-        } else cramRecord.readFeatures = Collections.emptyList();
-
         cramRecord.readBases = record.getReadBases();
         cramRecord.qualityScores = record.getBaseQualities();
+        if (cramRecord.readBases.length == 0) {
+            cramRecord.readBases = new byte[record.getCigar().getReadLength()];
+            Arrays.fill(cramRecord.readBases, (byte) 'N');
+        } else {
+            // normalize bases:
+            for (int i=0; i<cramRecord.readBases.length; i++) {
+                cramRecord.readBases[i] = Utils.normalizeBase(cramRecord.readBases[i]);
+            }
+        }
+
+        if (!record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
+            cramRecord.readFeatures = checkedCreateVariations(cramRecord, record.getCigar().getCigarElements());
+        } else cramRecord.readFeatures = Collections.emptyList();
+
         landedTotalScores += cramRecord.readLength;
         if (version.compatibleWith(CramVersions.CRAM_v3))
             cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
@@ -186,40 +189,28 @@ public class Sam2CramRecordFactory {
     /**
      * A wrapper method to provide better diagnostics for ArrayIndexOutOfBoundsException.
      *
-     * @param cramRecord CRAM record
-     * @param samRecord SAM record
+     * @param cramRecord    CRAM record
+     * @param cigarElements a list of cigar elements for the read
      * @return a list of read features created for the given {@link htsjdk.samtools.SAMRecord}
      */
-    private List<ReadFeature> checkedCreateVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
+    private List<ReadFeature> checkedCreateVariations(final CramCompressionRecord cramRecord, final List<CigarElement> cigarElements) {
         try {
-            return createVariations(cramRecord, samRecord);
+            return createVariations(cramRecord, cigarElements);
         } catch (final ArrayIndexOutOfBoundsException e) {
             log.error("Reference bases array length=" + refBases.length);
             log.error("Offensive CRAM record: " + cramRecord.toString());
-            log.error("Offensive SAM record: " + samRecord.getSAMString());
             throw e;
         }
     }
 
-    private List<ReadFeature> createVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
+    private List<ReadFeature> createVariations(final CramCompressionRecord cramRecord, final List<CigarElement> cigarElements) {
         final List<ReadFeature> features = new LinkedList<ReadFeature>();
         int zeroBasedPositionInRead = 0;
         int alignmentStartOffset = 0;
         int cigarElementLength;
 
-        final List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
-
-        int cigarLen = 0;
-        for (final CigarElement cigarElement : cigarElements)
-            if (cigarElement.getOperator().consumesReadBases())
-                cigarLen += cigarElement.getLength();
-
-        byte[] bases = samRecord.getReadBases();
-        if (bases.length == 0) {
-            bases = new byte[cigarLen];
-            Arrays.fill(bases, (byte) 'N');
-        }
-        final byte[] qualityScore = samRecord.getBaseQualities();
+        byte[] bases = cramRecord.readBases;
+        final byte[] qualityScore = cramRecord.qualityScores;
 
         for (final CigarElement cigarElement : cigarElements) {
             cigarElementLength = cigarElement.getLength();
@@ -307,26 +298,53 @@ public class Sam2CramRecordFactory {
             else refBase = refBases[referenceCoordinates];
             refBase = Utils.normalizeBase(refBase);
 
-            if (bases[i + fromPosInRead] != refBase) {
-                final Substitution substitution = new Substitution();
-                substitution.setPosition(oneBasedPositionInRead);
-                substitution.setBase(bases[i + fromPosInRead]);
-                substitution.setReferenceBase(refBase);
+            final byte base = bases[i + fromPosInRead];
+            if (base != refBase) {
+                switch (base) {
+                    case 'A':
+                    case 'C':
+                    case 'G':
+                    case 'T':
+                        final Substitution substitution = new Substitution();
+                        substitution.setPosition(oneBasedPositionInRead);
+                        substitution.setBase(bases[i + fromPosInRead]);
+                        substitution.setReferenceBase(refBase);
 
-                features.add(substitution);
+                        features.add(substitution);
 
-                if (noQS) continue;
-            }
-
-            if (noQS) continue;
-
-            if (refSNPs != null) {
-                final byte snpOrNot = refSNPs[referenceCoordinates];
-                if (snpOrNot != 0) {
-                    final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
-                    features.add(new BaseQualityScore(oneBasedPositionInRead, score));
-                    qualityAdded = true;
-                    landedRefMaskScores++;
+                        if (refSNPs != null) {
+                            final byte snpOrNot = refSNPs[referenceCoordinates];
+                            if (snpOrNot != 0) {
+                                final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
+                                features.add(new BaseQualityScore(oneBasedPositionInRead, score));
+                                qualityAdded = true;
+                                landedRefMaskScores++;
+                            }
+                        }
+                        break;
+                    default:
+                        if (qualityScore == null || qualityScore.length == 0) {
+                            Bases bb = new Bases(oneBasedPositionInRead, new byte[]{base});
+                            features.add(bb);
+                        } else {
+                            final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
+                            ReadBase rb = new ReadBase(oneBasedPositionInRead, base, score);
+                            features.add(rb);
+                            qualityAdded = true;
+                        }
+                        break;
+                }
+            } else {
+                if (!noQS) {
+                    if (refSNPs != null) {
+                        final byte snpOrNot = refSNPs[referenceCoordinates];
+                        if (snpOrNot != 0) {
+                            final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
+                            features.add(new BaseQualityScore(oneBasedPositionInRead, score));
+                            qualityAdded = true;
+                            landedRefMaskScores++;
+                        }
+                    }
                 }
             }
 
