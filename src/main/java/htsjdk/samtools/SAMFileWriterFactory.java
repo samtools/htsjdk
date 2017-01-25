@@ -86,6 +86,14 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Gets the default for whether to create md5Files for BAM files this factory.
+     * @see #setDefaultCreateMd5File(boolean)
+     */
+    public static boolean getDefaultCreateMd5File() {
+        return defaultCreateMd5File;
+    }
+
+    /**
      * Sets whether to create md5Files for BAMs from this factory.
      */
     public SAMFileWriterFactory setCreateMd5File(final boolean createMd5File) {
@@ -125,6 +133,14 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     public static void setDefaultCreateIndexWhileWriting(final boolean setting) {
         defaultCreateIndexWhileWriting = setting;
+    }
+
+    /**
+     * Gets the default for subsequent SAMFileWriterFactories that do not specify whether to create an index.
+     * @see #setDefaultCreateIndexWhileWriting
+     */
+    public static boolean getDefaultCreateIndexWhileWriting() {
+        return defaultCreateIndexWhileWriting;
     }
 
     /**
