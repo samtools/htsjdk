@@ -66,13 +66,15 @@ public class ValidateSamFileTest {
 
     @Test
     public void testValidCRAMFileWithoutSeqDict() throws Exception {
-        final SamReader samReader = SamReaderFactory.
-                makeDefault().
-                validationStringency(ValidationStringency.SILENT).
-                referenceSequence(new File(TEST_DATA_DIR, "nm_tag_validation.fa")).
-                open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
-        final ReferenceSequenceFile reference = new FastaSequenceFile(new File(TEST_DATA_DIR, "nm_tag_validation.fa"), true);
-        final Histogram<String> results = executeValidation(samReader, reference, IndexValidationStringency.EXHAUSTIVE);
+        final File reference = new File(TEST_DATA_DIR, "nm_tag_validation.fa");
+        final SamReader samReader = SamReaderFactory
+                .makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .referenceSequence(reference)
+                .open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
+        final Histogram<String> results = executeValidation(samReader,
+                new FastaSequenceFile(reference, true),
+                IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(!results.isEmpty());
     }
 
