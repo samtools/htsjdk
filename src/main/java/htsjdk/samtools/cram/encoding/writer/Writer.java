@@ -234,7 +234,6 @@ public class Writer {
                         qualityScoreCodec.writeData(bqs.getQualityScore());
                         break;
                     case Bases.operator:
-                        System.out.println("writing bases: " + new String(((Bases) f).getBases()));
                         basesCodec.writeData(((Bases) f).getBases());
                         break;
 

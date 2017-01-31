@@ -437,6 +437,12 @@ public class CRAMContainerStreamWriter {
                     final SAMRecord restoredSamRecord = f.create(cramRecords.get(i));
                     assert (restoredSamRecord.getAlignmentStart() == samRecords.get(i).getAlignmentStart());
                     assert (restoredSamRecord.getReferenceName().equals(samRecords.get(i).getReferenceName()));
+                    if (!restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString())) {
+                        Thread.dumpStack();
+                        System.out.println(restoredSamRecord.getSAMString());
+                        System.out.println(samRecords.get(i).getSAMString());
+                        System.out.println("\n-------------" + restoredSamRecord.getReadString() + "\n" + samRecords.get(i).getReadString());
+                    }
                     assert (restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString()));
                     assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));
                 }
