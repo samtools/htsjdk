@@ -82,7 +82,7 @@ public class CRAMFileReaderTest {
     @Test(description = "Test CRAMReader 2 input required", expectedExceptions = IllegalArgumentException.class)
     public void testCRAMReader2_InputRequired() {
         File file = null;
-        InputStream bis =  null;
+        InputStream bis = null;
         new CRAMFileReader(file, bis, createReferenceSource());
     }
 

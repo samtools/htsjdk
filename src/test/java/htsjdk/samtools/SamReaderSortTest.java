@@ -3,7 +3,7 @@ package htsjdk.samtools;
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2009-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@ package htsjdk.samtools;
  * THE SOFTWARE.
  */
 
+import htsjdk.samtools.cram.ref.ReferenceSource;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -37,9 +38,15 @@ import java.io.File;
  */
 public class SamReaderSortTest {
 
-    public static final String COORDINATE_SORTED_FILE = "src/test/resources/htsjdk/samtools/coordinate_sorted.sam";
-    public static final String QUERYNAME_SORTED_FILE = "src/test/resources/htsjdk/samtools/queryname_sorted.sam";
-    public static final String QUERYNAME_SORTED_NO_HEADER_SORT = "src/test/resources/htsjdk/samtools/unsorted.sam";
+    private static final String COORDINATE_SORTED_FILE = "src/test/resources/htsjdk/samtools/coordinate_sorted.sam";
+    private static final String QUERYNAME_SORTED_FILE = "src/test/resources/htsjdk/samtools/queryname_sorted.sam";
+    private static final String QUERYNAME_SORTED_NO_HEADER_SORT = "src/test/resources/htsjdk/samtools/unsorted.sam";
+    private static final String CRAM_FILE = "src/test/resources/htsjdk/samtools/cram_query_sorted.cram";
+    private static final String CRAM_REFERENCE = "src/test/resources/htsjdk/samtools/cram_query_sorted.fasta";
+    private static final String CRAM_FILE_COORDINATE = "src/test/resources/htsjdk/samtools/cram/ce#tag_depadded.2.1.cram";
+    private static final String CRAM_REFERENCE_COORDINATE = "src/test/resources/htsjdk/samtools/cram/ce.fa";
+    private static final String CRAM_FILE_UNSORTED = "src/test/resources/htsjdk/samtools/cram/xx#unsorted.3.0.cram";
+    private static final String CRAM_REFERENCE_UNSORTED = "src/test/resources/htsjdk/samtools/cram/xx.fa";
 
     @Test(expectedExceptions = IllegalStateException.class)
     public void testSortsDisagree() throws Exception {
@@ -91,6 +98,49 @@ public class SamReaderSortTest {
         } finally {
             it.close();
         }
+    }
+
+    private CRAMFileReader getCramFileReader(String file, String fileReference) {
+        final ReferenceSource referenceSource = new ReferenceSource(new File(fileReference));
+        return new CRAMFileReader(new File(file), referenceSource);
+    }
+
+    @Test(dataProvider = "sortsCramWithoutIndex")
+    public void testCramSort(String file, String fileReference, SAMFileHeader.SortOrder order) throws Exception {
+        final CRAMFileReader cramFileReader = getCramFileReader(file, fileReference);
+        final SAMRecordIterator samRecordIterator = cramFileReader.getIterator().assertSorted(order);
+        Assert.assertTrue(samRecordIterator.hasNext());
+        while (samRecordIterator.hasNext()) {
+            Assert.assertNotNull(samRecordIterator.next());
+        }
+    }
+
+    @Test(dataProvider = "sortsFailCramWithoutIndex", expectedExceptions = IllegalStateException.class)
+    public void testCramSortFail(String file, String fileReference, SAMFileHeader.SortOrder order) throws Exception {
+        final CRAMFileReader cramFileReader = getCramFileReader(file, fileReference);
+        final SAMRecordIterator samRecordIterator = cramFileReader.getIterator().assertSorted(order);
+        Assert.assertTrue(samRecordIterator.hasNext());
+        while (samRecordIterator.hasNext()) {
+            Assert.assertNotNull(samRecordIterator.next());
+        }
+    }
+
+    @DataProvider(name = "sortsFailCramWithoutIndex")
+    public Object[][] getSortsFailCramWithoutIndex() {
+        return new Object[][]{
+                {CRAM_FILE, CRAM_REFERENCE, SAMFileHeader.SortOrder.coordinate},
+                {CRAM_FILE_COORDINATE, CRAM_REFERENCE_COORDINATE, SAMFileHeader.SortOrder.queryname},
+                {CRAM_FILE_UNSORTED, CRAM_REFERENCE_UNSORTED, SAMFileHeader.SortOrder.coordinate}
+        };
+    }
+
+    @DataProvider(name = "sortsCramWithoutIndex")
+    public Object[][] getSortsCramWithoutIndex() {
+        return new Object[][]{
+                {CRAM_FILE, CRAM_REFERENCE, SAMFileHeader.SortOrder.queryname},
+                {CRAM_FILE_COORDINATE, CRAM_REFERENCE_COORDINATE, SAMFileHeader.SortOrder.coordinate},
+                {CRAM_FILE_UNSORTED, CRAM_REFERENCE_UNSORTED, SAMFileHeader.SortOrder.unsorted}
+        };
     }
 
     @DataProvider(name = "invalidSorts")
