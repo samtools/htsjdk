@@ -1,5 +1,8 @@
 package htsjdk.tribble;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -15,6 +18,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.*;
+import java.util.function.Function;
 
 import static org.testng.Assert.*;
 
@@ -26,6 +33,19 @@ public class AbstractFeatureReaderTest {
 
     final static String HTTP_INDEXED_VCF_PATH = TestUtil.BASE_URL_FOR_HTTP_TESTS + "ex2.vcf";
     final static String LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH = VariantBaseTest.variantTestDataRoot + "ex2.vcf";
+
+    //the "mangled" versions of the files have an extra byte added to the front of the file that makes them invalid
+    private static final String TEST_PATH = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/";
+    private static final String MANGLED_VCF = TEST_PATH + "mangledBaseVariants.vcf";
+    private static final String MANGLED_VCF_INDEX = TEST_PATH + "mangledBaseVariants.vcf.idx";
+    private static final String VCF = TEST_PATH + "baseVariants.vcf";
+    private static final String VCF_INDEX = TEST_PATH + "baseVariants.vcf.idx";
+    private static final String VCF_TABIX = TEST_PATH + "baseVariants.vcf.gz";
+    private static final String VCF_TABIX_INDEX = TEST_PATH + "baseVariants.vcf.gz.tbi";
+    private static final String MANGLED_VCF_TABIX = TEST_PATH + "baseVariants.mangled.vcf.gz";
+    private static final String MANGLED_VCF_TABIX_INDEX = TEST_PATH + "baseVariants.mangled.vcf.gz.tbi";
+
+    private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
 
     /**
      * Asserts readability and correctness of VCF over HTTP.  The VCF is indexed and requires and index.
@@ -65,12 +85,12 @@ public class AbstractFeatureReaderTest {
         };
     }
 
-    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
     public void testBlockCompressionExtensionString(final String testString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testString), expected);
     }
 
-    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
     public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(new File(testString)), expected);
     }
@@ -103,10 +123,142 @@ public class AbstractFeatureReaderTest {
         };
     }
 
-    @Test(enabled = true, dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
     public void testBlockCompressionExtension(final String testURIString, final boolean expected) throws URISyntaxException {
         URI testURI = URI.create(testURIString);
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURI), expected);
+    }
+
+
+    @DataProvider(name = "vcfFileAndWrapperCombinations")
+    private static Object[][] vcfFileAndWrapperCombinations(){
+        return new Object[][] {
+                {VCF, VCF_INDEX, null, null},
+                {MANGLED_VCF, MANGLED_VCF_INDEX, WRAPPER, WRAPPER},
+                {VCF, MANGLED_VCF_INDEX, null, WRAPPER},
+                {MANGLED_VCF, VCF_INDEX, WRAPPER, null},
+                {MANGLED_VCF_TABIX, MANGLED_VCF_TABIX_INDEX, WRAPPER, WRAPPER},
+                {VCF_TABIX, MANGLED_VCF_TABIX_INDEX, null, WRAPPER},
+                {MANGLED_VCF_TABIX, VCF_TABIX_INDEX, WRAPPER, null},
+                {VCF_TABIX, VCF_TABIX_INDEX, null, null},
+        };
+    }
+
+    @Test(dataProvider = "vcfFileAndWrapperCombinations")
+    public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
+                                                        Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException, URISyntaxException {
+        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+            final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
+                                                                                            indexWrapper,
+                                                                                            new VCFCodec(),
+                                                                                            fs);
+            Assert.assertTrue(featureReader.hasIndex());
+            Assert.assertEquals(featureReader.iterator().toList().size(), 26);
+            Assert.assertEquals(featureReader.query("1", 190, 210).toList().size(), 3);
+            Assert.assertEquals(featureReader.query("2", 190, 210).toList().size(), 1);
+        }
+    }
+
+    @DataProvider(name = "failsWithoutWrappers")
+    private static Object[][] failsWithoutWrappers(){
+        return new Object[][] {
+                {MANGLED_VCF, VCF_INDEX, new VCFCodec()},
+                {VCF, MANGLED_VCF_INDEX, new VCFCodec()},
+        };
+    }
+
+    @Test(dataProvider = "failsWithoutWrappers", expectedExceptions = {TribbleException.class, FileTruncatedException.class})
+    public void testFailureIfNoWrapper(String file, String index, FeatureCodec<? extends Feature, ?> codec) throws IOException, URISyntaxException {
+        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+            getFeatureReader(file, index, null, null, new VCFCodec(), fs);
+        }
+    }
+
+    private static <T extends Feature> AbstractFeatureReader<T, ?> getFeatureReader(String vcf, String index,
+                                                                                    Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                                                                                    Function<SeekableByteChannel, SeekableByteChannel> indexWrapper,
+                                                                                    FeatureCodec<T, ?> codec,
+                                                                                    FileSystem fileSystem) throws IOException, URISyntaxException {
+        final Path vcfInJimfs = getTribbleFileInJimfs(vcf, index, fileSystem);
+        return AbstractFeatureReader.getFeatureReader(
+                vcfInJimfs.toUri().toString(),
+                null,
+                codec,
+                true,
+                wrapper,
+                indexWrapper);
+    }
+
+    /**
+     * skip the first byte of a SeekableByteChannel
+     */
+    private static class SkippingByteChannel implements SeekableByteChannel{
+        private final int toSkip;
+        private final SeekableByteChannel input;
+
+       private SkippingByteChannel(SeekableByteChannel input) {
+           this.toSkip = 1;
+           try {
+               this.input = input;
+               input.position(toSkip);
+           } catch (final IOException e){
+               throw new RuntimeException(e);
+           }
+       }
+
+       @Override
+        public boolean isOpen() {
+            return input.isOpen();
+        }
+
+        @Override
+        public void close() throws IOException {
+            input.close();
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+           return input.read(dst);
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            throw new UnsupportedOperationException("Read only");
+        }
+
+        @Override
+        public long position() throws IOException {
+            return input.position() - toSkip;
+        }
+
+        @Override
+        public SeekableByteChannel position(long newPosition) throws IOException {
+            if (newPosition < 0 ){
+                throw new RuntimeException("negative position not allowed");
+            }
+            return input.position( newPosition + toSkip);
+        }
+
+        @Override
+        public long size() throws IOException {
+            return input.size() - toSkip;
+        }
+
+        @Override
+        public SeekableByteChannel truncate(long size) throws IOException {
+            return input.truncate(size + toSkip);
+        }
+    };
+
+    private static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
+        final FileSystem fs = fileSystem;
+        final Path root = fs.getPath("/");
+        final Path vcfPath = Paths.get(vcf);
+        final Path idxPath = Paths.get(index);
+        final Path idxDestination = Paths.get(AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexFile(vcf) : Tribble.indexFile(vcf));
+        Files.copy(idxPath, root.resolve(idxDestination.getFileName().toString()));
+        return Files.copy(vcfPath, root.resolve(vcfPath.getFileName().toString()));
     }
 
 }

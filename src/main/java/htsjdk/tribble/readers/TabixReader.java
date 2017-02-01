@@ -34,19 +34,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * @author Heng Li <hengli@broadinstitute.org>
  */
 public class TabixReader {
-    private String mFn;
-    private String mIdxFn;
-    private BlockCompressedInputStream mFp;
+    private final String mFn;
+    private final String mIdxFn;
+    private final Function<SeekableByteChannel, SeekableByteChannel> mIdxWrpr;
+    private final BlockCompressedInputStream mFp;
 
     private int mPreset;
     private int mSc;
@@ -111,6 +114,17 @@ public class TabixReader {
     }
 
     /**
+     * @param fn File name of the data file
+     * @param idxFn Full path to the index file. Auto-generated if null
+     */
+    public TabixReader(final String fn, final String idxFn,
+                       Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                       Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        this(fn, idxFn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn, wrapper)), indexWrapper);
+    }
+
+
+    /**
      * @param fn File name of the data file  (used for error messages only)
      * @param stream Seekable stream from which the data is read
      */
@@ -124,8 +138,14 @@ public class TabixReader {
      * @param stream Seekable stream from which the data is read
      */
     public TabixReader(final String fn, final String idxFn, SeekableStream stream) throws IOException {
+        this(fn, idxFn, stream, null);
+    }
+
+
+    public TabixReader(final String fn, final String idxFn, SeekableStream stream, Function<SeekableByteChannel, SeekableByteChannel> idxWrpr) throws IOException {
         mFn = fn;
         mFp = new BlockCompressedInputStream(stream);
+        mIdxWrpr = idxWrpr;
         if(idxFn == null){
             mIdxFn = ParsingUtils.appendToPath(fn, TabixUtils.STANDARD_INDEX_EXTENSION);
         } else {
@@ -239,7 +259,7 @@ public class TabixReader {
      */
     private void readIndex() throws IOException {
         ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
-        readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIdxFn), 128000));
+        readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIdxFn, mIdxWrpr), 128000));
     }
 
     /**

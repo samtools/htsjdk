@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.util;
 
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.IOUtil;
 import java.awt.Color;
 import java.io.File;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.Function;
 
 /**
  * @author jrobinso
@@ -80,9 +83,7 @@ public class ParsingUtils {
 
     public static InputStream openInputStream(String path)
             throws IOException {
-
-        InputStream inputStream;
-
+        final InputStream inputStream;
         if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
             inputStream = getURLHelper(new URL(path)).openInputStream();
         } else if (IOUtil.hasScheme(path)) {
@@ -92,6 +93,21 @@ public class ParsingUtils {
             inputStream = new FileInputStream(file);
         }
 
+        return inputStream;
+    }
+
+    public static InputStream openInputStream(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+            throws IOException {
+
+        final InputStream inputStream;
+        if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
+            inputStream = getURLHelper(new URL(path)).openInputStream();
+        } else if (IOUtil.hasScheme(path)) {
+            inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
+        } else {
+            File file = new File(path);
+            inputStream = new FileInputStream(file);
+        }
         return inputStream;
     }
 

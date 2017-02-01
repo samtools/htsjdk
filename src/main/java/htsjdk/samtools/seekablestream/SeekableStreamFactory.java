@@ -27,6 +27,8 @@ import htsjdk.samtools.util.IOUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
+import java.util.function.Function;
 
 /**
  * Singleton class for getting {@link SeekableStream}s from URL/paths
@@ -65,11 +67,19 @@ public class SeekableStreamFactory{
 
     private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
 
+        @Override
         public SeekableStream getStreamFor(final URL url) throws IOException {
             return getStreamFor(url.toExternalForm());
         }
 
+        @Override
         public SeekableStream getStreamFor(final String path) throws IOException {
+            return getStreamFor(path, null);
+        }
+
+        @Override
+        public SeekableStream getStreamFor(final String path,
+                                           Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
             // todo -- add support for SeekableBlockInputStream
 
             if (path.startsWith("http:") || path.startsWith("https:")) {
@@ -80,16 +90,18 @@ public class SeekableStreamFactory{
             } else if (path.startsWith("file:")) {
                 return new SeekableFileStream(new File(new URL(path).getPath()));
             } else if (IOUtil.hasScheme(path)) {
-                return new SeekablePathStream(IOUtil.getPath(path));
+                return new SeekablePathStream(IOUtil.getPath(path), wrapper);
             } else {
                 return new SeekableFileStream(new File(path));
             }
         }
 
+        @Override
         public SeekableStream getBufferedStream(SeekableStream stream){
             return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
         }
 
+        @Override
         public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize){
             if (bufferSize == 0) return stream;
             else return new SeekableBufferedStream(stream, bufferSize);

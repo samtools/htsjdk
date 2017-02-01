@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
@@ -30,9 +31,11 @@ import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author Jim Robinson
@@ -50,10 +53,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @throws IOException
      */
     public TabixFeatureReader(final String featureFile, final AsciiFeatureCodec codec) throws IOException {
-        super(featureFile, codec);
-        tabixReader = new TabixReader(featureFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
-        readHeader();
+        this(featureFile, null, codec, null, null);
     }
 
     /**
@@ -64,9 +64,23 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @throws IOException
      */
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec) throws IOException {
-        super(featureFile, codec);
-        tabixReader = new TabixReader(featureFile, indexFile);
-        sequenceNames = new ArrayList<String>(tabixReader.getChromosomes());
+        this(featureFile, indexFile, codec, null, null);
+    }
+
+    /**
+     *
+     * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
+     * @param indexFile - path to the index file.
+     * @param codec
+     * @param wrapper
+     * @param indexWrapper @throws IOException
+     */
+    public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec,
+                              final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                              final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        super(featureFile, codec, wrapper, indexWrapper);
+        tabixReader = new TabixReader(featureFile, indexFile, wrapper, indexWrapper);
+        sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }
 
@@ -80,7 +94,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader() throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper))));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
@@ -97,6 +111,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
 
+    @Override
     public List<String> getSequenceNames() {
         return sequenceNames;
     }
@@ -110,6 +125,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
      * @return
      * @throws IOException
      */
+    @Override
     public CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException {
         final List<String> mp = getSequenceNames();
         if (mp == null) throw new TribbleException.TabixReaderFailure("Unable to find sequence named " + chr +
@@ -121,13 +137,15 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         return new FeatureIterator<T>(lineReader, start - 1, end);
     }
 
+    @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
-        final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path));
+        final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
     }
 
+    @Override
     public void close() throws IOException {
         tabixReader.close();
     }
@@ -184,10 +202,12 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         }
 
 
+        @Override
         public boolean hasNext() {
             return currentRecord != null;
         }
 
+        @Override
         public T next() {
             T ret = currentRecord;
             try {
@@ -200,14 +220,17 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Remove is not supported in Iterators");
         }
 
+        @Override
         public void close() {
             lineReader.close();
         }
 
+        @Override
         public Iterator<T> iterator() {
             return this;
         }

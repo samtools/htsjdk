@@ -407,7 +407,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     /**
      * Attempt to reuse the buffer of the given block 
      * @param block owning block
-     * @return null decompressiong buffer to resuse, null if no buffer is available
+     * @return null decompressing buffer to reuse, null if no buffer is available
      */
     private byte[] getBufferForReuse(DecompressedBlock block) {
         if (block == null) return null;

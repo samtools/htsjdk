@@ -77,8 +77,6 @@ public abstract class SamReaderFactory {
 
     private static ValidationStringency defaultValidationStringency = ValidationStringency.DEFAULT_STRINGENCY;
 
-    private Function<SeekableByteChannel, SeekableByteChannel> pathWrapper = Function.identity();
-
     abstract public SamReader open(final File file);
 
     /**

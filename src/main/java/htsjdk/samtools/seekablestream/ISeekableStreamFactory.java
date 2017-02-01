@@ -2,6 +2,8 @@ package htsjdk.samtools.seekablestream;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
+import java.util.function.Function;
 
 /**
  * Factory for creating {@link SeekableStream}s based on URLs/paths.
@@ -30,4 +32,12 @@ public interface ISeekableStreamFactory {
      * @return
      */
     public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize);
+
+    default SeekableStream getStreamFor(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        if(wrapper != null) {
+            throw new UnsupportedOperationException("This factory doesn't support adding wrappers");
+        } else {
+            return this.getStreamFor(path);
+        }
+    }
 }
