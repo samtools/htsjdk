@@ -30,6 +30,7 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -40,6 +41,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.zip.Inflater;
 
 /**
  * Utility class for reading BGZF block compressed files.  The caller can treat this file like any other InputStream.
@@ -65,19 +67,41 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     private DecompressedBlock mCurrentBlock = null;
     private int mCurrentOffset = 0;
     private long mStreamOffset = 0;
-    private final BlockGunzipper blockGunzipper = new BlockGunzipper();
+    private final BlockGunzipper blockGunzipper;
 
     /**
      * Note that seek() is not supported if this ctor is used.
+     * @param stream source of bytes
      */
     public BlockCompressedInputStream(final InputStream stream) {
-        this(stream, true);
+        this(stream, true, BlockGunzipper.getDefaultInflaterFactory());
     }
 
     /**
      * Note that seek() is not supported if this ctor is used.
+     * @param stream source of bytes
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     */
+    public BlockCompressedInputStream(final InputStream stream, final InflaterFactory inflaterFactory) {
+        this(stream, true, inflaterFactory);
+    }
+
+    /**
+     * Note that seek() is not supported if this ctor is used.
+     * @param stream source of bytes
+     * @param allowBuffering if true, allow buffering
      */
     public BlockCompressedInputStream(final InputStream stream, final boolean allowBuffering) {
+        this(stream, allowBuffering, BlockGunzipper.getDefaultInflaterFactory());
+    }
+
+    /**
+     * Note that seek() is not supported if this ctor is used.
+     * @param stream source of bytes
+     * @param allowBuffering if true, allow buffering
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     */
+    public BlockCompressedInputStream(final InputStream stream, final boolean allowBuffering, final InflaterFactory inflaterFactory) {
         if (allowBuffering) {
             mStream = IOUtil.toBufferedStream(stream);
         }
@@ -86,30 +110,68 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
 
         mFile = null;
+        blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
 
     /**
      * Use this ctor if you wish to call seek()
+     * @param file source of bytes
+     * @throws IOException
      */
     public BlockCompressedInputStream(final File file) throws IOException {
-        mFile = new SeekableFileStream(file);
-        mStream = null;
-
+        this(file, BlockGunzipper.getDefaultInflaterFactory());
     }
 
+    /**
+     * Use this ctor if you wish to call seek()
+     * @param file source of bytes
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     * @throws IOException
+     */
+    public BlockCompressedInputStream(final File file, final InflaterFactory inflaterFactory) throws IOException {
+        mFile = new SeekableFileStream(file);
+        mStream = null;
+        blockGunzipper = new BlockGunzipper(inflaterFactory);
+    }
+
+    /**
+     * @param url source of bytes
+     */
     public BlockCompressedInputStream(final URL url) {
+        this(url, BlockGunzipper.getDefaultInflaterFactory());
+    }
+
+    /**
+     * @param url source of bytes
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     */
+    public BlockCompressedInputStream(final URL url, final InflaterFactory inflaterFactory) {
         mFile = new SeekableBufferedStream(new SeekableHTTPStream(url));
         mStream = null;
+        blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
 
     /**
      * For providing some arbitrary data source.  No additional buffering is
      * provided, so if the underlying source is not buffered, wrap it in a
      * SeekableBufferedStream before passing to this ctor.
+     * @param strm source of bytes
      */
     public BlockCompressedInputStream(final SeekableStream strm) {
+        this(strm, BlockGunzipper.getDefaultInflaterFactory());
+    }
+
+    /**
+     * For providing some arbitrary data source.  No additional buffering is
+     * provided, so if the underlying source is not buffered, wrap it in a
+     * SeekableBufferedStream before passing to this ctor.
+     * @param strm source of bytes
+     * @param inflaterFactory {@link InflaterFactory} used by {@link BlockGunzipper}
+     */
+    public BlockCompressedInputStream(final SeekableStream strm, final InflaterFactory inflaterFactory) {
         mFile = strm;
         mStream = null;
+        blockGunzipper = new BlockGunzipper(inflaterFactory);
     }
 
     /**

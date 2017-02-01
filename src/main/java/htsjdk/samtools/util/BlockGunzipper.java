@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFormatException;
+import htsjdk.samtools.util.zip.InflaterFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -43,9 +44,34 @@ import java.util.zip.Inflater;
  * @author alecw@broadinstitute.org
  */
 public class BlockGunzipper {
-    private final Inflater inflater = new Inflater(true); // GZIP mode
+    private static InflaterFactory defaultInflaterFactory = new InflaterFactory();
+    private final Inflater inflater;
     private final CRC32 crc32 = new CRC32();
     private boolean checkCrcs = false;
+
+    /**
+     * Create BlockGunziper using the provided inflaterFactory
+     * @param inflaterFactory
+     */
+    BlockGunzipper(InflaterFactory inflaterFactory) {
+        inflater = inflaterFactory.makeInflater(true); // GZIP mode
+    }
+
+    /**
+     * Sets the default {@link InflaterFactory} that will be used for all instances unless specified otherwise in the constructor.
+     * If this method is not called the default is a factory that will create the JDK {@link Inflater}.
+     * @param inflaterFactory non-null default factory.
+     */
+    public static void setDefaultInflaterFactory(final InflaterFactory inflaterFactory) {
+        if (inflaterFactory == null) {
+            throw new IllegalArgumentException("null inflaterFactory");
+        }
+        defaultInflaterFactory = inflaterFactory;
+    }
+
+    public static InflaterFactory getDefaultInflaterFactory() {
+        return defaultInflaterFactory;
+    }
 
     /** Allows the caller to decide whether or not to check CRCs on when uncompressing blocks. */
     public void setCheckCrcs(final boolean check) {
