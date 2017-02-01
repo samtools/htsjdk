@@ -50,7 +50,14 @@ public class BlockGunzipper {
     private boolean checkCrcs = false;
 
     /**
-     * Create BlockGunziper using the provided inflaterFactory
+     * Create a BlockGunzipper using the default inflaterFactory
+     */
+    BlockGunzipper() {
+        inflater = defaultInflaterFactory.makeInflater(true); // GZIP mode
+    }
+
+    /**
+     * Create a BlockGunzipper using the provided inflaterFactory
      * @param inflaterFactory
      */
     BlockGunzipper(InflaterFactory inflaterFactory) {

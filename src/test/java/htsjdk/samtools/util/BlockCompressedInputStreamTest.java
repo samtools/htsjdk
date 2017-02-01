@@ -93,8 +93,11 @@ public class BlockCompressedInputStreamTest {
 		}
 	}
 
-    private static class MyInflater extends Inflater {
-        MyInflater(boolean gzipCompatible) {
+    private static class CountingInflater extends Inflater {
+        // Must be static unfortunately, since there's no way to reach down into an inflater instance given a stream
+        static int inflateCalls = 0;
+
+        CountingInflater(boolean gzipCompatible) {
             super(gzipCompatible);
         }
         @Override
@@ -102,71 +105,73 @@ public class BlockCompressedInputStreamTest {
             inflateCalls++;
             return super.inflate(b, off, len);
         }
-        static int inflateCalls;
+    }
+
+    private static class CountingInflaterFactory extends InflaterFactory {
+        @Override
+        public Inflater makeInflater( boolean gzipCompatible ) {
+            return new CountingInflater(gzipCompatible);
+        }
+    }
+
+    @FunctionalInterface
+    private interface CheckedExceptionInputStreamSupplier {
+        InputStream get() throws IOException;
+    }
+
+    private List<String> writeTempBlockCompressedFileForInflaterTest( final File tempFile ) throws IOException {
+        final List<String> linesWritten = new ArrayList<>();
+        try ( final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(tempFile, 5) ) {
+            String s = "Hi, Mom!\n";
+            bcos.write(s.getBytes()); //Call 1
+            linesWritten.add(s);
+            s = "Hi, Dad!\n";
+            bcos.write(s.getBytes()); //Call 2
+            linesWritten.add(s);
+            bcos.flush();
+            final StringBuilder sb = new StringBuilder(BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2);
+            s = "1234567890123456789012345678901234567890123456789012345678901234567890\n";
+            while ( sb.length() <= BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE ) {
+                sb.append(s);
+                linesWritten.add(s);
+            }
+            bcos.write(sb.toString().getBytes()); //Call 3
+        }
+        return linesWritten;
     }
 
     @DataProvider(name = "customInflaterInput")
     public Object[][] customInflateInput() throws IOException {
         final File tempFile = File.createTempFile("testCustomInflater.", ".bam");
         tempFile.deleteOnExit();
-        System.out.println("Creating file " + tempFile);
+        final List<String> linesWritten = writeTempBlockCompressedFileForInflaterTest(tempFile);
 
-        final List<String> linesWritten = new ArrayList<>();
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(tempFile, 5);
-        String s = "Hi, Mom!\n";
-        bcos.write(s.getBytes()); //Call 1
-        linesWritten.add(s);
-        s = "Hi, Dad!\n";
-        bcos.write(s.getBytes()); //Call 2
-        linesWritten.add(s);
-        bcos.flush();
-        final StringBuilder sb = new StringBuilder(BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE * 2);
-        s = "1234567890123456789012345678901234567890123456789012345678901234567890\n";
-        while (sb.length() <= BlockCompressedStreamConstants.DEFAULT_UNCOMPRESSED_BLOCK_SIZE) {
-            sb.append(s);
-            linesWritten.add(s);
-        }
-        bcos.write(sb.toString().getBytes()); //Call 3
-        bcos.close();
-
-        final InflaterFactory myInflaterFactory = new InflaterFactory() {
-            public Inflater makeInflater(final boolean gzipCompatible) {
-                return new MyInflater(gzipCompatible);
-            }
-        };
-
-        // test catching null InflaterFactory
-        try {
-            BlockGunzipper.setDefaultInflaterFactory(null);
-            Assert.fail("Did not catch 'null' InflaterFactory");
-        }
-        catch (java.lang.IllegalArgumentException e) { /* expected */ }
-
-        BlockGunzipper.setDefaultInflaterFactory(myInflaterFactory);
+        final InflaterFactory countingInflaterFactory = new CountingInflaterFactory();
+        BlockGunzipper.setDefaultInflaterFactory(countingInflaterFactory);
 
         return new Object[][]{
                 // use default InflaterFactory
-                {new BlockCompressedInputStream(new FileInputStream(tempFile), false), linesWritten, 4},
-                {new BlockCompressedInputStream(tempFile), linesWritten, 4},
-                {new AsyncBlockCompressedInputStream(tempFile), linesWritten, 4},
-                {new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam")), null, 21},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam")), null, 21},
                 // provide InflaterFactory
-                {new BlockCompressedInputStream(new FileInputStream(tempFile), false, myInflaterFactory), linesWritten, 4},
-                {new BlockCompressedInputStream(tempFile, myInflaterFactory), linesWritten, 4},
-                {new AsyncBlockCompressedInputStream(tempFile, myInflaterFactory), linesWritten, 4},
-                {new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"), myInflaterFactory), null, 21}
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"), countingInflaterFactory), null, 21}
         };
     }
 
-    @Test(dataProvider = "customInflaterInput")
-    public void testCustomInflater(final BlockCompressedInputStream bcis,
+    @Test(dataProvider = "customInflaterInput", singleThreaded = true)
+    public void testCustomInflater(final CheckedExceptionInputStreamSupplier bcisSupplier,
                                    final List<String> expectedOutput,
                                    final int expectedInflateCalls) throws Exception
     {
-        // clear inflate call counter in MyInflater
-        MyInflater.inflateCalls = 0;
+        // clear inflate call counter in CountingInflater
+        CountingInflater.inflateCalls = 0;
 
-        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(bcis))) {
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(bcisSupplier.get()))) {
             String line;
             for (int i = 0; (line = reader.readLine()) != null; ++i) {
                 // check expected output, if provided
@@ -175,9 +180,14 @@ public class BlockCompressedInputStreamTest {
                 }
             }
         }
-        bcis.close();
 
         // verify custom inflater was used by checking number of inflate calls
-        Assert.assertEquals(MyInflater.inflateCalls, expectedInflateCalls, "inflate calls");
+        Assert.assertEquals(CountingInflater.inflateCalls, expectedInflateCalls, "inflate calls");
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testSetNullInflaterFactory() {
+        // test catching null InflaterFactory
+        BlockGunzipper.setDefaultInflaterFactory(null);
     }
 }
