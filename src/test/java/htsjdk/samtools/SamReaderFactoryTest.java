@@ -67,7 +67,6 @@ public class SamReaderFactoryTest {
         final File input = new File(TEST_DATA_DIR, inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault().inflaterFactory(myInflaterFactory).open(input)) {
             for (final SAMRecord ignored : reader) { }
-            reader.close();
         }
         Assert.assertNotEquals(inflateCalls[0], 0, "Not using Inflater from InflateFactory on file : " + inputFile);
     }
