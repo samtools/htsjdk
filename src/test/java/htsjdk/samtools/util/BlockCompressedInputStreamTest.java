@@ -147,29 +147,37 @@ public class BlockCompressedInputStreamTest {
         final List<String> linesWritten = writeTempBlockCompressedFileForInflaterTest(tempFile);
 
         final InflaterFactory countingInflaterFactory = new CountingInflaterFactory();
-        BlockGunzipper.setDefaultInflaterFactory(countingInflaterFactory);
 
         return new Object[][]{
-                // use default InflaterFactory
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam")), null, 21},
-                // provide InflaterFactory
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4},
-                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"), countingInflaterFactory), null, 21}
+                // set the default InflaterFactory to a CountingInflaterFactory
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false), linesWritten, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile), linesWritten, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile), linesWritten, 4, countingInflaterFactory},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam")), null, 21, countingInflaterFactory},
+                // provide a CountingInflaterFactory explicitly
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new FileInputStream(tempFile), false, countingInflaterFactory), linesWritten, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new AsyncBlockCompressedInputStream(tempFile, countingInflaterFactory), linesWritten, 4, null},
+                {(CheckedExceptionInputStreamSupplier) () -> new BlockCompressedInputStream(new URL("http://broadinstitute.github.io/picard/testdata/index_test.bam"), countingInflaterFactory), null, 21, null}
         };
     }
 
     @Test(dataProvider = "customInflaterInput", singleThreaded = true)
     public void testCustomInflater(final CheckedExceptionInputStreamSupplier bcisSupplier,
                                    final List<String> expectedOutput,
-                                   final int expectedInflateCalls) throws Exception
+                                   final int expectedInflateCalls,
+                                   final InflaterFactory customDefaultInflaterFactory) throws Exception
     {
         // clear inflate call counter in CountingInflater
         CountingInflater.inflateCalls = 0;
+
+        // If requested, set the global default InflaterFactory to a custom factory. Otherwise, set it to the default.
+        if ( customDefaultInflaterFactory != null )  {
+            BlockGunzipper.setDefaultInflaterFactory(customDefaultInflaterFactory);
+        }
+        else {
+            BlockGunzipper.setDefaultInflaterFactory(new InflaterFactory());
+        }
 
         try (final BufferedReader reader = new BufferedReader(new InputStreamReader(bcisSupplier.get()))) {
             String line;
@@ -183,6 +191,9 @@ public class BlockCompressedInputStreamTest {
 
         // verify custom inflater was used by checking number of inflate calls
         Assert.assertEquals(CountingInflater.inflateCalls, expectedInflateCalls, "inflate calls");
+
+        // Reset the default InflaterFactory back to the default value
+        BlockGunzipper.setDefaultInflaterFactory(new InflaterFactory());
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
