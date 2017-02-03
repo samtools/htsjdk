@@ -39,9 +39,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -80,8 +82,13 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @throws IOException
      */
     public TribbleIndexedFeatureReader(final String featurePath, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
+        this(featurePath, codec, requireIndex, null, null);
+    }
 
-        super(featurePath, codec);
+    public TribbleIndexedFeatureReader(final String featurePath, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex,
+                                       Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                                       Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        super(featurePath, codec, wrapper, indexWrapper);
 
         if (requireIndex) {
             this.loadIndex();
@@ -104,9 +111,23 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @throws IOException
      */
     public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
-        this(featureFile, codec, false); // required to read the header
+        this(featureFile, indexFile, codec, requireIndex, null, null);
+    }
+
+        /**
+         * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url, or any other
+         *                     uri supported by a {@link java.nio.file.Path} plugin
+         * @param indexFile    - path to the index file
+         * @param codec        - codec to decode the features
+         * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
+         * @throws IOException
+         */
+    public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex,
+                                       Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                                       Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        this(featureFile, codec, false, wrapper, indexWrapper); // required to read the header
         if (indexFile != null && ParsingUtils.resourceExists(indexFile)) {
-            index = IndexFactory.loadIndex(indexFile);
+            index = IndexFactory.loadIndex(indexFile, indexWrapper);
             this.needCheckForIndex = false;
         } else {
             if (requireIndex) {
@@ -117,6 +138,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
     }
+
+
 
     /**
      * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
@@ -139,12 +162,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     private void loadIndex() throws IOException{
         String indexFile = Tribble.indexFile(this.path);
         if (ParsingUtils.resourceExists(indexFile)) {
-            index = IndexFactory.loadIndex(indexFile);
+            index = IndexFactory.loadIndex(indexFile, indexWrapper);
         } else {
             // See if the index itself is gzipped
             indexFile = ParsingUtils.appendToPath(indexFile, ".gz");
             if (ParsingUtils.resourceExists(indexFile)) {
-                index = IndexFactory.loadIndex(indexFile);
+                index = IndexFactory.loadIndex(indexFile, indexWrapper);
             }
         }
         this.needCheckForIndex = false;
@@ -164,11 +187,11 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         final SeekableStream result;
         if (reuseStreamInQuery()) {
             // if the stream points to an underlying file, only create the underlying seekable stream once
-            if (seekableStream == null) seekableStream = SeekableStreamFactory.getInstance().getStreamFor(path);
+            if (seekableStream == null) seekableStream = SeekableStreamFactory.getInstance().getStreamFor(path, wrapper);
             result = seekableStream;
         } else {
             // we are not reusing the stream, so make a fresh copy each time we request it
-            result = SeekableStreamFactory.getInstance().getStreamFor(path);
+            result = SeekableStreamFactory.getInstance().getStreamFor(path, wrapper);
         }
 
         return result;
@@ -183,6 +206,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         return pathIsRegularFile;
     }
 
+    @Override
     public void close() throws IOException {
         // close the seekable stream if that's necessary
         if (seekableStream != null) seekableStream.close();
@@ -193,6 +217,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      *
      * @return list of strings of the contig names
      */
+    @Override
     public List<String> getSequenceNames() {
         return !this.hasIndex() ? new ArrayList<String>() : new ArrayList<String>(index.getSequenceNames());
     }
@@ -218,7 +243,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         InputStream is = null;
         PositionalBufferedStream pbs = null;
         try {
-            is = ParsingUtils.openInputStream(path);
+            is = ParsingUtils.openInputStream(path, wrapper);
             if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
@@ -252,6 +277,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @return an iterator of records in this interval
      * @throws IOException
      */
+    @Override
     public CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException {
 
         if (!this.hasIndex()) {
@@ -271,6 +297,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @return Return an iterator to iterate over the entire file
      * @throws IOException
      */
+    @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
         return new WFIterator();
     }
@@ -288,7 +315,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          * @throws IOException
          */
         public WFIterator() throws IOException {
-            final InputStream inputStream = ParsingUtils.openInputStream(path);
+            final InputStream inputStream = ParsingUtils.openInputStream(path, wrapper);
 
             final PositionalBufferedStream pbs;
             if (hasBlockCompressedExtension(path)) {
@@ -299,9 +326,9 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             } else {
                 pbs = new PositionalBufferedStream(inputStream, 512000);
             }
-            /**
+            /*
              * The header was already read from the original source in the constructor; don't read it again, since some codecs keep state
-             * about its initializagtion.  Instead, skip that part of the stream.
+             * about its initialization.  Instead, skip that part of the stream.
              */
             pbs.skip(header.getHeaderEnd());
             source = codec.makeSourceFromStream(pbs);
@@ -399,10 +426,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         }
 
 
+        @Override
         public boolean hasNext() {
             return currentRecord != null;
         }
 
+        @Override
         public T next() {
             final T ret = currentRecord;
             try {
@@ -486,11 +515,13 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         }
 
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Remove is not supported.");
         }
 
 
+        @Override
         public void close() {
             // Note that this depends on BlockStreamWrapper not actually closing the underlying stream
             codec.close(source);
@@ -504,6 +535,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
 
+        @Override
         public Iterator<T> iterator() {
             return this;
         }

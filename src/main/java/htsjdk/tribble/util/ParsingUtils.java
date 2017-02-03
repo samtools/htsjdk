@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.util;
 
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.IOUtil;
 import java.awt.Color;
 import java.io.File;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.Function;
 
 /**
  * @author jrobinso
@@ -78,20 +81,37 @@ public class ParsingUtils {
     }
 
 
+    /**
+     * @return an input stream from the given path
+     * @throws IOException
+     */
     public static InputStream openInputStream(String path)
             throws IOException {
+        return openInputStream(path, null);
+    }
 
-        InputStream inputStream;
+    /**
+     * open an input stream from the given path and wrap the raw byte stream with a wrapper if given
+     *
+     * the wrapper will only be applied to paths that are not http, https, ftp, or file, i.e. any {@link java.nio.file.Path}
+     * using a custom filesystem plugin
+     * @param path a uri like string
+     * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
+     * @return
+     * @throws IOException
+     */
+    public static InputStream openInputStream(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+            throws IOException {
 
+        final InputStream inputStream;
         if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
             inputStream = getURLHelper(new URL(path)).openInputStream();
         } else if (IOUtil.hasScheme(path)) {
-            inputStream = Files.newInputStream(IOUtil.getPath(path));
+            inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
         } else {
             File file = new File(path);
             inputStream = new FileInputStream(file);
         }
-
         return inputStream;
     }
 

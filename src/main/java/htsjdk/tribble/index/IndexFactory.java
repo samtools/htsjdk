@@ -51,9 +51,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.nio.channels.SeekableByteChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -90,9 +92,7 @@ public class IndexFactory {
         public IndexCreator getIndexCreator() {
             try {
                 return indexCreatorClass.newInstance();
-            } catch ( final InstantiationException e ) {
-                throw new TribbleException("Couldn't make index creator in " + this, e);
-            } catch ( final IllegalAccessException e ) {
+            } catch ( final InstantiationException | IllegalAccessException e ) {
                 throw new TribbleException("Couldn't make index creator in " + this, e);
             }
         }
@@ -162,11 +162,25 @@ public class IndexFactory {
      * @param indexFile from which to load the index
      */
     public static Index loadIndex(final String indexFile) {
+        return loadIndex(indexFile, null);
+    }
+
+    /**
+     * Load in index from the specified file.   The type of index (LinearIndex or IntervalTreeIndex) is determined
+     * at run time by reading the type flag in the file.
+     *
+     * @param indexFile from which to load the index
+     * @param indexWrapper a wrapper to apply to the raw byte stream of the index file, only applied to uri's loaded as
+     *                     {@link java.nio.file.Path}
+     */
+    public static Index loadIndex(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
         // Must be buffered, because getIndexType uses mark and reset
-        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(indexFileInputStream(indexFile), Defaults.NON_ZERO_BUFFER_SIZE)){
+        try (BufferedInputStream bufferedInputStream = new BufferedInputStream(indexFileInputStream(indexFile, indexWrapper), Defaults.NON_ZERO_BUFFER_SIZE)) {
             final Class<Index> indexClass = IndexType.getIndexType(bufferedInputStream).getIndexType();
             final Constructor<Index> ctor = indexClass.getConstructor(InputStream.class);
             return ctor.newInstance(bufferedInputStream);
+        } catch (final TribbleException ex) {
+            throw ex;
         } catch (final IOException ex) {
             throw new TribbleException.UnableToReadIndexFile("Unable to read index file", indexFile, ex);
         } catch (final Exception ex) {
@@ -174,8 +188,8 @@ public class IndexFactory {
         }
     }
 
-    private static InputStream indexFileInputStream(final String indexFile) throws IOException {
-        final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile);
+    private static InputStream indexFileInputStream(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        final InputStream inputStreamInitial = ParsingUtils.openInputStream(indexFile, indexWrapper);
         if (indexFile.endsWith(".gz")) {
             return new GZIPInputStream(inputStreamInitial);
         }
