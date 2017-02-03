@@ -69,11 +69,13 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
     /**
      *
-     * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
-     * @param indexFile - path to the index file.
-     * @param codec
-     * @param wrapper
-     * @param indexWrapper @throws IOException
+     * @param featureFile     path to a feature file. Can be a local file, http url, or ftp url
+     * @param indexFile       path to the index file.
+     * @param wrapper         a wrapper to apply to the byte stream from the featureResource allowing injecting features
+     *                        like caching and prefetching of the stream, may be null, will only be applied if featureFile
+     *                        is a uri representing a {@link java.nio.file.Path}
+     * @param indexWrapper    a wrapper to apply to the byte stream from the indexResource, may be null, will only be
+     *                        applied if indexFile is a uri representing a {@link java.nio.file.Path}
      */
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec,
                               final Function<SeekableByteChannel, SeekableByteChannel> wrapper,

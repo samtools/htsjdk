@@ -170,6 +170,8 @@ public class IndexFactory {
      * at run time by reading the type flag in the file.
      *
      * @param indexFile from which to load the index
+     * @param indexWrapper a wrapper to apply to the raw byte stream of the index file, only applied to uri's loaded as
+     *                     {@link java.nio.file.Path}
      */
     public static Index loadIndex(final String indexFile, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
         // Must be buffered, because getIndexType uses mark and reset

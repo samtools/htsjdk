@@ -44,7 +44,10 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     // the path to underlying data source
     String path;
+
+    // a wrapper to apply to the raw stream of the Feature file to allow features like prefetching and caching to be injected
     final Function<SeekableByteChannel, SeekableByteChannel> wrapper;
+    // a wrapper to apply to the raw stream of the index file
     final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper;
 
     // the query source, codec, and header
@@ -84,11 +87,14 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      *
      * @param featureResource the feature file to create from
      * @param indexResource   the index for the feature file. If null, will auto-generate (if necessary)
-     * @param codec
+     * @param codec           the codec to use to decode the individual features
      * @param requireIndex    whether an index is required for this file
-     * @param wrapper
-     * @param indexWrapper
-     * @return
+     * @param wrapper         a wrapper to apply to the byte stream from the featureResource allowing injecting features
+     *                        like caching and prefetching of the stream, may be null, will only be applied if featureResource
+     *                        is a uri representing a {@link java.nio.file.Path}
+     * @param indexWrapper    a wrapper to apply to the byte stream from the indexResource, may be null, will only be
+     *                        applied if indexResource is a uri representing a {@link java.nio.file.Path}
+     *
      * @throws TribbleException
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {

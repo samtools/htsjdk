@@ -77,6 +77,14 @@ public class SeekableStreamFactory{
             return getStreamFor(path, null);
         }
 
+        /**
+         * The wrapper will only be applied to the stream if the stream is treated as a {@link java.nio.file.Path}
+         *
+         * This currently means any uri with a scheme that is not http, https, ftp, or file will have the wrapper applied to it
+         *
+         * @param path    a uri like String representing a resource to open
+         * @param wrapper a wrapper to apply to the stream allowing direct transformations on the byte stream to be applied
+         */
         @Override
         public SeekableStream getStreamFor(final String path,
                                            Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {

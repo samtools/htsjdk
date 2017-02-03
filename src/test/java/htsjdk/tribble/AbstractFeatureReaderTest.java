@@ -40,11 +40,12 @@ public class AbstractFeatureReaderTest {
     private static final String MANGLED_VCF_INDEX = TEST_PATH + "mangledBaseVariants.vcf.idx";
     private static final String VCF = TEST_PATH + "baseVariants.vcf";
     private static final String VCF_INDEX = TEST_PATH + "baseVariants.vcf.idx";
-    private static final String VCF_TABIX = TEST_PATH + "baseVariants.vcf.gz";
+    private static final String VCF_TABIX_BLOCK_GZIPPED = TEST_PATH + "baseVariants.vcf.gz";
     private static final String VCF_TABIX_INDEX = TEST_PATH + "baseVariants.vcf.gz.tbi";
-    private static final String MANGLED_VCF_TABIX = TEST_PATH + "baseVariants.mangled.vcf.gz";
+    private static final String MANGLED_VCF_TABIX_BLOCK_GZIPPED = TEST_PATH + "baseVariants.mangled.vcf.gz";
     private static final String MANGLED_VCF_TABIX_INDEX = TEST_PATH + "baseVariants.mangled.vcf.gz.tbi";
 
+    //wrapper which skips the first byte of a file and leaves the rest unchanged
     private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
 
     /**
@@ -137,10 +138,10 @@ public class AbstractFeatureReaderTest {
                 {MANGLED_VCF, MANGLED_VCF_INDEX, WRAPPER, WRAPPER},
                 {VCF, MANGLED_VCF_INDEX, null, WRAPPER},
                 {MANGLED_VCF, VCF_INDEX, WRAPPER, null},
-                {MANGLED_VCF_TABIX, MANGLED_VCF_TABIX_INDEX, WRAPPER, WRAPPER},
-                {VCF_TABIX, MANGLED_VCF_TABIX_INDEX, null, WRAPPER},
-                {MANGLED_VCF_TABIX, VCF_TABIX_INDEX, WRAPPER, null},
-                {VCF_TABIX, VCF_TABIX_INDEX, null, null},
+                {MANGLED_VCF_TABIX_BLOCK_GZIPPED, MANGLED_VCF_TABIX_INDEX, WRAPPER, WRAPPER},
+                {VCF_TABIX_BLOCK_GZIPPED, MANGLED_VCF_TABIX_INDEX, null, WRAPPER},
+                {MANGLED_VCF_TABIX_BLOCK_GZIPPED, VCF_TABIX_INDEX, WRAPPER, null},
+                {VCF_TABIX_BLOCK_GZIPPED, VCF_TABIX_INDEX, null, null},
         };
     }
 
@@ -148,11 +149,11 @@ public class AbstractFeatureReaderTest {
     public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
                                                         Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                         Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException, URISyntaxException {
-        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
                                                                                             indexWrapper,
                                                                                             new VCFCodec(),
-                                                                                            fs);
+                                                                                            fs)){
             Assert.assertTrue(featureReader.hasIndex());
             Assert.assertEquals(featureReader.iterator().toList().size(), 26);
             Assert.assertEquals(featureReader.query("1", 190, 210).toList().size(), 3);
@@ -163,15 +164,20 @@ public class AbstractFeatureReaderTest {
     @DataProvider(name = "failsWithoutWrappers")
     private static Object[][] failsWithoutWrappers(){
         return new Object[][] {
-                {MANGLED_VCF, VCF_INDEX, new VCFCodec()},
-                {VCF, MANGLED_VCF_INDEX, new VCFCodec()},
+                {MANGLED_VCF, MANGLED_VCF_INDEX},
+                {VCF, MANGLED_VCF_INDEX},
+                {MANGLED_VCF, VCF_INDEX},
+                {MANGLED_VCF_TABIX_BLOCK_GZIPPED, MANGLED_VCF_TABIX_INDEX},
+                {VCF_TABIX_BLOCK_GZIPPED, MANGLED_VCF_TABIX_INDEX},
+                {MANGLED_VCF_TABIX_BLOCK_GZIPPED, VCF_TABIX_INDEX},
         };
     }
 
     @Test(dataProvider = "failsWithoutWrappers", expectedExceptions = {TribbleException.class, FileTruncatedException.class})
-    public void testFailureIfNoWrapper(String file, String index, FeatureCodec<? extends Feature, ?> codec) throws IOException, URISyntaxException {
-        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
-            getFeatureReader(file, index, null, null, new VCFCodec(), fs);
+    public void testFailureIfNoWrapper(String file, String index) throws IOException, URISyntaxException {
+        try(final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
+            final FeatureReader<?> reader = getFeatureReader(file, index, null, null, new VCFCodec(), fs)){
+            // should have exploded by now
         }
     }
 

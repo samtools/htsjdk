@@ -81,21 +81,25 @@ public class ParsingUtils {
     }
 
 
+    /**
+     * @return an input stream from the given path
+     * @throws IOException
+     */
     public static InputStream openInputStream(String path)
             throws IOException {
-        final InputStream inputStream;
-        if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
-            inputStream = getURLHelper(new URL(path)).openInputStream();
-        } else if (IOUtil.hasScheme(path)) {
-            inputStream = Files.newInputStream(IOUtil.getPath(path));
-        } else {
-            File file = new File(path);
-            inputStream = new FileInputStream(file);
-        }
-
-        return inputStream;
+        return openInputStream(path, null);
     }
 
+    /**
+     * open an input stream from the given path and wrap the raw byte stream with a wrapper if given
+     *
+     * the wrapper will only be applied to paths that are not http, https, ftp, or file, i.e. any {@link java.nio.file.Path}
+     * using a custom filesystem plugin
+     * @param path a uri like string
+     * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
+     * @return
+     * @throws IOException
+     */
     public static InputStream openInputStream(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
 

@@ -115,7 +115,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     }
 
         /**
-         * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url
+         * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url, or any other
+         *                     uri supported by a {@link java.nio.file.Path} plugin
          * @param indexFile    - path to the index file
          * @param codec        - codec to decode the features
          * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist

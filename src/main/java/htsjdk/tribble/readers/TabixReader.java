@@ -46,9 +46,9 @@ import java.util.function.Function;
  * @author Heng Li <hengli@broadinstitute.org>
  */
 public class TabixReader {
-    private final String mFn;
-    private final String mIdxFn;
-    private final Function<SeekableByteChannel, SeekableByteChannel> mIdxWrpr;
+    private final String mFilePath;
+    private final String mIndexPath;
+    private final Function<SeekableByteChannel, SeekableByteChannel> mIndexWrapper;
     private final BlockCompressedInputStream mFp;
 
     private int mPreset;
@@ -99,57 +99,64 @@ public class TabixReader {
     }
 
     /**
-     * @param fn File name of the data file
+     * @param filePath path to the data file/uri
      */
-    public TabixReader(final String fn) throws IOException {
-        this(fn, null, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
+    public TabixReader(final String filePath) throws IOException {
+        this(filePath, null, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(filePath)));
     }
 
     /**
-     * @param fn File name of the data file
-     * @param idxFn Full path to the index file. Auto-generated if null
+     * @param filePath path to the of the data file/uri
+     * @param indexPath Full path to the index file. Auto-generated if null
      */
-    public TabixReader(final String fn, final String idxFn) throws IOException {
-        this(fn, idxFn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn)));
+    public TabixReader(final String filePath, final String indexPath) throws IOException {
+        this(filePath, indexPath, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(filePath)));
     }
 
     /**
-     * @param fn File name of the data file
-     * @param idxFn Full path to the index file. Auto-generated if null
+     * @param filePath path to the data file/uri
+     * @param indexPath Full path to the index file. Auto-generated if null
+     * @param wrapper a wrapper to apply to the raw byte stream of the data file if is a uri representing a {@link java.nio.file.Path}
+     * @param indexWrapper a wrapper to apply to the raw byte stream of the index file if it is a uri representing a {@link java.nio.file.Path}
      */
-    public TabixReader(final String fn, final String idxFn,
-                       Function<SeekableByteChannel, SeekableByteChannel> wrapper,
-                       Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
-        this(fn, idxFn, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(fn, wrapper)), indexWrapper);
+    public TabixReader(final String filePath, final String indexPath,
+                       final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
+                       final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        this(filePath, indexPath, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(filePath, wrapper)), indexWrapper);
     }
 
 
     /**
-     * @param fn File name of the data file  (used for error messages only)
+     * @param filePath Path to the data file  (used for error messages only)
      * @param stream Seekable stream from which the data is read
      */
-    public TabixReader(final String fn, SeekableStream stream) throws IOException {
-        this(fn, null, stream);
+    public TabixReader(final String filePath, SeekableStream stream) throws IOException {
+        this(filePath, null, stream);
     }
 
     /**
-     * @param fn File name of the data file  (used for error messages only)
-     * @param idxFn Full path to the index file. Auto-generated if null
+     * @param filePath Path to the data file  (used for error messages only)
+     * @param indexPath Full path to the index file. Auto-generated if null
      * @param stream Seekable stream from which the data is read
      */
-    public TabixReader(final String fn, final String idxFn, SeekableStream stream) throws IOException {
-        this(fn, idxFn, stream, null);
+    public TabixReader(final String filePath, final String indexPath, SeekableStream stream) throws IOException {
+        this(filePath, indexPath, stream, null);
     }
 
-
-    public TabixReader(final String fn, final String idxFn, SeekableStream stream, Function<SeekableByteChannel, SeekableByteChannel> idxWrpr) throws IOException {
-        mFn = fn;
+    /**
+     * @param filePath Path to the data file (used for error messages only)
+     * @param indexPath Full path to the index file. Auto-generated if null
+     * @param indexWrapper a wrapper to apply to the raw byte stream of the index file if it is a uri representing a {@link java.nio.file.Path}
+     * @param stream Seekable stream from which the data is read
+     */
+    public TabixReader(final String filePath, final String indexPath, SeekableStream stream, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
+        mFilePath = filePath;
         mFp = new BlockCompressedInputStream(stream);
-        mIdxWrpr = idxWrpr;
-        if(idxFn == null){
-            mIdxFn = ParsingUtils.appendToPath(fn, TabixUtils.STANDARD_INDEX_EXTENSION);
+        mIndexWrapper = indexWrapper;
+        if(indexPath == null){
+            mIndexPath = ParsingUtils.appendToPath(filePath, TabixUtils.STANDARD_INDEX_EXTENSION);
         } else {
-            mIdxFn = idxFn;
+            mIndexPath = indexPath;
         }
         readIndex();
     }
@@ -157,7 +164,7 @@ public class TabixReader {
     /** return the source (filename/URL) of that reader */
     public String getSource()
         {
-        return this.mFn;
+        return this.mFilePath;
         }
 
     private static int reg2bins(final int beg, final int _end, final int[] list) {
@@ -259,7 +266,7 @@ public class TabixReader {
      */
     private void readIndex() throws IOException {
         ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
-        readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIdxFn, mIdxWrpr), 128000));
+        readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIndexPath, mIndexWrapper), 128000));
     }
 
     /**
