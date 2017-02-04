@@ -12,6 +12,7 @@ import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 
 import java.io.Closeable;
 import java.io.File;
@@ -54,23 +55,30 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 	public VCFFileReader(final File file, final boolean requireIndex) {
 	  // Note how we deal with type safety here, just casting to (FeatureCodec)
 	  // in the call to getFeatureReader is not enough for Java 8.
-      FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      final FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      final boolean closeStreamAfterReadingHeader =
+              VariantContextWriterBuilder.OutputType.VCF_STREAM == VariantContextWriterBuilder.determineOutputTypeFromFile(file) ? false : true;
+
       this.reader = AbstractFeatureReader.getFeatureReader(
                       file.getAbsolutePath(),
                       codec,
-                      requireIndex);
+                      requireIndex,
+              closeStreamAfterReadingHeader);
 	}
 
     /** Allows construction of a VCFFileReader with a specified index file. */
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
       // Note how we deal with type safety here, just casting to (FeatureCodec)
       // in the call to getFeatureReader is not enough for Java 8.
-      FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      final FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
+      final boolean closeStreamAfterReadingHeader =
+                VariantContextWriterBuilder.OutputType.VCF_STREAM == VariantContextWriterBuilder.determineOutputTypeFromFile(file) ? false : true;
       this.reader = AbstractFeatureReader.getFeatureReader(
                       file.getAbsolutePath(),
                       indexFile.getAbsolutePath(),
                       codec,
-                      requireIndex);
+                      requireIndex,
+              closeStreamAfterReadingHeader);
     }
 
     /**

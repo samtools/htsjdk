@@ -80,6 +80,17 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * @throws IOException
      */
     public TribbleIndexedFeatureReader(final String featurePath, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
+        this(featurePath, codec, requireIndex, false);
+    }
+
+    /**
+     * @param featurePath  - path to the feature file, can be a local file path, http url, or ftp url
+     * @param codec        - codec to decode the features
+     * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
+     * @param closeStreamAfterReadingHeader - close the stream after reading the header
+     * @throws IOException
+     */
+    public TribbleIndexedFeatureReader(final String featurePath, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex, final boolean closeStreamAfterReadingHeader) throws IOException {
 
         super(featurePath, codec);
 
@@ -93,18 +104,25 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         // does path point to a regular file?
         this.pathIsRegularFile = SeekableStreamFactory.isFilePath(path);
 
-        readHeader();
+        readHeader(closeStreamAfterReadingHeader);
     }
 
+    public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
+        this(featureFile, indexFile, codec, requireIndex, false);
+    }
+
+
     /**
+     *
      * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url
      * @param indexFile    - path to the index file
      * @param codec        - codec to decode the features
      * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
+     * @param closeStreamAfterReadingHeader  close the stream after reading the header
      * @throws IOException
      */
-    public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex) throws IOException {
-        this(featureFile, codec, false); // required to read the header
+    public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex,  final boolean closeStreamAfterReadingHeader) throws IOException {
+        this(featureFile, codec, false, closeStreamAfterReadingHeader); // required to read the header
         if (indexFile != null && ParsingUtils.resourceExists(indexFile)) {
             index = IndexFactory.loadIndex(indexFile);
             this.needCheckForIndex = false;
@@ -118,14 +136,18 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         }
     }
 
-    /**
-     * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
-     * @param codec       - codec to decode the features
-     * @param index       - a tribble Index object
-     * @throws IOException
-     */
     public TribbleIndexedFeatureReader(final String featureFile, final FeatureCodec<T, SOURCE> codec, final Index index) throws IOException {
-        this(featureFile, codec, false); // required to read the header
+        this(featureFile, codec, index, false);
+    }
+
+        /**
+         * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
+         * @param codec       - codec to decode the features
+         * @param index       - a tribble Index object
+         * @throws IOException
+         */
+    public TribbleIndexedFeatureReader(final String featureFile, final FeatureCodec<T, SOURCE> codec, final Index index, final boolean closeStreamAfterReadingHeader) throws IOException {
+        this(featureFile, codec, false, closeStreamAfterReadingHeader); // required to read the header
         this.index = index;
         this.needCheckForIndex = false;
     }
@@ -212,9 +234,11 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     /**
      * read the header from the file
      *
+     * @param closeStreamAfterReadingHeader - close the stream after reading the header
+     *
      * @throws IOException throws an IOException if we can't open the file
      */
-    private void readHeader() throws IOException {
+    private void readHeader(final boolean closeStreamAfterReadingHeader) throws IOException {
         InputStream is = null;
         PositionalBufferedStream pbs = null;
         try {
@@ -229,8 +253,10 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
         } finally {
-            if (pbs != null) pbs.close();
-            else if (is != null) is.close();
+            if ( closeStreamAfterReadingHeader ) {
+                if (pbs != null) pbs.close();
+                else if (is != null) is.close();
+            }
         }
     }
 

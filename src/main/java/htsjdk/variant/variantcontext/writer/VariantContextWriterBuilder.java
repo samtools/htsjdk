@@ -467,7 +467,7 @@ public class VariantContextWriterBuilder {
      * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
      * but is neither a file or directory then VCF_STREAM is returned.
      */
-    protected static OutputType determineOutputTypeFromFile(final File f) {
+    public static OutputType determineOutputTypeFromFile(final File f) {
         if (isBCF(f)) {
             return OutputType.BCF;
         } else if (isCompressedVCF(f)) {

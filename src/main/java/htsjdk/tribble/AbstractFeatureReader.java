@@ -50,7 +50,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     private static ComponentMethods methods = new ComponentMethods();
 
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     /**
      * Calls {@link #getFeatureReader(String, FeatureCodec, boolean)} with {@code requireIndex} = true
@@ -64,7 +64,16 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @throws TribbleException
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
-        return getFeatureReader(featureResource, null, codec, requireIndex);
+        return getFeatureReader(featureResource, null, codec, requireIndex, false);
+    }
+
+    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex,
+                                                                                                            final boolean closeStreamAfterReadingHeader) throws TribbleException {
+        return getFeatureReader(featureResource, null, codec, requireIndex, closeStreamAfterReadingHeader);
+    }
+
+    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
+        return getFeatureReader(featureResource, indexResource, codec, requireIndex, false);
     }
 
     /**
@@ -73,10 +82,12 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @param indexResource   the index for the feature file. If null, will auto-generate (if necessary)
      * @param codec
      * @param requireIndex    whether an index is required for this file
+     * @param closeStreamAfterReadingHeader  close stream after reading header?
      * @return
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
+    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex,
+                                                                                                            final boolean closeStreamAfterReadingHeader) throws TribbleException {
 
         try {
             // Test for tabix index
@@ -87,7 +98,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
             }
             // Not tabix => tribble index file (might be gzipped, but not block gzipped)
             else {
-                return new TribbleIndexedFeatureReader<FEATURE, SOURCE>(featureResource, indexResource, codec, requireIndex);
+                return new TribbleIndexedFeatureReader<FEATURE, SOURCE>(featureResource, indexResource, codec, requireIndex, closeStreamAfterReadingHeader);
             }
         } catch (IOException e) {
             throw new TribbleException.MalformedFeatureFile("Unable to create BasicFeatureReader using feature file ", featureResource, e);
@@ -95,6 +106,10 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
             e.setSource(featureResource);
             throw e;
         }
+    }
+
+    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE>  codec, final Index index) throws TribbleException {
+        return getFeatureReader(featureResource, codec, index, false);
     }
 
     /**
@@ -106,13 +121,12 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return a reader for this data
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE>  codec, final Index index) throws TribbleException {
+    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE>  codec, final Index index, final boolean closeStreamAfterReadingHeader) throws TribbleException {
         try {
             return new TribbleIndexedFeatureReader<FEATURE, SOURCE>(featureResource, codec, index);
         } catch (IOException e) {
             throw new TribbleException.MalformedFeatureFile("Unable to create AbstractFeatureReader using feature file ", featureResource, e);
         }
-
     }
 
     protected AbstractFeatureReader(final String path, final FeatureCodec<T, SOURCE> codec) {
