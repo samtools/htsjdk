@@ -138,5 +138,4 @@ public class LocatableUnitTest {
         Assert.assertEquals(firstInterval.contains(secondInterval), expectedContainsResult,
                 "contains() returned incorrect result for intervals " + firstInterval + " and " + secondInterval);
     }
-
 }

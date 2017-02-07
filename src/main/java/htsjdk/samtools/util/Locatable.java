@@ -44,16 +44,16 @@ public interface Locatable {
     }
 
     /**
-     * Determines whether this interval comes within "margin" of overlapping the provided locatable.
-     * This is the same as plain overlaps if margin=0.
+     * Determines whether this interval comes within {@code distance} of overlapping the provided locatable.
+     * When distance = 0 this is equal to {@link #overlaps(Locatable)}
      *
      * @param other interval to check
-     * @param margin how many bases may be between the two interval for us to still consider them overlapping.
+     * @param distance how many bases may be between the two intervals for us to still consider them overlapping.
      * @return true if this interval overlaps other, otherwise false
      */
-    default boolean withinDistanceOf(Locatable other, int margin) {
+    default boolean withinDistanceOf(Locatable other, int distance) {
         return contigsMatch(other) &&
-                CoordMath.overlaps(getStart(), getEnd(), other.getStart()-margin, other.getEnd()+margin);
+                CoordMath.overlaps(getStart(), getEnd(), other.getStart()-distance, other.getEnd()+distance);
     }
 
     /**
@@ -61,7 +61,7 @@ public interface Locatable {
      * (in other words, whether it covers it).
      *
      * @param other interval to check
-     * @return true if this interval contains all of the bases spanned by other, otherwise false
+     * @return true if this interval contains all of the base positions spanned by other, otherwise false
      */
     default boolean contains(Locatable other) {
         return contigsMatch(other) && CoordMath.encloses(getStart(), getEnd(), other.getStart(), other.getEnd());
@@ -74,6 +74,4 @@ public interface Locatable {
     default boolean contigsMatch(Locatable other) {
         return getContig() != null && other != null && Objects.equals(this.getContig(), other.getContig());
     }
-
-
 }

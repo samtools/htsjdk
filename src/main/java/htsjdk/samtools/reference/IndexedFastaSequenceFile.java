@@ -68,6 +68,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
+    @Deprecated
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
         this(file == null ? null : file.toPath(), index);
     }
@@ -77,6 +78,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @param file The file to open.
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
+    @Deprecated
     public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
         this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(file))));
     }
