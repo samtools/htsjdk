@@ -29,7 +29,11 @@ import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.utils.GeneralUtils;
-import htsjdk.variant.vcf.*;
+import htsjdk.variant.vcf.VCFCompoundHeaderLine;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.io.Serializable;
 import java.util.*;
@@ -858,9 +862,10 @@ public class VariantContext implements Feature, Serializable {
             return null;
         }
 
-        List<Integer> lengths = getAlternateAlleles().stream()
-                                                     .map(a -> a.length() - getReference().length())
-                                                     .collect(Collectors.toList());
+        List<Integer> lengths = new ArrayList<>();
+        for ( Allele a : getAlternateAlleles() ) {
+            lengths.add(a.length() - getReference().length());
+        }
 
         return lengths;
     }
@@ -1043,7 +1048,7 @@ public class VariantContext implements Feature, Serializable {
      * @return chromosome count
      */
     public int getCalledChrCount(Allele a) {
-        return getCalledChrCount(a, Collections.emptySet());
+        return getCalledChrCount(a, new HashSet<>(0));
     }
 
     /**
@@ -1719,10 +1724,10 @@ public class VariantContext implements Feature, Serializable {
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
         return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
     }
-
-    /**
-     * Search for the INFO=SVTYPE and return the type of Structural Variant
-     * @return the StructuralVariantType of null if there is no property SVTYPE
+    
+    /** 
+     * Search for the INFO=SVTYPE and return the type of Structural Variant 
+     * @return the StructuralVariantType of null if there is no property SVTYPE 
      * */
     public StructuralVariantType getStructuralVariantType() {
         final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
