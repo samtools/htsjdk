@@ -22,7 +22,7 @@ public class CRAMCRAIIndexerTest {
     @Test
     public void testCRAIIndexerFromContainer() throws IOException {
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/test2.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/test2.fa");
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
         ReferenceSource refSource = new ReferenceSource(refFile);
         CRAMFileReader reader = new CRAMFileReader(
                 CRAMFile,
@@ -55,7 +55,7 @@ public class CRAMCRAIIndexerTest {
     @Test
     public void testCRAIIndexerFromStream() throws IOException {
         final File CRAMFile = new File("src/test/resources/htsjdk/samtools/cram/test2.cram");
-        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/test2.fa");
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/auxf.fa");
         ReferenceSource refSource = new ReferenceSource(refFile);
 
         // get the header to use
