@@ -181,6 +181,10 @@ public class CRAMComplianceTest extends HtsjdkTest {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
         return new Object[][] {
+                // Test cram file created with samtools using a *reference* that contains ambiguity codes
+                // 'R' and 'M', a single no call '.', and some lower case bases.
+                {new File(TEST_DATA_DIR, "samtoolsSliceMD5WithAmbiguityCodesTest.cram"),
+                        new File(TEST_DATA_DIR, "ambiguityCodes.fasta")},
                 {new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram"),
                         new File(TEST_DATA_DIR, "human_g1k_v37.20.21.1-100.fasta")},
                 {new File(TEST_DATA_DIR, "NA12878.20.21.1-100.100-SeqsPerSlice.1-unMapped.cram"),
