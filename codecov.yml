@@ -10,7 +10,7 @@ coverage:
     project:
       default:
         target: auto
-        threshold: null
+        threshold: .01
         branches: null
 
     patch:
