@@ -633,7 +633,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Non static version of the static function with the same name.
      *
      * @param position 1-based location within the unclipped sequence
-     * @return 1-based reference position of the unclipped sequence at a given read position
+     * @return 1-based reference position of the unclipped sequence at a given read position,
+     *         or 0 if there is no position.
      */
     public int getReferencePositionAtReadPosition(final int position) {
         return getReferencePositionAtReadPosition(this, position);
@@ -702,7 +703,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * Returns the 1-based position in the read of the provided reference position, or zero if no
+     * Returns the 1-based position in the read of the provided reference position, or 0 if no
      * such position exists.
      *
      * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
