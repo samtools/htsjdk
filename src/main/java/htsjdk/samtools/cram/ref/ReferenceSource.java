@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -27,6 +28,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -124,10 +126,13 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    // Upper case and normalize (-> ACGTN) in-place, and add to the cache
+    // Upper case (in-place), and add to the cache
     private byte[] addToCache(final String sequenceName, final byte[] bases) {
+        // Normalize to upper case only. We can't use the cram normalization utility Utils.normalizeBases, since
+        // we don't want to normalize ambiguity codes, we can't use SamUtils.normalizeBases, since we don't want
+        // to normalize no-call ('.') bases.
         for (int i = 0; i < bases.length; i++) {
-            bases[i] = Utils.normalizeBase(bases[i]);
+            bases[i] = StringUtil.toUpperCase(bases[i]);
         }
         cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
         return bases;
