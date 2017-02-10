@@ -630,38 +630,44 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
 
     /**
-     * @param offset 1-based location within the unclipped sequence or 0 if there is no position.
-     * <p/>
      * Non static version of the static function with the same name.
-     * @return 1-based inclusive reference position of the unclipped sequence at a given offset,
+     *
+     * @param position 1-based location within the unclipped sequence
+     * @return 1-based reference position of the unclipped sequence at a given read position,
+     *         or 0 if there is no position.
      */
-    public int getReferencePositionAtReadPosition(final int offset) {
-        return getReferencePositionAtReadPosition(this, offset);
+    public int getReferencePositionAtReadPosition(final int position) {
+        return getReferencePositionAtReadPosition(this, position);
     }
 
     /**
-     * @param rec record to use
-     * @param offset 1-based location within the unclipped sequence
-     * @return 1-based inclusive reference position of the unclipped sequence at a given offset,
-     * or 0 if there is no position.
+     * Returns the 1-based reference position for the provided 1-based position in read.
+     *
      * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
-     * and a (1-based)offset 10 (start of GGG) it returns 7 (1-based offset starting after the soft clip.
+     * and a (1-based) position of 10 (start of GGG) it returns 7 (1-based position starting after
+     * the soft clip.
+     *
      * For example: given the sequence AAACCCGGGTTT, cigar 4M1D6M, an alignment start of 1,
-     * an offset of 4 returns reference position 4, an offset of 5 returns reference position 6.
+     * a position of 4, returns reference position 4, a position of 5 returns reference position 6.
+     *
      * Another example: given the sequence AAACCCGGGTTT, cigar 4M1I6M, an alignment start of 1,
-     * an offset of 4 returns reference position 4, an offset of 5 returns 0.
+     * a position of 4 returns reference position 4, an position of 5 returns 0.
+     *
+     * @param rec record to use
+     * @param position 1-based location within the unclipped sequence
+     * @return 1-based  reference position of the unclipped sequence at a given read position,
+     *                  or 0 if there is no position.
      */
-    public static int getReferencePositionAtReadPosition(final SAMRecord rec, final int offset) {
-
-        if (offset == 0) return 0;
+    public static int getReferencePositionAtReadPosition(final SAMRecord rec, final int position) {
+        if (position == 0) return 0;
 
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
-            if (CoordMath.getEnd(alignmentBlock.getReadStart(), alignmentBlock.getLength()) < offset) {
+            if (CoordMath.getEnd(alignmentBlock.getReadStart(), alignmentBlock.getLength()) < position) {
                 continue;
-            } else if (offset < alignmentBlock.getReadStart()) {
+            } else if (position < alignmentBlock.getReadStart()) {
                 return 0;
             } else {
-                return alignmentBlock.getReferenceStart() + offset - alignmentBlock.getReadStart();
+                return alignmentBlock.getReferenceStart() + position - alignmentBlock.getReadStart();
             }
         }
         return 0; // offset not located in an alignment block
@@ -669,8 +675,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
 
     /**
+     * Returns the 1-based position in the read of the 1-based reference position provided.
+     *
      * @param pos 1-based reference position
-     * return the offset
      * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
      * unclipped sequence at a given reference position, or 0 if there is no such position.
      *
@@ -681,37 +688,43 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @param pos 1-based reference position
-     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read, function will
-     * return the offset
-     * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
-     * unclipped sequence at a given reference position,
-     * or 0 if there is no such position. If returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
-     * in the preceding block.
-     *
      * Non-static version of static function with the same name. See examples below.
+     *
+     * @param pos 1-based reference position
+     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read,
+     *                                function will return the offset
+     * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
+     *         unclipped sequence at a given reference position, or 0 if there is no such position. If
+     *         returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
+     *         in the preceding block.
      */
     public int getReadPositionAtReferencePosition(final int pos, final boolean returnLastBaseIfDeleted) {
         return getReadPositionAtReferencePosition(this, pos, returnLastBaseIfDeleted);
     }
 
     /**
+     * Returns the 1-based position in the read of the provided reference position, or 0 if no
+     * such position exists.
+     *
+     * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
+     * and a (1-based) pos of 7 (start of GGG) it returns 10 (1-based position including the soft clip).
+     *
+     * For example: given the sequence AAACCCGGGT, cigar 4M1D6M, an alignment start of 1,
+     * a reference position of 4 returns read position 4, a reference position of 5 also returns a read
+     * position of 4 if returnLastBaseIfDeleted and 0 otherwise.
+     *
+     * For example: given the sequence AAACtCGGGTT, cigar 4M1I6M, an alignment start of 1,
+     * a position 4 returns a position of 5, a position of 5 returns 6 (the inserted base is the 5th read position),
+     * a position of 11 returns 0 since that position in the reference doesn't overlap the read at all.
+     *
      * @param rec record to use
      * @param pos 1-based reference position
-     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read, function will
-     * return the offset
+     * @param returnLastBaseIfDeleted if positive, and reference position matches a deleted base in the read,
+     *                                function will return the position of the last non-deleted base
      * @return 1-based (to match getReferencePositionAtReadPosition behavior) inclusive position into the
-     * unclipped sequence at a given reference position,
-     * or 0 if there is no such position. If returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
-     * in the preceding block.
-     * For example, given the sequence NNNAAACCCGGG, cigar 3S9M, and an alignment start of 1,
-     * and a (1-based)pos of 7 (start of GGG) it returns 10 (1-based offset including the soft clip.
-     * For example: given the sequence AAACCCGGGT, cigar 4M1D6M, an alignment start of 1,
-     * a reference position of 4 returns offset of 4, a reference of 5 also returns an offset 4 (using "left aligning") if returnLastBaseIfDeleted
-     * and 0 otherwise.
-     * For example: given the sequence AAACtCGGGTT, cigar 4M1I6M, an alignment start of 1,
-     * a position 4 returns an offset 5, a position of 5 returns 6 (the inserted base is the 5th offset), a position of 11 returns 0 since
-     * that position in the reference doesn't overlap the read at all.
+     *         unclipped sequence at a given reference position, or 0 if there is no such position. If
+     *         returnLastBaseIfDeleted is true deletions are assumed to "live" on the last read base
+     *         in the preceding block.
      *
      */
     public static int getReadPositionAtReferencePosition(final SAMRecord rec, final int pos, final boolean returnLastBaseIfDeleted) {
