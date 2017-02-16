@@ -297,7 +297,7 @@ public class BAMRecord extends SAMRecord {
     }
 
     @Override
-    protected SAMBinaryTagAndValue getBinaryAttributes() {
+    public SAMBinaryTagAndValue getBinaryAttributes() {
         if (!mAttributesDecoded) {
             decodeAttributes();
         }
