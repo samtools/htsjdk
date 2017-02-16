@@ -262,6 +262,28 @@ public class BinaryTagCodec {
 
     /**
      * Convert tags from little-endian disk representation to in-memory representation.
+     * @param tagCode
+     * @param tagType
+     * @param byteBuffer a byte buffer in little-endian order containing file representation of a tagCode.
+     * @param validationStringency
+     * @return
+     */
+
+    public static SAMBinaryTagAndValue readSingleTagValue(final short tagCode, final byte tagType, final ByteBuffer byteBuffer, final ValidationStringency validationStringency) {
+        final SAMBinaryTagAndValue tag;
+        if (tagType != 'B') {
+            tag = new SAMBinaryTagAndValue(tagCode, BinaryTagCodec.readSingleValue(tagType, byteBuffer, validationStringency));
+        } else {
+            final TagValueAndUnsignedArrayFlag valueAndFlag = BinaryTagCodec.readArray(byteBuffer, validationStringency);
+            if (valueAndFlag.isUnsignedArray) tag = new SAMBinaryTagAndUnsignedArrayValue(tagCode, valueAndFlag.value);
+            else tag = new SAMBinaryTagAndValue(tagCode, valueAndFlag.value);
+        }
+
+        return tag;
+    }
+
+    /**
+     * Convert tags from little-endian disk representation to in-memory representation.
      * @param binaryRep Byte buffer containing file representation of tags.
      * @param offset Where in binaryRep tags start.
      * @param length How many bytes in binaryRep are tag storage.
@@ -277,14 +299,7 @@ public class BinaryTagCodec {
         while (byteBuffer.hasRemaining()) {
             final short tag = byteBuffer.getShort();
             final byte tagType = byteBuffer.get();
-            final SAMBinaryTagAndValue tmp;
-            if (tagType != 'B') {
-                tmp = new SAMBinaryTagAndValue(tag, readSingleValue(tagType, byteBuffer, validationStringency));
-            } else {
-                final TagValueAndUnsignedArrayFlag valueAndFlag = readArray(byteBuffer, validationStringency);
-                if (valueAndFlag.isUnsignedArray) tmp = new SAMBinaryTagAndUnsignedArrayValue(tag, valueAndFlag.value);
-                else tmp = new SAMBinaryTagAndValue(tag, valueAndFlag.value);
-            }
+            final SAMBinaryTagAndValue tmp = readSingleTagValue(tag, tagType, byteBuffer, validationStringency);
 
             // If samjdk wrote the BAM then the attributes will be in lowest->highest tag order, to inserting at the
             // head each time will be very inefficient. To fix that we check here to see if the tag should go right on
@@ -311,7 +326,7 @@ public class BinaryTagCodec {
      * @param byteBuffer Little-ending byte buffer to read value from.
      * @return Value in in-memory Object form.
      */
-    private static  Object readSingleValue(final byte tagType, final ByteBuffer byteBuffer,
+    public static  Object readSingleValue(final byte tagType, final ByteBuffer byteBuffer,
                                            final ValidationStringency validationStringency) {
         switch (tagType) {
             case 'Z':
