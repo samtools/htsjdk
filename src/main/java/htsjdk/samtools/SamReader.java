@@ -381,7 +381,11 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             this.resource = resource;
         }
 
-        PrimitiveSamReader underlyingReader() {
+        /**
+         * Access the underlying {@link PrimitiveSamReader} used by this adapter.
+         * @return the {@link PrimitiveSamReader} used by this adapter.
+         */
+        public PrimitiveSamReader underlyingReader() {
             return p;
         }
 
