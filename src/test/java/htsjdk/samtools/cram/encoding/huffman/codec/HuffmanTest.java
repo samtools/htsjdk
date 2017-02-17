@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.encoding.huffman.codec;
 
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
-import htsjdk.samtools.cram.structure.ReadTag;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -14,25 +13,27 @@ import java.io.IOException;
  * Created by vadim on 22/04/2015.
  */
 public class HuffmanTest {
+
     @Test
     public void testHuffmanIntHelper() throws IOException {
         int size = 1000000;
 
         HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
-        cal.add(ReadTag.nameType3BytesToInt("OQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X0", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'C'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("X1", 's'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XA", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XC", 'c'), size);
-        cal.add(ReadTag.nameType3BytesToInt("XT", 'A'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OP", 'i'), size);
-        cal.add(ReadTag.nameType3BytesToInt("OC", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("BQ", 'Z'), size);
-        cal.add(ReadTag.nameType3BytesToInt("AM", 'c'), size);
+        // CRAM read tag ids for tags: OQZ X0C X0c X0s X1C X1c X1s XAZ XCc XTA OPi OCZ BQZ AMc
+        cal.add(5198170);
+        cal.add(5779523);
+        cal.add(5779555);
+        cal.add(5779571);
+        cal.add(5779779);
+        cal.add(5779811);
+        cal.add(5779827);
+        cal.add(5783898);
+        cal.add(5784419);
+        cal.add(5788737);
+        cal.add(5197929);
+        cal.add(5194586);
+        cal.add(4346202);
+        cal.add(4279651);
 
         cal.calculate();
 
