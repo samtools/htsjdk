@@ -39,18 +39,6 @@ public interface URLHelper {
 
     InputStream openInputStream() throws IOException;
 
-    /**
-     * May throw an OperationUnsupportedException
-     * @deprecated Will be removed in a future release, as is somewhat fragile
-     * and not used.
-     * @param start
-     * @param end
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    InputStream openInputStreamForRange(long start, long end) throws IOException;
-
     public boolean exists() throws IOException;
 
 }

@@ -43,12 +43,6 @@ public class FTPHelper implements URLHelper {
     }
 
     @Override
-    @Deprecated
-    public InputStream openInputStreamForRange(long start, long end) throws IOException {
-        throw new UnsupportedOperationException("Cannot perform range operations over FTP");
-    }
-
-    @Override
     public boolean exists() throws IOException {
         return FTPUtils.resourceAvailable(this.url);
     }

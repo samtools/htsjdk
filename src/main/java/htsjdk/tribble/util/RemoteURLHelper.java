@@ -43,12 +43,6 @@ public class RemoteURLHelper implements URLHelper {
     }
 
     @Override
-    @Deprecated
-    public InputStream openInputStreamForRange(long start, long end) throws IOException {
-        return this.wrappedHelper.openInputStreamForRange(start, end);
-    }
-
-    @Override
     public boolean exists() throws IOException {
         return this.wrappedHelper.exists();
     }
