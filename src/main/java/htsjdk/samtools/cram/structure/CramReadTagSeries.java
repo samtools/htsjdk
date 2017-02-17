@@ -105,6 +105,20 @@ public class CramReadTagSeries implements Comparable<CramReadTagSeries> {
     }
 
     /**
+     * Write byte representation of CRAM tag id into a new byte array
+     *
+     * @param cramTagId CRAM tag id to write
+     */
+    public static byte[] writeCramTagId(final int cramTagId) {
+        ByteBuffer buf = ByteBuffer.allocate(3);
+        writeCramTagId(cramTagId, buf);
+        buf.flip();
+        byte[] data = new byte[3];
+        buf.get(data);
+        return data;
+    }
+
+    /**
      * Extract BAM binary tag code from CRAM tag id
      *
      * @param cramTagId CRAM tag id

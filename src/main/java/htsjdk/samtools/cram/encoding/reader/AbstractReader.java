@@ -17,20 +17,84 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.common.IntHashMap;
 import htsjdk.samtools.cram.encoding.DataSeries;
 import htsjdk.samtools.cram.encoding.DataSeriesMap;
 import htsjdk.samtools.cram.encoding.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingKey;
+import htsjdk.samtools.cram.structure.CramReadTagSeries;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 @SuppressWarnings({"WeakerAccess", "UnusedDeclaration"})
 public abstract class AbstractReader {
     final Charset charset = Charset.forName("UTF8");
     public boolean captureReadNames = false;
-    public byte[][][] tagIdDictionary;
+
+    public byte[][][] getTagIdDictionary() {
+        return tagIdDictionary;
+    }
+
+    public void setTagIdDictionary(byte[][][] tagIdDictionary) {
+        this.tagIdDictionary = tagIdDictionary;
+        cramReadTagSeries = new CramReadTagSeries[tagIdDictionary.length][];
+        for (int tagIdList = 0; tagIdList < tagIdDictionary.length; tagIdList++) {
+            final byte[][] ids = tagIdDictionary[tagIdList];
+            cramReadTagSeries[tagIdList] = new CramReadTagSeries[ids.length];
+            for (int i = 0; i < ids.length; i++) {
+                cramReadTagSeries[tagIdList][i] = new CramReadTagSeries(ids[i]);
+            }
+        }
+    }
+
+    /**
+     * Read record tags into a linked tag list
+     *
+     * @param validationStringency validation stringency to use while reading
+     * @return null if there is no tags, or new {@link SAMBinaryTagAndValue} values linked together
+     * @throws IOException
+     */
+    SAMBinaryTagAndValue readRecordTags(ValidationStringency validationStringency) throws IOException {
+        final Integer tagIdList = tagIdListCodec.readData();
+        final byte[][] ids = tagIdDictionary[tagIdList];
+
+        SAMBinaryTagAndValue tags = null;
+        if (ids.length > 0) {
+            for (CramReadTagSeries tagSeries : cramReadTagSeries[tagIdList]) {
+                final byte[] data = tagValueCodecs.get(tagSeries.cramTagId).readData();
+                SAMBinaryTagAndValue tag = tagSeries.deserializeValue(data, validationStringency);
+                if (tags == null) {
+                    tags = tag;
+                } else {
+                    tags = tags.insert(tag);
+                }
+            }
+        }
+        return tags;
+    }
+
+    /**
+     * Read and discard tags for the record
+     *
+     * @throws IOException
+     */
+    void skipRecordTags() throws IOException {
+        final Integer tagIdList = tagIdListCodec.readData();
+        final byte[][] ids = tagIdDictionary[tagIdList];
+
+        if (ids.length > 0) {
+            for (CramReadTagSeries tagSeries : cramReadTagSeries[tagIdList]) {
+                tagValueCodecs.get(tagSeries.cramTagId).readData();
+            }
+        }
+    }
+
+    protected byte[][][] tagIdDictionary;
+    protected CramReadTagSeries[][] cramReadTagSeries;
 
     @DataSeries(key = EncodingKey.BF_BitFlags, type = DataSeriesType.INT)
     public DataReader<Integer> bitFlagsCodec;
