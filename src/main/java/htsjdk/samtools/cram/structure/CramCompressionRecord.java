@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
@@ -87,7 +88,7 @@ public class CramCompressionRecord {
     // insert size:
     public int templateSize;
 
-    public ReadTag[] tags;
+    public SAMBinaryTagAndValue tags;
     public byte[] tagIds;
     public MutableInt tagIdsIndex;
 
