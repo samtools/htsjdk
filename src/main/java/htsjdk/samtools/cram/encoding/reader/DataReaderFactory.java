@@ -26,11 +26,8 @@ import htsjdk.samtools.cram.encoding.DataSeriesType;
 import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingKey;
-import htsjdk.samtools.cram.structure.EncodingParams;
-import htsjdk.samtools.cram.structure.ReadTag;
+import htsjdk.samtools.cram.structure.*;
+import htsjdk.samtools.cram.structure.CramReadTagSeries;
 import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
@@ -87,7 +84,7 @@ public class DataReaderFactory {
             }
         }
 
-        reader.tagIdDictionary = header.dictionary;
+        reader.setTagIdDictionary(header.dictionary);
         return reader;
     }
 
@@ -215,8 +212,8 @@ public class DataReaderFactory {
                     final Map<Integer, DataReader<byte[]>> tagMap = (Map<Integer, DataReader<byte[]>>) field
                             .get(reader);
                     for (final Integer key : tagMap.keySet()) {
-                        final String tag = ReadTag.intToNameType4Bytes(key);
-                        map.put(tag, (DataReaderWithStats) tagMap.get(key));
+                        CramReadTagSeries tag = new CramReadTagSeries(key);
+                        map.put(tag.tagName + ":" + (char) tag.valueType, (DataReaderWithStats) tagMap.get(key));
                     }
                 }
             }

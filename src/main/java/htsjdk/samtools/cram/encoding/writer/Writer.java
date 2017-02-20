@@ -17,13 +17,12 @@
  */
 package htsjdk.samtools.cram.encoding.writer;
 
+import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.cram.encoding.DataSeries;
 import htsjdk.samtools.cram.encoding.DataSeriesMap;
 import htsjdk.samtools.cram.encoding.DataSeriesType;
 import htsjdk.samtools.cram.encoding.readfeatures.*;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.EncodingKey;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.cram.structure.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -164,9 +163,11 @@ public class Writer {
         // tag records:
         tagIdListCodec.writeData(r.tagIdsIndex.value);
         if (r.tags != null) {
-            for (int i = 0; i < r.tags.length; i++) {
-                final DataWriter<byte[]> writer = tagValueCodecs.get(r.tags[i].keyType3BytesAsInt);
-                writer.writeData(r.tags[i].getValueAsByteArray());
+            SAMBinaryTagAndValue tv = r.tags;
+            while (tv != null) {
+                final DataWriter<byte[]> writer = tagValueCodecs.get(CramReadTagSeries.tagIntId(tv));
+                writer.writeData(CramTagValueSerialization.writeTagValue(tv));
+                tv = tv.getNext();
             }
         }
 
