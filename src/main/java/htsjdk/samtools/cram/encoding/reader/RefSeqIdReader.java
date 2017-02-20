@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2013 EMBL-EBI
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.readfeatures.Bases;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
@@ -33,7 +32,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.util.RuntimeIOException;
 
@@ -45,7 +43,7 @@ import java.util.Map;
 /**
  * A reader that only keeps track of alignment spans. The intended use is for
  * CRAI index.
- * 
+ *
  * @author vadim
  *
  */
@@ -124,18 +122,7 @@ public class RefSeqIdReader extends AbstractReader {
 			} else if (cramRecord.isHasMateDownStream())
 				cramRecord.recordsToNextFragment = distanceToNextFragmentCodec.readData();
 
-			final Integer tagIdList = tagIdListCodec.readData();
-			final byte[][] ids = tagIdDictionary[tagIdList];
-			if (ids.length > 0) {
-				final int tagCount = ids.length;
-				cramRecord.tags = new ReadTag[tagCount];
-				for (int i = 0; i < ids.length; i++) {
-					final int id = ReadTag.name3BytesToInt(ids[i]);
-					final DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-					final ReadTag tag = new ReadTag(id, dataReader.readData(), validationStringency);
-					cramRecord.tags[i] = tag;
-				}
-			}
+			skipRecordTags();
 
 			if (!cramRecord.isSegmentUnmapped()) {
 				// reading read features:

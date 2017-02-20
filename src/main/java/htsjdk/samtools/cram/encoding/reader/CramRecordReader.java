@@ -17,9 +17,7 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
-import htsjdk.samtools.SAMFormatException;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
 import htsjdk.samtools.cram.encoding.readfeatures.Bases;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
@@ -34,10 +32,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.Scores;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.ReadTag;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.LinkedList;
 
 public class CramRecordReader extends AbstractReader {
@@ -88,18 +83,7 @@ public class CramRecordReader extends AbstractReader {
             } else if (cramRecord.isHasMateDownStream())
                 cramRecord.recordsToNextFragment = distanceToNextFragmentCodec.readData();
 
-            final Integer tagIdList = tagIdListCodec.readData();
-            final byte[][] ids = tagIdDictionary[tagIdList];
-            if (ids.length > 0) {
-                final int tagCount = ids.length;
-                cramRecord.tags = new ReadTag[tagCount];
-                for (int i = 0; i < ids.length; i++) {
-                    final int id = ReadTag.name3BytesToInt(ids[i]);
-                    final DataReader<byte[]> dataReader = tagValueCodecs.get(id);
-                    final ReadTag tag = new ReadTag(id, dataReader.readData(), validationStringency);
-                    cramRecord.tags[i] = tag;
-                }
-            }
+            cramRecord.tags = readRecordTags(validationStringency);
 
             if (!cramRecord.isSegmentUnmapped()) {
                 // reading read features:
