@@ -17,12 +17,7 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
 import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
 import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
@@ -34,7 +29,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
 import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.ReadTag;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,7 +44,7 @@ public class Cram2SamRecordFactory {
     }
 
     public SAMRecord create(final CramCompressionRecord cramRecord) {
-        final SAMRecord samRecord = new SAMRecord(header);
+        final SAMRecord samRecord = new InternalBinaryTagsSAMRecord(header, cramRecord.tags);
 
         samRecord.setReadName(cramRecord.readName);
         copyFlags(cramRecord, samRecord);
@@ -68,7 +62,7 @@ public class Cram2SamRecordFactory {
         if (cramRecord.isSegmentUnmapped())
             samRecord.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         else
-            samRecord.setCigar(getCigar2(cramRecord.readFeatures,
+            samRecord.setCigar(getCigar(cramRecord.readFeatures,
                     cramRecord.readLength));
 
         if (samRecord.getReadPairedFlag()) {
@@ -87,10 +81,6 @@ public class Cram2SamRecordFactory {
         samRecord.setInferredInsertSize(cramRecord.templateSize);
         samRecord.setReadBases(cramRecord.readBases);
         samRecord.setBaseQualities(cramRecord.qualityScores);
-
-        if (cramRecord.tags != null)
-            for (final ReadTag tag : cramRecord.tags)
-                samRecord.setAttribute(tag.getKey(), tag.getValue());
 
         if (cramRecord.readGroupID > -1) {
             final SAMReadGroupRecord readGroupRecord = header.getReadGroups().get(
@@ -114,8 +104,8 @@ public class Cram2SamRecordFactory {
         samRecord.setSupplementaryAlignmentFlag(cramRecord.isSupplementary());
     }
 
-    private static Cigar getCigar2(final Collection<ReadFeature> features,
-                                   final int readLength) {
+    public static Cigar getCigar(final Collection<ReadFeature> features,
+                                 final int readLength) {
         if (features == null || features.isEmpty()) {
             final CigarElement cigarElement = new CigarElement(readLength, CigarOperator.M);
             return new Cigar(Collections.singletonList(cigarElement));
@@ -223,5 +213,14 @@ public class Cram2SamRecordFactory {
         }
 
         return new Cigar(list);
+    }
+
+
+    private static class InternalBinaryTagsSAMRecord extends SAMRecord {
+
+        public InternalBinaryTagsSAMRecord(SAMFileHeader header, SAMBinaryTagAndValue tags) {
+            super(header);
+            setAttributes(tags);
+        }
     }
 }

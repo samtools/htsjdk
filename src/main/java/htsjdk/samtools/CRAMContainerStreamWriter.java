@@ -64,11 +64,11 @@ public class CRAMContainerStreamWriter {
      * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
      * containers on output stream, with an optional index.
      *
-     * @param outputStream where to write the CRAM stream.
-     * @param indexStream where to write the output index. Can be null if no index is required.
-     * @param source reference source
+     * @param outputStream  where to write the CRAM stream.
+     * @param indexStream   where to write the output index. Can be null if no index is required.
+     * @param source        reference source
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
-     * @param cramId used for display in error message display
+     * @param cramId        used for display in error message display
      */
     public CRAMContainerStreamWriter(
             final OutputStream outputStream,
@@ -88,6 +88,7 @@ public class CRAMContainerStreamWriter {
 
     /**
      * Write an alignment record.
+     *
      * @param alignment must not be null
      */
     public void writeAlignment(final SAMRecord alignment) {
@@ -108,7 +109,7 @@ public class CRAMContainerStreamWriter {
 
     /**
      * Write a CRAM file header and SAM header to the stream.
-
+     *
      * @param header SAMFileHeader to write
      */
     public void writeHeader(final SAMFileHeader header) {
@@ -118,6 +119,7 @@ public class CRAMContainerStreamWriter {
 
     /**
      * Finish writing to the stream. Flushes the record cache and optionally emits an EOF container.
+     *
      * @param writeEOFContainer true if an EOF container should be written. Only use false if writing a CRAM file
      *                          fragment which will later be aggregated into a complete CRAM file.
      */
@@ -275,15 +277,15 @@ public class CRAMContainerStreamWriter {
                 if (preservation != null && preservation.areReferenceTracksRequired()) {
                     throw new SAMException("Cannot apply reference-based lossy compression on non-coordinate sorted reads.");
                 }
-            refs = new byte[0];
+                refs = new byte[0];
                 break;
             case SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX:
                 refs = new byte[0];
                 break;
             default:
-            final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
-            refs = source.getReferenceBases(sequence, true);
-            refSeqName = sequence.getSequenceName();
+                final SAMSequenceRecord sequence = samFileHeader.getSequence(refSeqIndex);
+                refs = source.getReferenceBases(sequence, true);
+                refSeqName = sequence.getSequenceName();
                 break;
         }
 
@@ -310,9 +312,7 @@ public class CRAMContainerStreamWriter {
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refs, samFileHeader, cramVersion);
         sam2CramRecordFactory.preserveReadNames = preserveReadNames;
-        sam2CramRecordFactory.captureAllTags = captureAllTags;
-        sam2CramRecordFactory.captureTags.addAll(captureTags);
-        sam2CramRecordFactory.ignoreTags.addAll(ignoreTags);
+        sam2CramRecordFactory.setTagPresevationPolicy(ignoreTags, captureTags, captureAllTags);
         containerFactory.setPreserveReadNames(preserveReadNames);
 
         int index = 0;
@@ -332,7 +332,7 @@ public class CRAMContainerStreamWriter {
 
             if (preservation != null) preservation.addQualityScores(samRecord, cramRecord, tracks);
             else if (cramRecord.qualityScores != SAMRecord.NULL_QUALS) cramRecord.setForcePreserveQualityScores(true);
-            }
+        }
 
 
         if (sam2CramRecordFactory.getBaseCount() < 3 * sam2CramRecordFactory.getFeatureCount())
@@ -390,7 +390,7 @@ public class CRAMContainerStreamWriter {
                                 last = last.next;
                             }
                             if (last.templateSize != -templateLength) detach(cramRecord);
-                        }else detach(cramRecord);
+                        } else detach(cramRecord);
                     } else detach(cramRecord);
                 }
 
@@ -413,8 +413,7 @@ public class CRAMContainerStreamWriter {
                     cramRecord.next = null;
                     cramRecord.previous = null;
                 }
-            }
-            else {
+            } else {
                 for (final CramCompressionRecord cramRecord : cramRecords) {
                     cramRecord.setDetached(true);
                 }
@@ -495,7 +494,7 @@ public class CRAMContainerStreamWriter {
             refSeqIndex = samRecordReferenceIndex;
         } else if (refSeqIndex != samRecordReferenceIndex) {
             refSeqIndex = Slice.MULTI_REFERENCE;
-    }
+        }
     }
 
 }
