@@ -17,6 +17,7 @@
  */
 package htsjdk.samtools.cram.build;
 
+import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.cram.common.MutableInt;
 import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
 import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
@@ -27,25 +28,13 @@ import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
-import htsjdk.samtools.cram.structure.CompressionHeader;
-import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.cram.structure.EncodingKey;
-import htsjdk.samtools.cram.structure.EncodingParams;
-import htsjdk.samtools.cram.structure.ReadTag;
-import htsjdk.samtools.cram.structure.SubstitutionMatrix;
+import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.nio.ByteBuffer;
+import java.util.*;
 
 /**
  * A class responsible for decisions about which encodings to use for a given set of records.
@@ -141,12 +130,14 @@ public class CompressionHeaderFactory {
         final Set<Integer> tagIdSet = new HashSet<>();
 
         for (final CramCompressionRecord record : records) {
-            if (record.tags == null || record.tags.length == 0) {
+            if (record.tags == null) {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
-                tagIdSet.add(tag.keyType3BytesAsInt);
+            SAMBinaryTagAndValue tv = record.tags;
+            while (tv != null) {
+                tagIdSet.add(CramReadTagSeries.tagIntId(tv));
+                tv = tv.getNext();
             }
         }
 
@@ -221,14 +212,6 @@ public class CompressionHeaderFactory {
      * @return a 3D byte array: a set of unique lists of tag ids.
      */
     private static byte[][][] buildTagIdDictionary(final List<CramCompressionRecord> records) {
-        final Comparator<ReadTag> comparator = new Comparator<ReadTag>() {
-
-            @Override
-            public int compare(final ReadTag o1, final ReadTag o2) {
-                return o1.keyType3BytesAsInt - o2.keyType3BytesAsInt;
-            }
-        };
-
         final Comparator<byte[]> baComparator = new Comparator<byte[]>() {
 
             @Override
@@ -257,15 +240,25 @@ public class CompressionHeaderFactory {
                 continue;
             }
 
-            Arrays.sort(record.tags, comparator);
-            record.tagIds = new byte[record.tags.length * 3];
+            ArrayList<Integer> tagIds = new ArrayList<>();
+            /*
+            * Tags are identified by a 3-byte int id (byte representation of name and type basically).
+            * Each record captures a sorted list of its tags ids.
+             */
+            tagIds.clear();
+            SAMBinaryTagAndValue tv = record.tags;
+            while (tv != null) {
+                tagIds.add(CramReadTagSeries.tagIntId(tv));
+                tv = tv.getNext();
+            }
+            Collections.sort(tagIds);
 
-            int tagIndex = 0;
-            for (int i = 0; i < record.tags.length; i++) {
-                record.tagIds[i * 3] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(0);
-                record.tagIds[i * 3 + 1] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(1);
-                record.tagIds[i * 3 + 2] = (byte) record.tags[tagIndex].keyType3Bytes.charAt(2);
-                tagIndex++;
+            // push bytes of tag ids into the array:
+            record.tagIds = new byte[tagIds.size() * 3];
+            ByteBuffer tagIdsBuf = ByteBuffer.wrap(record.tagIds);
+            for (int i = 0; i < tagIds.size(); i++) {
+                int tagId = tagIds.get(i);
+                CramReadTagSeries.writeCramTagId(tagId, tagIdsBuf);
             }
 
             MutableInt count = map.get(record.tagIds);
@@ -336,39 +329,48 @@ public class CompressionHeaderFactory {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
-                if (tag.keyType3BytesAsInt != tagID) {
+            // push serialized tag values into the buffer:
+            SAMBinaryTagAndValue tv = record.tags;
+            while (tv != null) {
+                int cramTagId = CramReadTagSeries.tagIntId(tv);
+                if (cramTagId != tagID) {
+                    tv = tv.getNext();
                     continue;
                 }
-                final byte[] valueBytes = tag.getValueAsByteArray();
+                final byte[] valueBytes = CramTagValueSerialization.writeTagValue(tv);
                 try {
                     baosForTagValues.write(valueBytes);
                 } catch (final IOException e) {
                     throw new RuntimeIOException(e);
                 }
+                tv = tv.getNext();
             }
         }
 
         return baosForTagValues.toByteArray();
     }
 
-    static ByteSizeRange geByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
-        final byte type = getTagType(tagID);
+    static ByteSizeRange geByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int cramTagId) {
+        final byte type = getTagType(cramTagId);
         final ByteSizeRange stats = new ByteSizeRange();
         for (final CramCompressionRecord record : records) {
             if (record.tags == null) {
                 continue;
             }
 
-            for (final ReadTag tag : record.tags) {
-                if (tag.keyType3BytesAsInt != tagID) {
+            SAMBinaryTagAndValue tv = record.tags;
+            while (tv != null) {
+                int current_cramTagId = CramReadTagSeries.tagIntId(tv);
+                if (current_cramTagId != cramTagId) {
+                    tv = tv.getNext();
                     continue;
                 }
-                final int size = getTagValueByteSize(type, tag.getValue());
+                final int size = getTagValueByteSize(type, tv.value);
                 if (stats.min > size)
                     stats.min = size;
                 if (stats.max < size)
                     stats.max = size;
+                tv = tv.getNext();
             }
         }
         return stats;

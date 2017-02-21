@@ -1,12 +1,13 @@
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingKey;
-import htsjdk.samtools.cram.structure.ReadTag;
+import htsjdk.samtools.cram.structure.CramReadTagSeries;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -53,10 +54,9 @@ public class CompressionHeaderFactoryTest {
         final CompressionHeaderFactory factory = new CompressionHeaderFactory();
         final List<CramCompressionRecord> records = new ArrayList<>();
         final CramCompressionRecord record = new CramCompressionRecord();
-        final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
+        final int tagID = new CramReadTagSeries("ACi".getBytes()).cramTagId;
         final byte[] data = new byte[]{1, 2, 3, 4};
-        final ReadTag tag = new ReadTag(tagID, data, ValidationStringency.STRICT);
-        record.tags = new ReadTag[]{tag};
+        record.tags = new SAMBinaryTagAndValue(SAMTagUtil.getSingleton().makeBinaryTag("AC"), data);
         records.add(record);
 
         final byte[] dataForTag = factory.getDataForTag(records, tagID);
@@ -108,7 +108,7 @@ public class CompressionHeaderFactoryTest {
     @Test
     public void test_geByteSizeRangeOfTagValues() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        final int tagID = ReadTag.name3BytesToInt("ACi".getBytes());
+        final int tagID = new CramReadTagSeries("ACi".getBytes()).cramTagId;
         // test empty list:
         CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
@@ -118,8 +118,7 @@ public class CompressionHeaderFactoryTest {
         // test single record with a single tag:
         final CramCompressionRecord record = new CramCompressionRecord();
         final byte[] data = new byte[]{1, 2, 3, 4};
-        final ReadTag tag = new ReadTag(tagID, data, ValidationStringency.STRICT);
-        record.tags = new ReadTag[]{tag};
+        record.tags = new SAMBinaryTagAndValue(SAMTagUtil.getSingleton().makeBinaryTag("AC"), data);
         records.add(record);
 
         range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
@@ -130,7 +129,7 @@ public class CompressionHeaderFactoryTest {
 
     @Test
     public void test_getTagType() {
-        Assert.assertEquals(CompressionHeaderFactory.getTagType(ReadTag.name3BytesToInt("ACi".getBytes())), 'i');
+        Assert.assertEquals(CompressionHeaderFactory.getTagType(new CramReadTagSeries("ACi".getBytes()).cramTagId), 'i');
     }
 
     @Test
