@@ -24,6 +24,7 @@ public abstract class HuffmanTree<T> implements Comparable<HuffmanTree<T>> {
         frequency = freq;
     }
 
+    @Override
     public int compareTo(@SuppressWarnings("NullableProblems") final HuffmanTree<T> tree) {
         return frequency - tree.frequency;
     }

@@ -37,42 +37,50 @@ public class CountingInputStream extends InputStream {
         return delegate.read();
     }
 
+    @Override
     public int read(@SuppressWarnings("NullableProblems") final byte[] b) throws IOException {
         final int read = delegate.read(b);
         count += read;
         return read;
     }
 
+    @Override
     public int read(@SuppressWarnings("NullableProblems") final byte[] b, final int off, final int length) throws IOException {
         final int read = delegate.read(b, off, length);
         count += read;
         return read;
     }
 
+    @Override
     public long skip(final long n) throws IOException {
         final long skipped = delegate.skip(n);
         count += skipped;
         return skipped;
     }
 
+    @Override
     public int available() throws IOException {
         return delegate.available();
     }
 
+    @Override
     public void close() throws IOException {
         if (delegate != null)
             delegate.close();
     }
 
+    @Override
     public void mark(final int readLimit) {
         delegate.mark(readLimit);
     }
 
+    @Override
     public void reset() throws IOException {
         delegate.reset();
         count = 0;
     }
 
+    @Override
     public boolean markSupported() {
         return delegate.markSupported();
     }

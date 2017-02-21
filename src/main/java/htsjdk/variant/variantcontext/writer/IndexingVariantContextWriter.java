@@ -126,11 +126,13 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
         return name;
     }
 
+    @Override
     public abstract void writeHeader(VCFHeader header);
 
     /**
      * attempt to close the VCF file
      */
+    @Override
     public void close() {
         try {
             // close the underlying output stream
@@ -161,6 +163,7 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      *
      * @param vc      the Variant Context object
      */
+    @Override
     public void add(final VariantContext vc) {
         // if we are doing on the fly indexing, add the record ***before*** we write any bytes
         if ( indexer != null )

@@ -15,20 +15,24 @@ public class DelegatingIterator<T> implements CloseableIterator<T> {
         this.iterator = iterator;
     }
 
+    @Override
     public void close() {
         if (iterator instanceof CloseableIterator) {
             ((CloseableIterator) this.iterator).close();
         }
     }
 
+    @Override
     public boolean hasNext() {
         return this.iterator.hasNext();
     }
 
+    @Override
     public T next() {
         return this.iterator.next();
     }
 
+    @Override
     public void remove() {
         this.iterator.remove();
     }

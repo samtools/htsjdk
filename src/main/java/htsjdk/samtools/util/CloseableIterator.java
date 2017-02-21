@@ -45,6 +45,7 @@ import java.util.stream.StreamSupport;
  */
 public interface CloseableIterator<T> extends Iterator<T>, Closeable {
     /** Should be implemented to close/release any underlying resources. */
+    @Override
     void close();
 
     /** Consumes the contents of the iterator and returns it as a List. */

@@ -76,6 +76,7 @@ public class Interval implements Comparable {
     }
 
 
+    @Override
     public int compareTo(Object o) {
         Interval other = (Interval) o;
         if (this.start < other.start)

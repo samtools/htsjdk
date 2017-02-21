@@ -186,6 +186,7 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
     private static class VariantContextComparator implements Comparator<VCFRecord>, Serializable {
         private static final long serialVersionUID = 1L;
 
+        @Override
         public int compare(VCFRecord r1, VCFRecord r2) {
             return r1.vc.getStart() - r2.vc.getStart();
         }

@@ -83,6 +83,7 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
     /**
      * @return the index of reference sequence
      */
+    @Override
     public int getSequenceIndex() {
         return referenceSequence.getSequenceIndex();
     }
@@ -90,6 +91,7 @@ public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Loc
     /**
      * @return 1-based reference position
      */
+    @Override
     public int getPosition() {
         return position;
     }

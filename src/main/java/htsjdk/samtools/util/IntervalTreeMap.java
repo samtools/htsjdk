@@ -60,10 +60,12 @@ public class IntervalTreeMap<T>
         }
     }
 
+    @Override
     public void clear() {
         mSequenceMap.clear();
     }
 
+    @Override
     public boolean containsKey(final Object object) {
         if (!(object instanceof Interval)) {
             return false;
@@ -79,6 +81,7 @@ public class IntervalTreeMap<T>
         return (tree.find(key.getStart(), key.getEnd()) != null);
     }
 
+    @Override
     public Set<Entry<Interval, T>> entrySet() {
         return mEntrySet;
     }
@@ -95,6 +98,7 @@ public class IntervalTreeMap<T>
         return mSequenceMap.hashCode();
     }
 
+    @Override
     public T get(final Object object) {
         if (!(object instanceof Interval)) {
             return null;
@@ -114,6 +118,7 @@ public class IntervalTreeMap<T>
         return node.getValue();
     }
 
+    @Override
     public boolean isEmpty() {
         for (final IntervalTree<T> tree : mSequenceMap.values()) {
             if (tree.size() > 0) {
@@ -123,6 +128,7 @@ public class IntervalTreeMap<T>
         return true;
     }
 
+    @Override
     public T put(final Interval key, final T value) {
         IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree == null) {
@@ -132,6 +138,7 @@ public class IntervalTreeMap<T>
         return tree.put(key.getStart(), key.getEnd(), value);
     }
 
+    @Override
     public T remove(final Object object) {
         if (!(object instanceof Interval)) {
             return null;
@@ -147,6 +154,7 @@ public class IntervalTreeMap<T>
         return tree.remove(key.getStart(), key.getEnd());
     }
 
+    @Override
     public int size() {
         // Note: We should think about caching the size to avoid having to recompute it.
         int size = 0;
@@ -214,6 +222,7 @@ public class IntervalTreeMap<T>
     private class EntrySet
         extends AbstractSet<Map.Entry<Interval,T>> {
 
+        @Override
         public void clear() {
            IntervalTreeMap.this.clear();
         }
@@ -225,14 +234,17 @@ public class IntervalTreeMap<T>
             return entry.getValue().equals(IntervalTreeMap.this.get(entry.getKey()));
         }
 
+        @Override
         public boolean isEmpty() {
             return IntervalTreeMap.this.isEmpty();
         }
 
+        @Override
         public Iterator<Map.Entry<Interval,T>> iterator() {
             return new EntryIterator();
         }
 
+        @Override
         @SuppressWarnings("unchecked")
         public boolean remove(final Object object) {
             // Note: Could not figure out how to eliminate the unchecked cast.
@@ -251,6 +263,7 @@ public class IntervalTreeMap<T>
             }
         }
 
+        @Override
         public int size() {
             return IntervalTreeMap.this.size();
         }
@@ -268,10 +281,12 @@ public class IntervalTreeMap<T>
             advanceSequence();
         }
 
+        @Override
         public boolean hasNext() {
             return (mTreeIterator != null && mTreeIterator.hasNext());
         }
 
+        @Override
         public Map.Entry<Interval,T> next() {
             if (!hasNext()) {
                 throw new NoSuchElementException("Iterator exhausted");
@@ -286,6 +301,7 @@ public class IntervalTreeMap<T>
             return new MapEntry(key, value);
         }
 
+        @Override
         public void remove() {
             if (mTreeIterator == null) {
                 throw new IllegalStateException("Iterator.next() has not been called");
@@ -315,14 +331,17 @@ public class IntervalTreeMap<T>
             mValue = value;
         }
 
+        @Override
         public Interval getKey() {
             return mKey;
         }
 
+        @Override
         public T getValue() {
             return mValue;
         }
 
+        @Override
         public T setValue(final T value) {
             mValue = value;
             return IntervalTreeMap.this.put(mKey, mValue);

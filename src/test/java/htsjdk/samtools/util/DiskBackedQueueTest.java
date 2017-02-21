@@ -50,7 +50,9 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
         };
     }
 
+    @Override
     @BeforeMethod void setup() { resetTmpDir(); }
+    @Override
     @AfterMethod void tearDown() { resetTmpDir(); }
 
     /**
@@ -59,6 +61,7 @@ public class DiskBackedQueueTest extends SortingCollectionTest {
      * @param numStringsToGenerate
      * @param maxRecordsInRam
      */
+    @Override
     @Test(dataProvider = "diskBackedQueueProvider")
     public void testPositive(final String testName, final int numStringsToGenerate, final int maxRecordsInRam) {
         final String[] strings = new String[numStringsToGenerate];

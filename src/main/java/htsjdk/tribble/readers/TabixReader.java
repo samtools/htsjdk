@@ -78,6 +78,7 @@ public class TabixReader {
             v = p.v;
         }
 
+        @Override
         public int compareTo(final TPair64 p) {
             return u == p.u ? 0 : ((u < p.u) ^ (u < 0) ^ (p.u < 0)) ? -1 : 1; // unsigned 64-bit comparison
         }

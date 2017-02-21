@@ -237,26 +237,32 @@ public class ValidateSamFileTest {
         final Histogram<String> results = executeValidation(samBuilder.getSamReader(), new ReferenceSequenceFile() {
             private int index = 0;
 
+            @Override
             public SAMSequenceDictionary getSequenceDictionary() {
                 return null;
             }
 
+            @Override
             public ReferenceSequence nextSequence() {
                 final byte[] bases = new byte[10000];
                 Arrays.fill(bases, (byte) 'A');
                 return new ReferenceSequence("foo", index++, bases);
             }
 
+            @Override
             public void reset() {
                 this.index = 0;
             }
 
+            @Override
             public boolean isIndexed() { return false; }
 
+            @Override
             public ReferenceSequence getSequence(final String contig) {
                 throw new UnsupportedOperationException();
             }
 
+            @Override
             public ReferenceSequence getSubsequenceAt(final String contig, final long start, final long stop) {
                 throw new UnsupportedOperationException();
             }

@@ -39,6 +39,7 @@ public class FullBEDFeature extends SimpleBEDFeature implements BEDFeature {
 
     }
 
+    @Override
     public java.util.List<Exon> getExons() {
         return exons;
     }

@@ -39,16 +39,19 @@ public class PeekableIterator<Object> implements CloseableIterator<Object> {
     }
 
     /** Closes the underlying iterator. */
+    @Override
     public void close() {
         CloserUtil.close(iterator);
     }
 
     /** True if there are more items, in which case both next() and peek() will return a value. */
+    @Override
     public boolean hasNext() {
         return this.nextObject != null;
     }
 
     /** Returns the next object and advances the iterator. */
+    @Override
     public Object next() {
         Object retval = this.nextObject;
         advance();
@@ -73,6 +76,7 @@ public class PeekableIterator<Object> implements CloseableIterator<Object> {
     }
 
     /** Unsupported Operation. */
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("Not supported: remove");
     }

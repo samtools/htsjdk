@@ -41,6 +41,7 @@ public class PeekIterator<T> implements Iterator<T> {
      * @return true if the iteration has more elements. (In other words, returns true if next would return an element 
      * rather than throwing an exception.)
      */
+    @Override
     public boolean hasNext() {
         return peekedElement != null || underlyingIterator.hasNext();  
     }
@@ -49,6 +50,7 @@ public class PeekIterator<T> implements Iterator<T> {
      * @return the next element in the iteration. Calling this method repeatedly until the hasNext() method returns
      * false will return each element in the underlying collection exactly once.
      */
+    @Override
     public T next() {
         if (peekedElement != null) {
             final T ret = peekedElement;
@@ -72,6 +74,7 @@ public class PeekIterator<T> implements Iterator<T> {
     /**
      * Unsupported
      */
+    @Override
     public void remove() {
         throw new UnsupportedOperationException();
     }

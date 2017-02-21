@@ -38,10 +38,12 @@ public class ExternalLongEncoding implements Encoding<Long> {
         return new EncodingParams(encodingId, externalLongEncoding.toByteArray());
     }
 
+    @Override
     public byte[] toByteArray() {
         return ITF8.writeUnsignedITF8(contentId);
     }
 
+    @Override
     public void fromByteArray(final byte[] data) {
         contentId = ITF8.readUnsignedITF8(data);
     }

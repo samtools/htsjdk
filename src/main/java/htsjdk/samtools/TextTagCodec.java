@@ -158,14 +158,17 @@ public class TextTagCodec {
         final String stringVal = numFields == TextTagCodec.NUM_TAG_FIELDS ? fields[2] : "";
         final Object val = convertStringToObject(type, stringVal);
         return new Map.Entry<String, Object>() {
+            @Override
             public String getKey() {
                 return key;
             }
 
+            @Override
             public Object getValue() {
                 return val;
             }
 
+            @Override
             public Object setValue(final Object o) {
                 throw new UnsupportedOperationException();
             }

@@ -56,6 +56,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final Set<String> STANDARD_TAGS =
             new HashSet<String>(Arrays.asList(VERSION_TAG, SORT_ORDER_TAG, GROUP_ORDER_TAG));
 
+    @Override
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
@@ -353,6 +354,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         return result;
     }
 
+    @Override
     public final SAMFileHeader clone() {
         final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
         codec.setValidationStringency(ValidationStringency.SILENT);

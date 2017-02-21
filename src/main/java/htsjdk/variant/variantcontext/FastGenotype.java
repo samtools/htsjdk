@@ -154,6 +154,7 @@ public final class FastGenotype extends Genotype {
     //
     // ---------------------------------------------------------------------------------------------------------
 
+    @Override
     public Map<String, Object> getExtendedAttributes() {
         return extendedAttributes;
     }

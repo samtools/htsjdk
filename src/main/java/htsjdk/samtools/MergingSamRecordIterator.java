@@ -107,6 +107,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     /**
      * Close down all open iterators.
      */
+    @Override
     public void close() {
         // Iterators not in the priority queue have already been closed; only close down the iterators that are still in the priority queue.
         for (CloseableIterator<SAMRecord> iterator : pq)
@@ -114,12 +115,14 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     }
 
     /** Returns true if any of the underlying iterators has more records, otherwise false. */
+    @Override
     public boolean hasNext() {
         startIterationIfRequired();
         return !this.pq.isEmpty();
     }
 
     /** Returns the next record from the top most iterator during merging. */
+    @Override
     public SAMRecord next() {
         startIterationIfRequired();
 
@@ -163,6 +166,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     }
 
     /** Unsupported operation. */
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("MergingSAMRecorderIterator.remove()");
     }
@@ -176,10 +180,12 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
         // For unsorted build a fake comparator that compares based on object ID
         if (this.sortOrder == SAMFileHeader.SortOrder.unsorted) {
             return new SAMRecordComparator() {
+                @Override
                 public int fileOrderCompare(final SAMRecord lhs, final SAMRecord rhs) {
                     return System.identityHashCode(lhs) - System.identityHashCode(rhs);
                 }
 
+                @Override
                 public int compare(final SAMRecord lhs, final SAMRecord rhs) {
                     return fileOrderCompare(lhs, rhs);
                 }
@@ -206,6 +212,7 @@ public class MergingSamRecordIterator implements CloseableIterator<SAMRecord> {
     private class MergedSequenceDictionaryCoordinateOrderComparator extends SAMRecordCoordinateComparator implements Serializable {
         private static final long serialVersionUID = 1L;
 
+        @Override
         public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
             final int referenceIndex1 = getReferenceIndex(samRecord1);
             final int referenceIndex2 = getReferenceIndex(samRecord2);

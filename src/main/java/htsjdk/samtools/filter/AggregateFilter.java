@@ -51,6 +51,7 @@ public class AggregateFilter implements SamRecordFilter {
      * @param record    the SAMRecord to evaluate
      * @return  true if the SAMRecord matches at least one filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord record) {
         for (final SamRecordFilter filter : filters) {
             if (filter.filterOut(record)) {
@@ -68,6 +69,7 @@ public class AggregateFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
          for (final SamRecordFilter filter : filters) {
             if (filter.filterOut(first, second)) {

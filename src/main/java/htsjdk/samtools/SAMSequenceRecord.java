@@ -194,10 +194,12 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         return mSequenceName != null ? mSequenceName.hashCode() : 0;
     }
 
+    @Override
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
 
+    @Override
     public final SAMSequenceRecord clone() {
         final SAMSequenceRecord ret = new SAMSequenceRecord(this.mSequenceName, this.mSequenceLength);
         ret.mSequenceIndex = this.mSequenceIndex;

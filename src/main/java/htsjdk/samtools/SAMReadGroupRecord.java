@@ -74,6 +74,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         }
     }
 
+    @Override
     public String getId() { return getReadGroupId();  }
     public String getReadGroupId() { return mReadGroupId; }
 
@@ -158,6 +159,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         return mReadGroupId.hashCode();
     }
 
+    @Override
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }

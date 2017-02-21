@@ -182,6 +182,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * @return iterator over all/all covered locus position in reference according to <code>emitUncoveredLoci</code>
      * value.
      */
+    @Override
     public Iterator<K> iterator() {
         if (samIterator != null) {
             throw new IllegalStateException("Cannot call iterator() more than once on " + this.getClass().getSimpleName());
@@ -202,6 +203,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     /**
      * Closes inner <code>SamIterator</>.
      */
+    @Override
     public void close() {
         this.samIterator.close();
     }
@@ -216,6 +218,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      * 2) there are AbstractLocusInfo<T>s in some stage of accumulation
      * 3) there are loci in the target mask that have yet to be accumulated (even if there are no reads covering them)
      */
+    @Override
     public boolean hasNext() {
         if (this.samIterator == null) {
             iterator();
@@ -253,6 +256,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      *
      * @return information about next locus position in reference sequence
      */
+    @Override
     public K next() {
         // if we don't have any completed entries to return, try and make some!
         while (complete.isEmpty() && samHasMore()) {
@@ -475,6 +479,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
         return samReader.getFileHeader().getSequence(referenceSequenceIndex);
     }
 
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("Can not remove records from a SAM file via an iterator!");
     }

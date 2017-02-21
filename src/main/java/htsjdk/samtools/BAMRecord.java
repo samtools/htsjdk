@@ -113,6 +113,7 @@ public class BAMRecord extends SAMRecord {
     /**
      * Force all the lazily-initialized attributes to be decoded.
      */
+    @Override
     protected void eagerDecode() {
         getReadName();
         getCigar();

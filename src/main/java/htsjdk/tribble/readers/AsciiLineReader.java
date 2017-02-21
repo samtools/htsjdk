@@ -57,6 +57,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
     /**
      * @return The position of the InputStream
      */
+    @Override
     public long getPosition(){
         if(is == null){
             throw new TribbleException("getPosition() called but no default stream was provided to the class on creation");
@@ -115,6 +116,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
      *
      * @return
      */
+    @Override
     public final String readLine() throws IOException{
         if ( is == null ){
             throw new TribbleException("readLine() called without an explicit stream argument but no default stream was provided to the class on creation");

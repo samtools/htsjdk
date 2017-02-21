@@ -42,10 +42,12 @@ public class InsertBase implements Serializable, ReadFeature {
         return operator;
     }
 
+    @Override
     public int getPosition() {
         return position;
     }
 
+    @Override
     public void setPosition(final int position) {
         this.position = position;
     }

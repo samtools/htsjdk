@@ -56,6 +56,7 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @param reader the line reader to take header lines from
      * @return the number of header lines
      */
+    @Override
     public Object readActualHeader(final LineIterator reader) {
         final List<String> headerStrings = new ArrayList<String>();
 
@@ -97,6 +98,7 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @param filterString the string to parse
      * @return a set of the filters applied
      */
+    @Override
     protected List<String> parseFilters(String filterString) {
 
         // null for unfiltered

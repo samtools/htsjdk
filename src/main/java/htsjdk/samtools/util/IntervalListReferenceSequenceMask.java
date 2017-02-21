@@ -66,6 +66,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
      *
      * @return true if the mask is set for the given sequence and position
      */
+    @Override
     public boolean get(final int sequenceIndex, final int position) {
         ensureSequenceLoaded(sequenceIndex);
         return currentBitSet.get(position);
@@ -76,6 +77,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
      *
      * @return the next pos on the given sequence >= position that is set, or -1 if there are no more set positions
      */
+    @Override
     public int nextPosition(final int sequenceIndex, final int position) {
         ensureSequenceLoaded(sequenceIndex);
         // nextSetBit returns the first set bit on or after the starting index, therefore position+1
@@ -108,6 +110,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
     /**
      * @return Largest sequence index for which there are set bits.
      */
+    @Override
     public int getMaxSequenceIndex() {
         return lastSequenceIndex;
     }
@@ -115,6 +118,7 @@ public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask 
     /**
      * @return the largest position on the last sequence index
      */
+    @Override
     public int getMaxPosition() {
         return lastPosition;
     }

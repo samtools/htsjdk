@@ -47,6 +47,7 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, OutputStr
     }
 
     private static class Functor implements ResourceLimitedMapFunctor<File, OutputStream> {
+        @Override
         public OutputStream makeValue(final File file) {
             try {
                 return IOUtil.maybeBufferOutputStream(new FileOutputStream(file, true));
@@ -65,6 +66,7 @@ public class FileAppendStreamLRUCache extends ResourceLimitedMap<File, OutputStr
             }
         }
 
+        @Override
         public void finalizeValue(final File file, final OutputStream out) {
             try {
                 out.flush();

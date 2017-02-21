@@ -78,6 +78,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * @throws IllegalArgumentException when {@code key} is {@code null} or
      *                                  when any of the JexlVCMatchExp (i.e. keys) contains invalid Jexl expressions.
      */
+    @Override
     public Boolean get(Object key) {
         if (key == null) {
             throw new IllegalArgumentException("Query key is null");
@@ -101,8 +102,10 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      * @param o the key
      * @return true if we have a value for that key
      */
+    @Override
     public boolean containsKey(Object o) { return jexl.containsKey(o); }
 
+    @Override
     public Set<JexlVCMatchExp> keySet() {
         return jexl.keySet();
     }
@@ -119,6 +122,7 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
      *
      * @throws IllegalArgumentException when any of the JexlVCMatchExp (i.e. keys) contains invalid Jexl expressions.
      */
+    @Override
     public Collection<Boolean> values() {
         for (final JexlVCMatchExp exp : jexl.keySet()) {
             jexl.computeIfAbsent(exp, k -> evaluateExpression(exp));
@@ -129,16 +133,20 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
     /**
      * @return the number of keys, i.e. {@link JexlVCMatchExp}'s held by this mapping.
      */
+    @Override
     public int size() {
         return jexl.size();
     }
 
+    @Override
     public boolean isEmpty() { return this.jexl.isEmpty(); }
 
+    @Override
     public Boolean put(JexlVCMatchExp jexlVCMatchExp, Boolean aBoolean) {
         return jexl.put(jexlVCMatchExp, aBoolean);
     }
 
+    @Override
     public void putAll(Map<? extends JexlVCMatchExp, ? extends Boolean> map) {
         jexl.putAll(map);
     }
@@ -207,21 +215,25 @@ class JEXLMap implements Map<JexlVCMatchExp, Boolean> {
 
     // this doesn't make much sense to implement, boolean doesn't offer too much variety to deal
     // with evaluating every key in the internal map.
+    @Override
     public boolean containsValue(Object o) {
         throw new UnsupportedOperationException("containsValue() not supported on a JEXLMap");
     }
 
     // this doesn't make much sense
+    @Override
     public Boolean remove(Object o) {
         throw new UnsupportedOperationException("remove() not supported on a JEXLMap");
     }
 
 
+    @Override
     public Set<Entry<JexlVCMatchExp, Boolean>> entrySet() {
         throw new UnsupportedOperationException("entrySet() not supported on a JEXLMap");
     }
 
     // nope
+    @Override
     public void clear() {
         throw new UnsupportedOperationException("clear() not supported on a JEXLMap");
     }

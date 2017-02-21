@@ -193,16 +193,21 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     }
 
     /** Returns a CloseableIterator over the collection of SAMRecords. */
+    @Override
     public CloseableIterator<SAMRecord> iterator() {
         return new CloseableIterator<SAMRecord>() {
             private final Iterator<SAMRecord> iterator = records.iterator();
 
+            @Override
             public void close() { /** Do nothing. */}
 
+            @Override
             public boolean hasNext() { return this.iterator.hasNext(); }
 
+            @Override
             public SAMRecord next() { return this.iterator.next(); }
 
+            @Override
             public void remove() { this.iterator.remove(); }
         };
     }

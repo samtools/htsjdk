@@ -38,6 +38,7 @@ class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
         mask = ~(~0 << log2m);
     }
 
+    @Override
     public final Integer read(final BitInputStream bitInputStream) throws IOException {
 
         int unary = 0;

@@ -39,5 +39,6 @@ public interface LineReader extends Closeable {
     public String readLine() throws IOException;
 
 
+    @Override
     public void close();
 }

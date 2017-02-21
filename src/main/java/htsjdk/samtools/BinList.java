@@ -60,6 +60,7 @@ public class BinList implements Iterable<Bin> {
      * Gets an iterator over all selected bins.
      * @return An iterator over all selected bins.
      */
+    @Override
     public Iterator<Bin> iterator() {
         return new BinIterator();
     }
@@ -95,6 +96,7 @@ public class BinList implements Iterable<Bin> {
          * Are there more bins in this set, waiting to be returned?
          * @return True if more bins are remaining.
          */
+        @Override
         public boolean hasNext() {
             return nextBin >= 0;
         }
@@ -103,6 +105,7 @@ public class BinList implements Iterable<Bin> {
          * Gets the next bin in the provided BinList.
          * @return the next available bin in the BinList.
          */
+        @Override
         public Bin next() {
             if(!hasNext())
                 throw new NoSuchElementException("This BinIterator is currently empty");
@@ -111,6 +114,7 @@ public class BinList implements Iterable<Bin> {
             return new Bin(referenceSequence,currentBin);
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Unable to remove from a bin iterator");
         }

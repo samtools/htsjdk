@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadFactory;
 public class AsyncBlockCompressedInputStream extends BlockCompressedInputStream {
     private static final int READ_AHEAD_BUFFERS = (int)Math.ceil(Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
     private static final Executor threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),new ThreadFactory() {
+            @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
                 t.setDaemon(true);

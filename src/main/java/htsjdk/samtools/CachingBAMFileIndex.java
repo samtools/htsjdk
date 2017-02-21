@@ -61,6 +61,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      *         in a range that can be scanned to find SAMRecords that overlap the given positions.
      *         May return null if there is no content overlapping the region.
      */
+    @Override
     public BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos) {
         final BAMIndexContent queryResults = getQueryResults(referenceIndex);
 
@@ -80,6 +81,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      * @param endPos 1-based end of the desired interval, inclusive
      * @return a list of bins that contain relevant data.
      */
+    @Override
     public BinList getBinsOverlapping(final int referenceIndex, final int startPos, final int endPos) {
         final BitSet regionBins = GenomicIndexUtil.regionToBins(startPos, endPos);
         if (regionBins == null) {
@@ -93,6 +95,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      * @param bin The bin over which to perform an overlapping query.
      * @return The file pointers
      */
+    @Override
     public BAMFileSpan getSpanOverlapping(final Bin bin) {
         if(bin == null)
             return null;
@@ -138,6 +141,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      * @param referenceIndex The reference to load.  CachingBAMFileIndex only stores index data for entire references. 
      * @return The index information for this reference.
      */
+    @Override
     protected BAMIndexContent getQueryResults(final int referenceIndex) {
         // WeakHashMap is a bit weird in that its lookups are done via equals() equality, but expirations must be
         // handled via == equality.  This implementation jumps through a few hoops to make sure that == equality still

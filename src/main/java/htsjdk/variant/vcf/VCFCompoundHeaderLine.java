@@ -57,6 +57,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     private VCFHeaderLineType type;
 
     // access methods
+    @Override
     public String getID() { return name; }
     public String getDescription() { return description; }
     public VCFHeaderLineType getType() { return type; }
@@ -221,6 +222,7 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
      * make a string representation of this header line
      * @return a string representation
      */
+    @Override
     protected String toStringEncoding() {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("ID", name);

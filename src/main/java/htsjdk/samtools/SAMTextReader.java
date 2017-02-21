@@ -79,22 +79,27 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      *
      * @param enabled true to write source information into each SAMRecord.
      */
+    @Override
     public void enableFileSource(final SamReader reader, final boolean enabled) {
         this.mParentReader = enabled ? reader : null;
     }
 
+    @Override
     void enableIndexCaching(final boolean enabled) {
         throw new UnsupportedOperationException("Cannot enable index caching for a SAM text reader");
     }
 
+    @Override
     void enableIndexMemoryMapping(final boolean enabled) {
         throw new UnsupportedOperationException("Cannot enable index memory mapping for a SAM text reader");
     }
 
+    @Override
     void enableCrcChecking(final boolean enabled) {
         // Do nothing - this has no meaning for SAM reading
     }
 
+    @Override
     void setSAMRecordFactory(final SAMRecordFactory factory) {
         this.samRecordFactory = factory;
     }
@@ -104,14 +109,17 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         return SamReader.Type.SAM_TYPE;
     }
 
+    @Override
     public boolean hasIndex() {
         return false;
     }
 
+    @Override
     public BAMIndex getIndex() {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void close() {
         if (mReader != null) {
             try {
@@ -122,14 +130,17 @@ class SAMTextReader extends SamReader.ReaderImplementation {
         }
     }
 
+    @Override
     public SAMFileHeader getFileHeader() {
         return mFileHeader;
     }
 
+    @Override
     public ValidationStringency getValidationStringency() {
         return validationStringency;
     }
 
+    @Override
     public void setValidationStringency(final ValidationStringency stringency) {
         this.validationStringency = stringency;
     }
@@ -141,6 +152,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      *
      * @return Iterator of SAMRecords in file order.
      */
+    @Override
     public CloseableIterator<SAMRecord> getIterator() {
         if (mReader == null) {
             throw new IllegalStateException("File reader is closed");
@@ -158,6 +170,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      * @param fileSpan The file span.
      * @return An iterator over the given file span.
      */
+    @Override
     public CloseableIterator<SAMRecord> getIterator(final SAMFileSpan fileSpan) {
         throw new UnsupportedOperationException("Cannot directly iterate over regions within SAM text files.");
     }
@@ -167,6 +180,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
      *
      * @return An pointer to the first read in the file.
      */
+    @Override
     public SAMFileSpan getFilePointerSpanningReads() {
         throw new UnsupportedOperationException("Cannot retrieve file pointers within SAM text files.");
     }
@@ -186,10 +200,12 @@ class SAMTextReader extends SamReader.ReaderImplementation {
     /**
      * Unsupported for SAM text files.
      */
+    @Override
     public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
         throw new UnsupportedOperationException("Cannot query SAM text files");
     }
 
+    @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
         throw new UnsupportedOperationException("Cannot query SAM text files");
     }
@@ -220,14 +236,17 @@ class SAMTextReader extends SamReader.ReaderImplementation {
             }
         }
 
+        @Override
         public void close() {
             SAMTextReader.this.close();
         }
 
+        @Override
         public boolean hasNext() {
             return mCurrentLine != null;
         }
 
+        @Override
         public SAMRecord next() {
             if (!hasNext()) {
                 throw new IllegalStateException("Cannot call next() on exhausted iterator");
@@ -239,6 +258,7 @@ class SAMTextReader extends SamReader.ReaderImplementation {
             }
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Not supported: remove");
         }

@@ -66,6 +66,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * Attempts to finish draining the queue and then calls synchronouslyClose() to allow implementation
      * to do any one time clean up.
      */
+    @Override
     public void close() {
         checkAndRethrow();
 
@@ -110,6 +111,7 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
      * synchronous writer.
      */
     private class WriterRunnable implements Runnable {
+        @Override
         public void run() {
             try {
                 //The order of the two conditions is important, see https://github.com/samtools/htsjdk/issues/564

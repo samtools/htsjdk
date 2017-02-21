@@ -98,6 +98,7 @@ public class SamFileHeaderMerger {
 
     //HeaderRecordFactory that creates SAMReadGroupRecord instances.
     private static final HeaderRecordFactory<SAMReadGroupRecord> READ_GROUP_RECORD_FACTORY = new HeaderRecordFactory<SAMReadGroupRecord>() {
+        @Override
         public SAMReadGroupRecord createRecord(final String id, final SAMReadGroupRecord srcReadGroupRecord) {
             return new SAMReadGroupRecord(id, srcReadGroupRecord);
         }
@@ -105,6 +106,7 @@ public class SamFileHeaderMerger {
 
     //HeaderRecordFactory that creates SAMProgramRecord instances.
     private static final HeaderRecordFactory<SAMProgramRecord> PROGRAM_RECORD_FACTORY = new HeaderRecordFactory<SAMProgramRecord>() {
+        @Override
         public SAMProgramRecord createRecord(final String id, final SAMProgramRecord srcProgramRecord) {
             return new SAMProgramRecord(id, srcProgramRecord);
         }
@@ -112,6 +114,7 @@ public class SamFileHeaderMerger {
 
     //comparator used to sort lists of program group and read group records
     private static final Comparator<AbstractSAMHeaderRecord> RECORD_ID_COMPARATOR = new Comparator<AbstractSAMHeaderRecord>() {
+        @Override
         public int compare(final AbstractSAMHeaderRecord o1, final AbstractSAMHeaderRecord o2) {
             return o1.getId().compareTo(o2.getId());
         }

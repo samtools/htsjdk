@@ -1663,6 +1663,7 @@ public class VariantContext implements Feature, Serializable {
      * underlying vcf file, VariantContexts representing the same biological event may have different start positions depending on the
      * specifics of the vcf file they are derived from
      */
+    @Override
     public int getStart() {
         return (int)start;
     }
@@ -1673,6 +1674,7 @@ public class VariantContext implements Feature, Serializable {
      * For VariantContexts with a single alternate allele, if that allele is an insertion, the end position will be on the reference base
      * before the insertion event.  If the single alt allele is a deletion, the end will be on the final deleted reference base.
      */
+    @Override
     public int getEnd() {
         return (int)stop;
     }

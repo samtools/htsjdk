@@ -86,5 +86,6 @@ public interface ReferenceSequenceFile extends Closeable {
      */
     public String toString();
 
+    @Override
     public void close() throws IOException;
 }

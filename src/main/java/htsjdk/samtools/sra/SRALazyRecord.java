@@ -675,6 +675,7 @@ public class SRALazyRecord extends SAMRecord {
         return super.getBinaryAttributes();
     }
 
+    @Override
     public boolean isUnsignedArrayAttribute(final String tag) {
         Short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag(tag);
         LazyAttribute attr = lazyAttributeTags.get(binaryTag);

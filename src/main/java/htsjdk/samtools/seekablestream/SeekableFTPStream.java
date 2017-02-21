@@ -39,10 +39,12 @@ public class SeekableFTPStream extends SeekableStream {
         helper = new SeekableFTPStreamHelper(url, userPasswordInput);
     }
 
+    @Override
     public void seek(long position) {
         helper.seek(position);
     }
 
+    @Override
     public long position() {
         return helper.position();
     }
@@ -75,10 +77,12 @@ public class SeekableFTPStream extends SeekableStream {
     }
 
 
+    @Override
     public void close() throws IOException {
         helper.close();
     }
 
+    @Override
     public int read() throws IOException {
         return helper.read();
     }

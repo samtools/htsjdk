@@ -63,5 +63,6 @@ public interface BAMIndex extends Closeable {
     /**
      * Close the index and release any associated resources.
      */
+    @Override
     void close();
 }

@@ -119,6 +119,7 @@ public class IntervalTreeIndex extends AbstractIndex {
             tree = new IntervalTree();
         }
 
+        @Override
         public String getName() {
             return name;
         }
@@ -127,11 +128,13 @@ public class IntervalTreeIndex extends AbstractIndex {
             tree.insert(iv);
         }
 
+        @Override
         public List<Block> getBlocks() {
             return null;
         }
 
 
+        @Override
         public List<Block> getBlocks(final int start, final int end) {
 
             // Get intervals and build blocks list
@@ -148,6 +151,7 @@ public class IntervalTreeIndex extends AbstractIndex {
 
             // Sort blocks by start position
             Arrays.sort(blocks, new Comparator<Block>() {
+                @Override
                 public int compare(final Block b1, final Block b2) {
                     // this is a little cryptic because the normal method (b1.getStartPosition() - b2.getStartPosition()) wraps in int space and we incorrectly sort the blocks in extreme cases
                     return b1.getStartPosition() - b2.getStartPosition() < 1 ? -1 : (b1.getStartPosition() - b2.getStartPosition() > 1 ? 1 : 0);
@@ -175,6 +179,7 @@ public class IntervalTreeIndex extends AbstractIndex {
             System.out.println(tree.toString());
         }
 
+        @Override
         public void write(final LittleEndianOutputStream dos) throws IOException {
 
             dos.writeString(name);
@@ -190,6 +195,7 @@ public class IntervalTreeIndex extends AbstractIndex {
 
         }
 
+        @Override
         public void read(final LittleEndianInputStream dis) throws IOException {
 
             tree = new IntervalTree();

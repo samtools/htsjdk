@@ -141,6 +141,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      * Sort based on sequence.compareTo, then start pos, then end pos
      * with null objects coming lexically last
      */
+    @Override
     public int compareTo(final Interval that) {
         if (that == null) return -1; // nulls last
 

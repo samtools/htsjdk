@@ -101,6 +101,7 @@ public abstract class AbstractIndex implements MutableIndex {
      * @param obj
      * @return true if this and obj are 'effectively' equivalent data structures.
      */
+    @Override
     public boolean equalsIgnoreProperties(final Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof AbstractIndex)) {
@@ -194,6 +195,7 @@ public abstract class AbstractIndex implements MutableIndex {
      *
      * @return true if we're up to date, false otherwise
      */
+    @Override
     public boolean isCurrentVersion() {
         return version == VERSION;
     }
@@ -226,6 +228,7 @@ public abstract class AbstractIndex implements MutableIndex {
         this.indexedFileMD5 = md5;
     }
 
+    @Override
     public boolean containsChromosome(final String chr) {
         return chrIndices.containsKey(chr);
     }
@@ -306,10 +309,12 @@ public abstract class AbstractIndex implements MutableIndex {
         }
     }
 
+    @Override
     public List<String> getSequenceNames() {
         return new ArrayList<String>(chrIndices.keySet());
     }
 
+    @Override
     public List<Block> getBlocks(final String chr, final int start, final int end) {
         return getChrIndex(chr).getBlocks(start, end);
     }
@@ -332,6 +337,7 @@ public abstract class AbstractIndex implements MutableIndex {
         }
     }
 
+    @Override
     public void write(final LittleEndianOutputStream stream) throws IOException {
         writeHeader(stream);
 
@@ -418,10 +424,12 @@ public abstract class AbstractIndex implements MutableIndex {
         return String.format("%12d blocks (%12d empty (%.2f%%))", stats.total, stats.empty, (100.0 * stats.empty) / stats.total);
     }
 
+    @Override
     public void addProperty(final String key, final String value) {
         properties.put(key, value);
     }
 
+    @Override
     public void addProperties(final Map<String, String> properties) {
         this.properties.putAll(properties);
     }
@@ -431,6 +439,7 @@ public abstract class AbstractIndex implements MutableIndex {
      *
      * @return the mapping of values as an unmodifiable map
      */
+    @Override
     public Map<String, String> getProperties() {
         return Collections.unmodifiableMap(properties);
     }

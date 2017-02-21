@@ -65,6 +65,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
         creators = getIndexCreators(inputFile,iba);
     }
 
+    @Override
     public Index finalizeIndex(final long finalFilePosition) {
         // finalize all of the indexes
         // return the score of the indexes we've generated
@@ -123,6 +124,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
     }
 
 
+    @Override
     public void addFeature(final Feature f, final long filePosition) {
         // protected static Map<Double,Index> createIndex(FileBasedFeatureIterator<Feature> iterator, Map<IndexType,IndexCreator> creators, IndexBalanceApproach iba) {
         // feed each feature to the indexes we've created

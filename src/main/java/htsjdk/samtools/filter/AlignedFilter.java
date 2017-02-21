@@ -45,6 +45,7 @@ public class AlignedFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecord matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord record) {
         if (includeAligned) {
             if (!record.getReadUnmappedFlag()) {
@@ -68,6 +69,7 @@ public class AlignedFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
 
         if (includeAligned) {

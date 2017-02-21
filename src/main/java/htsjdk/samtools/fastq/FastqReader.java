@@ -128,8 +128,10 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         }
     }
 
+    @Override
     public boolean hasNext() { return nextRecord != null; }
 
+    @Override
     public FastqRecord next() {
         if (!hasNext()) {
             throw new NoSuchElementException("next() called when !hasNext()");
@@ -139,6 +141,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         return rec;
     }
 
+    @Override
     public void remove() { throw new UnsupportedOperationException("Unsupported operation"); }
 
     /**
@@ -146,6 +149,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * start iteration from the beginning of the file.  Developers should probably not call iterator()
      * directly.  It is provided so that this class can be used in Java for-each loop.
      */
+    @Override
     public Iterator<FastqRecord> iterator() { return this; }
 
     public int getLineNumber() { return line ; }

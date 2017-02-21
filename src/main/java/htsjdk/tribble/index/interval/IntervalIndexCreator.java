@@ -62,6 +62,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
         this(inputFile, DEFAULT_FEATURE_COUNT);
     }
 
+    @Override
     public void addFeature(final Feature feature, final long filePosition) {
         // if we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
         if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
@@ -105,6 +106,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
      * @param finalFilePosition the final file position, for indexes that have to close out with the final position
      * @return a Tree Index
      */
+    @Override
     public Index finalizeIndex(final long finalFilePosition) {
         final IntervalTreeIndex featureIndex = new IntervalTreeIndex(inputFile.getAbsolutePath());
         // dump the remaining bins to the index
