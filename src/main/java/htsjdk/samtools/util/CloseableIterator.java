@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -55,9 +56,42 @@ public interface CloseableIterator<T> extends Iterator<T>, Closeable {
         return list;
     }
 
+    default <R> CloseableIterator<R> asyncMap(Function<T,R> f){
+        return new AsyncChunkedOperationIterator<>(this, f);
+    }
+
     /** Returns a Stream that will consume from the underlying iterator. */
     default Stream<T> stream() {
+        return this.stream(false);
+    }
+
+    /** Returns a Stream that will consume from the underlying iterator. */
+    default Stream<T> stream(boolean parallel) {
         final Spliterator<T> s = Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED);
-        return StreamSupport.stream(s, false).onClose(this::close);
+        return StreamSupport.stream(s, parallel).onClose(this::close);
+    }
+
+    /**
+     * wrap an Iterator in a CloseableIterator with an no-op close function
+     */
+    static <T> CloseableIterator<T> of(final Iterator<T> iterator) {
+        return new CloseableIterator<T>() {
+            final Iterator<T> in = iterator;
+
+            @Override
+            public boolean hasNext() {
+                return in.hasNext();
+            }
+
+            @Override
+            public T next() {
+                return in.next();
+            }
+
+            @Override
+            public void close() {
+                //pass
+            }
+        };
     }
 }
