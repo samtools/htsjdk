@@ -57,6 +57,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         }
     }
 
+    @Override
     public String getId() {
         return getProgramGroupId();
     }
@@ -126,6 +127,7 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
         return result;
     }
 
+    @Override
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }

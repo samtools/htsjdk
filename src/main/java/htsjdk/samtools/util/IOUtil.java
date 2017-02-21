@@ -696,6 +696,7 @@ public class IOUtil {
 
     public static File[] getFilesMatchingRegexp(final File directory, final Pattern regexp) {
         return directory.listFiles( new FilenameFilter() {
+            @Override
             public boolean accept(final File dir, final String name) {
                 return regexp.matcher(name).matches();
             }

@@ -115,6 +115,7 @@ class BAMFileWriter extends SAMFileWriterImpl {
         }
     }
 
+    @Override
     protected void writeAlignment(final SAMRecord alignment) {
         prepareToWriteAlignments();
 
@@ -135,10 +136,12 @@ class BAMFileWriter extends SAMFileWriterImpl {
         }
     }
 
+    @Override
     protected void writeHeader(final String textHeader) {
         writeHeader(outputBinaryCodec, getFileHeader(), textHeader);
     }
 
+    @Override
     protected void finish() {
         outputBinaryCodec.close();
             try {
@@ -151,6 +154,7 @@ class BAMFileWriter extends SAMFileWriterImpl {
     }
 
     /** @return absolute path, or null if this writer does not correspond to a file.  */
+    @Override
     protected String getFilename() {
         return outputBinaryCodec.getOutputFileName();
     }

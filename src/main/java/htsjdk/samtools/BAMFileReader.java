@@ -341,6 +341,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * If true, writes the source of every read into the source SAMRecords.
      * @param enabled true to write source information into each SAMRecord.
      */
+    @Override
     void enableFileSource(final SamReader reader, final boolean enabled) {
         this.mReader = enabled ? reader : null;
     }
@@ -349,6 +350,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * If true, uses the caching version of the index reader.
      * @param enabled true to use the caching version of the reader.
      */
+    @Override
     protected void enableIndexCaching(final boolean enabled) {
         if(mIndex != null)
             throw new SAMException("Unable to turn on index caching; index file has already been loaded.");
@@ -360,6 +362,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * This is slower but more scalable when accessing large numbers of BAM files sequentially.
      * @param enabled True to use memory mapping, false to use regular I/O.
      */
+    @Override
     protected void enableIndexMemoryMapping(final boolean enabled) {
         if (mIndex != null) {
             throw new SAMException("Unable to change index memory mapping; index file has already been loaded.");
@@ -381,6 +384,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     /**
      * @return true if ths is a BAM file, and has an index
      */
+    @Override
     public boolean hasIndex() {
         return mIsSeekable && ((mIndexFile != null) || (mIndexStream != null));
     }
@@ -389,6 +393,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * Retrieves the index for the given file type.  Ensure that the index is of the specified type.
      * @return An index of the given type.
      */
+    @Override
     public BAMIndex getIndex() {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
@@ -425,6 +430,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         mIndex = null;
     }
 
+    @Override
     public SAMFileHeader getFileHeader() {
         return mFileHeader;
     }
@@ -432,10 +438,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
     /**
      * Set error-checking level for subsequent SAMRecord reads.
      */
+    @Override
     void setValidationStringency(final ValidationStringency validationStringency) {
         this.mValidationStringency = validationStringency;
     }
 
+    @Override
     public ValidationStringency getValidationStringency() {
         return this.mValidationStringency;
     }
@@ -448,6 +456,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * getIterator() begins its iteration where the last one left off.  That is the best that can be
      * done in that situation.
      */
+    @Override
     public CloseableIterator<SAMRecord> getIterator() {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
@@ -552,6 +561,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @return Iterator for the matching SAMRecords
      * @see QueryInterval#optimizeIntervals(QueryInterval[])
      */
+    @Override
     public CloseableIterator<SAMRecord> query(final QueryInterval[] intervals, final boolean contained) {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
@@ -582,6 +592,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      * @param start Alignment start sought.
      * @return Iterator for the matching SAMRecords.
      */
+    @Override
     public CloseableIterator<SAMRecord> queryAlignmentStart(final String sequence, final int start) {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
@@ -608,6 +619,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
      *
      * @return Iterator for the matching SAMRecords.
      */
+    @Override
     public CloseableIterator<SAMRecord> queryUnmapped() {
         if (mStream == null) {
             throw new IllegalStateException("File reader is closed");
@@ -710,6 +722,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         private boolean isClosed = false;
 
+        @Override
         public void close() {
             if (!isClosed) {
                 if (mCurrentIterator != null && this != mCurrentIterator) {
@@ -724,6 +737,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             if (isClosed) throw new AssertionError("Iterator has been closed");
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException("Not supported: remove");
         }
@@ -770,11 +784,13 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             }
         }
 
+        @Override
         public boolean hasNext() {
             assertOpen();
             return (mNextRecord != null);
         }
 
+        @Override
         public SAMRecord next() {
             assertOpen();
             final SAMRecord result = mNextRecord;
@@ -947,6 +963,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             advance();
         }
 
+        @Override
         SAMRecord getNextRecord()
             throws IOException {
             // Advance to next file block if necessary
@@ -989,6 +1006,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         /**
          * Returns true if a next element exists; false otherwise.
          */
+        @Override
         public boolean hasNext() {
             assertOpen();
             return mNextRecord != null;
@@ -998,6 +1016,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
          * Gets the next record from the given iterator.
          * @return The next SAM record in the iterator.
          */
+        @Override
         public SAMRecord next() {
             if(!hasNext())
                 throw new NoSuchElementException("BAMQueryFilteringIterator: no next element available");

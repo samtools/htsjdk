@@ -57,6 +57,7 @@ public class HTTPHelper implements URLHelper {
         proxy = p;
     }
 
+    @Override
     public URL getUrl() {
         return url;
     }
@@ -65,6 +66,7 @@ public class HTTPHelper implements URLHelper {
      * @return content length of the resource
      * @throws IOException
      */
+    @Override
     public long getContentLength() throws IOException {
 
         HttpURLConnection con = null;
@@ -84,6 +86,7 @@ public class HTTPHelper implements URLHelper {
     }
 
 
+    @Override
     public InputStream openInputStream() throws IOException {
 
         HttpURLConnection connection = openConnection();
@@ -99,6 +102,7 @@ public class HTTPHelper implements URLHelper {
      * @return
      * @throws IOException
      */
+    @Override
     @Deprecated
     public InputStream openInputStreamForRange(long start, long end) throws IOException {
 
@@ -118,6 +122,7 @@ public class HTTPHelper implements URLHelper {
         return connection;
     }
 
+    @Override
     public boolean exists() throws IOException {
         HttpURLConnection con = null;
         try {

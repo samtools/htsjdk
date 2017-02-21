@@ -14,6 +14,7 @@ public class DefaultSAMRecordFactory implements SAMRecordFactory {
     }
 
     /** Create a new SAMRecord to be filled in */
+    @Override
     public SAMRecord createSAMRecord(final SAMFileHeader header) {
         return new SAMRecord(header);
     }
@@ -23,6 +24,7 @@ public class DefaultSAMRecordFactory implements SAMRecordFactory {
      * any value other than NO_ALIGNMENT_REFERENCE_INDEX, the values must be resolvable against the sequence
      * dictionary in the header argument.
      */
+    @Override
     public BAMRecord createBAMRecord (final SAMFileHeader header,
                                       final int referenceSequenceIndex,
                                       final int alignmentStart,

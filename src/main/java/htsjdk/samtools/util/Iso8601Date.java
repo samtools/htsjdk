@@ -36,6 +36,7 @@ import java.util.Date;
  */
 public class Iso8601Date extends Date {
     private static final ThreadLocal<DateFormat> iso8601DateFormatter = new ThreadLocal<DateFormat>() {
+        @Override
         protected synchronized DateFormat initialValue() {
             return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
         }

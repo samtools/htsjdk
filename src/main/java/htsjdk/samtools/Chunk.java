@@ -38,6 +38,7 @@ public class Chunk implements Cloneable, Serializable,Comparable<Chunk> {
         mChunkEnd = end;
     }
 
+    @Override
     public Chunk clone() {
         return new Chunk(mChunkStart,mChunkEnd);
     }
@@ -58,6 +59,7 @@ public class Chunk implements Cloneable, Serializable,Comparable<Chunk> {
         mChunkEnd = value;
     }
 
+    @Override
     public int compareTo(final Chunk chunk) {
         int result = Long.signum(mChunkStart - chunk.mChunkStart);
         if (result == 0) {

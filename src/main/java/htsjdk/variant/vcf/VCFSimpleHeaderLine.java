@@ -92,6 +92,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
         this.genericFields.putAll(genericFields);
     }
 
+    @Override
     protected String toStringEncoding() {
         Map<String, Object> map = new LinkedHashMap<String, Object>();
         map.put("ID", name);
@@ -121,6 +122,7 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
         return result;
     }
 
+    @Override
     public String getID() {
         return name;
     }

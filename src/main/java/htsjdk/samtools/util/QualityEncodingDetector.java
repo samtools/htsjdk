@@ -270,6 +270,7 @@ public class QualityEncodingDetector {
                 }
             }
 
+            @Override
             public boolean hasNext() {
                 // If this returns true, the head of the queue will have a next element
                 while (!queue.isEmpty()) {
@@ -281,6 +282,7 @@ public class QualityEncodingDetector {
                 return false;
             }
 
+            @Override
             public FastqRecord next() {
                 if (!hasNext()) throw new NoSuchElementException();
                 final Iterator<FastqRecord> i = queue.poll();
@@ -289,6 +291,7 @@ public class QualityEncodingDetector {
                 return result;
             }
 
+            @Override
             public void remove() {
                 throw new UnsupportedOperationException();
             }

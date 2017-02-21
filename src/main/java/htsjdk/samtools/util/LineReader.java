@@ -47,5 +47,6 @@ public interface LineReader extends Closeable{
      */
     int peek();
 
+    @Override
     public void close();
 }

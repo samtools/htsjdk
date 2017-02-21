@@ -25,11 +25,13 @@ public final class LittleEndianOutputStream extends FilterOutputStream {
         super(out);
     }
 
+    @Override
     public void write(int b) throws IOException {
         out.write(b);
         written++;
     }
 
+    @Override
     public void write(byte[] data, int offset, int length)
             throws IOException {
         out.write(data, offset, length);

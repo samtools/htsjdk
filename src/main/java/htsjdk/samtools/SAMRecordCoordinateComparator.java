@@ -43,6 +43,7 @@ import java.io.Serializable;
 public class SAMRecordCoordinateComparator implements SAMRecordComparator, Serializable {
     private static final long serialVersionUID = 1L;
 
+    @Override
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         int cmp = fileOrderCompare(samRecord1, samRecord2);
         if (cmp != 0) {
@@ -83,6 +84,7 @@ public class SAMRecordCoordinateComparator implements SAMRecordComparator, Seria
      *
      * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
      */
+    @Override
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
 
         if (null == samRecord1.getHeader() || null == samRecord2.getHeader()) {

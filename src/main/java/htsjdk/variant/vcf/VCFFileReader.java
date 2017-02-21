@@ -129,7 +129,8 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 	}
 
     /** Returns an iterator over all records in this VCF/BCF file. */
-	public CloseableIterator<VariantContext> iterator() {
+	@Override
+    public CloseableIterator<VariantContext> iterator() {
 		try { return reader.iterator(); }
         catch (final IOException ioe) {
 			throw new TribbleException("Could not create an iterator from a feature reader.", ioe);
@@ -144,7 +145,8 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
-	public void close() {
+	@Override
+    public void close() {
 		try { this.reader.close(); }
         catch (final IOException ioe) {
 			throw new TribbleException("Could not close a variant context feature reader.", ioe);

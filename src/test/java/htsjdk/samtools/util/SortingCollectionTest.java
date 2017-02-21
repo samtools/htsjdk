@@ -130,19 +130,23 @@ public class SortingCollectionTest {
             this.numElementsToGenerate = numElementsToGenerate;
         }
 
+        @Override
         public Iterator<String> iterator() {
             return this;
         }
 
+        @Override
         public boolean hasNext() {
             return numElementsGenerated < numElementsToGenerate;
         }
 
+        @Override
         public String next() {
             ++numElementsGenerated;
             return Integer.toString(random.nextInt());
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -150,6 +154,7 @@ public class SortingCollectionTest {
 
     static class StringComparator implements Comparator<String> {
 
+        @Override
         public int compare(final String s, final String s1) {
             return s.compareTo(s1);
         }
@@ -160,6 +165,7 @@ public class SortingCollectionTest {
         OutputStream os;
         InputStream is;
 
+        @Override
         public SortingCollection.Codec<String> clone() {
             return new StringCodec();
         }
@@ -169,6 +175,7 @@ public class SortingCollectionTest {
          *
          * @param os
          */
+        @Override
         public void setOutputStream(final OutputStream os) {
             this.os = os;
         }
@@ -178,6 +185,7 @@ public class SortingCollectionTest {
          *
          * @param is
          */
+        @Override
         public void setInputStream(final InputStream is) {
             this.is = is;
         }
@@ -187,6 +195,7 @@ public class SortingCollectionTest {
          *
          * @param val what to write
          */
+        @Override
         public void encode(final String val) {
             try {
                 byteBuffer.clear();
@@ -204,6 +213,7 @@ public class SortingCollectionTest {
          * @return null if no more records.  Should throw exception if EOF is encountered in the middle of
          *         a record.
          */
+        @Override
         public String decode() {
             try {
                 byteBuffer.clear();

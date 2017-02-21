@@ -587,6 +587,7 @@ public class BinaryCodec implements Closeable {
     /**
      * Close the appropriate stream
      */
+    @Override
     public void close() {
         try {
             if (this.isWriting) {

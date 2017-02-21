@@ -43,6 +43,7 @@ public class StringHeader implements Header {
         setValue(value);
     }
 
+    @Override
     public void parse(String in) { value = in.trim(); }
     public String toString() { return value; }
 

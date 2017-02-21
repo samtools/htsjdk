@@ -44,6 +44,7 @@ public class BaseQualityScore implements Serializable, ReadFeature {
         return position;
     }
 
+    @Override
     public void setPosition(final int position) {
         this.position = position;
     }

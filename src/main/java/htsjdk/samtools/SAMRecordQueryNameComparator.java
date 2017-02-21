@@ -31,6 +31,7 @@ import java.io.Serializable;
 public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serializable {
     private static final long serialVersionUID = 1L;
 
+    @Override
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         int cmp = fileOrderCompare(samRecord1, samRecord2);
         if (cmp != 0) {
@@ -75,6 +76,7 @@ public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serial
      *
      * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
      */
+    @Override
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         return compareReadNames(samRecord1.getReadName(), samRecord2.getReadName());
     }

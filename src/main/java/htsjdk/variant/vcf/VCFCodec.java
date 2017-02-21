@@ -125,6 +125,7 @@ public class VCFCodec extends AbstractVCFCodec {
      * @param filterString the string to parse
      * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
      */
+    @Override
     protected List<String> parseFilters(final String filterString) {
         // null for unfiltered
         if ( filterString.equals(VCFConstants.UNFILTERED) )

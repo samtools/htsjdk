@@ -35,8 +35,10 @@ public abstract class SeekableStream extends InputStream {
 
     public abstract void seek(long position) throws IOException;
 
+    @Override
     public abstract int read(byte[] buffer, int offset, int length) throws IOException;
 
+    @Override
     public abstract void close() throws IOException;
 
     public abstract boolean eof() throws IOException;

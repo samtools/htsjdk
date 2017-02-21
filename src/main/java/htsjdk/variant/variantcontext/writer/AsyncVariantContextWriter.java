@@ -39,10 +39,12 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
 
     @Override protected final String getThreadNamePrefix() { return "VariantContextWriterThread-"; }
 
+    @Override
     public void add(final VariantContext vc) {
         write(vc);
     }
 
+    @Override
     public void writeHeader(final VCFHeader header) {
         this.underlyingWriter.writeHeader(header);
     }

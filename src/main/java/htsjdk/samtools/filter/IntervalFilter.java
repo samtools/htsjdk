@@ -65,6 +65,7 @@ public class IntervalFilter implements SamRecordFilter {
      * @param record the SAMRecord to evaluate
      * @return true if the SAMRecord matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord record) {
         while (currentInterval != null &&
                 (currentSequenceIndex < record.getReferenceIndex() ||
@@ -93,6 +94,7 @@ public class IntervalFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         // This can never be implemented because if the bam is coordinate sorted,
         // which it has to be for this filter, it will never get both the first and second reads together

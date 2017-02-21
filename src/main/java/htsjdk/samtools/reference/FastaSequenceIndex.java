@@ -184,6 +184,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      * Creates an iterator which can iterate through all entries in a fasta index.
      * @return iterator over all fasta index entries.
      */
+    @Override
     public Iterator<FastaSequenceIndexEntry> iterator() {
         return sequenceEntries.values().iterator();
     }

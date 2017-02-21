@@ -424,18 +424,22 @@ public class MergingSamRecordIteratorGroupCollisionTest {
     }
 
     class ProgramGroupAdapter extends GroupAdapter {
+        @Override
         String getGroupId(AbstractSAMHeaderRecord group) {
             return ((SAMProgramRecord) group).getProgramGroupId();
         }
 
+        @Override
         List<? extends AbstractSAMHeaderRecord> getGroups(SAMFileHeader header) {
             return header.getProgramRecords();
         }
 
+        @Override
         String getTagName() {
             return SAMTag.PG.toString();
         }
 
+        @Override
         List<? extends AbstractSAMHeaderRecord> createGroups(final String[] groupIds) {
             final List<SamReader> readers = new ArrayList<SamReader>();
             for (final String groupId : groupIds) {
@@ -457,36 +461,44 @@ public class MergingSamRecordIteratorGroupCollisionTest {
             return fileHeaderMerger.getMergedHeader().getProgramRecords();
         }
 
+        @Override
         void setAttribute(AbstractSAMHeaderRecord group, String value) {
             ((SAMProgramRecord) group).setCommandLine(value);
         }
 
+        @Override
         AbstractSAMHeaderRecord newGroup(String id) {
             return new SAMProgramRecord(id);
         }
 
+        @Override
         void setBuilderGroup(SAMRecordSetBuilder builder, AbstractSAMHeaderRecord group) {
             builder.setProgramRecord((SAMProgramRecord) group);
         }
 
+        @Override
         boolean equivalent(AbstractSAMHeaderRecord group1, AbstractSAMHeaderRecord group2) {
             return ((SAMProgramRecord) group1).equivalent((SAMProgramRecord) group2);
         }
     }
 
     class ReadGroupAdapter extends GroupAdapter {
+        @Override
         String getGroupId(AbstractSAMHeaderRecord group) {
             return ((SAMReadGroupRecord) group).getReadGroupId();
         }
 
+        @Override
         List<? extends AbstractSAMHeaderRecord> getGroups(SAMFileHeader header) {
             return header.getReadGroups();
         }
 
+        @Override
         String getTagName() {
             return SAMTag.RG.toString();
         }
 
+        @Override
         List<? extends AbstractSAMHeaderRecord> createGroups(final String[] groupIds) {
             final List<SamReader> readers = new ArrayList<SamReader>();
 
@@ -507,20 +519,24 @@ public class MergingSamRecordIteratorGroupCollisionTest {
             return fileHeaderMerger.getMergedHeader().getReadGroups();
         }
 
+        @Override
         void setAttribute(AbstractSAMHeaderRecord group, String value) {
             ((SAMReadGroupRecord) group).setPlatformUnit(value);
         }
 
+        @Override
         AbstractSAMHeaderRecord newGroup(String id) {
             SAMReadGroupRecord group = new SAMReadGroupRecord(id);
             group.setAttribute(SAMTag.SM.name(), id);
             return group;
         }
 
+        @Override
         void setBuilderGroup(SAMRecordSetBuilder builder, AbstractSAMHeaderRecord group) {
             builder.setReadGroup((SAMReadGroupRecord) group);
         }
 
+        @Override
         boolean equivalent(AbstractSAMHeaderRecord group1, AbstractSAMHeaderRecord group2) {
             return ((SAMReadGroupRecord) group1).equivalent((SAMReadGroupRecord) group2);
         }

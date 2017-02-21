@@ -41,20 +41,24 @@ public final class PositionalOutputStream extends OutputStream implements Locati
         this.out = out;
     }
 
+    @Override
     public final void write(final byte[] bytes) throws IOException {
         write(bytes, 0, bytes.length);
     }
 
+    @Override
     public final void write(final byte[] bytes, final int startIndex, final int numBytes) throws IOException {
         position += numBytes;
         out.write(bytes, startIndex, numBytes);
     }
 
+    @Override
     public final void write(final int c)  throws IOException {
         position++;
         out.write(c);
     }
 
+    @Override
     public final long getPosition() { return position; }
 
     @Override

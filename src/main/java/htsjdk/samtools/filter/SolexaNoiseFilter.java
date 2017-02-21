@@ -40,6 +40,7 @@ public class SolexaNoiseFilter implements SamRecordFilter {
      * @param record    the SAMRecord to evaluate
      * @return  true if the SAMRecord matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord record) {
         final byte[] sequence = record.getReadBases();
         for (final byte base : sequence) {
@@ -59,6 +60,7 @@ public class SolexaNoiseFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         // only filter out the pair if both first and second reads have all As
         return (filterOut(first) && filterOut(second));

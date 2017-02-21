@@ -75,6 +75,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * Sets the progress logger used by this implementation. Setting this lets this writer emit log
      * messages as SAM records in a SortingCollection are being written to disk.
      */
+    @Override
     public void setProgressLogger(final ProgressLoggerInterface progress) {
         this.progressLogger = progress;
     }
@@ -153,6 +154,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         }
     }
 
+    @Override
     public SAMFileHeader getFileHeader() {
         return header;
     }
@@ -180,6 +182,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @throws IllegalArgumentException if the record's reference or mate reference indices cannot be
      * resolved against the writer's header using the current reference and mate reference names
      */
+    @Override
     public void addAlignment(final SAMRecord alignment)
     {
         alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
@@ -206,6 +209,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Must be called or else file will likely be defective.
      */
+    @Override
     public final void close()
     {
         if (!isClosed) {

@@ -750,6 +750,7 @@ public class SamFileValidator {
 
         PairEndInfo remove(int mateReferenceIndex, String key);
 
+        @Override
         CloseableIterator<Map.Entry<String, PairEndInfo>> iterator();
     }
 
@@ -757,14 +758,17 @@ public class SamFileValidator {
         private final CoordinateSortedPairInfoMap<String, PairEndInfo> onDiskMap =
                 new CoordinateSortedPairInfoMap<String, PairEndInfo>(maxTempFiles, new Codec());
 
+        @Override
         public void put(int mateReferenceIndex, String key, PairEndInfo value) {
             onDiskMap.put(mateReferenceIndex, key, value);
         }
 
+        @Override
         public PairEndInfo remove(int mateReferenceIndex, String key) {
             return onDiskMap.remove(mateReferenceIndex, key);
         }
 
+        @Override
         public CloseableIterator<Map.Entry<String, PairEndInfo>> iterator() {
             return onDiskMap.iterator();
         }
@@ -773,14 +777,17 @@ public class SamFileValidator {
             private DataInputStream in;
             private DataOutputStream out;
 
+            @Override
             public void setOutputStream(final OutputStream os) {
                 this.out = new DataOutputStream(os);
             }
 
+            @Override
             public void setInputStream(final InputStream is) {
                 this.in = new DataInputStream(is);
             }
 
+            @Override
             public void encode(final String key, final PairEndInfo record) {
                 try {
                     out.writeUTF(key);
@@ -802,6 +809,7 @@ public class SamFileValidator {
                 }
             }
 
+            @Override
             public Map.Entry<String, PairEndInfo> decode() {
                 try {
                     final String key = in.readUTF();
@@ -838,31 +846,38 @@ public class SamFileValidator {
     private static class InMemoryPairEndInfoMap implements PairEndInfoMap {
         private final Map<String, PairEndInfo> map = new HashMap<String, PairEndInfo>();
 
+        @Override
         public void put(int mateReferenceIndex, String key, PairEndInfo value) {
             if (mateReferenceIndex != value.mateReferenceIndex)
                 throw new IllegalArgumentException("mateReferenceIndex does not agree with PairEndInfo");
             map.put(key, value);
         }
 
+        @Override
         public PairEndInfo remove(int mateReferenceIndex, String key) {
             return map.remove(key);
         }
 
+        @Override
         public CloseableIterator<Map.Entry<String, PairEndInfo>> iterator() {
             final Iterator<Map.Entry<String, PairEndInfo>> it = map.entrySet().iterator();
             return new CloseableIterator<Map.Entry<String, PairEndInfo>>() {
+                @Override
                 public void close() {
                     // do nothing
                 }
 
+                @Override
                 public boolean hasNext() {
                     return it.hasNext();
                 }
 
+                @Override
                 public Map.Entry<String, PairEndInfo> next() {
                     return it.next();
                 }
 
+                @Override
                 public void remove() {
                     it.remove();
                 }

@@ -340,6 +340,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
      * Return an iterator over the entire tree.
      * @return An iterator.
      */
+    @Override
     public Iterator<Node<V>> iterator()
     {
         return new FwdIterator(min());
@@ -1069,11 +1070,13 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mNext = node;
         }
 
+        @Override
         public boolean hasNext()
         {
             return mNext != null;
         }
 
+        @Override
         public Node<V> next()
         {
             if ( mNext == null )
@@ -1092,6 +1095,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return mLast;
         }
 
+        @Override
         public void remove()
         {
             if ( mLast == null )
@@ -1115,11 +1119,13 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mNext = node;
         }
 
+        @Override
         public boolean hasNext()
         {
             return mNext != null;
         }
 
+        @Override
         public Node<V> next()
         {
             if ( mNext == null )
@@ -1135,6 +1141,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return mLast;
         }
 
+        @Override
         public void remove()
         {
             if ( mLast == null )
@@ -1160,11 +1167,13 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mEnd = end;
         }
 
+        @Override
         public boolean hasNext()
         {
             return mNext != null;
         }
 
+        @Override
         public Node<V> next()
         {
             if ( mNext == null )
@@ -1182,6 +1191,7 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             return mLast;
         }
 
+        @Override
         public void remove()
         {
             if ( mLast == null )
@@ -1207,16 +1217,19 @@ public class IntervalTree<V> implements Iterable<IntervalTree.Node<V>>
             mItr = itr;
         }
 
+        @Override
         public boolean hasNext()
         {
             return mItr.hasNext();
         }
 
+        @Override
         public V1 next()
         {
             return mItr.next().getValue();
         }
 
+        @Override
         public void remove()
         {
             mItr.remove();

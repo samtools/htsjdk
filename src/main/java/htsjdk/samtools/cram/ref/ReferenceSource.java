@@ -133,6 +133,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         return bases;
     }
 
+    @Override
     public synchronized byte[] getReferenceBases(final SAMSequenceRecord record,
                                                  final boolean tryNameVariants) {
         { // check cache by sequence name:

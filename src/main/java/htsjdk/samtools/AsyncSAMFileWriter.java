@@ -48,11 +48,13 @@ class AsyncSAMFileWriter extends AbstractAsyncWriter<SAMRecord> implements SAMFi
      * Adds an alignment to the queue to be written.  Will re-throw any exception that was received when
      * writing prior record(s) to the underlying SAMFileWriter.
      */
+    @Override
     public void addAlignment(final SAMRecord alignment) {
         write(alignment);
     }
 
     /** Returns the SAMFileHeader from the underlying SAMFileWriter. */
+    @Override
     public SAMFileHeader getFileHeader() {
         return this.underlyingWriter.getFileHeader();
     }

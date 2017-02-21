@@ -65,17 +65,20 @@ public class Md5CalculatingOutputStream extends OutputStream {
         }
     }
 
+    @Override
     public void write(int b) throws IOException {
         md5.update((byte)b);
         os.write(b);
     }
 
+    @Override
     public void write(byte[] b) throws IOException {
         md5.update(b);
         os.write(b);
     }
 
 
+    @Override
     public void write(byte[] b, int off, int len) throws IOException {
         md5.update(b, off, len);
         os.write(b, off, len);
@@ -102,6 +105,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
         }
     }
 
+    @Override
     public void close() throws IOException {
         os.close();
         makeHash();
@@ -114,6 +118,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
     }
 
     // Pass-through method
+    @Override
     public void flush() throws IOException { os.flush(); }
 
 }

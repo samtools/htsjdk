@@ -88,6 +88,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     /**
      * Close this index and release any associated resources.
      */
+    @Override
     public void close() {
         mIndexBuffer.close();
     }
@@ -170,6 +171,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The file offset of the first record in the last linear bin, or -1
      * if there are no elements in linear bins (i.e. no mapped reads).
      */
+    @Override
     public long getStartOfLastLinearBin() {
         seek(4);
 
@@ -206,6 +208,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @param reference the reference of interest
      * @return meta data for the reference
      */
+    @Override
     public BAMIndexMetaData getMetaData(final int reference) {
         seek(4);
 

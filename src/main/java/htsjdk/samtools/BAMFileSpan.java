@@ -78,6 +78,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * Does this chunk list map to any position within the BAM file?
      * @return True iff the ChunkList points to any data within the BAM.
      */
+    @Override
     public boolean isEmpty() {
         return chunks.isEmpty();
     }
@@ -86,6 +87,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * Deep clone the given chunk list.
      * @return A copy of the chunk list.
      */
+    @Override
     public BAMFileSpan clone() {
         final BAMFileSpan clone = new BAMFileSpan();
         for(final Chunk chunk: chunks)
@@ -100,6 +102,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * @param fileSpan The filespan before which to eliminate.
      * @return A new BAMFileSpan which contains the portion of the chunk list after the given chunk.
      */
+    @Override
     public SAMFileSpan removeContentsBefore(final SAMFileSpan fileSpan) {
         if(fileSpan == null)
             return clone();
@@ -174,6 +177,7 @@ public class BAMFileSpan implements SAMFileSpan, Serializable {
      * Gets a file span over the data immediately following this span.
      * @return The a pointer to data immediately following this span.
      */
+    @Override
     public SAMFileSpan getContentsFollowing() {
         if(chunks.isEmpty())
             throw new SAMException("Unable to get the file pointer following this one: no data present.");

@@ -111,6 +111,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
         this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
     }
 
+    @Override
     public boolean isIndexed() {return true;}
 
     private static File findFastaIndex(File fastaFile) {
@@ -190,6 +191,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * Retrieves the sequence dictionary for the fasta file.
      * @return sequence dictionary of the fasta.
      */
+    @Override
     public SAMSequenceDictionary getSequenceDictionary() {
         return sequenceDictionary;
     }
@@ -199,6 +201,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @param contig contig whose data should be returned.
      * @return The full sequence associated with this contig.
      */
+    @Override
     public ReferenceSequence getSequence( String contig ) {
         return getSubsequenceAt( contig, 1, (int)index.getIndexEntry(contig).getSize() );
     }
@@ -210,6 +213,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * @param stop inclusive, 1-based stop of region.
      * @return The partial reference sequence associated with this range.
      */
+    @Override
     public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
         if(start > stop + 1)
             throw new SAMException(String.format("Malformed query; start point %d lies after end point %d",start,stop));
@@ -300,6 +304,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
      * Gets the next sequence if available, or null if not present.
      * @return next sequence if available, or null if not present.
      */
+    @Override
     public ReferenceSequence nextSequence() {
         if( !indexIterator.hasNext() )
             return null;
@@ -309,6 +314,7 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     /**
      * Reset the iterator over the index.
      */
+    @Override
     public void reset() {
         indexIterator = index.iterator();
     }

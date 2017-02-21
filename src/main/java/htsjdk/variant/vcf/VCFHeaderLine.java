@@ -127,6 +127,7 @@ public class VCFHeaderLine implements Comparable, Serializable {
         return result;
     }
 
+    @Override
     public int compareTo(Object other) {
         return toString().compareTo(other.toString());
     }

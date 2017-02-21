@@ -115,6 +115,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      * Returns the list of sequence records associated with the reference sequence if found
      * otherwise null.
      */
+    @Override
     public SAMSequenceDictionary getSequenceDictionary() {
         return this.sequenceDictionary;
     }
@@ -130,14 +131,17 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     /** default implementation -- override if index is supported */
+    @Override
     public boolean isIndexed() {return false;}
 
     /** default implementation -- override if index is supported */
+    @Override
     public ReferenceSequence getSequence( String contig ) {
         throw new UnsupportedOperationException();
     }
 
     /** default implementation -- override if index is supported */
+    @Override
     public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
         throw new UnsupportedOperationException("Index does not appear to exist for " + getAbsolutePath() + ".  samtools faidx can be used to create an index");
     }

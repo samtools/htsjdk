@@ -523,6 +523,7 @@ public class Allele implements Comparable<Allele>, Serializable {
             return null;    // couldn't find anything
     }
 
+    @Override
     public int compareTo(final Allele other) {
         if ( isReference() && other.isNonReference() )
             return -1;

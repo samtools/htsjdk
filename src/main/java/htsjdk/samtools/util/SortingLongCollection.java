@@ -336,6 +336,7 @@ public class SortingLongCollection {
     private static class PeekFileValueIteratorComparator implements Comparator<PeekFileValueIterator>, Serializable {
         private static final long serialVersionUID = 1L;
 
+        @Override
         public int compare(final PeekFileValueIterator it1, final PeekFileValueIterator it2) {
             if (it1.peek() < it2.peek()) {
                 return -1;

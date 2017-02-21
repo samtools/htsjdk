@@ -66,6 +66,7 @@ public class TagFilter implements SamRecordFilter {
      * @param record    the SAMRecord to evaluate
      * @return  true if the SAMRecord matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(SAMRecord record) {
         return values.contains(record.getAttribute(tag));
     }
@@ -78,6 +79,7 @@ public class TagFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         // both first and second must have the tag in order for it to be filtered out
          return values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag));

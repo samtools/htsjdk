@@ -79,6 +79,7 @@ public class FastLineReader implements Closeable {
         return sawEoln;
     }
 
+    @Override
     public void close() {
         CloserUtil.close(in);
         in = null;

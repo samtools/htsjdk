@@ -65,6 +65,7 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
      * @param record the SAMRecord to evaluate
      * @return true if the SAMRecord matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord record) {
         if (record.isSecondaryOrSupplementary()) {
            return true;
@@ -102,6 +103,7 @@ public class IntervalKeepPairFilter implements SamRecordFilter {
      *
      * @return true if both SAMRecords do not overlap the interval list
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         return filterOut(first) && filterOut(second);
     }

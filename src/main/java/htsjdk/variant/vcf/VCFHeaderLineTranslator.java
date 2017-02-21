@@ -67,6 +67,7 @@ class VCF4Parser implements VCFLineParser {
      * @param valueLine the line
      * @return a mapping of the tags parsed out
      */
+    @Override
     public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
         Map<String, String> ret = new LinkedHashMap<String, String>();
@@ -145,6 +146,7 @@ class VCF4Parser implements VCFLineParser {
 
 class VCF3Parser implements VCFLineParser {
 
+    @Override
     public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
         Map<String, String> ret = new LinkedHashMap<String, String>();

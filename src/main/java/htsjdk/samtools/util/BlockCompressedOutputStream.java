@@ -296,6 +296,7 @@ public class BlockCompressedOutputStream
      * @param bite
      * @throws IOException
      */
+    @Override
     public void write(final int bite) throws IOException {
         singleByteArray[0] = (byte)bite;
         write(singleByteArray);

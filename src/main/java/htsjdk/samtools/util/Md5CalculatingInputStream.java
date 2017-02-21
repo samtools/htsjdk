@@ -65,12 +65,14 @@ public class Md5CalculatingInputStream extends InputStream {
         }
     }
 
+    @Override
     public int read() throws IOException {
         int result = is.read();
         if (result != -1) md5.update((byte)result);
         return result;
     }
 
+    @Override
     public int read(byte[] b) throws IOException {
         int result = is.read(b);
         if (result != -1) md5.update(b, 0, result);
@@ -78,6 +80,7 @@ public class Md5CalculatingInputStream extends InputStream {
     }
 
 
+    @Override
     public int read(byte[] b, int off, int len) throws IOException {
         int result = is.read(b, off, len);
         if (result != -1) md5.update(b, off, result);
@@ -104,6 +107,7 @@ public class Md5CalculatingInputStream extends InputStream {
         }
     }
 
+    @Override
     public void close() throws IOException {
         is.close();
         makeHash();
@@ -116,18 +120,23 @@ public class Md5CalculatingInputStream extends InputStream {
     }
 
     // Methods not supported or overridden because they would not result in a valid hash
+    @Override
     public boolean markSupported() { return false; }
+    @Override
     public void	mark(int readlimit) {
         throw new UnsupportedOperationException("mark() is not supported by the MD5CalculatingInputStream");
     }
+    @Override
     public void	reset() throws IOException {
         throw new UnsupportedOperationException("reset() is not supported by the MD5CalculatingInputStream");
     }
+    @Override
     public long skip(long n) throws IOException {
         throw new UnsupportedOperationException("skip() is not supported by the MD5CalculatingInputStream");
     }
 
     // Methods delegated to the wrapped InputStream
+    @Override
     public int available() throws IOException { return is.available(); }
 
 }

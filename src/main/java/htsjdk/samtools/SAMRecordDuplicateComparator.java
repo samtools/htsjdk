@@ -220,6 +220,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
      * If both reads are paired and both ends mapped, always prefer the first end over the second end.  This is needed to
      * properly choose the first end for optical duplicate identification when both ends are mapped to the same position etc. 
      */ 
+    @Override
     public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         populateTransientAttributes(samRecord1, samRecord2);
         int cmp;
@@ -357,6 +358,7 @@ public class SAMRecordDuplicateComparator implements SAMRecordComparator, Serial
     /**
      * Less stringent than duplicateSetCompare, such that two records are equal enough such that their ordering in a sorted SAM file would be arbitrary.
      */
+    @Override
     public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         return fileOrderCompare(samRecord1, samRecord2, false, true);
     }

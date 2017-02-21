@@ -101,6 +101,7 @@ public class LinearIndex extends AbstractIndex {
         read(dis);
     }
 
+    @Override
     public boolean isCurrentVersion() {
         if (!super.isCurrentVersion()) return false;
 
@@ -117,6 +118,7 @@ public class LinearIndex extends AbstractIndex {
         return INDEX_TYPE;
     }
 
+    @Override
     public List<String> getSequenceNames() {
         return (chrIndices == null ? Collections.EMPTY_LIST :
                 Collections.unmodifiableList(new ArrayList<String>(chrIndices.keySet())));
@@ -173,6 +175,7 @@ public class LinearIndex extends AbstractIndex {
             this.nFeatures = 0;
         }
 
+        @Override
         public String getName() {
             return name;
         }
@@ -186,10 +189,12 @@ public class LinearIndex extends AbstractIndex {
             return blocks.size();
         }
 
+        @Override
         public List<Block> getBlocks() {
             return blocks;
         }
 
+        @Override
         public List<Block> getBlocks(final int start, final int end) {
             if (blocks.isEmpty()) {
                 return Collections.emptyList();
@@ -231,6 +236,7 @@ public class LinearIndex extends AbstractIndex {
             this.nFeatures++;
         }
 
+        @Override
         public void write(final LittleEndianOutputStream dos) throws IOException {
 
             // Chr name, binSize,  # bins,  longest feature
@@ -253,6 +259,7 @@ public class LinearIndex extends AbstractIndex {
             dos.writeLong(pos + size);
         }
 
+        @Override
         public void read(final LittleEndianInputStream dis) throws IOException {
             name = dis.readString();
             binWidth = dis.readInt();

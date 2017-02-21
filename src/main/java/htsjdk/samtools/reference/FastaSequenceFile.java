@@ -62,10 +62,12 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     /**
      * It's good to call this to free up memory.
      */
+    @Override
     public void close() {
         in.close();
     }
 
+    @Override
     public ReferenceSequence nextSequence() {
         this.sequenceIndex += 1;
 
@@ -83,6 +85,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         return new ReferenceSequence(name, this.sequenceIndex, bases);
     }
 
+    @Override
     public void reset() {
         this.sequenceIndex = -1;
         this.in.close();

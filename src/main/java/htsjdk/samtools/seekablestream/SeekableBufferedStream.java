@@ -67,6 +67,7 @@ public class SeekableBufferedStream extends SeekableStream {
         this(stream, DEFAULT_BUFFER_SIZE);
     }
 
+    @Override
     public long length() {
         return wrappedStream.length();
     }
@@ -84,18 +85,21 @@ public class SeekableBufferedStream extends SeekableStream {
         }
     }
 
+    @Override
     public void seek(final long position) throws IOException {
         this.position = position;
         wrappedStream.seek(position);
         bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
     }
 
+    @Override
     public int read() throws IOException {
         int b = bufferedStream.read();
         position++;
         return b;
     }
 
+    @Override
     public int read(final byte[] buffer, final int offset, final int length) throws IOException {
         int nBytesRead = bufferedStream.read(buffer, offset, length);
         if (nBytesRead > 0) {
@@ -112,10 +116,12 @@ public class SeekableBufferedStream extends SeekableStream {
         return nBytesRead;
     }
 
+    @Override
     public void close() throws IOException {
         wrappedStream.close();
     }
 
+    @Override
     public boolean eof() throws IOException {
         return position >= wrappedStream.length();
     }

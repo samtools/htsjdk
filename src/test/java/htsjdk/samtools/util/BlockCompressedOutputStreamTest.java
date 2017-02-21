@@ -181,6 +181,7 @@ public class BlockCompressedOutputStreamTest {
 
         }
         final DeflaterFactory myDeflaterFactory= new DeflaterFactory(){
+            @Override
             public Deflater makeDeflater(final int compressionLevel, final boolean gzipCompatible) {
                 return new MyDeflater(compressionLevel, gzipCompatible);
             }

@@ -57,6 +57,7 @@ public class WholeReadClippedFilter implements SamRecordFilter {
      *
      * @return true if the SAMRecords matches the filter, otherwise false
      */
+    @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         // if either fails, exclude them both
         return (filterOut(first) || filterOut(second));
