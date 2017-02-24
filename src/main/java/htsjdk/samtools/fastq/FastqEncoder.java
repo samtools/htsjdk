@@ -28,11 +28,14 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 /**
- * Codec for encode records into FASTQ format.
+ * Codec for encoding records into FASTQ format.
  *
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class FastqCodec {
+public final class FastqEncoder {
+
+    // cannot be instantiated because it is an utility class
+    private FastqEncoder() {}
 
     /**
      * Encodes a FastqRecord in the String FASTQ format.
@@ -48,6 +51,15 @@ public class FastqCodec {
                 .append(FastqConstants.QUALITY_HEADER).append(qualHeader == null ? "" : qualHeader).append('\n')
                 .append(qualityString == null ? "" : qualityString)
                 .toString();
+    }
+
+    /**
+     * Encodes a SAMRecord in the String FASTQ format.
+     * @see #encode(FastqRecord)
+     * @see #asSAMRecord(FastqRecord, SAMFileHeader)
+     */
+    public static String encode(final SAMRecord record) {
+        return encode(asFastqRecord(record));
     }
 
     /**

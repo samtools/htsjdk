@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.StringUtil;
 
@@ -90,7 +91,7 @@ public class FastqRecord implements Serializable {
 
     /**
      * @return the read name
-     * @deprecated use {@link #getReadName()} instead
+     * @deprecated since 02/2017. Use {@link #getReadName()} instead
      */
     @Deprecated
     public String getReadHeader() {
@@ -163,7 +164,7 @@ public class FastqRecord implements Serializable {
     /**
      * shortcut to getReadString().length()
      *
-     * @deprecated use {@link #getReadLength()} instead
+     * @deprecated since 02/2017. Use {@link #getReadLength()} instead
      */
     @Deprecated
     public int length() {
@@ -218,9 +219,21 @@ public class FastqRecord implements Serializable {
         return true;
     }
 
-    /** Simple toString() that gives a read name and length */
+    /**
+     * Returns the record as the String FASTQ format.
+     * @see FastqEncoder#encode(FastqRecord)
+     */
+    public String toFastQString() {
+        return FastqEncoder.encode(this);
+    }
+
+    /**
+     * Returns {@link #toFastQString()}
+     */
     @Override
     public String toString() {
-        return String.format("%s: %s bp", readName, getReadLength());
+        // TODO: this should be change in the future for a simpler and more informative form such as
+        // TODO: return String.format("%s: %s bp", readName, getReadLength());
+        return toFastQString();
     }
 }

@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class FastqCodecTest {
+public class FastqEncoderTest {
 
     @Test
     public void testAsFastqRecord() throws Exception {
@@ -39,12 +39,12 @@ public class FastqCodecTest {
         record.setReadPairedFlag(true);
         // test first of pair encoding
         record.setFirstOfPairFlag(true);
-        testRecord(record.getReadName() + FastqConstants.FIRST_OF_PAIR, FastqCodec.asFastqRecord(record), record);
+        testRecord(record.getReadName() + FastqConstants.FIRST_OF_PAIR, FastqEncoder.asFastqRecord(record), record);
         record.setFirstOfPairFlag(false);
         record.setSecondOfPairFlag(true);
-        testRecord(record.getReadName() + FastqConstants.SECOND_OF_PAIR, FastqCodec.asFastqRecord(record), record);
+        testRecord(record.getReadName() + FastqConstants.SECOND_OF_PAIR, FastqEncoder.asFastqRecord(record), record);
         record.setSecondOfPairFlag(false);
-        testRecord(record.getReadName(), FastqCodec.asFastqRecord(record), record);
+        testRecord(record.getReadName(), FastqEncoder.asFastqRecord(record), record);
     }
 
     private void testRecord(final String expectedReadName, final FastqRecord fastqRecord, final SAMRecord samRecord) {
@@ -59,11 +59,11 @@ public class FastqCodecTest {
         // create a random record
         final SAMRecord samRecord = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "10M", null, 2);
         FastqRecord fastqRecord = new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), "", samRecord.getBaseQualities());
-        testConvertedSAMRecord(FastqCodec.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
+        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.FIRST_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
-        testConvertedSAMRecord(FastqCodec.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
+        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
-        testConvertedSAMRecord(FastqCodec.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
+        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
     }
 
     private void testConvertedSAMRecord(final SAMRecord converted, final SAMRecord original) {
