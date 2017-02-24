@@ -58,7 +58,10 @@ public class BasicFastqWriter implements FastqWriter,Flushable {
 
     @Override
     public void write(final FastqRecord rec) {
-        writer.println(FastqEncoder.encode(rec));
+        // encode without creating a String
+        FastqEncoder.write(writer, rec);
+        // and print a new line
+        writer.println();
         if (writer.checkError()) {
             throw new SAMException("Error in writing fastq file " + path);
         }

@@ -23,9 +23,12 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.io.IOException;
 
 /**
  * Codec for encoding records into FASTQ format.
@@ -41,16 +44,30 @@ public final class FastqEncoder {
      * Encodes a FastqRecord in the String FASTQ format.
      */
     public static String encode(final FastqRecord record) {
+        // reserve some memory based on the read length and read name
+        final int capacity = record.getReadLength() * 2 + record.getReadName().length() + 5;
+        return write(new StringBuilder(capacity), record).toString();
+    }
+
+    /**
+     * Writes a FastqRecord into the Appendable output.
+     * @throws SAMException if any I/O error occurs.
+     */
+    public static Appendable write(final Appendable out,final FastqRecord record) {
         final String readName = record.getReadName();
         final String readString = record.getReadString();
         final String qualHeader = record.getBaseQualityHeader();
         final String qualityString = record.getBaseQualityString();
-        return new StringBuilder()
-                .append(FastqConstants.SEQUENCE_HEADER).append(readName == null ? "" : readName).append('\n')
-                .append(readString == null ? "" : readString).append('\n')
-                .append(FastqConstants.QUALITY_HEADER).append(qualHeader == null ? "" : qualHeader).append('\n')
-                .append(qualityString == null ? "" : qualityString)
-                .toString();
+        try {
+            return out.append(FastqConstants.SEQUENCE_HEADER)
+                    .append(readName == null ? "" : readName).append('\n')
+                    .append(readString == null ? "" : readString).append('\n')
+                    .append(FastqConstants.QUALITY_HEADER)
+                    .append(qualHeader == null ? "" : qualHeader).append('\n')
+                    .append(qualityString == null ? "" : qualityString);
+        } catch (IOException e) {
+            throw new SAMException(e);
+        }
     }
 
     /**
