@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.StringUtil;
 
@@ -118,10 +119,10 @@ public class FastqRecord implements Serializable {
     /**
      * Get the DNA sequence.
      *
-     * @return read sequence as ASCII bytes ACGTN=.
+     * @return read sequence as ASCII bytes ACGTN=; {@link SAMRecord#NULL_SEQUENCE} if no bases are present.
      */
     public byte[] getReadBases() {
-        return StringUtil.stringToBytes(readString);
+        return (readString == null) ? SAMRecord.NULL_SEQUENCE : StringUtil.stringToBytes(readString);
     }
 
     /**
@@ -136,10 +137,10 @@ public class FastqRecord implements Serializable {
     /**
      * Get the base qualities as binary PHRED scores (not ASCII)
      *
-     * @return the base quality
+     * @return the base quality; {@link SAMRecord#NULL_QUALS} if no bases are present.
      */
     public byte[] getBaseQualities() {
-        return SAMUtils.fastqToPhred(baseQualityString);
+        return (baseQualityString == null) ? SAMRecord.NULL_QUALS : SAMUtils.fastqToPhred(baseQualityString);
     }
 
     /**
