@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools.fastq;
 
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.StringUtil;
 
