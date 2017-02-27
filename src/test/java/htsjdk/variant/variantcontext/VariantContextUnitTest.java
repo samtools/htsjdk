@@ -1267,7 +1267,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributesACNoGtTwoAlts = new HashMap<>();
         attributesACNoGtTwoAlts.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1", "1"));
         final VariantContext vcACNoGtSetTwoAlts =
-                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAlts, null);
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAlts, (Genotype[]) null);
 
         // with AF set, and two different ALTs (T and C), with GT of 1/2, we expect two frequncy values.
         // With two ALTs, a list is expected, so we set the attribute as a list of 0.5,0.5
@@ -1280,7 +1280,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributesAFNoGtTwoAlts = new HashMap<>();
         attributesAFNoGtTwoAlts.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5", "0.5"));
         final VariantContext vcAFNoGtSetTwoAlts =
-                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAlts, null);
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAlts, (Genotype[]) null);
 
         return new Object[][]{
                 {vcNoGenotypes},
@@ -1288,6 +1288,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
                 {vcANSetNoCall},
                 {vcACSet},
                 {vcACSetNoAlts},
+                {vcACSetTwoAlts},
                 {vcACNoGtSetTwoAlts},
                 {vcAFSetTwoAlts},
                 {vcAFNoGtSetTwoAlts}
@@ -1348,7 +1349,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributesACNoGtTwoAltsOneAltCount = new HashMap<>();
         attributesACNoGtTwoAltsOneAltCount.put(VCFConstants.ALLELE_COUNT_KEY, Arrays.asList("1"));
         final VariantContext vcACNoGtSetTwoAltsOneAltCount =
-                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAltsOneAltCount, null);
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesACNoGtTwoAltsOneAltCount, (Genotype[])null);
 
         // with AF set, two ALTs, but only frequency for one ALT (we expect two items in the list
         final Map<String, Object> attributesAFTwoAltsWrongFreq = new HashMap<>();
@@ -1360,7 +1361,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
         final Map<String, Object> attributesAFNoGtTwoAltsWrongCount = new HashMap<>();
         attributesAFNoGtTwoAltsWrongCount.put(VCFConstants.ALLELE_FREQUENCY_KEY, Arrays.asList("0.5"));
         final VariantContext vcAFNoGtSetTwoAltsWrongFreq =
-                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAltsWrongCount, null);
+                createValidateChromosomeCountsContext(Arrays.asList(Aref, T, C), attributesAFNoGtTwoAltsWrongCount, (Genotype[])null);
 
         return new Object[][]{
                 {vcANSet},
