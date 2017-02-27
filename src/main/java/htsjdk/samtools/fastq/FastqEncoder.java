@@ -44,8 +44,12 @@ public final class FastqEncoder {
      * Encodes a FastqRecord in the String FASTQ format.
      */
     public static String encode(final FastqRecord record) {
-        // reserve some memory based on the read length and read name
-        final int capacity = record.getReadLength() * 2 + record.getReadName().length() + 5;
+        // reserve some memory based on the read length
+        int capacity = record.getReadLength() * 2 +  5;
+        // reserve some memory based on the read name
+        if (record.getReadName() != null) {
+            capacity += record.getReadName().length();
+        }
         return write(new StringBuilder(capacity), record).toString();
     }
 
