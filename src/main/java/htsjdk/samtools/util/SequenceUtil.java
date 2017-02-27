@@ -32,6 +32,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.fastq.FastqConstants;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -1005,7 +1006,7 @@ public class SequenceUtil {
 
         // NOTE: the while loop isn't necessarily the most efficient way to handle this but we don't
         // expect this to ever happen more than once, just trapping pathological cases
-        while ((readName.endsWith("/1") || readName.endsWith("/2"))) {
+        while ((readName.endsWith(FastqConstants.FIRST_OF_PAIR) || readName.endsWith(FastqConstants.SECOND_OF_PAIR))) {
             // If this is an unpaired run we want to make sure that "/1" isn't tacked on the end of the read name,
             // as this can cause problems down the road (ex. in Picard's MergeBamAlignment).
             readName = readName.substring(0, readName.length() - 2);

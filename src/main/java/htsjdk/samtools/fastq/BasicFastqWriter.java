@@ -58,12 +58,10 @@ public class BasicFastqWriter implements FastqWriter,Flushable {
 
     @Override
     public void write(final FastqRecord rec) {
-        writer.print(FastqConstants.SEQUENCE_HEADER);
-        writer.println(rec.getReadHeader());
-        writer.println(rec.getReadString());
-        writer.print(FastqConstants.QUALITY_HEADER);
-        writer.println(rec.getBaseQualityHeader() == null ? "" : rec.getBaseQualityHeader());
-        writer.println(rec.getBaseQualityString());
+        // encode without creating a String
+        FastqEncoder.write(writer, rec);
+        // and print a new line
+        writer.println();
         if (writer.checkError()) {
             throw new SAMException("Error in writing fastq file " + path);
         }
