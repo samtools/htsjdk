@@ -27,6 +27,7 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
 
 import java.io.File;
+import java.nio.file.Path;
 
 /**
  * Common, tribble wide constants and static functions
@@ -57,6 +58,16 @@ public class Tribble {
     }
 
     /**
+     * Return the name of the index file for the provided {@code filename}
+     * Does not actually create an index
+     * @param path  name of the path
+     * @return non-null String representing the index filename
+     */
+    public static String indexPath(final Path path) {
+        return indexFile(path.toAbsolutePath().toString());
+    }
+
+    /**
      * Return the name of the tabix index file for the provided {@code filename}
      * Does not actually create an index
      * @param filename  name of the file
@@ -74,6 +85,16 @@ public class Tribble {
      */
     public static File tabixIndexFile(final File file) {
         return indexFile(file.getAbsoluteFile(), TabixUtils.STANDARD_INDEX_EXTENSION);
+    }
+
+    /**
+     * Return the name of the tabix index file for the provided {@code path}
+     * Does not actually create an index
+     * @param path  name of the path
+     * @return non-null String representing the index filename
+     */
+    public static String tabixIndexPath(final Path path) {
+        return indexFile(path.toAbsolutePath().toString());
     }
 
     /**

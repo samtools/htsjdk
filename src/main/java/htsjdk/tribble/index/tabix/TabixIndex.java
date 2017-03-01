@@ -30,7 +30,9 @@ import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -44,6 +46,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -209,6 +213,18 @@ public class TabixIndex implements Index {
     }
 
     /**
+     * Writes the index with BGZF.
+     *
+     * @param tabixPath Where to write the index.
+     */
+    @Override
+    public void write(final Path tabixPath) throws IOException {
+        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), null))) {
+            write(los);
+        }
+    }
+
+    /**
      * Writes to a file with appropriate name and directory based on feature file.
      *
      * @param featureFile File being indexed.
@@ -217,6 +233,17 @@ public class TabixIndex implements Index {
     public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
         if (!featureFile.isFile()) return;
         write(new File(featureFile.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION));
+    }
+
+    /**
+     * Writes to a path with appropriate name and directory based on feature path.
+     *
+     * @param featurePath Path being indexed.
+     */
+    @Override
+    public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
+        if (Files.isRegularFile(featurePath)) return;
+        write(IOUtil.getPath(Tribble.tabixIndexPath(featurePath)));
     }
 
     /**

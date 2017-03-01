@@ -31,6 +31,7 @@ import htsjdk.tribble.index.linear.LinearIndexCreator;
 import htsjdk.tribble.util.MathUtils;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -56,13 +57,18 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
     MathUtils.RunningStat stats = new MathUtils.RunningStat();
     long basesSeen = 0;
     Feature lastFeature = null;
-    File inputFile;
+    // TODO: actually this field is not needed
+    Path inputPath;
 
-    public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
+    public DynamicIndexCreator(final Path inputPath, final IndexFactory.IndexBalanceApproach iba) {
         this.iba = iba;
         // get a list of index creators
-        this.inputFile = inputFile;
-        creators = getIndexCreators(inputFile,iba);
+        this.inputPath = inputPath;
+        creators = getIndexCreators(inputPath, iba);
+    }
+
+    public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
+        this(inputFile.toPath(), iba);
     }
 
     @Override
@@ -90,19 +96,19 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
 
     /**
      * create a list of index creators (initialized) representing the common index types we'd suspect they'd like to use
-     * @param inputFile the input file to use to create the indexes
+     * @param inputPath the input path to use to create the indexes
      * @return a map of index type to the best index for that balancing approach
      */
-    private Map<IndexFactory.IndexType,TribbleIndexCreator> getIndexCreators(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
+    private Map<IndexFactory.IndexType,TribbleIndexCreator> getIndexCreators(final Path inputPath, final IndexFactory.IndexBalanceApproach iba) {
         final Map<IndexFactory.IndexType,TribbleIndexCreator> creators = new HashMap<IndexFactory.IndexType,TribbleIndexCreator>();
 
         if (iba == IndexFactory.IndexBalanceApproach.FOR_SIZE) {
             // add a linear index with the default bin size
-            final LinearIndexCreator linearNormal = new LinearIndexCreator(inputFile, LinearIndexCreator.DEFAULT_BIN_WIDTH);
+            final LinearIndexCreator linearNormal = new LinearIndexCreator(inputPath, LinearIndexCreator.DEFAULT_BIN_WIDTH);
             creators.put(IndexFactory.IndexType.LINEAR,linearNormal);
 
             // create a tree index with the default size
-            final IntervalIndexCreator treeNormal = new IntervalIndexCreator(inputFile, IntervalIndexCreator.DEFAULT_FEATURE_COUNT);
+            final IntervalIndexCreator treeNormal = new IntervalIndexCreator(inputPath, IntervalIndexCreator.DEFAULT_FEATURE_COUNT);
             creators.put(IndexFactory.IndexType.INTERVAL_TREE,treeNormal);
         }
 
@@ -111,12 +117,12 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
         if (iba == IndexFactory.IndexBalanceApproach.FOR_SEEK_TIME) {
             // create a linear index with a small bin size
             final LinearIndexCreator linearSmallBin =
-                    new LinearIndexCreator(inputFile, Math.max(200, LinearIndexCreator.DEFAULT_BIN_WIDTH / 4));
+                    new LinearIndexCreator(inputPath, Math.max(200, LinearIndexCreator.DEFAULT_BIN_WIDTH / 4));
             creators.put(IndexFactory.IndexType.LINEAR,linearSmallBin);
 
             // create a tree index with a small index size
             final IntervalIndexCreator treeSmallBin =
-                    new IntervalIndexCreator(inputFile, Math.max(20, IntervalIndexCreator.DEFAULT_FEATURE_COUNT / 8));
+                    new IntervalIndexCreator(inputPath, Math.max(20, IntervalIndexCreator.DEFAULT_FEATURE_COUNT / 8));
             creators.put(IndexFactory.IndexType.INTERVAL_TREE,treeSmallBin);
         }
 

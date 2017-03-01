@@ -25,6 +25,7 @@ import htsjdk.tribble.index.TribbleIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex.ChrIndex;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -51,15 +52,23 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
 
     private final ArrayList<MutableInterval> intervals = new ArrayList<MutableInterval>();
 
-    File inputFile;
+    Path inputPath;
 
-    public IntervalIndexCreator(final File inputFile, final int featuresPerInterval) {
-        this.inputFile = inputFile;
+    public IntervalIndexCreator(final Path inputPath, final int featuresPerInterval) {
+        this.inputPath = inputPath;
         this.featuresPerInterval = featuresPerInterval;
     }
 
+    public IntervalIndexCreator(final File inputFile, final int featuresPerInterval) {
+        this(inputFile.toPath(), featuresPerInterval);
+    }
+
     public IntervalIndexCreator(final File inputFile) {
-        this(inputFile, DEFAULT_FEATURE_COUNT);
+        this(inputFile.toPath());
+    }
+
+    public IntervalIndexCreator(final Path inputPath) {
+        this(inputPath, DEFAULT_FEATURE_COUNT);
     }
 
     @Override
@@ -108,7 +117,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
      */
     @Override
     public Index finalizeIndex(final long finalFilePosition) {
-        final IntervalTreeIndex featureIndex = new IntervalTreeIndex(inputFile.getAbsolutePath());
+        final IntervalTreeIndex featureIndex = new IntervalTreeIndex(inputPath);
         // dump the remaining bins to the index
         addIntervalsToLastChr(finalFilePosition);
         featureIndex.setChrIndex(chrList);
