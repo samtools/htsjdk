@@ -37,9 +37,9 @@ public class Tribble {
     public final static String STANDARD_INDEX_EXTENSION = ".idx";
 
     /**
-     * Return the name of the index file for the provided vcf {@code filename}
+     * Return the name of the index file for the provided {@code filename}
      * Does not actually create an index
-     * @param filename  name of the vcf file
+     * @param filename  name of the file
      * @return non-null String representing the index filename
      */
     public static String indexFile(final String filename) {
@@ -47,9 +47,9 @@ public class Tribble {
     }
 
     /**
-     * Return the File of the index file for the provided vcf {@code file}
+     * Return the File of the index file for the provided {@code file}
      * Does not actually create an index
-     * @param file  the vcf file
+     * @param file  the file
      * @return a non-null File representing the index
      */
     public static File indexFile(final File file) {
@@ -57,9 +57,9 @@ public class Tribble {
     }
 
     /**
-     * Return the name of the tabix index file for the provided vcf {@code filename}
+     * Return the name of the tabix index file for the provided {@code filename}
      * Does not actually create an index
-     * @param filename  name of the vcf file
+     * @param filename  name of the file
      * @return non-null String representing the index filename
      */
     public static String tabixIndexFile(final String filename) {
@@ -67,9 +67,9 @@ public class Tribble {
     }
 
     /**
-     * Return the File of the tabix index file for the provided vcf {@code file}
+     * Return the File of the tabix index file for the provided {@code file}
      * Does not actually create an index
-     * @param file  the vcf file
+     * @param file  the file
      * @return a non-null File representing the index
      */
     public static File tabixIndexFile(final File file) {
@@ -77,9 +77,9 @@ public class Tribble {
     }
 
     /**
-     * Return the name of the index file for the provided vcf {@code filename} and {@code extension}
+     * Return the name of the index file for the provided {@code filename} and {@code extension}
      * Does not actually create an index
-     * @param filename  name of the vcf file
+     * @param filename  name of the file
      * @param extension the extension to use for the index
      * @return non-null String representing the index filename
      */
@@ -88,9 +88,9 @@ public class Tribble {
     }
 
     /**
-     * Return the File of the index file for the provided vcf {@code file} and {@code extension}
+     * Return the File of the index file for the provided {@code file} and {@code extension}
      * Does not actually create an index
-     * @param file  the vcf file
+     * @param file  the file
      * @param extension the extension to use for the index
      * @return a non-null File representing the index
      */
