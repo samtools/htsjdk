@@ -31,6 +31,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -43,14 +45,14 @@ public class Md5CalculatingOutputStream extends OutputStream {
 
     private final OutputStream os;
     private final MessageDigest md5;
-    private final File digestFile;
+    private final Path digestFile;
     private String hash;
 
     /**
      * Constructor that takes in the OutputStream that we are wrapping
      * and creates the MD5 MessageDigest
      */
-    public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
+    public Md5CalculatingOutputStream(OutputStream os, Path digestFile) {
         super();
         this.hash = null;
         this.os = os;
@@ -63,6 +65,10 @@ public class Md5CalculatingOutputStream extends OutputStream {
         catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 algorithm not found", e);
         }
+    }
+
+    public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
+        this(os, digestFile.toPath());
     }
 
     @Override
@@ -111,7 +117,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
         makeHash();
 
         if(digestFile != null) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(digestFile));
+            BufferedWriter writer = Files.newBufferedWriter(digestFile);
             writer.write(hash);
             writer.close();
         }
