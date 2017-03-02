@@ -23,10 +23,12 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CigarUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -114,5 +116,84 @@ public class CigarTest {
         Assert.assertTrue(cigar.isLeftClipped());
         Assert.assertFalse(cigar.isRightClipped());
         Assert.assertTrue(cigar.isClipped());
+    }
+
+    @Test
+    public void testRemoveEmptyOperators() {
+        List<CigarElement> elements = new ArrayList<>();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        Assert.assertEquals(new Cigar(Cigar.removeEmptyOperators(elements)).toString(), SAMRecord.NO_ALIGNMENT_CIGAR);
+
+        elements.clear();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        elements.add(new CigarElement(0, CigarOperator.I));
+        Assert.assertEquals(new Cigar(Cigar.removeEmptyOperators(elements)).toString(), SAMRecord.NO_ALIGNMENT_CIGAR);
+
+        elements.clear();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        elements.add(new CigarElement(1, CigarOperator.I));
+        Assert.assertEquals(new Cigar(Cigar.removeEmptyOperators(elements)).toString(), "1I");
+    }
+
+    @Test
+    public void testMergeSameAdjacentOperators() {
+        List<CigarElement> elements = new ArrayList<>();
+        elements.add(new CigarElement(1, CigarOperator.M));
+        Assert.assertEquals(new Cigar(Cigar.mergeSameAdjacentOperators(elements)).toString(), "1M");
+
+        elements.clear();
+        elements.add(new CigarElement(1, CigarOperator.M));
+        elements.add(new CigarElement(2, CigarOperator.M));
+        Assert.assertEquals(new Cigar(Cigar.mergeSameAdjacentOperators(elements)).toString(), "3M");
+
+        elements.clear();
+        elements.add(new CigarElement(1, CigarOperator.M));
+        elements.add(new CigarElement(2, CigarOperator.M));
+        elements.add(new CigarElement(3, CigarOperator.M));
+        Assert.assertEquals(new Cigar(Cigar.mergeSameAdjacentOperators(elements)).toString(), "6M");
+
+        elements.clear();
+        elements.add(new CigarElement(1, CigarOperator.M));
+        elements.add(new CigarElement(1, CigarOperator.I));
+        elements.add(new CigarElement(2, CigarOperator.I));
+        Assert.assertEquals(new Cigar(Cigar.mergeSameAdjacentOperators(elements)).toString(), "1M3I");
+    }
+
+    @Test
+    public void testTidy() {
+        List<CigarElement> elements = new ArrayList<>();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        Assert.assertEquals(new Cigar(elements).tidy().toString(), SAMRecord.NO_ALIGNMENT_CIGAR);
+
+        elements.clear();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        elements.add(new CigarElement(0, CigarOperator.I));
+        Assert.assertEquals(new Cigar(elements).tidy().toString(), SAMRecord.NO_ALIGNMENT_CIGAR);
+
+        elements.clear();
+        elements.add(new CigarElement(0, CigarOperator.M));
+        elements.add(new CigarElement(1, CigarOperator.M));
+        elements.add(new CigarElement(2, CigarOperator.M));
+        Assert.assertEquals(new Cigar(elements).tidy().toString(), "3M");
+    }
+
+    @Test(dataProvider = "positiveTestsData")
+    public void testTidyWithPositiveTestCases(final String cigar) {
+        Cigar tidiedCigar = TextCigarCodec.decode(cigar).tidy();
+
+        // seems odd why empty string is considered a valid cigar, so make an exception:
+        if (cigar.length() > 0)
+            Assert.assertEquals(tidiedCigar.toString(), cigar);
+
+        final List<SAMValidationError> errors = tidiedCigar.isValid(null, -1);
+        Assert.assertTrue(errors == null || errors.isEmpty());
+    }
+
+    @Test
+    public void testEquivalentTo(){
+        Assert.assertTrue(TextCigarCodec.decode("1M").equivalentTo(TextCigarCodec.decode("1M0I")));
+        Assert.assertTrue(TextCigarCodec.decode("1M1M").equivalentTo(TextCigarCodec.decode("2M")));
+        Assert.assertTrue(TextCigarCodec.decode("0N").equivalentTo(TextCigarCodec.decode(SAMRecord.NO_ALIGNMENT_CIGAR)));
+        Assert.assertTrue(TextCigarCodec.decode("1M1M1P4M1P2D1P6D0M0N").equivalentTo(TextCigarCodec.decode("2M1P4M1P2D1P6D")));
     }
 }

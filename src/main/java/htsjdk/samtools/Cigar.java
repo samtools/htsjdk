@@ -24,10 +24,7 @@
 package htsjdk.samtools;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * A list of CigarElements, which describes how a read aligns with the reference.
@@ -260,6 +257,88 @@ public class Cigar implements Serializable, Iterable<CigarElement> {
         final Cigar cigar = (Cigar) o;
 
         return cigarElements.equals(cigar.cigarElements);
+    }
+
+    /**
+     * Remove all {@link CigarElement} with zero length.
+     * @param elements list to scan
+     * @return a new list without zero-length elements
+     */
+    public static List<CigarElement> removeEmptyOperators(List<CigarElement> elements) {
+        List<CigarElement> newList = new ArrayList<>(elements.size());
+        newList.addAll(elements);
+        for (Iterator<CigarElement> iterator = newList.iterator(); iterator.hasNext();) {
+            CigarElement element = iterator.next();
+            if (element.getLength() == 0) {
+                iterator.remove();
+            }
+        }
+        if (newList.size() == 1) {
+            if (newList.get(0).getLength() == 0) return Collections.emptyList();
+        }
+        return newList;
+    }
+
+    /**
+     * Merge adjacent elements with same operator. For example two 1M elements would become a single 2M.
+     * @param elements list of elements to scan
+     * @return a new list with adjacent same-operator elements merged
+     */
+    public static List<CigarElement> mergeSameAdjacentOperators(List<CigarElement> elements) {
+        List<CigarElement> newList = new ArrayList<>(elements.size());
+
+        CigarElement previousElement = null;
+        for (Iterator<CigarElement> iterator = elements.iterator(); iterator.hasNext(); ) {
+            CigarElement currentElement = iterator.next();
+            if (previousElement == null) {
+                previousElement = currentElement;
+            } else {
+                if (currentElement.getOperator() == previousElement.getOperator()) {
+                    previousElement = new CigarElement(previousElement.getLength() + currentElement.getLength(), previousElement.getOperator());
+                } else {
+                    newList.add(previousElement);
+                    previousElement = currentElement;
+                }
+            }
+        }
+
+        if (previousElement != null) {
+            newList.add(previousElement);
+        }
+        if (newList.size() == 1) {
+            if (newList.get(0).getLength() == 0) return Collections.emptyList();
+        }
+        return newList;
+    }
+
+    /**
+     * Create a new {@link List} of {@link CigarElement} without empty elements and adjacent operators merged.
+     * @param elements list to tidy
+     * @return new tidied list
+     */
+    public static List<CigarElement> tidy(List<CigarElement> elements) {
+        List<CigarElement> newList = removeEmptyOperators(elements);
+        newList = mergeSameAdjacentOperators(newList);
+        if (getReadLength(newList) == 0) return Collections.emptyList();
+
+        return newList;
+    }
+
+    /**
+     * Create a new {@link Cigar} copy without empty elements and adjacent operators merged.
+     * @return new tidied cigar
+     */
+    public Cigar tidy() {
+        return new Cigar(tidy(cigarElements));
+    }
+
+    /**
+     * Checks that this cigar is equivalent to another. The equivalence is based on tidied copies.
+     * @param cigar another cigar to compare equivalence to
+     * @return true if this cigar is equivalent to another
+     */
+    public boolean equivalentTo (Cigar cigar) {
+        return tidy(cigarElements).equals(tidy(cigar.cigarElements));
     }
     
     /** build a new Cigar object from a list of cigar operators.
