@@ -31,7 +31,7 @@ import java.util.TreeSet;
  * Class for writing SAMRecords into a series of CRAM containers on an output stream.
  */
 public class CRAMContainerStreamWriter {
-    private static final Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
+    private Version cramVersion = CramVersions.DEFAULT_CRAM_VERSION;
 
     static int DEFAULT_RECORDS_PER_SLICE = 10000;
     static int MIN_SINGLE_REF_RECORDS = 1000;
@@ -75,15 +75,36 @@ public class CRAMContainerStreamWriter {
             final OutputStream indexStream,
             final CRAMReferenceSource source,
             final SAMFileHeader samFileHeader,
-            final String cramId) {
+            final String cramId,
+            Version cramVersion) {
         this.outputStream = outputStream;
         this.samFileHeader = samFileHeader;
         this.cramID = cramId;
         this.source = source;
+        this.cramVersion = cramVersion;
         containerFactory = new ContainerFactory(samFileHeader, recordsPerSlice);
         if (indexStream != null) {
             indexer = new CRAMBAIIndexer(indexStream, samFileHeader);
         }
+    }
+
+    /**
+     * Create a CRAMContainerStreamWriter for writing SAM records into a series of CRAM
+     * containers on output stream, with an optional index.
+     *
+     * @param outputStream  where to write the CRAM stream.
+     * @param indexStream   where to write the output index. Can be null if no index is required.
+     * @param source        reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
+     * @param cramId        used for display in error message display
+     */
+    public CRAMContainerStreamWriter(
+            final OutputStream outputStream,
+            final OutputStream indexStream,
+            final CRAMReferenceSource source,
+            final SAMFileHeader samFileHeader,
+            final String cramId) {
+        this (outputStream, indexStream, source, samFileHeader, cramId, CramVersions.DEFAULT_CRAM_VERSION);
     }
 
     /**
@@ -497,4 +518,7 @@ public class CRAMContainerStreamWriter {
         }
     }
 
+    public Version getCramVersion() {
+        return cramVersion;
+    }
 }

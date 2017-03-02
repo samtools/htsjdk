@@ -15,6 +15,8 @@
  ******************************************************************************/
 package htsjdk.samtools;
 
+import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -89,6 +91,25 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
      */
     public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
                           final CRAMReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName) {
+        this (outputStream, indexOS, presorted, referenceSource, samFileHeader, fileName, CramVersions.DEFAULT_CRAM_VERSION);
+    }
+
+    /**
+     * Create a CRAMFileWriter and optional index on output streams.
+     *
+     * @param outputStream where to write the output. Can not be null.
+     * @param indexOS where to write the output index. Can be null if no index is required.
+     * @param presorted if true records written to this writer must already be sorted in the order specified by the header
+     * @param referenceSource reference source
+     * @param samFileHeader {@link SAMFileHeader} to be used. Can not be null. Sort order is determined by the sortOrder property of this arg.
+     * @param fileName used for display in error message display
+     * @param cramVersion CRAM version to use
+     *
+     * @throws IllegalArgumentException if the {@code outputStream}, {@code referenceSource} or {@code samFileHeader} are null
+     */
+    public CRAMFileWriter(final OutputStream outputStream, final OutputStream indexOS, final boolean presorted,
+                          final CRAMReferenceSource referenceSource, final SAMFileHeader samFileHeader, final String fileName,
+                          Version cramVersion) {
         if (outputStream == null) {
             throw new IllegalArgumentException("CRAMWriter output stream can not be null.");
         }
@@ -101,7 +122,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
         this.samFileHeader = samFileHeader;
         this.fileName = fileName;
         setSortOrder(samFileHeader.getSortOrder(), presorted);
-        cramContainerStream = new CRAMContainerStreamWriter(outputStream, indexOS, referenceSource, samFileHeader, fileName);
+        cramContainerStream = new CRAMContainerStreamWriter(outputStream, indexOS, referenceSource, samFileHeader, fileName, cramVersion);
         setHeader(samFileHeader);
     }
 
