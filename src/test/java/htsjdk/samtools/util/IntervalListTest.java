@@ -517,4 +517,16 @@ public class IntervalListTest {
         Assert.assertTrue(false);
 
     }
+
+    @Test public void uniqueIntervalsWithoutNames() {
+        final IntervalList test = new IntervalList(this.fileHeader);
+        test.add(new Interval("1", 100, 200));
+        test.add(new Interval("1", 500, 600));
+        test.add(new Interval("1", 550, 700));
+
+        for (final boolean concat : new boolean[]{true, false}) {
+            final IntervalList unique = test.uniqued(concat);
+            Assert.assertEquals(unique.size(), 2);
+        }
+    }
 }

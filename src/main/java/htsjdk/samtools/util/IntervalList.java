@@ -356,11 +356,9 @@ public class IntervalList implements Iterable<Interval> {
             end   = Math.max(end, i.getEnd());
         }
 
-        if (concatenateNames) {
-            if (names.isEmpty()) name = null;
-            else name = StringUtil.join("|", names);
-        }
-        else { name = names.iterator().next(); }
+        if (names.isEmpty()) name = null;
+        else if (concatenateNames) name = StringUtil.join("|", names);
+        else name = names.iterator().next();
 
         return new Interval(chrom, start, end, neg, name);
     }
