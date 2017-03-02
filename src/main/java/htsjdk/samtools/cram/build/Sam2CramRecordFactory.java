@@ -94,6 +94,7 @@ public class Sam2CramRecordFactory {
      * @return CramCompressionRecord
      */
     public CramCompressionRecord createCramRecord(final SAMRecord record) {
+
         if (null == record.getHeader()) {
             record.setHeader(header);
         }
@@ -135,9 +136,7 @@ public class Sam2CramRecordFactory {
             else if (record.getSecondOfPairFlag()) cramRecord.setLastSegment(true);
         }
 
-        if (!record.getReadUnmappedFlag() && record.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
-            cramRecord.readFeatures = checkedCreateVariations(cramRecord, record);
-        } else cramRecord.readFeatures = Collections.emptyList();
+        cramRecord.readFeatures = checkedCreateVariations(cramRecord, record);
 
         cramRecord.readBases = record.getReadBases();
         cramRecord.qualityScores = record.getBaseQualities();
@@ -201,18 +200,23 @@ public class Sam2CramRecordFactory {
         }
     }
 
+    /**
+     * Create a list of {@link ReadFeature} representing the given bases and {@link Cigar}.
+     * @param cramRecord a CRAM record for which the read features will be created
+     * @param samRecord a SAMRecord to use as a source
+     * @return a new list of read features
+     */
     private List<ReadFeature> createVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
-        final List<ReadFeature> features = new LinkedList<ReadFeature>();
+        int cigarLen = samRecord.getCigar().getReadLength();
+        if (cigarLen == 0) {
+            return Collections.emptyList();
+        }
+        final List<CigarElement> cigarElements = Cigar.tidy(samRecord.getCigar().getCigarElements());
+
+        final List<ReadFeature> features = new LinkedList<>();
         int zeroBasedPositionInRead = 0;
         int alignmentStartOffset = 0;
         int cigarElementLength;
-
-        final List<CigarElement> cigarElements = samRecord.getCigar().getCigarElements();
-
-        int cigarLen = 0;
-        for (final CigarElement cigarElement : cigarElements)
-            if (cigarElement.getOperator().consumesReadBases())
-                cigarLen += cigarElement.getLength();
 
         byte[] bases = samRecord.getReadBases();
         if (bases.length == 0) {
@@ -247,7 +251,7 @@ public class Sam2CramRecordFactory {
                 case M:
                 case X:
                 case EQ:
-                    addSubstitutionsAndMaskedBases(cramRecord, features, zeroBasedPositionInRead, alignmentStartOffset,
+                    addSubstitutionsAndMaskedBases(cramRecord.alignmentStart, features, zeroBasedPositionInRead, alignmentStartOffset,
                             cigarElementLength, bases, qualityScore);
                     break;
                 default:
@@ -264,6 +268,13 @@ public class Sam2CramRecordFactory {
         return features;
     }
 
+    /**
+     * Add a new soft clip read feature to the list by capturing the clipped bases explicitly
+     * @param features list of features
+     * @param zeroBasedPositionInRead 0-based position in the read
+     * @param cigarElementLength {@link CigarElement#getLength()}
+     * @param bases read bases
+     */
     private void addSoftClip(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
         final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
 
@@ -271,13 +282,13 @@ public class Sam2CramRecordFactory {
         features.add(softClip);
     }
 
-    private void addHardClip(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
-        final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
-
-        final HardClip hardClip = new HardClip(zeroBasedPositionInRead + 1, insertedBases.length);
-        features.add(hardClip);
-    }
-
+    /**
+     * Add a new insertion read feature to the list by capturing the inserted bases explicitly
+     * @param features list of features
+     * @param zeroBasedPositionInRead 0-based position in the read
+     * @param cigarElementLength {@link CigarElement#getLength()}
+     * @param bases read bases
+     */
     private void addInsertion(final List<ReadFeature> features, final int zeroBasedPositionInRead, final int cigarElementLength, final byte[] bases) {
         final byte[] insertedBases = Arrays.copyOfRange(bases, zeroBasedPositionInRead, zeroBasedPositionInRead + cigarElementLength);
 
@@ -291,7 +302,17 @@ public class Sam2CramRecordFactory {
         }
     }
 
-    private void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
+    /**
+     * Add substitution read features to the list by capturing the read base and the reference base
+     * @param alignmentStart read alignment start
+     * @param features list of read features to add new features to
+     * @param fromPosInRead position in the read to start from
+     * @param alignmentStartOffset offset in the reference bases array in case the reference is a sub-region
+     * @param nofReadBases number of read bases to consider
+     * @param bases read bases
+     * @param qualityScore base quality scores
+     */
+    private void addSubstitutionsAndMaskedBases(final int alignmentStart, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
         int oneBasedPositionInRead;
         final boolean noQS = (qualityScore.length == 0);
@@ -301,7 +322,7 @@ public class Sam2CramRecordFactory {
         byte refBase;
         for (i = 0; i < nofReadBases; i++) {
             oneBasedPositionInRead = i + fromPosInRead + 1;
-            final int referenceCoordinates = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
+            final int referenceCoordinates = alignmentStart + i + alignmentStartOffset - 1;
             qualityAdded = false;
             if (referenceCoordinates >= refBases.length) refBase = 'N';
             else refBase = refBases[referenceCoordinates];

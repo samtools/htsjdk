@@ -80,7 +80,7 @@ public class Sam2CramRecordFactoryTest {
         }
 
         // cigar is not stored, test a restored value:
-        Assert.assertEquals(Cram2SamRecordFactory.getCigar(cramRecord.readFeatures, cramRecord.readLength), samRecord.getCigar());
+        Assert.assertEquals(Cram2SamRecordFactory.getCigar(cramRecord.readFeatures, cramRecord.readLength), samRecord.getCigar().tidy());
 
         // inferredInsertSize is not stored, calculate by simulating a mate record:
         CramCompressionRecord mate = new CramCompressionRecord();
@@ -97,5 +97,4 @@ public class Sam2CramRecordFactoryTest {
         int inferredInsertSize = CramNormalizer.computeInsertSize(cramRecord, mate);
         Assert.assertEquals(inferredInsertSize, samRecord.getInferredInsertSize());
     }
-
 }
