@@ -25,6 +25,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.ParsingUtils;
@@ -41,7 +42,7 @@ import java.util.function.Function;
  * @author Jim Robinson
  * @since 2/11/12
  */
-public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatureReader<T, SOURCE> {
+public class TabixFeatureReader<T extends Locatable, SOURCE> extends AbstractFeatureReader<T, SOURCE> {
 
     TabixReader tabixReader;
     List<String> sequenceNames;
@@ -153,7 +154,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
 
-    class FeatureIterator<T extends Feature> implements CloseableTribbleIterator<T> {
+    class FeatureIterator<T extends Locatable> implements CloseableTribbleIterator<T> {
         private T currentRecord;
         private LineReader lineReader;
         private int start;
@@ -176,7 +177,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             currentRecord = null;
             String nextLine;
             while (currentRecord == null && (nextLine = lineReader.readLine()) != null) {
-                final Feature f;
+                final Locatable f;
                 try {
                     f = ((AsciiFeatureCodec)codec).decode(nextLine);
                     if (f == null) {

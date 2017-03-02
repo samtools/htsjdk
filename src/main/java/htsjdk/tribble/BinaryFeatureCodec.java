@@ -1,6 +1,7 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -13,7 +14,7 @@ import java.io.InputStream;
  * Implements common methods of {@link FeatureCodec}s that read from {@link htsjdk.tribble.readers.PositionalBufferedStream}s.
  * @author mccowan
  */
-abstract public class BinaryFeatureCodec<T extends Feature> implements FeatureCodec<T, PositionalBufferedStream> {
+abstract public class BinaryFeatureCodec<T extends Locatable> implements FeatureCodec<T, PositionalBufferedStream> {
     @Override
     public PositionalBufferedStream makeSourceFromStream(final InputStream bufferedInputStream) {
         if (bufferedInputStream instanceof PositionalBufferedStream)

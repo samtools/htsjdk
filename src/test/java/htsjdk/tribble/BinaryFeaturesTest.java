@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
 import htsjdk.tribble.readers.LineIterator;
@@ -24,26 +25,26 @@ public class BinaryFeaturesTest {
     }
 
     @Test(enabled = true, dataProvider = "BinaryFeatureSources")
-    public void testBinaryCodec(final File source, final FeatureCodec<Feature, LineIterator> codec) throws IOException {
+    public void testBinaryCodec(final File source, final FeatureCodec<Locatable, LineIterator> codec) throws IOException {
         final File tmpFile = File.createTempFile("testBinaryCodec", ".binary.bed");
         ExampleBinaryCodec.convertToBinaryTest(source, tmpFile, codec);
         tmpFile.deleteOnExit();
 
-        final FeatureReader<Feature> originalReader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false);
-        final FeatureReader<Feature> binaryReader = AbstractFeatureReader.getFeatureReader(tmpFile.getAbsolutePath(), new ExampleBinaryCodec(), false);
+        final FeatureReader<Locatable> originalReader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false);
+        final FeatureReader<Locatable> binaryReader = AbstractFeatureReader.getFeatureReader(tmpFile.getAbsolutePath(), new ExampleBinaryCodec(), false);
 
         // make sure the header is what we expect
         final List<String> header = (List<String>) binaryReader.getHeader();
         Assert.assertEquals(header.size(), 1, "We expect exactly one header line");
         Assert.assertEquals(header.get(0), ExampleBinaryCodec.HEADER_LINE, "Failed to read binary header line");
 
-        final Iterator<Feature> oit = originalReader.iterator();
-        final Iterator<Feature> bit = binaryReader.iterator();
+        final Iterator<Locatable> oit = originalReader.iterator();
+        final Iterator<Locatable> bit = binaryReader.iterator();
         while ( oit.hasNext() ) {
-            final Feature of = oit.next();
+            final Locatable of = oit.next();
 
             Assert.assertTrue(bit.hasNext(), "Original iterator has items, but there's no items left in binary iterator");
-            final Feature bf = bit.next();
+            final Locatable bf = bit.next();
 
             Assert.assertEquals(bf.getContig(), of.getContig(), "Chr not equal between original and binary encoding");
             Assert.assertEquals(bf.getStart(), of.getStart(), "Start not equal between original and binary encoding");

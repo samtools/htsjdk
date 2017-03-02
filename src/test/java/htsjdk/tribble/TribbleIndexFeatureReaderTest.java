@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.TestUtils;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -33,7 +34,7 @@ public class TribbleIndexFeatureReaderTest {
                 new TribbleIndexedFeatureReader<>(testPath, codec, false)) {
             final CloseableTribbleIterator<VariantContext> localIterator = featureReader.iterator();
             int count = 0;
-            for (final Feature feat : featureReader.iterator()) {
+            for (final Locatable feat : featureReader.iterator()) {
                 localIterator.next();
                 count++;
             }

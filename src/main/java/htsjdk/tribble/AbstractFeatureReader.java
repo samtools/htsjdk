@@ -18,6 +18,7 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
@@ -38,7 +39,7 @@ import java.util.function.Function;
  * <p/>
  * the feature reader class, which uses indices and codecs to read in Tribble file formats.
  */
-public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implements FeatureReader<T> {
+public abstract class AbstractFeatureReader<T extends Locatable, SOURCE> implements FeatureReader<T> {
     // the logging destination for this source
     //private final static Logger log = Logger.getLogger("BasicFeatureSource");
 
@@ -62,7 +63,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     /**
      * Calls {@link #getFeatureReader(String, FeatureCodec, boolean)} with {@code requireIndex} = true
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureFile, final FeatureCodec<FEATURE, SOURCE> codec) throws TribbleException {
+    public static <FEATURE extends Locatable, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureFile, final FeatureCodec<FEATURE, SOURCE> codec) throws TribbleException {
         return getFeatureReader(featureFile, codec, true);
     }
 
@@ -70,7 +71,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * {@link #getFeatureReader(String, String, FeatureCodec, boolean, Function, Function)} with {@code null} for indexResource, wrapper, and indexWrapper
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
+    public static <FEATURE extends Locatable, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
         return getFeatureReader(featureResource, null, codec, requireIndex, null, null);
     }
 
@@ -79,7 +80,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * {@link #getFeatureReader(String, String, FeatureCodec, boolean, Function, Function)} with {@code null} for wrapper, and indexWrapper
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
+    public static <FEATURE extends Locatable, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex) throws TribbleException {
         return getFeatureReader(featureResource, indexResource, codec, requireIndex, null, null);
     }
 
@@ -97,7 +98,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      *
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {
+    public static <FEATURE extends Locatable, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {
         try {
             // Test for tabix index
             if (methods.isTabix(featureResource, indexResource)) {
@@ -126,7 +127,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return a reader for this data
      * @throws TribbleException
      */
-    public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE>  codec, final Index index) throws TribbleException {
+    public static <FEATURE extends Locatable, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, final FeatureCodec<FEATURE, SOURCE>  codec, final Index index) throws TribbleException {
         try {
             return new TribbleIndexedFeatureReader<>(featureResource, codec, index);
         } catch (final IOException e) {
@@ -202,7 +203,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
         return header.getHeaderValue();
     }
 
-    static class EmptyIterator<T extends Feature> implements CloseableTribbleIterator<T> {
+    static class EmptyIterator<T extends Locatable> implements CloseableTribbleIterator<T> {
         @Override public Iterator<T> iterator() { return this; }
         @Override public boolean hasNext() { return false; }
         @Override public T next() { return null; }

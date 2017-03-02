@@ -28,7 +28,9 @@ import htsjdk.samtools.util.Locatable;
 
 /**
  * Represents a locus on a reference sequence.   All Features are expected to return 1-based closed-ended intervals.
+ * @deprecated since 02-2017. Use {@link Locatable} instead. TODO: set removal date/release
  */
+@Deprecated
 public interface Feature extends Locatable {
 
     /**

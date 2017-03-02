@@ -18,6 +18,7 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.index.tabix.TabixFormat;
 
@@ -30,15 +31,15 @@ import java.io.InputStream;
  * FeatureCodecs have to implement two key methods:
  * <p/>
  * {@link #readHeader(SOURCE)} - Reads the header, provided a {@link SOURCE} pointing at the beginning of the source input.
- * {@link #decode(SOURCE)} - Reads a {@link Feature} record, provided a {@link SOURCE} pointing at the beginning of a record within the 
+ * {@link #decode(SOURCE)} - Reads a {@link Locatable} record, provided a {@link SOURCE} pointing at the beginning of a record within the
  * source input.
  * <p/>
  * Note that it's not safe to carry state about the {@link SOURCE} within the codec.  There's no guarantee about its  state between calls.
  *
- * @param <FEATURE_TYPE> The type of {@link Feature} this codec generates
+ * @param <FEATURE_TYPE> The type of {@link Locatable} this codec generates
  * @param <SOURCE> The type of the data source this codec reads from
  */
-public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
+public interface FeatureCodec<FEATURE_TYPE extends Locatable, SOURCE> {
     /**
      * Decode a line to obtain just its FeatureLoc for indexing -- contig, start, and stop.
      *
@@ -46,10 +47,10 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * @return Return the FeatureLoc encoded by the line, or null if the line does not represent a feature (e.g. is
      *         a comment)
      */
-    public Feature decodeLoc(final SOURCE source) throws IOException;
+    public Locatable decodeLoc(final SOURCE source) throws IOException;
 
     /**
-     * Decode a single {@link Feature} from the {@link SOURCE}, reading no further in the underlying source than beyond that feature.
+     * Decode a single {@link Locatable} from the {@link SOURCE}, reading no further in the underlying source than beyond that feature.
      *
      * @param source the input stream from which to decode the next record
      * @return Return the Feature encoded by the line,  or null if the line does not represent a feature (e.g. is
@@ -61,7 +62,7 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
      * Read and return the header, or null if there is no header.
      * 
      * Note: Implementers of this method must be careful to read exactly as much from {@link SOURCE} as needed to parse the header, and no 
-     * more. Otherwise, data that might otherwise be fed into parsing a {@link Feature} may be lost.
+     * more. Otherwise, data that might otherwise be fed into parsing a {@link Locatable} may be lost.
      *
      * @param source the source from which to decode the header
      * @return header object

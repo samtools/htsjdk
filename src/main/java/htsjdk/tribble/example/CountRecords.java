@@ -23,9 +23,9 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
@@ -100,11 +100,11 @@ public class CountRecords {
             long recordCount = 0l;
 
             // this call could be replaced with a query
-            Iterator<Feature> iter = reader.iterator();
+            Iterator<Locatable> iter = reader.iterator();
 
             // cycle through the iterators
             while (iter.hasNext()) {
-                Feature feat = iter.next();
+                Locatable feat = iter.next();
                 ++recordCount;
             }
 

@@ -26,8 +26,8 @@
 package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.BinaryFeatureCodec;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.*;
@@ -110,7 +110,7 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
     // ----------------------------------------------------------------------
 
     @Override
-    public Feature decodeLoc( final PositionalBufferedStream inputStream ) {
+    public Locatable decodeLoc( final PositionalBufferedStream inputStream ) {
         return decode(inputStream);
     }
 

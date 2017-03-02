@@ -23,7 +23,7 @@
  */
 package htsjdk.tribble.index.linear;
 
-import htsjdk.tribble.Feature;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
@@ -65,7 +65,7 @@ public class LinearIndexCreator  extends TribbleIndexCreator {
      * @param filePosition the position of the file at the BEGINNING of the current feature
      */
     @Override
-    public void addFeature(final Feature feature, final long filePosition) {
+    public void addFeature(final Locatable feature, final long filePosition) {
         // fi we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
         if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the blocks to the old chrIndex
