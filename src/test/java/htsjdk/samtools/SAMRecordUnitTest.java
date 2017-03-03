@@ -25,6 +25,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMValidationError.Type;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
@@ -1023,7 +1024,24 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(cloneOfOriginal.getSignedIntArrayAttribute("X3"), new int[] {5,4,3,2,1});
         Assert.assertEquals(cloneOfOriginal.getFloatArrayAttribute("X4"), new float[] {5.0f,4.0f,3.0f,2.0f,1.0f});
         Assert.assertEquals(cloneOfOriginal.getStringAttribute("Y1"), "GTTTTCTTTT");
+    }
 
+    @Test
+    public void testReadMappingLongerThanInsert() {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        final List<SAMRecord> recs = builder.addPair("q1", 0, 100, 100, false, false, "100M50S", "50S100M", false, true, 30);
+        final SAMRecord r1 = recs.stream().filter(SAMRecord::getFirstOfPairFlag).findFirst().get();
+
+        // Check that the read is initially valid!
+        Assert.assertEquals(r1.getInferredInsertSize(), 100);
+        Assert.assertEquals(r1.isValid(), null);
+
+        // Then expand the mapped region and check again
+        r1.setCigarString("110M40S");
+        final List<SAMValidationError> errors = r1.isValid();
+        Assert.assertNotNull(errors, "Expected some errors!");
+        Assert.assertEquals(errors.size(), 1);
+        Assert.assertEquals(errors.get(0).getType(), Type.READ_EXTENDS_BEYOND_INSERT);
     }
 
     public SAMRecord createTestSamRec() {
