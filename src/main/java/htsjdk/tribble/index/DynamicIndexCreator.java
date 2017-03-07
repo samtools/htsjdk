@@ -24,7 +24,7 @@
 
 package htsjdk.tribble.index;
 
-import htsjdk.tribble.Feature;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.linear.LinearIndexCreator;
@@ -55,7 +55,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
 
     MathUtils.RunningStat stats = new MathUtils.RunningStat();
     long basesSeen = 0;
-    Feature lastFeature = null;
+    Locatable lastFeature = null;
     File inputFile;
 
     public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
@@ -125,7 +125,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
 
 
     @Override
-    public void addFeature(final Feature f, final long filePosition) {
+    public void addFeature(final Locatable f, final long filePosition) {
         // protected static Map<Double,Index> createIndex(FileBasedFeatureIterator<Feature> iterator, Map<IndexType,IndexCreator> creators, IndexBalanceApproach iba) {
         // feed each feature to the indexes we've created
         // first take care of the stats

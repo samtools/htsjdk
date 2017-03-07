@@ -27,7 +27,7 @@ import htsjdk.samtools.BinningIndexBuilder;
 import htsjdk.samtools.BinningIndexContent;
 import htsjdk.samtools.Chunk;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.tribble.Feature;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexCreator;
 
@@ -72,7 +72,7 @@ public class TabixIndexCreator implements IndexCreator {
     }
 
     @Override
-    public void addFeature(final Feature feature, final long filePosition) {
+    public void addFeature(final Locatable feature, final long filePosition) {
         final String sequenceName = feature.getContig();
         final int referenceIndex;
         if (sequenceName.equals(currentSequenceName)) {

@@ -18,7 +18,7 @@
 
 package htsjdk.tribble.index.interval;
 
-import htsjdk.tribble.Feature;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
@@ -63,7 +63,7 @@ public class IntervalIndexCreator extends TribbleIndexCreator {
     }
 
     @Override
-    public void addFeature(final Feature feature, final long filePosition) {
+    public void addFeature(final Locatable feature, final long filePosition) {
         // if we don't have a chrIndex yet, or if the last one was for the previous contig, create a new one
         if (chrList.isEmpty() || !chrList.getLast().getName().equals(feature.getContig())) {
             // if we're creating a new chrIndex (not the first), make sure to dump the intervals to the old chrIndex

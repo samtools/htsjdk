@@ -25,6 +25,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -55,7 +56,7 @@ import java.util.zip.GZIPInputStream;
  * @author Jim Robinson
  * @since 2/11/12
  */
-public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends AbstractFeatureReader<T, SOURCE> {
+public class TribbleIndexedFeatureReader<T extends Locatable, SOURCE> extends AbstractFeatureReader<T, SOURCE> {
 
     private Index index;
 

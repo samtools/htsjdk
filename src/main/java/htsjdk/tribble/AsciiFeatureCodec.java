@@ -19,6 +19,7 @@
 package htsjdk.tribble;
 
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.readers.*;
 
@@ -33,7 +34,7 @@ import java.io.InputStream;
  *
  * @param <T> The feature type this codec reads
  */
-public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatureCodec<T, LineIterator> {
+public abstract class AsciiFeatureCodec<T extends Locatable> extends AbstractFeatureCodec<T, LineIterator> {
     protected AsciiFeatureCodec(final Class<T> myClass) {
         super(myClass);
     }

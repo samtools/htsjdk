@@ -27,8 +27,8 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AsciiFeatureCodec;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
@@ -42,7 +42,6 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -248,7 +247,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param line the line of text for the record
      * @return a feature, (not guaranteed complete) that has the correct start and stop
      */
-    public Feature decodeLoc(String line) {
+    public Locatable decodeLoc(String line) {
         return decodeLine(line, false);
     }
 

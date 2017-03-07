@@ -24,8 +24,8 @@
 
 package htsjdk.tribble.bed;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
@@ -147,9 +147,9 @@ public class BEDCodecTest {
 
         AbstractFeatureReader reader = AbstractFeatureReader.getFeatureReader(filepath, codec, false);
 
-        Iterable<Feature> iter = reader.iterator();
+        Iterable<Locatable> iter = reader.iterator();
         int count = 0;
-        for (Feature feat : iter) {
+        for (Locatable feat : iter) {
             Assert.assertTrue(feat.getContig().length() > 0);
             Assert.assertTrue(feat.getEnd() >= feat.getStart());
 
@@ -196,9 +196,9 @@ public class BEDCodecTest {
 
         AbstractFeatureReader reader = AbstractFeatureReader.getFeatureReader(filepath, codec, false);
 
-        Iterable<Feature> iter = reader.iterator();
+        Iterable<Locatable> iter = reader.iterator();
         int count = 0;
-        for (Feature feat : iter) {
+        for (Locatable feat : iter) {
             count += 1;
         }
         reader.close();

@@ -23,6 +23,8 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
+
 import java.io.IOException;
 
 /**
@@ -31,7 +33,7 @@ import java.io.IOException;
  * Note that that method is the only way that the right codec for a file is identified and that <bold>only one</bold> codec
  * is allowed to identify itself as being able to decode any given file.
  */
-public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE> implements FeatureCodec<FEATURE_TYPE, SOURCE> {
+public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Locatable, SOURCE> implements FeatureCodec<FEATURE_TYPE, SOURCE> {
     private final Class<FEATURE_TYPE> myClass;
 
     protected AbstractFeatureCodec(final Class<FEATURE_TYPE> myClass) {
@@ -39,7 +41,7 @@ public abstract class AbstractFeatureCodec<FEATURE_TYPE extends Feature, SOURCE>
     }
     
     @Override
-    public Feature decodeLoc(final SOURCE source) throws IOException {
+    public Locatable decodeLoc(final SOURCE source) throws IOException {
         return decode(source);
     }
 

@@ -30,6 +30,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.*;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
@@ -218,7 +219,7 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param binSize   the bin size
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> LinearIndex createLinearIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> LinearIndex createLinearIndex(final File inputFile,
                                                                                       final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                       final int binSize) {
         final LinearIndexCreator indexCreator = new LinearIndexCreator(inputFile, binSize);
@@ -231,7 +232,7 @@ public class IndexFactory {
      * @param inputFile the file containing the features
      * @param codec to decode the features
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
                                                                                         final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createIntervalIndex(inputFile, codec, IntervalIndexCreator.DEFAULT_FEATURE_COUNT);
     }
@@ -244,7 +245,7 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param featuresPerInterval
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> IntervalTreeIndex createIntervalIndex(final File inputFile,
                                                                                         final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                         final int featuresPerInterval) {
         final IntervalIndexCreator indexCreator = new IntervalIndexCreator(inputFile, featuresPerInterval);
@@ -257,7 +258,7 @@ public class IndexFactory {
      * @param inputFile the input file to load features from
      * @param codec     the codec to use for decoding records
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> Index createDynamicIndex(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec) {
         return createDynamicIndex(inputFile, codec, IndexBalanceApproach.FOR_SEEK_TIME);
     }
 
@@ -268,7 +269,7 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param type      the type of index to create
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> Index createIndex(final File inputFile,
                                                                                 final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                 final IndexType type) {
         return createIndex(inputFile, codec, type, null);
@@ -282,7 +283,7 @@ public class IndexFactory {
      * @param type      the type of index to create
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for tabix index creation
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> Index createIndex(final File inputFile,
                                                                                 final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                 final IndexType type,
                                                                                 final SAMSequenceDictionary sequenceDictionary) {
@@ -313,7 +314,7 @@ public class IndexFactory {
      * @param codec     the codec to use for decoding records
      * @param iba       the index balancing approach
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> Index createDynamicIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> Index createDynamicIndex(final File inputFile,
                                                                                        final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                        final IndexBalanceApproach iba) {
         // get a list of index creators
@@ -328,7 +329,7 @@ public class IndexFactory {
      * @param sequenceDictionary May be null, but if present may reduce memory footprint for index creation.  Features
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
                                                                                      final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
                                                                                      final TabixFormat tabixFormat,
                                                                                      final SAMSequenceDictionary sequenceDictionary) {
@@ -343,16 +344,16 @@ public class IndexFactory {
      *                           in inputFile must be in the order defined by sequenceDictionary, if it is present.
      *
      */
-    public static <FEATURE_TYPE extends Feature, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
+    public static <FEATURE_TYPE extends Locatable, SOURCE_TYPE> TabixIndex createTabixIndex(final File inputFile,
             final FeatureCodec<FEATURE_TYPE, SOURCE_TYPE> codec,
             final SAMSequenceDictionary sequenceDictionary) {
         return createTabixIndex(inputFile, codec, codec.getTabixFormat(), sequenceDictionary);
     }
 
     private static Index createIndex(final File inputFile, final FeatureIterator iterator, final IndexCreator creator) {
-        Feature lastFeature = null;
-        Feature currentFeature;
-        final Map<String, Feature> visitedChromos = new HashMap<String, Feature>(40);
+        Locatable lastFeature = null;
+        Locatable currentFeature;
+        final Map<String, Locatable> visitedChromos = new HashMap<>(40);
         while (iterator.hasNext()) {
             final long position = iterator.getPosition();
             currentFeature = iterator.next();
@@ -382,11 +383,11 @@ public class IndexFactory {
         return creator.finalizeIndex(iterator.getPosition());
     }
 
-    private static String featToString(final Feature feature){
+    private static String featToString(final Locatable feature){
         return feature.getContig() + ":" + feature.getStart() + "-" + feature.getEnd();
     }
 
-    private static void checkSorted(final File inputFile, final Feature lastFeature, final Feature currentFeature){
+    private static void checkSorted(final File inputFile, final Locatable lastFeature, final Locatable currentFeature){
         // if the last currentFeature is after the current currentFeature, exception out
         if (lastFeature != null && currentFeature.getStart() < lastFeature.getStart() && lastFeature.getContig().equals(currentFeature.getContig()))
             throw new TribbleException.MalformedFeatureFile("Input file is not sorted by start position. \n" +
@@ -398,11 +399,11 @@ public class IndexFactory {
     /**
      * Iterator for reading features from a file, given a {@code FeatureCodec}.
      */
-    static class FeatureIterator<FEATURE_TYPE extends Feature, SOURCE> implements CloseableTribbleIterator<Feature> {
+    static class FeatureIterator<FEATURE_TYPE extends Locatable, SOURCE> implements CloseableTribbleIterator<Locatable> {
         // the stream we use to get features
         private final SOURCE source;
         // the next feature
-        private Feature nextFeature;
+        private Locatable nextFeature;
         // our codec
         private final FeatureCodec<FEATURE_TYPE, SOURCE> codec;
         private final File inputFile;
@@ -481,8 +482,8 @@ public class IndexFactory {
         }
 
         @Override
-        public Feature next() {
-            final Feature ret = nextFeature;
+        public Locatable next() {
+            final Locatable ret = nextFeature;
             readNextFeature();
             return ret;
         }
@@ -504,7 +505,7 @@ public class IndexFactory {
         }
 
         @Override
-        public Iterator<Feature> iterator() {
+        public Iterator<Locatable> iterator() {
             return this;
         }
 

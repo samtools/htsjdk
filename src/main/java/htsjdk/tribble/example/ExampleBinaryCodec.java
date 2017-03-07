@@ -23,10 +23,10 @@
  */
 package htsjdk.tribble.example;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.BinaryFeatureCodec;
-import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.FeatureReader;
@@ -49,16 +49,16 @@ import java.util.List;
  *
  * @author Mark DePristo
  */
-public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
+public class ExampleBinaryCodec extends BinaryFeatureCodec<Locatable> {
     public final static String HEADER_LINE = "# BinaryTestFeature";
 
     @Override
-    public Feature decodeLoc(final PositionalBufferedStream stream) throws IOException {
+    public Locatable decodeLoc(final PositionalBufferedStream stream) throws IOException {
         return decode(stream);
     }
 
     @Override
-    public Feature decode(final PositionalBufferedStream stream) throws IOException {
+    public Locatable decode(final PositionalBufferedStream stream) throws IOException {
         DataInputStream dis = new DataInputStream(stream);
         String contig = dis.readUTF();
         int start = dis.readInt();
@@ -80,9 +80,9 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
     }
 
     @Override
-    public Class<Feature> getFeatureType() {
+    public Class<Locatable> getFeatureType() {
 
-        return Feature.class;
+        return Locatable.class;
     }
     @Override
     public boolean canDecode(final String path) {
@@ -99,7 +99,7 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
      * @param codec of the source file features
      * @throws IOException
      */
-    public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec) throws IOException {
+    public static <FEATURE_TYPE extends Locatable> void convertToBinaryTest(final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec) throws IOException {
         final FeatureReader<FEATURE_TYPE> reader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false); // IndexFactory.loadIndex(idxFile));
         final OutputStream output = new FileOutputStream(dest);
         ExampleBinaryCodec.convertToBinaryTest(reader, output);
@@ -112,12 +112,12 @@ public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
      *
      * @throws IOException
      */
-    public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(final FeatureReader<FEATURE_TYPE> reader, final OutputStream out) throws IOException {
+    public static <FEATURE_TYPE extends Locatable> void convertToBinaryTest(final FeatureReader<FEATURE_TYPE> reader, final OutputStream out) throws IOException {
         DataOutputStream dos = new DataOutputStream(out);
         dos.writeBytes(HEADER_LINE + "\n");
         Iterator<FEATURE_TYPE> it = reader.iterator();
         while ( it.hasNext() ) {
-            final Feature f = it.next();
+            final Locatable f = it.next();
             dos.writeUTF(f.getContig());
             dos.writeInt(f.getStart());
             dos.writeInt(f.getEnd());

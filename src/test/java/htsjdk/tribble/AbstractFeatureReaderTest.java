@@ -3,6 +3,7 @@ package htsjdk.tribble;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.FileTruncatedException;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -59,7 +60,7 @@ public class AbstractFeatureReaderTest {
         final AbstractFeatureReader<VariantContext, LineIterator> featureReaderLocal =
                 AbstractFeatureReader.getFeatureReader(LOCAL_MIRROR_HTTP_INDEXED_VCF_PATH, codec, false);
         final CloseableTribbleIterator<VariantContext> localIterator = featureReaderLocal.iterator();
-        for (final Feature feat : featureReaderHttp.iterator()) {
+        for (final Locatable feat : featureReaderHttp.iterator()) {
             assertEquals(feat.toString(), localIterator.next().toString());
         }
         assertFalse(localIterator.hasNext());
@@ -70,7 +71,7 @@ public class AbstractFeatureReaderTest {
         final String path = "ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands with spaces.hg18.bed";
         final BEDCodec codec = new BEDCodec();
         final AbstractFeatureReader<BEDFeature, LineIterator> bfs = AbstractFeatureReader.getFeatureReader(path, codec, false);
-        for (final Feature feat : bfs.iterator()) {
+        for (final Locatable feat : bfs.iterator()) {
             assertNotNull(feat);
         }
     }
@@ -181,7 +182,7 @@ public class AbstractFeatureReaderTest {
         }
     }
 
-    private static <T extends Feature> AbstractFeatureReader<T, ?> getFeatureReader(String vcf, String index,
+    private static <T extends Locatable> AbstractFeatureReader<T, ?> getFeatureReader(String vcf, String index,
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> indexWrapper,
                                                                                     FeatureCodec<T, ?> codec,

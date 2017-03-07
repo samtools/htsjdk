@@ -2,6 +2,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.example.ExampleBinaryCodec;
@@ -51,8 +52,8 @@ public class FeatureReaderTest {
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testBedQuery(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
-        final AbstractFeatureReader<Feature, ?> reader = getReader(featureFile, indexType, codec);
+    public void testBedQuery(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Locatable, LocationAware> codec) throws IOException {
+        final AbstractFeatureReader<Locatable, ?> reader = getReader(featureFile, indexType, codec);
 
         // Query
         testQuery(reader, "chr1", 1, 500, 3);
@@ -76,12 +77,12 @@ public class FeatureReaderTest {
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testLargeNumberOfQueries(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
-        final AbstractFeatureReader<Feature, LocationAware> reader = getReader(featureFile, indexType, codec);
+    public void testLargeNumberOfQueries(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Locatable, LocationAware> codec) throws IOException {
+        final AbstractFeatureReader<Locatable, LocationAware> reader = getReader(featureFile, indexType, codec);
         for (int i = 0; i < 2000; i++) {
             for (final int start : Arrays.asList(500, 200, 201, 600, 100000)) {
                 for (final String chr : Arrays.asList("chr1", "chr2", "chr3")) {
-                    CloseableTribbleIterator<Feature> iter = null;
+                    CloseableTribbleIterator<Locatable> iter = null;
                     try {
                         iter = reader.query(chr, start, start + 1);
                         Assert.assertNotNull(iter, "Failed to create non-null iterator");
@@ -96,11 +97,11 @@ public class FeatureReaderTest {
         reader.close();
     }
 
-    private void testQuery(final AbstractFeatureReader<Feature, ?> reader, final String chr, final int start, final int stop, final int expectedNumRecords) throws IOException {
-        final Iterator<Feature> iter = reader.query(chr, start, stop);
+    private void testQuery(final AbstractFeatureReader<Locatable, ?> reader, final String chr, final int start, final int stop, final int expectedNumRecords) throws IOException {
+        final Iterator<Locatable> iter = reader.query(chr, start, stop);
         int count = 0;
         while (iter.hasNext()) {
-            final Feature f = iter.next();
+            final Locatable f = iter.next();
             Assert.assertTrue(f.getEnd() >= start && f.getStart() <= stop);
             count++;
         }
@@ -108,8 +109,8 @@ public class FeatureReaderTest {
     }
 
     @Test(dataProvider = "indexProvider")
-    public void testBedNames(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Feature, LocationAware> codec) throws IOException {
-        final AbstractFeatureReader<Feature, ?> reader = getReader(featureFile, indexType, codec);
+    public void testBedNames(final File featureFile, final IndexFactory.IndexType indexType, final FeatureCodec<Locatable, LocationAware> codec) throws IOException {
+        final AbstractFeatureReader<Locatable, ?> reader = getReader(featureFile, indexType, codec);
         final String[] expectedSequences = {"chr1", "chr2"};
 
         final List<String> seqNames = reader.getSequenceNames();
@@ -121,7 +122,7 @@ public class FeatureReaderTest {
         }
     }
 
-    private static <FEATURE extends Feature, SOURCE extends LocationAware> AbstractFeatureReader<FEATURE, SOURCE> getReader(final File featureFile,
+    private static <FEATURE extends Locatable, SOURCE extends LocationAware> AbstractFeatureReader<FEATURE, SOURCE> getReader(final File featureFile,
                                                                                                                             final IndexFactory.IndexType indexType,
                                                                                                                             final FeatureCodec<FEATURE, SOURCE> codec)
             throws IOException {

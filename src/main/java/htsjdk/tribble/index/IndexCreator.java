@@ -24,7 +24,7 @@
 package htsjdk.tribble.index;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.tribble.Feature;
+import htsjdk.samtools.util.Locatable;
 
 /**
  *
@@ -38,7 +38,7 @@ public interface IndexCreator {
      * @param feature the feature, of which start, end, and contig must be filled in
      * @param filePosition the current file position, at the beginning of the specified feature
      */
-    public void addFeature(Feature feature, long filePosition);
+    public void addFeature(Locatable feature, long filePosition);
 
     /**
      * Create the index, given the stream of features passed in to this point
