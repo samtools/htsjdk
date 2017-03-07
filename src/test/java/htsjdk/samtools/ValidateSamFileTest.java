@@ -27,6 +27,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.BamIndexValidator.IndexValidationStringency;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.FastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
@@ -67,6 +68,20 @@ public class ValidateSamFileTest {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "valid.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertTrue(results.isEmpty());
+    }
+
+    @Test
+    public void testValidCRAMFileWithoutSeqDict() throws Exception {
+        final File reference = new File(TEST_DATA_DIR, "nm_tag_validation.fa");
+        final SamReader samReader = SamReaderFactory
+                .makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .referenceSequence(reference)
+                .open(new File(TEST_DATA_DIR, "nm_tag_validation.cram"));
+        final Histogram<String> results = executeValidation(samReader,
+                new FastaSequenceFile(reference, true),
+                IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertTrue(!results.isEmpty());
     }
 
     @Test

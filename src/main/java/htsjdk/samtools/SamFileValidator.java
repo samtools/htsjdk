@@ -301,8 +301,7 @@ public class SamFileValidator {
                 if (cigarIsValid) {
                     try {
                         validateNmTag(record, recordNumber);
-                    }
-                    catch (SAMException e) {
+                    } catch (SAMException e) {
                         if (hasValidSortOrder) {
                             // If a CRAM file has an invalid sort order, the ReferenceFileWalker will throw a
                             // SAMException due to an out of order request when retrieving reference bases during NM
@@ -554,12 +553,12 @@ public class SamFileValidator {
                         "A platform (PL) attribute was not found for read group ",
                         readGroupID));
             }
-            else { 
+            else {
                 // NB: cannot be null, so not catching a NPE
                 try {
                     SAMReadGroupRecord.PlatformValue.valueOf(platformValue.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    addError(new SAMValidationError(Type.INVALID_PLATFORM_VALUE, 
+                    addError(new SAMValidationError(Type.INVALID_PLATFORM_VALUE,
                             "The platform (PL) attribute (" + platformValue + ") + was not one of the valid values for read group ",
                             readGroupID));
                 }

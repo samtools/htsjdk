@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2009-2016 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +83,7 @@ public class ReferenceSequenceFileWalker implements Closeable {
         }
         referenceSequence = null;
 
-        if(referenceSequenceFile.isIndexed()) {
+        if(referenceSequenceFile.isIndexed() && referenceSequenceFile.getSequenceDictionary() != null) {
             final SAMSequenceRecord samSequenceRecord = referenceSequenceFile.getSequenceDictionary().getSequence(sequenceIndex);
             if(samSequenceRecord != null) {
                 referenceSequence = referenceSequenceFile.getSequence(samSequenceRecord.getSequenceName()) ;
