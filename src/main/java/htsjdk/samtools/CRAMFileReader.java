@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright 2013 EMBL-EBI
+ * Copyright 2013-2016 EMBL-EBI
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -466,9 +466,8 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             iterator.setFileSource(enabled ? reader : null);
     }
 
-    private class CRAMIntervalIterator
-            extends BAMQueryMultipleIntervalsIteratorFilter
-            implements SAMRecordIterator {
+    private class CRAMIntervalIterator extends BAMQueryMultipleIntervalsIteratorFilter
+            implements CloseableIterator<SAMRecord> {
 
         // the granularity of this iterator is the container, so the records returned
         // by it must still be filtered to find those matching the filter criteria
@@ -504,11 +503,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             }
 
             return BAMFileSpan.merge(spanArray).toCoordinateArray();
-        }
-
-        @Override
-        public SAMRecordIterator assertSorted(final SortOrder sortOrder) {
-            return null;
         }
 
         @Override
