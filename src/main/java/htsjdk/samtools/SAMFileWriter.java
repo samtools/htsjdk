@@ -33,18 +33,18 @@ import htsjdk.samtools.util.ProgressLoggerInterface;
  */
 public interface SAMFileWriter extends Closeable {
 
-	void addAlignment(SAMRecord alignment);
+    void addAlignment(SAMRecord alignment);
 
     SAMFileHeader getFileHeader();
 
-	/**
-	 * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
-	 * SortingCollection.
-	 */
-	void setProgressLogger(final ProgressLoggerInterface progress);
+    /**
+     * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
+     * SortingCollection.
+     */
+    void setProgressLogger(final ProgressLoggerInterface progress);
 
     /**
-     * Must be called to flush or file will likely be defective. 
+     * Must be called to flush or file will likely be defective.
      */
     void close();
 }

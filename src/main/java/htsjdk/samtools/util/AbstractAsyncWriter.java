@@ -72,10 +72,10 @@ public abstract class AbstractAsyncWriter<T> implements Closeable {
         if (!this.isClosed.getAndSet(true)) {
             try {
                 if (this.queue.isEmpty()) this.writer.interrupt(); // signal to writer clean up
-            	this.writer.join();
+                this.writer.join();
             } catch (final InterruptedException ie) {
-            	throw new RuntimeException("Interrupted waiting on writer thread.", ie);
-        	}
+                throw new RuntimeException("Interrupted waiting on writer thread.", ie);
+            }
 
             //The queue should be empty but if it's not, we'll drain it here to protect against any lost data.
             //There's no need to timeout on poll because poll is called only when queue is not empty and
