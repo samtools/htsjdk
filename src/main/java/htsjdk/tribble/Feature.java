@@ -27,14 +27,14 @@ package htsjdk.tribble;
 import htsjdk.samtools.util.Locatable;
 
 /**
- * Marker interface for locatables with Tribble support.
+ * Marker interface for Locatables with Tribble support. A Feature represents a record in a tribble-supported file format.
  * As {@link Locatable}, represents a locus on a reference sequence and is expected to return 1-based closed-ended intervals.
  */
 public interface Feature extends Locatable {
 
     /**
      * Return the features reference sequence name, e.g chromosome or contig
-     * @deprecated before 05-2017. Use getContig() instead.
+     * @deprecated on 03/2015. Use getContig() instead.
      */
     @Deprecated
     default public String getChr() {
