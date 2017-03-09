@@ -81,13 +81,13 @@ public interface Index {
     /**
      * Writes the index into a path.
      *
-     * Default implementation converts the path to a file and uses {@link #write(File)}.
+     * Default implementation throws {@link UnsupportedOperationException}.
      *
      * @param indexPath Where to write the index.
      * @throws IOException if the index is unable to write to the specified path.
      */
     public default void write(final Path indexPath) throws IOException {
-        write(indexPath.toFile());
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -101,12 +101,12 @@ public interface Index {
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
      * If featureFile is not a normal file, the index will silently not be written.
      *
-     * Default implementation converts the path to a file and uses {@link #writeBasedOnFeatureFile(File)}.
+     * Default implementation throws {@link UnsupportedOperationException}.
      *
      * @param featurePath
      */
     public default void writeBasedOnFeaturePath(Path featurePath) throws IOException {
-        writeBasedOnFeatureFile(featurePath.toFile());
+        throw new UnsupportedOperationException();
     }
 
     /**

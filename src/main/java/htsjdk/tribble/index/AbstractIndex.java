@@ -212,6 +212,12 @@ public abstract class AbstractIndex implements MutableIndex {
         return version == VERSION;
     }
 
+    /**
+     * Gets the indexed file.
+     * @throws UnsupportedOperationException if the path cannot be represented as a file.
+     * @deprecated on 03/2017. Use {@link #getIndexedPath()} instead.
+     */
+    @Deprecated
     public File getIndexedFile() {
         return getIndexedPath().toFile();
     }
@@ -271,7 +277,7 @@ public abstract class AbstractIndex implements MutableIndex {
         dos.writeInt(MAGIC_NUMBER);
         dos.writeInt(getType());
         dos.writeInt(version);
-        dos.writeString(indexedPath.toString());
+        dos.writeString(indexedPath.toUri().toString());
         dos.writeLong(indexedFileSize);
         dos.writeLong(indexedFileTS);
         dos.writeString(indexedFileMD5);
@@ -388,7 +394,7 @@ public abstract class AbstractIndex implements MutableIndex {
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
         if (!Files.isRegularFile(featurePath)) return;
-        write(IOUtil.getPath(Tribble.indexPath(featurePath)));
+        write(Tribble.indexPath(featurePath));
     }
 
 

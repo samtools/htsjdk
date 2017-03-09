@@ -207,9 +207,7 @@ public class TabixIndex implements Index {
      */
     @Override
     public void write(final File tabixFile) throws IOException {
-        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(tabixFile))) {
-            write(los);
-        }
+        write(tabixFile.toPath());
     }
 
     /**
@@ -231,8 +229,7 @@ public class TabixIndex implements Index {
      */
     @Override
     public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
-        if (!featureFile.isFile()) return;
-        write(new File(featureFile.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION));
+        writeBasedOnFeaturePath(featureFile.toPath());
     }
 
     /**
