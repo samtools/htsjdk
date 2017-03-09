@@ -31,6 +31,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
@@ -64,6 +65,8 @@ public class TabixIndex implements Index {
         bb.flip();
         MAGIC_NUMBER = bb.order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
+
+    private static final Log LOGGER = Log.getInstance(TabixIndex.class);
 
     private final TabixFormat formatSpec;
     private final List<String> sequenceNames;
@@ -219,7 +222,10 @@ public class TabixIndex implements Index {
      */
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
-        if (!Files.isRegularFile(featurePath)) return;
+        if (!Files.isRegularFile(featurePath)) {
+            LOGGER.warn("Index not written into ", featurePath);
+            return;
+        }
         write(Tribble.tabixIndexPath(featurePath));
     }
 

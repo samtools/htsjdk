@@ -73,7 +73,7 @@ public interface Index {
     /**
      * Writes the index into a file.
      *
-     * Default implementation delegates in {@link #write(Path)}
+     * Default implementation delegates to {@link #write(Path)}
      *
      * @param idxFile Where to write the index.
      * @throws IOException if the index is unable to write to the specified file
@@ -94,7 +94,7 @@ public interface Index {
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
      * If featureFile is not a normal file, the index will silently not be written.
      *
-     * Default implementation delegates in {@link #writeBasedOnFeaturePath(Path)}
+     * Default implementation delegates to {@link #writeBasedOnFeaturePath(Path)}
      *
      * @param featureFile
      */

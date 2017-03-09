@@ -19,6 +19,7 @@
 package htsjdk.tribble.index;
 
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
@@ -75,6 +76,7 @@ public abstract class AbstractIndex implements MutableIndex {
     protected long indexedFileTS = NO_TS;      // The timestamp
     protected String indexedFileMD5 = NO_MD5;        // The MD5 value, generally not filled in (expensive to calc)
     protected int flags;
+    protected final Log logger = Log.getInstance(this.getClass());
 
     public boolean hasFileSize() {
         return indexedFileSize != NO_FILE_SIZE;
@@ -383,7 +385,10 @@ public abstract class AbstractIndex implements MutableIndex {
 
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
-        if (!Files.isRegularFile(featurePath)) return;
+        if (!Files.isRegularFile(featurePath)) {
+            logger.warn("Index not written into ", featurePath);
+            return;
+        }
         write(Tribble.indexPath(featurePath));
     }
 
