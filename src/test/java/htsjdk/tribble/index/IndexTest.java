@@ -8,6 +8,7 @@ import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
@@ -110,6 +111,19 @@ public class IndexTest {
             final Path path = fs.getPath(inputFile.getName() + ".index");
             // write the index to a file
             index.write(path);
+
+            // test if the index does not blow up with the path constructor
+            switch (type) {
+                case TABIX:
+                    new TabixIndex(path);
+                    break;
+                case LINEAR:
+                    new LinearIndex(path);
+                    break;
+                case INTERVAL_TREE:
+                    new IntervalTreeIndex(path);
+                    break;
+            }
         }
     }
 }
