@@ -102,6 +102,14 @@ public class LinearIndex extends AbstractIndex {
     }
 
     /**
+     * Initialize with default parameters
+     * @param featurePath Path for which this is an index
+     */
+    public LinearIndex(final Path featurePath) {
+        super(featurePath);
+    }
+
+    /**
      * Load from file.
      * @param inputStream This method assumes that the input stream is already buffered as appropriate.
      */

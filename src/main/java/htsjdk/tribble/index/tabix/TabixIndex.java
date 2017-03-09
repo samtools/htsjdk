@@ -102,6 +102,13 @@ public class TabixIndex implements Index {
         this(new BlockCompressedInputStream(tabixFile), true);
     }
 
+    /**
+     * Convenient ctor that opens the path, wraps with with BGZF reader, and closes after reading index.
+     */
+    public TabixIndex(final Path tabixPath) throws IOException {
+        this(new BlockCompressedInputStream(Files.newInputStream(tabixPath)), true);
+    }
+
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {
         final LittleEndianInputStream dis = new LittleEndianInputStream(inputStream);
         if (dis.readInt() != MAGIC_NUMBER) {
