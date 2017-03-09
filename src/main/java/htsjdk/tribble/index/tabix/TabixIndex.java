@@ -219,8 +219,8 @@ public class TabixIndex implements Index {
      */
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
-        if (Files.isRegularFile(featurePath)) return;
-        write(IOUtil.getPath(Tribble.tabixIndexPath(featurePath)));
+        if (!Files.isRegularFile(featurePath)) return;
+        write(Tribble.tabixIndexPath(featurePath));
     }
 
     /**

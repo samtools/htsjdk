@@ -91,10 +91,10 @@ public class Tribble {
      * Return the name of the tabix index file for the provided {@code path}
      * Does not actually create an index
      * @param path the path
-     * @return non-null String representing the index filename
+     * @return Path representing the index filename
      */
-    public static String tabixIndexPath(final Path path) {
-        return indexFile(path.toAbsolutePath().toString());
+    public static Path tabixIndexPath(final Path path) {
+        return path.getFileSystem().getPath(tabixIndexFile(path.toAbsolutePath().toString()));
     }
 
     /**
