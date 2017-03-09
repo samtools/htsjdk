@@ -375,20 +375,10 @@ public abstract class AbstractIndex implements MutableIndex {
     }
 
     @Override
-    public void write(final File idxFile) throws IOException {
-        write(idxFile.toPath());
-    }
-
-    @Override
     public void write(final Path idxPath) throws IOException {
         try(final LittleEndianOutputStream idxStream = new LittleEndianOutputStream(new BufferedOutputStream(Files.newOutputStream(idxPath)))) {
             write(idxStream);
         }
-    }
-
-    @Override
-    public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
-        writeBasedOnFeaturePath(featureFile.toPath());
     }
 
     @Override

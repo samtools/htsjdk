@@ -57,13 +57,10 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
     MathUtils.RunningStat stats = new MathUtils.RunningStat();
     long basesSeen = 0;
     Feature lastFeature = null;
-    // TODO: actually this field is not needed
-    Path inputPath;
 
     public DynamicIndexCreator(final Path inputPath, final IndexFactory.IndexBalanceApproach iba) {
         this.iba = iba;
         // get a list of index creators
-        this.inputPath = inputPath;
         creators = getIndexCreators(inputPath, iba);
     }
 

@@ -203,16 +203,6 @@ public class TabixIndex implements Index {
     /**
      * Writes the index with BGZF.
      *
-     * @param tabixFile Where to write the index.
-     */
-    @Override
-    public void write(final File tabixFile) throws IOException {
-        write(tabixFile.toPath());
-    }
-
-    /**
-     * Writes the index with BGZF.
-     *
      * @param tabixPath Where to write the index.
      */
     @Override
@@ -220,16 +210,6 @@ public class TabixIndex implements Index {
         try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), null))) {
             write(los);
         }
-    }
-
-    /**
-     * Writes to a file with appropriate name and directory based on feature file.
-     *
-     * @param featureFile File being indexed.
-     */
-    @Override
-    public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
-        writeBasedOnFeaturePath(featureFile.toPath());
     }
 
     /**

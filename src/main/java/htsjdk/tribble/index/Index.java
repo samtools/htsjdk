@@ -73,41 +73,42 @@ public interface Index {
     /**
      * Writes the index into a file.
      *
+     * Default implementation delegates in {@link #write(Path)}
+     *
      * @param idxFile Where to write the index.
      * @throws IOException if the index is unable to write to the specified file
      */
-    public void write(final File idxFile) throws IOException;
+    public default void write(final File idxFile) throws IOException {
+        write(idxFile.toPath());
+    }
 
     /**
      * Writes the index into a path.
      *
-     * Default implementation throws {@link UnsupportedOperationException}.
-     *
      * @param indexPath Where to write the index.
      * @throws IOException if the index is unable to write to the specified path.
      */
-    public default void write(final Path indexPath) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Write an appropriately named and located Index file based on the name and location of the featureFile.
-     * If featureFile is not a normal file, the index will silently not be written.
-     * @param featureFile
-     */
-    public void writeBasedOnFeatureFile(File featureFile) throws IOException;
+    public void write(final Path indexPath) throws IOException;
 
     /**
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
      * If featureFile is not a normal file, the index will silently not be written.
      *
-     * Default implementation throws {@link UnsupportedOperationException}.
+     * Default implementation delegates in {@link #writeBasedOnFeaturePath(Path)}
+     *
+     * @param featureFile
+     */
+    public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
+        writeBasedOnFeaturePath(featureFile.toPath());
+    }
+
+    /**
+     * Write an appropriately named and located Index file based on the name and location of the featureFile.
+     * If featureFile is not a normal file, the index will silently not be written.
      *
      * @param featurePath
      */
-    public default void writeBasedOnFeaturePath(Path featurePath) throws IOException {
-        throw new UnsupportedOperationException();
-    }
+    public void writeBasedOnFeaturePath(Path featurePath) throws IOException;
 
     /**
      * @return get the list of properties for this index.  Returns null if no properties.
