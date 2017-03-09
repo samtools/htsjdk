@@ -24,7 +24,14 @@
 package htsjdk.tribble.index.tabix;
 
 import htsjdk.HtsjdkTest;
+import com.google.common.io.Files;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Interval;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
@@ -39,11 +46,19 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 public class TabixIndexTest extends HtsjdkTest {
     private static final File SMALL_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz.tbi");
     private static final File BIGGER_TABIX_FILE = new File("src/test/resources/htsjdk/tribble/tabix/bigger.vcf.gz.tbi");
+    // this file was indexed using "tabix -p bed ${SMALL_BED_FILE}" (version 1.1)
+    private static final File SMALL_BED_FILE = new File("src/test/resources/htsjdk/tribble/tabix/small.bed.gz");
+    // this are the intervals for the features present in the VBED file
+    private static final List<Interval> SMALL_BED_FILE_INTERVALS = Arrays.asList(
+            new Interval("chr1", 1, 10),
+            new Interval("chr1", 100, 1000000));
 
     /**
      * Read an existing index from disk, write it to a temp file, read that in, and assert that both in-memory
@@ -131,6 +146,31 @@ public class TabixIndexTest extends HtsjdkTest {
         } finally {
             plainTextVcfReader.close();
             compressedVcfReader.close();
+        }
+    }
+
+    @Test
+    public void testSmallBedTabixIndex() throws Exception {
+        // from https://github.com/samtools/htsjdk/issues/393 using the small example
+        // bed codec for indexing/writing
+        final BEDCodec codec = new BEDCodec();
+
+        // copy the file and create the index for it
+        final File tmpBed = new File(IOUtil.createTempDir("testSmallBedTabixIndex", null), SMALL_BED_FILE.getName());
+        Files.copy(SMALL_BED_FILE, tmpBed);
+        final TabixIndex tabixIndexGz = IndexFactory.createTabixIndex(SMALL_BED_FILE, codec, null);
+        // write the index, and iterate over the copied file to check if the query works
+        tabixIndexGz.writeBasedOnFeatureFile(tmpBed);
+
+        try(final FeatureReader<BEDFeature> originalReader = AbstractFeatureReader.getFeatureReader(SMALL_BED_FILE.getAbsolutePath(), codec);
+            final FeatureReader<BEDFeature> createdReader = AbstractFeatureReader.getFeatureReader(tmpBed.getAbsolutePath(), codec)) {
+            // iterate over the expected intervals
+            for (final Interval interval: SMALL_BED_FILE_INTERVALS) {
+                // assert that the same number of features are in the interval
+                final long originalN = originalReader.query(interval.getContig(), interval.getStart(), interval.getEnd()).stream().count();
+                final long createdN = createdReader.query(interval.getContig(), interval.getStart(), interval.getEnd()).stream().count();
+                Assert.assertEquals(createdN, originalN, "different number of features in the interval");
+            }
         }
     }
 
