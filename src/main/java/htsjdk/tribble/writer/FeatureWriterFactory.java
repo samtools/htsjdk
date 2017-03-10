@@ -186,18 +186,16 @@ public final class FeatureWriterFactory {
             }
 
             final IndexCreator idxCreator;
-            final String indexFile;
+            final Path indexPath;
             if (blockCompressed) {
                 idxCreator = new TabixIndexCreator(seqDict, encoder.getTabixFormat());
-                indexFile = Tribble.tabixIndexFile(outputFileName);
+                indexPath = Tribble.tabixIndexPath(outputPath);
             } else {
-                // TODO: https://github.com/samtools/htsjdk/pull/810
-                // TODO: the dynamic index should use the corresponding Path constructor
-                idxCreator = new DynamicIndexCreator(outputPath.toFile(), iba);
-                indexFile = Tribble.indexFile(outputFileName);
+                idxCreator = new DynamicIndexCreator(outputPath, iba);
+                indexPath = Tribble.indexPath(outputPath);
             }
             
-            return maybeAsync(new IndexingFeatureWriter<>(encoder, outputStream, idxCreator, indexFile, seqDict));
+            return maybeAsync(new IndexingFeatureWriter<>(encoder, outputStream, idxCreator, indexPath, seqDict));
 
         } catch (final IOException e) {
             throw new TribbleException("Unable to create writer for " + outputFileName, e);

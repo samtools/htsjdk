@@ -39,6 +39,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Feature writer class for indexing on the fly.
@@ -51,7 +52,7 @@ final class IndexingFeatureWriter<F extends Feature> extends FeatureWriterImpl<F
 
     private final LocationAware location;
     private final IndexCreator indexer;
-    private final String indexPath;
+    private final Path indexPath;
     private final SAMSequenceDictionary refDict;
 
     /**
@@ -60,11 +61,11 @@ final class IndexingFeatureWriter<F extends Feature> extends FeatureWriterImpl<F
      * @param encoder      encoder for features.
      * @param outputStream the underlying output stream.
      * @param idxCreator   indexer.
-     * @param indexPath    the file to write the index.
+     * @param indexPath    the path to write the index on.
      * @param refDict      dictionary to write in the index. May be {@code null}.
      */
     public IndexingFeatureWriter(final FeatureEncoder<F> encoder, final OutputStream outputStream,
-            final IndexCreator idxCreator, final String indexPath,
+            final IndexCreator idxCreator, final Path indexPath,
             final SAMSequenceDictionary refDict) {
         super(encoder, asLocationAwareStream(outputStream));
         this.indexer = idxCreator;
@@ -98,21 +99,7 @@ final class IndexingFeatureWriter<F extends Feature> extends FeatureWriterImpl<F
             indexer.setIndexSequenceDictionary(refDict);
         }
         final Index index = indexer.finalizeIndex(location.getPosition());
-        // TODO: uncomment next line after https://github.com/samtools/htsjdk/pull/810
-        // index.write(indexPath);
-        writeIndex(index);
+        index.write(indexPath);
         super.close();
-    }
-
-    // TODO: remove comment and usage after https://github.com/samtools/htsjdk/pull/810
-    private final void writeIndex(final Index index) throws IOException {
-        OutputStream outputStream = Files.newOutputStream(IOUtil.getPath(indexPath));
-        if (index instanceof TabixIndex) {
-            outputStream = new BlockCompressedOutputStream(outputStream, null);
-        } else {
-            outputStream = new BufferedOutputStream(outputStream);
-        }
-        index.write(new LittleEndianOutputStream(outputStream));
-        outputStream.close();
     }
 }
