@@ -29,6 +29,7 @@ import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.TribbleIndexCreator;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -43,20 +44,28 @@ public class LinearIndexCreator  extends TribbleIndexCreator {
     private int binWidth = DEFAULT_BIN_WIDTH;
 
     // the input file
-    private final File inputFile;
+    private final Path inputFile;
 
     private final LinkedList<LinearIndex.ChrIndex> chrList = new LinkedList<LinearIndex.ChrIndex>();
     private int longestFeature= 0;
 
     private final ArrayList<Block> blocks = new ArrayList<Block>();
 
-    public LinearIndexCreator(final File inputFile, final int binSize) {
-        this.inputFile = inputFile;
+    public LinearIndexCreator(final Path inputPath, final int binSize) {
+        this.inputFile = inputPath;
         binWidth = binSize;
     }
 
+    public LinearIndexCreator(final File inputFile, final int binSize) {
+        this(inputFile.toPath(), binSize);
+    }
+
     public LinearIndexCreator(final File inputFile) {
-        this(inputFile, DEFAULT_BIN_WIDTH);
+        this(inputFile.toPath());
+    }
+
+    public LinearIndexCreator(final Path inputPath) {
+        this(inputPath, DEFAULT_BIN_WIDTH);
     }
 
     /**

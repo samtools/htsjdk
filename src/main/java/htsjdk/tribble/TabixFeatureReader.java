@@ -23,7 +23,6 @@
  */
 package htsjdk.tribble;
 
-import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;

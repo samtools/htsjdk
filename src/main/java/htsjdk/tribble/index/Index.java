@@ -27,6 +27,7 @@ import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -72,17 +73,42 @@ public interface Index {
     /**
      * Writes the index into a file.
      *
+     * Default implementation delegates to {@link #write(Path)}
+     *
      * @param idxFile Where to write the index.
      * @throws IOException if the index is unable to write to the specified file
      */
-    public void write(final File idxFile) throws IOException;
+    public default void write(final File idxFile) throws IOException {
+        write(idxFile.toPath());
+    }
+
+    /**
+     * Writes the index into a path.
+     *
+     * @param indexPath Where to write the index.
+     * @throws IOException if the index is unable to write to the specified path.
+     */
+    public void write(final Path indexPath) throws IOException;
 
     /**
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
      * If featureFile is not a normal file, the index will silently not be written.
+     *
+     * Default implementation delegates to {@link #writeBasedOnFeaturePath(Path)}
+     *
      * @param featureFile
      */
-    public void writeBasedOnFeatureFile(File featureFile) throws IOException;
+    public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
+        writeBasedOnFeaturePath(featureFile.toPath());
+    }
+
+    /**
+     * Write an appropriately named and located Index file based on the name and location of the featureFile.
+     * If featureFile is not a normal file, the index will silently not be written.
+     *
+     * @param featurePath
+     */
+    public void writeBasedOnFeaturePath(Path featurePath) throws IOException;
 
     /**
      * @return get the list of properties for this index.  Returns null if no properties.

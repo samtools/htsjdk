@@ -1,10 +1,14 @@
 package htsjdk.tribble.index;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
@@ -18,6 +22,11 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,4 +103,27 @@ public class IndexTest {
         index.write(new LittleEndianOutputStream(nullOutputStrem));
     }
 
+    @Test(dataProvider = "writeIndexData")
+    public void testWritePathIndex(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
+        try (final FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+            // create the index
+            final Index index = IndexFactory.createIndex(inputFile, codec, type);
+            final Path path = fs.getPath(inputFile.getName() + ".index");
+            // write the index to a file
+            index.write(path);
+
+            // test if the index does not blow up with the path constructor
+            switch (type) {
+                case TABIX:
+                    new TabixIndex(path);
+                    break;
+                case LINEAR:
+                    new LinearIndex(path);
+                    break;
+                case INTERVAL_TREE:
+                    new IntervalTreeIndex(path);
+                    break;
+            }
+        }
+    }
 }

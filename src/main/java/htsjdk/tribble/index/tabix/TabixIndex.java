@@ -30,7 +30,10 @@ import htsjdk.samtools.LinearIndex;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.tribble.Tribble;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -44,6 +47,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -60,6 +65,8 @@ public class TabixIndex implements Index {
         bb.flip();
         MAGIC_NUMBER = bb.order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
+
+    private static final Log LOGGER = Log.getInstance(TabixIndex.class);
 
     private final TabixFormat formatSpec;
     private final List<String> sequenceNames;
@@ -93,6 +100,13 @@ public class TabixIndex implements Index {
      */
     public TabixIndex(final File tabixFile) throws IOException {
         this(new BlockCompressedInputStream(tabixFile), true);
+    }
+
+    /**
+     * Convenient ctor that opens the path, wraps with with BGZF reader, and closes after reading index.
+     */
+    public TabixIndex(final Path tabixPath) throws IOException {
+        this(new BlockCompressedInputStream(Files.newInputStream(tabixPath)), true);
     }
 
     private TabixIndex(final InputStream inputStream, final boolean closeInputStream) throws IOException {
@@ -199,24 +213,27 @@ public class TabixIndex implements Index {
     /**
      * Writes the index with BGZF.
      *
-     * @param tabixFile Where to write the index.
+     * @param tabixPath Where to write the index.
      */
     @Override
-    public void write(final File tabixFile) throws IOException {
-        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(tabixFile))) {
+    public void write(final Path tabixPath) throws IOException {
+        try(final LittleEndianOutputStream los = new LittleEndianOutputStream(new BlockCompressedOutputStream(Files.newOutputStream(tabixPath), null))) {
             write(los);
         }
     }
 
     /**
-     * Writes to a file with appropriate name and directory based on feature file.
+     * Writes to a path with appropriate name and directory based on feature path.
      *
-     * @param featureFile File being indexed.
+     * @param featurePath Path being indexed.
      */
     @Override
-    public void writeBasedOnFeatureFile(final File featureFile) throws IOException {
-        if (!featureFile.isFile()) return;
-        write(new File(featureFile.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION));
+    public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
+        if (!Files.isRegularFile(featurePath)) {
+            LOGGER.warn("Index not written into ", featurePath);
+            return;
+        }
+        write(Tribble.tabixIndexPath(featurePath));
     }
 
     /**

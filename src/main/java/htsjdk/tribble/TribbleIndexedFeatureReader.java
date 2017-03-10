@@ -33,11 +33,9 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;

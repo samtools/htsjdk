@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,10 +72,19 @@ public class LinearIndex extends AbstractIndex {
      * @param indices
      * @param featureFile
      */
-    public LinearIndex(final List<ChrIndex> indices, final File featureFile) {
-        super(featureFile.getAbsolutePath());
+    public LinearIndex(final List<ChrIndex> indices, final Path featureFile) {
+        super(featureFile);
         for (final ChrIndex index : indices)
             chrIndices.put(index.getName(), index);
+    }
+
+    /**
+     * Initialize using the specified {@code indices}
+     * @param indices
+     * @param featureFile
+     */
+    public LinearIndex(final List<ChrIndex> indices, final File featureFile) {
+        this(indices, featureFile.toPath());
     }
 
     private LinearIndex(final LinearIndex parent, final List<ChrIndex> indices) {
@@ -89,6 +99,14 @@ public class LinearIndex extends AbstractIndex {
      */
     public LinearIndex(final String featureFile) {
         super(featureFile);
+    }
+
+    /**
+     * Initialize with default parameters
+     * @param featurePath Path for which this is an index
+     */
+    public LinearIndex(final Path featurePath) {
+        super(featurePath);
     }
 
     /**

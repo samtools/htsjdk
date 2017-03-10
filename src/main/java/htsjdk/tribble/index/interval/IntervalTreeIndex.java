@@ -25,6 +25,7 @@ import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -50,6 +51,15 @@ public class IntervalTreeIndex extends AbstractIndex {
         final LittleEndianInputStream dis = new LittleEndianInputStream(inputStream);
         validateIndexHeader(INDEX_TYPE, dis);
         read(dis);
+    }
+
+    /**
+     * Prepare to build an index.
+     *
+     * @param featureFile File which we are indexing
+     */
+    public IntervalTreeIndex(final Path featureFile) {
+        super(featureFile);
     }
 
     /**
