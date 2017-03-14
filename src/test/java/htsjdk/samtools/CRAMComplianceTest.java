@@ -2,10 +2,12 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
+import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 
+import htsjdk.samtools.util.Tuple;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -18,64 +20,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by vadim on 28/04/2015.
+ * A set of tests around compatibility test files. The compatibility test files are composed of 4 file per case:
+ * SAM file, reference FASTA file, CRAM v2.1 and v3.0 generated from the SAM file using samtools v1.3.1
+ * The naming convention is to mention reference name in the SAM file name and to append CRAM version to file name,
+ * for example:
+ * <ul>
+ * <li>ce.fa</li>
+ * <li>ce#unmap.sam</li>
+ * <li>ce#unmap.2.1.cram</li>
+ * <li>ce#unmap.3.0.cram</li>
+ * </ul>
  */
 public class CRAMComplianceTest {
 
     @FunctionalInterface
     public interface TriConsumer<T1, T2, T3> {
         void accept(T1 arg1, T2 arg2, T3 arg3);
-    }
-
-    /**
-     * CRAM test data for verification of unmapped read mapping quality score
-     * @return
-     */
-    @DataProvider(name = "unmappedVerification")
-    public Object[][] getUnmappedVerificationData() {
-        return new Object[][]{
-                // unmapped reads with non-zero MAPQ value that is not restored
-                // https://github.com/samtools/htsjdk/issues/714
-                {"ce#unmap"}
-        };
-    }
-
-    /**
-     * Tests that mapping quality score for unmapped reads is reset in CRAM
-     */
-    @Test(dataProvider = "unmappedVerification")
-    public void partialVerificationUnmappedTest(String name) throws IOException {
-        doComplianceTest(name, (version, expected, actual) -> {
-            expected.setMappingQuality(expected.getReadUnmappedFlag() ? SAMRecord.NO_MAPPING_QUALITY : expected.getMappingQuality());
-            Assert.assertEquals(expected, actual, String.format("\n%s%s", expected.getSAMString(), actual.getSAMString()));
-        });
-    }
-
-    /**
-     * Odd cigar test cases
-     * @return
-     */
-    @DataProvider(name = "nonStandardCigarVerification")
-    public Object[][] getNonStandardCigarVerificationData() {
-        return new Object[][]{
-                // cigar string "5H0M5H" is restored as "10H"
-                // https://github.com/samtools/htsjdk/issues/713
-                {"xx#minimal"}
-        };
-    }
-
-    /**
-     * Test that tidied CIGAR survives CRAM round trip
-     */
-    @Test(dataProvider = "nonStandardCigarVerification")
-    public void partialVerificationNonStandardCigarTest(String name) throws IOException {
-        doComplianceTest(name, (version, expected, actual) -> {
-            expected = expected.deepCopy();
-            actual = actual.deepCopy();
-            expected.setCigar(expected.getCigar().tidy());
-            actual.setCigar(actual.getCigar().tidy());
-            Assert.assertEquals(expected, actual, String.format("Mismatching records: \n%s%s", expected.getSAMString(), actual.getSAMString()));
-        });
     }
 
     // Files that can be subjected to full SAMRecord equality after conversion
@@ -100,27 +60,19 @@ public class CRAMComplianceTest {
                 {"xx#pair"},
                 {"xx#rg"},
                 {"xx#unsorted"},
-                // these cases used to be partially verifiable:
-                {"xx#minimal"},
+
+                // the following cases used to be partially verifiable:
+
                 {"auxf#values"},    // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"ce#5b"},          // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
                 {"ce#tag_depadded"},// reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-                {"ce#tag_padded"}  // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
-
-                // htsjdk.samtools.SamPairUtil.computeInsertSize() returns +6/-6 instead of +15/-15:
-//                {"xx#triplet"}    // the version 2.1 variant of this file has a bad insertSize, which is
-//                // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
+                {"ce#tag_padded"},  // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+                {"xx#triplet"},     // 5'-5' vs leftmost-rightmost insert size
+                {"xx#minimal"},     // cigar string "5H0M5H" is restored as "10H": https://github.com/samtools/htsjdk/issues/713
+                {"ce#unmap"},       // unmapped reads with non-zero MAPQ value that is not restored: https://github.com/samtools/htsjdk/issues/714
         };
-    }
-
-    @Test(dataProvider = "fullVerification")
-    public void fullVerificationTest(String name) throws IOException {
-        doComplianceTest(name, (version, expected, actual) -> {
-//            assertEqual_NM_MD_lost(expected, actual);
-            Assert.assertEquals(expected, actual, String.format("\n%s%s", expected.getSAMString(), actual.getSAMString()));
-        });
     }
 
     @BeforeTest
@@ -142,77 +94,58 @@ public class CRAMComplianceTest {
         }
     }
 
-    private void doComplianceTest(
-            final String name,
-            final TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
+    @Test(dataProvider = "fullVerification")
+    public void doComplianceTest(
+            final String name) throws IOException {
         TestCase t = new TestCase(new File("src/test/resources/htsjdk/samtools/cram/"), name);
 
         // retrieve all records from the original file
         List<SAMRecord> samRecords = getSAMRecordsFromFile(t.bamFile, t.refFile);
         SAMFileHeader samFileHeader = getFileHeader(t.bamFile, t.refFile);
-
-        // write them to cram stream
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ReferenceSource source = new ReferenceSource(t.refFile);
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, null, true, source, samFileHeader, name, CramVersions.CRAM_v3);
-         for (SAMRecord samRecord : samRecords) {
-            cramFileWriter.addAlignment(samRecord);
-         }
-        cramFileWriter.close();
 
-        // read them back from the stream and compare to original sam via assertSameRecords
-        CRAMFileReader cramFileReader = new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
+        // CRAM v2.1 in-memory HTSJDK-HTDJDK roundtrip tests:
+        assert_HTSJDK_HTSJDK_roundtripRecords(samRecords, source, samFileHeader, name, CramVersions.CRAM_v2_1);
+
+        // CRAM v3.0 in-memory HTSJDK-HTDJDK roundtrip tests:
+        assert_HTSJDK_HTSJDK_roundtripRecords(samRecords, source, samFileHeader, name, CramVersions.CRAM_v3);
+
+
+        // CRAM v2.1 file samtools-HTDJDK roundtrip tests:
+        assert_roundtripRecords(samRecords, new FileInputStream(t.cramFile_21), source, CramVersions.CRAM_v2_1,
+                CRAMComplianceTest::assertEqual_SAM_samtools_CRAM_HTSJDK_rountdtrip);
+
+        // CRAM v3.0 file samtools-HTDJDK roundtrip tests:
+        assert_roundtripRecords(samRecords, new FileInputStream(t.cramFile_30), source, CramVersions.CRAM_v3,
+                CRAMComplianceTest::assertEqual_SAM_samtools_CRAM_HTSJDK_rountdtrip);
+    }
+
+    private void assert_HTSJDK_HTSJDK_roundtripRecords(List<SAMRecord> samRecords, ReferenceSource source, SAMFileHeader samFileHeader, String name, Version cramVersion) throws IOException {
+        // write original records in CRAM format into memory:
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, null, true, source, samFileHeader, name, cramVersion);
+        samRecords.forEach(cramFileWriter::addAlignment);
+        cramFileWriter.close();
+        // make sure the written CRAM is actually CRAM of the requested version:
+        Assert.assertEquals(CramIO.readCramHeader(new ByteArrayInputStream(baos.toByteArray())).getVersion(), cramVersion);
+
+        // read CRAM records and compare them against the original SAM records:
+        assert_roundtripRecords(samRecords, new ByteArrayInputStream(baos.toByteArray()), source, cramVersion,
+                CRAMComplianceTest::assertEqual_SAM_HTSJDK_CRAM_HTSJDK_roundtrip);
+    }
+
+    private void assert_roundtripRecords(List<SAMRecord> samRecords, InputStream inputStream, ReferenceSource source, Version cramVersion, TriConsumer<Integer, SAMRecord, SAMRecord> assertFunction) throws IOException {
+        CRAMFileReader cramFileReader = new CRAMFileReader(inputStream, (SeekableStream) null, source, ValidationStringency.SILENT);
         SAMRecordIterator cramFileReaderIterator = cramFileReader.getIterator();
         for (SAMRecord samRecord : samRecords) {
             Assert.assertTrue(cramFileReaderIterator.hasNext());
             SAMRecord restored = cramFileReaderIterator.next();
             Assert.assertNotNull(restored);
-            assertEqual_samtools_v3(samRecord, restored);
-        }
-        Assert.assertFalse(cramFileReaderIterator.hasNext());
-
-        //v2.1 test
-        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_21), (SeekableStream) null, source, ValidationStringency.SILENT);
-        cramFileReaderIterator = cramFileReader.getIterator();
-        for (SAMRecord samRecord : samRecords) {
-            Assert.assertTrue(cramFileReaderIterator.hasNext());
-            SAMRecord restored = cramFileReaderIterator.next();
-            Assert.assertNotNull(restored);
-            assertEqual_samtools_v2_1(samRecord, restored);
-        }
-
-        Assert.assertFalse(cramFileReaderIterator.hasNext());
-
-        //v3.0 test
-        cramFileReader = new CRAMFileReader(new FileInputStream(t.cramFile_30), (SeekableStream) null, source, ValidationStringency.SILENT);
-        cramFileReaderIterator = cramFileReader.getIterator();
-        for (SAMRecord samRecord : samRecords) {
-            Assert.assertTrue(cramFileReaderIterator.hasNext());
-            SAMRecord restored = cramFileReaderIterator.next();
-            Assert.assertNotNull(restored);
-            assertEqual_samtools_v3(samRecord, restored);
+            assertFunction.accept(cramVersion.major, samRecord, restored);
         }
         Assert.assertFalse(cramFileReaderIterator.hasNext());
     }
 
-    private void assertSameRecordsPartial(Integer majorVersion, SAMRecord record1, SAMRecord record2) {
-        // test a partial set of fields for equality, avoiding known CRAM conversion issues
-        Assert.assertEquals(record2.getFlags(), record1.getFlags());
-        Assert.assertEquals(record2.getReadName(), record1.getReadName());
-        Assert.assertEquals(record2.getReferenceName(), record1.getReferenceName());
-        Assert.assertEquals(record2.getAlignmentStart(), record1.getAlignmentStart());
-
-        /**
-         * Known issue: CRAM v2.1 doesn't handle reads with missing bases correctly. This
-         * causes '*' bases to arise when reading CRAM. Skipping the base comparison asserts.
-         * https://github.com/samtools/htsjdk/issues/509
-         */
-        if (record1.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
-            Assert.assertEquals(record2.getReadBases(), record1.getReadBases());
-        }
-
-        Assert.assertEquals(record2.getBaseQualities(), record1.getBaseQualities());
-    }
 
     @DataProvider(name = "CRAMSourceFiles")
     public Object[][] getCRAMSources() {
@@ -230,7 +163,7 @@ public class CRAMComplianceTest {
         };
     }
 
-        @Test(dataProvider = "CRAMSourceFiles")
+    @Test(dataProvider = "CRAMSourceFiles")
     public void testCRAMThroughBAMRoundTrip(final File originalCRAMFile, final File referenceFile) throws IOException {
 
         // retrieve all records from the cram and make defensive deep copies
@@ -267,7 +200,7 @@ public class CRAMComplianceTest {
         Assert.assertEquals(i, originalCRAMRecords.size());
     }
 
-        @Test
+    @Test
     public void testBAMThroughCRAMRoundTrip() throws IOException, NoSuchAlgorithmException {
         final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
@@ -337,52 +270,141 @@ public class CRAMComplianceTest {
         }
     }
 
-    private static void assertEqual_samtools_v2_1 (SAMRecord expected, SAMRecord actual)  {
-        String message = String.format("\n%s%s", expected.getSAMString(), actual.getSAMString());
+    /**
+     * Assertion method to ensure records compressed with samtools and then restored with HTSJDK match the original SAM
+     * records read by HTSJDK.
+     * Here is a list of known expectations:
+     * <ul>
+     * <li>NM and MD tags are not captured by samtools for reads with known bases</li>
+     * <li>unknown read bases ({@link SAMRecord#NULL_SEQUENCE}) is not supported in CRAM v2.1</li>
+     * <li>CRAM does not support mapping quality score for unmapped reads</li>
+     * <li>only tidy cigars survive roundtrip, see {@link Cigar#tidy()} for details</li>
+     * <li>5'-5' vs leftmost-rightmost insert size definition clash: CRAM allows writers to omit insert size if it can be computed
+     * but the specific algorithm is not defined in the specs. Samtools uses leftmost-rightmost but HTSJDK uses 5'-5',
+     * therefore a file compressed by samtools and read by HTSJDK exhibits sporadic insert size mismatches.</li>
+     * </ul>
+     *
+     * @param major    CRAM major version number
+     * @param expected expected original SAM record to compare against
+     * @param actual   the actual record read from CRAM
+     */
+    private static void assertEqual_SAM_samtools_CRAM_HTSJDK_rountdtrip(int major, SAMRecord expected, SAMRecord actual) {
+        String message = String.format("\nMismatching records:\n%s%s", expected.getSAMString(), actual.getSAMString());
+
         if (expected.getReadBases() != SAMRecord.NULL_SEQUENCE) {
+            // samtools does not capture NM and MD tags if bases are known:
             Assert.assertNull(actual.getAttribute("NM"), message);
             Assert.assertNull(actual.getAttribute("MD"), message);
         }
 
         try {
+            // we are going to modify the record, so better make a copy:
             actual = (SAMRecord) actual.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
 
+        // copy NM and MD because HTSJDK does not restore them by default:
         actual.setAttribute("NM", expected.getAttribute("NM"));
         actual.setAttribute("MD", expected.getAttribute("MD"));
 
-        if (expected.getReadBases() == SAMRecord.NULL_SEQUENCE) {
+        if (major < CramVersions.CRAM_v3.major && expected.getReadBases() == SAMRecord.NULL_SEQUENCE) {
+            // CRAM3 has a special flag to handle unknown bases but older versions don't, so fix the actual value for v2.1:
             actual.setReadBases(SAMRecord.NULL_SEQUENCE);
         }
 
         if (actual.getReadUnmappedFlag()) {
+            // CRAM is strict about mapping quality score on unmapped reads:
             Assert.assertEquals(actual.getMappingQuality(), SAMRecord.NO_MAPPING_QUALITY);
             actual.setMappingQuality(expected.getMappingQuality());
         }
 
         if (!expected.getCigar().equals(actual.getCigar())) {
-            if (!expected.getCigar().tidy().equals(actual.getCigar().tidy())) {
-                Assert.fail(message);
-            } else {
+            // try tidying cigars before comparision:
+            Cigar tidiedExpectedCigar = expected.getCigar().tidy();
+            Cigar tidiedActualCigar = expected.getCigar().tidy();
+            if (tidiedExpectedCigar.equals(tidiedActualCigar)) {
+                // tidied cigars match, so overwrite the actual value with expected:
                 actual.setCigar(expected.getCigar());
+            } else {
+                Assert.fail(message);
             }
         }
+
+        if (expected.getInferredInsertSize() != actual.getInferredInsertSize()) {
+            // try another definition of insert size: tlen = rightmost - leftmost
+            boolean first = actual.getFirstOfPairFlag();
+            Tuple<Integer, Integer> left, right;
+            int tlen;
+            if (first) {
+                left = refBoundsOnForwardStrand(actual);
+                right = mateRefBoundsOnForwardStrand(actual, actual.getCigar().getReferenceLength());
+                tlen = right.b - left.a;
+            } else {
+                right = refBoundsOnForwardStrand(actual);
+                left = mateRefBoundsOnForwardStrand(actual, actual.getCigar().getReferenceLength() + 1);
+                tlen = -right.b + left.a;
+            }
+            // adjust for 1 base:
+            tlen += Math.signum(tlen);
+
+            Assert.assertEquals(tlen, expected.getInferredInsertSize());
+            actual.setInferredInsertSize(tlen);
+        }
+
         Assert.assertEquals(expected, actual, message);
     }
 
-    private static void assertEqual_samtools_v3 (SAMRecord expected, SAMRecord actual)  {
-        String message = String.format("\n%s%s", expected.getSAMString(), actual.getSAMString());
+    /**
+     * Compute alignment boundaries in forward reference coordinates for a record
+     * @param record a record which mate's alignment start and end is to be computed
+     * @return a start/end tuple, both 1-based
+     */
+    private static Tuple<Integer, Integer> refBoundsOnForwardStrand(SAMRecord record) {
+        int left = record.getReadNegativeStrandFlag() ? record.getAlignmentEnd() : record.getAlignmentStart();
+        int right = record.getReadNegativeStrandFlag() ? record.getAlignmentStart() : record.getAlignmentEnd();
+        return new Tuple<>(left, right);
+    }
+
+    /**
+     * Compute alignment boundaries in forward reference coordinates for the mate of the given record.
+     * @param record a record which mate's alignment start and end is to be computed
+     * @param referenceLength number of reference bases taken  by the mate record
+     * @return a start/end tuple, both 1-based
+     */
+    private static Tuple<Integer, Integer> mateRefBoundsOnForwardStrand(SAMRecord record, int referenceLength) {
+        int left = record.getMateNegativeStrandFlag() ? record.getMateAlignmentStart() + referenceLength - 1 : record.getMateAlignmentStart();
+        int right = record.getMateNegativeStrandFlag() ? record.getMateAlignmentStart() : record.getMateAlignmentStart() + referenceLength - 1;
+        return new Tuple<>(left, right);
+    }
+
+    /**
+     * Assertion method to ensure records compressed with HTSJDK and then restored with HTSJDK match the original SAM
+     * records read by HTSJDK.
+     * <ul>
+     * <li>unknown read bases ({@link SAMRecord#NULL_SEQUENCE}) is not supported in CRAM v2.1</li>
+     * <li>CRAM does not support mapping quality score for unmapped reads</li>
+     * <li>only tidy cigars survive roundtrip, see {@link Cigar#tidy()} for details</li>
+     * </ul>
+     *
+     * @param major    CRAM major version number
+     * @param expected expected original SAM record to compare against
+     * @param actual   the actual record read from CRAM
+     */
+    private static void assertEqual_SAM_HTSJDK_CRAM_HTSJDK_roundtrip(int major, SAMRecord expected, SAMRecord actual) {
+        String message = String.format("\nMismatching records:\n%s%s", expected.getSAMString(), actual.getSAMString());
 
         try {
+            // we are going to modify the record, so better make a copy:
             actual = (SAMRecord) actual.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
 
-        actual.setAttribute("NM", expected.getAttribute("NM"));
-        actual.setAttribute("MD", expected.getAttribute("MD"));
+        if (major < CramVersions.CRAM_v3.major && expected.getReadBases() == SAMRecord.NULL_SEQUENCE) {
+            actual.setReadBases(SAMRecord.NULL_SEQUENCE);
+        }
+
         if (actual.getReadUnmappedFlag()) {
             Assert.assertEquals(actual.getMappingQuality(), SAMRecord.NO_MAPPING_QUALITY);
             actual.setMappingQuality(expected.getMappingQuality());

@@ -6,37 +6,67 @@ import htsjdk.samtools.cram.common.Version;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 /**
- * Created by vadim on 19/02/2016.
+ * A set of tests to ensure certain features are not lost during roundtrip tests
  */
 public class LosslessRoundTripTest {
+    private SAMRecordSetBuilder samRecordSetBuilder;
+    private SAMFileHeader samFileHeader;
+    private ReferenceSource referenceSource;
+    private ReferenceSource emptyReferenceSource;
+
+    @BeforeTest
+    public void beforeTest() {
+        int refSequenceLength = 100;
+        samRecordSetBuilder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate, true, refSequenceLength);
+        samFileHeader = samRecordSetBuilder.getHeader();
+
+        InMemoryReferenceSequenceFile rsFile = new InMemoryReferenceSequenceFile();
+        // fill out the sequence with ACGTN repeated pattern:
+        byte[] ref = new byte[refSequenceLength];
+        for (int i = 0; i < refSequenceLength; i++) {
+            ref[i] = "ACGTN".getBytes()[i % 5];
+        }
+
+        rsFile.add(samFileHeader.getSequence(0).getSequenceName(), ref);
+        referenceSource = new ReferenceSource(rsFile);
+        emptyReferenceSource = new ReferenceSource(new InMemoryReferenceSequenceFile());
+    }
+
+    @BeforeMethod
+    public void beforeMethod() {
+        if (samRecordSetBuilder != null)
+            samRecordSetBuilder.getRecords().clear();
+    }
+
     /**
      * Test that NM and MD tags make it through CRAM conversion unchanged.
+     *
      * @throws IOException
      */
     @Test
     public void test_MD_NM() throws IOException {
-        SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate, true, 3);
-        boolean readUnmapped = true;
-        boolean negativeStrand = false;
-
         // a dumb unmapped read:
-        SAMRecord record  = samRecordSetBuilder.addFrag("read1", SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
-                SAMRecord.NO_ALIGNMENT_START, negativeStrand, readUnmapped, SAMRecord.NO_ALIGNMENT_CIGAR, null, 0);
+        SAMRecord record = samRecordSetBuilder.addFrag("read1", SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+                SAMRecord.NO_ALIGNMENT_START, false, true, SAMRecord.NO_ALIGNMENT_CIGAR, null, 0);
 
-        // setting some bizzar values to provoke test failure if the values are auto-restored while reading CRAM:
+        // setting some unrealistic values to provoke test failure if the values are auto-restored while reading CRAM:
         record.setAttribute("MD", "nonsense");
         record.setAttribute("NM", 123);
 
-        SAMRecord roundTripRecord = roundtripSingleRecord(samRecordSetBuilder, null, CramVersions.CRAM_v3);
+        SAMRecord roundTripRecord = roundtripSingleRecord(samRecordSetBuilder, emptyReferenceSource, CramVersions.CRAM_v3);
 
         Assert.assertNotNull(roundTripRecord);
         Assert.assertEquals(roundTripRecord, record);
@@ -47,18 +77,51 @@ public class LosslessRoundTripTest {
      */
     @Test
     public void testMappingScoreInUnmappedReadRoundtrip() {
-        SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
-        boolean readUnmapped = true;
         int mappingScore = 1;
         Assert.assertNotEquals(mappingScore, SAMRecord.NO_MAPPING_QUALITY);
-        samRecordSetBuilder.addFrag("read1", SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START, false, readUnmapped, SAMRecord.NO_ALIGNMENT_CIGAR, null, 0)
-                .setMappingQuality(mappingScore);
+        samRecordSetBuilder.addFrag("read1", SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, SAMRecord.NO_ALIGNMENT_START,
+                false, true, SAMRecord.NO_ALIGNMENT_CIGAR, null, 0).setMappingQuality(mappingScore);
 
-        SAMRecord roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, null, CramVersions.CRAM_v2_1);
+        SAMRecord roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, emptyReferenceSource, CramVersions.CRAM_v2_1);
         Assert.assertEquals(roundtripRecord.getMappingQuality(), SAMRecord.NO_MAPPING_QUALITY);
 
-        roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, null, CramVersions.CRAM_v3);
+        roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, emptyReferenceSource, CramVersions.CRAM_v3);
         Assert.assertEquals(roundtripRecord.getMappingQuality(), SAMRecord.NO_MAPPING_QUALITY);
+    }
+
+    /**
+     * Test various insert size expectations for CRAM transformations
+     *
+     * @throws IOException
+     */
+    @Test
+    public void test_InsertSize() throws IOException {
+        roundTripInsertSizes(15, -15);
+        roundTripInsertSizes(-99, 123456);
+    }
+
+    private void roundTripInsertSizes(int tlen1, int tlen2) {
+        SAMRecordBuilder.Pair pair = new SAMRecordBuilder.Pair(2, samRecordSetBuilder.getHeader());
+        pair.first().name("a1").start(1).flags(67).ref(0).mapq(1).cigar("10M").tlen(tlen1).bases("ACGTNACGTN").scores();
+        pair.last().name("a1").start(6).flags(3).ref(0).mapq(1).cigar("10M").tlen(tlen2).bases("ACGTNTTTTT").scores();
+        pair.mate();
+
+        Assert.assertEquals(pair.first().create().getInferredInsertSize(), tlen1);
+        Assert.assertEquals(pair.last().create().getInferredInsertSize(), tlen2);
+
+        Iterator<SAMRecord> iterator = roundtrip(pair.iterator(), samRecordSetBuilder.getHeader(), referenceSource, CramVersions.CRAM_v2_1);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertEquals(iterator.next().getInferredInsertSize(), tlen1);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertEquals(iterator.next().getInferredInsertSize(), tlen2);
+        Assert.assertFalse(iterator.hasNext());
+
+        iterator = roundtrip(pair.iterator(), samRecordSetBuilder.getHeader(), referenceSource, CramVersions.CRAM_v3);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertEquals(iterator.next().getInferredInsertSize(), tlen1);
+        Assert.assertTrue(iterator.hasNext());
+        Assert.assertEquals(iterator.next().getInferredInsertSize(), tlen2);
+        Assert.assertFalse(iterator.hasNext());
     }
 
     /**
@@ -186,13 +249,14 @@ public class LosslessRoundTripTest {
     @Test(dataProvider = "cigarExpectations")
     public void testRoundtripCigar(String originalCigarString, String expectedRoundTrippedCigarString) {
         SAMRecordSetBuilder samRecordSetBuilder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.coordinate);
+        samRecordSetBuilder.getHeader().getSequence(0).setSequenceLength(100);
 
         samRecordSetBuilder.addFrag("read1", 0, 1, false, false, originalCigarString, null, 0).setReadBases(SAMRecord.NULL_SEQUENCE);
 
-        SAMRecord roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, null, CramVersions.CRAM_v2_1);
+        SAMRecord roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, referenceSource, CramVersions.CRAM_v2_1);
         Assert.assertEquals(roundtripRecord.getCigarString(), expectedRoundTrippedCigarString);
 
-        roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, null, CramVersions.CRAM_v3);
+        roundtripRecord = roundtripSingleRecord(samRecordSetBuilder, referenceSource, CramVersions.CRAM_v3);
         Assert.assertEquals(roundtripRecord.getCigarString(), expectedRoundTrippedCigarString);
     }
 
@@ -204,19 +268,21 @@ public class LosslessRoundTripTest {
     }
 
     private Iterator<SAMRecord> roundtrip(SAMRecordSetBuilder builder, ReferenceSource referenceSource, Version cramVersion) {
+        return roundtrip(builder.iterator(), builder.getHeader(), referenceSource, cramVersion);
+    }
+
+    private Iterator<SAMRecord> roundtrip(Iterator<SAMRecord> iterator, SAMFileHeader header, ReferenceSource referenceSource, Version cramVersion) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         if (referenceSource == null) {
             InMemoryReferenceSequenceFile rsFile = new InMemoryReferenceSequenceFile();
-            // add random sequence:
-            rsFile.add("1", "ACGTN".getBytes());
             referenceSource = new ReferenceSource(rsFile);
         }
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, null, false, referenceSource, builder.getHeader(), null, cramVersion);
+        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, null, false, referenceSource, header, null, cramVersion);
 
-        builder.getRecords().forEach(cramFileWriter::addAlignment);
+        iterator.forEachRemaining(cramFileWriter::addAlignment);
         cramFileWriter.close();
 
-        SamReaderFactory f = SamReaderFactory.make().referenceSource(referenceSource).validationStringency(ValidationStringency.LENIENT);
+        SamReaderFactory f = SamReaderFactory.make().referenceSource(referenceSource).validationStringency(ValidationStringency.SILENT);
         SamReader reader = f.open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
         return reader.iterator();
     }
