@@ -218,8 +218,8 @@ class VCFWriter extends IndexingVariantContextWriter {
         try {
             super.add(context);
 
-            if (this.doNotWriteGenotypes) write(this.vcfEncoder.encode(new VariantContextBuilder(context).noGenotypes().make()));
-            else write(this.vcfEncoder.encode(context));
+            if (this.doNotWriteGenotypes) this.vcfEncoder.write(this.writer,new VariantContextBuilder(context).noGenotypes().make());
+            else this.vcfEncoder.write(this.writer,context);
             write("\n");
 
             writeAndResetBuffer();
