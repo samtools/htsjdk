@@ -71,7 +71,9 @@ public class VCFEncoder {
 	 */
 	public String encode(final VariantContext context) {
     	try {
-            return encode(context,new StringBuilder(1000)).toString();
+    	    final StringBuilder stringBuilder = new StringBuilder(1000);
+    	    write(stringBuilder,context);
+            return stringBuilder.toString();
         } catch (final IOException error) {
            throw new RuntimeIOException("Cannot encode variant", error);
         }
@@ -81,12 +83,12 @@ public class VCFEncoder {
    /** 
     * encodes a new Variant context as VCF, writes it to a java.lang.Appendable 
     * 
-    * @param context the variant
     * @param vcfoutput the java.lang.Appendable
+    * @param context the variant
     * @return the java.lang.Appendable 'vcfoutput'
     * @throws IOException
     */
-   public Appendable encode(final VariantContext context,final Appendable vcfoutput) throws IOException {	
+   public void write(final Appendable vcfoutput, final VariantContext context) throws IOException {	
        if (this.header == null) {
            throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
        }
@@ -155,8 +157,6 @@ public class VCFEncoder {
 				appendGenotypeData(context, alleleStrings, genotypeAttributeKeys, vcfoutput);
 			}
 		}
-
-		return vcfoutput;
 	}
 
 	VCFHeader getVCFHeader() {
