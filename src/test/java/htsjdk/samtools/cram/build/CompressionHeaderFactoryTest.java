@@ -13,6 +13,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,7 +28,6 @@ public class CompressionHeaderFactoryTest {
                 // skip test marks and unused series:
                 case TV_TestMark:
                 case TM_TestMark:
-                case BB_bases:
                 case QQ_scores:
                     Assert.assertFalse(header.encodingMap.containsKey(key), "Unexpected encoding key found: " + key.name());
                     continue;
@@ -54,13 +54,25 @@ public class CompressionHeaderFactoryTest {
         final CompressionHeaderFactory factory = new CompressionHeaderFactory();
         final List<CramCompressionRecord> records = new ArrayList<>();
         final CramCompressionRecord record = new CramCompressionRecord();
-        final int tagID = new CramReadTagSeries("ACi".getBytes()).cramTagId;
+        final int tagID = new CramReadTagSeries("ACB".getBytes()).cramTagId;
         final byte[] data = new byte[]{1, 2, 3, 4};
         record.tags = new SAMBinaryTagAndValue(SAMTagUtil.getSingleton().makeBinaryTag("AC"), data);
         records.add(record);
 
         final byte[] dataForTag = factory.getDataForTag(records, tagID);
-        Assert.assertEquals(dataForTag, data);
+
+        // prepare expected array:
+        int valueTypeByteLength = 1;
+        int arraySizeByteLength = 4;
+        int elementByteLength = 1;
+        int valuesByteLength = elementByteLength * data.length;
+        int tagValueByteLength = valueTypeByteLength + arraySizeByteLength + valuesByteLength;
+        byte[] expectedBytes = new byte[tagValueByteLength];
+        Arrays.fill(expectedBytes, (byte)0);
+        expectedBytes[0] = 'c';
+        expectedBytes[1] = (byte) (arraySizeByteLength & 0xFF);
+        System.arraycopy(data, 0, expectedBytes, 5, data.length);
+        Assert.assertEquals(expectedBytes, dataForTag);
     }
 
     @Test
@@ -123,8 +135,14 @@ public class CompressionHeaderFactoryTest {
 
         range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
-        Assert.assertEquals(range.min, 4);
-        Assert.assertEquals(range.max, 4);
+
+        int valueTypeByteLength = 1;
+        int arraySizeByteLength = 4;
+        int elementByteLength = 1;
+        int valuesByteLength = elementByteLength * data.length;
+        int tagValueByteLength = valueTypeByteLength + arraySizeByteLength + valuesByteLength;
+        Assert.assertEquals(range.min, tagValueByteLength);
+        Assert.assertEquals(range.max, tagValueByteLength);
     }
 
     @Test
