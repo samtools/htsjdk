@@ -5,8 +5,9 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.common.IntHashMap;
 import htsjdk.samtools.cram.structure.CramReadTagSeries;
 import htsjdk.samtools.cram.structure.CramTagValueSerialization;
-import org.junit.Test;
+
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
