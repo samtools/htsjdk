@@ -23,18 +23,12 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.*;
+import htsjdk.samtools.SAMBinaryTagAndValue;
+import htsjdk.samtools.SAMTagUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class CramReadTagSeriesTest {
 
@@ -68,7 +62,7 @@ public class CramReadTagSeriesTest {
     @Test
     public void testMethods() {
         String tagName = "AB";
-        byte tagValueType = 'i';
+        byte tagValueType = 'c';
         short bamTagCode = SAMTagUtil.getSingleton().makeBinaryTag(tagName);
         int cramTagId = (((tagName.getBytes()[0]) & 0xFF) << 16) | (((tagName.getBytes()[1]) & 0xFF) << 8) | (0xFF & tagValueType);
         byte[] bytes = new byte[]{tagName.getBytes()[0], tagName.getBytes()[1], tagValueType};
