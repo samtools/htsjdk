@@ -120,7 +120,7 @@ public class CompressionHeaderFactoryTest {
     @Test
     public void test_geByteSizeRangeOfTagValues() {
         final List<CramCompressionRecord> records = new ArrayList<>();
-        final int tagID = new CramReadTagSeries("ACi".getBytes()).cramTagId;
+        final int tagID = new CramReadTagSeries("ACB".getBytes()).cramTagId;
         // test empty list:
         CompressionHeaderFactory.ByteSizeRange range = CompressionHeaderFactory.geByteSizeRangeOfTagValues(records, tagID);
         Assert.assertNotNull(range);
