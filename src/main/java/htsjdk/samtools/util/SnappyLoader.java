@@ -42,9 +42,6 @@ public class SnappyLoader {
     // Force Snappy-java code to be loaded into executable jars.
     private final SnappyInputStream ignoreMe = null;
 
-    // Force bcel to load Snappy.
-    //private static final Class SnappyClass = SnappyInputStream.class;
-
     private static final boolean DefaultVerbosity = Boolean.valueOf(System.getProperty("snappy.loader.verbosity", "false"));
 
     public SnappyLoader() {
