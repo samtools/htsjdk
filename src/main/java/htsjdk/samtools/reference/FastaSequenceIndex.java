@@ -31,6 +31,9 @@ import htsjdk.samtools.util.IOUtil;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -155,6 +158,27 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
         } catch (IOException e) {
             throw new SAMException("Fasta index file could not be opened: " + indexFile, e);
 
+        }
+    }
+
+    /**
+     * Writes this index to the specified path.
+     *
+     * @param indexFile index file to output the index in the .fai format
+     *
+     * @throws IOException if an IO error occurs.
+     */
+    public void write(final Path indexFile) throws IOException {
+        try (final PrintStream writer = new PrintStream(Files.newOutputStream(indexFile))) {
+            sequenceEntries.values().forEach(se ->
+                    writer.println(String.join("\t",
+                            se.getContig(),
+                            String.valueOf(se.getSize()),
+                            String.valueOf(se.getLocation()),
+                            String.valueOf(se.getBasesPerLine()),
+                            String.valueOf(se.getBytesPerLine()))
+                    )
+            );
         }
     }
 
