@@ -131,4 +131,10 @@ public class SAMProgramRecord extends AbstractSAMHeaderRecord {
     Set<String> getStandardTags() {
         return STANDARD_TAGS;
     }
+
+
+    @Override
+    public String getSAMString() {
+        return new SAMTextHeaderCodec().getPGLine(this);
+    }
 }
