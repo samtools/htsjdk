@@ -23,12 +23,11 @@
  */
 package htsjdk.samtools;
 
+import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-
-import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * Base class for the various concrete records in a SAM header, providing uniform
@@ -113,4 +112,10 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     @Override public String toString() {
         return getClass().getSimpleName() + this.mAttributes.toString();
     }
+
+    /**
+     * Returns the record in the SAM line-based text format.  Fields are
+     * separated by '\t' characters. The String is NOT terminated by '\n'.
+     */
+    abstract public String getSAMString();
 }

@@ -429,14 +429,15 @@ public class SAMTextHeaderCodec {
     }
 
     private void writePGLine(final SAMProgramRecord programRecord) {
-        if (programRecord == null) {
-            return;
-        }
+        println(getPGLine(programRecord));
+    }
+
+    protected String getPGLine(final SAMProgramRecord programRecord) {
         final String[] fields = new String[2 + programRecord.getAttributes().size()];
         fields[0] = HEADER_LINE_START + HeaderRecordType.PG;
         fields[1] = SAMProgramRecord.PROGRAM_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + programRecord.getProgramGroupId();
         encodeTags(programRecord, fields, 2);
-        println(StringUtil.join(FIELD_SEPARATOR, fields));
+        return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
     private void writeRGLine(final SAMReadGroupRecord readGroup) {
@@ -474,13 +475,17 @@ public class SAMTextHeaderCodec {
     }
 
     private void writeSQLine(final SAMSequenceRecord sequenceRecord) {
+        println(getSQLine(sequenceRecord));
+    }
+
+    protected String getSQLine(final SAMSequenceRecord sequenceRecord) {
         final int numAttributes = sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
         final String[] fields = new String[3 + numAttributes];
         fields[0] = HEADER_LINE_START + HeaderRecordType.SQ;
         fields[1] = SAMSequenceRecord.SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + sequenceRecord.getSequenceName();
         fields[2] = SAMSequenceRecord.SEQUENCE_LENGTH_TAG + TAG_KEY_VALUE_SEPARATOR + Integer.toString(sequenceRecord.getSequenceLength());
         encodeTags(sequenceRecord, fields, 3);
-        println(StringUtil.join(FIELD_SEPARATOR, fields));
+        return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
     /**

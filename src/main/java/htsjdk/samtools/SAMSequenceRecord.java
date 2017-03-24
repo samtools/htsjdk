@@ -23,6 +23,9 @@
  */
 package htsjdk.samtools;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlValue;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -31,10 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlValue;
 
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
@@ -245,6 +244,11 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
                 getSequenceIndex(),
                 getAssembly()
         );
+    }
+
+    @Override
+    public String getSAMString() {
+        return new SAMTextHeaderCodec().getSQLine(this);
     }
 }
 
