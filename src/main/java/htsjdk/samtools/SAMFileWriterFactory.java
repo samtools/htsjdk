@@ -174,6 +174,14 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Gets the maximum number of records held in RAM before spilling to disk during sorting.
+     * @see #setMaxRecordsInRam(int)
+     */
+    public int getMaxRecordsInRam() {
+        return maxRecordsInRam;
+    }
+
+    /**
      * Turn on or off the use of asynchronous IO for writing output SAM and BAM files.  If true then
      * each SAMFileWriter creates a dedicated thread which is used for compression and IO activities.
      */
@@ -208,6 +216,14 @@ public class SAMFileWriterFactory implements Cloneable {
     public SAMFileWriterFactory setTempDirectory(final File tmpDir) {
         this.tmpDir = tmpDir;
         return this;
+    }
+
+    /**
+     * Gets the temporary directory that will be used when sorting data.
+     * @see #setTempDirectory(File)
+     */
+    public File getTempDirectory() {
+        return tmpDir;
     }
 
     /**

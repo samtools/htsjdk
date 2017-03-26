@@ -111,7 +111,11 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         }
         this.maxRecordsInRam = maxRecordsInRam;
     }
-    
+
+    int getMaxRecordsInRam() {
+        return maxRecordsInRam;
+    }
+
     /**
      * When writing records that are not presorted, specify the path of the temporary directory 
      * for spilling to disk.  Must be called before setHeader().
@@ -121,6 +125,10 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         if (tmpDir!=null) {
             this.tmpDir = tmpDir;
         }
+    }
+
+    File getTempDirectory() {
+        return tmpDir;
     }
 
     /**
