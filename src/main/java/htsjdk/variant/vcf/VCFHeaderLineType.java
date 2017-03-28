@@ -25,9 +25,37 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.utils.Utils;
+
 /**
  * the type encodings we use for fields in VCF header lines
  */
 public enum VCFHeaderLineType {
-    Integer, Float, String, Character, Flag;
+    Integer,
+    Float,
+    String,
+    Character,
+    Flag;
+
+    /**
+     * Decode a header line count string and return the corresponding VCFHeaderLineCount enum value.
+     * If the value is not recognized as a valid constant, we assume the string represents a numeric
+     * value and return Integer. The caller should convert and validate the value.
+     *
+     * @param lineTypeString
+     * @return VCFHeaderLineType for {@code lineTypeString}
+     */
+    protected static VCFHeaderLineType decode(final String lineTypeString) {
+        Utils.nonNull(lineTypeString);
+        return VCFHeaderLineType.valueOf(lineTypeString);
+    }
+
+    /**
+     * Encode this line type as a string suitable for serialization to a VCF header. Note this is
+     * not version specific and defaults to VCFv42.
+     *
+     * The serialized encoding is the simple name of the enum constant
+     * @return string encoding of this line type
+     */
+    String encode() { return this.toString(); }
 }

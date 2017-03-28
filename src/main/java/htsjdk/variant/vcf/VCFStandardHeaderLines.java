@@ -52,26 +52,30 @@ public class VCFStandardHeaderLines {
      * Enabling this causes us to repair header lines even if only their descriptions differ.
      */
     private final static boolean REPAIR_BAD_DESCRIPTIONS = false;
-    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<VCFFormatHeaderLine>();
-    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<VCFInfoHeaderLine>();
+    private static Standards<VCFFormatHeaderLine> formatStandards = new Standards<>();
+    private static Standards<VCFInfoHeaderLine> infoStandards = new Standards<>();
 
     /**
      * Walks over the VCF header and repairs the standard VCF header lines in it, returning a freshly
      * allocated {@link VCFHeader} with standard VCF header lines repaired as necessary.
      */
     public static VCFHeader repairStandardHeaderLines(final VCFHeader header) {
-        final Set<VCFHeaderLine> newLines = new LinkedHashSet<VCFHeaderLine>(header.getMetaDataInInputOrder().size());
+        final Set<VCFHeaderLine> newLines = new LinkedHashSet<>(header.getMetaDataInInputOrder().size());
         for ( VCFHeaderLine line : header.getMetaDataInInputOrder() ) {
             if ( line instanceof VCFFormatHeaderLine ) {
                 line = formatStandards.repair((VCFFormatHeaderLine) line);
             } else if ( line instanceof VCFInfoHeaderLine) {
                 line = infoStandards.repair((VCFInfoHeaderLine) line);
             }
-
             newLines.add(line);
         }
 
-        return new VCFHeader(newLines, header.getGenotypeSamples());
+        // TODO: this does not preserve any header state that is not captured by headerLines/sample-names/version
+        //NOTE that its possible for this to fail in the (probably rare) case that the repaired
+        //lines (which are "versionless") cannot pass validation against the header version
+        VCFHeader newHeader = new VCFHeader(header.getHeaderVersion(), newLines, header.getGenotypeSamples());
+
+        return newHeader;
     }
 
     /**
@@ -152,25 +156,25 @@ public class VCFStandardHeaderLines {
     //
     static {
         // FORMAT lines
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY,           1,                            VCFHeaderLineType.String,  "Genotype"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_QUALITY_KEY,   1,                            VCFHeaderLineType.Integer, "Genotype Quality"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                            VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_KEY,           1,                     VCFHeaderLineType.String,  "Genotype"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_QUALITY_KEY,   1,                     VCFHeaderLineType.Integer, "Genotype Quality"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.DEPTH_KEY,              1,                     VCFHeaderLineType.Integer, "Approximate read depth (reads with MQ=255 or with bad mates are filtered)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
-        registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                      VCFHeaderLineType.Float,   "Read-backed phasing quality"));
 
         // INFO lines
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.END_KEY,                  1,                    VCFHeaderLineType.Integer, "Stop position of the interval"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.DBSNP_KEY,                0,                    VCFHeaderLineType.Flag,    "dbSNP Membership"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.DEPTH_KEY,                1,                    VCFHeaderLineType.Integer, "Approximate read depth; some reads may have been filtered"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.STRAND_BIAS_KEY,          1,                    VCFHeaderLineType.Float,   "Strand Bias"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.END_KEY,                  1,             VCFHeaderLineType.Integer, "Stop position of the interval"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.DBSNP_KEY,                0,             VCFHeaderLineType.Flag,    "dbSNP Membership"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.DEPTH_KEY,                1,             VCFHeaderLineType.Integer, "Approximate read depth; some reads may have been filtered"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.STRAND_BIAS_KEY,          1,             VCFHeaderLineType.Float,   "Strand Bias"));
         registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_FREQUENCY_KEY,     VCFHeaderLineCount.A, VCFHeaderLineType.Float,   "Allele Frequency, for each ALT allele, in the same order as listed"));
         registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_COUNT_KEY,         VCFHeaderLineCount.A, VCFHeaderLineType.Integer, "Allele count in genotypes, for each ALT allele, in the same order as listed"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_NUMBER_KEY,        1,                    VCFHeaderLineType.Integer, "Total number of alleles in called genotypes"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.MAPPING_QUALITY_ZERO_KEY, 1,                    VCFHeaderLineType.Integer, "Total Mapping Quality Zero Reads"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.RMS_MAPPING_QUALITY_KEY,  1,                    VCFHeaderLineType.Float,   "RMS Mapping Quality"));
-        registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY,              0,                    VCFHeaderLineType.Flag,    "Somatic event"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.ALLELE_NUMBER_KEY,        1,              VCFHeaderLineType.Integer, "Total number of alleles in called genotypes"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.MAPPING_QUALITY_ZERO_KEY, 1,              VCFHeaderLineType.Integer, "Total Mapping Quality Zero Reads"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.RMS_MAPPING_QUALITY_KEY,  1,              VCFHeaderLineType.Float,   "RMS Mapping Quality"));
+        registerStandard(new VCFInfoHeaderLine(VCFConstants.SOMATIC_KEY,              0,              VCFHeaderLineType.Flag,    "Somatic event"));
     }
 
     private static class Standards<T extends VCFCompoundHeaderLine> {
@@ -186,6 +190,7 @@ public class VCFStandardHeaderLines {
                 final boolean needsRepair  = badCountType || badCount || badType || (REPAIR_BAD_DESCRIPTIONS && badDesc);
 
                 if ( needsRepair ) {
+                    // TODO: Should we warn/log when we do this ?
                     if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                         System.err.println("Repairing standard header line for field " + line.getID() + " because"
                                            + (badCountType ? " -- count types disagree; header has " + line.getCountType() + " but standard is " + standard.getCountType() : "")

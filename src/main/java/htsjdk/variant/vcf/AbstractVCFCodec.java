@@ -26,13 +26,16 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.tabix.TabixFormat;
+import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.utils.Utils;
 import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -42,7 +45,6 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +52,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,10 +63,13 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 
+import static htsjdk.variant.vcf.VCFConstants.*;
+
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
-    public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
+    protected final static Log logger = Log.getInstance(AbstractVCFCodec.class);
 
+    public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
     protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th column
 
     // we have to store the list of strings that make up the header until they're needed
@@ -71,26 +77,22 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     protected VCFHeaderVersion version = null;
 
     // a mapping of the allele
-    protected Map<String, List<Allele>> alleleMap = new HashMap<String, List<Allele>>(3);
+    protected final Map<String, List<Allele>> alleleMap = new HashMap<>(3);
     
-    // for performance testing purposes
-    public static boolean validate = true;
-
     // a key optimization -- we need a per thread string parts array, so we don't allocate a big array over and over
     // todo: make this thread safe?
     protected String[] parts = null;
     protected String[] genotypeParts = null;
-    protected final String[] locParts = new String[6];
 
     // for performance we cache the hashmap of filter encodings for quick lookup
-    protected HashMap<String,List<String>> filterHash = new HashMap<String,List<String>>();
+    protected final HashMap<String, Set<String>> filterHash = new HashMap<>();
 
     // we store a name to give to each of the variant contexts we emit
     protected String name = "Unknown";
 
     protected int lineNo = 0;
 
-    protected Map<String, String> stringCache = new HashMap<String, String>();
+    protected final Map<String, String> stringCache = new HashMap<>();
 
     protected boolean warnedAboutNoEqualsForNonFlag = false;
 
@@ -128,17 +130,76 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         @Override
         public LazyGenotypesContext.LazyData parse(final Object data) {
-            //System.out.printf("Loading genotypes... %s:%d%n", contig, start);
             return createGenotypeMap((String) data, alleles, contig, start);
         }
     }
 
     /**
-     * parse the filter string, first checking to see if we already have parsed it in a previous attempt
-     * @param filterString the string to parse
-     * @return a set of the filters applied
+     * Return true if this codec can handle the target version
+     * @param targetVersion
+     * @return true if this codec can handle this version
      */
-    protected abstract List<String> parseFilters(String filterString);
+    public abstract boolean canDecodeVersion(final VCFHeaderVersion targetVersion);
+
+    // TODO: Note: This method was lifted from duplicate methods in the codec subclasses.
+    /**
+     * Reads all of the header from the provided iterator, but reads no further.
+     * @param lineIterator the line reader to take header lines from
+     * @return The parsed header
+     */
+    @Override
+    public Object readActualHeader(final LineIterator lineIterator) {
+        final List<String> headerStrings = new ArrayList<>();
+
+        // Extract one line and retrieve the file format and version, which must be the first line,
+        // and then add it back into the headerLines.
+        final VCFHeaderVersion fileFormatVersion = readFormatVersionLine(lineIterator);
+        headerStrings.add(VCFHeader.METADATA_INDICATOR + fileFormatVersion.getVersionLine());
+
+        // collect metadata lines until we hit the required header line, or a non-metadata line,
+        // in which case throw since there was no header line
+        // TODO: Optimization: There is no reason we couldn't just parse the header lines right here
+        // instead of accumulating them in a list and then making another pass to convert them
+        while (lineIterator.hasNext()) {
+            final String line = lineIterator.next();
+            if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
+                lineNo++;
+                headerStrings.add(line);
+                if (!line.startsWith(VCFHeader.METADATA_INDICATOR)) {
+                    this.header = parseHeaderFromLines(headerStrings, fileFormatVersion);
+                    break;
+                }
+            } else {
+                throw new TribbleException.InvalidHeader(
+                        "The required header line (starting with one #) is missing in the input VCF file");
+            }
+        }
+        return this.header;
+    }
+
+    /**
+     * Read ahead one line to obtain and return the vcf header version for this file
+     *
+     * @param headerLineIterator
+     * @return VCFHeaderVersion for this file
+     * @throws TribbleException if no file format header line is found in the first line or, the version can't
+     * be handled by this codec
+     */
+    protected VCFHeaderVersion readFormatVersionLine(final LineIterator headerLineIterator) {
+        if (headerLineIterator.hasNext()) {
+            final String headerVersionLine = headerLineIterator.next();
+            if (headerVersionLine.startsWith(VCFHeader.METADATA_INDICATOR)) {
+                final VCFHeaderVersion vcfFileVersion = VCFHeaderVersion.getHeaderVersion(headerVersionLine);
+                if (!canDecodeVersion(vcfFileVersion)) {
+                    throw new TribbleException.InvalidHeader(
+                            String.format("The \"(%s)\" codec does not support VCF version: %s", getName(), vcfFileVersion));
+                } else {
+                    return vcfFileVersion;
+                }
+            }
+        }
+        throw new TribbleException.InvalidHeader("The VCF version header line is missing");
+    }
 
     /**
      * create a VCF header from a set of header record lines
@@ -146,100 +207,256 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @param headerStrings a list of strings that represent all the ## and # entries
      * @return a VCFHeader object
      */
-    protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion version ) {
-        this.version = version;
+    protected VCFHeader parseHeaderFromLines( final List<String> headerStrings, final VCFHeaderVersion sourceVersion ) {
+        this.version = sourceVersion;
 
-        Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
-        Set<String> sampleNames = new LinkedHashSet<String>();
+        final Set<VCFHeaderLine> metaData = new LinkedHashSet<>();
+        Set<String> sampleNames = new LinkedHashSet<>();
         int contigCounter = 0;
-        // iterate over all the passed in strings
-        for ( String str : headerStrings ) {
-            if ( !str.startsWith(VCFHeader.METADATA_INDICATOR) ) {
-                String[] strings = str.substring(1).split(VCFConstants.FIELD_SEPARATOR);
-                if ( strings.length < VCFHeader.HEADER_FIELDS.values().length )
-                    throw new TribbleException.InvalidHeader("there are not enough columns present in the header line: " + str);
 
-                int arrayIndex = 0;
-                for (VCFHeader.HEADER_FIELDS field : VCFHeader.HEADER_FIELDS.values()) {
-                    try {
-                        if (field != VCFHeader.HEADER_FIELDS.valueOf(strings[arrayIndex]))
-                            throw new TribbleException.InvalidHeader("we were expecting column name '" + field + "' but we saw '" + strings[arrayIndex] + "'");
-                    } catch (IllegalArgumentException e) {
-                        throw new TribbleException.InvalidHeader("unknown column name '" + strings[arrayIndex] + "'; it does not match a legal column header name.");
-                    }
-                    arrayIndex++;
-                }
-
-                boolean sawFormatTag = false;
-                if ( arrayIndex < strings.length ) {
-                    if ( !strings[arrayIndex].equals("FORMAT") )
-                        throw new TribbleException.InvalidHeader("we were expecting column name 'FORMAT' but we saw '" + strings[arrayIndex] + "'");
-                    sawFormatTag = true;
-                    arrayIndex++;
-                }
-
-                while ( arrayIndex < strings.length )
-                    sampleNames.add(strings[arrayIndex++]);
-
-                if ( sawFormatTag && sampleNames.isEmpty())
-                    throw new TribbleException.InvalidHeader("The FORMAT field was provided but there is no genotype/sample data");
-
-                // If we're performing sample name remapping and there is exactly one sample specified in the header, replace
-                // it with the remappedSampleName. Throw an error if there are 0 or multiple samples and remapping was requested
-                // for this file.
-                if ( remappedSampleName != null ) {
-                    // We currently only support on-the-fly sample name remapping for single-sample VCFs
-                    if ( sampleNames.isEmpty() || sampleNames.size() > 1 ) {
-                        throw new TribbleException(String.format("Cannot remap sample name to %s because %s samples are specified in the VCF header, and on-the-fly sample name remapping is only supported for single-sample VCFs",
-                                                                 remappedSampleName, sampleNames.isEmpty() ? "no" : "multiple"));
-                    }
-
-                    sampleNames.clear();
-                    sampleNames.add(remappedSampleName);
-                }
-
+        for ( String headerLine : headerStrings ) {
+            if ( !headerLine.startsWith(VCFHeader.METADATA_INDICATOR) ) {
+                sampleNames = parsePrimaryHeaderLine(headerLine);
             } else {
-                if ( str.startsWith(VCFConstants.INFO_HEADER_START) ) {
-                    final VCFInfoHeaderLine info = new VCFInfoHeaderLine(str.substring(7), version);
-                    metaData.add(info);
-                } else if ( str.startsWith(VCFConstants.FILTER_HEADER_START) ) {
-                    final VCFFilterHeaderLine filter = new VCFFilterHeaderLine(str.substring(9), version);
-                    metaData.add(filter);
-                } else if ( str.startsWith(VCFConstants.FORMAT_HEADER_START) ) {
-                    final VCFFormatHeaderLine format = new VCFFormatHeaderLine(str.substring(9), version);
-                    metaData.add(format);
-                } else if ( str.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
-                    final VCFContigHeaderLine contig = new VCFContigHeaderLine(str.substring(9), version, VCFConstants.CONTIG_HEADER_START.substring(2), contigCounter++);
-                    metaData.add(contig);
-                } else if ( str.startsWith(VCFConstants.ALT_HEADER_START) ) {
-                    final VCFSimpleHeaderLine alt = new VCFSimpleHeaderLine(str.substring(6), version, VCFConstants.ALT_HEADER_START.substring(2), Arrays.asList("ID", "Description"));
-                    metaData.add(alt);
+                if ( headerLine.startsWith(VCFConstants.INFO_HEADER_START) ) {
+                    metaData.add(getInfoHeaderLine(headerLine.substring(INFO_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.FILTER_HEADER_START) ) {
+                    metaData.add(getFilterHeaderLine(headerLine.substring(FILTER_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.FORMAT_HEADER_START) ) {
+                    metaData.add(getFormatHeaderLine(headerLine.substring(FORMAT_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
+                    metaData.add(getContigHeaderLine(headerLine.substring(CONTIG_HEADER_OFFSET), sourceVersion, contigCounter++));
+                } else if ( headerLine.startsWith(VCFConstants.ALT_HEADER_START) ) {
+                    metaData.add(getAltHeaderLine(headerLine.substring(ALT_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.PEDIGREE_HEADER_START) ) {
+                    metaData.add(getPedigreeHeaderLine(headerLine.substring(PEDIGREE_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.META_HEADER_START) ) {
+                    metaData.add(getMetaHeaderLine(headerLine.substring(META_HEADER_OFFSET), sourceVersion));
+                } else if ( headerLine.startsWith(VCFConstants.SAMPLE_HEADER_START) ) {
+                    metaData.add(getSampleHeaderLine(headerLine.substring(SAMPLE_HEADER_OFFSET), sourceVersion));
                 } else {
-                    int equals = str.indexOf('=');
-                    if ( equals != -1 )
-                        metaData.add(new VCFHeaderLine(str.substring(2, equals), str.substring(equals+1)));
+                    VCFHeaderLine otherHeaderLine = getOtherHeaderLine(
+                            headerLine.substring(VCFHeader.METADATA_INDICATOR.length()),
+                            sourceVersion);
+                    if (otherHeaderLine != null)
+                        metaData.add(otherHeaderLine);
                 }
             }
         }
 
-        this.header = new VCFHeader(metaData, sampleNames);
-        if ( doOnTheFlyModifications )
+        this.header = new VCFHeader(sourceVersion, metaData, sampleNames);
+
+        if ( doOnTheFlyModifications ) {
             this.header = VCFStandardHeaderLines.repairStandardHeaderLines(this.header);
+        }
         return this.header;
     }
 
-	/**
+    /**
+     * Create and return a VCFInfoHeader object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFInfoHeaderLine object
+     */
+    public VCFInfoHeaderLine getInfoHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFInfoHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFFormatHeader object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFFormatHeaderLine object
+     */
+    public VCFFormatHeaderLine getFormatHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFFormatHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFFilterHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFFilterHeaderLine object
+     */
+    public VCFFilterHeaderLine getFilterHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFFilterHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFContigHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be valid for this header version.
+     * @return a VCFContigHeaderLine object
+     */
+    public VCFContigHeaderLine getContigHeaderLine(
+            final String headerLineString,
+            final VCFHeaderVersion sourceVersion,
+            final int contigIndex) {
+        return new VCFContigHeaderLine(headerLineString, sourceVersion, contigIndex);
+    }
+
+    /**
+     * Create and return a VCFAltHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFAltHeaderLine object
+     */
+    public VCFAltHeaderLine getAltHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFAltHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFPedigreeHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFPedigreeHeaderLine object
+     */
+    public VCFPedigreeHeaderLine getPedigreeHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFPedigreeHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFMetaHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFMetaHeaderLine object
+     */
+    public VCFMetaHeaderLine getMetaHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFMetaHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a VCFSampleHeaderLine object from a header line string that conforms to the {@code sourceVersion}
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param sourceVersion the VCF header version derived from which the source was retrieved. The resulting header
+     *                      line object should be validate for this header version.
+     * @return a VCFSampleHeaderLine object
+     */
+    public VCFSampleHeaderLine getSampleHeaderLine(final String headerLineString, final VCFHeaderVersion sourceVersion) {
+        return new VCFSampleHeaderLine(headerLineString, sourceVersion);
+    }
+
+    /**
+     * Create and return a basic VCFHeaderLine.
+     *
+     * @param headerLineString VCF header line being parsed without the leading "##"
+     * @param targetVersion VCFHeaderVersion being parsed
+     * @return a VCFHeaderLine
+     */
+    public VCFHeaderLine getOtherHeaderLine(final String headerLineString, final VCFHeaderVersion targetVersion) {
+        final int indexOfEquals = headerLineString.indexOf('=');
+        if ( indexOfEquals < 3 ) { // must at least have "##?="
+            // TODO: NOTE: the old code silently dropped metadata lines with no "="; now we log, or throw for verbose logging
+            if (VCFUtils.getStrictVCFVersionValidation()) {
+                throw new TribbleException.InvalidHeader("Unrecognized metadata line type: " + headerLineString);
+            }
+            if (VCFUtils.getVerboseVCFLogging()) {
+                logger.warn("Dropping unrecognized metadata line type: " + headerLineString);
+            }
+            return null;
+        } else {
+            final String headerLineValue = headerLineString.substring(indexOfEquals + 1);
+            if (headerLineValue.startsWith("<") && headerLineValue.endsWith(">")) {
+                return new VCFStructuredHeaderLine(
+                        headerLineString.substring(0, indexOfEquals),
+                        headerLineString.substring(indexOfEquals + 1),
+                        targetVersion);
+            } else {
+                return new VCFHeaderLine(headerLineString.substring(0, indexOfEquals), headerLineString.substring(indexOfEquals + 1));
+            }
+        }
+    }
+
+    // Parse the primary header line of the form:
+    //
+    // #CHROM  POS     ID      REF     ALT     QUAL    FILTER  INFO    FORMAT  ...
+    //
+    // The string passed in is the first non-metadata line we've seen, so it should conform.
+    //
+    private Set<String> parsePrimaryHeaderLine(final String headerLine) {
+        final Set<String> sampleNames = new LinkedHashSet<>();
+
+        final String[] columns = headerLine.substring(1).split(VCFConstants.FIELD_SEPARATOR);
+        if ( columns.length < VCFHeader.HEADER_FIELDS.values().length ) {
+            throw new TribbleException.InvalidHeader("not enough columns present in header line: " + headerLine);
+        }
+
+        int col = 0;
+        for (VCFHeader.HEADER_FIELDS field : VCFHeader.HEADER_FIELDS.values()) {
+            try {
+                if (field != VCFHeader.HEADER_FIELDS.valueOf(columns[col])) {
+                    throw new TribbleException.InvalidHeader("expected column headerLineID '" + field + "' but saw '" + columns[col] + "'");
+                }
+            } catch (IllegalArgumentException e) {
+                throw new TribbleException.InvalidHeader("column headerLineID '" + columns[col] + "' is not a legal column header headerLineID.");
+            }
+            col++;
+        }
+
+        boolean sawFormatTag = false;
+        if ( col < columns.length ) {
+            if ( !columns[col].equals("FORMAT") )
+                throw new TribbleException.InvalidHeader("expected column headerLineID 'FORMAT' but  saw '" + columns[col] + "'");
+            sawFormatTag = true;
+            col++;
+        }
+
+        while ( col < columns.length ) {
+            sampleNames.add(columns[col++]);
+        }
+
+        if ( sawFormatTag && sampleNames.isEmpty())
+            throw new TribbleException.InvalidHeader("The FORMAT field was provided but there is no genotype/sample data");
+
+        // If we're performing sample name remapping and there is exactly one sample specified in the header, replace
+        // it with the remappedSampleName. Throw an error if there are 0 or multiple samples and remapping was requested
+        // for this file.
+        if ( remappedSampleName != null ) {
+            // We currently only support on-the-fly sample name remapping for single-sample VCFs
+            if ( sampleNames.isEmpty() || sampleNames.size() > 1 ) {
+                throw new TribbleException(
+                        String.format("Cannot remap sample headerLineID to %s because %s samples are specified in the VCF header, " +
+                                        "and on-the-fly sample headerLineID remapping is only supported for single-sample VCFs",
+                                remappedSampleName, sampleNames.isEmpty() ? "no" : "multiple"));
+            }
+
+            sampleNames.clear();
+            sampleNames.add(remappedSampleName);
+        }
+
+        return sampleNames;
+    }
+
+    /**
 	 * Explicitly set the VCFHeader on this codec. This will overwrite the header read from the file
 	 * and the version state stored in this instance; conversely, reading the header from a file will
-	 * overwrite whatever is set here. The returned header may not be identical to the header argument
-	 * since the header lines may be "repaired" (i.e., rewritten) if doOnTheFlyModifications is set.
+	 * overwrite whatever is set here.
+     *
+     * The returned header may not be identical to, or may even be a complete replacement for, the
+     * input header argument, since the header lines may be "repaired" (i.e., rewritten) if
+     * doOnTheFlyModifications is set.
 	 */
-	public VCFHeader setVCFHeader(final VCFHeader header, final VCFHeaderVersion version) {
-		this.version = version;
+	public VCFHeader setVCFHeader(final VCFHeader newHeader, final VCFHeaderVersion newVersion) {
+	    Utils.nonNull(newHeader);
+	    Utils.nonNull(newVersion);
 
-		if (this.doOnTheFlyModifications) this.header = VCFStandardHeaderLines.repairStandardHeaderLines(header);
-		else this.header = header;
+        // force header validation for the target version; hopefully this isn't actually
+        // setting a new version on the header
+        newHeader.setHeaderVersion(newVersion);
 
+	    this.header = newHeader;
+		this.version = newVersion;
+
+		if (this.doOnTheFlyModifications) {
+            this.header = VCFStandardHeaderLines.repairStandardHeaderLines(newHeader);
+        }
 		return this.header;
 	}
 
@@ -321,16 +538,19 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         final String alts = getCachedString(parts[4]);
         builder.log10PError(parseQual(parts[5]));
 
-        final List<String> filters = parseFilters(getCachedString(parts[6]));
-        if ( filters != null ) builder.filters(new HashSet<String>(filters));
+        final Set<String> filters = parseFilters(getCachedString(parts[6]));
+        if ( filters != null ) {
+            builder.filters(new HashSet<>(filters));
+        }
         final Map<String, Object> attrs = parseInfo(parts[7]);
         builder.attributes(attrs);
 
-        if ( attrs.containsKey(VCFConstants.END_KEY) ) {
-            // update stop with the end key if provided
+        // update stop with the end key if provided
+        Object endValue= attrs.get(VCFConstants.END_KEY);
+        if ( endValue != null ) {
             try {
-                builder.stop(Integer.valueOf(attrs.get(VCFConstants.END_KEY).toString()));
-            } catch (Exception e) {
+                builder.stop(Integer.valueOf(endValue.toString()));
+            } catch (NumberFormatException e) {
                 generateException("the END value in the INFO field is not valid");
             }
         } else {
@@ -397,20 +617,67 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         return internedString;
     }
 
+    // TODO: Note: This method was lifted from duplicate methods in the codec subclasses.
+    /**
+     * parse the filter string, first checking to see if we already have parsed it in a previous attempt
+     * @param filterString the string to parse
+     * @return a set of the filters applied
+     */
+    protected Set<String> parseFilters(final String filterString) {
+        // null for unfiltered
+        if ( filterString.equals(VCFConstants.UNFILTERED) )
+            return null;
+
+        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
+            return Collections.emptySet();
+        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
+            generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter headerLineID in vcf4", lineNo);
+        if (filterString.isEmpty())
+            generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
+
+        // do we have the filter string cached?
+        if ( filterHash.containsKey(filterString) )
+            return filterHash.get(filterString);
+
+        // empty set for passes filters
+        final Set<String> fFields = new HashSet<>();
+        // otherwise we have to parse and cache the value
+        if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
+            fFields.add(filterString);
+        else {
+            // Variant context uses a Set to store these, so duplicates were getting dropped anyway
+            // in previous versions. Warn for old version; throw for V43+.
+            String[] filters = filterString.split(VCFConstants.FILTER_CODE_SEPARATOR);
+            for (int i = 0; i < filters.length; i++) {
+                if (!fFields.add(filters[i])) {
+                    String message = String.format(
+                            "Filters must be unique; filter field \"%s\" in the vicinity of " +
+                                    "line %d has duplicate filters", filterString, lineNo);
+                    reportDuplicateFilterIDs(message);
+                }
+            }
+        }
+
+        filterHash.put(filterString, Collections.unmodifiableSet(fFields));
+
+        return fFields;
+    }
+
     /**
      * parse out the info fields
      * @param infoField the fields
      * @return a mapping of keys to objects
      */
-    private Map<String, Object> parseInfo(String infoField) {
-        Map<String, Object> attributes = new HashMap<String, Object>();
+    protected Map<String, Object> parseInfo(String infoField) {
+        Map<String, Object> attributes = new HashMap<>();
 
         if ( infoField.isEmpty() )
             generateException("The VCF specification requires a valid (non-zero length) info field");
 
         if ( !infoField.equals(VCFConstants.EMPTY_INFO_FIELD) ) {
-            if ( infoField.indexOf('\t') != -1 || infoField.indexOf(' ') != -1 )
-                generateException("The VCF specification does not allow for whitespace in the INFO field. Offending field value was \"" + infoField + "\"");
+            if ( infoField.indexOf('\t') != -1 ) {
+                generateException("The VCF specification does not allow for tab characters in the INFO field. Offending field value was \"" + infoField + "\"");
+            }
 
             List<String> infoFields = ParsingUtils.split(infoField, VCFConstants.INFO_FIELD_SEPARATOR_CHAR);
             for (int i = 0; i < infoFields.size(); i++) {
@@ -438,8 +705,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     key = infoFields.get(i);
                     final VCFInfoHeaderLine headerLine = header.getInfoHeaderLine(key);
                     if ( headerLine != null && headerLine.getType() != VCFHeaderLineType.Flag ) {
-                        if ( GeneralUtils.DEBUG_MODE_ENABLED && ! warnedAboutNoEqualsForNonFlag ) {
-                            System.err.println("Found info key " + key + " without a = value, but the header says the field is of type "
+                        if ( warnedAboutNoEqualsForNonFlag ) {
+                            logger.warn("Found info key " + key + " without a = value, but the header says the field is of type "
                                                + headerLine.getType() + " but this construct is only value for FLAG type fields");
                             warnedAboutNoEqualsForNonFlag = true;
                         }
@@ -453,12 +720,29 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                 // this line ensures that key/value pairs that look like key=; are parsed correctly as MISSING
                 if ( "".equals(value) ) value = VCFConstants.MISSING_VALUE_v4;
 
+                if (attributes.containsKey(key)) {
+                    reportDuplicateInfoKeyValue(key, infoField);
+                }
+
                 attributes.put(key, value);
             }
         }
 
         return attributes;
     }
+
+    /**
+     * Handle reporting of duplicate filter IDs
+     * @param duplicateFilterMessage
+     */
+    protected abstract void reportDuplicateFilterIDs(final String duplicateFilterMessage);
+
+    /**
+     * Handle report of duplicate info line field values
+     * @param key
+     * @param infoLine
+     */
+    public abstract void reportDuplicateInfoKeyValue(final String key, final String infoLine);
 
     /**
      * create a an allele from an index and an array of alleles
@@ -620,6 +904,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             alleles.add(allele);
     }
 
+    // TODO: What is the intended meaning of a return value of true ? This class is abstract and can't
+    // decode anything directly, but it will return true for ANY 4.x file when passed a string with
+    // the prefix "##fileformat=VCFv4" (or worse, for any vcf file if passed "##fileformat=VCFv")
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
         try {
             Path path = IOUtil.getPath(potentialInput);
@@ -704,8 +991,8 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     } else if ( missing ) {
                         // if its truly missing (there no provided value) skip adding it to the attributes
                     } else if (gtKey.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-                        final List<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
-                        if ( filters != null ) gb.filters(filters);
+                        final Set<String> filters = parseFilters(getCachedString(genotypeValues.get(i)));
+                        if ( filters != null ) gb.filters(new ArrayList<>(filters));
                     } else if ( genotypeValues.get(i).equals(VCFConstants.MISSING_VALUE_v4) ) {
                         // don't add missing values to the map
                     } else {
@@ -784,11 +1071,11 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     protected void generateException(String message) {
-        throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
+        throw new TribbleException(String.format("Failure parsing VCF file at (approximately) line number %d: %s", lineNo, message));
     }
 
     protected static void generateException(String message, int lineNo) {
-        throw new TribbleException(String.format("The provided VCF file is malformed at approximately line number %d: %s", lineNo, message));
+        throw new TribbleException(String.format("Failure parsing VCF file at (approximately) line number %d: %s", lineNo, message));
     }
 
     @Override

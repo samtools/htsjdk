@@ -25,48 +25,204 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
-import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.utils.Utils;
 import htsjdk.variant.variantcontext.GenotypeLikelihoods;
 import htsjdk.variant.variantcontext.VariantContext;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.regex.Pattern;
+
 
 /**
- * a base class for compound header lines, which include info lines and format lines (so far)
+ * Abstract base class for compound header lines, which include INFO lines and FORMAT lines.
+ *
+ * Compound header lines are distinguished only in that are required to have TYPE and NUMBER attributes
+ * (VCFHeaderLineCount, a VCFHeaderLineType, and a count).
  */
-public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCFIDHeaderLine {
+public abstract class VCFCompoundHeaderLine extends VCFStructuredHeaderLine {
+    private static final long serialVersionUID = 1L;
+    protected static final Log logger = Log.getInstance(VCFCompoundHeaderLine.class);
 
-    public enum SupportedHeaderLineType {
-        INFO(true), FORMAT(false);
+    // regex pattern corresponding to legal info/format field keys
+    protected static final Pattern VALID_HEADER_ID_PATTERN = Pattern.compile("^[A-Za-z_][0-9A-Za-z_.]*$");
+    protected static final String UNBOUND_DESCRIPTION = "Not provided in original VCF header";
 
-        public final boolean allowFlagValues;
-        SupportedHeaderLineType(boolean flagValues) {
-            allowFlagValues = flagValues;
+    protected static String NUMBER_ATTRIBUTE = "Number";
+    protected static String TYPE_ATTRIBUTE = "Type";
+
+    // List of expected tags that have a predefined order (used by the parser to verify order only). The
+    // header line class itself should verify that all required tags are present.
+    protected static final List<String> expectedTagOrder = Collections.unmodifiableList(
+            new ArrayList<String>(4) {{
+            add(ID_ATTRIBUTE);
+            add(NUMBER_ATTRIBUTE);
+            add(TYPE_ATTRIBUTE);
+            add(DESCRIPTION_ATTRIBUTE);
+        }}
+    );
+
+    // immutable, cached binary representations of compound header line attributes
+    private final VCFHeaderLineType type;
+    private final VCFHeaderLineCount countType;
+    private final int count;
+
+    /**
+     * create a VCF compound header line with count type = VCFHeaderLineCount.INTEGER
+     *
+     * @param key          the key (header line type) for this header line
+     * @param headerLineID the is or this header line
+     * @param count        the count for this header line, sets countType type as VCFHeaderLineCount.INTEGER
+     * @param type         the type for this header line
+     * @param description  the description for this header line
+     */
+    protected VCFCompoundHeaderLine(
+            final String key,
+            final String headerLineID,
+            final int count,
+            final VCFHeaderLineType type,
+            final String description)
+    {
+        this(key, createAttributeMap(headerLineID, VCFHeaderLineCount.INTEGER, count, type, description), VCFHeader.DEFAULT_VCF_VERSION);
+    }
+
+    /**
+     * create a VCF compound header line
+     *
+     * @param key          the key (header line type) for this header line
+     * @param headerLineID the id for this header line
+     * @param countType    the count type for this header line
+     * @param type         the type for this header line
+     * @param description  the description for this header line
+     */
+    protected VCFCompoundHeaderLine(
+            final String key,
+            final String headerLineID,
+            final VCFHeaderLineCount countType,
+            final VCFHeaderLineType type,
+            final String description) {
+        this(key, createAttributeMap(headerLineID, countType, VCFHeaderLineCount.VARIABLE_COUNT, type, description), VCFHeader.DEFAULT_VCF_VERSION);
+    }
+
+    /**
+     * create a VCF compound header line from an attribute map
+     *
+     * @param key       the key (header line type) for this header line
+     * @param mapping   the header line attribute map
+     * @param vcfVersion   the VCF header version. This may be null, in which case
+     */
+    protected VCFCompoundHeaderLine(final String key, final Map<String, String> mapping, final VCFHeaderVersion vcfVersion) {
+        super(key, mapping);
+        Utils.nonNull(vcfVersion);
+
+        this.type = decodeLineType(getGenericFieldValue(TYPE_ATTRIBUTE));
+        final String countString = getGenericFieldValue(NUMBER_ATTRIBUTE);
+        this.countType = decodeCountType(countString, vcfVersion);
+        this.count = decodeCount(countString, this.countType);
+        validateForVersion(vcfVersion);
+    }
+
+    /**
+     * Return the description for this header line.
+     * @return
+     */
+    public String getDescription() {
+        final String description = getGenericFieldValue(DESCRIPTION_ATTRIBUTE);
+        return description == null ?
+                UNBOUND_DESCRIPTION :
+                description;
+    }
+
+    public VCFHeaderLineType getType() { return type; }
+
+    public VCFHeaderLineCount getCountType() { return countType; }
+    public boolean isFixedCount() { return countType.isFixedCount(); }
+
+    public int getCount() {
+        if (!isFixedCount()) {
+            throw new TribbleException("Header line count request when count type is not an integer");
+        }
+        return count;
+    }
+
+    private VCFHeaderLineType decodeLineType(final String lineTypeString) {
+        if (lineTypeString == null) {
+            throw new TribbleException(String.format("A line type attribute is required for %s header lines", getKey()));
+        } else {
+            try {
+                return VCFHeaderLineType.valueOf(lineTypeString);
+            } catch (IllegalArgumentException e) {
+                throw new TribbleException(String.format(
+                        "\"%s\" is not a valid type for %s header lines (note that types are case-sensitive)",
+                        lineTypeString,
+                        getKey()));
+            }
         }
     }
 
-    // the field types
-    private String name;
-    private int count = -1;
-    private VCFHeaderLineCount countType;
-    private String description;
-    private VCFHeaderLineType type;
+    private VCFHeaderLineCount decodeCountType(final String countString, final VCFHeaderVersion vcfVersion) {
+        if (countString == null) {
+            throw new TribbleException.InvalidHeader(
+                    String.format("A count type/value must be provided for %s header lines.", getID()));
+        }
+        return VCFHeaderLineCount.decode(vcfVersion, countString);
+    }
 
-    // access methods
-    @Override
-    public String getID() { return name; }
-    public String getDescription() { return description; }
-    public VCFHeaderLineType getType() { return type; }
-    public VCFHeaderLineCount getCountType() { return countType; }
-    public boolean isFixedCount() { return countType == VCFHeaderLineCount.INTEGER; }
-    public int getCount() {
-        if (!isFixedCount())
-            throw new TribbleException("Asking for header line count when type is not an integer");
-        return count;
+    private int decodeCount(final String countString, final VCFHeaderLineCount requestedCountType) {
+        int lineCount = VCFHeaderLineCount.VARIABLE_COUNT;
+        if (requestedCountType.isFixedCount()) {
+            if (countString == null) {
+                throw new TribbleException.InvalidHeader(String.format("Missing count value in VCF header field %s", getID()));
+            }
+            try {
+                lineCount = Integer.valueOf(countString);
+            } catch (NumberFormatException e) {
+                throw new TribbleException.InvalidHeader(String.format("Invalid count value %s in VCF header field %s", lineCount, getID()));
+            }
+            if (lineCount < 0) {
+                throw new TribbleException.InvalidHeader("Count < 0 for fixed size VCF header field " + getID());
+            }
+            if (getType() == VCFHeaderLineType.Flag && lineCount != 0) {
+                // This check is here on behalf of INFO lines (which are the only header line type allowed to have Flag
+                // type). A Flag type with a count value other than 0 violates the spec (at least v4.2 and v4.3), but
+                // to retain backward compatibility with previous implementations, we accept (and repair) and the line here.
+                updateGenericField(NUMBER_ATTRIBUTE, "0");
+                lineCount = 0;
+                if (VCFUtils.getVerboseVCFLogging()) {
+                    String message = String.format("FLAG fields must have a count value of 0, but saw count %d for header line %s. A value of 0 will be used",
+                            lineCount,
+                            getID());
+                    logger.warn(message);
+                }
+            }
+        }
+        return lineCount;
+    }
+
+    /**
+     * Called when an attempt is made to add this header line to a header that is know to have a specific
+     * version, or when an attempt is made to change the version of header by changing it's target version,
+     * to validate that the header line conforms to the target version requirements.
+     */
+    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        super.validateForVersion(vcfTargetVersion);
+        if (!VALID_HEADER_ID_PATTERN.matcher(getID()).matches() ) {
+            String message = String.format("ID value \"%s\" in \"%s\" header line does not conform to VCF %s ID restrictions",
+                    getID(),
+                    getKey(),
+                    getKey());
+            if (vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+                if (VCFUtils.getStrictVCFVersionValidation()) {
+                    throw new TribbleException.InvalidHeader(message);
+                }
+                if (VCFUtils.getVerboseVCFLogging()) {
+                    // warn for older versions - this line can't be used as a v4.3 line
+                    logger.warn(message);
+                }
+            }
+        }
     }
 
     /**
@@ -101,153 +257,79 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         }
     }
 
-    public void setNumberToUnbounded() {
-        countType = VCFHeaderLineCount.UNBOUNDED;
-        count = -1;
-    }
-
-    // our type of line, i.e. format, info, etc
-    private final SupportedHeaderLineType lineType;
-
-    /**
-     * create a VCF format header line
-     *
-     * @param name         the name for this header line
-     * @param count        the count for this header line
-     * @param type         the type for this header line
-     * @param description  the description for this header line
-     * @param lineType     the header line type
-     */
-    protected VCFCompoundHeaderLine(String name, int count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
-        super(lineType.toString(), "");
-        this.name = name;
-        this.countType = VCFHeaderLineCount.INTEGER;
-        this.count = count;
-        this.type = type;
-        this.description = description;
-        this.lineType = lineType;
-        validate();
+    // Create a backing attribute map out of VCFCompoundHeaderLine elements
+    private static Map<String, String> createAttributeMap(
+            final String headerLineID,
+            final VCFHeaderLineCount countType,
+            final int count,
+            final VCFHeaderLineType type,
+            final String description) {
+        return new LinkedHashMap<String, String>() {
+            { put(ID_ATTRIBUTE, headerLineID); }
+            { put(NUMBER_ATTRIBUTE, countType.encode(count)); }
+            { put(TYPE_ATTRIBUTE, type.encode()); }
+            {
+                // Handle the case where there's no description provided, ALLOW_UNBOUND_DESCRIPTIONS is the default
+                // note: if no description was provided, don't cache it, which means we don't round trip it
+                if (description != null) {
+                    put(DESCRIPTION_ATTRIBUTE, description);
+                }
+            }
+        };
     }
 
     /**
-     * create a VCF format header line
-     *
-     * @param name         the name for this header line
-     * @param count        the count type for this header line
-     * @param type         the type for this header line
-     * @param description  the description for this header line
-     * @param lineType     the header line type
+     * Compare two VCFCompoundHeaderLine (FORMAT or INFO) lines to determine if they have compatible number types,
+     * and return a VCFCompoundHeaderLine that can be used to represent the result of merging these lines. In the
+     * case where the merged line requires "promoting" one of the types to the other, a new line of the appropriate
+     * type is created by calling the {@code compoundHeaderLineResolver} to produce new line of the correct
+     * subclass (INFO or FORMAT).
+     * @param line1
+     * @param line2
+     * @param conflictWarner
+     * @param compoundHeaderLineResolver function that accepts two compound header lines of the same type (info or
+     *                                   format, and returns a new header line representing the combination of the
+     *                                   two input header lines
+     * @return
      */
-    protected VCFCompoundHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, SupportedHeaderLineType lineType) {
-        super(lineType.toString(), "");
-        this.name = name;
-        this.countType = count;
-        this.type = type;
-        this.description = description;
-        this.lineType = lineType;
-        validate();
-    }
+    public static VCFCompoundHeaderLine getSmartMergedCompoundHeaderLine(
+            final VCFCompoundHeaderLine line1,
+            final VCFCompoundHeaderLine line2,
+            final VCFHeader.HeaderConflictWarner conflictWarner,
+            BiFunction<VCFCompoundHeaderLine, VCFCompoundHeaderLine, VCFCompoundHeaderLine> compoundHeaderLineResolver)
+    {
+        Utils. nonNull(line1);
+        Utils. nonNull(line2);
 
-    /**
-     * create a VCF format header line
-     *
-     * @param line   the header line
-     * @param version      the VCF header version
-     * @param lineType     the header line type
-     *
-     */
-    protected VCFCompoundHeaderLine(String line, VCFHeaderVersion version, SupportedHeaderLineType lineType) {
-        super(lineType.toString(), "");
+        VCFCompoundHeaderLine newLine = line1;
 
-        final ArrayList<String> expectedTags = new ArrayList(Arrays.asList("ID", "Number", "Type", "Description"));
-        if (version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_2))
-            expectedTags.add("Version");
-        final Map<String, String> mapping = VCFHeaderLineTranslator.parseLine(version, line, expectedTags);
-        name = mapping.get("ID");
-        count = -1;
-        final String numberStr = mapping.get("Number");
-        if (numberStr.equals(VCFConstants.PER_ALTERNATE_COUNT)) {
-            countType = VCFHeaderLineCount.A;
-        } else if (numberStr.equals(VCFConstants.PER_ALLELE_COUNT)) {
-            countType = VCFHeaderLineCount.R;
-        } else if (numberStr.equals(VCFConstants.PER_GENOTYPE_COUNT)) {
-            countType = VCFHeaderLineCount.G;
-        } else if ((version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v4)) ||
-                (!version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) && numberStr.equals(VCFConstants.UNBOUNDED_ENCODING_v3))) {
-            countType = VCFHeaderLineCount.UNBOUNDED;
-        } else {
-            countType = VCFHeaderLineCount.INTEGER;
-            count = Integer.valueOf(numberStr);
-
-        }
-
-        if (count < 0 && countType == VCFHeaderLineCount.INTEGER)
-            throw new TribbleException.InvalidHeader("Count < 0 for fixed size VCF header field " + name);
-
-        try {
-            type = VCFHeaderLineType.valueOf(mapping.get("Type"));
-        } catch (Exception e) {
-            throw new TribbleException(mapping.get("Type") + " is not a valid type in the VCF specification (note that types are case-sensitive)");
-        }
-        if (type == VCFHeaderLineType.Flag && !allowFlagValues())
-            throw new IllegalArgumentException("Flag is an unsupported type for this kind of field");
-
-        description = mapping.get("Description");
-        if (description == null && ALLOW_UNBOUND_DESCRIPTIONS) // handle the case where there's no description provided
-            description = UNBOUND_DESCRIPTION;
-
-        this.lineType = lineType;
-
-        validate();
-    }
-
-    private void validate() {
-        if (name == null || type == null || description == null || lineType == null)
-            throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
-                    super.getKey(), name, type, description, lineType));
-        if (name.contains("<") || name.contains(">"))
-            throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
-        if (name.contains("="))
-            throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain an equals sign");
-
-        if (type == VCFHeaderLineType.Flag && count != 0) {
-            count = 0;
-            if (GeneralUtils.DEBUG_MODE_ENABLED) {
-                System.err.println("FLAG fields must have a count value of 0, but saw " + count + " for header line " + getID() + ". Changing it to 0 inside the code");
+        // Note: this can drop extra attributes
+        if (!line1.equalsExcludingExtraAttributes(line2)) {
+            if (line1.getType().equals(line2.getType())) {
+                // The lines are different in some way, but have a common type.
+                // The Number entry is an Integer that describes the number of values that can be
+                // included with the INFO field. For example, if the INFO field contains a single
+                // number, then this value should be 1. However, if the INFO field describes a pair
+                // of numbers, then this value should be 2 and so on. If the number of possible
+                // values varies, is unknown, or is unbounded, then this value should be '.'.
+                conflictWarner.warn(line1, "Promoting header field Number to . due to number differences in header lines: " + line1 + " " + line2);
+                newLine = compoundHeaderLineResolver.apply(line1, line2);
+            } else if (line1.getType() == VCFHeaderLineType.Integer && line2.getType() == VCFHeaderLineType.Float) {
+                // promote key to Float
+                conflictWarner.warn(line1, "Promoting Integer to Float in header: " + line2);
+                newLine = line2;
+            } else if (line1.getType() == VCFHeaderLineType.Float && line2.getType() == VCFHeaderLineType.Integer) {
+                // promote key to Float
+                conflictWarner.warn(line1, "Promoting Integer to Float in header: " + line2);
+            } else {
+                throw new IllegalStateException("Incompatible header types, collision between these two types: " + line1 + " " + line2);
             }
         }
-    }
-
-    /**
-     * make a string representation of this header line
-     * @return a string representation
-     */
-    @Override
-    protected String toStringEncoding() {
-        Map<String, Object> map = new LinkedHashMap<String, Object>();
-        map.put("ID", name);
-        Object number;
-        switch (countType) {
-            case A:
-                number = VCFConstants.PER_ALTERNATE_COUNT;
-                break;
-            case R:
-                number = VCFConstants.PER_ALLELE_COUNT;
-                break;
-            case G:
-                number = VCFConstants.PER_GENOTYPE_COUNT;
-                break;
-            case UNBOUNDED:
-                number = VCFConstants.UNBOUNDED_ENCODING_v4;
-                break;
-            case INTEGER:
-            default:
-                number = count;
+        if (!line1.getDescription().equals(line2.getDescription())) {
+            conflictWarner.warn(line1, "Allowing unequal description fields through: keeping " + line2 + " excluding " + line1);
         }
-        map.put("Number", number);
-        map.put("Type", type);
-        map.put("Description", description);
-        return lineType.toString() + "=" + VCFHeaderLine.toStringEncoding(map);
+
+        return newLine;
     }
 
     /**
@@ -260,44 +342,20 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
         if ( this == o ) {
             return true;
         }
-        if ( o == null || getClass() != o.getClass() || ! super.equals(o) ) {
+        if ( o == null || getClass() != o.getClass() ) {
             return false;
         }
 
-        final VCFCompoundHeaderLine that = (VCFCompoundHeaderLine) o;
-        return equalsExcludingDescription(that) &&
-               description.equals(that.description);
+        // let the attribute list determine equality
+        return super.equals(o);
     }
 
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + name.hashCode();
-        result = 31 * result + count;
-        result = 31 * result + (countType != null ? countType.hashCode() : 0);  // only nullable field according to validate()
-        result = 31 * result + description.hashCode();
-        result = 31 * result + type.hashCode();
-        result = 31 * result + lineType.hashCode();
-        return result;
-    }
-
-    public boolean equalsExcludingDescription(VCFCompoundHeaderLine other) {
+    private boolean equalsExcludingExtraAttributes(VCFCompoundHeaderLine other) {
         return count == other.count &&
                 countType == other.countType &&
                 type == other.type &&
-                lineType == other.lineType &&
-                name.equals(other.name);
+                getKey().equals(other.getKey()) &&
+                getID().equals(other.getID());
     }
-
-    public boolean sameLineTypeAndName(VCFCompoundHeaderLine other) {
-        return lineType == other.lineType &&
-                name.equals(other.name);
-    }
-
-    /**
-     * do we allow flag (boolean) values? (i.e. booleans where you don't have specify the value, AQ means AQ=true)
-     * @return true if we do, false otherwise
-     */
-    abstract boolean allowFlagValues();
 
 }

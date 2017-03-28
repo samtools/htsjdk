@@ -34,9 +34,8 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFIDHeaderLine;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
-import htsjdk.variant.vcf.VCFSimpleHeaderLine;
+import htsjdk.variant.vcf.VCFStructuredHeaderLine;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,8 +43,11 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+
+import static htsjdk.variant.vcf.VCFStructuredHeaderLine.DESCRIPTION_ATTRIBUTE;
 
 /**
  * Tests for BCF2Utils
@@ -79,18 +81,17 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
         inputLines.add(new VCFFilterHeaderLine(String.valueOf(counter++)));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
         inputLines.add(new VCFContigHeaderLine(Collections.singletonMap("ID", String.valueOf(counter++)), counter));
-        inputLines.add(new VCFInfoHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
-        inputLines.add(new VCFInfoHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFInfoHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFInfoHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
         inputLines.add(new VCFHeaderLine("x", "misc"));
         inputLines.add(new VCFHeaderLine("y", "misc"));
-        inputLines.add(new VCFSimpleHeaderLine("GATKCommandLine","z","misc"));
-        inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
-        inputLines.add(new VCFFormatHeaderLine(String.valueOf(counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
-        final int inputLineCounter = counter;
-        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<VCFHeaderLine>(inputLines));
+        inputLines.add(new VCFFilterHeaderLine("aFilter", "misc"));
+        inputLines.add(new VCFFormatHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        inputLines.add(new VCFFormatHeaderLine(String.valueOf("A"+counter++), VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "x"));
+        final VCFHeader inputHeader = new VCFHeader(new LinkedHashSet<>(inputLines));
         final ArrayList<String> dict = BCF2Utils.makeDictionary(inputHeader);
         final int dict_size = dict.size();
-        Assert.assertEquals(7,dict_size);
+        Assert.assertEquals(8,dict_size);
     }
 
     /**
@@ -179,8 +180,8 @@ public final class BCF2UtilsUnitTest extends VariantBaseTest {
     private static boolean expectedConsistent(final VCFHeader combinationHeader, final int minCounterForInputLines) {
         final List<Integer> ids = new ArrayList<Integer>();
         for ( final VCFHeaderLine line : combinationHeader.getMetaDataInInputOrder() ) {
-            if ( line instanceof VCFIDHeaderLine) {
-                ids.add(Integer.valueOf(((VCFIDHeaderLine) line).getID()));
+            if ( line.isStructuredHeaderLine()) {
+                ids.add(Integer.valueOf(line.getID()));
             }
         }
 

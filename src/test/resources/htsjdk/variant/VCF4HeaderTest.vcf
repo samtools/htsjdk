@@ -9,7 +9,6 @@
 ##FILTER=<ID=HARD_TO_VALIDATE,Description="MQ0 = 4 && ((MQ0 / (1.0 * DP))  0.1)">
 ##FILTER=<ID=Indel,Description="Overlaps a user-input mask">
 ##FILTER=<ID=LowQual,Description="Low quality">
-##FILTER=<ID=LowQual,Description="QUAL  50.0">
 ##FILTER=<ID=ANNOTATION,Description="ANNOTATION != \"NA\" || ANNOTATION <= 0.01">
 ##FILTER=<ID=ANNOTATION2,Description="ANNOTATION with quote \" that is unmatched but escaped">
 ##FILTER=<ID=SnpCluster,Description="SNPs found in clusters">

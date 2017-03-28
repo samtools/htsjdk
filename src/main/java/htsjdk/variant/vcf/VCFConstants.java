@@ -45,7 +45,7 @@ public final class VCFConstants {
     public static final String GENOTYPE_KEY = "GT";
     public static final String GENOTYPE_POSTERIORS_KEY = "GP";
     public static final String GENOTYPE_QUALITY_KEY = "GQ";
-    public static final String GENOTYPE_ALLELE_DEPTHS = "AD"; //AD isn't reserved, but is specifically handled by VariantContext
+    public static final String GENOTYPE_ALLELE_DEPTHS = "AD"; //AD is now reserved
     public static final String GENOTYPE_PL_KEY = "PL";   // phred-scaled genotype likelihoods
     public static final String EXPECTED_ALLELE_COUNT_KEY = "EC";
     @Deprecated public static final String GENOTYPE_LIKELIHOODS_KEY = "GL";         // log10 scaled genotype likelihoods
@@ -86,12 +86,37 @@ public final class VCFConstants {
     public static final String PHASING_TOKENS = "/|\\";
 
     // header lines
-    public static final String FILTER_HEADER_START = "##FILTER";
-    public static final String FORMAT_HEADER_START = "##FORMAT";
-    public static final String INFO_HEADER_START = "##INFO";
-    public static final String ALT_HEADER_START = "##ALT";
+    public static final String FILTER_HEADER_KEY = "FILTER";
+    public static final String FILTER_HEADER_START = VCFHeader.METADATA_INDICATOR + FILTER_HEADER_KEY;
+    public static final int FILTER_HEADER_OFFSET = FILTER_HEADER_START.length() + 1;
+
+    public static final String FORMAT_HEADER_KEY = "FORMAT";
+    public static final String FORMAT_HEADER_START = VCFHeader.METADATA_INDICATOR + FORMAT_HEADER_KEY;
+    public static final int FORMAT_HEADER_OFFSET = FORMAT_HEADER_START.length() + 1;
+
+    public static final String INFO_HEADER_KEY = "INFO";
+    public static final String INFO_HEADER_START = VCFHeader.METADATA_INDICATOR + INFO_HEADER_KEY;
+    public static final int INFO_HEADER_OFFSET = INFO_HEADER_START.length() + 1;
+
+    public static final String ALT_HEADER_KEY = "ALT";
+    public static final String ALT_HEADER_START = VCFHeader.METADATA_INDICATOR + ALT_HEADER_KEY;
+    public static final int ALT_HEADER_OFFSET = ALT_HEADER_START.length() + 1;
+
+    public static final String PEDIGREE_HEADER_KEY = "PEDIGREE";
+    public static final String PEDIGREE_HEADER_START = VCFHeader.METADATA_INDICATOR + PEDIGREE_HEADER_KEY;
+    public static final int PEDIGREE_HEADER_OFFSET = PEDIGREE_HEADER_START.length() + 1;
+
+    public static final String SAMPLE_HEADER_KEY = "SAMPLE";
+    public static final String SAMPLE_HEADER_START = VCFHeader.METADATA_INDICATOR + SAMPLE_HEADER_KEY;
+    public static final int SAMPLE_HEADER_OFFSET = SAMPLE_HEADER_START.length() + 1;
+
+    public static final String META_HEADER_KEY = "META";
+    public static final String META_HEADER_START = VCFHeader.METADATA_INDICATOR + META_HEADER_KEY;
+    public static final int META_HEADER_OFFSET = META_HEADER_START.length() + 1;
+
     public static final String CONTIG_HEADER_KEY = "contig";
-    public static final String CONTIG_HEADER_START = "##" + CONTIG_HEADER_KEY;
+    public static final String CONTIG_HEADER_START = VCFHeader.METADATA_INDICATOR + CONTIG_HEADER_KEY;
+    public static final int CONTIG_HEADER_OFFSET = CONTIG_HEADER_START.length() + 1;
 
     // old indel alleles
     public static final char DELETION_ALLELE_v3 = 'D';

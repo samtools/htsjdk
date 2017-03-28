@@ -25,6 +25,8 @@
 
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
@@ -37,24 +39,13 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
+
+import static htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.NO_OPTIONS;
 
 /**
  * Created by IntelliJ IDEA.
@@ -71,8 +62,25 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         VCFCodec codec = new VCFCodec();
         VCFHeader header = (VCFHeader) codec.readActualHeader(new LineIteratorImpl(new SynchronousLineReader(
                 new StringReader(headerStr))));
+        //the "#CHROM..." header line isn't returned by getMetaDataInInputOrder
         Assert.assertEquals(header.getMetaDataInInputOrder().size(), VCF4headerStringCount);
         return header;
+    }
+
+    private Set<VCFHeaderLine> getV42HeaderLinesWithNoFormatString() {
+        // precondition - create a v42 header and make sure its v42
+        VCFHeader header = createHeader(VCF42headerStrings);
+        Set<VCFHeaderLine> metaDataSet = new LinkedHashSet<>(header.getMetaDataInInputOrder());
+        VCFHeaderLine versionLine = VCFHeader.getVersionLineFromHeaderLineSet(metaDataSet);
+        // precondition - make sure its v42 to start with
+        Assert.assertEquals(
+                VCFHeaderVersion.toHeaderVersion(versionLine.getValue()),
+                VCFHeaderVersion.VCF4_2);
+
+        // remove the 4.2 version line from the original set, verify, and return the set with no fileformat string
+        metaDataSet.remove(versionLine);
+        Assert.assertNull(VCFHeader.getVersionLineFromHeaderLineSet(metaDataSet));
+        return metaDataSet;
     }
 
     @BeforeClass
@@ -89,15 +97,17 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testVCF4ToVCF4() {
-        VCFHeader header = createHeader(VCF4headerStrings);
-        checkMD5ofHeaderFile(header, "91c33dadb92e01ea349bd4bcdd02d6be");
+    public void testVCF4ToVCF4() throws IOException {
+        VCFHeader header = createHeader(VCF42headerStrings);
+        Set<VCFHeaderLine> roundTripped = getRoundTripEncoded(header);
+        Assert.assertTrue(roundTripped.equals(header.getMetaDataInSortedOrder()));
     }
 
     @Test
-    public void testVCF4ToVCF4_alternate() {
+    public void testVCF4ToVCF4_alternate() throws IOException {
         VCFHeader header = createHeader(VCF4headerStrings_with_negativeOne);
-        checkMD5ofHeaderFile(header, "39318d9713897d55be5ee32a2119853f");
+        Set<VCFHeaderLine> roundTripped = getRoundTripEncoded(header);
+        Assert.assertTrue(roundTripped.equals(header.getMetaDataInSortedOrder()));
     }
 
     @Test
@@ -131,7 +141,10 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         headerOne.getSequenceDictionary().assertSameDictionary(headerTwo.getSequenceDictionary());
 
         // Run the merge command
-        final VCFHeader mergedHeader = new VCFHeader(VCFUtils.smartMergeHeaders(Arrays.asList(headerOne, headerTwo), false), sampleList);
+        final VCFHeader mergedHeader = new VCFHeader(
+                VCFUtils.smartMergeHeaders(Arrays.asList(headerOne, headerTwo),false),
+                sampleList
+        );
 
         // Check that the mergedHeader's sequence dictionary matches the first two
         mergedHeader.getSequenceDictionary().assertSameDictionary(headerOne.getSequenceDictionary());
@@ -197,8 +210,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderAddFilterLine() {
         final VCFHeader header = getHiSeqVCFHeader();
         final String filterDesc = "TestFilterLine Description";
-        final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine",filterDesc);
-        Assert.assertEquals(filterDesc,filterLine.getDescription());
+        final VCFFilterHeaderLine filterLine = new VCFFilterHeaderLine("TestFilterLine", filterDesc);
+        Assert.assertEquals(filterDesc, filterLine.getDescription());
         header.addMetaDataLine(filterLine);
 
         Assert.assertTrue(header.getFilterLines().contains(filterLine), "TestFilterLine not found in filter header lines");
@@ -214,7 +227,11 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCFHeaderAddContigLine() {
         final VCFHeader header = getHiSeqVCFHeader();
-        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine("<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, "chr1", 0);
+        //TODO: Note: This test was previously adding a "contig" header line with key "chr1", which
+        //would roundtrip (through a file) as a VCFHeaderLine, not a VCFContigHeaderLine
+        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine("<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, 0);
+        Assert.assertEquals(contigLine.getKey(), VCFHeader.CONTIG_KEY);
+        Assert.assertEquals(contigLine.getID(), "chr1");
         header.addMetaDataLine(contigLine);
 
         Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
@@ -224,6 +241,22 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getFormatHeaderLines().contains(contigLine), "Test contig line present in format header lines");
         Assert.assertFalse(header.getFilterLines().contains(contigLine), "Test contig line present in filter header lines");
         Assert.assertFalse(header.getOtherHeaderLines().contains(contigLine), "Test contig line present in other header lines");
+    }
+
+
+    //TODO: This is a new test, but it passes in both the old and new implementations ? Should this be allowed ?
+    // It seems wrong, VCFHeader allows two contig lines with the same contig index to reside in the header
+    @Test
+    public void testVCFHeaderAddContigLineWithSameIndex() {
+        final VCFHeader header = new VCFHeader();
+        final VCFContigHeaderLine contigLine1 = new VCFContigHeaderLine("<ID=chr1,length=10>", VCFHeaderVersion.VCF4_2, 0);
+        final VCFContigHeaderLine contigLine2 = new VCFContigHeaderLine("<ID=chr2,length=10>", VCFHeaderVersion.VCF4_2, 0);
+
+        header.addMetaDataLine(contigLine1);
+        header.addMetaDataLine(contigLine2);
+
+        Assert.assertTrue(header.getContigLines().contains(contigLine1));
+        Assert.assertTrue(header.getContigLines().contains(contigLine2));
     }
 
     @Test
@@ -272,7 +305,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
 
         final int numContigLinesBefore = header.getContigLines().size();
-        // try to readd the first contig line
+        // try to read the first contig line
         header.addMetaDataLine(header.getContigLines().get(0));
         final int numContigLinesAfter = header.getContigLines().size();
 
@@ -281,7 +314,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
-    public void testVCFHeaderAddDuplicateHeaderLine() {
+    public void testVCFHeaderAddDuplicateKeyValueHeaderLine() {
         File input = new File("src/test/resources/htsjdk/variant/ex2.vcf");
 
         VCFFileReader reader = new VCFFileReader(input, false);
@@ -292,11 +325,13 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         header.addMetaDataLine(newHeaderLine);
 
         final int numHeaderLinesBefore = header.getOtherHeaderLines().size();
-        // readd the same header line
+        // add the same header line again
         header.addMetaDataLine(newHeaderLine);
         final int numHeaderLinesAfter = header.getOtherHeaderLines().size();
 
-        // assert that we have the same number of other header lines before and after
+        // TODO: Note: This change assumes we don't allow duplicate unstructured
+        // lines with the same key unless they have different content
+        // assert that we have the one more other header line after
         Assert.assertEquals(numHeaderLinesBefore, numHeaderLinesAfter);
     }
 
@@ -312,7 +347,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(deserializedHeader.getContigLines(), originalHeader.getContigLines(), "Contig header lines do not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getFilterLines(), originalHeader.getFilterLines(), "Filter header lines do not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getFormatHeaderLines(), originalHeader.getFormatHeaderLines(), "Format header lines do not match before/after serialization");
-        Assert.assertEquals(deserializedHeader.getIDHeaderLines(), originalHeader.getIDHeaderLines(), "ID header lines do not match before/after serialization");
+        Assert.assertEquals(deserializedHeader.getStructuredHeaderLines(), originalHeader.getStructuredHeaderLines(), "ID header lines do not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getInfoHeaderLines(), originalHeader.getInfoHeaderLines(), "Info header lines do not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getOtherHeaderLines(), originalHeader.getOtherHeaderLines(), "Other header lines do not match before/after serialization");
         Assert.assertEquals(deserializedHeader.getGenotypeSamples(), originalHeader.getGenotypeSamples(), "Genotype samples not the same before/after serialization");
@@ -320,6 +355,309 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(deserializedHeader.getSampleNamesInOrder(), originalHeader.getSampleNamesInOrder(), "Sorted list of sample names in header not the same before/after serialization");
         Assert.assertEquals(deserializedHeader.getSampleNameToOffset(), originalHeader.getSampleNameToOffset(), "Sample name to offset map not the same before/after serialization");
         Assert.assertEquals(deserializedHeader.toString(), originalHeader.toString(), "String representation of header not the same before/after serialization");
+    }
+
+    @DataProvider(name = "vcfVersions")
+    public Object[][] vcfVersions() {
+        return new Object[][]{
+                {VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF3_3},
+                {VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_3}
+        };
+    }
+
+    @Test(dataProvider = "vcfVersions")
+    public void testCreateHeaderWithNoFileFormatLine(final VCFHeaderVersion vcfVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // this (4.2) header is compatible with all 4.x versions
+
+        // create a new versioned header from this set (containing no fileformat line)
+        // which should always default to 4.2
+        VCFHeader vcfHeader = new VCFHeader(vcfVersion, metaDataSet, Collections.EMPTY_SET);
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), vcfVersion);
+    }
+
+    @Test(dataProvider = "vcfVersions")
+    public void testCreateHeaderWithMatchingFileFormatLine(final VCFHeaderVersion vcfVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        // add in the corresponding fileformat line; create a new versioned header
+        // since the version requested in the constructor and the format lines are in sync, there is
+        // no conflict, and the resulting header's version should always match the requested version
+        metaDataSet.add(new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString()));
+        VCFHeader vcfHeader = new VCFHeader(vcfVersion, metaDataSet, Collections.EMPTY_SET);
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), vcfVersion);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testCreateHeaderWithMultipleFileFormatLines() {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // this (4.2) header is compatible with all 4.x versions
+        int beforeSize = metaDataSet.size();
+
+        metaDataSet.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeaderVersion.VCF4_2.getVersionString()));
+        metaDataSet.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_1.getFormatString(), VCFHeaderVersion.VCF4_1.getVersionString()));
+        Assert.assertEquals(metaDataSet.size(), beforeSize + 2);
+
+        // create a new versioned header from this set (containing no fileformat line)
+        // which should always default to 4.2
+        new VCFHeader(metaDataSet, Collections.EMPTY_SET);
+    }
+
+    @Test(dataProvider = "vcfVersions")
+    public void testSetHeaderVersionWithFileFormatLine(final VCFHeaderVersion vcfVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        // don't request a version; let the header derive it from the embedded format line;
+        // the resulting header version should match the format line we embedded
+        metaDataSet.add(new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString()));
+        VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.EMPTY_SET); //defaults to v4.2
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), vcfVersion);
+        vcfHeader.setHeaderVersion(vcfVersion);
+    }
+
+    @Test(dataProvider = "vcfVersions")
+    public void testSetHeaderVersionWithNoFileFormatLine(final VCFHeaderVersion vcfVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        // create a new header from this set (containing no fileformat line), no requested version in constructor
+        VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.EMPTY_SET); //defaults to v4.2
+        vcfHeader.setHeaderVersion(vcfVersion);
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), VCFHeader.DEFAULT_VCF_VERSION);
+    }
+
+    @DataProvider(name = "conflictingHeaderVersionPairs")
+    public Object[][] vcfConflictingVersionLines() {
+        return new Object[][]{
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF3_3},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_0, VCFHeaderVersion.VCF4_3},
+
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF3_3},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_2},
+                {VCFHeaderVersion.VCF4_1, VCFHeaderVersion.VCF4_3},
+
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF3_3},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_2, VCFHeaderVersion.VCF4_3},
+
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF3_2},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF3_3},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_0},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_1},
+                {VCFHeaderVersion.VCF4_3, VCFHeaderVersion.VCF4_2},
+        };
+    }
+
+    @Test(dataProvider = "conflictingHeaderVersionPairs", expectedExceptions = IllegalArgumentException.class)
+    public void testCreateHeaderWithConflictingFileFormatLine(
+            final VCFHeaderVersion vcfVersion,
+            final VCFHeaderVersion conflictingVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        //add in the fileformat line; create a new header requesting conflicting version
+        metaDataSet.add(new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString()));
+        new VCFHeader(conflictingVersion, metaDataSet, Collections.EMPTY_SET);
+    }
+
+    @Test(dataProvider = "conflictingHeaderVersionPairs", expectedExceptions = TribbleException.class)
+    public void testSetHeaderWithConflictingVersion(final VCFHeaderVersion vcfVersion, final VCFHeaderVersion conflictingVersion) {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        //add in a fileformat line; create a new header; setHeader with a conflicting version
+        metaDataSet.add(new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString()));
+        VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.EMPTY_SET);
+        vcfHeader.setHeaderVersion(conflictingVersion);
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testAddSecondFileFormatLine() {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        //add in a fileformat line that matches the default version; create a new header
+        metaDataSet.add(new VCFHeaderLine(VCFHeader.DEFAULT_VCF_VERSION.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+        VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.EMPTY_SET);
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), VCFHeader.DEFAULT_VCF_VERSION);
+
+        // try to add another identical fileformat header line
+        vcfHeader.addMetaDataLine(new VCFHeaderLine(VCFHeaderVersion.VCF4_2.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+    }
+
+    @Test(expectedExceptions = TribbleException.class)
+    public void testAddConflictingFileFormatLine() {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString(); // 4.2 header is compatible with all 4.x versions
+
+        //add in a fileformat line that matches the default version; create a new header
+        metaDataSet.add(new VCFHeaderLine(VCFHeader.DEFAULT_VCF_VERSION.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+        VCFHeader vcfHeader = new VCFHeader(metaDataSet, Collections.EMPTY_SET);
+        Assert.assertEquals(vcfHeader.getHeaderVersion(), VCFHeader.DEFAULT_VCF_VERSION);
+
+        // now add a conflicting fileformat header line
+        vcfHeader.addMetaDataLine(new VCFHeaderLine(VCFHeaderVersion.VCF4_1.getFormatString(), VCFHeaderVersion.VCF4_1.getVersionString()));
+    }
+
+    @Test
+    public void testSilentlyRejectDuplicateContigLines() {
+        // Note: This is testing a case that failed with the previous implementation, when both of these
+        // lines were added to the master list, but only one was added to the contig line list. The two
+        // lines have identical key/ID values, but because they have different attributes, they have
+        // different hashCodes, and so can both reside in a Set.
+        VCFContigHeaderLine contigOneNoAssembly = new VCFContigHeaderLine(
+                new LinkedHashMap<String, String>() {{
+                    put("ID", "1");
+                    put("length", "123");
+                }},
+                0);
+        VCFContigHeaderLine contigOneWithAssembly = new VCFContigHeaderLine(
+                new LinkedHashMap<String, String>() {{
+                    put("ID", "1");
+                    put("length", "123");
+                    put("assembly", "b37");
+                }},
+                0);
+        Assert.assertNotEquals(contigOneNoAssembly.hashCode(), contigOneWithAssembly.hashCode());
+
+        Set<VCFHeaderLine> headerLineSet = new LinkedHashSet<>();
+        headerLineSet.add(contigOneNoAssembly);
+        headerLineSet.add(contigOneWithAssembly); // silently dropped since it has the same id
+        Assert.assertEquals(headerLineSet.size(), 2);
+
+        VCFHeader vcfHeader = new VCFHeader(headerLineSet);
+        Set<VCFHeaderLine> allMetaDataInput = vcfHeader.getMetaDataInInputOrder();
+        Assert.assertEquals(allMetaDataInput.size(), 1);
+
+        Set<VCFHeaderLine> allMetaDataSorted = vcfHeader.getMetaDataInSortedOrder();
+        Assert.assertEquals(allMetaDataSorted.size(), 1);
+
+        List<VCFContigHeaderLine> allContigLines = vcfHeader.getContigLines();
+        Assert.assertEquals(allContigLines.size(), 1);      // one contig
+        Assert.assertNull(allContigLines.get(0).getGenericFieldValue("assembly"));
+    }
+
+    @Test(dataProvider = "conflictingHeaderVersionPairs")
+    public void test_MergeHeadersAcrossVersions(
+            final VCFHeaderVersion vcfVersion,
+            final VCFHeaderVersion conflictingVersion)
+    {
+        Set<VCFHeaderLine> metaDataSet = getV42HeaderLinesWithNoFormatString();
+        metaDataSet.add(new VCFHeaderLine(vcfVersion.getFormatString(), vcfVersion.getVersionString()));
+        VCFHeader header = new VCFHeader(metaDataSet);
+        Assert.assertEquals(header.getHeaderVersion(), vcfVersion);
+
+        Set<VCFHeaderLine> conflictSet = getV42HeaderLinesWithNoFormatString();
+        conflictSet.add(new VCFHeaderLine(conflictingVersion.getFormatString(), conflictingVersion.getVersionString()));
+        VCFHeader conflictingHeader = new VCFHeader(conflictSet);
+        Assert.assertEquals(conflictingHeader.getHeaderVersion(), conflictingVersion);
+
+        List<VCFHeader> headerList = new ArrayList<VCFHeader>(2);
+        headerList.add(header);
+        headerList.add(conflictingHeader);
+
+        // smartMergeHeaders strips out fileformat lines and returns the remaining merged header lines
+        Set<VCFHeaderLine> mergedSet = VCFUtils.smartMergeHeaders(headerList, false);
+
+        // create a header from the merged set, which should defautl to the default version
+        VCFHeader mergedHeader = new VCFHeader(mergedSet);
+        Assert.assertEquals(mergedHeader.getHeaderVersion(), VCFHeader.DEFAULT_VCF_VERSION);
+
+        // all the header lines in the merged set are also in the resulting header
+        Assert.assertEquals(mergedHeader.getMetaDataInInputOrder(), mergedSet);
+
+        // since we merged two headers that are identical except for the fileformat line, assert that all
+        // the original header lines are in the resulting header
+        metaDataSet.add(new VCFHeaderLine(VCFHeader.DEFAULT_VCF_VERSION.getFormatString(), VCFHeader.DEFAULT_VCF_VERSION.getVersionString()));
+        Assert.assertEquals(mergedHeader.getMetaDataInInputOrder(), mergedSet);
+    }
+
+    private LinkedHashSet<VCFHeaderLine> getHeaderLineListWithoutLine(
+            final LinkedHashSet<VCFHeaderLine> inputSet,
+            final int n) {
+        List<VCFHeaderLine> headerLineList = new ArrayList<>(inputSet);
+        headerLineList.remove(n);
+        return new LinkedHashSet<>(headerLineList);
+    }
+
+    @DataProvider(name = "mergeHeaderData")
+    public Iterator<Object[]> mergeHeaderData()
+    {
+        List<VCFHeaderLine> headerLineList = new ArrayList<>(new VCFHeaderUnitTestData().getFullMetaDataLinesAsSet());
+        Collection<Object[]> mergeTestCase = new ArrayList<>();
+        for (int i = 0; i < headerLineList.size(); i++) {
+            mergeTestCase.add(
+                    new Object[] {
+                            new VCFHeader(new VCFHeaderUnitTestData().getFullMetaDataLinesAsSet()),
+                            new VCFHeader(getHeaderLineListWithoutLine(new VCFHeaderUnitTestData().getFullMetaDataLinesAsSet(), i))
+            });
+        }
+
+        return mergeTestCase.iterator();
+    }
+
+    @Test(dataProvider = "mergeHeaderData")
+    public void testMergeHeaders(
+            final VCFHeader fullHeader,
+            final VCFHeader subsetHeader)
+    {
+        List<VCFHeader> headerList = new ArrayList<VCFHeader>() {{
+            add(fullHeader);
+            add(subsetHeader);
+        }};
+        LinkedHashSet<VCFHeaderLine> mergedList = new LinkedHashSet(VCFHeader.getMergedHeaderLines(headerList, false));
+
+        // We want to compare the set returned from the merger with the original set, but merging removes
+        // fileformat lines, so we need to remove the same fileformat line from the original set for comparison purposes
+        LinkedHashSet<VCFHeaderLine> fullHeaderListWithoutFileFormatLine = new LinkedHashSet(fullHeader.getMetaDataInInputOrder());
+        if (false == fullHeaderListWithoutFileFormatLine.remove(fullHeader.getOtherHeaderLine("fileformat"))) {
+            // one of the test cases has the fileformat line removed from the subsetted list; make sure this is it
+            Assert.assertNull(fullHeader.getOtherHeaderLine("fileformat"));
+        } else {
+            Assert.assertNotNull(fullHeader.getOtherHeaderLine("fileformat"));
+        }
+
+        Assert.assertEquals(new TreeSet<>(fullHeaderListWithoutFileFormatLine), new TreeSet<>(mergedList));
+    }
+
+    @Test
+    public void testPreserveSequenceDictionaryAttributes() {
+        // Round trip a SAMSequenceDictionary with attributes, through a VCFHeader, and back
+        // to a SAMSequenceDictionary with the same attributes.
+        // https://github.com/samtools/htsjdk/issues/730
+
+        final String assemblyString = "hg37";
+        final String md5String = "68b329da9893e34099c7d8ad5cb9c940";
+        final String speciesString = "Home Sapiens";
+        final String urlString = "http://www.refserve.org:8080/path/";
+
+        SAMSequenceDictionary samDict = new SAMSequenceDictionary();
+
+        final SAMSequenceRecord seqRec1 = new SAMSequenceRecord("1", 1);
+        seqRec1.setAssembly(assemblyString);
+        seqRec1.setMd5(md5String);
+        seqRec1.setAttribute(SAMSequenceRecord.URI_TAG, urlString);
+        seqRec1.setSpecies(speciesString);
+        final SAMSequenceRecord seqRec2 = new SAMSequenceRecord("2", 1);
+        samDict.addSequence(seqRec1);
+        samDict.addSequence(seqRec2);
+
+        VCFHeader vcfHeader = new VCFHeader();
+        vcfHeader.setSequenceDictionary(samDict);
+        SAMSequenceDictionary roundTrippedDict = vcfHeader.getSequenceDictionary();
+
+        final SAMSequenceRecord rtRec1 = roundTrippedDict.getSequence("1");
+        Assert.assertEquals(assemblyString, rtRec1.getAssembly());
+        Assert.assertEquals(md5String, rtRec1.getMd5());
+        Assert.assertEquals(urlString, rtRec1.getAttribute(SAMSequenceRecord.URI_TAG));
+        Assert.assertEquals(speciesString, rtRec1.getSpecies());
+
+        Assert.assertEquals(seqRec1, roundTrippedDict.getSequence("1")); // somewhat redundant check on full record
+        Assert.assertEquals(seqRec2, roundTrippedDict.getSequence("2"));
     }
 
     @Test
@@ -334,11 +672,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFFileReader originalFileReader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf"), false);
         final VCFHeader originalHeader = originalFileReader.getFileHeader();
 
-        // add a header line with quotes to the header
-        final Map<String, String> attributes = new LinkedHashMap<>();
-        attributes.put("ID", "VariantFiltration");
-        attributes.put("CommandLineOptions", "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
-        final VCFSimpleHeaderLine addedHeaderLine = new VCFSimpleHeaderLine("GATKCommandLine.Test", attributes);
+        final VCFStructuredHeaderLine addedHeaderLine = new VCFFilterHeaderLine(
+                "FakeFilter",
+                "filterName=[ANNOTATION] filterExpression=[ANNOTATION == \"NA\" || ANNOTATION <= 2.0]");
         originalHeader.addMetaDataLine(addedHeaderLine);
 
         final VCFFilterHeaderLine originalCopyAnnotationLine1 = originalHeader.getFilterHeaderLine("ANNOTATION");
@@ -382,7 +718,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         // read the copied file back in
         final VCFFileReader firstCopyReader = new VCFFileReader(firstCopyVCFFile, false);
         final VCFHeader firstCopyHeader = firstCopyReader.getFileHeader();
-        final VCFHeaderLine firstCopyNewHeaderLine = firstCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
+        final VCFFilterHeaderLine firstCopyNewHeaderLine = firstCopyHeader.getFilterHeaderLine("FakeFilter");
         Assert.assertNotNull(firstCopyNewHeaderLine);
 
         final VCFFilterHeaderLine firstCopyAnnotationLine1 = firstCopyHeader.getFilterHeaderLine("ANNOTATION");
@@ -425,7 +761,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFFileReader secondCopyReader = new VCFFileReader(secondCopyVCFFile, false);
         final VCFHeader secondCopyHeader = secondCopyReader.getFileHeader();
 
-        final VCFHeaderLine secondCopyNewHeaderLine = secondCopyHeader.getOtherHeaderLine("GATKCommandLine.Test");
+        final VCFFilterHeaderLine secondCopyNewHeaderLine = secondCopyHeader.getFilterHeaderLine("FakeFilter");
         Assert.assertNotNull(secondCopyNewHeaderLine);
 
         final VCFFilterHeaderLine secondCopyAnnotationLine1 = secondCopyHeader.getFilterHeaderLine("ANNOTATION");
@@ -435,8 +771,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertNotNull(secondCopyAnnotationLine2);
 
         Assert.assertEquals(firstCopyNewHeaderLine, secondCopyNewHeaderLine);
-        Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
-        Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(), "GATKCommandLine.Test=<ID=VariantFiltration,CommandLineOptions=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+        Assert.assertEquals(firstCopyNewHeaderLine.toStringEncoding(), "FILTER=<ID=FakeFilter,Description=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
+        Assert.assertEquals(secondCopyNewHeaderLine.toStringEncoding(), "FILTER=<ID=FakeFilter,Description=\"filterName=[ANNOTATION] filterExpression=[ANNOTATION == \\\"NA\\\" || ANNOTATION <= 2.0]\">");
 
         Assert.assertEquals(firstCopyAnnotationLine1, secondCopyAnnotationLine1);
         Assert.assertEquals(secondCopyAnnotationLine1.getGenericFieldValue("Description"), "ANNOTATION != \"NA\" || ANNOTATION <= 0.01");
@@ -460,70 +796,27 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
     }
 
-    /**
-     * a little utility function for all tests to md5sum a file
-     * Shameless taken from:
-     * <p/>
-     * http://www.javalobby.org/java/forums/t84420.html
-     *
-     * @param file the file
-     * @return a string
-     */
-    private static String md5SumFile(File file) {
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unable to find MD5 digest");
+    // Serialize/encode the header to a file, read metaData back in
+    private Set<VCFHeaderLine> getRoundTripEncoded(VCFHeader header) throws IOException {
+        File myTempFile = File.createTempFile("VCFHeader", "vcf");
+        try (final VariantContextWriter vcfWriter =
+                     new VariantContextWriterBuilder()
+                             .setOutputFile(myTempFile)
+                             .setOutputFileType(VariantContextWriterBuilder.OutputType.VCF)
+                             .setOptions(NO_OPTIONS)
+                             .build()) {
+            vcfWriter.writeHeader(header);
         }
-        InputStream is;
-        try {
-            is = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Unable to open file " + file);
-        }
-        byte[] buffer = new byte[8192];
-        int read;
-        try {
-            while ((read = is.read(buffer)) > 0) {
-                digest.update(buffer, 0, read);
-            }
-            byte[] md5sum = digest.digest();
-            BigInteger bigInt = new BigInteger(1, md5sum);
-            return bigInt.toString(16);
-
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to process file for MD5", e);
-        } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to close input stream for MD5 calculation", e);
-            }
-        }
+        VCFHeader vcfHeader = (VCFHeader) new VCFCodec().readActualHeader(new LineIteratorImpl(
+                new SynchronousLineReader(new FileReader(myTempFile.getAbsolutePath()))));
+        return vcfHeader.getMetaDataInSortedOrder();
     }
 
-    private void checkMD5ofHeaderFile(VCFHeader header, String md5sum) {
-        File myTempFile = null;
-        PrintWriter pw = null;
-        try {
-            myTempFile = File.createTempFile("VCFHeader", "vcf");
-            myTempFile.deleteOnExit();
-            pw = new PrintWriter(myTempFile);
-        } catch (IOException e) {
-            Assert.fail("Unable to make a temp file!");
-        }
-        for (VCFHeaderLine line : header.getMetaDataInSortedOrder())
-            pw.println(line);
-        pw.close();
-        Assert.assertEquals(md5SumFile(myTempFile), md5sum);
-    }
+    public static int VCF4headerStringCount = 16; // 17 -1 for the #CHROM... line
 
-    public static int VCF4headerStringCount = 16;
-
-    public static String VCF4headerStrings =
+    public static String VCF42headerStrings =
             "##fileformat=VCFv4.2\n" +
-                    "##filedate=2010-06-21\n" +
+             "##filedate=2010-06-21\n" +
                     "##reference=NCBI36\n" +
                     "##INFO=<ID=GC, Number=0, Type=Flag, Description=\"Overlap with Gencode CCDS coding sequence\">\n" +
                     "##INFO=<ID=DP, Number=1, Type=Integer, Description=\"Total number of reads in haplotype window\">\n" +
@@ -539,7 +832,6 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
                     "##FORMAT=<ID=HQ, Number=2, Type=Integer, Description=\"Haplotype quality\">\n" +
                     "##FORMAT=<ID=GQ, Number=1, Type=Integer, Description=\"Genotype quality\">\n" +
                     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n";
-
 
     public static String VCF4headerStrings_with_negativeOne =
             "##fileformat=VCFv4.2\n" +

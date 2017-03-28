@@ -150,6 +150,10 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
             if ( bcfVersion.getMajorVersion() != ALLOWED_MAJOR_VERSION )
                 error("BCF2Codec can only process BCF2 files, this file has major version " + bcfVersion.getMajorVersion());
+
+            // TODO: fixing this breaks GATK GenomicsDB integration/tests
+            // Require the minor version to match exactly
+            //if ( bcfVersion.getMinorVersion() != MIN_MINOR_VERSION )
             if ( bcfVersion.getMinorVersion() < MIN_MINOR_VERSION )
                 error("BCF2Codec can only process BCF2 files with minor version >= " + MIN_MINOR_VERSION + " but this file has minor version " + bcfVersion.getMinorVersion());
 
@@ -206,6 +210,10 @@ public final class BCF2Codec extends BinaryFeatureCodec<VariantContext> {
 
     @Override
     public boolean canDecode( final String path ) {
+        // TODO: this is broken in a couple of ways:
+        // First, the version check is too permissive - it accepts any minor version, including BCF 2.2,
+        // which it shouldn't. Second, it doesn't recognize that BCF can be block gzipped, so it rejects
+        // those files because the header never matches, but only because the stream isn't decompressed.
         try (InputStream fis = Files.newInputStream(IOUtil.getPath(path)) ){
             final BCFVersion version = BCFVersion.readBCFVersion(fis);
             return version != null && version.getMajorVersion() == ALLOWED_MAJOR_VERSION;

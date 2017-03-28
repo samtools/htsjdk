@@ -1,6 +1,6 @@
 /*
 * Copyright (c) 2012 The Broad Institute
-* 
+*
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
 * files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 * copies of the Software, and to permit persons to whom the
 * Software is furnished to do so, subject to the following
 * conditions:
-* 
+*
 * The above copyright notice and this permission notice shall be
 * included in all copies or substantial portions of the Software.
-* 
+*
 * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -25,17 +25,10 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
- * A feature codec for the VCF 4 specification
+ * A feature codec for the VCF 4.0, 4.1 and 4.2 specification versions
  *
  * <p>
  * VCF is a text file format (most likely stored in a compressed manner). It contains meta-information lines, a
@@ -45,7 +38,7 @@ import java.util.List;
  * of related samples. Recently the format for storing next-generation read alignments has been
  * standardised by the SAM/BAM file format specification. This has significantly improved the
  * interoperability of next-generation tools for alignment, visualisation, and variant calling.
- * We propose the Variant Call Format (VCF) as a standarised format for storing the most prevalent
+ * We propose the Variant Call Format (VCF) as a standardised format for storing the most prevalent
  * types of sequence variation, including SNPs, indels and larger structural variants, together
  * with rich annotations. VCF is usually stored in a compressed manner and can be indexed for
  * fast data retrieval of variants from a range of positions on the reference genome.
@@ -72,91 +65,68 @@ import java.util.List;
  * @since 2010
  */
 public class VCFCodec extends AbstractVCFCodec {
-    // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying on VariantContext to do the validation of any contradictory (or malformed) record parameters.
+    // Our aim is to read in the records and convert to VariantContext as quickly as possible, relying
+    // on VariantContext to do the validation of any contradictory (or malformed) record parameters.
     public final static String VCF4_MAGIC_HEADER = "##fileformat=VCFv4";
 
-    /**
-     * Reads all of the header from the provided iterator, but no reads no further.
-     * @param lineIterator the line reader to take header lines from
-     * @return The parsed header
-     */
-    @Override
-    public Object readActualHeader(final LineIterator lineIterator) {
-        final List<String> headerStrings = new ArrayList<String>();
-
-        String line;
-        boolean foundHeaderVersion = false;
-        while (lineIterator.hasNext()) {
-            line = lineIterator.peek();
-            lineNo++;
-            if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
-                final String[] lineFields = line.substring(2).split("=");
-                if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0]) ) {
-                    if ( !VCFHeaderVersion.isVersionString(lineFields[1]) )
-                        throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
-                    foundHeaderVersion = true;
-                    version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if ( ! version.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_0) )
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4; please use the VCF3 codec for " + lineFields[1]);
-                    if ( version != VCFHeaderVersion.VCF4_0 && version != VCFHeaderVersion.VCF4_1 && version != VCFHeaderVersion.VCF4_2 )
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv4 and does not support " + lineFields[1]);
-                }
-                headerStrings.add(lineIterator.next());
-            }
-            else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
-                if (!foundHeaderVersion) {
-                    throw new TribbleException.InvalidHeader("We never saw a header line specifying VCF version");
-                }
-                headerStrings.add(lineIterator.next());
-                super.parseHeaderFromLines(headerStrings, version);
-                return this.header;
-            }
-            else {
-                throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
-            }
-
-        }
-        throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
+    public VCFCodec() {
+        // TODO: This defaults to "Unknown" and winds up in every VariantContext. Setting it
+        // here breaks some GATK4 tests. Should we put useful something here ?
+        //setName(String.format("%s:%s:%s",
+        //            VCFHeaderVersion.VCF4_0.getVersionString(),
+        //            VCFHeaderVersion.VCF4_1.getVersionString(),
+        //            VCFHeaderVersion.VCF4_2.getVersionString())
+        //);
     }
 
     /**
-     * parse the filter string, first checking to see if we already have parsed it in a previous attempt
-     *
-     * @param filterString the string to parse
-     * @return a set of the filters applied or null if filters were not applied to the record (e.g. as per the missing value in a VCF)
+     * Return true if this codec can handle the target version
+     * @param targetHeaderVersion
+     * @return true if this codec can handle this version
      */
     @Override
-    protected List<String> parseFilters(final String filterString) {
-        // null for unfiltered
-        if ( filterString.equals(VCFConstants.UNFILTERED) )
-            return null;
-
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v4) )
-            return Collections.emptyList();
-        if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
-            generateException(VCFConstants.PASSES_FILTERS_v3 + " is an invalid filter name in vcf4", lineNo);
-        if (filterString.isEmpty())
-            generateException("The VCF specification requires a valid filter status: filter was " + filterString, lineNo);
-
-        // do we have the filter string cached?
-        if ( filterHash.containsKey(filterString) )
-            return filterHash.get(filterString);
-
-        // empty set for passes filters
-        final List<String> fFields = new LinkedList<String>();
-        // otherwise we have to parse and cache the value
-        if ( !filterString.contains(VCFConstants.FILTER_CODE_SEPARATOR) )
-            fFields.add(filterString);
-        else
-            fFields.addAll(Arrays.asList(filterString.split(VCFConstants.FILTER_CODE_SEPARATOR)));
-
-        filterHash.put(filterString, Collections.unmodifiableList(fFields));
-
-        return fFields;
+    public boolean canDecodeVersion(final VCFHeaderVersion targetHeaderVersion) {
+        return targetHeaderVersion == VCFHeaderVersion.VCF4_0 ||
+                targetHeaderVersion == VCFHeaderVersion.VCF4_1 ||
+                targetHeaderVersion == VCFHeaderVersion.VCF4_2;
     }
 
     @Override
     public boolean canDecode(final String potentialInput) {
+        // TODO: this will succeed on 4.3 files since it only looks as far as ..."##fileformat=VCFv4"
         return canDecodeFile(potentialInput, VCF4_MAGIC_HEADER);
     }
+
+    /**
+     * Handle reporting of duplicate filter IDs
+     * @param duplicateFilterMessage
+     */
+    @Override
+    protected void reportDuplicateFilterIDs(final String duplicateFilterMessage) {
+        // older versions of htsjdk have been silently dropping these for a while, but we can at least warn
+        if (VCFUtils.getVerboseVCFLogging()) {
+            logger.warn(duplicateFilterMessage);
+        }
+    }
+
+    public void reportDuplicateInfoKeyValue(final String key, final String infoLine) {}
+
+    /**
+     * parse out the info fields
+     * @param infoField the fields
+     * @return a mapping of keys to objects
+     */
+    protected Map<String, Object> parseInfo(String infoField) {
+        if (infoField.indexOf(' ') != -1) {
+            generateException(
+                    String.format("Whitespace is not allowed in the INFO field in VCF version %s: %s",
+                            version == null ?
+                                    "unknown" :
+                                    version.getVersionString(),
+                            infoField)
+            );
+        }
+        return super.parseInfo(infoField);
+    }
+
 }

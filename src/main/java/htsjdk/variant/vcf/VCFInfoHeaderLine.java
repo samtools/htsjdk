@@ -26,32 +26,49 @@
 package htsjdk.variant.vcf;
 
 
+import htsjdk.samtools.util.Log;
+import htsjdk.tribble.TribbleException;
+
 /**
- * @author ebanks
  *         <p>
  *         Class VCFInfoHeaderLine
  *         </p>
  *         <p>
- *         A class representing a key=value entry for INFO fields in the VCF header
+ *         A class representing an INFO field in the VCF header
  *         </p>
  */
 public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
-    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
-    }
+    private static final long serialVersionUID = 1L;
+
+    protected final static Log logger = Log.getInstance(VCFFormatHeaderLine.class);
 
     public VCFInfoHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+    }
+
+    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
     }
 
     public VCFInfoHeaderLine(String line, VCFHeaderVersion version) {
-        super(line, version, SupportedHeaderLineType.INFO);
+        super(VCFConstants.INFO_HEADER_KEY,
+              VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder),
+              version
+        );
+        validateForVersion(version);
     }
 
-    // info fields allow flag values
+    /**
+     * Return true if the attribute name requires quotes. 4.3 spec requires info attributes DESCRIPTION, SOURCE
+     * and VERSION to be quoted.
+     * @param attributeName name of the attribute being serialized
+     * @return boolean indicating whether the value should be embedded n quotes during serialization
+     */
     @Override
-    boolean allowFlagValues() {
-        return true;
+    protected boolean getIsQuotableAttribute(final String attributeName) {
+        return attributeName.equals(DESCRIPTION_ATTRIBUTE) ||
+                attributeName.equals(SOURCE_ATTRIBUTE) ||
+                attributeName.equals(VERSION_ATTRIBUTE);
     }
 
     @Override

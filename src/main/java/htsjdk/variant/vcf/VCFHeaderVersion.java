@@ -26,16 +26,18 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.utils.Utils;
 
 /**
  * information that identifies each header version
  */
 public enum VCFHeaderVersion {
-    VCF3_2("VCRv3.2","format"),
+    VCF3_2("VCRv3.2","format"), // the string "format" is the lower case version of the key used for FORMAT lines...
     VCF3_3("VCFv3.3","fileformat"),
     VCF4_0("VCFv4.0","fileformat"),
     VCF4_1("VCFv4.1","fileformat"),
-    VCF4_2("VCFv4.2","fileformat");
+    VCF4_2("VCFv4.2","fileformat"),
+    VCF4_3("VCFv4.3","fileformat");
 
     private final String versionString;
     private final String formatString;
@@ -45,7 +47,7 @@ public enum VCFHeaderVersion {
      * @param vString the version string
      * @param fString the format string
      */
-    VCFHeaderVersion(String vString, String fString) {
+     VCFHeaderVersion(String vString, String fString) {
         this.versionString = vString;
         this.formatString = fString;
     }
@@ -97,6 +99,13 @@ public enum VCFHeaderVersion {
     }
 
     /**
+     * @return A VCF fileformat=version metadata string for this version.
+     */
+    public String getVersionLine() {
+        return String.format("%s=%s", getFormatString(), getVersionString());
+    }
+
+    /**
      * Utility function to clean up a VCF header string
      * 
      * @param s string
@@ -114,10 +123,12 @@ public enum VCFHeaderVersion {
      */
     public boolean isAtLeastAsRecentAs(final VCFHeaderVersion target) {
         switch (target) {
+            case VCF4_3:
+                return this == VCF4_3;
             case VCF4_2:
-                return this == VCF4_2;
+                return this == VCF4_2 || this == VCF4_3;
             case VCF4_1:
-                return this == VCF4_1 || this == VCF4_2;
+                return this == VCF4_1 || this == VCF4_2 || this == VCF4_3;
             case VCF4_0:
                 return this != VCF3_2 && this != VCF3_3;
             case VCF3_3:
@@ -128,6 +139,18 @@ public enum VCFHeaderVersion {
         }
     }
 
+    /**
+     * Determine if twoheader versions are compatible. For now, the only incompatibility is between V4.3
+     * and any other version. All other versions are compatible.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static boolean versionsAreCompatible(final VCFHeaderVersion v1, final VCFHeaderVersion v2) {
+        return !v1.equals(v2) &&
+                (v1.isAtLeastAsRecentAs(VCF4_3) || v2.isAtLeastAsRecentAs(VCF4_3));
+    }
+
     public String getVersionString() {
         return versionString;
     }
@@ -135,4 +158,5 @@ public enum VCFHeaderVersion {
     public String getFormatString() {
         return formatString;
     }
+
 }
