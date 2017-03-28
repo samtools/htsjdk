@@ -1,13 +1,54 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.tribble.TribbleException;
+
+import java.util.Map;
+
 /**
- * A class representing PEDIGREE fields in the VCF header
+ * A class representing PEDIGREE fields in the VCF header. Applicable starting with version VCFv4.3.
+ *
+ * ##PEDIGREE=<ID=TumourSample,Original=GermlineID>
+ * ##PEDIGREE=<ID=SomaticNonTumour,Original=GermlineID>
+ * ##PEDIGREE=<ID=ChildID,Father=FatherID,Mother=MotherID>
+ * ##PEDIGREE=<ID=SampleID,Name_1=Ancestor_1,...,Name_N=Ancestor_N>
  */
 public class VCFPedigreeHeaderLine extends VCFSimpleHeaderLine {
+
     private static final long serialVersionUID = 1L;
 
     public VCFPedigreeHeaderLine(String line, VCFHeaderVersion version) {
-        super(VCFConstants.PEDIGREE_HEADER_KEY, VCFHeaderLineTranslator.parseLine(version, line, null));
+
+        // TODO: There are quite a few variants for expected tags (See above comment). Should we try to validate these?
+        // TODO: If not, we don't really need to model PEDIGREE as a separate class ?
+        // We need to call the V4 parser directly since the V3 parser requires expected tags; validateForVersion
+        // will detect the version incompatibility if we're called on behalf of V3
+        super(VCFConstants.PEDIGREE_HEADER_KEY, new VCF4Parser().parseLine(line, null));
+        validateForVersion(version);
+    }
+
+    public VCFPedigreeHeaderLine(final Map<String, String> mapping) {
+        super(VCFConstants.PEDIGREE_HEADER_KEY, mapping);
+    }
+
+    /**
+     * Validate that this header line conforms to the target version.
+     */
+    @Override
+    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        super.validateForVersion(vcfTargetVersion);
+        if (!vcfTargetVersion.isAtLeastAsRecentAs(VCFHeaderVersion.VCF4_3)) {
+            // previous to VCFv4.3, the PEDIGREE line did not have an ID. Such lines are not modeled by this
+            // class (since it is derived from VCFSimpleHeaderLine). Therefore instances of this class always
+            // represent VCFv4.3 or higher. So throw if the requested version is less than 4.3.
+            final String message = String.format("%s header lines are not allowed in VCF version %s headers",
+                    getKey(),
+                    vcfTargetVersion);
+            if (VCFUtils.getStrictVCFVersionValidation()) {
+                throw new TribbleException.InvalidHeader(message);
+            } else {
+                logger.warn(message);
+            }
+        }
     }
 
 }

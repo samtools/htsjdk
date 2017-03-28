@@ -221,6 +221,7 @@ public class VariantContextTestProvider extends HtsjdkTest {
     private static void createSyntheticHeader() {
         Set<VCFHeaderLine> metaData = new TreeSet<>();
 
+        metaData.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         addHeaderLine(metaData, "STRING1", 1, VCFHeaderLineType.String);
         addHeaderLine(metaData, "END", 1, VCFHeaderLineType.Integer);
         addHeaderLine(metaData, "STRING3", 3, VCFHeaderLineType.String);

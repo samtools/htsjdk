@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A class for translating between vcf header versions
+ * A class for translating between vcf header versions and corresponding header line parsers.
  */
 public class VCFHeaderLineTranslator {
     private static final Map<VCFHeaderVersion,VCFLineParser> mapping;
@@ -50,55 +50,54 @@ public class VCFHeaderLineTranslator {
         mapping = Collections.unmodifiableMap(map);
     }
 
+    /**
+     * Parse a VCFHeaderLine for the given version.
+     *
+     * @param version VCFHeaderVersion of the header line
+     * @param valueLine the header line string
+     * @param expectedTagOrder List of expected tags (interpreted differently by the VCF3 and VCF4 parsers).
+     * @return a mapping of the tags parsed out
+     */
     public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder) {
-        return parseLine(version, valueLine, expectedTagOrder, Collections.emptyList());
-    }
-    
-    public static Map<String,String> parseLine(VCFHeaderVersion version, String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
-        return mapping.get(version).parseLine(valueLine, expectedTagOrder, recommendedTags);
+        return mapping.get(version).parseLine(valueLine, expectedTagOrder);
     }
 }
 
-
+/**
+ * Parse a VCFHeaderLine.
+ */
 interface VCFLineParser {
     /**
      * parse a VCF line
-     * 
-     * @see #parseLine(String, List, List) VCFv4.2+ recommended tags support
-     * 
+     *
+     * @see #parseLine(String, List) VCFv4.2+ recommended tags support
+     *
      * @param valueLine the line
      * @param expectedTagOrder List of expected tags
      * @return a mapping of the tags parsed out
      */
-    default Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder) {
-        return parseLine(valueLine, expectedTagOrder, Collections.emptyList());
-    }
-
-    /**
-     * parse a VCF line
-     * 
-     * The recommended tags were introduced in VCFv4.2. 
-     * Older implementations may throw an exception when the recommendedTags field is not empty.
-     * 
-     * We use a list to represent tags as we assume there will be a very small amount of them,
-     * so using a {@code Set} is overhead.
-     * 
-     * @param valueLine the line
-     * @param expectedTagOrder List of expected tags
-     * @param recommendedTags List of tags that may or may not be present. Use an empty list instead of NULL for none.
-     * @return a mapping of the tags parsed out
-     */
-    Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags);
+    Map<String,String> parseLine(String valueLine, List<String> expectedTagOrder);
 }
-
 
 /**
  * a class that handles the to and from disk for VCF 4 lines
  */
 class VCF4Parser implements VCFLineParser {
-    
+
+    /**
+     * Parse a VCFHeaderLine. The expectedTagOrder list prescribes the order in which tags should appear, but
+     * all tags are treated as optional. Additional tags are allowed after the expected tags, and may appear in
+     * any order. It is the caller's responsibility to validate that all required tags are present and that
+     * any additional "optional" tags are valid.
+     *
+     * @param valueLine the header line string
+     * @param expectedTagOrder List of tags that are required to appear in the order they're expected. Additional
+     *                         "extra" tags are allowed after the tags in this list, and must be validated by
+     *                         the caller.
+     * @return a mapping of all tags parsed out
+     */
     @Override
-    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
+    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
         Map<String, String> ret = new LinkedHashMap<String, String>();
 
@@ -159,28 +158,23 @@ class VCF4Parser implements VCFLineParser {
             throw new TribbleException.InvalidHeader("Unclosed quote in header line value " + valueLine);
         }
 
-        // validate the tags against the expected list
-        index = 0;
+        // Validate the order of all discovered tags against requiredTagOrder. All tags are treated as
+        // "optional". Succeeding does not mean that all expected tags in the list were seen. Also, all
+        // structured header lines can have "extra" tags, with no order specified, so additional tags
+        // are tolerated.
         if ( expectedTagOrder != null ) {
-            if (ret.keySet().isEmpty() && !expectedTagOrder.isEmpty()) {
-                throw new TribbleException.InvalidHeader("Header with no tags is not supported when there are expected tags in line " + valueLine);
-            }
-            for ( String str : ret.keySet() ) {
-                if (index < expectedTagOrder.size()) {
-                    if (!expectedTagOrder.get(index).equals(str)) {
-                        if (expectedTagOrder.contains(str)) {
-                            throw new TribbleException.InvalidHeader("Tag " + str + " in wrong order (was #" + (index+1) + ", expected #" + (expectedTagOrder.indexOf(str)+1) + ") in line " + valueLine);
-                        } else if (recommendedTags.contains(str)) {
-                            throw new TribbleException.InvalidHeader("Recommended tag " + str + " must be listed after all expected tags in line " + valueLine);
-                        }
-                        else {
-                            throw new TribbleException.InvalidHeader("Unexpected tag " + str + " in line " + valueLine);
-                        }
-                    }
+            index = 0;
+            for (String str : ret.keySet()) {
+                if (index >= expectedTagOrder.size()) {
+                    break; // done - end of requiredTagOrder list
+                } else if (!expectedTagOrder.get(index).equals(str)) {
+                    throw new TribbleException.InvalidHeader(
+                            String.format("Unexpected tag or tag order for tag \"%s\" in line %s", str, valueLine));
                 }
                 index++;
             }
         }
+
         return ret;
     }
 }
@@ -188,13 +182,9 @@ class VCF4Parser implements VCFLineParser {
 class VCF3Parser implements VCFLineParser {
 
     @Override
-    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder, List<String> recommendedTags) {
-        if (!recommendedTags.isEmpty()) {
-            throw new TribbleException.InternalCodecException("Recommended tags are not allowed in VCFv3.x");
-        }
-        
+    public Map<String, String> parseLine(String valueLine, List<String> expectedTagOrder) {
         // our return map
-        Map<String, String> ret = new LinkedHashMap<String, String>();
+        Map<String, String> ret = new LinkedHashMap<>();
 
         // a builder to store up characters as we go
         StringBuilder builder = new StringBuilder();
@@ -211,18 +201,32 @@ class VCF3Parser implements VCFLineParser {
         for (char c: valueLine.toCharArray()) {
             switch (c) {
                 case ('\"') : inQuote = !inQuote; break; // a quote means we ignore ',' in our strings, keep track of it
-                case (',') : if (!inQuote) { ret.put(expectedTagOrder.get(tagIndex++),builder.toString()); builder = new StringBuilder(); break; } // drop the current key value to the return map
+                case (',') :
+                    if (!inQuote) {
+                        ret.put(expectedTagOrder.get(tagIndex++),builder.toString());
+                        builder = new StringBuilder();
+                        break;
+                    } // drop the current key value to the return map
                 default: builder.append(c); // otherwise simply append to the current string
             }
             index++;
         }
         ret.put(expectedTagOrder.get(tagIndex++),builder.toString());
         
-        // validate the tags against the expected list
+        // Validate that:
+        //      we have no more tags than are expected
+        //      the ones we have are in the expected list
+        //      they appear in the same order as in the expected list
+        // This does no checking for missing tags; all tags are treated as optional
+        //
         index = 0;
-        if (tagIndex != expectedTagOrder.size()) throw new IllegalArgumentException("Unexpected tag count " + tagIndex + ", we expected " + expectedTagOrder.size());
+        if (tagIndex != expectedTagOrder.size()) {
+            throw new IllegalArgumentException("Unexpected tag count " + tagIndex + ", we expected " + expectedTagOrder.size());
+        }
         for (String str : ret.keySet()){
-            if (!expectedTagOrder.get(index).equals(str)) throw new IllegalArgumentException("Unexpected tag " + str + " in string " + valueLine);
+            if (!expectedTagOrder.get(index).equals(str)) {
+                throw new IllegalArgumentException("Unexpected tag " + str + " in string " + valueLine);
+            }
             index++;
         }
         return ret;

@@ -25,12 +25,9 @@
 
 package htsjdk.variant.vcf;
 
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.LineIterator;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -52,46 +49,28 @@ import java.util.List;
 public class VCF3Codec extends AbstractVCFCodec {
     public final static String VCF3_MAGIC_HEADER = "##fileformat=VCFv3";
 
-    /**
-     * @param reader the line reader to take header lines from
-     * @return the number of header lines
-     */
-    @Override
-    public Object readActualHeader(final LineIterator reader) {
-        final List<String> headerStrings = new ArrayList<String>();
-
-        VCFHeaderVersion version = null;
-        boolean foundHeaderVersion = false;
-        while (reader.hasNext()) {
-            lineNo++;
-            final String line = reader.peek();
-            if (line.startsWith(VCFHeader.METADATA_INDICATOR)) {
-                final String[] lineFields = line.substring(2).split("=");
-                if (lineFields.length == 2 && VCFHeaderVersion.isFormatString(lineFields[0]) ) {
-                    if ( !VCFHeaderVersion.isVersionString(lineFields[1]) )
-                        throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
-                    foundHeaderVersion = true;
-                    version = VCFHeaderVersion.toHeaderVersion(lineFields[1]);
-                    if ( version != VCFHeaderVersion.VCF3_3 && version != VCFHeaderVersion.VCF3_2 )
-                        throw new TribbleException.InvalidHeader("This codec is strictly for VCFv3 and does not support " + lineFields[1]);
-                }
-                headerStrings.add(reader.next());
-            }
-            else if (line.startsWith(VCFHeader.HEADER_INDICATOR)) {
-                if (!foundHeaderVersion) {
-                    throw new TribbleException.InvalidHeader("We never saw a header line specifying VCF version");
-                }
-                headerStrings.add(reader.next());
-                return super.parseHeaderFromLines(headerStrings, version);
-            }
-            else {
-                throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
-            }
-
-        }
-        throw new TribbleException.InvalidHeader("We never saw the required CHROM header line (starting with one #) for the input VCF file");
+    public VCF3Codec() {
+        // TODO: This defaults to "Unknown" and winds up in every VariantContext. Setting it
+        // here breaks some GATK4 tests. Should we put useful something here ?
+        //setName(String.format("htsjdk:%s:%s",
+        //        VCFHeaderVersion.VCF3_2.getVersionString(),
+        //        VCFHeaderVersion.VCF3_3.getVersionString()));
     }
 
+    /**
+     * Return true if this codec can handle the target version
+     * @param targetHeaderVersion
+     * @return true if this codec can handle this version
+     */
+    @Override
+    public boolean canDecodeVersion(final VCFHeaderVersion targetHeaderVersion) {
+        return targetHeaderVersion == VCFHeaderVersion.VCF3_3 || targetHeaderVersion == VCFHeaderVersion.VCF3_2;
+    }
+
+    @Override
+    public boolean canDecode(final String potentialInputFile) {
+        return canDecodeFile(potentialInputFile, VCF3_MAGIC_HEADER);
+    }
 
     /**
      * parse the filter string, first checking to see if we already have parsed it in a previous attempt
@@ -99,24 +78,24 @@ public class VCF3Codec extends AbstractVCFCodec {
      * @return a set of the filters applied
      */
     @Override
-    protected List<String> parseFilters(String filterString) {
+    protected Set<String> parseFilters(String filterString) {
 
         // null for unfiltered
         if ( filterString.equals(VCFConstants.UNFILTERED) )
             return null;
 
         // empty set for passes filters
-        List<String> fFields = new ArrayList<String>();
+        HashSet<String> fFields = new HashSet<>();
 
         if ( filterString.equals(VCFConstants.PASSES_FILTERS_v3) )
-            return new ArrayList<String>(fFields);
+            return new HashSet<>(fFields);
 
         if (filterString.isEmpty())
             generateException("The VCF specification requires a valid filter status");
 
         // do we have the filter string cached?
         if ( filterHash.containsKey(filterString) )
-            return new ArrayList<String>(filterHash.get(filterString));
+            return new HashSet<>(filterHash.get(filterString));
 
         // otherwise we have to parse and cache the value
         if ( filterString.indexOf(VCFConstants.FILTER_CODE_SEPARATOR) == -1 )
@@ -129,8 +108,20 @@ public class VCF3Codec extends AbstractVCFCodec {
         return fFields;
     }
 
+    /**
+     * Handle reporting of duplicate filter IDs
+     * @param duplicateFilterMessage
+     */
     @Override
-    public boolean canDecode(final String potentialInput) {
-        return canDecodeFile(potentialInput, VCF3_MAGIC_HEADER);
+    protected void reportDuplicateFilterIDs(final String duplicateFilterMessage) {
+        // no-op since this codec's parseFilters method doesn't check for them
     }
+
+    /**
+     * Handle report of duplicate info field values
+     * @param key
+     * @param infoLine
+     */
+    public void reportDuplicateInfoKeyValue(final String key, final String infoLine) {}
+
 }

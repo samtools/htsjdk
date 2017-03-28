@@ -26,28 +26,21 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.Serializable;
 import java.util.Map;
 
-
 /**
- * @author ebanks
- *         <p>
- *         Class VCFHeaderLine
- *         </p>
- *         <p>
- *         A class representing a key=value entry in the VCF header
- *         </p>
+ * <p> Class VCFHeaderLine </p>
+ * <p> A class representing a key=value entry in the VCF header, and the base class for all structured header lines </p>
  */
 public class VCFHeaderLine implements Comparable, Serializable {
     public static final long serialVersionUID = 1L;
 
-    protected static final boolean ALLOW_UNBOUND_DESCRIPTIONS = true;
-    protected static final String UNBOUND_DESCRIPTION = "Not provided in original VCF header";
-
-    private String mKey = null;
-    private String mValue = null;
+    // immutable - we don't want to let the hash value change
+    private final String mKey;
+    private final String mValue;
 
     /**
      * create a VCF header line
@@ -56,14 +49,9 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param value   the value for this header line
      */
     public VCFHeaderLine(String key, String value) {
-        if ( key == null )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot be null");
-        if ( key.contains("<") || key.contains(">") )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot contain angle brackets");
-        if ( key.contains("=") )
-            throw new IllegalArgumentException("VCFHeaderLine: key cannot contain an equals sign");
         mKey = key;
         mValue = value;
+        validate();
     }
 
     /**
@@ -80,12 +68,81 @@ public class VCFHeaderLine implements Comparable, Serializable {
      *
      * @return the value
      */
+    //TODO: subclasses such as VCFSimpleHeaderLine use a null for the value, so it should be overridden
+    // by those classes so they return an encoded version of the value part of the string (or perhaps
+    // they should pass that in to this class' constructor so it will never be null...which would
+    // require all of these classes to be fully immutable
+    //TODO: OR update javadoc to say this can be null
     public String getValue() {
         return mValue;
     }
 
     /**
-     * By default the header lines won't be added to the dictionary, unless this method will be override (for example in FORMAT, INFO or FILTER header lines)
+     * @return true if this is a structured header line (has a unique ID, and key/value pairs), otherwise false
+     */
+    public boolean isIDHeaderLine() { return false; }
+
+    /**
+     * Return the unique ID for this line. Returns null iff {@link #isIDHeaderLine()} is false.
+     * @return the line's ID, or null if isIDHeaderLine() is false
+     */
+    public String getID() { return null; }
+
+    /**
+     * Validate the state of this header line. Require the key be valid as an "id".
+     */
+    private void validate() {
+        validateKeyOrID(mKey, "key");
+    }
+
+    /**
+     * Called when an attempt is made to add this VCFHeaderLine to a VCFHeader, or when an attempt is made
+     * to change the version of a VCFHeader by changing it's target version. Validates that the header line
+     * conforms to the target version requirements.
+     *
+     * Subclasses can override this to provide line-specific version validation, and the overrides should
+     * also call super.validateForVersion to allow each class in the class hierarchy to do class-level validation.
+     */
+    //TODO: should we implement this for all/any subclasses ?
+    //TODO: this needs to check for the VCFConstants.PEDIGREE key (since pre vcf4.3 PEDGIREE lines are not modeled as
+    // VCFPedigreeHeaderLine) and reject it if the target is >= 4.3
+    public void validateForVersion(final VCFHeaderVersion vcfTargetVersion) {
+        // If this header line is itself a fileformat/version line,
+        // make sure it doesn't clash with the new targetVersion.
+        if (VCFHeaderVersion.isFormatString(getKey())) {
+            if (!vcfTargetVersion.getFormatString().equals(getKey())  ||
+                    !vcfTargetVersion.getVersionString().equals(getValue())) {
+                throw new TribbleException(
+                        String.format("The requested version \"%s\" is incompatible with the existing fileformat header line \"%s\"",
+                                vcfTargetVersion,
+                                this.toStringEncoding()));
+            }
+        }
+    }
+
+    /**
+     * Validate a string that is to be used as a unique id or key field.
+     */
+    protected static void validateKeyOrID(final String keyString, final String sourceName) {
+        ValidationUtils.nonNull(sourceName);
+        if (keyString == null) {
+            throw new TribbleException(
+                    String.format("VCFHeaderLine: %s cannot be null or empty", sourceName));
+        }
+        if ( keyString.contains("<") || keyString.contains(">") ) {
+            throw new TribbleException(
+                    String.format("VCFHeaderLine: %s cannot contain angle brackets", sourceName));
+        }
+        if ( keyString.contains("=") ) {
+            throw new TribbleException(
+                    String.format("VCFHeaderLine: %s cannot contain an equals sign", sourceName));
+        }
+    }
+
+    //TODO: this method and it's overrides should be removed since they're for BCF only, or at least renamed
+    /**
+     * By default the header lines won't be added to the dictionary, unless this method will be override
+     * (for example in FORMAT, INFO or FILTER header lines)
      *
      * @return false
      */
@@ -145,6 +202,8 @@ public class VCFHeaderLine implements Comparable, Serializable {
      * @param keyValues a mapping of the key-&gt;value pairs to output
      * @return a string, correctly formatted
      */
+    //TODO: this should be removed and folded into toStringEncoding(): String, or else
+    // protected and VisibleForTesting
     public static String toStringEncoding(Map<String, ? extends Object> keyValues) {
         StringBuilder builder = new StringBuilder();
         builder.append('<');

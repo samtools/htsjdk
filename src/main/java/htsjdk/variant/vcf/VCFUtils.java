@@ -28,13 +28,17 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.FileExtensions;
-import htsjdk.variant.utils.GeneralUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -45,91 +49,23 @@ public class VCFUtils {
 
     private static final Pattern INF_OR_NAN_PATTERN = Pattern.compile("^(?<sign>[-+]?)((?<inf>(INF|INFINITY))|(?<nan>NAN))$", Pattern.CASE_INSENSITIVE);
 
-    public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
-        // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
-        // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
-        final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
-        final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
-        final Set<VCFHeaderVersion> headerVersions = new HashSet<>(2);
+    //TODO: Once we settle on the uses for this, we should determine how it gets set. For now its static/global.
+    //TODO: these are temporarily final for now in order to keep spotbugs from failing
+    public static final boolean VCF_STRICT_VERSION_VALIDATION = true;
+    public static final boolean VCF_VERBOSE_LOGGING = true;
 
-        // todo -- needs to remove all version headers from sources and add its own VCF version line
-        for (final VCFHeader source : headers) {
-            for (final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
+    public static boolean getStrictVCFVersionValidation() { return VCF_STRICT_VERSION_VALIDATION; }
+    public static boolean getVerboseVCFLogging() { return VCF_VERBOSE_LOGGING; }
 
-                enforceHeaderVersionMergePolicy(headerVersions, source.getVCFHeaderVersion());
-                String key = line.getKey();
-                if (line instanceof VCFIDHeaderLine)
-                    key = key + "-" + ((VCFIDHeaderLine) line).getID();
-
-                if (map.containsKey(key)) {
-                    final VCFHeaderLine other = map.get(key);
-                    if (line.equals(other)) {
-                        // continue;
-                    } else if (!line.getClass().equals(other.getClass())) {
-                        throw new IllegalStateException("Incompatible header types: " + line + " " + other);
-                    } else if (line instanceof VCFFilterHeaderLine) {
-                        final String lineName = ((VCFFilterHeaderLine) line).getID();
-                        final String otherName = ((VCFFilterHeaderLine) other).getID();
-                        if (!lineName.equals(otherName))
-                            throw new IllegalStateException("Incompatible header types: " + line + " " + other);
-                    } else if (line instanceof VCFCompoundHeaderLine) {
-                        final VCFCompoundHeaderLine compLine = (VCFCompoundHeaderLine) line;
-                        final VCFCompoundHeaderLine compOther = (VCFCompoundHeaderLine) other;
-
-                        // if the names are the same, but the values are different, we need to quit
-                        if (!(compLine).equalsExcludingDescription(compOther)) {
-                            if (compLine.getType().equals(compOther.getType())) {
-                                // The Number entry is an Integer that describes the number of values that can be
-                                // included with the INFO field. For example, if the INFO field contains a single
-                                // number, then this value should be 1. However, if the INFO field describes a pair
-                                // of numbers, then this value should be 2 and so on. If the number of possible
-                                // values varies, is unknown, or is unbounded, then this value should be '.'.
-                                conflictWarner.warn(line, "Promoting header field Number to . due to number differences in header lines: " + line + " " + other);
-                                compOther.setNumberToUnbounded();
-                            } else if (compLine.getType() == VCFHeaderLineType.Integer && compOther.getType() == VCFHeaderLineType.Float) {
-                                // promote key to Float
-                                conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
-                                map.put(key, compOther);
-                            } else if (compLine.getType() == VCFHeaderLineType.Float && compOther.getType() == VCFHeaderLineType.Integer) {
-                                // promote key to Float
-                                conflictWarner.warn(line, "Promoting Integer to Float in header: " + compOther);
-                            } else {
-                                throw new IllegalStateException("Incompatible header types, collision between these two types: " + line + " " + other);
-                            }
-                        }
-                        if (!compLine.getDescription().equals(compOther.getDescription()))
-                            conflictWarner.warn(line, "Allowing unequal description fields through: keeping " + compOther + " excluding " + compLine);
-                    } else {
-                        // we are not equal, but we're not anything special either
-                        conflictWarner.warn(line, "Ignoring header line already in map: this header line = " + line + " already present header = " + other);
-                    }
-                } else {
-                    map.put(key, line);
-                }
-            }
-        }
-
-        // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
-        return new LinkedHashSet<>(map.values());
+    //TODO: NOTE: The old implementation of this code had side-effects due to mutation of some VCFCompoundHeaderLines
+    //NOTE: These headers must be version >= 4.2 (older headers that are read in via AbstractVCFCodecs are
+    // "repaired" and stamped as VCF4.2 when they're read in).
+    public static Set<VCFHeaderLine> smartMergeHeaders(
+            final Collection<VCFHeader> headers,
+            final boolean emitWarnings) throws IllegalStateException {
+        return VCFHeader.getMergedHeaderLines(headers, emitWarnings);
     }
 
-    // Reject attempts to merge a VCFv4.3 header with any other version
-    private static void enforceHeaderVersionMergePolicy(
-            final Set<VCFHeaderVersion> headerVersions,
-            final VCFHeaderVersion candidateVersion) {
-        if (candidateVersion != null) {
-            headerVersions.add(candidateVersion);
-            if (headerVersions.size() > 1 && headerVersions.contains(VCFHeaderVersion.VCF4_3)) {
-                throw new IllegalArgumentException(
-                        String.format("Attempt to merge version %s header with incompatible header version %s",
-                                VCFHeaderVersion.VCF4_3.getVersionString(),
-                                headerVersions.stream()
-                                        .filter(hv -> !hv.equals(VCFHeaderVersion.VCF4_3))
-                                        .map(VCFHeaderVersion::getVersionString)
-                                        .collect(Collectors.joining(" "))));
-            }
-        }
-    }
 
     /**
      * Add / replace the contig header lines in the VCFHeader with the in the reference file and master reference dictionary
@@ -149,8 +85,8 @@ public class VCFUtils {
     public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, final boolean referenceNameOnly) {
         final Set<VCFHeaderLine> lines = new LinkedHashSet<>(oldLines.size());
 
-        for (final VCFHeaderLine line : oldLines) {
-            if (line instanceof VCFContigHeaderLine)
+        for ( final VCFHeaderLine line : oldLines ) {
+            if ( line.isIDHeaderLine() && line.getKey().equals(VCFConstants.CONTIG_HEADER_KEY) )
                 continue; // skip old contig lines
             if (line.getKey().equals(VCFHeader.REFERENCE_KEY))
                 continue; // skip the old reference key
@@ -184,17 +120,14 @@ public class VCFUtils {
                                                                   final File referenceFile) {
         final List<VCFContigHeaderLine> lines = new ArrayList<>();
         final String assembly = referenceFile != null ? getReferenceAssembly(referenceFile.getName()) : null;
-        for (final SAMSequenceRecord contig : refDict.getSequences())
-            lines.add(makeContigHeaderLine(contig, assembly));
+        for ( final SAMSequenceRecord contig : refDict.getSequences() )
+            lines.add(new VCFContigHeaderLine(contig, assembly));
         return lines;
     }
 
+    @Deprecated
     private static VCFContigHeaderLine makeContigHeaderLine(final SAMSequenceRecord contig, final String assembly) {
-        final Map<String, String> map = new LinkedHashMap<>(3);
-        map.put("ID", contig.getSequenceName());
-        map.put("length", String.valueOf(contig.getSequenceLength()));
-        if (assembly != null) map.put("assembly", assembly);
-        return new VCFContigHeaderLine(map, contig.getSequenceIndex());
+        return new VCFContigHeaderLine(contig, assembly);
     }
 
     /**
@@ -295,22 +228,4 @@ public class VCFUtils {
         return assembly;
     }
 
-    /**
-     * Only displays a warning if warnings are enabled and an identical warning hasn't been already issued
-     */
-    private static final class HeaderConflictWarner {
-        boolean emitWarnings;
-        Set<String> alreadyIssued = new HashSet<>();
-
-        private HeaderConflictWarner(final boolean emitWarnings) {
-            this.emitWarnings = emitWarnings;
-        }
-
-        public void warn(final VCFHeaderLine line, final String msg) {
-            if (GeneralUtils.DEBUG_MODE_ENABLED && emitWarnings && !alreadyIssued.contains(line.getKey())) {
-                alreadyIssued.add(line.getKey());
-                System.err.println(msg);
-            }
-        }
-    }
 }

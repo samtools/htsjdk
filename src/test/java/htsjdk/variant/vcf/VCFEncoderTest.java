@@ -148,6 +148,7 @@ public class VCFEncoderTest extends HtsjdkTest {
     private static Set<VCFHeaderLine> createSyntheticMetadata() {
         final Set<VCFHeaderLine> metaData = new TreeSet<>();
 
+        metaData.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         metaData.add(new VCFContigHeaderLine(Collections.singletonMap("ID", "1"), 0));
 
         metaData.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "x"));

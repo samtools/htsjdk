@@ -26,10 +26,12 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.tribble.TribbleException;
+import htsjdk.utils.ValidationUtils;
 
 /**
  * information that identifies each header version
  */
+//TODO: add a comparator
 public enum VCFHeaderVersion {
     // Keep this list in increasing (ordinal) order, since isAtLeastAsRecentAs depends on it
     VCF3_2("VCRv3.2", "format"),
@@ -47,7 +49,7 @@ public enum VCFHeaderVersion {
      * @param vString the version string
      * @param fString the format string
      */
-    VCFHeaderVersion(String vString, String fString) {
+     VCFHeaderVersion(String vString, String fString) {
         this.versionString = vString;
         this.formatString = fString;
     }
@@ -87,8 +89,16 @@ public enum VCFHeaderVersion {
         return false;
     }
 
-    public static VCFHeaderVersion getHeaderVersion(String versionLine) {
-        String[] lineFields = versionLine.split("=");
+    /**
+     *
+     * @param versionLine a VCF header version line, including the leading meta data indicator,
+     *                    for example "##fileformat=VCFv4.2"
+     * @return the VCFHeaderVersion for this string
+     * @throws TribbleException.InvalidHeader if the string is not a version string for a recognized supported version
+     */
+    public static VCFHeaderVersion getHeaderVersion(final String versionLine) {
+        ValidationUtils.nonNull(versionLine, "version line");
+        final String[] lineFields = versionLine.split("=");
         if ( lineFields.length != 2 || !isFormatString(lineFields[0].substring(2)) )
             throw new TribbleException.InvalidHeader(versionLine + " is not a valid VCF version line");
 
@@ -96,6 +106,13 @@ public enum VCFHeaderVersion {
             throw new TribbleException.InvalidHeader(lineFields[1] + " is not a supported version");
 
         return toHeaderVersion(lineFields[1]);
+    }
+
+    /**
+     * @return A VCF ##fileformat=version metadata string for the supplied version.
+     */
+    public String toHeaderVersionLine() {
+        return String.format("%s%s=%s", VCFHeader.METADATA_INDICATOR, getFormatString(), getVersionString());
     }
 
     /**
@@ -118,6 +135,18 @@ public enum VCFHeaderVersion {
         return this.ordinal() >= target.ordinal();
     }
 
+    /**
+     * Determine if two header versions are compatible. For now, the only incompatibility is between V4.3
+     * and any other version. All other versions are compatible.
+     * @param v1
+     * @param v2
+     * @return
+     */
+    public static boolean versionsAreCompatible(final VCFHeaderVersion v1, final VCFHeaderVersion v2) {
+        return v1.equals(v2) ||
+                (!v1.isAtLeastAsRecentAs(VCF4_3) && !v2.isAtLeastAsRecentAs(VCF4_3));
+    }
+
     public String getVersionString() {
         return versionString;
     }
@@ -125,4 +154,5 @@ public enum VCFHeaderVersion {
     public String getFormatString() {
         return formatString;
     }
+
 }

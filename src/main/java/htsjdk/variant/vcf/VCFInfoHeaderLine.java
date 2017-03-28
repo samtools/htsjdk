@@ -26,40 +26,48 @@
 package htsjdk.variant.vcf;
 
 
+import htsjdk.samtools.util.Log;
+import htsjdk.tribble.TribbleException;
+
 /**
- * @author ebanks
  *         <p>
  *         Class VCFInfoHeaderLine
  *         </p>
  *         <p>
- *         A class representing a key=value entry for INFO fields in the VCF header
+ *         A class representing an INFO field in the VCF header
  *         </p>
  */
 public class VCFInfoHeaderLine extends VCFCompoundHeaderLine {
-    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
-    }
+    private static final long serialVersionUID = 1L;
+
+    protected final static Log logger = Log.getInstance(VCFFormatHeaderLine.class);
 
     public VCFInfoHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+    }
+
+    public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
     }
 
     public VCFInfoHeaderLine(String name, int count, VCFHeaderLineType type, String description, String source, String version) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+        this.updateGenericField(SOURCE_ATTRIBUTE, source);
+        this.updateGenericField(VERSION_ATTRIBUTE, version);
     }
 
     public VCFInfoHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description, String source, String version) {
-        super(name, count, type, description, SupportedHeaderLineType.INFO, source, version);
+        super(VCFConstants.INFO_HEADER_KEY, name, count, type, description);
+        this.updateGenericField(SOURCE_ATTRIBUTE, source);
+        this.updateGenericField(VERSION_ATTRIBUTE, version);
     }
 
     public VCFInfoHeaderLine(String line, VCFHeaderVersion version) {
-        super(line, version, SupportedHeaderLineType.INFO);
-    }
-
-    // info fields allow flag values
-    @Override
-    boolean allowFlagValues() {
-        return true;
+        super(VCFConstants.INFO_HEADER_KEY,
+              VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder),
+              version
+        );
+        validateForVersion(version);
     }
 
     @Override

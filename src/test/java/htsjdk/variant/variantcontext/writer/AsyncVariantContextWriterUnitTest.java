@@ -89,7 +89,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
             writer.add(createVC(header));
         }
         final VCFCodec codec = new VCFCodec();
-        codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
+        codec.setVCFHeader(header);
 
         try (final FileInputStream fis = new FileInputStream(fakeVCFFile)) {
             final AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
@@ -110,6 +110,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
      */
     public static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
                                              final SAMSequenceDictionary sequenceDict) {
+        metaData.add(VCFHeader.getHeaderVersionLine(VCFHeader.DEFAULT_VCF_VERSION));
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");

@@ -26,34 +26,43 @@
 package htsjdk.variant.vcf;
 
 
+import htsjdk.samtools.util.Log;
+import htsjdk.tribble.TribbleException;
+
 /**
  * @author ebanks
  *         <p>
  *         Class VCFFormatHeaderLine
  *         </p>
  *         <p>
- *         A class representing a key=value entry for genotype FORMAT fields in the VCF header</p>
+ *         A class representing genotype FORMAT fields in the VCF header</p>
  */
 public class VCFFormatHeaderLine extends VCFCompoundHeaderLine {
+    private static final long serialVersionUID = 1L;
+    protected final static Log logger = Log.getInstance(VCFFormatHeaderLine.class);
 
     public VCFFormatHeaderLine(String name, int count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.FORMAT);
-        if (type == VCFHeaderLineType.Flag)
-            throw new IllegalArgumentException("Flag is an unsupported type for format fields");
+        super(VCFConstants.FORMAT_HEADER_KEY, name, count, type, description);
+        validate();
     }
 
     public VCFFormatHeaderLine(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
-        super(name, count, type, description, SupportedHeaderLineType.FORMAT);
+        super(VCFConstants.FORMAT_HEADER_KEY, name, count, type, description);
+        validate();
     }
 
     public VCFFormatHeaderLine(String line, VCFHeaderVersion version) {
-        super(line, version, SupportedHeaderLineType.FORMAT);
+        super(VCFConstants.FORMAT_HEADER_KEY,
+              VCFHeaderLineTranslator.parseLine(version, line, expectedTagOrder),
+              version);
+        validate();
+        validateForVersion(version);
     }
 
-    // format fields do not allow flag values (that wouldn't make much sense, how would you encode this in the genotype).
-    @Override
-    boolean allowFlagValues() {
-        return false;
+    private void validate() {
+        if (this.getType() == VCFHeaderLineType.Flag) {
+            throw new TribbleException("Flag is an unsupported type for format fields");
+        }
     }
 
     @Override

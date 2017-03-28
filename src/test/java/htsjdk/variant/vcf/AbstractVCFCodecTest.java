@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 
+
 public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test
@@ -31,11 +32,29 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
     public void TestSpanDelParseAlleles() {
         final List<Allele> list = VCF3Codec.parseAlleles("A", Allele.SPAN_DEL_STRING, 0);
     }
+	@DataProvider(name="AllVCFCodecs")
+	public Object[][] allVCFCodecVersions() {
+		return new Object[][] {
+				{new VCF3Codec() },
+				{new VCFCodec() },
+				//{new VCF43Codec ()}
+		};
+	}
+
+	@Test(dataProvider = "AllVCFCodecs")
+	public void TestSpanDelParseAlleles(final AbstractVCFCodec vcfCodec){
+		// TODO: why is there no Assert here ??
+		vcfCodec.parseAlleles("A", Allele.SPAN_DEL_STRING, 0);
+	}
 
     @Test(expectedExceptions = TribbleException.class)
     public void TestSpanDelParseAllelesException() {
         final List<Allele> list1 = VCF3Codec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
     }
+	@Test(dataProvider = "AllVCFCodecs", expectedExceptions = TribbleException.class)
+	public void TestSpanDelParseAllelesException(final AbstractVCFCodec vcfCodec){
+		vcfCodec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
+	}
 
     @DataProvider(name = "thingsToTryToDecode")
     public Object[][] getThingsToTryToDecode() {
@@ -47,16 +66,49 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         };
     }
 
-    @Test(dataProvider = "thingsToTryToDecode")
-    public void testCanDecodeFile(String potentialInput, boolean canDecode) {
-        Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
-    }
+	@Test(dataProvider = "thingsToTryToDecode")
+	public void testCanDecodeFile(String potentialInput, boolean canDecode) {
+		//TODO: add VCF43Codec when available
+		//TODO: its not sufficient to test for ANY v4 prefix since it will succeed on 4.3 as well
+		Assert.assertEquals(AbstractVCFCodec.canDecodeFile(potentialInput, VCFCodec.VCF4_MAGIC_HEADER), canDecode);
+	}
 
-    @Test
-    public void testGetTabixFormat() {
-        Assert.assertEquals(new VCFCodec().getTabixFormat(), TabixFormat.VCF);
-        Assert.assertEquals(new VCF3Codec().getTabixFormat(), TabixFormat.VCF);
-    }
+	@Test(dataProvider = "AllVCFCodecs")
+	public void testGetTabixFormat(final AbstractVCFCodec vcfCodec) {
+		Assert.assertEquals(vcfCodec.getTabixFormat(), TabixFormat.VCF);
+	}
+
+	@DataProvider(name="otherHeaderLines")
+	public Object[][] otherHeaderLines() {
+		return new Object[][] {
+                { "key=<", new VCFHeaderLine("key", "<") },
+                // taken from Funcotator test file as ##ID=<Description="ClinVar Variation ID">
+                // technically, this is invalid due to the lack of an "ID" attribute, but it should still parse
+                // into a VCFHeaderLine (but noa VCFSimpleHeaderLine
+                { "ID=<Description=\"ClinVar Variation ID\">",
+                        new VCFHeaderLine("ID", "<Description=\"ClinVar Variation ID\">") },
+		};
+	}
+
+	@Test(dataProvider="otherHeaderLines")
+	public void testGetOtherHeaderLine(final String headerLineString, final VCFHeaderLine headerLine) {
+		Assert.assertEquals(new VCFCodec().getOtherHeaderLine(headerLineString, VCFHeaderVersion.VCF4_2), headerLine);
+	}
+
+	@DataProvider(name="badOtherHeaderLines")
+	public Object[][] badOtherHeaderLines() {
+		return new Object[][] {
+				{ "=" },
+				{ "=<" },
+                { "=<>" },
+                { "key" },
+		};
+	}
+
+	@Test(dataProvider="badOtherHeaderLines", expectedExceptions=TribbleException.InvalidHeader.class)
+	public void testBadOtherHeaderLine(final String headerLineString) {
+		Assert.assertNull(new VCFCodec().getOtherHeaderLine(headerLineString, VCFHeaderVersion.VCF4_2));
+	}
 
     @Test
     public void testGLnotOverridePL() {
