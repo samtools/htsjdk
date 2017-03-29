@@ -179,6 +179,50 @@ public class SamReaderTest extends HtsjdkTest {
         Assert.assertTrue(samRec.getHeader() == null);
     }
 
+    @DataProvider(name = "hasValidFileExtensionTestData")
+    public Object[][]testHasValidFileExtensionTestData() {
+        final Set<SamReader.Type> setOfKnownFileTypes = new HashSet<>();
+        setOfKnownFileTypes.add(SamReader.Type.BAM_TYPE);
+        setOfKnownFileTypes.add(SamReader.Type.SAM_TYPE);
+        setOfKnownFileTypes.add(SamReader.Type.SRA_TYPE);
+        setOfKnownFileTypes.add(SamReader.Type.CRAM_TYPE);
+
+        final List<Object[]> list = new ArrayList<>();
+        for (final SamReader.Type fileType : setOfKnownFileTypes) {
+            // positive expectations:
+            list.add(new Object[]{fileType, "test." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "/path/to/test." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "/path/to/." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "\\path\\to\\." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "../." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "../test." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "./test." + fileType.fileExtension(), true});
+            list.add(new Object[]{fileType, "./." + fileType.fileExtension(), true});
+
+            // negative expectations:
+            list.add(new Object[]{fileType, null, false});
+            list.add(new Object[]{fileType, fileType.fileExtension(), false});
+            list.add(new Object[]{fileType, "test" + fileType.fileExtension(), false});
+            list.add(new Object[]{fileType, "test." + fileType.fileExtension() + ".", false});
+            list.add(new Object[]{fileType, "test" + fileType.fileExtension().toUpperCase(), false});
+            list.add(new Object[]{fileType, "test." + fileType.fileExtension() + ".png", false});
+            list.add(new Object[]{fileType, "/dev/null", false});
+
+            for (final SamReader.Type anotherFileType : setOfKnownFileTypes) {
+                if (anotherFileType != fileType) {
+                    list.add(new Object[]{fileType, "test." + anotherFileType.fileExtension(), false});
+                }
+            }
+        }
+
+        return list.toArray(new Object[list.size()][]);
+    }
+
+    @Test(dataProvider = "hasValidFileExtensionTestData")
+    public void testHasValidFileExtension(final SamReader.Type type, final String fileName, final boolean expectValidFileExtension) {
+        Assert.assertEquals(type.hasValidFileExtension(fileName), expectValidFileExtension);
+    }
     @Test
     public void testAssertingIteratorUsesLenientOrdering() {
         // The coordinate comparator's strict sort sorts lower mapping qualities first,

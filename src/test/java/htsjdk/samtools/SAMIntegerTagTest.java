@@ -25,9 +25,11 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -48,6 +50,9 @@ import java.util.Map;
  */
 public class SAMIntegerTagTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
+    private static final File REF_FILE = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
+    private SAMSequenceDictionary DICTIONARY_BACKED_BY_REF_FILE;
+
 
     private static final String BYTE_TAG = "BY";
     private static final String SHORT_TAG = "SH";
@@ -58,6 +63,13 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     private static final long TOO_LARGE_UNSIGNED_INT_VALUE = BinaryCodec.MAX_UINT + 1L;
 
     enum FORMAT {SAM, BAM, CRAM}
+
+    @BeforeTest
+    public void loadDictionaryFromFasta () throws IOException {
+        IndexedFastaSequenceFile ff = new IndexedFastaSequenceFile(REF_FILE);
+        DICTIONARY_BACKED_BY_REF_FILE = ff.getSequenceDictionary();
+        ff.close();
+    }
 
     @Test
     public void testBAM() throws Exception {
@@ -209,19 +221,24 @@ public class SAMIntegerTagTest extends HtsjdkTest {
      */
     private SAMRecord writeAndReadSamRecord(final String format, SAMRecord rec) throws IOException {
         final File bamFile = File.createTempFile("htsjdk-writeAndReadSamRecord.", "." + format);
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(rec.getHeader(), false, bamFile);
+        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeWriter(rec.getHeader(), false, bamFile, REF_FILE);
         bamWriter.addAlignment(rec);
         bamWriter.close();
-        final SamReader reader = SamReaderFactory.makeDefault().open(bamFile);
-        rec = reader.iterator().next();
+
+        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REF_FILE).open(bamFile);
+        SAMRecordIterator iterator = reader.iterator();
+        Assert.assertTrue(iterator.hasNext());
+        rec = iterator.next();
+        iterator.close();
         reader.close();
         bamFile.delete();
         return rec;
     }
 
-    private SAMRecord createSamRecord() {
+    private SAMRecord createSamRecord() throws IOException {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
-        builder.addFrag("readA", 20, 140, false);
+        builder.getHeader().setSequenceDictionary(DICTIONARY_BACKED_BY_REF_FILE);
+        builder.addFrag("readA", 0, 140, false);
         return builder.iterator().next();
     }
 
