@@ -154,7 +154,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 // that it is specced as a uint.
                 this.binaryCodec.writeInt(cigarElement);
             }
-            this.binaryCodec.writeBytes(SAMUtils.bytesToCompressedBases(alignment.getReadBases()));
+            this.binaryCodec.writeBytes(SAMUtils.bytesToCompressedBases(alignment.getReadBases(), alignment.getReadName()));
             byte[] qualities = alignment.getBaseQualities();
             if (qualities.length == 0) {
                 qualities = new byte[alignment.getReadLength()];

@@ -111,46 +111,48 @@ public final class SAMUtils {
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
-     * Convert from a byte array containing =AaCcGgTtNn represented as ASCII, to a byte array half as long,
-     * with =, A, C, G, T converted to 0, 1, 2, 4, 8, 15.
+     * Convert from a byte array containing =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb represented as ASCII, to a byte array half as long,
+     * with fore example, =, A, C, G, T converted to 0, 1, 2, 4, 8, 15.
      *
      * @param readBases Bases as ASCII bytes.
+     * @param readName Name of the read containing the bases,
      * @return New byte array with bases represented as nybbles, in BAM binary format.
      */
-    static byte[] bytesToCompressedBases(final byte[] readBases) {
+    static byte[] bytesToCompressedBases(final byte[] readBases, final String readName) {
         final byte[] compressedBases = new byte[(readBases.length + 1) / 2];
         int i;
         for (i = 1; i < readBases.length; i += 2) {
-            compressedBases[i / 2] = (byte) (charToCompressedBaseHigh(readBases[i - 1]) |
-                    charToCompressedBaseLow(readBases[i]));
+            compressedBases[i / 2] = (byte) (charToCompressedBaseHigh(readBases[i - 1], readName) |
+                    charToCompressedBaseLow(readBases[i], readName));
         }
         // Last nybble
         if (i == readBases.length) {
-            compressedBases[i / 2] = charToCompressedBaseHigh((char) readBases[i - 1]);
+            compressedBases[i / 2] = charToCompressedBaseHigh(readBases[i - 1], readName);
         }
         return compressedBases;
     }
 
     /**
-     * Convert from a byte array with basese stored in nybbles, with =, A, C, G, T represented as 0, 1, 2, 4, 8, 15,
+     * Convert from a byte array with bases stored in nybbles, with fore example,=, A, C, G, T, N represented as 0, 1, 2, 4, 8, 15,
      * to a a byte array containing =AaCcGgTtNn represented as ASCII.
      *
      * @param length Number of bases (not bytes) to convert.
      * @param compressedBases Bases represented as nybbles, in BAM binary format.
+     * @param readName Name of the read containing the bases.
      * @param compressedOffset Byte offset in compressedBases to start.
      * @return New byte array with bases as ASCII bytes.
      */
-    public static byte[] compressedBasesToBytes(final int length, final byte[] compressedBases, final int compressedOffset) {
+    public static byte[] compressedBasesToBytes(final int length, final byte[] compressedBases, final int compressedOffset, final String readName) {
         final byte[] ret = new byte[length];
         int i;
         for (i = 1; i < length; i += 2) {
             final int compressedIndex = i / 2 + compressedOffset;
-            ret[i - 1] = compressedBaseToByteHigh(compressedBases[compressedIndex]);
-            ret[i] = compressedBaseToByteLow(compressedBases[compressedIndex]);
+            ret[i - 1] = compressedBaseToByteHigh(compressedBases[compressedIndex], readName);
+            ret[i] = compressedBaseToByteLow(compressedBases[compressedIndex], readName);
         }
         // Last nybble
         if (i == length) {
-            ret[i - 1] = compressedBaseToByteHigh(compressedBases[i / 2 + compressedOffset]);
+            ret[i - 1] = compressedBaseToByteHigh(compressedBases[i / 2 + compressedOffset], readName);
         }
         return ret;
     }
@@ -158,10 +160,12 @@ public final class SAMUtils {
     /**
      * Convert from ASCII byte to BAM nybble representation of a base in low-order nybble.
      *
-     * @param base One of =AaCcGgTtNn.
+     * @param base One of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
+     * @param readName Name of the read containing the base.
      * @return Low-order nybble-encoded equivalent.
+     * @throws IllegalArgumentException if the base is not one of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
      */
-    private static byte charToCompressedBaseLow(final int base) {
+    private static byte charToCompressedBaseLow(final byte base, final String readName) {
         switch (base) {
             case '=':
                 return COMPRESSED_EQUAL_LOW;
@@ -214,17 +218,19 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_LOW;
             default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: " + Character.toString((char)base) + " in read: " + readName);
         }
     }
 
     /**
      * Convert from ASCII byte to BAM nybble representation of a base in high-order nybble.
      *
-     * @param base One of =AaCcGgTtNn.
+     * @param base One of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
+     * @param readName Name of the read containing the base.
      * @return High-order nybble-encoded equivalent.
+     * @throws IllegalArgumentException if the base is not one of =AaCcGgTtNnMmRrSsVvWwYyHhKkDdBb.
      */
-    private static byte charToCompressedBaseHigh(final int base) {
+    private static byte charToCompressedBaseHigh(final byte base, final String readName) {
         switch (base) {
             case '=':
                 return COMPRESSED_EQUAL_HIGH;
@@ -277,20 +283,22 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_HIGH;
             default:
-                throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: " + Character.toString((char)base) + " in read: " + readName);
         }
     }
     
     /**
      * Returns the byte corresponding to a certain nybble
      * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
-     * @return ASCII base, one of ACGTN=.
+     * @param readName Name of the read containing the base.
+     * @return ASCII base, one of =ACGTNMRSVWYHKDB.
+     * @throws IllegalArgumentException if the base is not one of =ACGTNMRSVWYHKDB.
      */
-    private static byte compressedBaseToByte(byte base){
+    private static byte compressedBaseToByte(byte base, final String readName){
         try{
             return COMPRESSED_LOOKUP_TABLE[base];
         }catch(IndexOutOfBoundsException e){
-            throw new IllegalArgumentException("Bad  byte passed to charToCompressedBase: " + base);
+            throw new IllegalArgumentException("Bad base passed to charToCompressedBase: " + Character.toString((char)base) + " in read: " + readName);
         }
     }
 
@@ -298,20 +306,22 @@ public final class SAMUtils {
      * Convert from BAM nybble representation of a base in low-order nybble to ASCII byte.
      *
      * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
+     * @param readName Name of the read containing the base.
      * @return ASCII base, one of ACGTN=.
      */
-    private static byte compressedBaseToByteLow(final int base) {
-        return compressedBaseToByte((byte)(base & 0xf));
+    private static byte compressedBaseToByteLow(final int base, final String readName) {
+        return compressedBaseToByte((byte)(base & 0xf), readName);
     }
 
     /**
      * Convert from BAM nybble representation of a base in high-order nybble to ASCII byte.
      *
      * @param base One of COMPRESSED_*_HIGH, a high-order nybble encoded base.
+     * @param readName Name of the read containing the base.
      * @return ASCII base, one of ACGTN=.
      */
-    private static byte compressedBaseToByteHigh(final int base) {
-        return compressedBaseToByte((byte)((base >> 4) & 0xf));
+    private static byte compressedBaseToByteHigh(final int base, final String readName) {
+        return compressedBaseToByte((byte)((base >> 4) & 0xf), readName);
     }
 
     /**
@@ -394,6 +404,7 @@ public final class SAMUtils {
     }
 
     /**
+     *
      * Converts printable qualities in Sanger fastq format to binary phred scores.
      */
     public static void fastqToPhred(final byte[] fastq) {

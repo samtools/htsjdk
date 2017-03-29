@@ -342,7 +342,7 @@ public class BAMRecord extends SAMRecord {
             return NULL_SEQUENCE;
         }
         final int basesOffset = readNameSize() + cigarSize();
-        return SAMUtils.compressedBasesToBytes(mReadLength, mRestOfBinaryData, basesOffset);
+        return SAMUtils.compressedBasesToBytes(mReadLength, mRestOfBinaryData, basesOffset, getReadName());
     }
 
     /* methods for computing disk size of variably-sized elements, in order to locate
