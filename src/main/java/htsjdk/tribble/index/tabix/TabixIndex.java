@@ -66,8 +66,6 @@ public class TabixIndex implements Index {
         MAGIC_NUMBER = bb.order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
-    private static final Log LOGGER = Log.getInstance(TabixIndex.class);
-
     private final TabixFormat formatSpec;
     private final List<String> sequenceNames;
     private final BinningIndexContent[] indices;
