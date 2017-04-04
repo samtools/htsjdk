@@ -230,8 +230,7 @@ public class TabixIndex implements Index {
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
         if (!Files.isRegularFile(featurePath)) {
-            LOGGER.warn("Index not written into ", featurePath);
-            return;
+            throw new IOException("Cannot write based on a non-regular file: " + featurePath.toUri());
         }
         write(Tribble.tabixIndexPath(featurePath));
     }

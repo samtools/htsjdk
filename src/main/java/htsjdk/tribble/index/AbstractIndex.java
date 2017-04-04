@@ -386,8 +386,7 @@ public abstract class AbstractIndex implements MutableIndex {
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
         if (!Files.isRegularFile(featurePath)) {
-            logger.warn("Index not written into ", featurePath);
-            return;
+            throw new IOException("Cannot write based on a non-regular file: " + featurePath.toUri());
         }
         write(Tribble.indexPath(featurePath));
     }
