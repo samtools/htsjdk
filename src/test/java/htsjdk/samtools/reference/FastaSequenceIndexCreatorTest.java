@@ -49,7 +49,9 @@ public class FastaSequenceIndexCreatorTest {
     public Object[][] getIndexedSequences() {
         return new Object[][]{
                 {new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta")},
-                {new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta.gz")}
+                {new File(TEST_DATA_DIR, "Homo_sapiens_assembly18.trimmed.fasta.gz")},
+                {new File(TEST_DATA_DIR, "header_with_white_space.fasta")},
+                {new File(TEST_DATA_DIR, "crlf.fasta")}
         };
     }
 
@@ -69,7 +71,7 @@ public class FastaSequenceIndexCreatorTest {
         Files.copy(indexedFile.toPath(), copied.toPath());
 
         // create the index for the copied file
-        FastaSequenceIndexCreator.create(copied.toPath());
+        FastaSequenceIndexCreator.create(copied.toPath(), false);
 
         // test if the expected .fai and the created one are the same
         final File expectedFai = new File(indexedFile.getAbsolutePath() +  ".fai");

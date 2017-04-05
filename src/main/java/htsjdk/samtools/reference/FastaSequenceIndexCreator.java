@@ -25,6 +25,7 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.readers.AsciiLineReader;
 
@@ -33,7 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Static methods for create an {@link FastaSequenceIndex}.
+ * Static methods to create an {@link FastaSequenceIndex}.
  *
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
@@ -46,14 +47,15 @@ public final class FastaSequenceIndexCreator {
      * Creates a FASTA .fai index for the provided FASTA.
      *
      * @param fastaFile the file to build the index from.
+     * @param overwrite if the .fai index already exists override it if {@code true}; otherwise, throws a {@link SAMException}.
      *
      * @throws SAMException if the fai file already exists or the file is malformed.
      * @throws IOException  if an IO error occurs.
      */
-    public static void create(final Path fastaFile) throws IOException {
+    public static void create(final Path fastaFile, final boolean overwrite) throws IOException {
         // get the index to write the file in
         final Path indexFile = ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile);
-        if (Files.exists(indexFile)) {
+        if (!overwrite && Files.exists(indexFile)) {
             // throw an exception if the file already exists
             throw new SAMException("Index file " + indexFile + " already exists for " + fastaFile);
         }
@@ -101,14 +103,10 @@ public final class FastaSequenceIndexCreator {
             for (String line = in.readLine(); previous != null; line = in.readLine()) {
                 // in this case, the previous line contains a header and the current line the first sequence
                 if (previous.charAt(0) == '>') {
-                    // first entry should be skipped
-                    if (entry != null) {
-                        // add the entry to the index
-                        index.add(entry.build());
-                    }
-                    // update the sequence index
-                    sequenceIndex++;
-                    entry = new FaiEntryBuilder(sequenceIndex, previous, line, location);
+                    // first entry should be skipped; otherwise it should be added to the index
+                    if (entry != null) index.add(entry.build());
+                    // creates a new entry (and update sequence index)
+                    entry = new FaiEntryBuilder(sequenceIndex++, previous, line, location);
                 } else if (line != null && line.charAt(0) == '>') {
                     // update the location, next iteration the sequence will be handled
                     location = in.getPosition();
@@ -123,6 +121,8 @@ public final class FastaSequenceIndexCreator {
             // add the last entry
             index.add(entry.build());
 
+            // TODO: check for correctness of carriage return
+
             // and return the index
             return index;
         }
@@ -134,6 +134,7 @@ public final class FastaSequenceIndexCreator {
         private final String contig;
         private final long location;
         // the bytes per line is the bases per line plus the end of the line
+        // TODO 04-2017: this will fail for CR+LF formatted files
         private final int basesPerLine;
 
         // the size is updated for each line in the input using updateWithSequence
@@ -148,8 +149,8 @@ public final class FastaSequenceIndexCreator {
                 throw new SAMException("Empty sequences could not be indexed");
             }
             this.index = index;
-            // parse the contig name (without the starting '>')
-            this.contig =  header.substring(1);
+            // parse the contig name (without the starting '>' and truncating white-spaces)
+            this.contig =  SAMSequenceRecord.truncateSequenceName(header.substring(1).trim());
             this.location = location;
             this.basesPerLine = firstSequenceLine.length();
 
@@ -159,7 +160,7 @@ public final class FastaSequenceIndexCreator {
 
         private void updateWithSequence(final String sequence) {
             if (sequence.length() > basesPerLine) {
-                throw new SAMException(String.format("Sequence bases for '{}' exceed the maximum length ({}): {}",
+                throw new SAMException(String.format("Sequence line for {} was longer than the expected length ({}): {}",
                         contig, basesPerLine, sequence));
             } else if (sequence.length() < basesPerLine) {
                 if (lessBasesFound) {
