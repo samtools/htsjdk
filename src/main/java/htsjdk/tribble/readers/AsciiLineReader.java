@@ -40,8 +40,9 @@ public class AsciiLineReader implements LineReader, LocationAware {
     private static final byte LINEFEED = (byte) ('\n' & 0xff);
     private static final byte CARRIAGE_RETURN = (byte) ('\r' & 0xff);
 
-    PositionalBufferedStream is;
-    char[] lineBuffer;
+    private final PositionalBufferedStream is;
+    private char[] lineBuffer;
+    private int lineTerminatorLength = -1;
 
     public AsciiLineReader(final InputStream is){
         this(new PositionalBufferedStream(is));
@@ -65,6 +66,16 @@ public class AsciiLineReader implements LineReader, LocationAware {
         return is.getPosition();
     }
 
+    /** Returns the length of the line terminator read after the last read line.  Returns either:
+     * -1 if no line has been read
+     * 0  after the last line if the last line in the file had no CR or LF line ending
+     * 1  if the line ended with CR or LF
+     * 2  if the line ended with CR and LF
+     */
+    public int getLineTerminatorLength() {
+        return this.lineTerminatorLength;
+    }
+
     /**
      * Read a line of text.  A line is considered to be terminated by any one
      * of a line feed ('\n'), a carriage return ('\r'), or a carriage return
@@ -83,6 +94,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
             if (b == -1) {
                 // eof reached.  Return the last line, or null if this is a new line
                 if (linePosition > 0) {
+                    this.lineTerminatorLength = 0;
                     return new String(lineBuffer, 0, linePosition);
                 } else {
                     return null;
@@ -93,6 +105,10 @@ public class AsciiLineReader implements LineReader, LocationAware {
             if (c == LINEFEED || c == CARRIAGE_RETURN) {
                 if (c == CARRIAGE_RETURN && stream.peek() == LINEFEED) {
                     stream.read(); // <= skip the trailing \n in case of \r\n termination
+                    this.lineTerminatorLength = 2;
+                }
+                else {
+                    this.lineTerminatorLength = 1;
                 }
 
                 return new String(lineBuffer, 0, linePosition);
