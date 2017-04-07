@@ -382,7 +382,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      */
     protected String getCachedString(String str) {
         WeakReference<String> internedString = stringCache.get(str);
-        if ( internedString == null ) {
+        if ( internedString == null || internedString.get() == null) {
             internedString = new WeakReference<>(str);
             stringCache.put(str, internedString);
         }
