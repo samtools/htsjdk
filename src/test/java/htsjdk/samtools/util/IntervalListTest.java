@@ -25,7 +25,9 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamFileHeaderMerger;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -33,6 +35,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,6 +76,15 @@ public class IntervalListTest {
         list3.add(new Interval("1", 25, 400));    //de-facto 1:25-400                2:200-600                            3:50-470
         list3.add(new Interval("2", 200, 600));
         list3.add(new Interval("3", 50, 470));
+    }
+
+    @Test
+    public void testIntervalListFrom() {
+        final String testPath = "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFTestComp.interval_list";
+        final IntervalList fromFileList = IntervalList.fromFile(new File(testPath));
+        final IntervalList fromPathList = IntervalList.fromPath(Paths.get(testPath));
+        fromFileList.getHeader().getSequenceDictionary().assertSameDictionary(fromPathList.getHeader().getSequenceDictionary());
+        Assert.assertEquals(CollectionUtil.makeCollection(fromFileList.iterator()), CollectionUtil.makeCollection(fromPathList.iterator()));
     }
 
     @DataProvider(name = "intersectData")
