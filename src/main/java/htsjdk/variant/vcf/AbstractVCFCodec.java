@@ -46,18 +46,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 
@@ -90,7 +82,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     protected int lineNo = 0;
 
-    protected Map<String, String> stringCache = new HashMap<String, String>();
+    protected Map<String, WeakReference<String>> stringCache = new WeakHashMap<>();
 
     protected boolean warnedAboutNoEqualsForNonFlag = false;
 
@@ -389,12 +381,12 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return interned string
      */
     protected String getCachedString(String str) {
-        String internedString = stringCache.get(str);
+        WeakReference<String> internedString = stringCache.get(str);
         if ( internedString == null ) {
-            internedString = new String(str);
-            stringCache.put(internedString, internedString);
+            internedString = new WeakReference<>(str);
+            stringCache.put(str, internedString);
         }
-        return internedString;
+        return internedString.get();
     }
 
     /**
