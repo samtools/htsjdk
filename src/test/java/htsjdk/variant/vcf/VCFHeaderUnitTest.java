@@ -37,6 +37,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -120,10 +121,18 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         }
     }
 
-    @Test
-    public void testVCFHeaderDictionaryMerging() {
-        VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false).getFileHeader();
-        VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
+    @DataProvider
+    public Object[][] testVCFHeaderDictionaryMergingData() {
+        return new Object[][]{
+                {"diagnosis_targets_testfile.vcf"},  // numerically ordered contigs
+                {"dbsnp_135.b37.1000.vcf"}          // lexicographically ordered contigs
+        };
+    }
+
+    @Test(dataProvider = "testVCFHeaderDictionaryMergingData")
+    public void testVCFHeaderDictionaryMerging(final String vcfFileName) {
+        final VCFHeader headerOne = new VCFFileReader(new File(variantTestDataRoot + vcfFileName), false).getFileHeader();
+        final VCFHeader headerTwo = new VCFHeader(headerOne); // deep copy
         final List<String> sampleList = new ArrayList<String>();
         sampleList.addAll(headerOne.getSampleNamesInOrder());
 

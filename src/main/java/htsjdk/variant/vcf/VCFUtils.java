@@ -32,26 +32,23 @@ import htsjdk.variant.utils.GeneralUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 public class VCFUtils {
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
         // This will cause problems for VCFHeader.getSequenceDictionary and anything else that implicitly relies on the line ordering.
-        final TreeMap<String, VCFHeaderLine> map = new TreeMap<String, VCFHeaderLine>(); // from KEY.NAME -> line
+        final LinkedHashMap<String, VCFHeaderLine> map = new LinkedHashMap<>(); // from KEY.NAME -> line
         final HeaderConflictWarner conflictWarner = new HeaderConflictWarner(emitWarnings);
 
         // todo -- needs to remove all version headers from sources and add its own VCF version line
         for ( final VCFHeader source : headers ) {
-            //System.out.printf("Merging in header %s%n", source);
             for ( final VCFHeaderLine line : source.getMetaDataInSortedOrder()) {
 
                 String key = line.getKey();
@@ -102,12 +99,11 @@ public class VCFUtils {
                     }
                 } else {
                     map.put(key, line);
-                    //System.out.printf("Adding header line %s%n", line);
                 }
             }
         }
         // returning a LinkedHashSet so that ordering will be preserved. Ensures the contig lines do not get scrambled.
-        return new LinkedHashSet<VCFHeaderLine>(map.values());
+        return new LinkedHashSet<>(map.values());
     }
 
     /**
