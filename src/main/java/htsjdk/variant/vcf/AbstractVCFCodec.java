@@ -42,7 +42,6 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -96,6 +95,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * only for single-sample VCFs.
      */
     protected String remappedSampleName = null;
+    protected static boolean vcfIndexUseStringsCache = "true".equals(System.getProperty("VCF_INDEX_USE_STRINGS_CACHE"));
 
     protected AbstractVCFCodec() {
         super(VariantContext.class);
@@ -381,12 +381,18 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return interned string
      */
     protected String getCachedString(String str) {
-        WeakReference<String> internedString = stringCache.get(str);
-        if ( internedString == null || internedString.get() == null) {
-            internedString = new WeakReference<>(str);
-            stringCache.put(str, internedString);
+        if (!vcfIndexUseStringsCache)
+            return str;
+        WeakReference<String> stringWeakReference = stringCache.get(str);
+        if ( stringWeakReference != null) {
+            String ret = stringWeakReference.get();
+            if (ret != null)
+                return ret;
         }
-        return internedString.get();
+        // not found in cache - str will be put in cache
+        stringWeakReference = new WeakReference<>(str);
+        stringCache.put(str, stringWeakReference);
+        return str;
     }
 
     /**
