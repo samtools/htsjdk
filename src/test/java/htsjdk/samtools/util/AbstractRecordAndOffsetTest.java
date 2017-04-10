@@ -52,12 +52,11 @@ public class AbstractRecordAndOffsetTest {
 
     @Test
     public void testConstructor(){
-        AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0, 10, 3);
+        AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0);
         assertArrayEquals(qualities, abstractRecordAndOffset.getBaseQualities());
         assertArrayEquals(bases, abstractRecordAndOffset.getRecord().getReadBases());
         assertEquals('A', abstractRecordAndOffset.getReadBase());
         assertEquals(30, abstractRecordAndOffset.getBaseQuality());
         assertEquals(0, abstractRecordAndOffset.getOffset());
-        assertEquals(-1, abstractRecordAndOffset.getRefPos());
     }
 }
