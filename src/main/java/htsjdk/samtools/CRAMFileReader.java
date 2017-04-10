@@ -484,6 +484,7 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                             getSeekableStreamOrFailWithRTE(),
                             referenceSource,
                             coordinates,
+                            queries,
                             validationStringency
                     );
                 } catch (final IOException e) {

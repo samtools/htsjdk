@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +45,7 @@ import htsjdk.samtools.cram.CRAMException;
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
     private final CountingInputStream countingInputStream;
+    private QueryInterval[] queries;
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
     private SAMRecord nextRecord = null;
@@ -112,6 +114,12 @@ public class CRAMIterator implements SAMRecordIterator {
         parser = new ContainerParser(cramHeader.getSamFileHeader());
     }
 
+    public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates, final QueryInterval[] queries, final ValidationStringency validationStringency)
+            throws IOException {
+        this(seekableStream, referenceSource, coordinates, validationStringency);
+        this.queries = queries;
+    }
+
     @Deprecated
     public CRAMIterator(final SeekableStream seekableStream, final CRAMReferenceSource referenceSource, final long[] coordinates)
             throws IOException {
@@ -125,24 +133,11 @@ public class CRAMIterator implements SAMRecordIterator {
     void nextContainer() throws IOException, IllegalArgumentException,
             IllegalAccessException, CRAMException {
 
-        if (containerIterator != null) {
-            if (!containerIterator.hasNext()) {
-                records.clear();
-                nextRecord = null;
-                return;
-            }
-            container = containerIterator.next();
-            if (container.isEOF()) {
-                records.clear();
-                nextRecord = null;
-                return;
-            }
-        } else {
-            container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
-            if (container.isEOF()) {
-                records.clear();
-                nextRecord = null;
-                return;
+        if (readAndCheckEOFContainer()) return;
+
+        if (queries != null) {
+            while (container.sequenceId != Slice.MULTI_REFERENCE && !isContainerMatchAnyInterval(container)) {
+                if (readAndCheckEOFContainer()) return;
             }
         }
 
@@ -222,6 +217,44 @@ public class CRAMIterator implements SAMRecordIterator {
         }
         cramRecords.clear();
         iterator = records.iterator();
+    }
+
+    private boolean readAndCheckEOFContainer() throws IOException {
+        if (containerIterator != null) {
+            if (!containerIterator.hasNext()) {
+                records.clear();
+                nextRecord = null;
+                return true;
+            }
+            container = containerIterator.next();
+            if (container.isEOF()) {
+                records.clear();
+                nextRecord = null;
+                return true;
+            }
+        } else {
+            container = ContainerIO.readContainer(cramHeader.getVersion(), countingInputStream);
+            if (container.isEOF()) {
+                records.clear();
+                nextRecord = null;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isContainerMatchAnyInterval(Container container) throws IOException, IllegalAccessException {
+        final int containerSequenceID = container.sequenceId;
+        QueryInterval[] queriesByReference = Arrays.stream(queries).filter(query -> (query.referenceIndex == containerSequenceID)).toArray(QueryInterval[]::new);
+        if (queriesByReference.length == 0) {
+            return false;
+        }
+        for (QueryInterval query : queriesByReference) {
+            int queryEnd = query.end <= 0 ? Integer.MAX_VALUE : query.end;
+            if ((queryEnd < container.alignmentStart) || (container.alignmentStart + container.alignmentSpan < query.start)) continue;
+            return true;
+        }
+        return false;
     }
 
     /**
