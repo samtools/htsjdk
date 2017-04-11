@@ -95,7 +95,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * only for single-sample VCFs.
      */
     protected String remappedSampleName = null;
-    protected static boolean vcfIndexUseStringsCache = "true".equals(System.getProperty("VCF_INDEX_USE_STRINGS_CACHE"));
+    protected static boolean vcfCodecUseStringsCache = "true".equals(System.getProperty("VCF_CODEC_USE_STRINGS_CACHE"));
 
     protected AbstractVCFCodec() {
         super(VariantContext.class);
@@ -381,7 +381,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return interned string
      */
     protected String getCachedString(String str) {
-        if (!vcfIndexUseStringsCache)
+        if (!vcfCodecUseStringsCache)
             return str;
         WeakReference<String> stringWeakReference = stringCache.get(str);
         if ( stringWeakReference != null) {
