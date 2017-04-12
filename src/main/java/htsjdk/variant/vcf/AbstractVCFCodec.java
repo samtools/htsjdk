@@ -42,22 +42,13 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 
@@ -90,7 +81,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
     protected int lineNo = 0;
 
-    protected Map<String, String> stringCache = new HashMap<String, String>();
+    protected Map<String, WeakReference<String>> stringCache = new WeakHashMap<>();
 
     protected boolean warnedAboutNoEqualsForNonFlag = false;
 
@@ -104,6 +95,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * only for single-sample VCFs.
      */
     protected String remappedSampleName = null;
+    protected static boolean vcfCodecUseStringsCache = "true".equals(System.getProperty("VCF_CODEC_USE_STRINGS_CACHE"));
 
     protected AbstractVCFCodec() {
         super(VariantContext.class);
@@ -389,12 +381,18 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
      * @return interned string
      */
     protected String getCachedString(String str) {
-        String internedString = stringCache.get(str);
-        if ( internedString == null ) {
-            internedString = new String(str);
-            stringCache.put(internedString, internedString);
+        if (!vcfCodecUseStringsCache)
+            return str;
+        WeakReference<String> stringWeakReference = stringCache.get(str);
+        if ( stringWeakReference != null) {
+            String ret = stringWeakReference.get();
+            if (ret != null)
+                return ret;
         }
-        return internedString;
+        // not found in cache - str will be put in cache
+        stringWeakReference = new WeakReference<>(str);
+        stringCache.put(str, stringWeakReference);
+        return str;
     }
 
     /**
