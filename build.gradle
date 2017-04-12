@@ -42,9 +42,6 @@ dependencies {
     compile "org.tukaani:xz:1.5"
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
 
-//    compile "org.openjdk.jmh:jmh-core:1.0'"
-//    compile "org.openjdk.jmh:jmh-generator-annprocess:1.0"
-
     testCompile "org.testng:testng:6.9.9"
     testCompile "com.google.jimfs:jimfs:1.1"
 
