@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -38,7 +39,7 @@ import java.util.Set;
  *
  * @author Dave Tefft
  */
-public class MergingSamRecordIteratorTest {
+public class MergingSamRecordIteratorTest extends HtsjdkTest {
 
     @Test
     public void testVanillaCoordinateMultiIterator() throws Exception {

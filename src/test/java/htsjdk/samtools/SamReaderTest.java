@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -31,7 +32,7 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
-public class SamReaderTest {
+public class SamReaderTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(dataProvider = "variousFormatReaderTestCases")

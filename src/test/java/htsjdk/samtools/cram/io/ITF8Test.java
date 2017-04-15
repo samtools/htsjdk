@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.Tuple;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -16,7 +17,7 @@ import java.util.List;
 /**
  * Created by vadim on 03/02/2015.
  */
-public class ITF8Test {
+public class ITF8Test extends HtsjdkTest {
 
     private ExposedByteArrayOutputStream testBAOS;
     private ByteArrayInputStream testBAIS;

@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -31,8 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class BlockCompressedFilePointerUtilTest
-{
+public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
     @Test
     public void basicTest() 
     {

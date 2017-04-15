@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -31,7 +32,7 @@ import java.io.File;
 /**
  * @author alecw@broadinstitute.org
  */
-public class BlockCompressedTerminatorTest {
+public class BlockCompressedTerminatorTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/util");
 
     @Test

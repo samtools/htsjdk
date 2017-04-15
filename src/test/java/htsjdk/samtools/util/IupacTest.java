@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
@@ -38,7 +39,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.util.Arrays;
 
-public class IupacTest {
+public class IupacTest extends HtsjdkTest {
     @Test(dataProvider = "basicDataProvider")
     public void basic(final String tempFileExtension) throws Exception {
         final File outputFile = File.createTempFile("iupacTest.", tempFileExtension);

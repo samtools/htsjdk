@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.StopWatch;
@@ -46,7 +47,7 @@ import static org.testng.Assert.*;
 /**
  * Test BAM file indexing.
  */
-public class BAMFileIndexTest {
+public class BAMFileIndexTest extends HtsjdkTest {
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final boolean mVerbose = false;
 
@@ -78,8 +79,7 @@ public class BAMFileIndexTest {
     }
 
     @Test(groups = {"slow"})
-    public void testRandomQueries()
-            throws Exception {
+    public void testRandomQueries() throws Exception {
         runRandomTest(BAM_FILE, 1000, new Random());
     }
 

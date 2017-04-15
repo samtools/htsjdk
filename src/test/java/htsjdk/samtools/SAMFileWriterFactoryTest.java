@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.IOUtil;
@@ -32,7 +33,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 
-public class SAMFileWriterFactoryTest {
+public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 

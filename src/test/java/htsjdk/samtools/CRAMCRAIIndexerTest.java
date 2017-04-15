@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -17,7 +18,7 @@ import java.util.List;
  * Companion to CRAMBAIIndexerTest, for testing CRAI indices created on cram
  * streams;
  */
-public class CRAMCRAIIndexerTest {
+public class CRAMCRAIIndexerTest extends HtsjdkTest {
 
     @Test
     public void testCRAIIndexerFromContainer() throws IOException {

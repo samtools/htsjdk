@@ -26,10 +26,12 @@ package htsjdk.samtools.seekablestream;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class SeekablePathStreamTest {
+public class SeekablePathStreamTest extends HtsjdkTest {
 
     @Test
     public void testRead() throws Exception {

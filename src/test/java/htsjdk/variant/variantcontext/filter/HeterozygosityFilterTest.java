@@ -23,6 +23,7 @@
  */
 package htsjdk.variant.variantcontext.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -37,7 +38,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class HeterozygosityFilterTest {
+public class HeterozygosityFilterTest extends HtsjdkTest {
 
     Allele refA = Allele.create("A", true);
     Allele G = Allele.create("G", false);

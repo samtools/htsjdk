@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
@@ -23,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class CRAMContainerStreamWriterTest {
+public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
     @BeforeClass
     public void initClass() {

@@ -1,17 +1,15 @@
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.DataProvider;
-import org.testng.annotations.Parameters;
 import org.testng.annotations.Test;
-
-import java.util.Arrays;
 
 /**
  * Created by Vadim on 12/03/2015.
  */
-public class SubstitutionMatrixTest {
+public class SubstitutionMatrixTest extends HtsjdkTest {
 
     SubstitutionMatrix m;
     long[][] freqs;

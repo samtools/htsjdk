@@ -18,6 +18,7 @@
 
 package htsjdk.tribble.index.linear;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
@@ -38,7 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class LinearIndexTest {
+public class LinearIndexTest extends HtsjdkTest {
     private static final File RANDOM_FILE = new File("notMeaningful");
 
     private final static Block CHR1_B1 = new Block(1, 10);

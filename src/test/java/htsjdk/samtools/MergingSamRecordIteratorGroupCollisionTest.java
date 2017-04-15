@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * @author Dave Tefft, Andre Mesarovic
  */
-public class MergingSamRecordIteratorGroupCollisionTest {
+public class MergingSamRecordIteratorGroupCollisionTest extends HtsjdkTest {
 
     private GroupAdapter padapter = new ProgramGroupAdapter();
     private GroupAdapter radapter = new ReadGroupAdapter();

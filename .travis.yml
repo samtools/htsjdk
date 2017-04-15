@@ -10,7 +10,7 @@ cache:
     - $HOME/.m2
 jdk:
   - oraclejdk8
-script: ./gradlew testSRA jacocoTestReport;
+script: ./gradlew test jacocoTestReport;
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";

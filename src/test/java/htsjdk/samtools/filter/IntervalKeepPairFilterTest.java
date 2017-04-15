@@ -1,5 +1,6 @@
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.util.CollectionUtil;
 import org.testng.Assert;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.stream.StreamSupport;
 
-public class IntervalKeepPairFilterTest {
+public class IntervalKeepPairFilterTest extends HtsjdkTest {
     private static final int READ_LENGTH = 151;
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
 

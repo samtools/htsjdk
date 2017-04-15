@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * @author alecw@broadinstitute.org
  */
-public class CigarTest {
+public class CigarTest extends HtsjdkTest {
 
     @DataProvider(name = "positiveTestsData")
     public Object[][] testPositive() {

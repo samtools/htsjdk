@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
@@ -22,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class FeatureReaderTest {
+public class FeatureReaderTest extends HtsjdkTest {
     private final static File asciiBedFile = new File(TestUtils.DATA_DIR + "test.bed");
     private File binaryBedFile;
     private final static File tabixBedFile = new File(TestUtils.DATA_DIR + "test.tabix.bed.gz");

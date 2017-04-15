@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
@@ -34,7 +35,7 @@ import org.testng.annotations.Test;
 import java.io.*;
 import java.net.URL;
 
-public class SamStreamsTest {
+public class SamStreamsTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 

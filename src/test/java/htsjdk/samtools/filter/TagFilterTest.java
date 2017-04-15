@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.ReservedTagConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
@@ -36,7 +37,7 @@ import java.util.List;
 /**
  * Tests for the TagFilter class
  */
-public class TagFilterTest {
+public class TagFilterTest extends HtsjdkTest {
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
 
 

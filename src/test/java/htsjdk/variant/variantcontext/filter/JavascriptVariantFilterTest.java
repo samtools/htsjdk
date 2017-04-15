@@ -23,6 +23,7 @@
  */
 package htsjdk.variant.variantcontext.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import org.testng.Assert;
@@ -36,7 +37,7 @@ import java.io.IOException;
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
 
-public class JavascriptVariantFilterTest {
+public class JavascriptVariantFilterTest extends HtsjdkTest {
     final File testDir = new File("src/test/resources/htsjdk/variant");
 
     @DataProvider

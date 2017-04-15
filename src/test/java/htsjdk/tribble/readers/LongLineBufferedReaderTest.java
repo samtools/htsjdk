@@ -1,5 +1,6 @@
 package htsjdk.tribble.readers;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -11,7 +12,7 @@ import java.io.InputStreamReader;
 /**
  * @author mccowan
  */
-public class LongLineBufferedReaderTest {
+public class LongLineBufferedReaderTest extends HtsjdkTest {
 
     /**
      * Test that we read the correct number of lines

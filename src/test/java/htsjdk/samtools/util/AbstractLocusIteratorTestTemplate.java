@@ -25,6 +25,7 @@
 package htsjdk.samtools.util;
 
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -36,7 +37,7 @@ import htsjdk.samtools.SAMSequenceRecord;
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * 
  */
-public abstract class AbstractLocusIteratorTestTemplate {
+public abstract class AbstractLocusIteratorTestTemplate extends HtsjdkTest {
 
     /** Coverage for tests with the same reads */
     final static int coverage = 2;

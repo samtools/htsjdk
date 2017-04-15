@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -45,7 +46,7 @@ import java.util.TreeSet;
 /**
  * Tests the IntervalList class
  */
-public class IntervalListTest {
+public class IntervalListTest extends HtsjdkTest {
 
     final SAMFileHeader fileHeader;
     final IntervalList list1, list2, list3;

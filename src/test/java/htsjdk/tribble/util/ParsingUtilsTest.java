@@ -3,20 +3,15 @@ package htsjdk.tribble.util;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
+import java.io.*;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,7 +19,7 @@ import java.util.List;
 /**
  * Parsing utils tests
  */
-public class ParsingUtilsTest {
+public class ParsingUtilsTest extends HtsjdkTest {
 
     static final String AVAILABLE_FTP_URL = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
     static final String UNAVAILABLE_FTP_URL = "ftp://www.example.com/file.txt";

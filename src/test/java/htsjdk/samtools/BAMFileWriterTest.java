@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
@@ -35,7 +36,7 @@ import java.io.File;
  * Test that BAM writing doesn't blow up.  For presorted writing, the resulting BAM file is read and contents are
  * compared with the original SAM file.
  */
-public class BAMFileWriterTest {
+public class BAMFileWriterTest extends HtsjdkTest {
 
     private SAMRecordSetBuilder getRecordSetBuilder(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
         final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);

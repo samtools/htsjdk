@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -41,7 +42,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
 
-public class IoUtilTest {
+public class IoUtilTest extends HtsjdkTest {
 
     private static final File SLURP_TEST_FILE = new File("src/test/resources/htsjdk/samtools/io/slurptest.txt");
     private static final File EMPTY_FILE = new File("src/test/resources/htsjdk/samtools/io/empty.txt");

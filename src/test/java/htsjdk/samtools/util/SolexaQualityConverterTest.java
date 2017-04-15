@@ -1,12 +1,13 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
 
-public class SolexaQualityConverterTest {
+public class SolexaQualityConverterTest extends HtsjdkTest {
     //declared as a staic variable because we reuse it in IlluminaUtilTest
     public static Object[][] SOLEXA_QUALS_TO_PHRED_SCORE = new Object[][] {
                 new Object[]{new byte[]{}, new byte[]{}},

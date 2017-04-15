@@ -1,5 +1,6 @@
 package htsjdk.variant.variantcontext.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * Created by farjoun on 9/9/15.
  */
-public class CompoundFilterTest {
+public class CompoundFilterTest extends HtsjdkTest {
 
     static AllPassFilter pass = new AllPassFilter();
     static AllFailFilter fail = new AllFailFilter();

@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.TextCigarCodec;
@@ -40,7 +41,7 @@ import java.util.List;
  *
  * @author Martha Borkan  mborkan@broadinstitute.org
  */
-public class CigarUtilTest {
+public class CigarUtilTest extends HtsjdkTest {
 
    @Test(dataProvider="clipData")
     public void basicTest(final String testName, final int start, final String inputCigar, final boolean negativeStrand,

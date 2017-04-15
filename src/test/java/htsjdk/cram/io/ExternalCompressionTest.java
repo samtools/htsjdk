@@ -1,16 +1,15 @@
-package htsjdk.samtools.cram.io;
+package htsjdk.cram.io;
 
-import org.apache.commons.compress.utils.IOUtils;
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.io.ExternalCompression;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class ExternalCompressionTest {
+public class ExternalCompressionTest extends HtsjdkTest {
     public static final File BZIP2_FILE = new File("src/test/resources/htsjdk/samtools/cram/io/bzip2-test.bz2");
     public static final byte [] TEST_BYTES = "This is a simple string to test BZip2".getBytes();
 

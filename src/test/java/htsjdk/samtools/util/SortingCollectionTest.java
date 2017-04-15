@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
@@ -41,7 +42,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
 
-public class SortingCollectionTest {
+public class SortingCollectionTest extends HtsjdkTest {
     // Create a separate directory for files so it is possible to confirm that the directory is emptied
     protected File tmpDir() {
         return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());

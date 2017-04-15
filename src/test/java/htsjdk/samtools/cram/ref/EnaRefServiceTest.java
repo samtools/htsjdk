@@ -1,11 +1,12 @@
 package htsjdk.samtools.cram.ref;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-public class EnaRefServiceTest {
+public class EnaRefServiceTest extends HtsjdkTest {
 
     @Test
     public void test() throws IOException, EnaRefService.GaveUpException {

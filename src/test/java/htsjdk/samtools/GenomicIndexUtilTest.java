@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 /**
  * Tests for GenomicIndexUtil.
  */
-public class GenomicIndexUtilTest {
+public class GenomicIndexUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "testRegionToBinDataProvider")
     public void testRegionToBin(final int beg, final int end, final int bin) {

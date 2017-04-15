@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.annotations.DataProvider;
@@ -38,7 +39,7 @@ import static org.testng.Assert.assertTrue;
 /**
  * Test BAM file index creation
  */
-public class BAMIndexWriterTest {
+public class BAMIndexWriterTest extends HtsjdkTest {
     // Two input files for basic test
     private final String BAM_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
     private final String BAI_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";

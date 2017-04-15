@@ -23,10 +23,11 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class AsyncWriterTest {
+public class AsyncWriterTest extends HtsjdkTest {
     private static class MyException extends RuntimeException {
         final Integer item;
         public MyException(Integer item) {

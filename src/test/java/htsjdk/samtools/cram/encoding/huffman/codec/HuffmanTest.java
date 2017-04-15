@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.encoding.huffman.codec;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.structure.ReadTag;
@@ -13,7 +14,7 @@ import java.io.IOException;
 /**
  * Created by vadim on 22/04/2015.
  */
-public class HuffmanTest {
+public class HuffmanTest extends HtsjdkTest {
     @Test
     public void testHuffmanIntHelper() throws IOException {
         int size = 1000000;

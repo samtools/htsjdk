@@ -23,12 +23,13 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
 
-public class CigarCodecTest {
+public class CigarCodecTest extends HtsjdkTest {
 
 
     @Test

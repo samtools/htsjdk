@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CloserUtil;
@@ -45,7 +46,7 @@ import java.util.Map;
  *
  * @author alecw@broadinstitute.org
  */
-public class SAMIntegerTagTest {
+public class SAMIntegerTagTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest");
 
     private static final String BYTE_TAG = "BY";

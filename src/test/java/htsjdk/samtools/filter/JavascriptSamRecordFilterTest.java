@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -39,7 +40,7 @@ import java.io.IOException;
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
 
-public class JavascriptSamRecordFilterTest {
+public class JavascriptSamRecordFilterTest extends HtsjdkTest {
     final File testDir = new File("./src/test/resources/htsjdk/samtools");
 
     @DataProvider

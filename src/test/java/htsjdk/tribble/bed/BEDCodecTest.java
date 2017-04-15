@@ -24,6 +24,7 @@
 
 package htsjdk.tribble.bed;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TestUtils;
@@ -43,7 +44,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-public class BEDCodecTest {
+public class BEDCodecTest extends HtsjdkTest {
 
     @Test
     public void testSimpleDecode() {

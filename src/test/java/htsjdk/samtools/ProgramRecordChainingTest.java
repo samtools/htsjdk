@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * Test for SequenceUtil.chainProgramRecord
  */
-public class ProgramRecordChainingTest {
+public class ProgramRecordChainingTest extends HtsjdkTest {
 
     @Test
     public void testChainProgramRecord() {

@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -36,7 +37,7 @@ import java.util.Iterator;
 /**
  * Test the fasta sequence index reader.
  */
-public class FastaSequenceIndexTest {
+public class FastaSequenceIndexTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
 
     @DataProvider(name="homosapiens")

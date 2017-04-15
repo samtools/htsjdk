@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -33,7 +34,7 @@ import java.io.OutputStream;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class PositionalOutputStreamTest {
+public class PositionalOutputStreamTest extends HtsjdkTest {
 
     @Test
     public void basicPositionTest() throws Exception {

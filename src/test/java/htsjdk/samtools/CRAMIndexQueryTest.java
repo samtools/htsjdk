@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
@@ -42,7 +43,7 @@ import java.util.function.Function;
  * whatever index format (.bai or .crai converted to .bai) is available for the
  * target file.
  */
-public class CRAMIndexQueryTest {
+public class CRAMIndexQueryTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 

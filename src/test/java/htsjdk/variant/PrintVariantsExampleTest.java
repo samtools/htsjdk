@@ -25,20 +25,19 @@
 
 package htsjdk.variant;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.example.PrintVariantsExample;
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
-public class PrintVariantsExampleTest {
+public class PrintVariantsExampleTest extends HtsjdkTest {
     @Test
     public void testExampleWriteFile() throws IOException {
         final File tempFile = File.createTempFile("example", ".vcf");

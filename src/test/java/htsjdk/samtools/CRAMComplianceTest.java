@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -22,7 +23,7 @@ import java.util.List;
 /**
  * Created by vadim on 28/04/2015.
  */
-public class CRAMComplianceTest {
+public class CRAMComplianceTest extends HtsjdkTest {
 
     @FunctionalInterface
     public interface TriConsumer<T1, T2, T3> {

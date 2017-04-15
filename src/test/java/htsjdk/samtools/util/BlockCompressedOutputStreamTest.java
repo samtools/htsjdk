@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
@@ -39,7 +40,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.zip.Deflater;
 
-public class BlockCompressedOutputStreamTest {
+public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     private static final String HTSJDK_TRIBBLE_RESOURCES = "src/test/resources/htsjdk/tribble/";
 

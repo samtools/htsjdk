@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -36,7 +37,7 @@ import java.io.File;
  *
  * @author alecw@broadinstitute.org
  */
-public class SequenceNameTruncationAndValidationTest {
+public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
     @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")

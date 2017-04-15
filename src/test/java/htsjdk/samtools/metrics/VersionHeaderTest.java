@@ -1,5 +1,6 @@
 package htsjdk.samtools.metrics;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 
-public class VersionHeaderTest {
+public class VersionHeaderTest extends HtsjdkTest {
 
     @Test
     public void testSerializeVersionHeader() throws IOException, ClassNotFoundException {

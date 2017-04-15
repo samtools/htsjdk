@@ -1,6 +1,7 @@
 package htsjdk.tribble.readers;
 
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
@@ -23,7 +24,7 @@ import static org.testng.AssertJUnit.assertTrue;
  * Time: 8:57:40 PM
  * To change this template use File | Settings | File Templates.
  */
-public class TabixReaderTest {
+public class TabixReaderTest extends HtsjdkTest {
 
     static String tabixFile = TestUtils.DATA_DIR + "tabix/trioDup.vcf.gz";
     static TabixReader tabixReader;

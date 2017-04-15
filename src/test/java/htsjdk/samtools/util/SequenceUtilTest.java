@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
@@ -36,7 +37,7 @@ import java.util.*;
 /**
  * @author alecw@broadinstitute.org
  */
-public class SequenceUtilTest {
+public class SequenceUtilTest extends HtsjdkTest {
     private static final String HEADER = "@HD\tVN:1.0\tSO:unsorted\n";
     private static final String SEQUENCE_NAME=
         "@SQ\tSN:phix174.seq\tLN:5386\tUR:/seq/references/PhiX174/v0/PhiX174.fasta\tAS:PhiX174\tM5:3332ed720ac7eaa9b3655c06f6b9e196";

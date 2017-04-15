@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 /**
  * @author nhomer
  */
-public class SamFlagFieldTest {
+public class SamFlagFieldTest extends HtsjdkTest {
 
     @Test
     public void testAllFlags() {

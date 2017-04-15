@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * @author alecw@broadinstitute.org
  */
-public class SAMCloneTest {
+public class SAMCloneTest extends HtsjdkTest {
     private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
         final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
         ret.addPair("readB", 20, 200, 300);

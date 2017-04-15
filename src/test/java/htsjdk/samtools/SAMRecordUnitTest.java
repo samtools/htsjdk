@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
@@ -34,7 +35,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
-public class SAMRecordUnitTest {
+public class SAMRecordUnitTest extends HtsjdkTest {
 
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {

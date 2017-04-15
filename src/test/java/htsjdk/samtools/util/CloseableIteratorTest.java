@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -8,7 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class CloseableIteratorTest {
+public class CloseableIteratorTest extends HtsjdkTest {
     @Test
     public void testToList() {
         final List<Integer> expected = Arrays.asList(1,2,3,4,5);

@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.cram.common.CramVersions;
@@ -15,7 +16,7 @@ import java.io.IOException;
 /**
  * Created by vadim on 25/08/2015.
  */
-public class CramIOTest {
+public class CramIOTest extends HtsjdkTest {
     @Test
     public void testCheckHeaderAndEOF_v2() throws IOException {
         final String id = "testid";

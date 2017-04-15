@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -31,7 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class SAMTextWriterTest {
+public class SAMTextWriterTest extends HtsjdkTest {
 
     private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
         final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
