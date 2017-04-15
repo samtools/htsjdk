@@ -96,6 +96,8 @@ public class SamFileValidator {
     private boolean bisulfiteSequenced;
     private IndexValidationStringency indexValidationStringency;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted;
+    private int numWarnings;
+    private int numErrors;
 
     private final int maxTempFiles;
 
@@ -111,6 +113,8 @@ public class SamFileValidator {
         this.ignoreWarnings = false;
         this.bisulfiteSequenced = false;
         this.sequenceDictionaryEmptyAndNoWarningEmitted = false;
+        this.numWarnings = 0;
+        this.numErrors = 0;
     }
 
     Histogram<Type> getErrorsByType() {
@@ -566,11 +570,41 @@ public class SamFileValidator {
         }
     }
 
+    /**
+     * Number of warnings during SAM file validation
+     *
+     * @return number of warnings
+     */
+    public int getNumWarnings() {
+        return this.numWarnings;
+    }
+
+    /**
+     * Number of errors during SAM file validation
+     *
+     * @return number of errors
+     */
+    public int getNumErrors() {
+        return this.numErrors;
+    }
+
     private void addError(final SAMValidationError error) {
         // Just ignore an error if it's of a type we're not interested in
         if (this.errorsToIgnore.contains(error.getType())) return;
 
-        if (this.ignoreWarnings && error.getType().severity == SAMValidationError.Severity.WARNING) return;
+        switch (error.getType().severity) {
+            case WARNING:
+                if ( this.ignoreWarnings ) {
+                    return;
+                }
+                this.numWarnings++;
+                break;
+            case ERROR:
+                this.numErrors++;
+                break;
+            default:
+                throw new SAMException("Unknown SAM validation error severity: " + error.getType().severity);
+        }
 
         this.errorsByType.increment(error.getType());
         if (verbose) {
