@@ -100,6 +100,7 @@ class FastqReaderWriterTest extends UnitSpec {
     val path = makeTempFile("empty.", ".fastq")
     val in = new FastqReader(path.toFile)
     while (in.hasNext) in.next()
+    an[Exception] shouldBe thrownBy { in.next() }
     in.close()
   }
 
@@ -118,4 +119,33 @@ class FastqReaderWriterTest extends UnitSpec {
       an[Exception] shouldBe thrownBy { new FastqReader(null, reader).iterator().toSeq }
     }
   }
+
+  it should "fail if the seq and qual lines are different lengths" in {
+    val fastq =
+      """
+        |@q1
+        |AACC
+        |+
+        |########
+      """.stripMargin.trim
+
+    val reader = new BufferedReader(new StringReader(fastq))
+    an[Exception] shouldBe thrownBy { new FastqReader(null, reader).iterator().toSeq }
+  }
+
+  it should "fail if either header line is empty" in {
+    val fastq =
+      """
+        |@q1
+        |AACC
+        |+q1
+        |########
+      """.stripMargin.trim
+
+    val noSeqHeader  = new BufferedReader(new StringReader(fastq.replace("@q1", "")))
+    val noQualHeader = new BufferedReader(new StringReader(fastq.replace("+q1", "")))
+    an[Exception] shouldBe thrownBy { new FastqReader(noSeqHeader).iterator().toSeq }
+    an[Exception] shouldBe thrownBy { new FastqReader(noQualHeader).iterator().toSeq }
+  }
+
 }

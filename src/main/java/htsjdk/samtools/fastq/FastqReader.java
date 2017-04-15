@@ -74,10 +74,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * @param skipBlankLines should we skip blank lines ?
      */
     public FastqReader(final File file, final boolean skipBlankLines) {
-        this.skipBlankLines=skipBlankLines;
-        fastqFile = file;
-        reader = IOUtil.openFileForBufferedReading(fastqFile);
-        nextRecord = readNextRecord();
+        this(file, IOUtil.openFileForBufferedReading(file), skipBlankLines);
     }
 
     public FastqReader(final BufferedReader reader) {
@@ -103,7 +100,6 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
 
     private FastqRecord readNextRecord() {
         try {
-
             // Read sequence header
             final String seqHeader = readLineConditionallySkippingBlanks();
             if (seqHeader == null) return null ;
@@ -111,7 +107,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
                 throw new SAMException(error("Missing sequence header"));
             }
             if (!seqHeader.startsWith(FastqConstants.SEQUENCE_HEADER)) {
-                throw new SAMException(error("Sequence header must start with "+ FastqConstants.SEQUENCE_HEADER+": "+seqHeader));
+                throw new SAMException(error("Sequence header must start with " + FastqConstants.SEQUENCE_HEADER + ": " + seqHeader));
             }
 
             // Read sequence line
@@ -122,7 +118,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             final String qualHeader = readLineConditionallySkippingBlanks();
             checkLine(qualHeader, LineType.QualityHeader);
             if (!qualHeader.startsWith(FastqConstants.QUALITY_HEADER)) {
-                throw new SAMException(error("Quality header must start with "+ FastqConstants.QUALITY_HEADER+": "+qualHeader));
+                throw new SAMException(error("Quality header must start with " + FastqConstants.QUALITY_HEADER + ": "+qualHeader));
             }
 
             // Read quality line
