@@ -56,6 +56,8 @@ public abstract class EdgingRecordAndOffset extends AbstractRecordAndOffset {
 
     public abstract byte getBaseQuality(int position);
 
+    public abstract int getRefPos();
+
     public static EdgingRecordAndOffset createBeginRecord(SAMRecord record, int offset, int length, int refPos) {
         return new StartEdgingRecordAndOffset(record, offset, length, refPos);
     }
