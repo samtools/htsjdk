@@ -41,6 +41,22 @@ import java.util.NoSuchElementException;
  * directly.  It is provided so that this class can be used in Java for-each loop.
  */
 public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>, Closeable {
+    /** Enum of the types of lines we see in Fastq. */
+    protected enum LineType {
+        SequenceHeader("Sequence Header"),
+        SequenceLine("Sequence Line"),
+        QualityHeader("Quality Header"),
+        QualityLine("Quality Line");
+
+        private String printable;
+
+        LineType(String printable) {
+            this.printable = printable;
+        }
+
+        @Override public String toString() { return this.printable; }
+    }
+
     final private File fastqFile;
     final private BufferedReader reader;
     private FastqRecord nextRecord;
@@ -58,10 +74,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
      * @param skipBlankLines should we skip blank lines ?
      */
     public FastqReader(final File file, final boolean skipBlankLines) {
-        this.skipBlankLines=skipBlankLines;
-        fastqFile = file;
-        reader = IOUtil.openFileForBufferedReading(fastqFile);
-        nextRecord = readNextRecord();
+        this(file, IOUtil.openFileForBufferedReading(file), skipBlankLines);
     }
 
     public FastqReader(final BufferedReader reader) {
@@ -87,7 +100,6 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
 
     private FastqRecord readNextRecord() {
         try {
-
             // Read sequence header
             final String seqHeader = readLineConditionallySkippingBlanks();
             if (seqHeader == null) return null ;
@@ -95,23 +107,23 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
                 throw new SAMException(error("Missing sequence header"));
             }
             if (!seqHeader.startsWith(FastqConstants.SEQUENCE_HEADER)) {
-                throw new SAMException(error("Sequence header must start with "+ FastqConstants.SEQUENCE_HEADER+": "+seqHeader));
+                throw new SAMException(error("Sequence header must start with " + FastqConstants.SEQUENCE_HEADER + ": " + seqHeader));
             }
 
             // Read sequence line
             final String seqLine = readLineConditionallySkippingBlanks();
-            checkLine(seqLine,"sequence line");
+            checkLine(seqLine, LineType.SequenceLine);
 
             // Read quality header
             final String qualHeader = readLineConditionallySkippingBlanks();
-            checkLine(qualHeader,"quality header");
+            checkLine(qualHeader, LineType.QualityHeader);
             if (!qualHeader.startsWith(FastqConstants.QUALITY_HEADER)) {
-                throw new SAMException(error("Quality header must start with "+ FastqConstants.QUALITY_HEADER+": "+qualHeader));
+                throw new SAMException(error("Quality header must start with " + FastqConstants.QUALITY_HEADER + ": "+qualHeader));
             }
 
             // Read quality line
             final String qualLine = readLineConditionallySkippingBlanks();
-            checkLine(qualLine,"quality line");
+            checkLine(qualLine, LineType.QualityLine);
 
             // Check sequence and quality lines are same length
             if (seqLine.length() != qualLine.length()) {
@@ -169,16 +181,18 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         }
     }
 
-    private void checkLine(final String line, final String kind) {
+    /** Checks that the line is neither null (representing EOF) or empty (blank line in file). */
+    protected void checkLine(final String line, final LineType kind) {
         if (line == null) {
-            throw new SAMException(error("File is too short - missing "+kind+" line"));
+            throw new SAMException(error("File is too short - missing " + kind));
         }
         if (StringUtil.isBlank(line)) {
-            throw new SAMException(error("Missing "+kind));
+            throw new SAMException(error("Missing " + kind));
         }
     }
 
-    private String error(final String msg) {
+    /** Generates an error message with line number information. */
+    protected String error(final String msg) {
         return msg + " at line "+line+" in fastq "+getAbsolutePath();
     }
 
