@@ -81,6 +81,11 @@ tasks.withType(Test) { task ->
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
 }
 
+task findScalaAndJavaTypes(type: Exec) {
+    description = "Check that Scala files only exist in the scala test dir and that java files do not reside in the scala test dir."
+    commandLine './scripts/checkScalaAndJavaFiles.sh'
+}
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
@@ -98,7 +103,7 @@ test {
         if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
-}
+} dependsOn findScalaAndJavaTypes
 
 task testSRA(type: Test) {
     description = "Run the SRA tests"
