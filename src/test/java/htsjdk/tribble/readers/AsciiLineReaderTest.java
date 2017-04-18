@@ -2,10 +2,10 @@ package htsjdk.tribble.readers;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.tribble.TestUtils;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
@@ -39,5 +39,33 @@ public class AsciiLineReaderTest extends HtsjdkTest {
 
         assertEquals(expectedNumber, actualLines);
 
+    }
+
+    @Test public void voidTestLineEndingLength() throws Exception {
+        final String input = "Hello\nThis\rIs A Silly Test\r\nSo There";
+        final InputStream is = new ByteArrayInputStream(input.getBytes());
+        final AsciiLineReader in = new AsciiLineReader(is);
+
+        Assert.assertEquals(in.getLineTerminatorLength(), -1);
+        Assert.assertEquals(in.readLine(), "Hello");
+        Assert.assertEquals(in.getLineTerminatorLength(), 1);
+        Assert.assertEquals(in.readLine(), "This");
+        Assert.assertEquals(in.getLineTerminatorLength(), 1);
+        Assert.assertEquals(in.readLine(), "Is A Silly Test");
+        Assert.assertEquals(in.getLineTerminatorLength(), 2);
+        Assert.assertEquals(in.readLine(), "So There");
+        Assert.assertEquals(in.getLineTerminatorLength(), 0);
+    }
+
+    @Test public void voidTestLineEndingLengthAtEof() throws Exception {
+        final String input = "Hello\nWorld\r\n";
+        final InputStream is = new ByteArrayInputStream(input.getBytes());
+        final AsciiLineReader in = new AsciiLineReader(is);
+
+        Assert.assertEquals(in.getLineTerminatorLength(), -1);
+        Assert.assertEquals(in.readLine(), "Hello");
+        Assert.assertEquals(in.getLineTerminatorLength(), 1);
+        Assert.assertEquals(in.readLine(), "World");
+        Assert.assertEquals(in.getLineTerminatorLength(), 2);
     }
 }
