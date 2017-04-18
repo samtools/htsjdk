@@ -1,4 +1,4 @@
-/*
+ /*
  * The MIT License
  *
  * Copyright (c) 2017 The Broad Institute
@@ -106,7 +106,7 @@ class StringUtilTest extends UnitSpec {
     StringUtil.assertCharactersNotInString("HelloWorld", ' ', '!', '_')
   }
 
-  val textForWrapping =
+  val textForWrapping: String =
     """This is a little bit
       |of text with nice short
       |lines.

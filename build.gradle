@@ -81,6 +81,23 @@ tasks.withType(Test) { task ->
     task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
 }
 
+task testSRA(type: Test) {
+    description = "Run the SRA tests"
+    jvmArgs += '-Dsamjdk.sra_libraries_download=true'
+
+    tags {
+        exclude "slow"
+        exclude "broken"
+    }
+}
+
+
+task FindScalaAndJavaTypes(type: Exec) {
+    description = "Check for Scala outside the scala test dir and java files there."
+    commandLine './scripts/checkScalaAndJavaFiles.sh'
+}
+
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
@@ -98,17 +115,7 @@ test {
         if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
-}
-
-task testSRA(type: Test) {
-    description = "Run the SRA tests"
-    jvmArgs += '-Dsamjdk.sra_libraries_download=true'
-
-    tags {
-        exclude "slow"
-        exclude "broken"
-    }
-}
+} dependsOn FindScalaAndJavaTypes
 
 task wrapper(type: Wrapper) {
     description = "Regenerate the gradle wrapper"
