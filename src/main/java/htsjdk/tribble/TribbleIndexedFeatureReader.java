@@ -25,6 +25,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -33,9 +34,12 @@ import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
@@ -242,7 +246,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         PositionalBufferedStream pbs = null;
         try {
             is = ParsingUtils.openInputStream(path, wrapper);
-            if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
+            if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8"))) || isGZIPBCFPath(path)) {
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }
@@ -255,6 +259,34 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (pbs != null) pbs.close();
             else if (is != null) is.close();
         }
+    }
+
+    /*
+     * Determine if this is a BGZF compressed BCF file.
+     * @param path file path or URL to the resource
+     * @return true if this a BGZF compressed BCF file
+     * @throws IOException
+     */
+    static boolean isGZIPBCFPath(final String path) throws IOException {
+        try {
+            final URL url = new URL(path);
+            if (url != null) {
+                final String urlPath = url.getPath();
+                if (urlPath != null && urlPath.toLowerCase().endsWith(".bcf")) {
+                    try (final InputStream is = SeekableStreamFactory.getInstance().getStreamFor(url)) {
+                        return BlockCompressedInputStream.isValidFile(is);
+                    }
+                }
+            }
+        }
+        catch (MalformedURLException e) {
+            if (path.toLowerCase().endsWith(".bcf")) {
+                try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(path))) {
+                    return BlockCompressedInputStream.isValidFile(bis);
+                }
+            }
+        }
+        return false;
     }
 
     /**
