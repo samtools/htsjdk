@@ -119,7 +119,9 @@ public class ValidateSamFileTest extends HtsjdkTest {
         validator.validateSamFileVerbose(samBuilder.getSamReader(), null);
 
         final int lineCount = results.toString().split("\n").length;
-        Assert.assertEquals(lineCount, 11);
+        Assert.assertEquals(lineCount, 11); // 1 extra message added to indicate maximum number of errors
+        Assert.assertEquals(validator.getNumErrors(), 6);
+        Assert.assertEquals(validator.getNumWarnings(), 4);
     }
 
     @Test
@@ -522,16 +524,18 @@ public class ValidateSamFileTest extends HtsjdkTest {
     @DataProvider(name = "validateBamFileTerminationData")
     public Object[][] validateBamFileTerminationData() throws IOException {
         return new Object[][]{
-                {getBrokenFile(TERMINATION_GZIP_BLOCK_SIZE), SAMValidationError.Type.BAM_FILE_MISSING_TERMINATOR_BLOCK},
-                {getBrokenFile(RANDOM_NUMBER_TRUNC_BYTE), SAMValidationError.Type.TRUNCATED_FILE}
+                {getBrokenFile(TERMINATION_GZIP_BLOCK_SIZE), SAMValidationError.Type.BAM_FILE_MISSING_TERMINATOR_BLOCK, 1, 0},
+                {getBrokenFile(RANDOM_NUMBER_TRUNC_BYTE), SAMValidationError.Type.TRUNCATED_FILE, 0, 1}
         };
     }
 
     @Test(dataProvider = "validateBamFileTerminationData")
-    public void validateBamFileTerminationTest(File file, SAMValidationError.Type errorType) throws IOException {
+    public void validateBamFileTerminationTest(final File file, final SAMValidationError.Type errorType, final int numWarnings, final int numErrors) throws IOException {
         final SamFileValidator samFileValidator = new SamFileValidator(new PrintWriter(System.out), 8000);
         samFileValidator.validateBamFileTermination(file);
         Assert.assertEquals(samFileValidator.getErrorsByType().get(errorType).getValue(), 1.0);
+        Assert.assertEquals(samFileValidator.getNumWarnings(), numWarnings);
+        Assert.assertEquals(samFileValidator.getNumErrors(), numErrors);
     }
 
     private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference,
