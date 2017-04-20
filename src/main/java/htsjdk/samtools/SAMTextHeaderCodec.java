@@ -228,21 +228,22 @@ public class SAMTextHeaderCodec {
         if (!parsedHeaderLine.requireTag(SAMFileHeader.VERSION_TAG)) {
             return;
         }
-        final String SOString = parsedHeaderLine.getValue(SAMFileHeader.SORT_ORDER_TAG);
+
+        final String soString = parsedHeaderLine.getValue(SAMFileHeader.SORT_ORDER_TAG);
         try {
-            SAMFileHeader.SortOrder.valueOf(SOString);
+            if (soString != null) SAMFileHeader.SortOrder.valueOf(soString);
         } catch (IllegalArgumentException e) {
             reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
-                            " line has non-conforming SO tag value: "+ SOString + ".",
+                            " line has non-conforming SO tag value: "+ soString + ".",
                     SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
         }
 
-        final String GOString = parsedHeaderLine.getValue(SAMFileHeader.GROUP_ORDER_TAG);
+        final String goString = parsedHeaderLine.getValue(SAMFileHeader.GROUP_ORDER_TAG);
         try {
-            SAMFileHeader.GroupOrder.valueOf(GOString);
+            if (goString != null) SAMFileHeader.GroupOrder.valueOf(goString);
         } catch (IllegalArgumentException e) {
             reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
-                            " line has non-conforming GO tag value: "+ GOString + ".",
+                            " line has non-conforming GO tag value: "+ goString + ".",
                     SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
         }
 
