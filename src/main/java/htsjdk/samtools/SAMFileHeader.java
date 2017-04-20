@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.StringLineReader;
 
 import java.io.StringWriter;
@@ -50,6 +51,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final Set<String> ACCEPTABLE_VERSIONS =
             new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4", "1.5"));
 
+    private static final Log log = Log.getInstance(SAMFileHeader.class);
     /**
      * These tags are of known type, so don't need a type field in the text representation.
      */
@@ -65,8 +67,8 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      * Ways in which a SAM or BAM may be sorted.
      */
     public enum SortOrder {
-
         unsorted(null),
+        unknown(null),
         queryname(SAMRecordQueryNameComparator.class),
         coordinate(SAMRecordCoordinateComparator.class),
         duplicate(SAMRecordDuplicateComparator.class); // NB: this is not in the SAM spec!
@@ -253,7 +255,13 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         if (so == null || so.equals("unknown")) {
             return SortOrder.unsorted;
         }
-        return SortOrder.valueOf((String) so);
+        try {
+            SortOrder sortOrder = SortOrder.valueOf(so);
+            return sortOrder;
+        } catch (IllegalArgumentException e) {
+            log.warn("Found non conforming header SO tag: "+ so + ". Treating as 'unknown'.");
+            return SortOrder.unknown;
+        }
     }
 
     public void setSortOrder(final SortOrder so) {
