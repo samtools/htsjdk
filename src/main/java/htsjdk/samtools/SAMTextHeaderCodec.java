@@ -228,6 +228,24 @@ public class SAMTextHeaderCodec {
         if (!parsedHeaderLine.requireTag(SAMFileHeader.VERSION_TAG)) {
             return;
         }
+        final String SOString = parsedHeaderLine.getValue(SAMFileHeader.SORT_ORDER_TAG);
+        try {
+            SAMFileHeader.SortOrder.valueOf(SOString);
+        } catch (IllegalArgumentException e) {
+            reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
+                            " line has non-conforming SO tag value: "+ SOString + ".",
+                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+        }
+
+        final String GOString = parsedHeaderLine.getValue(SAMFileHeader.GROUP_ORDER_TAG);
+        try {
+            SAMFileHeader.GroupOrder.valueOf(GOString);
+        } catch (IllegalArgumentException e) {
+            reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
+                            " line has non-conforming GO tag value: "+ GOString + ".",
+                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+        }
+
         transferAttributes(mFileHeader, parsedHeaderLine.mKeyValuePairs);
     }
 
