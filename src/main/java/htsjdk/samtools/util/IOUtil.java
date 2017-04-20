@@ -778,8 +778,13 @@ public class IOUtil {
 
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
-        return new BufferedReader(new InputStreamReader(openFileForReading(file)), Defaults.NON_ZERO_BUFFER_SIZE);
+        return openFileForBufferedReading(file.toPath());
 	}
+
+    /** Checks that a path exists and is readable, and then returns a buffered reader for it. */
+    public static BufferedReader openFileForBufferedReading(final Path path) {
+        return new BufferedReader(new InputStreamReader(openFileForReading(path)), Defaults.NON_ZERO_BUFFER_SIZE);
+    }
 
     /** Takes a string and replaces any characters that are not safe for filenames with an underscore */
     public static String makeFileNameSafe(final String str) {

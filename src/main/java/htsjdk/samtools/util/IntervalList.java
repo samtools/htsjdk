@@ -34,6 +34,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -395,12 +396,21 @@ public class IntervalList implements Iterable<Interval> {
      * @return an IntervalList object that contains the headers and intervals from the file
      */
     public static IntervalList fromFile(final File file) {
-        final BufferedReader reader= IOUtil.openFileForBufferedReading(file);
+        return fromPath(file.toPath());
+    }
+
+    /**
+     * Parses an interval list from a path.
+     * @param path the path containing the intervals
+     * @return an IntervalList object that contains the headers and intervals from the path
+     */
+    public static IntervalList fromPath(final Path path) {
+        final BufferedReader reader = IOUtil.openFileForBufferedReading(path);
         final IntervalList list = fromReader(reader);
         try {
             reader.close();
         } catch (final IOException e) {
-            throw new SAMException(String.format("Failed to close file %s after reading",file));
+            throw new SAMException(String.format("Failed to close file %s after reading", path.toUri().toString()));
         }
 
         return list;
