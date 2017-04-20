@@ -49,14 +49,14 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final String GROUP_ORDER_TAG = "GO";
     public static final String CURRENT_VERSION = "1.5";
     public static final Set<String> ACCEPTABLE_VERSIONS =
-            new HashSet<String>(Arrays.asList("1.0", "1.3", "1.4", "1.5"));
+            new HashSet<>(Arrays.asList("1.0", "1.3", "1.4", "1.5"));
 
     private static final Log log = Log.getInstance(SAMFileHeader.class);
     /**
      * These tags are of known type, so don't need a type field in the text representation.
      */
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(VERSION_TAG, SORT_ORDER_TAG, GROUP_ORDER_TAG));
+            new HashSet<>(Arrays.asList(VERSION_TAG, SORT_ORDER_TAG, GROUP_ORDER_TAG));
 
     @Override
     Set<String> getStandardTags() {
@@ -109,15 +109,15 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     }
 
     private List<SAMReadGroupRecord> mReadGroups =
-        new ArrayList<SAMReadGroupRecord>();
-    private List<SAMProgramRecord> mProgramRecords = new ArrayList<SAMProgramRecord>();
+            new ArrayList<>();
+    private List<SAMProgramRecord> mProgramRecords = new ArrayList<>();
     private final Map<String, SAMReadGroupRecord> mReadGroupMap =
-        new HashMap<String, SAMReadGroupRecord>();
-    private final Map<String, SAMProgramRecord> mProgramRecordMap = new HashMap<String, SAMProgramRecord>();
+            new HashMap<>();
+    private final Map<String, SAMProgramRecord> mProgramRecordMap = new HashMap<>();
     private SAMSequenceDictionary mSequenceDictionary = new SAMSequenceDictionary();
-    final private List<String> mComments = new ArrayList<String>();
+    final private List<String> mComments = new ArrayList<>();
     private String textHeader;
-    private final List<SAMValidationError> mValidationErrors = new ArrayList<SAMValidationError>();
+    private final List<SAMValidationError> mValidationErrors = new ArrayList<>();
 
     public SAMFileHeader() {
         setAttribute(VERSION_TAG, CURRENT_VERSION);
@@ -130,11 +130,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     }
 
     public String getVersion() {
-        return (String) getAttribute("VN");
+        return getAttribute("VN");
     }
 
     public String getCreator() {
-        return (String) getAttribute("CR");
+        return getAttribute("CR");
     }
 
     public SAMSequenceDictionary getSequenceDictionary() {
@@ -256,8 +256,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
             return SortOrder.unsorted;
         }
         try {
-            SortOrder sortOrder = SortOrder.valueOf(so);
-            return sortOrder;
+            return SortOrder.valueOf(so);
         } catch (IllegalArgumentException e) {
             log.warn("Found non conforming header SO tag: "+ so + ". Treating as 'unknown'.");
             return SortOrder.unknown;
@@ -272,7 +271,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
         if (getAttribute("GO") == null) {
             return GroupOrder.none;
         }
-        return GroupOrder.valueOf((String)getAttribute("GO"));
+        return GroupOrder.valueOf(getAttribute("GO"));
     }
 
     public void setGroupOrder(final GroupOrder go) {
@@ -380,7 +379,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static class PgIdGenerator {
         private int recordCounter;
 
-        private final Set<String> idsThatAreAlreadyTaken = new HashSet<String>();
+        private final Set<String> idsThatAreAlreadyTaken = new HashSet<>();
 
         public PgIdGenerator(final SAMFileHeader header) {
             for (final SAMProgramRecord pgRecord : header.getProgramRecords()) {
@@ -408,7 +407,6 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
                 idsThatAreAlreadyTaken.add(newId);
                 return newId;
             }
-
         }
     }
 }
