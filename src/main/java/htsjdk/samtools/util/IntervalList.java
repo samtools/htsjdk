@@ -401,13 +401,18 @@ public class IntervalList implements Iterable<Interval> {
         return fromPath(file.toPath());
     }
 
+    /**
+     * Parses an interval list from a path.
+     * @param path the path containing the intervals
+     * @return an IntervalList object that contains the headers and intervals from the path
+     */
     public static IntervalList fromPath(final Path path) {
         final BufferedReader reader = IOUtil.openFileForBufferedReading(path);
         final IntervalList list = fromReader(reader);
         try {
             reader.close();
         } catch (final IOException e) {
-            throw new SAMException(String.format("Failed to close file %s after reading", path));
+            throw new SAMException(String.format("Failed to close file %s after reading", path.toUri().toString()));
         }
 
         return list;
