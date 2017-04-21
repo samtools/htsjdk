@@ -24,7 +24,9 @@
 package htsjdk.variant.vcf;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -66,11 +68,13 @@ public class VCFIteratorTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingStreams(String uri, int nVariants) throws IOException {
-        VCFIterator r = new VCFIteratorBuilder().open(uri);
+    public void testUsingStreams(String file, int nVariants) throws IOException {
+        InputStream in = new FileInputStream(file); 
+        VCFIterator r = new VCFIteratorBuilder().open(in);
         Assert.assertNotNull(r.getFileHeader());
         Assert.assertEquals(countVariants(r), nVariants);
         r.close();
+        in.close();
     }
 
 }
