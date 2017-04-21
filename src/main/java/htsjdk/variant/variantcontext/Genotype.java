@@ -540,6 +540,8 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
             return getAlleles();
         } else if (key.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
             return getGQ();
+        } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
+            return getFilters();
         } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
             if (hasAD()) {
                 final List<Integer> intList = new ArrayList<Integer>(getAD().length);
