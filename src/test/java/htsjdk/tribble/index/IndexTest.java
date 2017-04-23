@@ -3,6 +3,7 @@ package htsjdk.tribble.index;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
