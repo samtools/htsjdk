@@ -28,8 +28,11 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,6 +43,7 @@ import java.io.OutputStreamWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 public class IoUtilTest {
 
@@ -186,5 +190,55 @@ public class IoUtilTest {
                 {"/dev/stdout", Boolean.FALSE},
                 {"/non/existent/file", Boolean.TRUE},
         };
+    }
+    
+    @Test
+    public void isGZIPInputStreamTest() throws IOException {
+        // test string without compression
+        final byte message[]="Hello World".getBytes();
+        BufferedInputStream in = new BufferedInputStream(new ByteArrayInputStream(message),10);
+        Assert.assertFalse(IOUtil.isGZIPInputStream(in));
+        // call twice to verify 'in.reset()' was called
+        Assert.assertFalse(IOUtil.isGZIPInputStream(in));
+        in.close();
+        
+        //compress the message
+        ByteArrayOutputStream bos =new ByteArrayOutputStream();
+        GZIPOutputStream gzout=new GZIPOutputStream(bos);
+        gzout.write(message);
+        gzout.finish();
+        gzout.close();
+        //and now test for compression
+        in = new BufferedInputStream(new ByteArrayInputStream(bos.toByteArray()),10);
+        Assert.assertTrue(IOUtil.isGZIPInputStream(in));
+        // call twice to verify 'in.reset()' was called
+        Assert.assertTrue(IOUtil.isGZIPInputStream(in));
+        in.close();
+    }
+    
+    @Test
+    public void mayBeGZippedInputStreamTest() throws IOException {
+        // i==0 do not compress, i==1 compress
+        // at the end of the loop, test input==output
+        for(int i=0;i< 2;++i) {
+            final String msgStr="Hello Word";
+            final byte message[]=msgStr.getBytes();
+            final byte inputMsg[];
+            if( i == 0 ) {
+                inputMsg = message;
+            } else {
+              //compress the message
+                final ByteArrayOutputStream bos =new ByteArrayOutputStream();
+                final GZIPOutputStream gzout=new GZIPOutputStream(bos);
+                gzout.write(message);
+                gzout.finish();
+                gzout.close();
+                inputMsg = bos.toByteArray();
+            }
+        final InputStream in = IOUtil.mayBeGZippedInputStream(new ByteArrayInputStream(inputMsg));
+        final String str = IOUtil.readFully(in);
+        in.close();
+        Assert.assertEquals(str,msgStr);
+        }
     }
 }

@@ -76,5 +76,4 @@ public class VCFIteratorTest extends VariantBaseTest {
         r.close();
         in.close();
     }
-
 }

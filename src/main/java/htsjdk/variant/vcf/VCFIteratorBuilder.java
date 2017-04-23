@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.util.AbstractIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -72,8 +71,7 @@ public class VCFIteratorBuilder {
      * @return the VCFIterator
      * @throws RuntimeIOException
      */
-    @SuppressWarnings("resource")
-    public VCFIterator open(InputStream in) throws IOException {
+    public VCFIterator open(final InputStream in) throws IOException {
         if (in == null) {
             throw new IllegalArgumentException("input stream is null");
             }
@@ -83,24 +81,12 @@ public class VCFIteratorBuilder {
         final BCFVersion bcfVersion = BCFVersion.readBCFVersion(bufferedinput);
         bufferedinput.reset();
 
-        //this is VCF or VCF.gz
-        if (bcfVersion == null) {
-            // try to read GZIP header
-            // see http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped
-            final byte[] signature = new byte[2];
-            bufferedinput.mark(signature.length);
-            final int len = bufferedinput.read(signature); // read the signature
-            bufferedinput.reset(); // push back the signature to the stream
-            if (len == signature.length && signature[0] == (byte) 0x1f && signature[1] == (byte) 0x8b) { 
-                //it's gzip, decode the gzip input
-                in = new GZIPInputStream(bufferedinput);
-            } else {
-                // it's plain VCF
-                in = bufferedinput;
-            }
-            return new VCFReaderIterator(in);
-        } else {
+        if (bcfVersion != null) {
+            //this is BCF
             return new BCFInputStreamIterator(bufferedinput);
+        } else {
+            //this is VCF or VCF.gz
+            return new VCFReaderIterator(IOUtil.mayBeGZippedInputStream(bufferedinput));
         }
     }
 
@@ -140,7 +126,9 @@ public class VCFIteratorBuilder {
     }
 
     /** implementation of VCFIterator, reading VCF */
-    private static class VCFReaderIterator extends AbstractIterator<VariantContext>implements VCFIterator {
+    private static class VCFReaderIterator 
+            extends AbstractIterator<VariantContext>
+            implements VCFIterator {
         /** delegate input stream */
         private final InputStream inputStream;
         /** VCF codec */
@@ -176,7 +164,9 @@ public class VCFIteratorBuilder {
     }
 
     /** implementation of VCFIterator, reading BCF */
-    private static class BCFInputStreamIterator extends AbstractIterator<VariantContext>implements VCFIterator {
+    private static class BCFInputStreamIterator 
+            extends AbstractIterator<VariantContext>
+            implements VCFIterator {
         /** the underlying input stream */
         private final PositionalBufferedStream inputStream;
         /** BCF codec */
