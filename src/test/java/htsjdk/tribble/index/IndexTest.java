@@ -121,4 +121,13 @@ public class IndexTest extends HtsjdkTest {
             }
         }
     }
+
+    @Test(dataProvider = "writeIndexData")
+    public void testWriteBasedOnNonRegularFeatureFile(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
+        final File tmpFolder = IOUtil.createTempDir("NonRegultarFeatureFile", null);
+        // create the index
+        final Index index = IndexFactory.createIndex(inputFile, codec, type);
+        // try to write based on the tmpFolder
+        Assert.assertThrows(IOException.class, () -> index.writeBasedOnFeatureFile(tmpFolder));
+    }
 }
