@@ -106,22 +106,19 @@ public final class FastaSequenceIndexCreator {
                     // first entry should be skipped; otherwise it should be added to the index
                     if (entry != null) index.add(entry.build());
                     // creates a new entry (and update sequence index)
-                    entry = new FaiEntryBuilder(sequenceIndex++, previous, line, location);
+                    entry = new FaiEntryBuilder(sequenceIndex++, previous, line, in.getLineTerminatorLength(), location);
                 } else if (line != null && line.charAt(0) == '>') {
                     // update the location, next iteration the sequence will be handled
                     location = in.getPosition();
                 } else if (line != null && !line.isEmpty()) {
                     // update in case it is not a blank-line
-                    entry.updateWithSequence(line);
+                    entry.updateWithSequence(line, in.getLineTerminatorLength());
                 }
                 // set the previous to the current line
                 previous = line;
             }
-
             // add the last entry
             index.add(entry.build());
-
-            // TODO: check for correctness of carriage return
 
             // and return the index
             return index;
@@ -133,16 +130,16 @@ public final class FastaSequenceIndexCreator {
         private final int index;
         private final String contig;
         private final long location;
-        // the bytes per line is the bases per line plus the end of the line
-        // TODO 04-2017: this will fail for CR+LF formatted files
+        // the bytes per line is the bases per line plus the length of the end of the line
         private final int basesPerLine;
+        private final int endOfLineLength;
 
         // the size is updated for each line in the input using updateWithSequence
         private long size;
         // flag to check if the supposedly last line was already reached
         private boolean lessBasesFound;
 
-        private FaiEntryBuilder(final int index, final String header, final String firstSequenceLine, final long location) {
+        private FaiEntryBuilder(final int index, final String header, final String firstSequenceLine, final int endOfLineLength, final long location) {
             if (header == null || header.charAt(0) != '>') {
                 throw new SAMException("Wrong sequence header: " + header);
             } else if (firstSequenceLine == null) {
@@ -153,12 +150,15 @@ public final class FastaSequenceIndexCreator {
             this.contig =  SAMSequenceRecord.truncateSequenceName(header.substring(1).trim());
             this.location = location;
             this.basesPerLine = firstSequenceLine.length();
-
+            this.endOfLineLength = endOfLineLength;
             this.size = firstSequenceLine.length();
             this.lessBasesFound = false;
         }
 
-        private void updateWithSequence(final String sequence) {
+        private void updateWithSequence(final String sequence, final int endOfLineLength) {
+            if (this.endOfLineLength != endOfLineLength) {
+                throw new SAMException(String.format("Different end of line for the same sequence was found."));
+            }
             if (sequence.length() > basesPerLine) {
                 throw new SAMException(String.format("Sequence line for {} was longer than the expected length ({}): {}",
                         contig, basesPerLine, sequence));
@@ -174,7 +174,7 @@ public final class FastaSequenceIndexCreator {
         }
 
         private FastaSequenceIndexEntry build() {
-            return new FastaSequenceIndexEntry(contig, location, size, basesPerLine, basesPerLine + 1, index);
+            return new FastaSequenceIndexEntry(contig, location, size, basesPerLine, basesPerLine + endOfLineLength, index);
         }
     }
 }
