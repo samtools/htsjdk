@@ -224,6 +224,7 @@ public class TabixIndex implements Index {
      * Writes to a path with appropriate name and directory based on feature path.
      *
      * @param featurePath Path being indexed.
+     * @throws IOException if featureFile is not a normal file.
      */
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
