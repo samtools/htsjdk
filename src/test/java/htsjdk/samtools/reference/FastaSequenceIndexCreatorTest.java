@@ -24,16 +24,14 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +39,7 @@ import java.util.stream.Stream;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class FastaSequenceIndexCreatorTest {
+public class FastaSequenceIndexCreatorTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
 
 
@@ -87,7 +85,6 @@ public class FastaSequenceIndexCreatorTest {
 
         // load the tmp index and check that both are the same
         Assert.assertEquals(new FastaSequenceIndex(createdFai), new FastaSequenceIndex(expectedFai));
-
     }
 
 }

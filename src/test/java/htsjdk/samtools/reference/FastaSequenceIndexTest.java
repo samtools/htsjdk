@@ -264,7 +264,7 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
     @Test
     public void testWrite() throws Exception {
         // gets the original file and index
-        final File originalFile = new File(TEST_DATA_DIR,"testing.fai");
+        final File originalFile = new File(TEST_DATA_DIR, "testing.fai");
         final FastaSequenceIndex originalIndex = new FastaSequenceIndex(originalFile);
 
         // write the index to a temp file and test if files are the same
@@ -274,16 +274,15 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
 
         // read all the files and compare line by line
         try(final Stream<String> original = Files.lines(originalFile.toPath());
-            final Stream<String> writen = Files.lines(fileToWrite.toPath())) {
-            final List<String> originalLines = original.filter(String::isEmpty).collect(Collectors.toList());
-            final List<String> actualLines = writen.filter(String::isEmpty).collect(Collectors.toList());
+            final Stream<String> written = Files.lines(fileToWrite.toPath())) {
+            final List<String> originalLines = original.filter(s -> ! s.isEmpty()).collect(Collectors.toList());
+            final List<String> actualLines = written.filter(s -> !s.isEmpty()).collect(Collectors.toList());
             Assert.assertEquals(actualLines, originalLines);
         }
 
         // load the tmp index and check that both are the same
-        final FastaSequenceIndex writenIndex = new FastaSequenceIndex(fileToWrite);
-        Assert.assertEquals(writenIndex, originalIndex);
-
+        final FastaSequenceIndex writtenIndex = new FastaSequenceIndex(fileToWrite);
+        Assert.assertEquals(writtenIndex, originalIndex);
     }
 
 
