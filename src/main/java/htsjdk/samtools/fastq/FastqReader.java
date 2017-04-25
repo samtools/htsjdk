@@ -136,7 +136,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
             return frec ;
 
         } catch (IOException e) {
-            throw new SAMException(String.format("Error reading fastq '%s'", getAbsolutePath()), e);
+            throw new SAMException(error(e.getMessage()), e);
         }
     }
 
@@ -177,7 +177,7 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
         try {
             reader.close();
         } catch (IOException e) {
-            throw new SAMException("IO problem in fastq file " + getAbsolutePath(), e);
+            throw new SAMException(error(e.getMessage()), e);
         }
     }
 
