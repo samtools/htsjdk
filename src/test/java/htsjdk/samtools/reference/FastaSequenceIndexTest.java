@@ -30,9 +30,15 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.file.Files;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Test the fasta sequence index reader.
@@ -254,4 +260,30 @@ public class FastaSequenceIndexTest extends HtsjdkTest {
         Assert.assertEquals(ent.getBasesPerLine(),70,"Contig file:gi|17981852|ref|NC_001807.4| bases per line is not correct");
         Assert.assertEquals(ent.getBytesPerLine(),71,"Contig file:gi|17981852|ref|NC_001807.4| bytes per line is not correct");
     }
+
+    @Test
+    public void testWrite() throws Exception {
+        // gets the original file and index
+        final File originalFile = new File(TEST_DATA_DIR, "testing.fai");
+        final FastaSequenceIndex originalIndex = new FastaSequenceIndex(originalFile);
+
+        // write the index to a temp file and test if files are the same
+        final File fileToWrite = File.createTempFile("testing.toWrite", "fai");
+        fileToWrite.deleteOnExit();
+        originalIndex.write(fileToWrite.toPath());
+
+        // read all the files and compare line by line
+        try(final Stream<String> original = Files.lines(originalFile.toPath());
+            final Stream<String> written = Files.lines(fileToWrite.toPath())) {
+            final List<String> originalLines = original.filter(s -> ! s.isEmpty()).collect(Collectors.toList());
+            final List<String> actualLines = written.filter(s -> !s.isEmpty()).collect(Collectors.toList());
+            Assert.assertEquals(actualLines, originalLines);
+        }
+
+        // load the tmp index and check that both are the same
+        final FastaSequenceIndex writtenIndex = new FastaSequenceIndex(fileToWrite);
+        Assert.assertEquals(writtenIndex, originalIndex);
+    }
+
+
 }
