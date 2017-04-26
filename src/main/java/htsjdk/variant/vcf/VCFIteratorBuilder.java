@@ -28,9 +28,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.nio.file.Path;
 
+import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.AbstractIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
@@ -38,6 +38,7 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -66,8 +67,7 @@ public class VCFIteratorBuilder {
      * creates a VCF iterator from an input stream It detects if the stream is a
      * BCF stream or a GZipped stream.
      * 
-     * @param in
-     *            inputstream
+     * @param in inputstream
      * @return the VCFIterator
      * @throws RuntimeIOException
      */
@@ -86,37 +86,37 @@ public class VCFIteratorBuilder {
             return new BCFInputStreamIterator(bufferedinput);
         } else {
             //this is VCF or VCF.gz
-            return new VCFReaderIterator(IOUtil.mayBeGZippedInputStream(bufferedinput));
+            return new VCFReaderIterator(IOUtil.gunZipIfNeeded(bufferedinput));
         }
     }
 
     /**
-     * creates a VCF iterator from an URI It detects if the stream is a BCF
+     * creates a VCF iterator from a URI It detects if the stream is a BCF
      * stream or a GZipped stream.
      * 
-     * @param uri
-     *            the URI
+     * @param path the Path
      * @return the VCFIterator
      * @throws OException
      */
-    public VCFIterator open(final String uri) throws IOException {
-        if (IOUtil.isUrl(uri)) {
-            try {
-                final URL url = new URL(uri); // this will throw if its not a
-                                              // url
-                return open(url.openStream());
-            } catch (final MalformedURLException e) {
-                // ignore
-            }
-        }
-        return open(new File(uri));
+    public VCFIterator open(final String path) throws IOException {
+        return open(ParsingUtils.openInputStream(path, null));
     }
 
     /**
+     * creates a VCF iterator from a Path
+     * 
+     * @param path the path
+     * @return the VCFIterator
+     * @throws OException
+     */
+    public VCFIterator open(final Path path) throws IOException {
+        return open(new SeekablePathStream(path, null));
+    }
+    
+    /**
      * creates a VCF iterator from a File
      * 
-     * @param file
-     *            the file (can be bcf, vcf, vcf.gz)
+     * @param file the file (can be bcf, vcf, vcf.gz)
      * @return the VCFIterator
      * @throws IOException
      */

@@ -215,30 +215,32 @@ public class IoUtilTest {
         Assert.assertTrue(IOUtil.isGZIPInputStream(in));
         in.close();
     }
-    
-    @Test
-    public void mayBeGZippedInputStreamTest() throws IOException {
-        // i==0 do not compress, i==1 compress
-        // at the end of the loop, test input==output
-        for(int i=0;i< 2;++i) {
-            final String msgStr="Hello Word";
-            final byte message[]=msgStr.getBytes();
-            final byte inputMsg[];
-            if( i == 0 ) {
-                inputMsg = message;
-            } else {
-              //compress the message
-                final ByteArrayOutputStream bos =new ByteArrayOutputStream();
-                final GZIPOutputStream gzout=new GZIPOutputStream(bos);
-                gzout.write(message);
-                gzout.finish();
-                gzout.close();
-                inputMsg = bos.toByteArray();
-            }
-        final InputStream in = IOUtil.mayBeGZippedInputStream(new ByteArrayInputStream(inputMsg));
-        final String str = IOUtil.readFully(in);
-        in.close();
-        Assert.assertEquals(str,msgStr);
+    @DataProvider(name = "mayBeGZippedInputStreamTestCases")
+    private Object[][] mayBeGZippedInputStreamTestCases() {
+        return new Object[][]{
+                {"Hello World", Boolean.FALSE},
+                {"Hello World", Boolean.TRUE}
+        };
+    }
+
+    @Test(dataProvider="mayBeGZippedInputStreamTestCases")
+    public void mayBeGZippedInputStreamTest(final String inputMessage,boolean compress) throws IOException {    
+        final byte message[] = inputMessage.getBytes();
+        final byte inputMsg[];
+        if(!compress ) {
+            inputMsg = message;
+        } else {
+          //compress the message
+            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            final GZIPOutputStream gzout = new GZIPOutputStream(bos);
+            gzout.write(message);
+            gzout.finish();
+            gzout.close();
+            inputMsg = bos.toByteArray();
         }
+        final InputStream in = IOUtil.gunZipIfNeeded(new ByteArrayInputStream(inputMsg));
+        final String decodedStr = IOUtil.readFully(in);
+        in.close();
+        Assert.assertEquals(decodedStr,inputMessage);
     }
 }

@@ -27,6 +27,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
@@ -75,5 +77,14 @@ public class VCFIteratorTest extends VariantBaseTest {
         Assert.assertEquals(countVariants(r), nVariants);
         r.close();
         in.close();
+    }
+    
+    @Test(dataProvider = "VcfFiles")
+    public void testUsingPath(String file, int nVariants) throws IOException {
+        Path path =Paths.get(file);
+        VCFIterator r = new VCFIteratorBuilder().open(path);
+        Assert.assertNotNull(r.getFileHeader());
+        Assert.assertEquals(countVariants(r), nVariants);
+        r.close();
     }
 }

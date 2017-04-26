@@ -69,7 +69,6 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Miscellaneous stateless static IO-oriented methods.
@@ -475,9 +474,13 @@ public class IOUtil {
             while ((len1 = s1.read(buf1)) != -1) {
                 final int len2 = s2.read(buf2);
                 if (len1 != len2) {
+                    s1.close();
+                    s2.close();
                     throw new SAMException("Unexpected EOF comparing files that are supposed to be the same length.");
                 }
                 if (!Arrays.equals(buf1, buf2)) {
+                    s1.close();
+                    s2.close();
                     throw new SAMException("Files " + f1 + " and " + f2 + " differ.");
                 }
             }
@@ -996,7 +999,6 @@ public class IOUtil {
      * @throws IOException
      */
     public static boolean isGZIPInputStream(final BufferedInputStream bufferedinput) throws IOException {
-        if(bufferedinput == null) throw new IllegalArgumentException("isGZIPInputStream(null)");
         // see http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped
         final byte[] signature = new byte[2];
         bufferedinput.mark(signature.length);
@@ -1009,21 +1011,15 @@ public class IOUtil {
     
     /**
      * If `in` is a GZipped stream, wrap it into a {@link GZIPInputStream}.
-     * @param in the input stream. If it's a BufferedInputStream, the buffer must be large enough to contains the gzip signature
+     * @param in the input stream
      * @return a decompressed input stream
      * @throws IOException
      */
-    public static InputStream mayBeGZippedInputStream(final InputStream in) throws IOException {
-        if(in == null) throw new IllegalArgumentException("mayBeGZippedInputStream(null)");
+    public static InputStream gunZipIfNeeded(final InputStream in) throws IOException {
         /* BufferedInputStream is needed to decode the first bytes of the stream */
-        final BufferedInputStream bufferedinput;
-        /* it's already a buffered input stream, no need to wrap it again */
-        if(in instanceof BufferedInputStream) {
-            bufferedinput = BufferedInputStream.class.cast(in);
-        } else {
-            bufferedinput = new BufferedInputStream(in, 4);
-        }
-        if(isGZIPInputStream(bufferedinput)) {
+        final BufferedInputStream bufferedinput = new BufferedInputStream(in, 4);
+        
+        if ( isGZIPInputStream(bufferedinput) ) {
             return new GZIPInputStream(bufferedinput);
         } else {
             return bufferedinput;
