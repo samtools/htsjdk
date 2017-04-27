@@ -70,7 +70,7 @@ public class CRAMContainerStreamWriter {
      * @param samFileHeader {@link SAMFileHeader} to be used. Sort order is determined by the sortOrder property of this arg.
      * @param cramId        used for display in error message display
      */
-    public CRAMContainerStreamWriter(
+    CRAMContainerStreamWriter(
             final OutputStream outputStream,
             final OutputStream indexStream,
             final CRAMReferenceSource source,

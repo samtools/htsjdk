@@ -23,7 +23,7 @@ class SAMRecordBuilder {
     private SAMBinaryTagAndValue attributes;
     private Integer referenceIndex;
     private Integer mateReferenceIndex = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-    private SAMFileHeader header;
+    private final SAMFileHeader header;
 
     SAMRecordBuilder(SAMFileHeader header) {
         this.header = header;
@@ -181,11 +181,11 @@ class SAMRecordBuilder {
      * A builder-like structure for a pair of reads
      */
     static class Pair implements Iterable<SAMRecord> {
-        LinkedList<SAMRecordBuilder> builders;
+        final LinkedList<SAMRecordBuilder> builders;
 
-        Pair(int size, SAMFileHeader header) {
+        Pair(SAMFileHeader header) {
             this.builders = new LinkedList<>();
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < 2; i++) {
                 builders.add(new SAMRecordBuilder(header));
             }
         }

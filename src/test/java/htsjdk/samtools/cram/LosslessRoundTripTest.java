@@ -3,6 +3,7 @@ package htsjdk.samtools.cram;
 import htsjdk.samtools.*;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
+import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import org.testng.Assert;
@@ -14,6 +15,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -101,7 +103,7 @@ public class LosslessRoundTripTest {
     }
 
     private void roundTripInsertSizes(int tlen1, int tlen2) {
-        SAMRecordBuilder.Pair pair = new SAMRecordBuilder.Pair(2, samRecordSetBuilder.getHeader());
+        SAMRecordBuilder.Pair pair = new SAMRecordBuilder.Pair(samRecordSetBuilder.getHeader());
         pair.first().name("a1").start(1).flags(67).ref(0).mapq(1).cigar("10M").tlen(tlen1).bases("ACGTNACGTN").scores();
         pair.last().name("a1").start(6).flags(3).ref(0).mapq(1).cigar("10M").tlen(tlen2).bases("ACGTNTTTTT").scores();
         pair.mate();
@@ -277,7 +279,7 @@ public class LosslessRoundTripTest {
             InMemoryReferenceSequenceFile rsFile = new InMemoryReferenceSequenceFile();
             referenceSource = new ReferenceSource(rsFile);
         }
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, null, false, referenceSource, header, null, cramVersion);
+        CRAMFileWriter cramFileWriter = new MyCRAMFileWriter(baos, false, referenceSource, header, cramVersion);
 
         iterator.forEachRemaining(cramFileWriter::addAlignment);
         cramFileWriter.close();
@@ -285,5 +287,13 @@ public class LosslessRoundTripTest {
         SamReaderFactory f = SamReaderFactory.make().referenceSource(referenceSource).validationStringency(ValidationStringency.SILENT);
         SamReader reader = f.open(SamInputResource.of(new ByteArrayInputStream(baos.toByteArray())));
         return reader.iterator();
+    }
+
+    private static class MyCRAMFileWriter extends CRAMFileWriter {
+        public MyCRAMFileWriter(OutputStream outputStream, boolean presorted,
+                                CRAMReferenceSource referenceSource, SAMFileHeader samFileHeader,
+                                Version version) {
+            super(outputStream, null, presorted, referenceSource, samFileHeader, null, version);
+        }
     }
 }
