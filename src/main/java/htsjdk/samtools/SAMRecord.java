@@ -862,9 +862,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
-    /**
-     * It is preferable to use the get*Flag() methods that handle the flag word symbolically.
-     */
+    /** It is preferable to use the get*Flag() methods that handle the flag word symbolically. */
     public int getFlags() {
         return mFlags;
     }
@@ -875,232 +873,191 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         setIndexingBin(null);
     }
 
-    /**
-     * the read is paired in sequencing, no matter whether it is mapped in a pair.
-     */
-    public boolean getReadPairedFlag() {
-        return (mFlags & SAMFlag.READ_PAIRED.flag) != 0;
-    }
+    ////////////////////////////////////////////////////////////////////////////
+    // Flag accessor and mutators
+    ////////////////////////////////////////////////////////////////////////////
 
-    private void requireReadPaired() {
-        if (!getReadPairedFlag()) {
-            throw new IllegalStateException("Inappropriate call if not paired read");
-        }
-    }
+    /** Returns true if the "read paired in sequencing" flag is true. */
+    public boolean isPaired() { return getFlag(SAMFlag.READ_PAIRED); }
 
-    /**
-     * the read is mapped in a proper pair (depends on the protocol, normally inferred during alignment).
-     */
-    public boolean getProperPairFlag() {
-        requireReadPaired();
-        return getProperPairFlagUnchecked();
-    }
+    /** Sets the "read paired in sequencing" flag to the given value. */
+    public void setPaired(boolean paired) { setFlag(SAMFlag.READ_PAIRED, paired); }
 
-    private boolean getProperPairFlagUnchecked() {
-        return (mFlags & SAMFlag.PROPER_PAIR.flag) != 0;
-    }
+    /** @deprecated since May 2017; use {@link #isPaired()} instead. */
+    @Deprecated public boolean getReadPairedFlag() { return isPaired(); }
+    /** @deprecated since May 2017; use {@link #setPaired(boolean)} instead. */
+    @Deprecated public void setReadPairedFlag(final boolean flag) { setPaired(flag); }
 
-    /**
-     * the query sequence itself is unmapped.
-     */
-    public boolean getReadUnmappedFlag() {
-        return (mFlags & SAMFlag.READ_UNMAPPED.flag) != 0;
-    }
+    private void requireReadPaired() { if (!isPaired()) throw new IllegalStateException("Inappropriate call if not paired read"); }
 
-    /**
-     * the mate is unmapped.
-     */
-    public boolean getMateUnmappedFlag() {
-        requireReadPaired();
-        return getMateUnmappedFlagUnchecked();
-    }
 
-    private boolean getMateUnmappedFlagUnchecked() {
-        return (mFlags & SAMFlag.MATE_UNMAPPED.flag) != 0;
-    }
+    /** Returns true if both reads in the read pair are aligned as expected. */
+    public boolean isProperlyPaired() { requireReadPaired(); return getFlag(SAMFlag.PROPER_PAIR); }
 
-    /**
-     * strand of the query (false for forward; true for reverse strand).
-     */
-    public boolean getReadNegativeStrandFlag() {
-        return (mFlags & SAMFlag.READ_REVERSE_STRAND.flag) != 0;
-    }
+    /** Sets whether both reads in the read pair are aligned as expected. */
+    public void setProperlyPaired(final boolean paired) { setFlag(SAMFlag.PROPER_PAIR, paired); }
 
-    /**
-     * strand of the mate (false for forward; true for reverse strand).
-     */
-    public boolean getMateNegativeStrandFlag() {
-        requireReadPaired();
-        return getMateNegativeStrandFlagUnchecked();
-    }
+    /** @deprecated Since May 2017; use {@link #isProperlyPaired()} instead. */
+    @Deprecated public boolean getProperPairFlag() { return isProperlyPaired(); }
+    /** @deprecated Since May 2017; use {@link #setProperlyPaired(boolean)} instead. */
+    @Deprecated public void setProperPairFlag(final boolean flag) { setProperlyPaired(flag); }
 
-    private boolean getMateNegativeStrandFlagUnchecked() {
-        return (mFlags & SAMFlag.MATE_REVERSE_STRAND.flag) != 0;
-    }
+    /** Returns true if the read represented by this record in unmapped. */
+    public boolean isUnmapped() { return getFlag(SAMFlag.READ_UNMAPPED); }
 
-    /**
-     * the read is the first read in a pair.
-     */
-    public boolean getFirstOfPairFlag() {
-        requireReadPaired();
-        return getFirstOfPairFlagUnchecked();
-    }
+    /** Returns true if the read represented by this record is mapped. */
+    public final boolean isMapped() { return !isUnmapped(); }
 
-    private boolean getFirstOfPairFlagUnchecked() {
-        return (mFlags & SAMFlag.FIRST_OF_PAIR.flag) != 0;
-    }
-
-    /**
-     * the read is the second read in a pair.
-     */
-    public boolean getSecondOfPairFlag() {
-        requireReadPaired();
-        return getSecondOfPairFlagUnchecked();
-    }
-
-    private boolean getSecondOfPairFlagUnchecked() {
-        return (mFlags & SAMFlag.SECOND_OF_PAIR.flag) != 0;
-    }
-
-    /**
-     * the alignment is not primary (a read having split hits may have multiple primary alignment records).
-     */
-    public boolean getNotPrimaryAlignmentFlag() {
-        return (mFlags & SAMFlag.NOT_PRIMARY_ALIGNMENT.flag) != 0;
-    }
-
-    /**
-     * the alignment is supplementary (TODO: further explanation?).
-     */
-    public boolean getSupplementaryAlignmentFlag() {
-        return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
-    }
-
-    /**
-     * the read fails platform/vendor quality checks.
-     */
-    public boolean getReadFailsVendorQualityCheckFlag() {
-        return (mFlags & SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag) != 0;
-    }
-
-    /**
-     * the read is either a PCR duplicate or an optical duplicate.
-     */
-    public boolean getDuplicateReadFlag() {
-        return (mFlags & SAMFlag.DUPLICATE_READ.flag) != 0;
-    }
-
-    /**
-     * the read is paired in sequencing, no matter whether it is mapped in a pair.
-     */
-    public void setReadPairedFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.READ_PAIRED.flag);
-    }
-
-    /**
-     * the read is mapped in a proper pair (depends on the protocol, normally inferred during alignment).
-     */
-    public void setProperPairFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.PROPER_PAIR.flag);
-    }
-
-    /**
-     * the query sequence itself is unmapped.  This method name is misspelled.
-     * Use {@link #setReadUnmappedFlag} instead.
-     * @deprecated
-     */
-    @Deprecated
-    public void setReadUmappedFlag(final boolean flag) {
-        setReadUnmappedFlag(flag);
-    }
-
-    /**
-     * the query sequence itself is unmapped.
-     */
-    public void setReadUnmappedFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.READ_UNMAPPED.flag);
-        // Change to readUnmapped could change indexing bin
+    /** Sets the read's unmapped flag. */
+    public void setUnmapped(final boolean unmapped) {
+        setFlag(SAMFlag.READ_UNMAPPED, unmapped);
         setIndexingBin(null);
     }
 
-    /**
-     * the mate is unmapped.
-     */
-    public void setMateUnmappedFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.MATE_UNMAPPED.flag);
+    /** @deprecated Since May 2017; use {@link #isUnmapped()} instead. */
+    @Deprecated public boolean getReadUnmappedFlag() { return isUnmapped(); }
+    /** @deprecated Since May 2017; use {@link #setUnmapped(boolean)} instead. */
+    @Deprecated public void setReadUnmappedFlag(final boolean flag) { setUnmapped(flag); }
+
+
+    /** Returns true if the read's mate is unmapped, otherwise false. */
+    public boolean isMateUnmapped() { requireReadPaired(); return getFlag(SAMFlag.MATE_UNMAPPED); }
+
+    /** Returns true if the read's mate is mapped, otherwise false. */
+    public final boolean isMateMapped() { return !isMateUnmapped(); }
+
+    /** Sets whether the read's mate is unmapped. */
+    public void setMateUnmapped(final boolean unmapped) { setFlag(SAMFlag.MATE_UNMAPPED, unmapped); }
+
+    /** @deprecated Since May 2017; use {@link #isMateUnmapped()} instead. */
+    @Deprecated public boolean getMateUnmappedFlag() { return isMateUnmapped(); }
+    /** @deprecated Since May 2017; use {@link #isMateUnmapped()} instead. */
+    @Deprecated public void setMateUnmappedFlag(final boolean flag) { setMateUnmapped(flag); }
+
+
+    /** Returns true if the read is mapped to the negative strand of the genome. */
+    public boolean isNegativeStrand() { return getFlag(SAMFlag.READ_REVERSE_STRAND); }
+
+    /** Returns true if the read is mapped to the positive strand of the genome. */
+    public final boolean isPositiveStrand() { return !isNegativeStrand(); }
+
+    /** Sets whether the read is mapped to the negative strand of the genome. */
+    public void setNegativeStrand(final boolean negative) { setFlag(SAMFlag.READ_REVERSE_STRAND, negative); }
+
+    /** @deprecated Since May 2017; use {@link #isNegativeStrand()} instead. */
+    @Deprecated public boolean getReadNegativeStrandFlag() {
+        return isNegativeStrand();
     }
+    /** @deprecated Since May 2017; use {@link #setNegativeStrand(boolean)} instead. */
+    @Deprecated public void setReadNegativeStrandFlag(final boolean flag) { setNegativeStrand(flag); }
+
+
+    /** Returns true if the read's mate pair is mapped to the negative strand. Illegal to call on unpaired reads. */
+    public boolean isMateNegativeStrand() { requireReadPaired(); return getFlag(SAMFlag.MATE_REVERSE_STRAND); }
+
+    /** Returns true if the read's mate pair is mapped to the positive strand. Illegal to call on unpaired reads. */
+    public boolean isMatePositiveStrand() { return !isMateNegativeStrand(); }
+
+    /** Sets whether the read's mate pair is mapped to the negative strand. */
+    public void setMateNegativeStrand(final boolean negative) { setFlag(SAMFlag.MATE_REVERSE_STRAND, negative); }
+
+    /** @deprecated Since May 2017; use {@link #isMateNegativeStrand()} instead. */
+    @Deprecated public boolean getMateNegativeStrandFlag() { return isMateNegativeStrand(); }
+    /** @deprecated Since May 2017; use {@link #setMateNegativeStrand(boolean)} instead. */
+    @Deprecated public void setMateNegativeStrandFlag(final boolean flag) { setMateNegativeStrand(flag); }
+
+
+    /** Returns true if the first of pair flag is set, false otherwise. */
+    public boolean isFirstOfPair() { requireReadPaired(); return getFlag(SAMFlag.FIRST_OF_PAIR); }
+
+    /** Sets the first of pair flag. */
+    public void setFirstOfPair(final boolean first) { setFlag(SAMFlag.FIRST_OF_PAIR, first); }
+
+    /** @deprecated Since May 2017; use {@link #isFirstOfPair()} instead. */
+    @Deprecated public boolean getFirstOfPairFlag() { return isFirstOfPair(); }
+    /** @deprecated Since May 2017; use {@link #setFirstOfPair(boolean)} instead. */
+    @Deprecated public void setFirstOfPairFlag(final boolean flag) { setFirstOfPair(flag); }
+
+
+    /** Returns true if the second of pair flag is set, false otherwise. */
+    public boolean isSecondOfPair() { requireReadPaired(); return getFlag(SAMFlag.SECOND_OF_PAIR); }
+
+    /** Sets the secpmd of pair flag. */
+    public void setSecondOfPair(final boolean second) { setFlag(SAMFlag.SECOND_OF_PAIR, second); }
+
+    /** @deprecated Since May 2017; use {@link #isSecondOfPair()} instead. */
+    @Deprecated public boolean getSecondOfPairFlag() { return isSecondOfPair(); }
+    /** @deprecated Since May 2017; use {@link #setSecondOfPair(boolean)} instead. */
+    @Deprecated public void setSecondOfPairFlag(final boolean flag) { setSecondOfPair(flag); }
+
+
+    /** Returns true if this read is, or is part of, a secondary alignment - i.e. an alternative alignment. */
+    public boolean isSecondaryAlignment() { return getFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT); }
+
+    /** Sets whether the record is, or is part of, a secondary alignment - i.e. an alternative alignment. */
+    public void setSecondaryAlignment(final boolean secondary) { setFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondary); }
+
+    /** @deprecated Since May 2017; use {@link #isSecondaryAlignment()} instead. */
+    @Deprecated public boolean getNotPrimaryAlignmentFlag() { return isSecondaryAlignment(); }
+    /** @deprecated Since May 2017; use {@link #setSecondaryAlignment(boolean)} instead. */
+    @Deprecated public void setNotPrimaryAlignmentFlag(final boolean flag) { setSecondaryAlignment(flag); }
+
 
     /**
-     * strand of the query (false for forward; true for reverse strand).
+     * Returns true if the record represents a supplementary alignment - i.e. a part of a chimeric or non-co-linear
+     * alignment to reference that cannot be represented in a single SAMRecord.
      */
-    public void setReadNegativeStrandFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.READ_REVERSE_STRAND.flag);
-    }
+    public boolean isSupplementaryAlignment() { return getFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT); }
 
     /**
-     * strand of the mate (false for forward; true for reverse strand).
+     * Sets whether the record represents a supplementary alignment - i.e. a part of a chimeric or non-co-linear
+     * alignment to reference that cannot be represented in a single SAMRecord.
      */
-    public void setMateNegativeStrandFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.MATE_REVERSE_STRAND.flag);
+    public void setSupplementaryAlignment(final boolean supplementary) { setFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementary); }
+
+    /** @deprecated Since May 2017; use {@link #isSupplementaryAlignment()} instead. */
+    @Deprecated public boolean getSupplementaryAlignmentFlag() { return isSupplementaryAlignment(); }
+    /** @deprecated Since May 2017; use {@link #()} instead. */
+    @Deprecated public void setSupplementaryAlignmentFlag(final boolean flag) { setSupplementaryAlignment(flag); }
+
+    /** Returns true if the read fails vendor quality checks. */
+    public boolean failsQc() { return getFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK); }
+
+    /** Returns true if the read passes vendor quality checks. */
+    public boolean passesQc() { return !failsQc(); }
+
+    /** Sets whether the read fails vendor quality checks. */
+    public void setFailsQc(final boolean fail) { setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, fail); }
+
+    /** @deprecated Since May 2017; use {@link #failsQc()} instead. */
+    @Deprecated public boolean getReadFailsVendorQualityCheckFlag() { return failsQc(); }
+    /** @deprecated Since May 2017; use {@link #setFailsQc(boolean)} instead. */
+    @Deprecated public void setReadFailsVendorQualityCheckFlag(final boolean flag) { setFailsQc(flag); }
+
+
+    /** Returns true if the read is marked as a duplicate read. */
+    public boolean isDuplicate() { return getFlag(SAMFlag.DUPLICATE_READ); }
+
+    /** Sets whether the read is marked as a duplicate or not. */
+    public void setDuplicate(final boolean duplicate) { setFlag(SAMFlag.DUPLICATE_READ, duplicate); }
+
+    /** @deprecated Since May 2017; use {@link #isDuplicate()} instead. */
+    @Deprecated public boolean getDuplicateReadFlag() { return isDuplicate(); }
+    /** @deprecated Since May 2017; use {@link #setDuplicate(boolean)} instead. */
+    @Deprecated public void setDuplicateReadFlag(final boolean flag) { setDuplicate(flag); }
+
+
+    /** Returns true if the record represents either a secondary or supplementary alignment. */
+    public boolean isSecondaryOrSupplementary() { return isSecondaryAlignment() || isSupplementaryAlignment(); }
+
+    /** Sets a specific flag bit to the provided value. */
+    private void setFlag(final SAMFlag flag, final boolean value) {
+        if (value) this.mFlags |= flag.flag;
+        else this.mFlags &= ~flag.flag;
     }
 
-    /**
-     * the read is the first read in a pair.
-     */
-    public void setFirstOfPairFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.FIRST_OF_PAIR.flag);
-    }
-
-    /**
-     * the read is the second read in a pair.
-     */
-    public void setSecondOfPairFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.SECOND_OF_PAIR.flag);
-    }
-
-    /**
-     * the alignment is not primary (a read having split hits may have multiple primary alignment records).
-     */
-    public void setNotPrimaryAlignmentFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.NOT_PRIMARY_ALIGNMENT.flag);
-    }
-
-    /**
-     * the alignment is supplementary (TODO: further explanation?).
-     */
-    public void setSupplementaryAlignmentFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag);
-    }
-
-    /**
-     * the read fails platform/vendor quality checks.
-     */
-    public void setReadFailsVendorQualityCheckFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag);
-    }
-
-    /**
-     * the read is either a PCR duplicate or an optical duplicate.
-     */
-    public void setDuplicateReadFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.DUPLICATE_READ.flag);
-    }
-
-    /**
-     * Tests if this record is either a secondary and/or supplementary alignment;
-     * equivalent to {@code (getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag())}.
-     */
-    public boolean isSecondaryOrSupplementary() {
-        return getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag();
-    }
-
-    private void setFlag(final boolean flag, final int bit) {
-        if (flag) {
-            mFlags |= bit;
-        } else {
-            mFlags &= ~bit;
-        }
-    }
+    /** Retrieves the value of a specific flag bit. */
+    private boolean getFlag(final SAMFlag flag) { return (this.mFlags & flag.flag) != 0; }
 
     public ValidationStringency getValidationStringency() {
         return mValidationStringency;
@@ -1874,27 +1831,27 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         // in which everything is valid.  It's ugly, but more efficient.
         ArrayList<SAMValidationError> ret = null;
         if (!getReadPairedFlag()) {
-            if (getProperPairFlagUnchecked()) {
+            if (getFlag(SAMFlag.PROPER_PAIR)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_PROPER_PAIR, "Proper pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getMateUnmappedFlagUnchecked()) {
+            if (getFlag(SAMFlag.MATE_UNMAPPED)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED, "Mate unmapped flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getMateNegativeStrandFlagUnchecked()) {
+            if (getFlag(SAMFlag.MATE_REVERSE_STRAND)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_NEG_STRAND, "Mate negative strand flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getFirstOfPairFlagUnchecked()) {
+            if (getFlag(SAMFlag.FIRST_OF_PAIR)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR, "First of pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (getSecondOfPairFlagUnchecked()) {
+            if (getFlag(SAMFlag.SECOND_OF_PAIR)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR, "Second of pair flag should not be set for unpaired read.", getReadName()));
                 if (firstOnly) return ret;
@@ -1917,7 +1874,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_MATE_UNMAPPED, "Mapped mate should have mate reference name", getReadName()));
                 if (firstOnly) return ret;
             }
-            if (!getFirstOfPairFlagUnchecked() && !getSecondOfPairFlagUnchecked()) {
+            if (!getFlag(SAMFlag.FIRST_OF_PAIR) && !getFlag(SAMFlag.SECOND_OF_PAIR)) {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND,
                         "Paired read should be marked as first of pair or second of pair.", getReadName()));
