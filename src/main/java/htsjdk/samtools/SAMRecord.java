@@ -862,11 +862,20 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
-    /** It is preferable to use the get*Flag() methods that handle the flag word symbolically. */
+    /**
+     * Accesses the 16-but flag field as a 32-bit integer. The flag bits are stored in the lower 16 bits.
+     * It is recommended to use the individual accessors (is*() and set*()) rather than accessing the flag
+     * field directly.
+     */
     public int getFlags() {
         return mFlags;
     }
 
+    /**
+     * Directly sets the values of the 16-but flag field as a 32-bit integer. Only the lower 16 bits are meaningful.
+     * It is recommended to use the individual accessors (is*() and set*()) rather than accessing the flag
+     * field directly.
+     */
     public void setFlags(final int value) {
         mFlags = value;
         // Could imply change to readUnmapped flag, which could change indexing bin
@@ -877,10 +886,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     // Flag accessor and mutators
     ////////////////////////////////////////////////////////////////////////////
 
-    /** Returns true if the "read paired in sequencing" flag is true. */
+    /** Returns true if the read is part of a read pair - i.e. it has a mate pair. */
     public boolean isPaired() { return getFlag(SAMFlag.READ_PAIRED); }
 
-    /** Sets the "read paired in sequencing" flag to the given value. */
+    /** Sets whether or not the read is part of a read pair. */
     public void setPaired(boolean paired) { setFlag(SAMFlag.READ_PAIRED, paired); }
 
     /** @deprecated since May 2017; use {@link #isPaired()} instead. */
@@ -902,7 +911,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /** @deprecated Since May 2017; use {@link #setProperlyPaired(boolean)} instead. */
     @Deprecated public void setProperPairFlag(final boolean flag) { setProperlyPaired(flag); }
 
-    /** Returns true if the read represented by this record in unmapped. */
+    /** Returns true if the read represented by this record is unmapped. */
     public boolean isUnmapped() { return getFlag(SAMFlag.READ_UNMAPPED); }
 
     /** Returns true if the read represented by this record is mapped. */
@@ -920,10 +929,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setReadUnmappedFlag(final boolean flag) { setUnmapped(flag); }
 
 
-    /** Returns true if the read's mate is unmapped, otherwise false. */
+    /** Returns true if the read's mate is unmapped, otherwise false. Illegal to call on unpaired reads. */
     public boolean isMateUnmapped() { requireReadPaired(); return getFlag(SAMFlag.MATE_UNMAPPED); }
 
-    /** Returns true if the read's mate is mapped, otherwise false. */
+    /** Returns true if the read's mate is mapped, otherwise false. Illegal to call on unpaired reads. */
     public final boolean isMateMapped() { return !isMateUnmapped(); }
 
     /** Sets whether the read's mate is unmapped. */
@@ -967,7 +976,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setMateNegativeStrandFlag(final boolean flag) { setMateNegativeStrand(flag); }
 
 
-    /** Returns true if the first of pair flag is set, false otherwise. */
+    /** Returns true if the first of pair flag is set, false otherwise. Illegal to call on unpaired reads. */
     public boolean isFirstOfPair() { requireReadPaired(); return getFlag(SAMFlag.FIRST_OF_PAIR); }
 
     /** Sets the first of pair flag. */
@@ -979,10 +988,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setFirstOfPairFlag(final boolean flag) { setFirstOfPair(flag); }
 
 
-    /** Returns true if the second of pair flag is set, false otherwise. */
+    /** Returns true if the second of pair flag is set, false otherwise. Illegal to call on unpaired reads. */
     public boolean isSecondOfPair() { requireReadPaired(); return getFlag(SAMFlag.SECOND_OF_PAIR); }
 
-    /** Sets the secpmd of pair flag. */
+    /** Sets the second of pair flag. */
     public void setSecondOfPair(final boolean second) { setFlag(SAMFlag.SECOND_OF_PAIR, second); }
 
     /** @deprecated Since May 2017; use {@link #isSecondOfPair()} instead. */
@@ -1020,19 +1029,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /** @deprecated Since May 2017; use {@link #()} instead. */
     @Deprecated public void setSupplementaryAlignmentFlag(final boolean flag) { setSupplementaryAlignment(flag); }
 
-    /** Returns true if the read fails vendor quality checks. */
-    public boolean failsQc() { return getFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK); }
+    /** Returns true if the read is marked as failing filters, e.g. QC or Illumina non-PF. */
+    public boolean isFailingFilters() { return getFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK); }
 
-    /** Returns true if the read passes vendor quality checks. */
-    public boolean passesQc() { return !failsQc(); }
+    /** Returns true if the read passes filters. */
+    public boolean isPassingFilters() { return !isFailingFilters(); }
 
-    /** Sets whether the read fails vendor quality checks. */
-    public void setFailsQc(final boolean fail) { setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, fail); }
+    /** Sets whether the read fails filters. */
+    public void setFailingFilters(final boolean fail) { setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, fail); }
 
-    /** @deprecated Since May 2017; use {@link #failsQc()} instead. */
-    @Deprecated public boolean getReadFailsVendorQualityCheckFlag() { return failsQc(); }
-    /** @deprecated Since May 2017; use {@link #setFailsQc(boolean)} instead. */
-    @Deprecated public void setReadFailsVendorQualityCheckFlag(final boolean flag) { setFailsQc(flag); }
+    /** @deprecated Since May 2017; use {@link #isFailingFilters()} instead. */
+    @Deprecated public boolean getReadFailsVendorQualityCheckFlag() { return isFailingFilters(); }
+    /** @deprecated Since May 2017; use {@link #setFailingFilters(boolean)} instead. */
+    @Deprecated public void setReadFailsVendorQualityCheckFlag(final boolean flag) { setFailingFilters(flag); }
 
 
     /** Returns true if the read is marked as a duplicate read. */
