@@ -222,25 +222,4 @@ public class IoUtilTest {
                 {"Hello World", Boolean.TRUE}
         };
     }
-
-    @Test(dataProvider="mayBeGZippedInputStreamTestCases")
-    public void mayBeGZippedInputStreamTest(final String inputMessage,boolean compress) throws IOException {    
-        final byte message[] = inputMessage.getBytes();
-        final byte inputMsg[];
-        if(!compress ) {
-            inputMsg = message;
-        } else {
-          //compress the message
-            final ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            final GZIPOutputStream gzout = new GZIPOutputStream(bos);
-            gzout.write(message);
-            gzout.finish();
-            gzout.close();
-            inputMsg = bos.toByteArray();
-        }
-        final InputStream in = IOUtil.gunZipIfNeeded(new ByteArrayInputStream(inputMsg));
-        final String decodedStr = IOUtil.readFully(in);
-        in.close();
-        Assert.assertEquals(decodedStr,inputMessage);
-    }
 }

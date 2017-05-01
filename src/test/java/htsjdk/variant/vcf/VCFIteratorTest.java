@@ -49,42 +49,39 @@ public class VCFIteratorTest extends VariantBaseTest {
                 new Object[] { "src/test/resources/htsjdk/variant/serialization_test.bcf", 12 } };
     }
 
-    private int countVariants(VCFIterator r) {
-        return (int) StreamSupport.stream(Spliterators.spliteratorUnknownSize(r, Spliterator.ORDERED), true).count();
-    }
-
-    @Test(dataProvider = "VcfFiles")
-    public void testUsingUri(String uri, int nVariants) throws IOException {
-        VCFIterator r = new VCFIteratorBuilder().open(uri);
+    private void countVariants(final VCFIterator r, final int expectVariants) {
         Assert.assertNotNull(r.getFileHeader());
-        Assert.assertEquals(countVariants(r), nVariants);
+        final int nVariants =  (int) StreamSupport.stream(Spliterators.spliteratorUnknownSize(r, Spliterator.ORDERED), true).count();
+        Assert.assertNotNull(r.getFileHeader());
+        Assert.assertEquals(nVariants, expectVariants);
         r.close();
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingFile(String uri, int nVariants) throws IOException {
-        VCFIterator r = new VCFIteratorBuilder().open(new File(uri));
-        Assert.assertNotNull(r.getFileHeader());
-        Assert.assertEquals(countVariants(r), nVariants);
-        r.close();
+    public void testUsingUri(final String uri, final int nVariants) throws IOException {
+        final VCFIterator r = new VCFIteratorBuilder().open(uri);
+        countVariants(r, nVariants);
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingStreams(String file, int nVariants) throws IOException {
-        InputStream in = new FileInputStream(file); 
-        VCFIterator r = new VCFIteratorBuilder().open(in);
-        Assert.assertNotNull(r.getFileHeader());
-        Assert.assertEquals(countVariants(r), nVariants);
-        r.close();
+    public void testUsingFile(final String file, final int nVariants) throws IOException {
+        final VCFIterator r = new VCFIteratorBuilder().open(new File(file));
+        countVariants(r, nVariants);
+
+    }
+
+    @Test(dataProvider = "VcfFiles")
+    public void testUsingStreams(final String filepath, final int nVariants) throws IOException {
+        final InputStream in = new FileInputStream(filepath); 
+        final VCFIterator r = new VCFIteratorBuilder().open(in);
+        countVariants(r, nVariants);
         in.close();
     }
     
     @Test(dataProvider = "VcfFiles")
-    public void testUsingPath(String file, int nVariants) throws IOException {
-        Path path =Paths.get(file);
-        VCFIterator r = new VCFIteratorBuilder().open(path);
-        Assert.assertNotNull(r.getFileHeader());
-        Assert.assertEquals(countVariants(r), nVariants);
-        r.close();
+    public void testUsingPath(final String path, final int nVariants) throws IOException {
+        final Path a_path = Paths.get(path);
+        final VCFIterator r = new VCFIteratorBuilder().open(a_path);
+        countVariants(r, nVariants);
     }
 }

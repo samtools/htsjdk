@@ -96,6 +96,11 @@ public class IOUtil {
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
 
+    /** signature of a gzip stream used by {@link isGZIPInputStream} 
+     * @see {@linkplain http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped}
+     */
+    public static final byte GZIP_SIGNATURE[]= {(byte) 0x1f, (byte) 0x8b};
+    
     /**
      * Sets the GZip compression level for subsequent GZIPOutputStream object creation.
      * @param compressionLevel 0 <= compressionLevel <= 9
@@ -994,35 +999,17 @@ public class IOUtil {
     
     /**
      * Test whether a input stream looks like a GZIP input.
-     * @param bufferedinput the input stream. The buffer must be large enough to contain the GZIP signature
+     * @param bufferedinput the input stream. The buffer must be large enough to contain {@link GZIP_SIGNATURE}
      * @return true if `bufferedinput` starts with a gzip signature 
      * @throws IOException
+     * @see {@linkplain http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped}
      */
     public static boolean isGZIPInputStream(final BufferedInputStream bufferedinput) throws IOException {
         // see http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped
-        final byte[] signature = new byte[2];
-        bufferedinput.mark(signature.length);
-        final int len = bufferedinput.read(signature); // read the signature
+        final byte[] signature = new byte[ GZIP_SIGNATURE.length ];
+        bufferedinput.mark(GZIP_SIGNATURE.length);
+        bufferedinput.read(signature); // read the signature
         bufferedinput.reset(); // push back the signature to the stream
-        return  len == signature.length && 
-                    signature[0] == (byte) 0x1f && 
-                    signature[1] == (byte) 0x8b; 
-    }
-    
-    /**
-     * If `in` is a GZipped stream, wrap it into a {@link GZIPInputStream}.
-     * @param in the input stream
-     * @return a decompressed input stream
-     * @throws IOException
-     */
-    public static InputStream gunZipIfNeeded(final InputStream in) throws IOException {
-        /* BufferedInputStream is needed to decode the first bytes of the stream */
-        final BufferedInputStream bufferedinput = new BufferedInputStream(in, 4);
-        
-        if ( isGZIPInputStream(bufferedinput) ) {
-            return new GZIPInputStream(bufferedinput);
-        } else {
-            return bufferedinput;
-        }
+        return Arrays.equals(signature, GZIP_SIGNATURE);
     }
 }

@@ -29,12 +29,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.AbstractIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
@@ -44,7 +44,7 @@ import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- * An Class building {@link VCFReaderIterator}
+ * A Class building {@link VCFReaderIterator}
  * 
  * Example:
  * 
@@ -69,15 +69,17 @@ public class VCFIteratorBuilder {
      * 
      * @param in inputstream
      * @return the VCFIterator
-     * @throws RuntimeIOException
+     * @throws IOException
      */
     public VCFIterator open(final InputStream in) throws IOException {
         if (in == null) {
             throw new IllegalArgumentException("input stream is null");
             }
+        // buffer must be large enough to contain the BCF header (+ min/max version) and/or GZIP signature
+        final int bufferSize = Math.max( BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES , IOUtil.GZIP_SIGNATURE.length);
         // try to read the BCF header
-        final BufferedInputStream bufferedinput = new BufferedInputStream(in, 100);
-        bufferedinput.mark(100);
+        final BufferedInputStream bufferedinput = new BufferedInputStream(in,bufferSize);
+        bufferedinput.mark(bufferSize);
         final BCFVersion bcfVersion = BCFVersion.readBCFVersion(bufferedinput);
         bufferedinput.reset();
 
@@ -85,8 +87,10 @@ public class VCFIteratorBuilder {
             //this is BCF
             return new BCFInputStreamIterator(bufferedinput);
         } else {
-            //this is VCF or VCF.gz
-            return new VCFReaderIterator(IOUtil.gunZipIfNeeded(bufferedinput));
+            //
+            //this is VCF or VCF.gz, gunzip the input stream if needed
+            return new VCFReaderIterator( IOUtil.isGZIPInputStream(bufferedinput) ? 
+                    new GZIPInputStream(bufferedinput) : bufferedinput );
         }
     }
 
@@ -96,7 +100,7 @@ public class VCFIteratorBuilder {
      * 
      * @param path the Path
      * @return the VCFIterator
-     * @throws OException
+     * @throws IOException
      */
     public VCFIterator open(final String path) throws IOException {
         return open(ParsingUtils.openInputStream(path, null));
@@ -107,7 +111,7 @@ public class VCFIteratorBuilder {
      * 
      * @param path the path
      * @return the VCFIterator
-     * @throws OException
+     * @throws IOException
      */
     public VCFIterator open(final Path path) throws IOException {
         return open(new SeekablePathStream(path, null));
