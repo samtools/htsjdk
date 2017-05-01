@@ -886,10 +886,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     // Flag accessor and mutators
     ////////////////////////////////////////////////////////////////////////////
 
-    /** Returns true if the read is part of a read pair - i.e. it has a mate pair. */
+    /**
+     * True if the read is part of a read pair - i.e. it has a mate pair - and false otherwise.
+     * Returns the value of flag bit 0x1.
+     */
     public boolean isPaired() { return getFlag(SAMFlag.READ_PAIRED); }
 
-    /** Sets whether or not the read is part of a read pair. */
+    /** Sets whether or not the read is part of a read pair. Sets flag bit 0x1. */
     public void setPaired(boolean paired) { setFlag(SAMFlag.READ_PAIRED, paired); }
 
     /** @deprecated since May 2017; use {@link #isPaired()} instead. */
@@ -900,10 +903,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     private void requireReadPaired() { if (!isPaired()) throw new IllegalStateException("Inappropriate call if not paired read"); }
 
 
-    /** Returns true if both reads in the read pair are aligned as expected. */
+    /**
+     * True if both reads in the read pair are aligned as expected, false otherwise.
+     * Returns the value of flag bit 0x2.
+     */
     public boolean isProperlyPaired() { requireReadPaired(); return getFlag(SAMFlag.PROPER_PAIR); }
 
-    /** Sets whether both reads in the read pair are aligned as expected. */
+    /** Sets whether both reads in the read pair are aligned as expected. Sets flag bit 0x2. */
     public void setProperlyPaired(final boolean paired) { setFlag(SAMFlag.PROPER_PAIR, paired); }
 
     /** @deprecated Since May 2017; use {@link #isProperlyPaired()} instead. */
@@ -911,13 +917,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /** @deprecated Since May 2017; use {@link #setProperlyPaired(boolean)} instead. */
     @Deprecated public void setProperPairFlag(final boolean flag) { setProperlyPaired(flag); }
 
-    /** Returns true if the read represented by this record is unmapped. */
+    /**
+     * True if the read represented by this record is unmapped, false if it is mapped.
+     * Returns the value of flag bit 0x4.
+     */
     public boolean isUnmapped() { return getFlag(SAMFlag.READ_UNMAPPED); }
 
-    /** Returns true if the read represented by this record is mapped. */
+    /**
+     * True if the read represented by this record is mapped, false if it is unmapped.
+     * Returns the negation of flag bit 0x4.
+     */
     public final boolean isMapped() { return !isUnmapped(); }
 
-    /** Sets the read's unmapped flag. */
+    /** Sets the read's unmapped flag. Sets flag bit 0x4. */
     public void setUnmapped(final boolean unmapped) {
         setFlag(SAMFlag.READ_UNMAPPED, unmapped);
         setIndexingBin(null);
@@ -929,13 +941,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setReadUnmappedFlag(final boolean flag) { setUnmapped(flag); }
 
 
-    /** Returns true if the read's mate is unmapped, otherwise false. Illegal to call on unpaired reads. */
+    /**
+     * True if the read's mate is unmapped, otherwise false. Illegal to call on unpaired reads.
+     * Returns the value of flag bit 0x8.
+     */
     public boolean isMateUnmapped() { requireReadPaired(); return getFlag(SAMFlag.MATE_UNMAPPED); }
 
-    /** Returns true if the read's mate is mapped, otherwise false. Illegal to call on unpaired reads. */
+    /**
+     * True if the read's mate is mapped, otherwise false. Illegal to call on unpaired reads.
+     * Returns the negative of flag bit 0x8.
+     */
     public final boolean isMateMapped() { return !isMateUnmapped(); }
 
-    /** Sets whether the read's mate is unmapped. */
+    /** Sets whether the read's mate is unmapped. Sets flag bit 0x8. */
     public void setMateUnmapped(final boolean unmapped) { setFlag(SAMFlag.MATE_UNMAPPED, unmapped); }
 
     /** @deprecated Since May 2017; use {@link #isMateUnmapped()} instead. */
@@ -944,13 +962,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setMateUnmappedFlag(final boolean flag) { setMateUnmapped(flag); }
 
 
-    /** Returns true if the read is mapped to the negative strand of the genome. */
+    /**
+     * True if the read is mapped to the negative strand of the genome, false otherwise.
+     * Returns the value of flag bit 0x10.
+     */
     public boolean isNegativeStrand() { return getFlag(SAMFlag.READ_REVERSE_STRAND); }
 
-    /** Returns true if the read is mapped to the positive strand of the genome. */
+    /**
+     * True if the read is mapped to the positive strand of the genome, false otherwise.
+     * Returns the negatation of flag bit 0x10.
+     */
     public final boolean isPositiveStrand() { return !isNegativeStrand(); }
 
-    /** Sets whether the read is mapped to the negative strand of the genome. */
+    /** Sets whether the read is mapped to the negative strand of the genome. Sets flag bit 0x10. */
     public void setNegativeStrand(final boolean negative) { setFlag(SAMFlag.READ_REVERSE_STRAND, negative); }
 
     /** @deprecated Since May 2017; use {@link #isNegativeStrand()} instead. */
@@ -961,13 +985,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setReadNegativeStrandFlag(final boolean flag) { setNegativeStrand(flag); }
 
 
-    /** Returns true if the read's mate pair is mapped to the negative strand. Illegal to call on unpaired reads. */
+    /**
+     * True if the read's mate pair is mapped to the negative strand, false otherwise. Illegal to call on unpaired reads.
+     * Returns the value of flag bit 0x20.
+     */
     public boolean isMateNegativeStrand() { requireReadPaired(); return getFlag(SAMFlag.MATE_REVERSE_STRAND); }
 
-    /** Returns true if the read's mate pair is mapped to the positive strand. Illegal to call on unpaired reads. */
+    /**
+     * True if the read's mate pair is mapped to the positive strand, false otherwise. Illegal to call on unpaired reads.
+     * Returns the negation of flag bit 0x20.
+     */
     public boolean isMatePositiveStrand() { return !isMateNegativeStrand(); }
 
-    /** Sets whether the read's mate pair is mapped to the negative strand. */
+    /** Sets whether the read's mate pair is mapped to the negative strand. Sets flag bit 0x20. */
     public void setMateNegativeStrand(final boolean negative) { setFlag(SAMFlag.MATE_REVERSE_STRAND, negative); }
 
     /** @deprecated Since May 2017; use {@link #isMateNegativeStrand()} instead. */
@@ -976,10 +1006,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setMateNegativeStrandFlag(final boolean flag) { setMateNegativeStrand(flag); }
 
 
-    /** Returns true if the first of pair flag is set, false otherwise. Illegal to call on unpaired reads. */
+    /**
+     * True if the read is the first read in a read pair. Illegal to call on unpaired reads.
+     * Returns the value of flag bit 0x40.
+     */
     public boolean isFirstOfPair() { requireReadPaired(); return getFlag(SAMFlag.FIRST_OF_PAIR); }
 
-    /** Sets the first of pair flag. */
+    /** Sets whether the read is the first read of a pair. Sets flag bit 0x40. */
     public void setFirstOfPair(final boolean first) { setFlag(SAMFlag.FIRST_OF_PAIR, first); }
 
     /** @deprecated Since May 2017; use {@link #isFirstOfPair()} instead. */
@@ -988,10 +1021,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setFirstOfPairFlag(final boolean flag) { setFirstOfPair(flag); }
 
 
-    /** Returns true if the second of pair flag is set, false otherwise. Illegal to call on unpaired reads. */
+    /**
+     * True if the read is the second read in a read pair, false otherwise. Illegal to call on unpaired reads.
+     * Returns the value of flag bit 0x80.
+     */
     public boolean isSecondOfPair() { requireReadPaired(); return getFlag(SAMFlag.SECOND_OF_PAIR); }
 
-    /** Sets the second of pair flag. */
+    /** Sets whether the read is  the second read of a pair. Sets flag bit 0x80. */
     public void setSecondOfPair(final boolean second) { setFlag(SAMFlag.SECOND_OF_PAIR, second); }
 
     /** @deprecated Since May 2017; use {@link #isSecondOfPair()} instead. */
@@ -1000,10 +1036,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setSecondOfPairFlag(final boolean flag) { setSecondOfPair(flag); }
 
 
-    /** Returns true if this read is, or is part of, a secondary alignment - i.e. an alternative alignment. */
+    /**
+     * True if this read is, or is part of, a secondary alignment - i.e. an alternative alignment.
+     * Returns the value of flag bit 0x100
+     */
     public boolean isSecondaryAlignment() { return getFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT); }
 
-    /** Sets whether the record is, or is part of, a secondary alignment - i.e. an alternative alignment. */
+    /**
+     * Sets whether the record is, or is part of, a secondary alignment - i.e. an alternative alignment.
+     * Sets flag bit 0x100.
+     */
     public void setSecondaryAlignment(final boolean secondary) { setFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondary); }
 
     /** @deprecated Since May 2017; use {@link #isSecondaryAlignment()} instead. */
@@ -1013,14 +1055,15 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
 
     /**
-     * Returns true if the record represents a supplementary alignment - i.e. a part of a chimeric or non-co-linear
-     * alignment to reference that cannot be represented in a single SAMRecord.
+     * True if the record represents a supplementary alignment - i.e. a part of a chimeric or non-co-linear
+     * alignment to reference that cannot be represented in a single SAMRecord - and false otherwise.
+     * Returns the value of flag bit 0x800.
      */
     public boolean isSupplementaryAlignment() { return getFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT); }
 
     /**
      * Sets whether the record represents a supplementary alignment - i.e. a part of a chimeric or non-co-linear
-     * alignment to reference that cannot be represented in a single SAMRecord.
+     * alignment to reference that cannot be represented in a single SAMRecord. Sets flag bit 0x800.
      */
     public void setSupplementaryAlignment(final boolean supplementary) { setFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementary); }
 
@@ -1029,13 +1072,19 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /** @deprecated Since May 2017; use {@link #()} instead. */
     @Deprecated public void setSupplementaryAlignmentFlag(final boolean flag) { setSupplementaryAlignment(flag); }
 
-    /** Returns true if the read is marked as failing filters, e.g. QC or Illumina non-PF. */
+    /**
+     * True if the read is marked as failing filters, e.g. QC or Illumina non-PF.
+     * Returns the value of flag bit 0x200.
+     *  */
     public boolean isFailingFilters() { return getFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK); }
 
-    /** Returns true if the read passes filters. */
+    /**
+     * True if the read is NOT marked as failing filters, false otherwise.
+     * Returns the negation of flag bit 0x200.
+     */
     public boolean isPassingFilters() { return !isFailingFilters(); }
 
-    /** Sets whether the read fails filters. */
+    /** Sets whether the read fails filters. Sets flag bit 0x200. */
     public void setFailingFilters(final boolean fail) { setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, fail); }
 
     /** @deprecated Since May 2017; use {@link #isFailingFilters()} instead. */
@@ -1044,10 +1093,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     @Deprecated public void setReadFailsVendorQualityCheckFlag(final boolean flag) { setFailingFilters(flag); }
 
 
-    /** Returns true if the read is marked as a duplicate read. */
+    /**
+     * True if the read is marked as a duplicate read, false otherwise.
+     * Returns the value of flag bit 0x400. */
     public boolean isDuplicate() { return getFlag(SAMFlag.DUPLICATE_READ); }
 
-    /** Sets whether the read is marked as a duplicate or not. */
+    /** Sets whether the read is marked as a duplicate or not. Sets flag bit 0x400. */
     public void setDuplicate(final boolean duplicate) { setFlag(SAMFlag.DUPLICATE_READ, duplicate); }
 
     /** @deprecated Since May 2017; use {@link #isDuplicate()} instead. */
