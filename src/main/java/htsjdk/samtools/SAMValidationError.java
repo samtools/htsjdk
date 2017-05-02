@@ -171,6 +171,9 @@ public class SAMValidationError implements Serializable {
 
         HEADER_RECORD_MISSING_REQUIRED_TAG,
 
+        /** Header tag contains illegal value */
+        HEADER_TAG_NON_CONFORMING_VALUE,
+
         /** Date string is not ISO-8601 */
         INVALID_DATE_STRING(Severity.WARNING),
 

@@ -97,12 +97,10 @@ public class QualityScorePreservationTest extends HtsjdkTest {
         }
     }
 
-    private SAMFileHeader samFileHeader = new SAMFileHeader();
-
     private SAMRecord buildSAMRecord(String seqName, String line) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            baos.write("@HD\tVN:1.0\tGO:none SO:coordinate\n".getBytes());
+            baos.write("@HD\tVN:1.0\tGO:none\tSO:coordinate\n".getBytes());
             baos.write(("@SQ\tSN:" + seqName + "\tLN:247249719\n").getBytes());
             baos.write(line.replaceAll("\\s+", "\t").getBytes());
             baos.close();
