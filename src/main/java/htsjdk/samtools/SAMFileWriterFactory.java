@@ -174,6 +174,14 @@ public class SAMFileWriterFactory implements Cloneable {
     }
 
     /**
+     * Gets the maximum number of records held in RAM before spilling to disk during sorting.
+     * @see #setMaxRecordsInRam(int)
+     */
+    public int getMaxRecordsInRam() {
+        return maxRecordsInRam;
+    }
+
+    /**
      * Turn on or off the use of asynchronous IO for writing output SAM and BAM files.  If true then
      * each SAMFileWriter creates a dedicated thread which is used for compression and IO activities.
      */
@@ -208,6 +216,14 @@ public class SAMFileWriterFactory implements Cloneable {
     public SAMFileWriterFactory setTempDirectory(final File tmpDir) {
         this.tmpDir = tmpDir;
         return this;
+    }
+
+    /**
+     * Gets the temporary directory that will be used when sorting data.
+     * @see #setTempDirectory(File)
+     */
+    public File getTempDirectory() {
+        return tmpDir;
     }
 
     /**
@@ -253,7 +269,6 @@ public class SAMFileWriterFactory implements Cloneable {
             if (this.createIndex && !createIndex) {
                 log.warn("Cannot create index for BAM because output file is not a regular file: " + outputFile.getAbsolutePath());
             }
-            if (this.tmpDir != null) ret.setTempDirectory(this.tmpDir);
             initializeBAMWriter(ret, header, presorted, createIndex);
 
             if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
@@ -268,6 +283,7 @@ public class SAMFileWriterFactory implements Cloneable {
         if (maxRecordsInRam != null) {
             writer.setMaxRecordsInRam(maxRecordsInRam);
         }
+        if (this.tmpDir != null) writer.setTempDirectory(this.tmpDir);
         writer.setHeader(header);
         if (createIndex && writer.getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)) {
             writer.enableBamIndexConstruction();
@@ -294,14 +310,7 @@ public class SAMFileWriterFactory implements Cloneable {
                     ? new SAMTextWriter(new Md5CalculatingOutputStream(new FileOutputStream(outputFile, false),
                     new File(outputFile.getAbsolutePath() + ".md5")), samFlagFieldOutput)
                     : new SAMTextWriter(outputFile, samFlagFieldOutput);
-            ret.setSortOrder(header.getSortOrder(), presorted);
-            if (maxRecordsInRam != null) {
-                ret.setMaxRecordsInRam(maxRecordsInRam);
-            }
-            ret.setHeader(header);
-
-            if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
-            else return ret;
+            return initWriter(header, presorted, ret);
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputFile.getAbsolutePath());
         }
@@ -324,7 +333,7 @@ public class SAMFileWriterFactory implements Cloneable {
         if (samFlagFieldOutput == SamFlagField.NONE) {
             samFlagFieldOutput = Defaults.SAM_FLAG_FIELD_FORMAT;
         }
-        return initWriter(header, presorted, false, new SAMTextWriter(stream, samFlagFieldOutput));
+        return initWriter(header, presorted, new SAMTextWriter(stream, samFlagFieldOutput));
     }
 
     /**
@@ -338,24 +347,23 @@ public class SAMFileWriterFactory implements Cloneable {
      */
 
     public SAMFileWriter makeBAMWriter(final SAMFileHeader header, final boolean presorted, final OutputStream stream) {
-        return initWriter(header, presorted, true, new BAMFileWriter(stream, null, this.getCompressionLevel(), this.deflaterFactory));
+        return initWriter(header, presorted, new BAMFileWriter(stream, null, this.getCompressionLevel(), this.deflaterFactory));
     }
 
     /**
      * Initialize SAMTextWriter or a BAMFileWriter and possibly wrap in AsyncSAMFileWriter
-     *
      * @param header    entire header. Sort order is determined by the sortOrder property of this arg.
      * @param presorted if true, SAMRecords must be added to the SAMFileWriter in order that agrees with header.sortOrder.
-     * @param binary    do we want to generate a BAM or a SAM
      * @param writer    SAM or BAM writer to initialize and maybe wrap.
      */
 
-    private SAMFileWriter initWriter(final SAMFileHeader header, final boolean presorted, final boolean binary,
+    private SAMFileWriter initWriter(final SAMFileHeader header, final boolean presorted,
                                      final SAMFileWriterImpl writer) {
         writer.setSortOrder(header.getSortOrder(), presorted);
         if (maxRecordsInRam != null) {
             writer.setMaxRecordsInRam(maxRecordsInRam);
         }
+        if (this.tmpDir != null) writer.setTempDirectory(this.tmpDir);
         writer.setHeader(header);
 
         if (this.useAsyncIo) return new AsyncSAMFileWriter(writer, this.asyncOutputBufferSize);

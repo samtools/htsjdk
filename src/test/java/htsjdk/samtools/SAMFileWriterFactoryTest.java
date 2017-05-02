@@ -167,7 +167,29 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         fillSmallBam(writer);
         writer.close();
     }
-   
+
+    @Test(description="check that factory settings are propagated to writer")
+    public void testFactorySettings()  throws Exception {
+        final SAMFileWriterFactory factory = new SAMFileWriterFactory();
+        factory.setCreateIndex(false);
+        factory.setCreateMd5File(false);
+        final File wontBeUsed = new File("wontBeUsed.tmp");
+        final int maxRecsInRam = 271828;
+        factory.setMaxRecordsInRam(maxRecsInRam);
+        factory.setTempDirectory(wontBeUsed);
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+        header.addSequence(new SAMSequenceRecord("chr1", 123));
+        try (final SAMFileWriter writer = factory.makeBAMWriter(header, false, new ByteArrayOutputStream())) {
+            Assert.assertEquals(maxRecsInRam, ((SAMFileWriterImpl) writer).getMaxRecordsInRam());
+            Assert.assertEquals(wontBeUsed, ((SAMFileWriterImpl) writer).getTempDirectory());
+        }
+        try (final SAMFileWriter writer = factory.makeSAMWriter(header, false, new ByteArrayOutputStream())) {
+            Assert.assertEquals(maxRecsInRam, ((SAMFileWriterImpl) writer).getMaxRecordsInRam());
+            Assert.assertEquals(wontBeUsed, ((SAMFileWriterImpl) writer).getTempDirectory());
+        }
+    }
+
    private int fillSmallBam(SAMFileWriter writer) {
        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
        builder.addUnmappedFragment("HiMom!");
