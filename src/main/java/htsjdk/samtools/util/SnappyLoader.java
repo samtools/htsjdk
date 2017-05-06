@@ -24,27 +24,19 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import org.xerial.snappy.LoadSnappy;
 import org.xerial.snappy.SnappyInputStream;
+import org.xerial.snappy.SnappyOutputStream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Constructor;
 
 /**
  * If Snappy is available, obtain single-arg ctors for SnappyInputStream and SnappyOutputStream.
  */
 public class SnappyLoader {
     private static final int SNAPPY_BLOCK_SIZE = 32768;  // keep this as small as can be without hurting compression ratio.
-    private final Constructor<InputStream> SnappyInputStreamCtor;
-    private final Constructor<OutputStream> SnappyOutputStreamCtor;
     public final boolean SnappyAvailable;
-
-    // Force Snappy-java code to be loaded into executable jars.
-    private final SnappyInputStream ignoreMe = null;
-
-    // Force bcel to load Snappy.
-    //private static final Class SnappyClass = SnappyInputStream.class;
 
     private static final boolean DefaultVerbosity = Boolean.valueOf(System.getProperty("snappy.loader.verbosity", "false"));
 
@@ -57,71 +49,47 @@ public class SnappyLoader {
      * @param verbose if true output a small number of debug messages to System.err
      */
     public SnappyLoader(final boolean verbose) {
-        Constructor<InputStream> inputStreamCtor = null;
-        Constructor<OutputStream> outputStreamCtor = null;
-        Class<Error> snappyErrorClass = null;
+        this(verbose, verbose);
+    }
 
+    /**
+     * Constructs a new SnappyLoader which will check to see if snappy is available in the JVM/library path.
+     * @param logFailures  if true output a message to stderr if snappy loading fails
+     * @param logSuccesses if true output a message to stderr if snappy loading succeeds
+     */
+    public SnappyLoader(final boolean logFailures, final boolean logSuccesses) {
         if (java.lang.Boolean.valueOf(System.getProperty("snappy.disable", "false"))) {
             System.err.println("Snappy is disabled via system property.");
+            SnappyAvailable = false;
         }
         else {
+            boolean tmpSnappyAvailable = false;
             try {
-                final Class<InputStream> snappyInputStreamClass = (Class<InputStream>)Class.forName("org.xerial.snappy.SnappyInputStream");
-                final Class<OutputStream> snappyOutputStreamClass = (Class<OutputStream>)Class.forName("org.xerial.snappy.SnappyOutputStream");
-                snappyErrorClass = (Class<Error>)Class.forName("org.xerial.snappy.SnappyError");
-                inputStreamCtor = snappyInputStreamClass.getConstructor(InputStream.class);
-                outputStreamCtor = snappyOutputStreamClass.getConstructor(OutputStream.class, Integer.TYPE);
+                final OutputStream test = new SnappyOutputStream(new ByteArrayOutputStream(1000));
+                test.write("Hello World!".getBytes());
+                test.close();
+                tmpSnappyAvailable = true;
+                if (logSuccesses) System.err.println("Snappy successfully loaded.");
             }
-            catch (NoSuchMethodException e) { /* Do nothing. */ }
-            catch (ClassNotFoundException e) { /* Do nothing. */ }
-        }
-
-        this.SnappyInputStreamCtor = inputStreamCtor;
-        this.SnappyOutputStreamCtor = outputStreamCtor;
-
-        if (this.SnappyInputStreamCtor != null && this.SnappyOutputStreamCtor != null) {
-            // Don't try to call any Snappy code until classes have been found via reflection above.
-            boolean tmpSnappyAvailable;
-            try {
-                if (!LoadSnappy.load()) {
-                    if (verbose) System.err.println("Snappy dll failed to load.");
-                    tmpSnappyAvailable = false;
-                }
-                else {
-                    if (verbose) System.err.println("Snappy stream classes loaded.");
-                    tmpSnappyAvailable = true;
-                }
-            } catch (Error e) {
-                if (e.getClass().equals(snappyErrorClass)) {
-                    if (verbose) System.err.println("Snappy dll failed to load: " + e.getMessage());
-                    tmpSnappyAvailable = false;
-                } else {
-                    throw e;
-                }
+            catch (Throwable e) {
+                if (logFailures) System.err.println("Snappy native library failed to load: " + e.getMessage());
             }
             SnappyAvailable = tmpSnappyAvailable;
         }
-        else {
-            if (verbose) System.err.println("Snappy stream classes not loaded.");
-            SnappyAvailable = false;
-        }
     }
+
+    /** Returns true if Snappy is available, false otherwise. */
+    public boolean isSnappyAvailable() { return SnappyAvailable; }
 
     /** Wrap an InputStream in a SnappyInputStream. If Snappy is not available will throw an exception. */
     public InputStream wrapInputStream(final InputStream inputStream) {
-        try {
-            return SnappyInputStreamCtor.newInstance(inputStream);
-        } catch (Exception e) {
-            throw new SAMException("Error instantiating SnappyInputStream", e);
-        }
+        try { return new SnappyInputStream(inputStream); }
+        catch (Exception e) { throw new SAMException("Error instantiating SnappyInputStream", e); }
     }
 
     /** Wrap an InputStream in a SnappyInputStream. If Snappy is not available will throw an exception. */
     public OutputStream wrapOutputStream(final OutputStream outputStream) {
-        try {
-            return SnappyOutputStreamCtor.newInstance(outputStream, SNAPPY_BLOCK_SIZE);
-        } catch (Exception e) {
-            throw new SAMException("Error instantiating SnappyOutputStream", e);
-        }
+        try { return new SnappyOutputStream(outputStream, SNAPPY_BLOCK_SIZE); }
+        catch (Exception e) { throw new SAMException("Error instantiating SnappyOutputStream", e); }
     }
 }

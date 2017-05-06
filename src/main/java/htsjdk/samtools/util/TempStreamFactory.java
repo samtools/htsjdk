@@ -51,7 +51,7 @@ public class TempStreamFactory {
      */
     public InputStream wrapTempInputStream(final InputStream inputStream, final int bufferSize) {
         InputStream is = IOUtil.maybeBufferInputStream(inputStream, bufferSize);
-        if (getSnappyLoader().SnappyAvailable) {
+        if (getSnappyLoader().isSnappyAvailable()) {
             try {
                 return getSnappyLoader().wrapInputStream(is);
             } catch (Exception e) {
@@ -71,7 +71,7 @@ public class TempStreamFactory {
     public OutputStream wrapTempOutputStream(final OutputStream outputStream, final int bufferSize) {
         OutputStream os = outputStream;
         if (bufferSize > 0) os = new BufferedOutputStream(os, bufferSize);
-        if (getSnappyLoader().SnappyAvailable) {
+        if (getSnappyLoader().isSnappyAvailable()) {
             try {
                 os = getSnappyLoader().wrapOutputStream(os);
             } catch (Exception e) {
