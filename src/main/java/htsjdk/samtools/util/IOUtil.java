@@ -996,12 +996,12 @@ public class IOUtil {
             return FileSystems.newFileSystem(uri, new HashMap<>(), cl).provider().getPath(uri);
         }
     }
-    
+
     /**
      * Test whether a input stream looks like a GZIP input.
      * @param bufferedinput the input stream. The buffer must be large enough to contain {@link GZIP_SIGNATURE}
      * @return true if `bufferedinput` starts with a gzip signature 
-     * @throws IOException
+     * @throws IOException if `bufferedinput` cannot mark or reset the stream
      * @see {@linkplain http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped}
      */
     public static boolean isGZIPInputStream(final BufferedInputStream bufferedinput) throws IOException {
