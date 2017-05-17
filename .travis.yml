@@ -10,6 +10,7 @@ cache:
     - $HOME/.m2
 jdk:
   - oraclejdk8
+  - openjdk8
 script: ./gradlew test jacocoTestReport;
 after_success:
   - bash <(curl -s https://codecov.io/bash)
