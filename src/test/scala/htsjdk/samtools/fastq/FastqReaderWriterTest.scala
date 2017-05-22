@@ -3,7 +3,7 @@ package htsjdk.samtools.fastq
 import java.io.{BufferedReader, File, StringReader}
 
 import htsjdk.UnitSpec
-import htsjdk.samtools.SAMUtils
+import htsjdk.samtools.{SAMException, SAMUtils}
 import htsjdk.samtools.util.IOUtil
 
 import scala.util.Random
@@ -104,6 +104,33 @@ class FastqReaderWriterTest extends UnitSpec {
     while (in.hasNext) in.next()
     an[Exception] shouldBe thrownBy { in.next() }
     in.close()
+  }
+
+  it should "honor skipBlankLines when requested" in {
+    val fastq =
+      """
+        |
+        |@SL-XBG:1:1:4:1663#0/2
+        |NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+        |+SL-XBG:1:1:4:1663#0/2
+        |BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+      """.stripMargin
+    val reader = new BufferedReader(new StringReader(fastq))
+    val in = new FastqReader(null, reader, true)
+    while (in.hasNext) in.next()
+  }
+
+  it should "fail on blank lines when skipBlankLines is false" in {
+    val fastq =
+      """
+        |
+        |@SL-XBG:1:1:4:1663#0/2
+        |NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
+        |+SL-XBG:1:1:4:1663#0/2
+        |BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+      """.stripMargin
+    val reader = new BufferedReader(new StringReader(fastq))
+    an[SAMException] shouldBe thrownBy { val in = new FastqReader(null, reader, false) }
   }
 
   it should "fail on a truncated file" in {

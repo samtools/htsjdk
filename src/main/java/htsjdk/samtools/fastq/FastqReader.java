@@ -90,8 +90,8 @@ public class FastqReader implements Iterator<FastqRecord>, Iterable<FastqRecord>
     public FastqReader(final File file, final BufferedReader reader,boolean skipBlankLines) {
         this.fastqFile = file;
         this.reader = reader;
-        this.nextRecord = readNextRecord();
         this.skipBlankLines = skipBlankLines;
+        this.nextRecord = readNextRecord();
     }
 
     public FastqReader(final File file, final BufferedReader reader) {
