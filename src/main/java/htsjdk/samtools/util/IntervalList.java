@@ -739,6 +739,59 @@ public class IntervalList implements Iterable<Interval> {
                 subtract(lists2, lists1));
     }
 
+    /**
+     * A utility function for finding the intervals in the first list that have at least 1bp overlap with any interval
+     * in the second list.
+     *
+     * @param lhs the first collection of IntervalLists
+     * @param lhs the second collection of IntervalLists
+     * @return an IntervalList comprising of all intervals in the first IntervalList that have at least 1bp overlap with
+     * any interval in the second.
+     */
+    public static IntervalList overlaps(final IntervalList lhs, final IntervalList rhs) {
+        return overlaps(Collections.singletonList(lhs), Collections.singletonList(rhs));
+    }
+
+    /**
+     * A utility function for finding the intervals in the first list that have at least 1bp overlap with any interval
+     * in the second list.
+     *
+     * @param lists1 the first collection of IntervalLists
+     * @param lists2 the second collection of IntervalLists
+     * @return an IntervalList comprising of all intervals in the first collection of lists that have at least 1bp
+     * overlap with any interval in the second lists.
+     */
+    public static IntervalList overlaps(final Collection<IntervalList> lists1, final Collection<IntervalList> lists2) {
+        final SAMFileHeader header = lists1.iterator().next().getHeader().clone();
+        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+
+        // Create an overlap detector on list2
+        final IntervalList overlapIntervals = new IntervalList(header);
+        for (final IntervalList list : lists2) {
+            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                    list.getHeader().getSequenceDictionary());
+            overlapIntervals.addall(list.getIntervals());
+        }
+        final OverlapDetector<Interval> detector = new OverlapDetector<>(0, 0);
+        for (final Interval interval : overlapIntervals.sorted().uniqued()) {
+            detector.addLhs(interval, interval);
+        }
+
+        // Go through each input interval in in lists1 and see if overlaps any interval in lists2
+        final IntervalList merged = new IntervalList(header);
+        for (final IntervalList list : lists1) {
+            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                    list.getHeader().getSequenceDictionary());
+            for (final Interval interval : list.getIntervals()) {
+                if (detector.overlapsAny(interval)) {
+                    merged.add(interval);
+                }
+            }
+        }
+
+        return merged;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;

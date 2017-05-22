@@ -377,9 +377,80 @@ public class IntervalListTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "subtractSingletonData")
-    public void testSubtractSingletonasListIntervalList(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
+    public void testSubtractSingletonAsListIntervalList(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
         Assert.assertEquals(
                 CollectionUtil.makeCollection(IntervalList.subtract(Collections.singletonList(fromLists), Collections.singletonList(whatLists)).iterator()),
+                CollectionUtil.makeCollection(list.iterator()));
+    }
+
+    @DataProvider(name = "overlapsSingletonData")
+    public Object[][] overlapSingletonData() {
+        final IntervalList two_overlaps_one   = new IntervalList(fileHeader);
+        final IntervalList three_overlaps_two = new IntervalList(fileHeader);
+        final IntervalList three_overlaps_one = new IntervalList(fileHeader);
+        final IntervalList one_overlaps_three = new IntervalList(fileHeader);
+
+        two_overlaps_one.add(new Interval("1", 50, 150));
+        //two_overlaps_one.add(new Interval("1", 301, 500));
+        two_overlaps_one.add(new Interval("2", 1, 150));
+        two_overlaps_one.add(new Interval("2", 250, 270));
+        two_overlaps_one.add(new Interval("2", 290, 400));
+
+        three_overlaps_two.add(new Interval("1", 25, 400));
+        three_overlaps_two.add(new Interval("2", 200, 600));
+        //three_overlaps_two.add(new Interval("3", 50, 470));
+
+        three_overlaps_one.add(new Interval("1", 25, 400));
+        three_overlaps_one.add(new Interval("2", 200, 600));
+        //three_overlaps_one.add(new Interval("3", 50, 470));
+
+        one_overlaps_three.add(new Interval("1", 1, 100));
+        one_overlaps_three.add(new Interval("1", 101, 200));
+        one_overlaps_three.add(new Interval("1", 202, 300));
+        one_overlaps_three.add(new Interval("2", 200, 300));
+        //one_overlaps_three.add(new Interval("2", 100, 150));
+
+        return new Object[][]{
+                new Object[]{list1, list1, list1}, // should return itself
+                new Object[]{list1, IntervalList.invert(list1), new IntervalList(list1.getHeader())}, // should be empty
+                new Object[]{list2, list1, two_overlaps_one},
+                new Object[]{list3, list2, three_overlaps_two},
+                new Object[]{list3, list1, three_overlaps_one},
+                new Object[]{list1, list3, one_overlaps_three}
+        };
+    }
+
+    @DataProvider(name = "overlapsData")
+    public Object[][] overlapData() {
+        final IntervalList three_overlaps_one_and_two = new IntervalList(fileHeader);
+
+        three_overlaps_one_and_two.add(new Interval("1", 25, 400));
+        three_overlaps_one_and_two.add(new Interval("2", 200, 600));
+        //three_overlaps_one_and_two.add(new Interval("3", 50, 470));
+
+        return new Object[][]{
+                new Object[]{CollectionUtil.makeList(list3), CollectionUtil.makeList(list1, list2), three_overlaps_one_and_two},
+        };
+    }
+
+    @Test(dataProvider = "overlapsData")
+    public void testOverlapsIntervalLists(final List<IntervalList> fromLists, final List<IntervalList> whatLists, final IntervalList list) {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.overlaps(fromLists, whatLists).iterator()),
+                CollectionUtil.makeCollection(list.iterator()));
+    }
+
+    @Test(dataProvider = "overlapsSingletonData")
+    public void testOverlapsSingletonIntervalLists(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.overlaps(fromLists, whatLists).iterator()),
+                CollectionUtil.makeCollection(list.iterator()));
+    }
+
+    @Test(dataProvider = "overlapsSingletonData")
+    public void testOverlapsSingletonAsListIntervalList(final IntervalList fromLists, final IntervalList whatLists, final IntervalList list) {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.overlaps(Collections.singletonList(fromLists), Collections.singletonList(whatLists)).iterator()),
                 CollectionUtil.makeCollection(list.iterator()));
     }
 
