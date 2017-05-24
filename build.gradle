@@ -8,6 +8,7 @@ plugins {
     id 'java'
     id 'scala'
     id 'maven'
+    id 'maven-publish'
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.5.1'
@@ -17,6 +18,14 @@ plugins {
 
 repositories {
     mavenCentral()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
 }
 
 jacocoTestReport {
