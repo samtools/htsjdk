@@ -80,7 +80,7 @@ public class IntGenotypeFieldAccessors {
     }
 
     public static class GQAccessor extends AtomicAccessor {
-        @Override public int getValue(final Genotype g) { return Math.min(g.getGQ(), VCFConstants.MAX_GENOTYPE_QUAL); }
+        @Override public int getValue(final Genotype g) { return g.getGQ(); }
     }
 
     public static class DPAccessor extends AtomicAccessor {
