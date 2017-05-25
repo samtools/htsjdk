@@ -303,7 +303,7 @@ public abstract class SamReaderFactory {
                     return reader;
                   }
                 }
-                if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.URL) {
+                if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.PATH || type == InputResource.Type.URL) {
                     if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
                         final SeekableStream bufferedIndexStream;
                         if (indexDefined && indexMaybe.asUnbufferedSeekableStream() != null) {
