@@ -3,6 +3,7 @@ package htsjdk.tribble.index;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
@@ -120,5 +121,14 @@ public class IndexTest extends HtsjdkTest {
                     break;
             }
         }
+    }
+
+    @Test(dataProvider = "writeIndexData")
+    public void testWriteBasedOnNonRegularFeatureFile(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
+        final File tmpFolder = IOUtil.createTempDir("NonRegultarFeatureFile", null);
+        // create the index
+        final Index index = IndexFactory.createIndex(inputFile, codec, type);
+        // try to write based on the tmpFolder
+        Assert.assertThrows(IOException.class, () -> index.writeBasedOnFeatureFile(tmpFolder));
     }
 }
