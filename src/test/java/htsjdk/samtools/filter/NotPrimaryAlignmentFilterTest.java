@@ -5,8 +5,6 @@ import htsjdk.samtools.SAMRecordSetBuilder;
 import junit.framework.Assert;
 import org.junit.Test;
 
-import static org.testng.Assert.*;
-
 /**
  * Created by farjoun on 5/27/17.
  */
