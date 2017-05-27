@@ -45,6 +45,7 @@ public class ByteArraySeekableStreamTest {
             Assert.assertEquals(byteArraySeekableStream.read(), bytes[i]);
 
         }
+
         Assert.assertTrue(byteArraySeekableStream.eof());
         Assert.assertEquals(byteArraySeekableStream.position(), 10);
         Assert.assertEquals(byteArraySeekableStream.read(), -1);

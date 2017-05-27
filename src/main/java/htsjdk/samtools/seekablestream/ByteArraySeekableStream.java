@@ -27,8 +27,8 @@ package htsjdk.samtools.seekablestream;
 import java.io.IOException;
 
 /**
-* Created by vadim on 23/03/2015.
-*/
+ * Created by vadim on 23/03/2015.
+ */
 public class ByteArraySeekableStream extends SeekableStream {
     private byte[] bytes;
     private long position = 0;
@@ -58,9 +58,11 @@ public class ByteArraySeekableStream extends SeekableStream {
 
     @Override
     public int read() throws IOException {
-        if (position < bytes.length)
+        if (position < bytes.length) {
             return 0xFF & bytes[((int) position++)];
-        else return -1;
+        } else {
+            return -1;
+        }
     }
 
     @Override
