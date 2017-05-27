@@ -23,6 +23,7 @@
 
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import org.junit.Test;
 import org.testng.Assert;
 
@@ -31,7 +32,7 @@ import java.io.IOException;
 /**
  * Created by farjoun on 5/27/17.
  */
-public class ByteArraySeekableStreamTest {
+public class ByteArraySeekableStreamTest extends HtsjdkTest {
     private final byte[] bytes = new byte[]{'A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'};
 
     @Test
