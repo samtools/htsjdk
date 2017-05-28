@@ -30,9 +30,8 @@ import htsjdk.samtools.SAMRecord;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 /**
  * 
@@ -56,8 +55,8 @@ public class EdgingRecordAndOffsetTest extends HtsjdkTest {
     @Test
     public void testConstructor(){
         EdgingRecordAndOffset typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 3);
-        assertArrayEquals(qualities, typedRecordAndOffset.getBaseQualities());
-        assertArrayEquals(bases, typedRecordAndOffset.getRecord().getReadBases());
+        assertEquals(qualities, typedRecordAndOffset.getBaseQualities());
+        assertEquals(bases, typedRecordAndOffset.getRecord().getReadBases());
         assertEquals('A', typedRecordAndOffset.getReadBase());
         assertEquals(0, typedRecordAndOffset.getOffset());
         assertEquals(3, typedRecordAndOffset.getRefPos());
@@ -76,8 +75,8 @@ public class EdgingRecordAndOffsetTest extends HtsjdkTest {
     public void testNotEqualsTypedRecords(){
         EdgingRecordAndOffset typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 0, 10, 3);
         EdgingRecordAndOffset secondEdgingRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 5, 10, 3);
-        assertNotSame(typedRecordAndOffset.getBaseQuality(), secondEdgingRecordAndOffset.getBaseQuality());
-        assertArrayEquals(typedRecordAndOffset.getBaseQualities(), secondEdgingRecordAndOffset.getBaseQualities());
+        assertNotEquals(typedRecordAndOffset.getBaseQuality(), secondEdgingRecordAndOffset.getBaseQuality());
+        assertEquals(typedRecordAndOffset.getBaseQualities(), secondEdgingRecordAndOffset.getBaseQualities());
     }
 
     @Test

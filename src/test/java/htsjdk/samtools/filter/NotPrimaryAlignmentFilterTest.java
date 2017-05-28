@@ -2,8 +2,8 @@ package htsjdk.samtools.filter;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecordSetBuilder;
-import junit.framework.Assert;
-import org.junit.Test;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Created by farjoun on 5/27/17.
@@ -30,7 +30,6 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
                                 record2Strand,
                                 null,null,
                                 10,true);
-
                     }
                 }
             }

@@ -31,7 +31,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 /**
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>

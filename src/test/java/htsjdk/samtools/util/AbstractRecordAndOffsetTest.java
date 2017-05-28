@@ -28,8 +28,8 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+
+import static org.testng.Assert.assertEquals;
 
 /**
  * 
@@ -54,8 +54,8 @@ public class AbstractRecordAndOffsetTest extends HtsjdkTest {
     @Test
     public void testConstructor(){
         AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0);
-        assertArrayEquals(qualities, abstractRecordAndOffset.getBaseQualities());
-        assertArrayEquals(bases, abstractRecordAndOffset.getRecord().getReadBases());
+        assertEquals(qualities, abstractRecordAndOffset.getBaseQualities());
+        assertEquals(bases, abstractRecordAndOffset.getRecord().getReadBases());
         assertEquals('A', abstractRecordAndOffset.getReadBase());
         assertEquals(30, abstractRecordAndOffset.getBaseQuality());
         assertEquals(0, abstractRecordAndOffset.getOffset());

@@ -14,8 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static org.testng.AssertJUnit.assertTrue;
-
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by IntelliJ IDEA.
@@ -52,7 +51,7 @@ public class TabixReaderTest extends HtsjdkTest {
         Assert.assertEquals(expectedSeqNames.length, sequenceNames.size());
 
         for (String s : expectedSeqNames) {
-            Assert.assertTrue(sequenceNames.contains(s));
+            assertTrue(sequenceNames.contains(s));
         }
 
 
@@ -62,7 +61,7 @@ public class TabixReaderTest extends HtsjdkTest {
     public void testSequenceSet() {
         Set<String> chroms= tabixReader.getChromosomes();
         Assert.assertFalse(chroms.isEmpty());
-        Assert.assertTrue(chroms.contains("1"));
+        assertTrue(chroms.contains("1"));
         Assert.assertFalse(chroms.contains("MT"));
         
     }
