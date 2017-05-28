@@ -24,8 +24,8 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
-import org.junit.Test;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 
@@ -70,7 +70,7 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
         Assert.assertEquals(copy, bytes);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testCantSeekNegative() throws IOException {
 
         ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
