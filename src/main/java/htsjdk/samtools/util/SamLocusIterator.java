@@ -91,8 +91,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      */
     @Override
     void accumulateSamRecord(final SAMRecord rec) {
-        // get the accumulator offset
-        int accOffset = getAccumulatorOffset(rec);
+        prepairAccumulatorForRec(rec);
 
         final int minQuality = getQualityScoreCutoff();
         final boolean dontCheckQualities = minQuality == 0;
@@ -101,8 +100,8 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         // interpret the CIGAR string and add the base info
         for (final AlignmentBlock alignmentBlock : rec.getAlignmentBlocks()) {
             final int readStart = alignmentBlock.getReadStart();
-            final int refStart = alignmentBlock.getReferenceStart();
             final int blockLength = alignmentBlock.getLength();
+            final int blockStartAccIndex = alignmentBlock.getReferenceStart() - accumulator.get(0).getPosition();
 
             for (int i = 0; i < blockLength; ++i) {
                 // 0-based offset into the read of the current base
@@ -111,8 +110,8 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
                 // if the quality score cutoff is met, accumulate the base info
                 if (dontCheckQualities || baseQualities.length == 0 || baseQualities[readOffset] >= minQuality) {
                     // 0-based offset from the aligned position of the first base in the read to the aligned position of the current base.
-                    final int refOffset = refStart + i - accOffset;
-                    accumulator.get(refOffset).add(new RecordAndOffset(rec, readOffset));
+                    final int accumulateIndex = blockStartAccIndex + i;
+                    accumulator.get(accumulateIndex).add(new RecordAndOffset(rec, readOffset));
                 }
             }
         }
@@ -129,53 +128,48 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         final List<CigarElement> cigar = rec.getCigar().getCigarElements();
         // 0-based offset into the read of the current base
         int readBase = 0;
-        // 0-based offset for the reference of the current base
-        // the accumulator could have the previous position because an indel is accumulating
-        int refBase = rec.getAlignmentStart() - getAccumulatorOffset(rec);
+        int baseAccIndex = rec.getAlignmentStart() - accumulator.get(0).getPosition();
+
         // iterate over the cigar element
         for (int elementIndex = 0; elementIndex < cigar.size(); elementIndex++) {
             final CigarElement e = cigar.get(elementIndex);
             final CigarOperator operator = e.getOperator();
             if (operator.equals(CigarOperator.I)) {
-                System.err.println("");
                 // insertions are included in the previous base
-                accumulator.get(refBase - 1).addInserted(rec, readBase);
+                accumulator.get(baseAccIndex - 1).addInserted(rec, readBase);
                 readBase += e.getLength();
             } else if (operator.equals(CigarOperator.D)) {
                 // accumulate for each position that spans the deletion
                 for (int i = 0; i < e.getLength(); i++) {
                     // the offset is the one for the previous base
-                    accumulator.get(refBase + i).addDeleted(rec, readBase - 1);
+                    accumulator.get(baseAccIndex + i).addDeleted(rec, readBase - 1);
                 }
-                refBase += e.getLength();
+                baseAccIndex += e.getLength();
             } else {
                 if (operator.consumesReadBases()) readBase += e.getLength();
-                if (operator.consumesReferenceBases()) refBase += e.getLength();
+                if (operator.consumesReferenceBases()) baseAccIndex += e.getLength();
             }
         }
     }
 
-    /**
-     * Ensure that the queue is populated and get the accumulator offset for the current record
-     */
-    private int getAccumulatorOffset(SAMRecord rec) {
+    private void prepairAccumulatorForRec(SAMRecord rec) {
         final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
         final int alignmentStart = rec.getAlignmentStart();
         final int alignmentEnd = rec.getAlignmentEnd();
         final int alignmentLength = alignmentEnd - alignmentStart;
-        // get the offset for an insertion if we are tracking them
-        final int insOffset = (includeIndels && startWithInsertion(rec.getCigar())) ? 1 : 0;
-        // if there is an insertion in the first base and it is not tracked in the accumulator, add it
-        if (insOffset == 1 && accumulator.isEmpty()) {
-            accumulator.add(new LocusInfo(ref, alignmentStart - 1));
-        }
-        // Ensure there are LocusInfos up to and including this position
-        for (int i = accumulator.size(); i <= alignmentLength + insOffset; ++i) {
-            accumulator.add(new LocusInfo(ref, alignmentStart + i - insOffset));
-        }
-        return alignmentStart - insOffset;
-    }
 
+        // if there is an insertion in the first base and it is not tracked in the accumulator, add it
+        if (includeIndels && startWithInsertion(rec.getCigar()) &&
+                (accumulator.isEmpty() || accumulator.get(0).getPosition() == alignmentStart)) {
+            accumulator.add(0, new LocusInfo(ref, alignmentStart - 1));
+        }
+
+        final int accIndexWhereReadStarts =  accumulator.isEmpty() ? 0 : alignmentStart - accumulator.get(0).getPosition();
+        final int newLocusesCount = accIndexWhereReadStarts + alignmentLength - accumulator.size();
+        for (int i = 0; i <= newLocusesCount; i++) {
+            accumulator.add(new LocusInfo(ref, alignmentEnd - newLocusesCount + i));
+        }
+    }
 
     /**
      * @param rec        aligned SamRecord
