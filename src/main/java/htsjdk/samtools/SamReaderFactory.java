@@ -303,106 +303,111 @@ public abstract class SamReaderFactory {
                     return reader;
                   }
                 }
-                if (type == InputResource.Type.SEEKABLE_STREAM || type == InputResource.Type.PATH || type == InputResource.Type.URL) {
-                    if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
-                        final SeekableStream bufferedIndexStream;
-                        if (indexDefined && indexMaybe.asUnbufferedSeekableStream() != null) {
-                            bufferedIndexStream = IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream());
-                        } else {
-                            // TODO: Throw an exception here?  An index _may_ have been provided, but we're ignoring it
-                            bufferedIndexStream = null;
-                        }
-
-                        primitiveSamReader = new BAMFileReader(
-                                IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
-                                bufferedIndexStream,
-                                false,
-                                asynchronousIO,
-                                validationStringency,
-                                this.samRecordFactory,
-                                this.inflaterFactory
-                        );
-                    } else if (SamStreams.sourceLikeCram(data.asUnbufferedSeekableStream())) {
-                        if (referenceSource == null) {
-                            referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
-                        }
-                        SeekableStream bufferedIndexStream = indexDefined ?
-                                IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream()) :
-                                null;
-                        primitiveSamReader = new CRAMFileReader(
-                                IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
-                                bufferedIndexStream, referenceSource, validationStringency);
-                    } else {
-                        // assume its a SAM file/no index
-                        LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
-                        primitiveSamReader = new SAMTextReader(
-                                IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
-                                validationStringency, this.samRecordFactory);
-                    }
-                } else if (type == InputResource.Type.SRA_ACCESSION) {
-                    primitiveSamReader = new SRAFileReader(data.asSRAAccession());
-                } else {
-                    InputStream bufferedStream =
-                            IOUtil.maybeBufferInputStream(
-                                    data.asUnbufferedInputStream(),
-                                    Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE)
-                            );
-                    File sourceFile = data.asFile();
-                    // calling asFile is safe even if indexMaybe is a Google Cloud Storage bucket
-                    // (in that case we just get null)
-                    final File indexFile = indexMaybe == null ? null : indexMaybe.asFile();
-                    if (SamStreams.isBAMFile(bufferedStream)) {
-                        if (sourceFile == null || !sourceFile.isFile()) {
-                            // check whether we can seek
-                            final SeekableStream indexSeekable = indexMaybe == null ? null : indexMaybe.asUnbufferedSeekableStream();
-                            // do not close bufferedStream, it's the same stream we're getting here.
-                            SeekableStream sourceSeekable = data.asUnbufferedSeekableStream();
-                            if (null == sourceSeekable || null == indexSeekable) {
-                                // not seekable.
-                                // it's OK that we consumed a bit of the stream already, this ctor expects it.
-                                primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO,
-                                        validationStringency, this.samRecordFactory, this.inflaterFactory);
+                switch (type) {
+                    case PATH: case SEEKABLE_STREAM: case URL:
+                        if (SamStreams.sourceLikeBam(data.asUnbufferedSeekableStream())) {
+                            final SeekableStream bufferedIndexStream;
+                            if (indexDefined && indexMaybe.asUnbufferedSeekableStream() != null) {
+                                bufferedIndexStream = IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream());
                             } else {
-                                // seekable.
-                                // need to return to the beginning because it's the same stream we used earlier
-                                // and read a bit from, and that form of the ctor expects the stream to start at 0.
-                                sourceSeekable.seek(0);
-                                primitiveSamReader = new BAMFileReader(
-                                        sourceSeekable, indexSeekable, false, asynchronousIO, validationStringency,
-                                        this.samRecordFactory, this.inflaterFactory);
+                                // TODO: Throw an exception here?  An index _may_ have been provided, but we're ignoring it
+                                bufferedIndexStream = null;
                             }
-                        } else {
-                            bufferedStream.close();
+
                             primitiveSamReader = new BAMFileReader(
-                                sourceFile, indexFile, false, asynchronousIO,
-                                validationStringency, this.samRecordFactory, this.inflaterFactory);
-                        }
-                    } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
-                        primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-                    } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
-                        primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-                    } else if (SamStreams.isCRAMFile(bufferedStream)) {
-                        if (referenceSource == null) {
-                            referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
-                        }
-                        if (sourceFile == null || !sourceFile.isFile()) {
-                            primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                                    IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
+                                    bufferedIndexStream,
+                                    false,
+                                    asynchronousIO,
+                                    validationStringency,
+                                    this.samRecordFactory,
+                                    this.inflaterFactory
+                            );
+                        } else if (SamStreams.sourceLikeCram(data.asUnbufferedSeekableStream())) {
+                            if (referenceSource == null) {
+                                referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
+                            }
+                            SeekableStream bufferedIndexStream = indexDefined ?
+                                    IOUtil.maybeBufferedSeekableStream(indexMaybe.asUnbufferedSeekableStream()) :
+                                    null;
+                            primitiveSamReader = new CRAMFileReader(
+                                    IOUtil.maybeBufferedSeekableStream(data.asUnbufferedSeekableStream()),
+                                    bufferedIndexStream, referenceSource, validationStringency);
                         } else {
-                            bufferedStream.close();
-                            primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
+                            // assume its a SAM file/no index
+                            LOG.warn("Unable to detect file format from input URL or stream, assuming SAM format.");
+                            primitiveSamReader = new SAMTextReader(
+                                    IOUtil.toBufferedStream(data.asUnbufferedInputStream()),
+                                    validationStringency, this.samRecordFactory);
                         }
-                    } else if (sourceFile != null && isSra(sourceFile)) {
-                        if (bufferedStream != null) {
-                            bufferedStream.close();
+                        break;
+                    case SRA_ACCESSION:
+                        primitiveSamReader = new SRAFileReader(data.asSRAAccession());
+                        break;
+                    case FILE: case INPUT_STREAM:
+                        InputStream bufferedStream =
+                                IOUtil.maybeBufferInputStream(
+                                        data.asUnbufferedInputStream(),
+                                        Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE)
+                                );
+                        File sourceFile = data.asFile();
+                        // calling asFile is safe even if indexMaybe is a Google Cloud Storage bucket
+                        // (in that case we just get null)
+                        final File indexFile = indexMaybe == null ? null : indexMaybe.asFile();
+                        if (SamStreams.isBAMFile(bufferedStream)) {
+                            if (sourceFile == null || !sourceFile.isFile()) {
+                                // check whether we can seek
+                                final SeekableStream indexSeekable = indexMaybe == null ? null : indexMaybe.asUnbufferedSeekableStream();
+                                // do not close bufferedStream, it's the same stream we're getting here.
+                                SeekableStream sourceSeekable = data.asUnbufferedSeekableStream();
+                                if (null == sourceSeekable || null == indexSeekable) {
+                                    // not seekable.
+                                    // it's OK that we consumed a bit of the stream already, this ctor expects it.
+                                    primitiveSamReader = new BAMFileReader(bufferedStream, indexFile, false, asynchronousIO,
+                                            validationStringency, this.samRecordFactory, this.inflaterFactory);
+                                } else {
+                                    // seekable.
+                                    // need to return to the beginning because it's the same stream we used earlier
+                                    // and read a bit from, and that form of the ctor expects the stream to start at 0.
+                                    sourceSeekable.seek(0);
+                                    primitiveSamReader = new BAMFileReader(
+                                            sourceSeekable, indexSeekable, false, asynchronousIO, validationStringency,
+                                            this.samRecordFactory, this.inflaterFactory);
+                                }
+                            } else {
+                                bufferedStream.close();
+                                primitiveSamReader = new BAMFileReader(
+                                        sourceFile, indexFile, false, asynchronousIO,
+                                        validationStringency, this.samRecordFactory, this.inflaterFactory);
+                            }
+                        } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
+                            primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                        } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
+                            primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
+                        } else if (SamStreams.isCRAMFile(bufferedStream)) {
+                            if (referenceSource == null) {
+                                referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
+                            }
+                            if (sourceFile == null || !sourceFile.isFile()) {
+                                primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                            } else {
+                                bufferedStream.close();
+                                primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
+                            }
+                        } else if (sourceFile != null && isSra(sourceFile)) {
+                            if (bufferedStream != null) {
+                                bufferedStream.close();
+                            }
+                            primitiveSamReader = new SRAFileReader(new SRAAccession(sourceFile.getPath()));
+                        } else {
+                            if (indexDefined) {
+                                bufferedStream.close();
+                                throw new RuntimeException("Cannot use index file with textual SAM file");
+                            }
+                            primitiveSamReader = new SAMTextReader(bufferedStream, sourceFile, validationStringency, this.samRecordFactory);
                         }
-                        primitiveSamReader = new SRAFileReader(new SRAAccession(sourceFile.getPath()));
-                    } else {
-                        if (indexDefined) {
-                            bufferedStream.close();
-                            throw new RuntimeException("Cannot use index file with textual SAM file");
-                        }
-                        primitiveSamReader = new SAMTextReader(bufferedStream, sourceFile, validationStringency, this.samRecordFactory);
-                    }
+                        break;
+                    default: throw new SAMException("Opening SamReader for " + type + " is not supported");
                 }
 
                 // Apply the options defined by this factory to this reader
