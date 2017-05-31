@@ -36,11 +36,13 @@ public class IntervalFilterTest extends HtsjdkTest {
     public void testReads() {
         SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
 
+        int readLength = 36;
+        builder.setReadLength(readLength);
+
         int i = 0;
         int expected = 0;
-        //reads are of length 36
-        builder.addPair("abutting" + i++, 0, 50 - 36, 151); //both abutting
-        builder.addPair("intersecting" + i++, 0, 50 - 35, 150); // both overlapping
+        builder.addPair("abutting" + i++, 0, 50 - readLength, 151); //both abutting
+        builder.addPair("intersecting" + i++, 0, 50 - readLength + 1, 150); // both overlapping
         expected += 2;
 
         builder.addPair("intersecting" + i++, 0, 150, 200); // only the first

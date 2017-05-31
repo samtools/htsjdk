@@ -81,7 +81,17 @@ public class ReadNameFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord record) {
-        return readNameFilterSet.contains(record.getReadName()) != includeReads;
+        if (includeReads) {
+            if (readNameFilterSet.contains(record.getReadName())) {
+                return false;
+            }
+        } else {
+            if (!readNameFilterSet.contains(record.getReadName())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -94,8 +104,19 @@ public class ReadNameFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        return (readNameFilterSet.contains(first.getReadName()) &&
-                readNameFilterSet.contains(second.getReadName())) != includeReads;
+        if (includeReads) {
+            if (readNameFilterSet.contains(first.getReadName()) &&
+                readNameFilterSet.contains(second.getReadName())) {
+                return false;
+            }
+        } else {
+            if (!readNameFilterSet.contains(first.getReadName()) &&
+                !readNameFilterSet.contains(second.getReadName())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 }
