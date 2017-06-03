@@ -165,16 +165,16 @@ public class IntervalTreeMap<T>
     }
     /**
      * Test overlapping interval 
-     * @param key the interval
+     * @param key the Locatable
      * @return true if it contains an object overlapping the interval 
      */
-    public boolean containsOverlapping(final Interval key) {
+    public boolean containsOverlapping(final Locatable key) {
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         return tree!=null && tree.overlappers(key.getStart(), key.getEnd()).hasNext();
     	}
     
     
-    public Collection<T> getOverlapping(final Interval key) {
+    public Collection<T> getOverlapping(final Locatable key) {
         final List<T> result = new ArrayList<T>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree != null) {
@@ -187,10 +187,10 @@ public class IntervalTreeMap<T>
     }
     /**
      * Test if this contains an object that is contained by 'key'
-     * @param key the interval
+     * @param key the Locatable
      * @return true if it contains an object is contained by 'key'
      */
-    public boolean containsContained(final Interval key) {
+    public boolean containsContained(final Locatable key) {
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if(tree==null) return false;
             final Iterator<IntervalTree.Node<T>> iterator = tree.overlappers(key.getStart(), key.getEnd());
@@ -204,7 +204,7 @@ public class IntervalTreeMap<T>
     }
     
     
-    public Collection<T> getContained(final Interval key) {
+    public Collection<T> getContained(final Locatable key) {
         final List<T> result = new ArrayList<T>();
         final IntervalTree<T> tree = mSequenceMap.get(key.getContig());
         if (tree != null) {
