@@ -25,10 +25,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamFileHeaderMerger;
+import htsjdk.samtools.*;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -390,6 +387,8 @@ public class IntervalListTest extends HtsjdkTest {
         final IntervalList three_overlaps_one = new IntervalList(fileHeader);
         final IntervalList one_overlaps_three = new IntervalList(fileHeader);
 
+        // NB: commented lines below are there to show the intervals in the first list that will not be in the resulting list
+
         two_overlaps_one.add(new Interval("1", 50, 150));
         //two_overlaps_one.add(new Interval("1", 301, 500));
         two_overlaps_one.add(new Interval("2", 1, 150));
@@ -452,6 +451,18 @@ public class IntervalListTest extends HtsjdkTest {
         Assert.assertEquals(
                 CollectionUtil.makeCollection(IntervalList.overlaps(Collections.singletonList(fromLists), Collections.singletonList(whatLists)).iterator()),
                 CollectionUtil.makeCollection(list.iterator()));
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testOverlapsEmptyFirstList() {
+        IntervalList.overlaps(Collections.emptyList(), Collections.singletonList(list1));
+    }
+
+    @Test
+    public void testOverlapsEmptySecondList() {
+        Assert.assertEquals(
+                CollectionUtil.makeCollection(IntervalList.overlaps(Collections.singletonList(list1), Collections.emptyList()).iterator()),
+                Collections.emptyList());
     }
 
     @DataProvider(name = "VCFCompData")

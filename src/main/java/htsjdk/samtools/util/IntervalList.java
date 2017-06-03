@@ -762,6 +762,10 @@ public class IntervalList implements Iterable<Interval> {
      * overlap with any interval in the second lists.
      */
     public static IntervalList overlaps(final Collection<IntervalList> lists1, final Collection<IntervalList> lists2) {
+        if(lists1.isEmpty()){
+            throw new SAMException("Cannot call overlaps with the first collection having empty list of IntervalLists.");
+        }
+
         final SAMFileHeader header = lists1.iterator().next().getHeader().clone();
         header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
 
@@ -772,9 +776,10 @@ public class IntervalList implements Iterable<Interval> {
                     list.getHeader().getSequenceDictionary());
             overlapIntervals.addall(list.getIntervals());
         }
-        final OverlapDetector<Interval> detector = new OverlapDetector<>(0, 0);
+        final OverlapDetector<Integer> detector = new OverlapDetector<>(0, 0);
+        final int dummy = -1; // NB: since we don't actually use the returned objects, we can use a dummy value
         for (final Interval interval : overlapIntervals.sorted().uniqued()) {
-            detector.addLhs(interval, interval);
+            detector.addLhs(dummy, interval);
         }
 
         // Go through each input interval in in lists1 and see if overlaps any interval in lists2
