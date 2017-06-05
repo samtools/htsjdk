@@ -69,7 +69,6 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Miscellaneous stateless static IO-oriented methods.
