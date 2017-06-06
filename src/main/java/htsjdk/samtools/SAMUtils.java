@@ -91,25 +91,24 @@ public final class SAMUtils {
     private static final byte COMPRESSED_D_HIGH = (byte) (COMPRESSED_D_LOW << 4);
     private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
 
-    private static final byte[] COMPRESSED_LOOKUP_TABLE =
-            new byte[]{
-                    '=',
-                    'A',
-                    'C',
-                    'M',
-                    'G',
-                    'R',
-                    'S',
-                    'V',
-                    'T',
-                    'W',
-                    'Y',
-                    'H',
-                    'K',
-                    'D',
-                    'B',
-                    'N'
-            };
+    private static final byte[] COMPRESSED_LOOKUP_TABLE = {
+            '=',
+            'A',
+            'C',
+            'M',
+            'G',
+            'R',
+            'S',
+            'V',
+            'T',
+            'W',
+            'Y',
+            'H',
+            'K',
+            'D',
+            'B',
+            'N'
+    };
 
     public static final int MAX_PHRED_SCORE = 93;
 
@@ -730,7 +729,7 @@ public final class SAMUtils {
                     refBase += length;
                     break;
                 default:
-                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator() + "in CIGAR: " + cigar.toString());
+                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator() + "in CIGAR: " + cigar);
             }
         }
         return Collections.unmodifiableList(alignmentBlocks);
@@ -844,11 +843,11 @@ public final class SAMUtils {
      */
     public static int getMateAlignmentEnd(final SAMRecord rec) {
         if (rec.getMateUnmappedFlag()) {
-            throw new RuntimeException("getMateAlignmentEnd called on an unmapped mate: " + rec.toString());
+            throw new RuntimeException("getMateAlignmentEnd called on an unmapped mate: " + rec);
         }
         final Cigar mateCigar = SAMUtils.getMateCigar(rec);
         if (mateCigar == null) {
-            throw new SAMException("Mate CIGAR (Tag MC) not found:" + rec.toString());
+            throw new SAMException("Mate CIGAR (Tag MC) not found:" + rec);
         }
         return CoordMath.getEnd(rec.getMateAlignmentStart(), mateCigar.getReferenceLength());
     }
@@ -863,10 +862,10 @@ public final class SAMUtils {
      */
     public static int getMateUnclippedStart(final SAMRecord rec) {
         if (rec.getMateUnmappedFlag())
-            throw new RuntimeException("getMateUnclippedStart called on an unmapped mate: " + rec.toString());
+            throw new RuntimeException("getMateUnclippedStart called on an unmapped mate: " + rec);
         final Cigar mateCigar = getMateCigar(rec);
         if (mateCigar == null) {
-            throw new SAMException("Mate CIGAR (Tag MC) not found: " + rec.toString());
+            throw new SAMException("Mate CIGAR (Tag MC) not found: " + rec);
         }
         return SAMUtils.getUnclippedStart(rec.getMateAlignmentStart(), mateCigar);
     }
@@ -881,11 +880,11 @@ public final class SAMUtils {
      */
     public static int getMateUnclippedEnd(final SAMRecord rec) {
         if (rec.getMateUnmappedFlag()) {
-            throw new RuntimeException("getMateUnclippedEnd called on an unmapped mate: " + rec.toString());
+            throw new RuntimeException("getMateUnclippedEnd called on an unmapped mate: " + rec);
         }
         final Cigar mateCigar = SAMUtils.getMateCigar(rec);
         if (mateCigar == null) {
-            throw new SAMException("Mate CIGAR (Tag MC) not found: " + rec.toString());
+            throw new SAMException("Mate CIGAR (Tag MC) not found: " + rec);
         }
         return SAMUtils.getUnclippedEnd(getMateAlignmentEnd(rec), mateCigar);
     }
@@ -1131,7 +1130,7 @@ public final class SAMUtils {
         final Object saValue = record.getAttribute(SAMTagUtil.getSingleton().SA);
         if (saValue == null) return Collections.emptyList();
         if (!(saValue instanceof String)) throw new SAMException(
-                "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record.toString());
+                "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
 
         final SAMRecordFactory samReaderFactory = new DefaultSAMRecordFactory();
 
@@ -1161,7 +1160,7 @@ public final class SAMUtils {
             /* break string using comma */
             final String commaStrs[] = COMMA_PAT.split(semiColonStr);
             if (commaStrs.length != 6)
-                throw new SAMException("Bad 'SA' attribute in " + semiColonStr + ". Record: " + record.toString());
+                throw new SAMException("Bad 'SA' attribute in " + semiColonStr + ". Record: " + record);
 
             /* create the new record */
             final SAMRecord otherRec = samReaderFactory.createSAMRecord(record.getHeader());
@@ -1179,7 +1178,7 @@ public final class SAMUtils {
             /* get reference sequence */
             final int tid = record.getHeader().getSequenceIndex(commaStrs[0]);
             if (tid == -1)
-                throw new SAMException("Unknown contig in " + semiColonStr + ". Record: " + record.toString());
+                throw new SAMException("Unknown contig in " + semiColonStr + ". Record: " + record);
             otherRec.setReferenceIndex(tid);
 
             /* fill POS */
@@ -1187,7 +1186,7 @@ public final class SAMUtils {
             try {
                 alignStart = Integer.parseInt(commaStrs[1]);
             } catch (final NumberFormatException err) {
-                throw new SAMException("bad POS in " + semiColonStr + ". Record: " + record.toString(), err);
+                throw new SAMException("bad POS in " + semiColonStr + ". Record: " + record, err);
             }
 
             otherRec.setAlignmentStart(alignStart);
@@ -1215,7 +1214,7 @@ public final class SAMUtils {
             try {
                 otherRec.setMappingQuality(Integer.parseInt(commaStrs[4]));
             } catch (final NumberFormatException err) {
-                throw new SAMException("bad MAPQ in " + semiColonStr + ". Record: " + record.toString(), err);
+                throw new SAMException("bad MAPQ in " + semiColonStr + ". Record: " + record, err);
             }
 
             /* fill NM */
@@ -1224,7 +1223,7 @@ public final class SAMUtils {
                     otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]));
                 }
             } catch (final NumberFormatException err) {
-                throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record.toString(), err);
+                throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record, err);
             }
 
             /* if strand is not the same: reverse-complement */
