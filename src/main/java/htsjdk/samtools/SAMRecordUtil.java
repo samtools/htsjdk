@@ -39,7 +39,9 @@ import java.util.List;
  */
 @Deprecated
 public class SAMRecordUtil {
+    @Deprecated
     public static List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
+    @Deprecated
     public static List<String> TAGS_TO_REVERSE            = Arrays.asList(SAMTag.OQ.name(), SAMTag.U2.name());
 
     /**
@@ -49,6 +51,7 @@ public class SAMRecordUtil {
      * See {@link #TAGS_TO_REVERSE_COMPLEMENT} {@link #TAGS_TO_REVERSE}
      * for the default set of tags that are handled.
      */
+    @Deprecated
     public static void reverseComplement(final SAMRecord rec) {
         rec.reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, true);
     }
@@ -62,6 +65,7 @@ public class SAMRecordUtil {
      * @param rec Record to reverse complement.
      * @param inplace Setting this to false will clone all attributes, bases and qualities before changing the values.
      */
+    @Deprecated
     public static void reverseComplement(final SAMRecord rec, boolean inplace) {
         rec.reverseComplement(TAGS_TO_REVERSE_COMPLEMENT, TAGS_TO_REVERSE, inplace);
     }
@@ -71,6 +75,7 @@ public class SAMRecordUtil {
      * non-null attributes specified by tagsToRevcomp and reverse and non-null attributes
      * specified by tagsToReverse.
      */
+    @Deprecated
     public static void reverseComplement(final SAMRecord rec, final Collection<String> tagsToRevcomp, final Collection<String> tagsToReverse, boolean inplace) {
         rec.reverseComplement(tagsToRevcomp, tagsToReverse, inplace);
     }
