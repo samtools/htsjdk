@@ -572,7 +572,7 @@ public final class SAMUtils {
      */
     public static void makeReadUnmapped(final SAMRecord rec) {
         if (rec.getReadNegativeStrandFlag()) {
-            SAMRecordUtil.reverseComplement(rec);
+            rec.reverseComplement(true);
             rec.setReadNegativeStrandFlag(false);
         }
         rec.setDuplicateReadFlag(false);
