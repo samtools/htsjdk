@@ -43,14 +43,17 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-
 /**
  * Utilty methods.
  */
 public final class SAMUtils {
-    /** regex for semicolon, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    /**
+     * regex for semicolon, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)}
+     */
     private static final Pattern SEMICOLON_PAT = Pattern.compile("[;]");
-    /** regex for comma, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)} */
+    /**
+     * regex for comma, used in {@link SAMUtils#getOtherCanonicalAlignments(SAMRecord)}
+     */
     private static final Pattern COMMA_PAT = Pattern.compile("[,]");
 
     // Representation of bases, one for when in low-order nybble, one for when in high-order nybble.
@@ -87,27 +90,27 @@ public final class SAMUtils {
     private static final byte COMPRESSED_K_HIGH = (byte) (COMPRESSED_K_LOW << 4);
     private static final byte COMPRESSED_D_HIGH = (byte) (COMPRESSED_D_LOW << 4);
     private static final byte COMPRESSED_B_HIGH = (byte) (COMPRESSED_B_LOW << 4);
-    
-    private static final byte [] COMPRESSED_LOOKUP_TABLE = 
+
+    private static final byte[] COMPRESSED_LOOKUP_TABLE =
             new byte[]{
-                '=',
-                'A',
-                'C',
-                'M',
-                'G',
-                'R',
-                'S',
-                'V',
-                'T',
-                'W',
-                'Y',
-                'H',
-                'K',
-                'D',
-                'B',
-                'N'
+                    '=',
+                    'A',
+                    'C',
+                    'M',
+                    'G',
+                    'R',
+                    'S',
+                    'V',
+                    'T',
+                    'W',
+                    'Y',
+                    'H',
+                    'K',
+                    'D',
+                    'B',
+                    'N'
             };
-    
+
     public static final int MAX_PHRED_SCORE = 93;
 
     /**
@@ -135,8 +138,8 @@ public final class SAMUtils {
      * Convert from a byte array with bases stored in nybbles, with for example,=, A, C, G, T, N represented as 0, 1, 2, 4, 8, 15,
      * to a a byte array containing =AaCcGgTtNn represented as ASCII.
      *
-     * @param length Number of bases (not bytes) to convert.
-     * @param compressedBases Bases represented as nybbles, in BAM binary format.
+     * @param length           Number of bases (not bytes) to convert.
+     * @param compressedBases  Bases represented as nybbles, in BAM binary format.
      * @param compressedOffset Byte offset in compressedBases to start.
      * @return New byte array with bases as ASCII bytes.
      */
@@ -215,7 +218,7 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_LOW;
             default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: " + Character.toString((char)base) + "(" + base + ")");
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseLow: " + Character.toString((char) base) + "(" + base + ")");
         }
     }
 
@@ -279,21 +282,22 @@ public final class SAMUtils {
             case 'b':
                 return COMPRESSED_B_HIGH;
             default:
-                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: " + Character.toString((char)base) + "(" + base + ")");
+                throw new IllegalArgumentException("Bad base passed to charToCompressedBaseHigh: " + Character.toString((char) base) + "(" + base + ")");
         }
     }
-    
+
     /**
      * Returns the byte corresponding to a certain nybble
+     *
      * @param base One of COMPRESSED_*_LOW, a low-order nybble encoded base.
      * @return ASCII base, one of =ACGTNMRSVWYHKDB.
      * @throws IllegalArgumentException if the base is not one of =ACGTNMRSVWYHKDB.
      */
-    private static byte compressedBaseToByte(byte base){
-        try{
+    private static byte compressedBaseToByte(byte base) {
+        try {
             return COMPRESSED_LOOKUP_TABLE[base];
-        }catch(IndexOutOfBoundsException e){
-            throw new IllegalArgumentException("Bad base passed to charToCompressedBase: " + Character.toString((char)base) + "(" + base + ")");
+        } catch (IndexOutOfBoundsException e) {
+            throw new IllegalArgumentException("Bad base passed to charToCompressedBase: " + Character.toString((char) base) + "(" + base + ")");
         }
     }
 
@@ -304,7 +308,7 @@ public final class SAMUtils {
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteLow(final int base) {
-        return compressedBaseToByte((byte)(base & 0xf));
+        return compressedBaseToByte((byte) (base & 0xf));
     }
 
     /**
@@ -314,7 +318,7 @@ public final class SAMUtils {
      * @return ASCII base, one of ACGTN=.
      */
     private static byte compressedBaseToByteHigh(final int base) {
-        return compressedBaseToByte((byte)((base >> 4) & 0xf));
+        return compressedBaseToByte((byte) ((base >> 4) & 0xf));
     }
 
     /**
@@ -434,11 +438,11 @@ public final class SAMUtils {
     /**
      * Handle a list of validation errors according to the validation stringency.
      *
-     * @param validationErrors List of errors to report, or null if there are no errors.
-     * @param samRecordIndex Record number of the SAMRecord corresponding to the validation errors, or -1 if
-     * the record number is not known.
+     * @param validationErrors     List of errors to report, or null if there are no errors.
+     * @param samRecordIndex       Record number of the SAMRecord corresponding to the validation errors, or -1 if
+     *                             the record number is not known.
      * @param validationStringency If STRICT, throw a SAMFormatException.  If LENIENT, print the validation
-     * errors to stderr.  If SILENT, do nothing.
+     *                             errors to stderr.  If SILENT, do nothing.
      */
     public static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                                final long samRecordIndex,
@@ -560,7 +564,7 @@ public final class SAMUtils {
 
     /**
      * Strip mapping information from a SAMRecord.
-     *
+     * <p>
      * WARNING: by clearing the secondary and supplementary flags,
      * this may have the affect of producing multiple distinct records with the
      * same read name and flags, which may lead to invalid SAM/BAM output.
@@ -622,6 +626,7 @@ public final class SAMUtils {
     /**
      * Tests if the provided record is mapped entirely beyond the end of the reference (i.e., the alignment start is greater than the
      * length of the sequence to which the record is mapped).
+     *
      * @param record must not have a null SamFileHeader
      */
     public static boolean recordMapsEntirelyBeyondEndOfReference(final SAMRecord record) {
@@ -644,7 +649,6 @@ public final class SAMUtils {
         else if (mapq2 == 255) return 1;
         else return mapq1 - mapq2;
     }
-
 
     /**
      * Hokey algorithm for combining two MAPQs into values that are comparable, being cognizant of the fact
@@ -687,9 +691,9 @@ public final class SAMUtils {
      * reference sequence. Note that clipped portions, and inserted and deleted bases (vs. the reference)
      * are not represented in the alignment blocks.
      *
-     * @param cigar The cigar containing the alignment information
+     * @param cigar          The cigar containing the alignment information
      * @param alignmentStart The start (1-based) of the alignment
-     * @param cigarTypeName The type of cigar passed - for error logging.
+     * @param cigarTypeName  The type of cigar passed - for error logging.
      * @return List of alignment blocks
      */
     public static List<AlignmentBlock> getAlignmentBlocks(final Cigar cigar, final int alignmentStart, final String cigarTypeName) {
@@ -726,7 +730,7 @@ public final class SAMUtils {
                     refBase += length;
                     break;
                 default:
-                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator()+ "in CIGAR: " + cigar.toString());
+                    throw new IllegalStateException("Case statement didn't deal with " + cigarTypeName + " op: " + e.getOperator() + "in CIGAR: " + cigar.toString());
             }
         }
         return Collections.unmodifiableList(alignmentBlocks);
@@ -734,7 +738,7 @@ public final class SAMUtils {
 
     /**
      * @param alignmentStart The start (1-based) of the alignment
-     * @param cigar The cigar containing the alignment information
+     * @param cigar          The cigar containing the alignment information
      * @return the alignment start (1-based, inclusive) adjusted for clipped bases.  For example if the read
      * has an alignment start of 100 but the first 4 bases were clipped (hard or soft clipped)
      * then this method will return 96.
@@ -758,7 +762,7 @@ public final class SAMUtils {
 
     /**
      * @param alignmentEnd The end (1-based) of the alignment
-     * @param cigar The cigar containing the alignment information
+     * @param cigar        The cigar containing the alignment information
      * @return the alignment end (1-based, inclusive) adjusted for clipped bases.  For example if the read
      * has an alignment end of 100 but the last 7 bases were clipped (hard or soft clipped)
      * then this method will return 107.
@@ -796,7 +800,7 @@ public final class SAMUtils {
     /**
      * Returns the Mate Cigar or null if there is none.
      *
-     * @param rec the SAM record
+     * @param rec            the SAM record
      * @param withValidation true if we are to validate the mate cigar before returning, false otherwise.
      * @return Cigar object for the read's mate, or null if there is none.
      */
@@ -867,7 +871,6 @@ public final class SAMUtils {
         return SAMUtils.getUnclippedStart(rec.getMateAlignmentStart(), mateCigar);
     }
 
-
     /**
      * @param rec the SAM record
      * @return the mate alignment end (1-based, inclusive) adjusted for clipped bases.  For example if the mate
@@ -889,9 +892,9 @@ public final class SAMUtils {
 
     /**
      * @param rec the SAM record
-     * Returns blocks of the mate sequence that have been aligned directly to the
-     * reference sequence. Note that clipped portions of the mate and inserted and
-     * deleted bases (vs. the reference) are not represented in the alignment blocks.
+     *            Returns blocks of the mate sequence that have been aligned directly to the
+     *            reference sequence. Note that clipped portions of the mate and inserted and
+     *            deleted bases (vs. the reference) are not represented in the alignment blocks.
      */
     public static List<AlignmentBlock> getMateAlignmentBlocks(final SAMRecord rec) {
         return getAlignmentBlocks(getMateCigar(rec), rec.getMateAlignmentStart(), "mate cigar");
@@ -901,12 +904,12 @@ public final class SAMUtils {
      * Run all validations of the mate's CIGAR.  These include validation that the CIGAR makes sense independent of
      * placement, plus validation that CIGAR + placement yields all bases with M operator within the range of the reference.
      *
-     * @param rec the SAM record
-     * @param cigar The cigar containing the alignment information
-     * @param referenceIndex The reference index
+     * @param rec             the SAM record
+     * @param cigar           The cigar containing the alignment information
+     * @param referenceIndex  The reference index
      * @param alignmentBlocks The alignment blocks (parsed from the cigar)
-     * @param recordNumber For error reporting.  -1 if not known.
-     * @param cigarTypeName For error reporting.  "Read CIGAR" or "Mate Cigar"
+     * @param recordNumber    For error reporting.  -1 if not known.
+     * @param cigarTypeName   For error reporting.  "Read CIGAR" or "Mate Cigar"
      * @return List of errors, or null if no errors.
      */
 
@@ -924,8 +927,7 @@ public final class SAMUtils {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.MISSING_HEADER,
                         cigarTypeName + " A non-null SAMHeader is required to validate cigar elements for: ", rec.getReadName(), recordNumber));
-            }
-            else {
+            } else {
                 final SAMSequenceRecord sequence = samHeader.getSequence(referenceIndex);
                 final int referenceSequenceLength = sequence.getSequenceLength();
                 for (final AlignmentBlock alignmentBlock : alignmentBlocks) {
@@ -945,7 +947,7 @@ public final class SAMUtils {
      * Run all validations of the mate's CIGAR.  These include validation that the CIGAR makes sense independent of
      * placement, plus validation that CIGAR + placement yields all bases with M operator within the range of the reference.
      *
-     * @param rec the SAM record
+     * @param rec          the SAM record
      * @param recordNumber For error reporting.  -1 if not known.
      * @return List of errors, or null if no errors.
      */
@@ -992,7 +994,7 @@ public final class SAMUtils {
      * Returns a string that is the the read group ID and read name separated by a colon.  This is meant to canonically
      * identify a given record within a set of records.
      *
-     * @param record SamRecord for which "canonical" read name is requested
+     * @param record SAMRecord for which "canonical" read name is requested
      * @return The record's readgroup-id (if non-null) and the read name, separated by a colon, ':'
      */
     public static String getCanonicalRecordName(final SAMRecord record) {
@@ -1007,7 +1009,7 @@ public final class SAMUtils {
      * or the given record's start position is greater than its mate's start position, zero is automatically returned.
      * NB: This method assumes that the record's mate is not contained within the given record's alignment.
      *
-     * @param rec SamRecord that needs clipping due to overlapping pairs.
+     * @param rec SAMRecord that needs clipping due to overlapping pairs.
      * @return the number of bases at the end of the read that need to be clipped such that there would be no overlapping bases with its mate.
      * Read bases include only those from insertion, match, or mismatch Cigar operators.
      */
@@ -1018,7 +1020,8 @@ public final class SAMUtils {
 
         // Only clip records that are left-most in genomic order and overlapping.
         if (rec.getMateAlignmentStart() < rec.getAlignmentStart()) return 0; // right-most, so ignore.
-        else if (rec.getMateAlignmentStart() == rec.getAlignmentStart() && rec.getFirstOfPairFlag()) return 0; // same start, so pick the first end
+        else if (rec.getMateAlignmentStart() == rec.getAlignmentStart() && rec.getFirstOfPairFlag())
+            return 0; // same start, so pick the first end
 
         // Find the number of read bases after the given mate's alignment start.
         int numBasesToClip = 0;
@@ -1031,12 +1034,11 @@ public final class SAMUtils {
             if (refStartPos <= refPos + refBasesLength - 1) { // add to clipped bases
                 if (operator == CigarOperator.MATCH_OR_MISMATCH) { // M
                     if (refStartPos < refPos) numBasesToClip += refBasesLength; // use all of the bases
-                    else numBasesToClip += (refPos + refBasesLength) - refStartPos;  // since the mate's alignment start can be in the middle of a cigar element
-                }
-                else if (operator == CigarOperator.SOFT_CLIP || operator == CigarOperator.HARD_CLIP || operator == CigarOperator.PADDING || operator == CigarOperator.SKIPPED_REGION) {
+                    else
+                        numBasesToClip += (refPos + refBasesLength) - refStartPos;  // since the mate's alignment start can be in the middle of a cigar element
+                } else if (operator == CigarOperator.SOFT_CLIP || operator == CigarOperator.HARD_CLIP || operator == CigarOperator.PADDING || operator == CigarOperator.SKIPPED_REGION) {
                     // ignore
-                }
-                else { // ID
+                } else { // ID
                     numBasesToClip += operator.consumesReadBases() ? el.getLength() : 0; // clip all the bases in the read from this operator
                 }
             }
@@ -1054,7 +1056,7 @@ public final class SAMUtils {
      * NB: this does not properly consider a cigar like: 100M20S10H.
      * NB: This method assumes that the record's mate is not contained within the given record's alignment.
      *
-     * @param record the record from which to clip bases.
+     * @param record        the record from which to clip bases.
      * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
      * @return a (possibly new) record that has been clipped
      */
@@ -1068,20 +1070,20 @@ public final class SAMUtils {
      * NB: this does not properly consider a cigar like: 100M20S10H.
      * NB: This method assumes that the record's mate is not contained within the given record's alignment.
      *
-     * @param record the record from which to clip bases.
+     * @param record                    the record from which to clip bases.
      * @param numOverlappingBasesToClip the number of bases to clip at the end of the read.
-     * @param noSideEffects if true a modified clone of the original record is returned, otherwise we modify the record directly.
+     * @param noSideEffects             if true a modified clone of the original record is returned, otherwise we modify the record directly.
      * @return Returns a (possibly new) SAMRecord with the given number of bases soft-clipped
      */
     public static SAMRecord clipOverlappingAlignedBases(final SAMRecord record, final int numOverlappingBasesToClip, final boolean noSideEffects) {
         // NB: ignores how to handle supplemental records when present for both ends by just using the mate information in the record.
 
-        if (numOverlappingBasesToClip <= 0 || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()){
+        if (numOverlappingBasesToClip <= 0 || record.getReadUnmappedFlag() || record.getMateUnmappedFlag()) {
             return record;
         }
 
         try {
-            final SAMRecord rec = noSideEffects ? ((SAMRecord)record.clone()) : record;
+            final SAMRecord rec = noSideEffects ? ((SAMRecord) record.clone()) : record;
 
             // watch out for when the second read overlaps all of the first read
             if (rec.getMateAlignmentStart() <= rec.getAlignmentStart()) { // make it unmapped
@@ -1092,7 +1094,7 @@ public final class SAMUtils {
             // 1-based index of first base in read to clip.
             int clipFrom = rec.getReadLength() - numOverlappingBasesToClip + 1;
             // we have to check if the last cigar element is soft-clipping, so we can subtract that from clipFrom
-            final CigarElement cigarElement = rec.getCigar().getCigarElement(rec.getCigarLength()-1);
+            final CigarElement cigarElement = rec.getCigar().getCigarElement(rec.getCigarLength() - 1);
             if (CigarOperator.SOFT_CLIP == cigarElement.getOperator()) clipFrom -= cigarElement.getLength();
             // FIXME: does not properly consider a cigar like: 100M20S10H
 
@@ -1118,17 +1120,18 @@ public final class SAMUtils {
      * Extract a List of 'other canonical alignments' from a SAM record. Those alignments are stored as a string in the 'SA' tag as defined
      * in the SAM specification.
      * The name, sequence and qualities, mate data are copied from the original record.
+     *
      * @param record must be non null and must have a non-null associated header.
      * @return a list of 'other canonical alignments' SAMRecords. The list is empty if the 'SA' attribute is missing.
      */
     public static List<SAMRecord> getOtherCanonicalAlignments(final SAMRecord record) {
-        if( record == null ) throw new IllegalArgumentException("record is null");
-        if( record.getHeader() == null ) throw new IllegalArgumentException("record.getHeader() is null");
+        if (record == null) throw new IllegalArgumentException("record is null");
+        if (record.getHeader() == null) throw new IllegalArgumentException("record.getHeader() is null");
         /* extract value of SA tag */
-        final Object saValue = record.getAttribute( SAMTagUtil.getSingleton().SA );
-        if( saValue == null ) return Collections.emptyList();
-        if( ! (saValue instanceof String) ) throw new SAMException(
-                "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record.toString() );
+        final Object saValue = record.getAttribute(SAMTagUtil.getSingleton().SA);
+        if (saValue == null) return Collections.emptyList();
+        if (!(saValue instanceof String)) throw new SAMException(
+                "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record.toString());
 
         final SAMRecordFactory samReaderFactory = new DefaultSAMRecordFactory();
 
@@ -1139,79 +1142,80 @@ public final class SAMUtils {
          */
 
         /* break string using semicolon */
-        final String semiColonStrs[] = SEMICOLON_PAT.split((String)saValue);
+        final String semiColonStrs[] = SEMICOLON_PAT.split((String) saValue);
 
         /* the result list */
-        final List<SAMRecord> alignments = new ArrayList<>( semiColonStrs.length );
+        final List<SAMRecord> alignments = new ArrayList<>(semiColonStrs.length);
 
         /* base SAM flag */
-        int record_flag = record.getFlags() ;
+        int record_flag = record.getFlags();
         record_flag &= ~SAMFlag.PROPER_PAIR.flag;
         record_flag &= ~SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
         record_flag &= ~SAMFlag.READ_REVERSE_STRAND.flag;
 
-
-        for(int i=0; i< semiColonStrs.length;++i  ) {
+        for (int i = 0; i < semiColonStrs.length; ++i) {
             final String semiColonStr = semiColonStrs[i];
             /* ignore empty string */
-            if( semiColonStr.isEmpty() ) continue;
+            if (semiColonStr.isEmpty()) continue;
 
             /* break string using comma */
             final String commaStrs[] = COMMA_PAT.split(semiColonStr);
-            if( commaStrs.length != 6 )  throw new SAMException("Bad 'SA' attribute in " + semiColonStr + ". Record: " + record.toString());
+            if (commaStrs.length != 6)
+                throw new SAMException("Bad 'SA' attribute in " + semiColonStr + ". Record: " + record.toString());
 
             /* create the new record */
-            final SAMRecord otherRec = samReaderFactory.createSAMRecord( record.getHeader() );
+            final SAMRecord otherRec = samReaderFactory.createSAMRecord(record.getHeader());
 
             /* copy fields from the original record */
-            otherRec.setReadName( record.getReadName() );
-            otherRec.setReadBases( record.getReadBases() );
-            otherRec.setBaseQualities( record.getBaseQualities() );
-            if( record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
-                otherRec.setMateReferenceIndex( record.getMateReferenceIndex() );
-                otherRec.setMateAlignmentStart( record.getMateAlignmentStart() );
+            otherRec.setReadName(record.getReadName());
+            otherRec.setReadBases(record.getReadBases());
+            otherRec.setBaseQualities(record.getBaseQualities());
+            if (record.getReadPairedFlag() && !record.getMateUnmappedFlag()) {
+                otherRec.setMateReferenceIndex(record.getMateReferenceIndex());
+                otherRec.setMateAlignmentStart(record.getMateAlignmentStart());
             }
 
 
             /* get reference sequence */
-            final int tid = record.getHeader().getSequenceIndex( commaStrs[0] );
-            if( tid == -1 ) throw new SAMException("Unknown contig in " + semiColonStr +  ". Record: " + record.toString());
-            otherRec.setReferenceIndex( tid );
+            final int tid = record.getHeader().getSequenceIndex(commaStrs[0]);
+            if (tid == -1)
+                throw new SAMException("Unknown contig in " + semiColonStr + ". Record: " + record.toString());
+            otherRec.setReferenceIndex(tid);
 
             /* fill POS */
             final int alignStart;
             try {
                 alignStart = Integer.parseInt(commaStrs[1]);
-            } catch( final NumberFormatException err ) {
-                throw new SAMException("bad POS in "+semiColonStr + ". Record: " + record.toString(), err);
+            } catch (final NumberFormatException err) {
+                throw new SAMException("bad POS in " + semiColonStr + ". Record: " + record.toString(), err);
             }
 
-            otherRec.setAlignmentStart( alignStart );
+            otherRec.setAlignmentStart(alignStart);
 
             /* set TLEN */
-            if( record.getReadPairedFlag() &&
-                !record.getMateUnmappedFlag() &&
-                record.getMateReferenceIndex() == tid ) {
-                otherRec.setInferredInsertSize( record.getMateAlignmentStart() - alignStart );
+            if (record.getReadPairedFlag() &&
+                    !record.getMateUnmappedFlag() &&
+                    record.getMateReferenceIndex() == tid) {
+                otherRec.setInferredInsertSize(record.getMateAlignmentStart() - alignStart);
             }
 
             /* set FLAG */
-           int other_flag = record_flag;
-           other_flag |= (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag) ;
+            int other_flag = record_flag;
+            other_flag |= (commaStrs[2].equals("+") ? 0 : SAMFlag.READ_REVERSE_STRAND.flag);
            /* spec: Conventionally, at a supplementary line, the  1st element points to the primary line */
-           if( !( record.getSupplementaryAlignmentFlag() && i==0 ) ) {
-               other_flag |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
-           }
-           otherRec.setFlags(other_flag);
+            if (!(record.getSupplementaryAlignmentFlag() && i == 0)) {
+                other_flag |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;
+            }
+            otherRec.setFlags(other_flag);
 
            /* set CIGAR */
-           otherRec.setCigar( TextCigarCodec.decode( commaStrs[3] ) );
+            otherRec.setCigar(TextCigarCodec.decode(commaStrs[3]));
 
             /* set MAPQ */
             try {
-                otherRec.setMappingQuality( Integer.parseInt(commaStrs[4]) );
+                otherRec.setMappingQuality(Integer.parseInt(commaStrs[4]));
             } catch (final NumberFormatException err) {
-                throw new SAMException("bad MAPQ in "+ semiColonStr + ". Record: " + record.toString(), err);
+                throw new SAMException("bad MAPQ in " + semiColonStr + ". Record: " + record.toString(), err);
             }
 
             /* fill NM */
@@ -1220,16 +1224,16 @@ public final class SAMUtils {
                     otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]));
                 }
             } catch (final NumberFormatException err) {
-                throw new SAMException("bad NM in "+ semiColonStr + ". Record: " + record.toString(), err);
+                throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record.toString(), err);
             }
 
             /* if strand is not the same: reverse-complement */
-            if (otherRec.getReadNegativeStrandFlag() != record.getReadNegativeStrandFlag() ) {
+            if (otherRec.getReadNegativeStrandFlag() != record.getReadNegativeStrandFlag()) {
                 otherRec.reverseComplement(true);
             }
 
             /* add the alignment */
-            alignments.add( otherRec );
+            alignments.add(otherRec);
         }
         return alignments;
     }
