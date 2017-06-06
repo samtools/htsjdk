@@ -17,37 +17,17 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
-import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Padding;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class Sam2CramRecordFactory {
 
@@ -187,7 +167,7 @@ public class Sam2CramRecordFactory {
      * A wrapper method to provide better diagnostics for ArrayIndexOutOfBoundsException.
      *
      * @param cramRecord CRAM record
-     * @param samRecord SAM record
+     * @param samRecord  SAM record
      * @return a list of read features created for the given {@link htsjdk.samtools.SAMRecord}
      */
     private List<ReadFeature> checkedCreateVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
@@ -291,36 +271,62 @@ public class Sam2CramRecordFactory {
         }
     }
 
-    private void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
+    /**
+     * Processes a stretch of read bases marked as match or mismatch and emits appropriate read features.
+     * Briefly the algorithm is:
+     * <ul><li>emit nothing for a read base matching corresponding reference base.</li>
+     * <li>emit a {@link Substitution} read feature for each ACTGN-ACTGN mismatch.</li>
+     * <li>emit {@link ReadBase} for a non-ACTGN mismatch. The side effect is the quality score stored twice.</li>
+     * <p>
+     * The rest of the method handles quality score read features added if refSNPs is specified.
+     * <p>
+     * IMPORTANT: reference and read bases are always compared for match/mismatch in upper case due to BAM limitations.
+     *
+     * @param cramRecord           a record to work on
+     * @param features             a list of read features to add to
+     * @param fromPosInRead        a zero based position in the read to start with
+     * @param alignmentStartOffset offset into the reference array
+     * @param nofReadBases         how many read bases to process
+     * @param bases                the read bases array
+     * @param qualityScore         the quality score array
+     */
+    void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
         int oneBasedPositionInRead;
         final boolean noQS = (qualityScore.length == 0);
 
-        int i;
         boolean qualityAdded;
         byte refBase;
-        for (i = 0; i < nofReadBases; i++) {
+        for (int i = 0; i < nofReadBases; i++) {
             oneBasedPositionInRead = i + fromPosInRead + 1;
             final int referenceCoordinates = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
             qualityAdded = false;
             if (referenceCoordinates >= refBases.length) refBase = 'N';
             else refBase = refBases[referenceCoordinates];
-            refBase = Utils.normalizeBase(refBase);
 
-            if (bases[i + fromPosInRead] != refBase) {
-                final Substitution substitution = new Substitution();
-                substitution.setPosition(oneBasedPositionInRead);
-                substitution.setBase(bases[i + fromPosInRead]);
-                substitution.setReferenceBase(refBase);
+            // explicitly upper case reference base:
+            refBase = SequenceUtil.upperCase(refBase);
+            // explicitly upper case read base:
+            final byte readBase = SequenceUtil.upperCase(bases[i + fromPosInRead]);
 
-                features.add(substitution);
-
-                if (noQS) continue;
+            if (readBase != refBase) {
+                final boolean isSubstitution = isACGTN(readBase) && isACGTN(refBase);
+                if (isSubstitution) {
+                    final Substitution substitution = new Substitution();
+                    substitution.setPosition(oneBasedPositionInRead);
+                    substitution.setBase(readBase);
+                    substitution.setReferenceBase(refBase);
+                    features.add(substitution);
+                } else {
+                    final byte score = qualityScore[i + fromPosInRead];
+                    features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
+                    qualityAdded = true;
+                }
             }
 
-            if (noQS) continue;
-
-            if (refSNPs != null) {
+            // don't add quality score if either there is none or already added or not needed (reference SNP list not provided):
+            final boolean shouldAddQualityScore = !noQS && !qualityAdded && refSNPs != null;
+            if (shouldAddQualityScore) {
                 final byte snpOrNot = refSNPs[referenceCoordinates];
                 if (snpOrNot != 0) {
                     final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
@@ -330,7 +336,27 @@ public class Sam2CramRecordFactory {
                 }
             }
 
+            // count the number of quality scores added:
             if (qualityAdded) landedTotalScores++;
+        }
+    }
+
+    /**
+     * Check if the given base is one of ACGTN
+     *
+     * @param base a base to check
+     * @return true if the base is one ACGTN false otherwise
+     */
+    static boolean isACGTN(final byte base) {
+        switch (base) {
+            case 'A':
+            case 'C':
+            case 'G':
+            case 'T':
+            case 'N':
+                return true;
+            default:
+                return false;
         }
     }
 

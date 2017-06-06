@@ -256,6 +256,7 @@ public class CramNormalizer {
                     final Substitution substitution = (Substitution) variation;
                     byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
                             - refOffsetZeroBased, (byte) 'N');
+                    // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
                     substitution.setBase(base);
