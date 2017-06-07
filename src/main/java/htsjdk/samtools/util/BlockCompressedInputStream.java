@@ -586,51 +586,95 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 
     public enum FileTermination {HAS_TERMINATOR_BLOCK, HAS_HEALTHY_LAST_BLOCK, DEFECTIVE}
 
+    /**
+     *
+     * @param file the file to check
+     * @return status of the last compressed block
+     * @throws IOException
+     */
     public static FileTermination checkTermination(final File file) throws IOException {
         return checkTermination(file == null ? null : file.toPath());
     }
 
+    /**
+     *
+     * @param path to the file to check
+     * @return status of the last compressed block
+     * @throws IOException
+     */
     public static FileTermination checkTermination(final Path path) throws IOException {
         try( final SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ) ){
             return checkTermination(channel);
         }
     }
 
+    /**
+     * check the status of the final bzgipped block for the given bgzipped resource
+     *
+     * @param channel an open channel to read from,
+     * the channel will remain open and the initial position will be restored when the operation completes
+     * this makes no guarantee about the state of the channel if an exception is thrown during reading
+     *
+     * @return the status of the last compressed black
+     * @throws IOException
+     */
     public static FileTermination checkTermination(SeekableByteChannel channel) throws IOException {
         final long fileSize = channel.size();
         if (fileSize < BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length) {
             return FileTermination.DEFECTIVE;
         }
-        channel.position(fileSize - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
+        final long initialPosition = channel.position();
+        boolean exceptionThrown = false;
+        try {
+            channel.position(fileSize - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
 
-        final ByteBuffer bytebuffer = ByteBuffer.allocate(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
-        readFully(channel, bytebuffer);
-        if (Arrays.equals(bytebuffer.array(), BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK)) {
-            return FileTermination.HAS_TERMINATOR_BLOCK;
-        }
-        final int bufsize = (int)Math.min(fileSize, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-        final byte[] buf = new byte[bufsize];
-        channel.position(fileSize - bufsize);
-        readFully(channel, ByteBuffer.wrap(buf));
-        for (int i = buf.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length;
-                i >= 0; --i) {
-            if (!preambleEqual(BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE,
-                    buf, i, BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length)) {
-                continue;
+            //Check if the end of the file is an empty gzip block which is used as the terminator for a bgzipped file
+            final ByteBuffer lastBlockBuffer = ByteBuffer.allocate(BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length);
+            readFully(channel, lastBlockBuffer);
+            if (Arrays.equals(lastBlockBuffer.array(), BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK)) {
+                return FileTermination.HAS_TERMINATOR_BLOCK;
             }
-            final ByteBuffer byteBuffer = ByteBuffer.wrap(buf, i + BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length, 4);
-            byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-            final int totalBlockSizeMinusOne =  byteBuffer.getShort() & 0xFFFF;
-            if (buf.length - i == totalBlockSizeMinusOne + 1) {
-                return FileTermination.HAS_HEALTHY_LAST_BLOCK;
-            } else {
-                return FileTermination.DEFECTIVE;
+
+            //if the last block isn't an empty gzip block, check to see if it is a healthy compressed block or if it's corrupted
+            final int bufsize = (int) Math.min(fileSize, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+            final byte[] bufferArray = new byte[bufsize];
+            channel.position(fileSize - bufsize);
+            readFully(channel, ByteBuffer.wrap(bufferArray));
+            for (int i = bufferArray.length - BlockCompressedStreamConstants.EMPTY_GZIP_BLOCK.length;
+                 i >= 0; --i) {
+                if (!preambleEqual(BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE,
+                                   bufferArray, i, BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length)) {
+                    continue;
+                }
+                final ByteBuffer byteBuffer = ByteBuffer.wrap(bufferArray,
+                                                              i + BlockCompressedStreamConstants.GZIP_BLOCK_PREAMBLE.length,
+                                                              4);
+                byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                final int totalBlockSizeMinusOne = byteBuffer.getShort() & 0xFFFF;
+                if (bufferArray.length - i == totalBlockSizeMinusOne + 1) {
+                    return FileTermination.HAS_HEALTHY_LAST_BLOCK;
+                } else {
+                    return FileTermination.DEFECTIVE;
+                }
+            }
+            return FileTermination.DEFECTIVE;
+        } catch (final Throwable e) {
+            exceptionThrown = true;
+            throw e;
+        } finally {
+            //if an exception was thrown we don't want to reset the position because that would be likely to throw again
+            //and suppress the initial exception
+            if(!exceptionThrown) {
+                channel.position(initialPosition);
             }
         }
-        return FileTermination.DEFECTIVE;
     }
 
-    private static void readFully(SeekableByteChannel channel, ByteBuffer dst) throws IOException {
+    /**
+     * read as many bytes as dst's capacity into dst or throw if that's not possible
+     * @throws EOFException if channel has fewer bytes available than dst's capacity
+     */
+    static void readFully(SeekableByteChannel channel, ByteBuffer dst) throws IOException {
         final int bytesRead = channel.read(dst);
         if (bytesRead < dst.capacity()){
             throw new EOFException();
