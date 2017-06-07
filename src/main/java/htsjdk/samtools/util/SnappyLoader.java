@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-import org.xerial.snappy.LoadSnappy;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.InputStream;
@@ -42,9 +41,6 @@ public class SnappyLoader {
 
     // Force Snappy-java code to be loaded into executable jars.
     private final SnappyInputStream ignoreMe = null;
-
-    // Force bcel to load Snappy.
-    //private static final Class SnappyClass = SnappyInputStream.class;
 
     private static final boolean DefaultVerbosity = Boolean.valueOf(System.getProperty("snappy.loader.verbosity", "false"));
 
@@ -64,42 +60,13 @@ public class SnappyLoader {
         if (java.lang.Boolean.valueOf(System.getProperty("snappy.disable", "false"))) {
             System.err.println("Snappy is disabled via system property.");
         }
-        else {
-            try {
-                final Class<InputStream> snappyInputStreamClass = (Class<InputStream>)Class.forName("org.xerial.snappy.SnappyInputStream");
-                final Class<OutputStream> snappyOutputStreamClass = (Class<OutputStream>)Class.forName("org.xerial.snappy.SnappyOutputStream");
-                snappyErrorClass = (Class<Error>)Class.forName("org.xerial.snappy.SnappyError");
-                inputStreamCtor = snappyInputStreamClass.getConstructor(InputStream.class);
-                outputStreamCtor = snappyOutputStreamClass.getConstructor(OutputStream.class, Integer.TYPE);
-            }
-            catch (NoSuchMethodException e) { /* Do nothing. */ }
-            catch (ClassNotFoundException e) { /* Do nothing. */ }
-        }
 
         this.SnappyInputStreamCtor = inputStreamCtor;
         this.SnappyOutputStreamCtor = outputStreamCtor;
 
         if (this.SnappyInputStreamCtor != null && this.SnappyOutputStreamCtor != null) {
             // Don't try to call any Snappy code until classes have been found via reflection above.
-            boolean tmpSnappyAvailable;
-            try {
-                if (!LoadSnappy.load()) {
-                    if (verbose) System.err.println("Snappy dll failed to load.");
-                    tmpSnappyAvailable = false;
-                }
-                else {
-                    if (verbose) System.err.println("Snappy stream classes loaded.");
-                    tmpSnappyAvailable = true;
-                }
-            } catch (Error e) {
-                if (e.getClass().equals(snappyErrorClass)) {
-                    if (verbose) System.err.println("Snappy dll failed to load: " + e.getMessage());
-                    tmpSnappyAvailable = false;
-                } else {
-                    throw e;
-                }
-            }
-            SnappyAvailable = tmpSnappyAvailable;
+            SnappyAvailable = true;
         }
         else {
             if (verbose) System.err.println("Snappy stream classes not loaded.");
