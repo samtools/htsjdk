@@ -776,7 +776,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test
-    private void testNullHeaderDeepCopy() {
+    public void testNullHeaderDeepCopy() {
         SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
         final SAMRecord deepCopy = sam.deepCopy();
@@ -805,13 +805,13 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test
-    private void testNullHeadGetCigarSAM() {
-        SAMRecord sam = createTestRecordHelper();
+    public void testNullHeadGetCigarSAM() {
+        final SAMRecord sam = createTestRecordHelper();
         testNullHeaderCigar(sam);
     }
 
     @Test
-    private void testNullHeadGetCigarBAM() {
+    public void testNullHeadGetCigarBAM() {
         SAMRecord sam = createTestRecordHelper();
         SAMRecordFactory factory = new DefaultSAMRecordFactory();
         BAMRecord bamRec = factory.createBAMRecord(
@@ -1038,5 +1038,21 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         rec.setAttribute("Y1", "AAAAGAAAAC");
 
         return(rec);
+    }
+
+    @DataProvider
+    public Object [][] readBasesGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE, 0 },
+                { new byte[] {'A', 'C'}, 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesGetReadLengthData")
+    public void testNullReadBasesGetReadLength(final byte[] readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadBases(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
     }
 }

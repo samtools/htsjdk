@@ -262,7 +262,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return number of bases in the read.
      */
     public int getReadLength() {
-        return getReadBases().length;
+        final byte[] readBases = getReadBases();
+        return readBases == null ? 0 : readBases.length;
     }
 
     /**
