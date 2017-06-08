@@ -101,6 +101,9 @@ public class HTTPHelper implements URLHelper {
      * @param end   end of range ni bytes
      * @return
      * @throws IOException
+     *
+     * @deprecated  since 12/10/14  Will be removed in a future release, as is somewhat fragile
+     * and not used.
      */
     @Override
     @Deprecated
