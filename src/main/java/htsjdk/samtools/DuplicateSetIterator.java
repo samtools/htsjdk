@@ -114,7 +114,7 @@ public class DuplicateSetIterator implements CloseableIterator<DuplicateSet> {
     }
 
     @Deprecated
-    /** Do not use this method as the first duplicate set will not be compared with this scoring strategy.
+    /** @deprecated Do not use this method as the first duplicate set will not be compared with this scoring strategy.
       * Instead, provide a comparator to the constructor that has the scoring strategy set. */
     public void setScoringStrategy(final DuplicateScoringStrategy.ScoringStrategy scoringStrategy) {
         this.comparator.setScoringStrategy(scoringStrategy);

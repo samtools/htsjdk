@@ -183,6 +183,10 @@ public class GenotypeLikelihoods {
      * If you <strong>know</strong> you're biallelic, use <code>getGQLog10FromLikelihoods</code> directly.
      * @param genotype - actually a genotype type (no call, hom ref, het, hom var)
      * @return an unsafe quantity that could be negative. In the bi-allelic case, the GQ resulting from best minus next best (if the type is the best).
+     *
+     * @deprecated since 2/5/13 use
+     * {@link GenotypeLikelihoods#getLog10GQ(Genotype, VariantContext)} or
+     * {@link GenotypeLikelihoods#getLog10GQ(Genotype, List)}
      */
     @Deprecated
     public double getLog10GQ(GenotypeType genotype){
@@ -554,6 +558,8 @@ public class GenotypeLikelihoods {
      *
      * @param PLindex   the PL index
      * @return the allele index pair
+     *
+     * @deprecated since 2/5/13
      */
     @Deprecated
     public static GenotypeLikelihoodsAllelePair getAllelePairUsingDeprecatedOrdering(final int PLindex) {
