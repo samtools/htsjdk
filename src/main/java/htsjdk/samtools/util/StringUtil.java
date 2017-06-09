@@ -312,6 +312,9 @@ public class StringUtil {
         }
         return byteBuffer;
 */
+        if (s == null) {
+            return null;
+        }
         final byte[] byteBuffer = new byte[s.length()];
         s.getBytes(0, byteBuffer.length, byteBuffer, 0);
         return byteBuffer;
@@ -319,6 +322,9 @@ public class StringUtil {
 
     @SuppressWarnings("deprecation")
     public static byte[] stringToBytes(final String s, final int offset, final int length) {
+        if (s == null) {
+            return null;
+        }
         final byte[] byteBuffer = new byte[length];
         s.getBytes(offset, offset + length, byteBuffer, 0);
         return byteBuffer;

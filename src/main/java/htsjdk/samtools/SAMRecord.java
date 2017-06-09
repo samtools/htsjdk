@@ -238,7 +238,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             mReadBases = NULL_SEQUENCE;
         } else {
             final byte[] bases = StringUtil.stringToBytes(value);
-            SAMUtils.normalizeBases(bases);
+            if (bases != null) {
+                SAMUtils.normalizeBases(bases);
+            }
             setReadBases(bases);
         }
     }

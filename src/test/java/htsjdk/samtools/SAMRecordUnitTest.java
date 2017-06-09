@@ -1041,7 +1041,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object [][] readBasesGetReadLengthData() {
+    public Object [][] readBasesArrayGetReadLengthData() {
         return new Object[][]{
                 { null, 0 },
                 { SAMRecord.NULL_SEQUENCE, 0 },
@@ -1049,10 +1049,26 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "readBasesGetReadLengthData")
-    public void testNullReadBasesGetReadLength(final byte[] readBases, final int readLength) {
+    @Test(dataProvider = "readBasesArrayGetReadLengthData")
+    public void testReadBasesGetReadLength(final byte[] readBases, final int readLength) {
         final SAMRecord sam = createTestRecordHelper();
         sam.setReadBases(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
+    }
+
+    @DataProvider
+    public Object [][] readBasesStringGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE_STRING, 0 },
+                { "AC", 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesStringGetReadLengthData")
+    public void testReadStringGetReadLength(final String readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadString(readBases);
         Assert.assertEquals(sam.getReadLength(), readLength);
     }
 }
