@@ -36,7 +36,7 @@ public class DuplicateScoringStrategy {
     public enum ScoringStrategy {
         SUM_OF_BASE_QUALITIES,
         TOTAL_MAPPED_REFERENCE_LENGTH,
-        RANDOM,
+        RANDOM
     }
 
     /** Hash used for the RANDOM scoring strategy. */
