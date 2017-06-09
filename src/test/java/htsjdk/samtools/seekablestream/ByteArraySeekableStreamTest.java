@@ -33,7 +33,7 @@ import java.io.IOException;
  * Created by farjoun on 5/27/17.
  */
 public class ByteArraySeekableStreamTest extends HtsjdkTest {
-    private final byte[] bytes = new byte[]{'A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'};
+    private final byte[] bytes = new byte[] {'A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'};
 
     @Test
     public void testNormalBehavior() throws IOException {
@@ -44,7 +44,6 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
             Assert.assertFalse(byteArraySeekableStream.eof());
             Assert.assertEquals(byteArraySeekableStream.position(), i);
             Assert.assertEquals(byteArraySeekableStream.read(), bytes[i]);
-
         }
 
         Assert.assertTrue(byteArraySeekableStream.eof());
@@ -89,5 +88,6 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
 
         byteArraySeekableStream.seek(10);
         Assert.assertEquals(byteArraySeekableStream.read(copy), -1);
+        Assert.assertEquals(byteArraySeekableStream.read(), -1);
     }
 }
