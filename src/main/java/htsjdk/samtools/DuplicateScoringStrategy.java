@@ -128,7 +128,7 @@ public class DuplicateScoringStrategy {
         int cmp;
 
         // always prefer paired over non-paired
-        if (rec1.getReadPairedFlag() != rec2.getReadPairedFlag()) return rec1.getReadPairedFlag() ? 1 : -1;
+        if (rec1.getReadPairedFlag() != rec2.getReadPairedFlag()) return rec1.getReadPairedFlag() ? -1 : 1;
 
         cmp = computeDuplicateScore(rec2, scoringStrategy, assumeMateCigar) - computeDuplicateScore(rec1, scoringStrategy, assumeMateCigar);
 
