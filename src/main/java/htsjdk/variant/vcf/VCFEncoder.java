@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -9,6 +10,7 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.IntGenotypeFieldAccessors;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -64,15 +66,34 @@ public class VCFEncoder {
 		this.allowMissingFieldsInHeader = allow;
 	}
 
+	/** encodes a new Variant context as VCF 
+	 * @return the VCF line
+	 */
 	public String encode(final VariantContext context) {
-		if (this.header == null) {
-			throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
-		}
+    	try {
+    	    final StringBuilder stringBuilder = new StringBuilder(1000);
+    	    write(stringBuilder,context);
+            return stringBuilder.toString();
+        } catch (final IOException error) {
+           throw new RuntimeIOException("Cannot encode variant", error);
+        }
+	}
 
-		final StringBuilder stringBuilder = new StringBuilder();
 
+   /** 
+    * encodes a new Variant context as VCF, writes it to a java.lang.Appendable 
+    * 
+    * @param vcfoutput the java.lang.Appendable
+    * @param context the variant
+    * @return the java.lang.Appendable 'vcfoutput'
+    * @throws IOException
+    */
+   public void write(final Appendable vcfoutput, final VariantContext context) throws IOException {	
+       if (this.header == null) {
+           throw new NullPointerException("The header field must be set on the VCFEncoder before encoding records.");
+       }
 		// CHROM
-		stringBuilder.append(context.getContig()).append(VCFConstants.FIELD_SEPARATOR)
+		vcfoutput.append(context.getContig()).append(VCFConstants.FIELD_SEPARATOR)
 				// POS
 				.append(String.valueOf(context.getStart())).append(VCFConstants.FIELD_SEPARATOR)
 				// ID
@@ -84,24 +105,24 @@ public class VCFEncoder {
 		if ( context.isVariant() ) {
 			Allele altAllele = context.getAlternateAllele(0);
 			String alt = altAllele.getDisplayString();
-			stringBuilder.append(alt);
+			vcfoutput.append(alt);
 
 			for (int i = 1; i < context.getAlternateAlleles().size(); i++) {
 				altAllele = context.getAlternateAllele(i);
 				alt = altAllele.getDisplayString();
-				stringBuilder.append(',');
-				stringBuilder.append(alt);
+				vcfoutput.append(',');
+				vcfoutput.append(alt);
 			}
 		} else {
-			stringBuilder.append(VCFConstants.EMPTY_ALTERNATE_ALLELE_FIELD);
+			vcfoutput.append(VCFConstants.EMPTY_ALTERNATE_ALLELE_FIELD);
 		}
 
-		stringBuilder.append(VCFConstants.FIELD_SEPARATOR);
+		vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
 
 		// QUAL
-		if ( ! context.hasLog10PError()) stringBuilder.append(VCFConstants.MISSING_VALUE_v4);
-		else stringBuilder.append(formatQualValue(context.getPhredScaledQual()));
-		stringBuilder.append(VCFConstants.FIELD_SEPARATOR)
+		if ( ! context.hasLog10PError()) vcfoutput.append(VCFConstants.MISSING_VALUE_v4);
+		else vcfoutput.append(formatQualValue(context.getPhredScaledQual()));
+		vcfoutput.append(VCFConstants.FIELD_SEPARATOR)
 				// FILTER
 				.append(getFilterString(context)).append(VCFConstants.FIELD_SEPARATOR);
 
@@ -113,13 +134,13 @@ public class VCFEncoder {
 			final String outputValue = formatVCFField(field.getValue());
 			if (outputValue != null) infoFields.put(field.getKey(), outputValue);
 		}
-		writeInfoString(infoFields, stringBuilder);
+		writeInfoString(infoFields, vcfoutput);
 
 		// FORMAT
 		final GenotypesContext gc = context.getGenotypes();
 		if (gc.isLazyWithData() && ((LazyGenotypesContext) gc).getUnparsedGenotypeData() instanceof String) {
-			stringBuilder.append(VCFConstants.FIELD_SEPARATOR);
-			stringBuilder.append(((LazyGenotypesContext) gc).getUnparsedGenotypeData().toString());
+			vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
+			vcfoutput.append(((LazyGenotypesContext) gc).getUnparsedGenotypeData().toString());
 		} else {
 			final List<String> genotypeAttributeKeys = context.calcVCFGenotypeKeys(this.header);
 			if ( ! genotypeAttributeKeys.isEmpty()) {
@@ -129,15 +150,13 @@ public class VCFEncoder {
 
 				final String genotypeFormatString = ParsingUtils.join(VCFConstants.GENOTYPE_FIELD_SEPARATOR, genotypeAttributeKeys);
 
-				stringBuilder.append(VCFConstants.FIELD_SEPARATOR);
-				stringBuilder.append(genotypeFormatString);
+				vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
+				vcfoutput.append(genotypeFormatString);
 
 				final Map<Allele, String> alleleStrings = buildAlleleStrings(context);
-				addGenotypeData(context, alleleStrings, genotypeAttributeKeys, stringBuilder);
+				appendGenotypeData(context, alleleStrings, genotypeAttributeKeys, vcfoutput);
 			}
 		}
-
-		return stringBuilder.toString();
 	}
 
 	VCFHeader getVCFHeader() {
@@ -175,7 +194,8 @@ public class VCFEncoder {
 					+ " complete VCF headers by default.");
 	}
 
-	String formatVCFField(final Object val) {
+	@SuppressWarnings("rawtypes")
+    String formatVCFField(final Object val) {
 		final String result;
 		if ( val == null )
 			result = VCFConstants.MISSING_VALUE_v4;
@@ -246,11 +266,27 @@ public class VCFEncoder {
 	/*
 	 * Add the genotype data
 	 */
-	public void addGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final StringBuilder builder) {
+    public void addGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final StringBuilder builder) {
+            try {
+                appendGenotypeData(vc,alleleMap,genotypeFormatKeys,builder);
+            } catch (final IOException err) {
+                throw new RuntimeIOException("addGenotypeData failed",err);
+            }
+        }
+	
+    /**
+     * Add the genotype Data to a java.lang.Appendable
+     * @param vc the variant
+     * @param alleleMap
+     * @param genotypeFormatKeys
+     * @param vcfoutput VCF output
+     * @throws IOException
+     */
+	private void appendGenotypeData(final VariantContext vc, final Map<Allele, String> alleleMap, final List<String> genotypeFormatKeys, final Appendable vcfoutput) throws IOException {
 		final int ploidy = vc.getMaxPloidy(2);
 
 		for (final String sample : this.header.getGenotypeSamples()) {
-			builder.append(VCFConstants.FIELD_SEPARATOR);
+			vcfoutput.append(VCFConstants.FIELD_SEPARATOR);
 
 			Genotype g = vc.getGenotype(sample);
 			if (g == null) g = GenotypeBuilder.createMissing(sample, ploidy);
@@ -262,10 +298,10 @@ public class VCFEncoder {
 						throw new IllegalStateException("GTs cannot be missing for some samples if they are available for others in the record");
 					}
 
-					writeAllele(g.getAllele(0), alleleMap, builder);
+					writeAllele(g.getAllele(0), alleleMap, vcfoutput);
 					for (int i = 1; i < g.getPloidy(); i++) {
-						builder.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
-						writeAllele(g.getAllele(i), alleleMap, builder);
+						vcfoutput.append(g.isPhased() ? VCFConstants.PHASED : VCFConstants.UNPHASED);
+						writeAllele(g.getAllele(i), alleleMap, vcfoutput);
 					}
 					continue;
 
@@ -328,9 +364,9 @@ public class VCFEncoder {
 
 			for (int i = 0; i < attrs.size(); i++) {
 				if ( i > 0 || genotypeFormatKeys.contains(VCFConstants.GENOTYPE_KEY)) {
-					builder.append(VCFConstants.GENOTYPE_FIELD_SEPARATOR);
+					vcfoutput.append(VCFConstants.GENOTYPE_FIELD_SEPARATOR);
 				}
-				builder.append(attrs.get(i));
+				vcfoutput.append(attrs.get(i));
 			}
 		}
 	}
@@ -338,24 +374,24 @@ public class VCFEncoder {
 	/*
 	 * Create the info string; assumes that no values are null
 	 */
-	private void writeInfoString(final Map<String, String> infoFields, final StringBuilder builder) {
+	private void writeInfoString(final Map<String, String> infoFields, final Appendable vcfoutput) throws IOException {
 		if ( infoFields.isEmpty() ) {
-			builder.append(VCFConstants.EMPTY_INFO_FIELD);
+			vcfoutput.append(VCFConstants.EMPTY_INFO_FIELD);
 			return;
 		}
 
 		boolean isFirst = true;
 		for (final Map.Entry<String, String> entry : infoFields.entrySet()) {
 			if (isFirst) isFirst = false;
-			else builder.append(VCFConstants.INFO_FIELD_SEPARATOR);
+			else vcfoutput.append(VCFConstants.INFO_FIELD_SEPARATOR);
 
-			builder.append(entry.getKey());
+			vcfoutput.append(entry.getKey());
 
-			if ( ! entry.getValue().equals("")) {
+			if ( ! entry.getValue().isEmpty()) {
 				final VCFInfoHeaderLine metaData = this.header.getInfoHeaderLine(entry.getKey());
 				if ( metaData == null || metaData.getCountType() != VCFHeaderLineCount.INTEGER || metaData.getCount() != 0 ) {
-					builder.append('=');
-					builder.append(entry.getValue());
+					vcfoutput.append('=');
+					vcfoutput.append(entry.getValue());
 				}
 			}
 		}
@@ -373,10 +409,10 @@ public class VCFEncoder {
 		return alleleMap;
 	}
 
-	private void writeAllele(final Allele allele, final Map<Allele, String> alleleMap, final StringBuilder builder) {
+	private void writeAllele(final Allele allele, final Map<Allele, String> alleleMap, final Appendable vcfoutput) throws IOException {
 		final String encoding = alleleMap.get(allele);
 		if ( encoding == null )
 			throw new RuntimeException("Allele " + allele + " is not an allele in the variant context");
-		builder.append(encoding);
+		vcfoutput.append(encoding);
 	}
 }
