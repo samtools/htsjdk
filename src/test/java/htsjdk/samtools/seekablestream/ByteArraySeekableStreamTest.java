@@ -25,6 +25,7 @@ package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -89,5 +90,27 @@ public class ByteArraySeekableStreamTest extends HtsjdkTest {
         byteArraySeekableStream.seek(10);
         Assert.assertEquals(byteArraySeekableStream.read(copy), -1);
         Assert.assertEquals(byteArraySeekableStream.read(), -1);
+    }
+
+    @DataProvider(name = "abnormalReadRequests")
+    public Object[][] abnormalReadRequestsProvider() {
+        return new Object[][]{
+                {new byte[10], -1, 0},
+                {new byte[10], -1, -1},
+                {new byte[10], 0, -1},
+                {new byte[10], 0, -1},
+                {new byte[10], 0, 11},
+                {new byte[10], 6, 6},
+                {new byte[10], 11, 0},
+        };
+    }
+
+    @Test(dataProvider = "abnormalReadRequests", expectedExceptions = IndexOutOfBoundsException.class)
+    public void testAbnormalReadRequest(final byte[] b, final int off, final int length) throws IOException {
+
+        ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
+        int i = byteArraySeekableStream.read(b, off, length);
+
+        Assert.assertEquals(i, -2); ///impossible
     }
 }
