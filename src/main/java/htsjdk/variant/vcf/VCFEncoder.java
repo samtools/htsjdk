@@ -11,11 +11,8 @@ import htsjdk.variant.variantcontext.writer.IntGenotypeFieldAccessors;
 
 import java.lang.reflect.Array;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.text.DecimalFormat;
+import java.util.*;
 
 /**
  * Functions specific to encoding VCF records.
@@ -201,33 +198,66 @@ public class VCFEncoder {
 		return result;
 	}
 
+	private static double round(final double value, final int digits) {
+		final double x = Math.pow(10, digits);
+
+		return ((int)(value * x)) / x;
+	}
+
 	/**
-	 * Takes a double value and pretty prints it to a String for display
 	 *
-	 * Large doubles =&gt; gets %.2f style formatting
-	 * Doubles &lt; 1 / 10 but &gt; 1/100 =&gt; get %.3f style formatting
-	 * Double &lt; 1/100 =&gt; %.3e formatting
-	 * @param d
-	 * @return
+	 * <table summary="">
+	 *   <tr><td>Number</td><td>Stored As</td></tr>
+	 *   <tr><td>-------</td><td>------------</td></tr>
+	 *   <tr><td>0.0</td><td>0.0</td></tr>
+	 *   <tr><td>1.0</td><td>1.0</td></tr>
+	 *   <tr><td>1.12345</td><td>1.12345</td></tr>
+	 *   <tr><td>1.33333333333</td><td>1.33333</td></tr>
+	 *   <tr><td>0.1</td><td>0.1</td></tr>
+	 *   <tr><td>0.01</td><td>0.01</td></tr>
+	 *   <tr><td>0.001</td><td>0.001</td></tr>
+	 *   <tr><td>0.0001</td><td>0.0001</td></tr>
+	 *   <tr><td>0.00001</td><td>0.00001</td></tr>
+	 *   <tr><td>0.000001</td><td>0.000001</td></tr>
+	 *   <tr><td>0.000001</td><td>1.0e-6</td></tr>
+	 *   <tr><td>0.50000001</td><td>0.5</td></tr>
+	 *   <tr><td>0.012345</td><td>1.23450e-02</td></tr>
+	 *   <tr><td>0.0033333333</td><td>3.33333e-03</td></tr>
+	 * </table>
 	 */
 	public static String formatVCFDouble(final double d) {
-		final String format;
-		if ( d < 1 ) {
-			if ( d < 0.01 ) {
-				if ( Math.abs(d) >= 1e-20 )
-					format = "%.3e";
-				else {
-					// return a zero format
-					return "0.00";
-				}
-			} else {
-				format = "%.3f";
-			}
-		} else {
-			format = "%.2f";
+		final int numSignificant = 5;
+		final double lowerLimit = Math.pow(10, -numSignificant);
+		if (d == 0.0) {
+			return "0.0";
 		}
-
-		return String.format(format, d);
+		else if (d == Double.POSITIVE_INFINITY || d == Double.NEGATIVE_INFINITY || Double.isNaN(d)) {
+			return String.format("%f", d);
+		}
+		else if (d >= 0.1) {
+			// this avoids trailing zeros
+			final DecimalFormat df = new DecimalFormat("0.0" + String.join("", Collections.nCopies(numSignificant-1, "#")));
+			return df.format(round(d, numSignificant));
+		}
+		else {
+			// transform 0.00123456 into 0.123456 / 1000
+			int denominator = 1;
+			int denominatorCount = 0;
+			while (d * denominator < 1.0) {
+				denominator *= 10;
+				denominatorCount++;
+			}
+			// transform 1.23456 / 1000 into 1.2345 / 1000 (i.e. roundedValue / denominator)
+			final double roundedValue = round(d * denominator, numSignificant);
+			final double finalValue = roundedValue / denominator;
+			// if the rounded value when casted to into int and back to double is the same (ex. 1.0 or 6.0) and greater
+			// or equal to the lower limit, then return (roundedValue / denominator), otherwise use "e" format
+			if (roundedValue == (double)(int)roundedValue && finalValue >= lowerLimit) {
+				return String.format("%." + denominatorCount + "f", finalValue);
+			} else {
+				return String.format("%." + numSignificant + "e", finalValue);
+			}
+		}
 	}
 
 	static int countOccurrences(final char c, final String s) {
