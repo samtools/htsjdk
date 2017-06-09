@@ -776,7 +776,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test
-    private void testNullHeaderDeepCopy() {
+    public void testNullHeaderDeepCopy() {
         SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
         final SAMRecord deepCopy = sam.deepCopy();
@@ -805,13 +805,13 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @Test
-    private void testNullHeadGetCigarSAM() {
-        SAMRecord sam = createTestRecordHelper();
+    public void testNullHeadGetCigarSAM() {
+        final SAMRecord sam = createTestRecordHelper();
         testNullHeaderCigar(sam);
     }
 
     @Test
-    private void testNullHeadGetCigarBAM() {
+    public void testNullHeadGetCigarBAM() {
         SAMRecord sam = createTestRecordHelper();
         SAMRecordFactory factory = new DefaultSAMRecordFactory();
         BAMRecord bamRec = factory.createBAMRecord(
@@ -1038,5 +1038,37 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         rec.setAttribute("Y1", "AAAAGAAAAC");
 
         return(rec);
+    }
+
+    @DataProvider
+    public Object [][] readBasesArrayGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE, 0 },
+                { new byte[] {'A', 'C'}, 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesArrayGetReadLengthData")
+    public void testReadBasesGetReadLength(final byte[] readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadBases(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
+    }
+
+    @DataProvider
+    public Object [][] readBasesStringGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE_STRING, 0 },
+                { "AC", 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesStringGetReadLengthData")
+    public void testReadStringGetReadLength(final String readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadString(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
     }
 }
