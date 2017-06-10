@@ -34,7 +34,7 @@ import java.io.IOException;
  * Created by farjoun on 5/27/17.
  */
 public class ByteArraySeekableStreamTest extends HtsjdkTest {
-    private final byte[] bytes = new byte[] {'A', 'B', 'C', 'D', 'E', '1', '2', '3', '4', '5'};
+    private final byte[] bytes = "ABCDEFG12345".getBytes();
 
     @Test
     public void testNormalBehavior() throws IOException {
