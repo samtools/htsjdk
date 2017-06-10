@@ -25,14 +25,14 @@ public abstract class AbstractSRATest extends HtsjdkTest {
         canResolveNetworkAccession = SRAAccession.isValid(checkAccession);
     }
 
-    @BeforeMethod
+    @BeforeMethod(groups = "sra")
     public final void assertSRAIsSupported() {
         if(SRAAccession.checkIfInitialized() != null){
             throw new SkipException("Skipping SRA Test because SRA native code is unavailable.");
         }
     }
 
-    @BeforeMethod
+    @BeforeMethod(groups = "sra")
     public final void skipIfCantResolve(Method method, Object[] params) {
         String accession = null;
 
