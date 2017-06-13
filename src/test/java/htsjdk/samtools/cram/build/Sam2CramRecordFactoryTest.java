@@ -3,7 +3,6 @@ package htsjdk.samtools.cram.build;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.encoding.readfeatures.Bases;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
@@ -36,25 +35,8 @@ public class Sam2CramRecordFactoryTest {
      */
     @Test
     public void testAddSubstitutionsAndMaskedBasesMatch() {
-        final byte[] refBases = "A".getBytes();
-        final byte[] readBases = "A".getBytes();
-        final byte[] scores = "!".getBytes();
-
-        final SAMFileHeader header = new SAMFileHeader();
-        final CramCompressionRecord record = new CramCompressionRecord();
-        record.alignmentStart = 1;
-        final List<ReadFeature> readFeatures = new ArrayList<>();
-        final int fromPosInRead = 0;
-        final int alignmentStartOffset = 0;
-        final int nofReadBases = 1;
-
-        final Sam2CramRecordFactory s2mFactory_v2 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v2_1);
-        s2mFactory_v2.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(0, readFeatures.size());
-
-        final Sam2CramRecordFactory s2mFactory_v3 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v3);
-        s2mFactory_v3.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(0, readFeatures.size());
+        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("A", "A", "!");
+        Assert.assertTrue(readFeatures.isEmpty());
     }
 
     /**
@@ -63,25 +45,8 @@ public class Sam2CramRecordFactoryTest {
      */
     @Test
     public void testAddSubstitutionsAndMaskedBasesAmbiguityMatch() {
-        final byte[] refBases = "R".getBytes();
-        final byte[] readBases = "R".getBytes();
-        final byte[] scores = "!".getBytes();
-
-        final SAMFileHeader header = new SAMFileHeader();
-        final CramCompressionRecord record = new CramCompressionRecord();
-        record.alignmentStart = 1;
-        final List<ReadFeature> readFeatures = new ArrayList<>();
-        final int fromPosInRead = 0;
-        final int alignmentStartOffset = 0;
-        final int nofReadBases = 1;
-
-        final Sam2CramRecordFactory s2mFactory_v2 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v2_1);
-        s2mFactory_v2.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(0, readFeatures.size());
-
-        final Sam2CramRecordFactory s2mFactory_v3 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v3);
-        s2mFactory_v3.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(0, readFeatures.size());
+        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("R", "R", "!");
+        Assert.assertTrue(readFeatures.isEmpty());
     }
 
     /**
@@ -90,40 +55,16 @@ public class Sam2CramRecordFactoryTest {
      */
     @Test
     public void testAddSubstitutionsAndMaskedBasesSingleSubstitution() {
-        final byte[] refBases = "A".getBytes();
-        final byte[] readBases = "C".getBytes();
-        final byte[] scores = "!".getBytes();
+        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("A", "C", "!");
 
-        final SAMFileHeader header = new SAMFileHeader();
-        final CramCompressionRecord record = new CramCompressionRecord();
-        record.alignmentStart = 1;
-        final List<ReadFeature> readFeatures = new ArrayList<>();
-        final int fromPosInRead = 0;
-        final int alignmentStartOffset = 0;
-        final int nofReadBases = 1;
-
-        final Sam2CramRecordFactory s2mFactory_v2 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v2_1);
-        s2mFactory_v2.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
         Assert.assertEquals(1, readFeatures.size());
 
-        ReadFeature rf = readFeatures.get(0);
+        final ReadFeature rf = readFeatures.get(0);
         Assert.assertTrue(rf instanceof Substitution);
-        Substitution substitution = (Substitution) rf;
+        final Substitution substitution = (Substitution) rf;
         Assert.assertEquals(1, substitution.getPosition());
-        Assert.assertEquals(readBases[0], substitution.getBase());
-        Assert.assertEquals(refBases[0], substitution.getReferenceBase());
-
-        readFeatures.clear();
-        final Sam2CramRecordFactory s2mFactory_v3 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v3);
-        s2mFactory_v3.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(1, readFeatures.size());
-
-        rf = readFeatures.get(0);
-        Assert.assertTrue(rf instanceof Substitution);
-        substitution = (Substitution) rf;
-        Assert.assertEquals(1, substitution.getPosition());
-        Assert.assertEquals(readBases[0], substitution.getBase());
-        Assert.assertEquals(refBases[0], substitution.getReferenceBase());
+        Assert.assertEquals('C', substitution.getBase());
+        Assert.assertEquals('A', substitution.getReferenceBase());
     }
 
     /**
@@ -132,10 +73,18 @@ public class Sam2CramRecordFactoryTest {
      */
     @Test
     public void testAddSubstitutionsAndMaskedBasesAmbiguityMismatch() {
-        final byte[] refBases = "R".getBytes();
-        final byte[] readBases = "F".getBytes();
-        final byte[] scores = SAMUtils.fastqToPhred("!");
+        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("R", "F", "1");
+        Assert.assertEquals(1, readFeatures.size());
 
+        final ReadFeature rf = readFeatures.get(0);
+        Assert.assertTrue(rf instanceof ReadBase);
+        final ReadBase readBaseFeature = (ReadBase) rf;
+        Assert.assertEquals(1, readBaseFeature.getPosition());
+        Assert.assertEquals('F', readBaseFeature.getBase());
+        Assert.assertEquals(SAMUtils.fastqToPhred('1'), readBaseFeature.getQualityScore());
+    }
+
+    private List<ReadFeature> buildMatchOrMismatchReadFeatures(final String refBases, final String readBases, final String scores) {
         final SAMFileHeader header = new SAMFileHeader();
         final CramCompressionRecord record = new CramCompressionRecord();
         record.alignmentStart = 1;
@@ -144,28 +93,8 @@ public class Sam2CramRecordFactoryTest {
         final int alignmentStartOffset = 0;
         final int nofReadBases = 1;
 
-        final Sam2CramRecordFactory s2mFactory_v2 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v2_1);
-        s2mFactory_v2.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(1, readFeatures.size());
-
-        ReadFeature rf = readFeatures.get(0);
-        Assert.assertTrue(rf instanceof ReadBase);
-        ReadBase readBaseFeature = (ReadBase) rf;
-        Assert.assertEquals(1, readBaseFeature.getPosition());
-        Assert.assertEquals(readBases[0], readBaseFeature.getBase());
-        Assert.assertEquals(scores[0], readBaseFeature.getQualityScore());
-
-
-        readFeatures.clear();
-        final Sam2CramRecordFactory s2mFactory_v3 = new Sam2CramRecordFactory(refBases, header, CramVersions.CRAM_v3);
-        s2mFactory_v3.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases, scores);
-        Assert.assertEquals(1, readFeatures.size());
-
-        rf = readFeatures.get(0);
-        Assert.assertTrue(rf instanceof ReadBase);
-        readBaseFeature = (ReadBase) rf;
-        Assert.assertEquals(1, readBaseFeature.getPosition());
-        Assert.assertEquals(readBases[0], readBaseFeature.getBase());
-        Assert.assertEquals(scores[0], readBaseFeature.getQualityScore());
+        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refBases.getBytes(), header, CramVersions.CRAM_v3);
+        sam2CramRecordFactory.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases.getBytes(), SAMUtils.fastqToPhred(scores));
+        return readFeatures;
     }
 }
