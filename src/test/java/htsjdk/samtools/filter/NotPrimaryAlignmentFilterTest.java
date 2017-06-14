@@ -28,8 +28,8 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
                         builder.addFrag("frag" + i++, 0, 10,
                                 record1Unmapped,
                                 record2Strand,
-                                null,null,
-                                10,true);
+                                null, null,
+                                10, true);
                     }
                 }
             }
@@ -38,7 +38,7 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
                 new NotPrimaryAlignmentFilter());
 
-        Assert.assertEquals(filteringSamIterator.hasNext(),false);
+        Assert.assertEquals(filteringSamIterator.hasNext(), false);
     }
 
     @Test
@@ -59,8 +59,8 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
                         builder.addFrag("frag" + i++, 0, 10,
                                 record1Unmapped,
                                 record2Strand,
-                                null,null,
-                                10,false);
+                                null, null,
+                                10, false);
                     }
                 }
             }
@@ -69,10 +69,9 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
                 new NotPrimaryAlignmentFilter());
 
-        Assert.assertEquals(filteringSamIterator.stream().count(),i*3);
+        // i is incremented once for each 3 records that are added (a pair and a fragment)
+        Assert.assertEquals(filteringSamIterator.stream().count(), i * 3);
     }
-
-
 
     @Test
     public void testSupplementaryRecords() {
@@ -88,21 +87,23 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
                                 null, null,
                                 record1Strand, record2Strand,
                                 false, false,
-                                10).stream().forEach(r->r.setSupplementaryAlignmentFlag(true));
+                                10);
                         builder.addFrag("frag" + i++, 0, 10,
                                 record1Unmapped,
                                 record2Strand,
-                                null,null,
-                                10,false).setSupplementaryAlignmentFlag(true);
+                                null, null,
+                                10, false);
                     }
                 }
             }
         }
+        builder.forEach(r -> r.setSupplementaryAlignmentFlag(true));
 
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
                 new NotPrimaryAlignmentFilter());
 
-        Assert.assertEquals(filteringSamIterator.stream().count(),i*3);
+        // i is incremented once for each 3 records that are added (a pair and a fragment)
+        Assert.assertEquals(filteringSamIterator.stream().count(), i * 3);
     }
 }
 

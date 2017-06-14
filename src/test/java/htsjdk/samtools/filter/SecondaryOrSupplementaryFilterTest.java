@@ -12,7 +12,6 @@ import static org.testng.Assert.*;
  */
 public class SecondaryOrSupplementaryFilterTest extends HtsjdkTest {
 
-
     @Test
     public void testSecondaryRecords() {
         SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
@@ -31,8 +30,8 @@ public class SecondaryOrSupplementaryFilterTest extends HtsjdkTest {
                         builder.addFrag("frag" + i++, 0, 10,
                                 record1Unmapped,
                                 record2Strand,
-                                null,null,
-                                10,true);
+                                null, null,
+                                10, true);
                     }
                 }
             }
@@ -41,9 +40,8 @@ public class SecondaryOrSupplementaryFilterTest extends HtsjdkTest {
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
                 new SecondaryOrSupplementaryFilter());
 
-        Assert.assertEquals(filteringSamIterator.hasNext(),false);
+        Assert.assertEquals(filteringSamIterator.hasNext(), false);
     }
-
 
     @Test
     public void testSupplementaryRecords() {
@@ -93,8 +91,8 @@ public class SecondaryOrSupplementaryFilterTest extends HtsjdkTest {
                         builder.addFrag("frag" + i++, 0, 10,
                                 record1Unmapped,
                                 record2Strand,
-                                null,null,
-                                10,false);
+                                null, null,
+                                10, false);
                     }
                 }
             }
@@ -103,7 +101,7 @@ public class SecondaryOrSupplementaryFilterTest extends HtsjdkTest {
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
                 new SecondaryOrSupplementaryFilter());
 
-        Assert.assertEquals(filteringSamIterator.stream().count(),i*3);
+        // i is incremented once for each 3 records that are added (a pair and a fragment)
+        Assert.assertEquals(filteringSamIterator.stream().count(), i * 3);
     }
-
 }

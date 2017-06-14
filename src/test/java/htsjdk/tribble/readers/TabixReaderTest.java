@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static org.testng.Assert.assertTrue;
-
 /**
  * Created by IntelliJ IDEA.
  * User: jrobinso
@@ -51,7 +49,7 @@ public class TabixReaderTest extends HtsjdkTest {
         Assert.assertEquals(expectedSeqNames.length, sequenceNames.size());
 
         for (String s : expectedSeqNames) {
-            assertTrue(sequenceNames.contains(s));
+            Assert.assertTrue(sequenceNames.contains(s));
         }
 
 
@@ -61,7 +59,7 @@ public class TabixReaderTest extends HtsjdkTest {
     public void testSequenceSet() {
         Set<String> chroms= tabixReader.getChromosomes();
         Assert.assertFalse(chroms.isEmpty());
-        assertTrue(chroms.contains("1"));
+        Assert.assertTrue(chroms.contains("1"));
         Assert.assertFalse(chroms.contains("MT"));
         
     }
@@ -128,10 +126,10 @@ public class TabixReaderTest extends HtsjdkTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
 
     }
@@ -153,10 +151,10 @@ public class TabixReaderTest extends HtsjdkTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
     }
 }
