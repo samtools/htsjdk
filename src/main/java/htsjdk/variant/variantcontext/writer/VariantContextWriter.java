@@ -49,4 +49,6 @@ public interface VariantContextWriter extends Closeable {
     public boolean checkError();
     
     public void add(VariantContext vc);
+
+    void setVcfHeader(VCFHeader header);
 }

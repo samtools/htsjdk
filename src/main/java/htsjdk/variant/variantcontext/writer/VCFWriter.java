@@ -228,4 +228,10 @@ class VCFWriter extends IndexingVariantContextWriter {
             throw new RuntimeIOException("Unable to write the VCF object to " + getStreamName(), e);
         }
     }
+
+    @Override
+    public void setVcfHeader(VCFHeader header) {
+        this.mHeader = header;
+        this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+    }
 }

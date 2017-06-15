@@ -221,6 +221,11 @@ class BCF2Writer extends IndexingVariantContextWriter {
         super.close();
     }
 
+    @Override
+    public void setVcfHeader(VCFHeader header) {
+        //no-op
+    }
+
     // --------------------------------------------------------------------------------
     //
     // implicit block

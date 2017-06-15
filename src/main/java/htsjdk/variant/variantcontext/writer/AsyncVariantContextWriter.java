@@ -53,4 +53,10 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
     public boolean checkError() {
         return false;
     }
+
+    @Override
+    public void setVcfHeader(VCFHeader header) {
+        this.underlyingWriter.setVcfHeader(header);
+    }
+
 }
