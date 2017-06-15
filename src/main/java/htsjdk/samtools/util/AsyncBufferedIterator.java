@@ -228,13 +228,13 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         }
     }
     /**
-     * Block of records from the underlying iterator 
+     * Block of records from the underlying iterator
      */
     private static class IteratorBuffer<U> implements Iterator<U> {
         private final Throwable exception;
         private final Iterator<U> it;
         public IteratorBuffer(Iterable<U> it) {
-            this.it = it != null ? it.iterator() : null;;
+            this.it = it != null ? it.iterator() : null;
             this.exception = null;
         }
 
