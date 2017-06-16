@@ -37,7 +37,7 @@ public class LocatableUnitTest {
                 { getLocatable("1", 1, 1), 1 },
                 { getLocatable("1", 1, 2), 2 },
                 { getLocatable("1", 1, 10), 10 },
-                { getLocatable("1", 2, 10), 9 }
+                { getLocatable("1", 2, 10), 9 },
         };
     }
 
@@ -129,7 +129,16 @@ public class LocatableUnitTest {
                 { containingInterval, getLocatable("1", 21, 25), false },
                 { containingInterval, getLocatable("1", 25, 30), false },
                 { containingInterval, null, false },
-                { containingInterval, containingInterval, true }
+                { containingInterval, containingInterval, true },
+
+                //0 based intervals are w
+                { containingInterval, getLocatable("1", 10, 9), true},
+                { containingInterval, getLocatable("1", 15, 14), true},
+                { containingInterval, getLocatable("1", 21,20), true},
+                { containingInterval, getLocatable("1", 25, 24), false},
+                { getLocatable("1", 10,9), getLocatable("1",9,8), false},
+                { getLocatable("1", 10,9), getLocatable("1",11,10), false},
+                { getLocatable("1", 10, 9), getLocatable("1", 10, 9), true}
         };
     }
 

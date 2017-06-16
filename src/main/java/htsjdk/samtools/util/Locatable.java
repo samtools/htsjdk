@@ -25,7 +25,6 @@ public interface Locatable {
      */
     int getEnd();
 
-
     /**
      * @return number of bases of reference covered by this interval
      */
@@ -69,7 +68,9 @@ public interface Locatable {
 
     /**
      * Determine if this is on the same contig as other
-     * @return true if this is
+     * this must be equivalent to this.getContig().equals(other.getContig()) but may be implemented more efficiently
+     *
+     * @return true iff this.getContig().equals(other.getContig())
      */
     default boolean contigsMatch(Locatable other) {
         return getContig() != null && other != null && Objects.equals(this.getContig(), other.getContig());
