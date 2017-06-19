@@ -91,7 +91,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
      */
     @Override
     void accumulateSamRecord(final SAMRecord rec) {
-        prepairAccumulatorForRec(rec);
+        prepareAccumulatorForRecord(rec);
 
         final int minQuality = getQualityScoreCutoff();
         final boolean dontCheckQualities = minQuality == 0;
@@ -152,7 +152,7 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
         }
     }
 
-    private void prepairAccumulatorForRec(SAMRecord rec) {
+    private void prepareAccumulatorForRecord(SAMRecord rec) {
         final SAMSequenceRecord ref = getReferenceSequence(rec.getReferenceIndex());
         final int alignmentStart = rec.getAlignmentStart();
         final int alignmentEnd = rec.getAlignmentEnd();
@@ -163,8 +163,8 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
                 (accumulator.isEmpty() || accumulator.get(0).getPosition() == alignmentStart)) {
             accumulator.add(0, new LocusInfo(ref, alignmentStart - 1));
         }
-
-        final int accIndexWhereReadStarts =  accumulator.isEmpty() ? 0 : alignmentStart - accumulator.get(0).getPosition();
+        // Ensure there are LocusInfos up to and including this position
+        final int accIndexWhereReadStarts = accumulator.isEmpty() ? 0 : alignmentStart - accumulator.get(0).getPosition();
         final int newLocusesCount = accIndexWhereReadStarts + alignmentLength - accumulator.size();
         for (int i = 0; i <= newLocusesCount; i++) {
             accumulator.add(new LocusInfo(ref, alignmentEnd - newLocusesCount + i));
