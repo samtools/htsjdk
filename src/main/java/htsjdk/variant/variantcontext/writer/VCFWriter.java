@@ -231,7 +231,7 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setVcfHeader(VCFHeader header) {
-        this.mHeader = header;
+        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }
 }
