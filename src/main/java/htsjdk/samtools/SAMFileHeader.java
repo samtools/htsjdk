@@ -328,7 +328,9 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
             this.setSortOrder(SortOrder.valueOf(value));
         } else if (key.equals(GROUP_ORDER_TAG)) {
             this.setGroupOrder(GroupOrder.valueOf(value));
-        } else super.setAttribute(key, value);
+        } else {
+            super.setAttribute(key, value);
+        }
     }
 
     /**
