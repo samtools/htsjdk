@@ -8,6 +8,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -18,24 +19,19 @@ import java.util.List;
  */
 public class Sam2CramRecordFactoryTest {
 
-
-    /**
-     * Test the outcome of a matching base.
-     * The result should be empty - no base read features issued.
-     */
-    @Test
-    public void testAddSubstitutionsAndMaskedBasesMatch() {
-        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("A", "A", "!");
-        Assert.assertTrue(readFeatures.isEmpty());
+    @DataProvider(name = "emptyFeatureListProvider")
+    public Object[][] testPositive() {
+        return new Object[][]{
+                // a matching base
+                {"A", "A", "!"},
+                // a matching ambiguity base
+                {"R", "R", "!"},
+        };
     }
 
-    /**
-     * Test the outcome of a matching ambiguity base.
-     * The result should be empty - no base read features issued.
-     */
-    @Test
-    public void testAddSubstitutionsAndMaskedBasesAmbiguityMatch() {
-        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("R", "R", "!");
+    @Test(dataProvider = "emptyFeatureListProvider")
+    public void testAddMismatchReadFeaturesNoReadFeaturesForMatch(final String refBases, final String readBases, final String fastqScores) {
+        final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures(refBases, readBases, fastqScores);
         Assert.assertTrue(readFeatures.isEmpty());
     }
 
@@ -44,7 +40,7 @@ public class Sam2CramRecordFactoryTest {
      * The result should always be a {@link Substitution} read feature.
      */
     @Test
-    public void testAddSubstitutionsAndMaskedBasesSingleSubstitution() {
+    public void testAddMismatchReadFeaturesSingleSubstitution() {
         final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("A", "C", "!");
 
         Assert.assertEquals(1, readFeatures.size());
@@ -62,7 +58,7 @@ public class Sam2CramRecordFactoryTest {
      * The result should be explicit read base and score capture via {@link ReadBase}.
      */
     @Test
-    public void testAddSubstitutionsAndMaskedBasesAmbiguityMismatch() {
+    public void testAddMismatchReadFeaturesAmbiguityMismatch() {
         final List<ReadFeature> readFeatures = buildMatchOrMismatchReadFeatures("R", "F", "1");
         Assert.assertEquals(1, readFeatures.size());
 
