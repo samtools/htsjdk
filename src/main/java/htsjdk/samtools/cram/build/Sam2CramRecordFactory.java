@@ -214,7 +214,7 @@ public class Sam2CramRecordFactory {
                 case M:
                 case X:
                 case EQ:
-                    addSubstitutionsAndMaskedBases(cramRecord.alignmentStart, features, zeroBasedPositionInRead, alignmentStartOffset,
+                    addMismatchReadFeatures(cramRecord.alignmentStart, features, zeroBasedPositionInRead, alignmentStartOffset,
                             cigarElementLength, bases, qualityScore);
                     break;
                 default:
@@ -277,7 +277,7 @@ public class Sam2CramRecordFactory {
      * @param bases                the read bases array
      * @param qualityScore         the quality score array
      */
-    void addSubstitutionsAndMaskedBases(final int alignmentStart, final List<ReadFeature> features, final int fromPosInRead, final int
+    void addMismatchReadFeatures(final int alignmentStart, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
         int oneBasedPositionInRead = fromPosInRead + 1;
         int refIndex = alignmentStart + alignmentStartOffset - 1;
