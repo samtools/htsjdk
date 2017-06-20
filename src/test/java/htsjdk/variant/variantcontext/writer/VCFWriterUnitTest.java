@@ -30,6 +30,8 @@ import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.Tribble;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
@@ -45,6 +47,7 @@ import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -130,6 +133,40 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         catch (final IOException e ) {
             throw new RuntimeException(e.getMessage());
         }
+
+    }
+
+    /** test, using the writer and reader, that we can output and input a VCF body without problems */
+    @Test
+    public void testBlockWriteAndRead() throws IOException {
+        final File fakeVCFFile = File.createTempFile("testBlockWriteAndRead.", ".vcf");
+        fakeVCFFile.deleteOnExit();
+
+        metaData = new HashSet<VCFHeaderLine>();
+        additionalColumns = new HashSet<String>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile)
+                .setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        writer.setVcfHeader(header);
+        writer.add(createVC(header));
+        writer.add(createVC(header));
+        writer.close();
+        final VCFCodec codec = new VCFCodec();
+        codec.setVCFHeader(header, VCFHeaderVersion.VCF4_0);
+
+        AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(fakeVCFFile)));
+        int counter = 0;
+        while(iterator.hasNext()) {
+            VariantContext context = codec.decode(iterator.next());
+            if (context != null) {
+                counter++;
+            }
+        }
+        Assert.assertEquals(counter, 2);
 
     }
 
