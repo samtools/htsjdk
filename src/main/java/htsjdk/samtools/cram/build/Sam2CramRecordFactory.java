@@ -279,14 +279,13 @@ public class Sam2CramRecordFactory {
      */
     void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
-        int oneBasedPositionInRead;
+        int oneBasedPositionInRead = fromPosInRead + 1;
+        int refIndex = cramRecord.alignmentStart + alignmentStartOffset - 1;
 
         byte refBase;
-        for (int i = 0; i < nofReadBases; i++) {
-            oneBasedPositionInRead = i + fromPosInRead + 1;
-            final int referenceCoordinates = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
-            if (referenceCoordinates >= refBases.length) refBase = 'N';
-            else refBase = refBases[referenceCoordinates];
+        for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
+            if (refIndex >= refBases.length) refBase = 'N';
+            else refBase = refBases[refIndex];
 
             // explicitly upper case reference base:
             refBase = SequenceUtil.upperCase(refBase);
