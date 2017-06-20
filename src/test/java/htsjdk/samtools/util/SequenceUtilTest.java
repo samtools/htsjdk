@@ -562,4 +562,15 @@ public class SequenceUtilTest extends HtsjdkTest {
             Assert.assertEquals(actual[i], expected[i], "Array differ at position " + i);
         }
     }
+
+    @Test
+    public void testIsACGTN() {
+        for (byte base = Byte.MIN_VALUE; base < Byte.MAX_VALUE; base++) {
+            if (base == 'A' || base == 'C' || base == 'G' || base == 'T' || base == 'N') {
+                Assert.assertTrue(SequenceUtil.isACGTN(base));
+            } else {
+                Assert.assertFalse(SequenceUtil.isACGTN(base));
+            }
+        }
+    }
 }

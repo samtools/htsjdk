@@ -7,6 +7,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,16 +19,6 @@ import java.util.List;
  */
 public class Sam2CramRecordFactoryTest {
 
-    @Test
-    public void testIsACGTN() {
-        for (byte base = Byte.MIN_VALUE; base < Byte.MAX_VALUE; base++) {
-            if (base == 'A' || base == 'C' || base == 'G' || base == 'T' || base == 'N') {
-                Assert.assertTrue(Sam2CramRecordFactory.isACGTN(base));
-            } else {
-                Assert.assertFalse(Sam2CramRecordFactory.isACGTN(base));
-            }
-        }
-    }
 
     /**
      * Test the outcome of a matching base.

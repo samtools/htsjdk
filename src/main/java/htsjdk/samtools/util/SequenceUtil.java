@@ -50,6 +50,7 @@ public class SequenceUtil {
 
     public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
     public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
+    public static final byte[] ACGTN_BASES = new byte[]{A, C, G, T, N};
 
     private static final byte A_MASK = 1;
     private static final byte C_MASK = 2;
@@ -142,6 +143,16 @@ public class SequenceUtil {
         return false;
     }
 
+    /**
+     * Check if the given base is one of ACGTN
+     *
+     * @param base a base to check
+     * @return true if the base is one ACGTN false otherwise
+     */
+    public static boolean isACGTN(final byte base) {
+        return isValidBase(base, ACGTN_BASES);
+    }
+
     /** Calculates the fraction of bases that are G/C in the sequence. */
     public static double calculateGc(final byte[] bases) {
         int gcs = 0;
@@ -212,6 +223,7 @@ public class SequenceUtil {
             }
         }
     }
+
 
     public static class SequenceListsDifferException extends SAMException {
         public SequenceListsDifferException() {

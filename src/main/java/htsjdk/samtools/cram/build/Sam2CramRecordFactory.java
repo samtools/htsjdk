@@ -310,7 +310,7 @@ public class Sam2CramRecordFactory {
             final byte readBase = SequenceUtil.upperCase(bases[i + fromPosInRead]);
 
             if (readBase != refBase) {
-                final boolean isSubstitution = isACGTN(readBase) && isACGTN(refBase);
+                final boolean isSubstitution = SequenceUtil.isACGTN(readBase) && SequenceUtil.isACGTN(refBase);
                 if (isSubstitution) {
                     final Substitution substitution = new Substitution();
                     substitution.setPosition(oneBasedPositionInRead);
@@ -338,25 +338,6 @@ public class Sam2CramRecordFactory {
 
             // count the number of quality scores added:
             if (qualityAdded) landedTotalScores++;
-        }
-    }
-
-    /**
-     * Check if the given base is one of ACGTN
-     *
-     * @param base a base to check
-     * @return true if the base is one ACGTN false otherwise
-     */
-    static boolean isACGTN(final byte base) {
-        switch (base) {
-            case 'A':
-            case 'C':
-            case 'G':
-            case 'T':
-            case 'N':
-                return true;
-            default:
-                return false;
         }
     }
 
