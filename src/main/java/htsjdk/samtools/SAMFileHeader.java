@@ -307,7 +307,6 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     @Deprecated
     @Override
     public void setAttribute(final String key, final Object value) {
-        super.setAttribute(key, value);
         if (key.equals(SORT_ORDER_TAG) || key.equals(GROUP_ORDER_TAG)) {
             this.setAttribute(key, value.toString());
         } else {
@@ -325,10 +324,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      */
     @Override
     public void setAttribute(final String key, final String value) {
-        super.setAttribute(key, value);
-        if (key.equals(SORT_ORDER_TAG)) this.setSortOrder(SortOrder.valueOf(value));
-        else if (key.equals(GROUP_ORDER_TAG)) this.setGroupOrder(GroupOrder.valueOf(value));
-        else super.setAttribute(key, value);
+        if (key.equals(SORT_ORDER_TAG)) {
+            this.setSortOrder(SortOrder.valueOf(value));
+        } else if (key.equals(GROUP_ORDER_TAG)) {
+            this.setGroupOrder(GroupOrder.valueOf(value));
+        } else super.setAttribute(key, value);
     }
 
     /**
