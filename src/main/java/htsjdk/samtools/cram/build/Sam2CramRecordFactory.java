@@ -295,11 +295,7 @@ public class Sam2CramRecordFactory {
             if (readBase != refBase) {
                 final boolean isSubstitution = SequenceUtil.isACGTN(readBase) && SequenceUtil.isACGTN(refBase);
                 if (isSubstitution) {
-                    final Substitution substitution = new Substitution();
-                    substitution.setPosition(oneBasedPositionInRead);
-                    substitution.setBase(readBase);
-                    substitution.setReferenceBase(refBase);
-                    features.add(substitution);
+                    features.add(new Substitution(oneBasedPositionInRead, readBase, refBase));
                 } else {
                     final byte score = qualityScore[i + fromPosInRead];
                     features.add(new ReadBase(oneBasedPositionInRead, readBase, score));

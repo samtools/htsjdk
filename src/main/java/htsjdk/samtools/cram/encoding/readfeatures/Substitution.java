@@ -45,6 +45,15 @@ public class Substitution implements Serializable, ReadFeature {
      */
     private byte code = NO_CODE;
 
+    public Substitution() {
+    }
+
+    public Substitution(int position, byte base, byte referenceBase) {
+        this.position = position;
+        this.base = base;
+        this.referenceBase = referenceBase;
+    }
+
     public byte getCode() {
         return code;
     }
