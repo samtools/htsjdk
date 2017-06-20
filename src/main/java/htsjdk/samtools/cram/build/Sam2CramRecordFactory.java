@@ -30,26 +30,14 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.*;
 
 public class Sam2CramRecordFactory {
-
-    public static final String UNKNOWN_READ_GROUP_ID = "UNKNOWN";
-    public static final String UNKNOWN_READ_GROUP_SAMPLE = "UNKNOWN";
-
-    private final static byte QS_asciiOffset = 33;
-    public final static byte unsetQualityScore = 32;
-    public final static byte ignorePositionsWithQualityScore = -1;
-
     private byte[] refBases;
     private final Version version;
-    private byte[] refSNPs;
 
     final private SAMFileHeader header;
 
     private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
     private final Map<String, Integer> readGroupMap = new HashMap<String, Integer>();
-
-    private long landedRefMaskScores = 0;
-    private long landedTotalScores = 0;
 
     public boolean captureAllTags = false;
     public boolean preserveReadNames = false;
@@ -132,7 +120,6 @@ public class Sam2CramRecordFactory {
 
         cramRecord.readBases = record.getReadBases();
         cramRecord.qualityScores = record.getBaseQualities();
-        landedTotalScores += cramRecord.readLength;
         if (version.compatibleWith(CramVersions.CRAM_v3))
             cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
 
@@ -293,14 +280,11 @@ public class Sam2CramRecordFactory {
     void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
         int oneBasedPositionInRead;
-        final boolean noQS = (qualityScore.length == 0);
 
-        boolean qualityAdded;
         byte refBase;
         for (int i = 0; i < nofReadBases; i++) {
             oneBasedPositionInRead = i + fromPosInRead + 1;
             final int referenceCoordinates = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
-            qualityAdded = false;
             if (referenceCoordinates >= refBases.length) refBase = 'N';
             else refBase = refBases[referenceCoordinates];
 
@@ -320,33 +304,9 @@ public class Sam2CramRecordFactory {
                 } else {
                     final byte score = qualityScore[i + fromPosInRead];
                     features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
-                    qualityAdded = true;
                 }
             }
-
-            // don't add quality score if either there is none or already added or not needed (reference SNP list not provided):
-            final boolean shouldAddQualityScore = !noQS && !qualityAdded && refSNPs != null;
-            if (shouldAddQualityScore) {
-                final byte snpOrNot = refSNPs[referenceCoordinates];
-                if (snpOrNot != 0) {
-                    final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
-                    features.add(new BaseQualityScore(oneBasedPositionInRead, score));
-                    qualityAdded = true;
-                    landedRefMaskScores++;
-                }
-            }
-
-            // count the number of quality scores added:
-            if (qualityAdded) landedTotalScores++;
         }
-    }
-
-    public long getLandedRefMaskScores() {
-        return landedRefMaskScores;
-    }
-
-    public long getLandedTotalScores() {
-        return landedTotalScores;
     }
 
     public byte[] getRefBases() {
@@ -355,14 +315,6 @@ public class Sam2CramRecordFactory {
 
     public void setRefBases(final byte[] refBases) {
         this.refBases = refBases;
-    }
-
-    public byte[] getRefSNPs() {
-        return refSNPs;
-    }
-
-    public void setRefSNPs(final byte[] refSNPs) {
-        this.refSNPs = refSNPs;
     }
 
     public Map<String, Integer> getReadGroupMap() {
