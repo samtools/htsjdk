@@ -33,11 +33,7 @@ public class IndexTest extends HtsjdkTest {
 
     @DataProvider(name = "StartProvider")
     public Object[][] makeStartProvider() {
-        List<Object[]> tests = new ArrayList<Object[]>();
-
-//        for ( int mid = 0; mid <= end; mid += 1000000 ) {
-//            tests.add(new Object[]{0, mid, mid+1000000, end});
-//        }
+        List<Object[]> tests = new ArrayList<>();
 
         tests.add(new Object[]{1226943, 1226943, 1226943, 2000000});
 
@@ -92,7 +88,8 @@ public class IndexTest extends HtsjdkTest {
         Assert.assertTrue(tempIndex.exists());
         // load the generated index
         final Index loadedIndex = IndexFactory.loadIndex(tempIndex.getAbsolutePath());
-        // tess that the sequences and properties are the same
+        //TODO: This is just a smoke test; it can pass even if the generated index is unusable for queries.
+        // test that the sequences and properties are the same
         Assert.assertEquals(loadedIndex.getSequenceNames(), index.getSequenceNames());
         Assert.assertEquals(loadedIndex.getProperties(), index.getProperties());
         // test that write to a stream does not blows ip

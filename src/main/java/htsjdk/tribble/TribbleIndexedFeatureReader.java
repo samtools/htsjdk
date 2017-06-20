@@ -243,6 +243,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         try {
             is = ParsingUtils.openInputStream(path, wrapper);
             if (hasBlockCompressedExtension(new URI(URLEncoder.encode(path, "UTF-8")))) {
+                // TODO: TEST/FIX THIS! https://github.com/samtools/htsjdk/issues/944
                 // TODO -- warning I don't think this can work, the buffered input stream screws up position
                 is = new GZIPInputStream(new BufferedInputStream(is));
             }

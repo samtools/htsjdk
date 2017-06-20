@@ -78,7 +78,7 @@ public final class FastaSequenceIndexCreator {
      * @throws IOException  if an IO error occurs.
      */
     public static FastaSequenceIndex buildFromFasta(final Path fastaFile) throws IOException {
-        try(final AsciiLineReader in = new AsciiLineReader(IOUtil.openFileForReading(fastaFile))) {
+        try(final AsciiLineReader in = AsciiLineReader.from(IOUtil.openFileForReading(fastaFile))) {
 
             // sanity check reference format:
             // 1. Non-empty file

@@ -105,7 +105,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingSingleSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "HiSeq.10000.vcf")));
+        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "HiSeq.10000.vcf")));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
 
         Assert.assertEquals(header.getNGenotypeSamples(), 1, "Wrong number of samples in remapped header");
@@ -150,7 +150,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingMultiSampleVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "ex2.vcf")));
+        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "ex2.vcf")));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
@@ -158,7 +158,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     public void testVCFHeaderSampleRenamingSitesOnlyVCF() throws Exception {
         final VCFCodec codec = new VCFCodec();
         codec.setRemappedSampleName("FOOSAMPLE");
-        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
+        final AsciiLineReaderIterator vcfIterator = new AsciiLineReaderIterator(AsciiLineReader.from(new FileInputStream(variantTestDataRoot + "dbsnp_135.b37.1000.vcf")));
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 

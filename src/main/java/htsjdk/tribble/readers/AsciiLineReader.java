@@ -17,13 +17,12 @@
  */
 package htsjdk.tribble.readers;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.TribbleException;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -36,23 +35,63 @@ import java.io.InputStream;
  * @author jrobinso
  */
 public class AsciiLineReader implements LineReader, LocationAware {
+    private static final Log log = Log.getInstance(AsciiLineReader.class);
+
     private static final int BUFFER_OVERFLOW_INCREASE_FACTOR = 2;
     private static final byte LINEFEED = (byte) ('\n' & 0xff);
     private static final byte CARRIAGE_RETURN = (byte) ('\r' & 0xff);
 
-    private final PositionalBufferedStream is;
+    private PositionalBufferedStream is;
     private char[] lineBuffer;
     private int lineTerminatorLength = -1;
 
+    protected AsciiLineReader() {};
+
+    /**
+     * Note: This class implements LocationAware, which requires preservation of virtual file pointers on BGZF inputs.
+     * However, if the inputStream wrapped by this class is a BlockCompressedInputStream, it violates that contract by
+     * wrapping the stream and returning positional file offsets instead.
+     *
+     * @deprecated 8/8/2017 use {@link #from}
+     */
+    @Deprecated
     public AsciiLineReader(final InputStream is){
+        // NOTE: This will wrap the input stream in a PositionalBufferedStream even if its already a PositionalBufferedStream
         this(new PositionalBufferedStream(is));
     }
 
+    /**
+     * @deprecated 8/8/2017 use {@link #from}
+     * @param is the {@link PositionalBufferedStream} input stream to be wrapped
+     */
+    @Deprecated
     public AsciiLineReader(final PositionalBufferedStream is) {
         this.is = is;
         // Allocate this only once, even though it is essentially a local variable of
         // readLine.  This makes a huge difference in performance
         lineBuffer = new char[10000];
+    }
+
+    /**
+     * Create an AsciiLineReader of the appropriate type for a given InputStream.
+     * @param inputStream An InputStream-derived class that implements BlockCompressedInputStream or PositionalBufferedStream
+     * @return AsciiLineReader that wraps inputStream
+     */
+    public static AsciiLineReader from(final InputStream inputStream) {
+        if (inputStream instanceof BlockCompressedInputStream) {
+            // For block compressed inputs, we need to ensure that no buffering takes place above the input stream to
+            // ensure that the correct (virtual file pointer) positions returned from this stream are preserved for
+            // the indexer. We can't used AsciiLineReader in this case since it wraps the input stream with a
+            // PositionalBufferedInputStream.
+            return new BlockCompressedAsciiLineReader((BlockCompressedInputStream) inputStream);
+        } else if (inputStream instanceof PositionalBufferedStream) {
+            // if this is already a PositionalBufferedStream, don't let AsciiLineReader wrap it with another one...
+            return new AsciiLineReader((PositionalBufferedStream)inputStream);
+        } else {
+            log.warn("Creating an indexable source for an AsciiFeatureCodec using a stream that is " +
+                    "neither a PositionalBufferedStream nor a BlockCompressedInputStream");
+            return new AsciiLineReader(new PositionalBufferedStream(inputStream)); // wrap the stream in a PositionalBufferedStream
+        }
     }
 
     /**
@@ -81,11 +120,14 @@ public class AsciiLineReader implements LineReader, LocationAware {
      * of a line feed ('\n'), a carriage return ('\r'), or a carriage return
      * followed immediately by a linefeed.
      *
+     * @deprecated 8/8/2017 use {@link #from} to create a new AsciiLineReader and {@link #readLine()}
+     *
      * @param stream the stream to read the next line from
      * @return A String containing the contents of the line or null if the
      *         end of the stream has been reached
      */
-    public final String readLine(final PositionalBufferedStream stream) throws IOException{
+    @Deprecated
+    public String readLine(final PositionalBufferedStream stream) throws IOException{
         int linePosition = 0;
 
         while (true) {
@@ -113,7 +155,7 @@ public class AsciiLineReader implements LineReader, LocationAware {
 
                 return new String(lineBuffer, 0, linePosition);
             } else {
-                // Expand line buffer size if neccessary.  Reserve at least 2 characters
+                // Expand line buffer size if necessary.  Reserve at least 2 characters
                 // for potential line-terminators in return string
 
                 if (linePosition > (lineBuffer.length - 3)) {
@@ -130,10 +172,10 @@ public class AsciiLineReader implements LineReader, LocationAware {
     /**
      * Same as {@link #readLine(PositionalBufferedStream)} but uses the stream provided in the constructor
      *
-     * @return
+     * @return The next string, or null when input is exhausted.
      */
     @Override
-    public final String readLine() throws IOException{
+    public String readLine() throws IOException{
         if ( is == null ){
             throw new TribbleException("readLine() called without an explicit stream argument but no default stream was provided to the class on creation");
         }
@@ -146,58 +188,5 @@ public class AsciiLineReader implements LineReader, LocationAware {
         lineBuffer = null;
     }
 
-    public static void main(final String[] args) throws Exception {
-        final File testFile = new File(args[0]);
-        final int iterations = Integer.valueOf(args[1]);
-        final boolean includeBufferedReader = Boolean.valueOf(args[2]);
-        long t0, lineCount, dt;
-        double rate;
-
-        System.out.printf("Testing %s%n", args[0]);
-        for (int i = 0; i < iterations; i++) {
-            if ( includeBufferedReader ) {
-                final BufferedReader reader2 = new BufferedReader(new FileReader(testFile));
-                t0 = System.currentTimeMillis();
-                lineCount = 0;
-                while (reader2.readLine() != null) {
-                    lineCount++;
-                }
-                dt = System.currentTimeMillis() - t0;
-                rate = ((double) lineCount) / dt;
-                printStatus("BufferedReader", lineCount, rate, dt);
-                reader2.close();
-            }
-
-            if ( includeBufferedReader ) {
-                final LongLineBufferedReader longLineBufferedReader = new LongLineBufferedReader(new BufferedReader(new FileReader(testFile)));
-                t0 = System.currentTimeMillis();
-                lineCount = 0;
-                while (longLineBufferedReader.readLine() != null) {
-                    lineCount++;
-                }
-                dt = System.currentTimeMillis() - t0;
-                rate = ((double) lineCount) / dt;
-                printStatus("BufferedReader", lineCount, rate, dt);
-                longLineBufferedReader.close();
-            }
-            
-            final PositionalBufferedStream pbs = new PositionalBufferedStream(new FileInputStream(testFile));
-            final LineReader reader = new AsciiLineReader(pbs);
-            t0 = System.currentTimeMillis();
-            lineCount = 0;
-            while (reader.readLine() != null) {
-                lineCount++;
-            }
-            dt = System.currentTimeMillis() - t0;
-            rate = ((double) lineCount) / dt;
-            printStatus("PositionalBufferedStream", lineCount, rate, dt);
-            pbs.close();
-        }
-    }
-
-    private static final void printStatus(final String name, final long lineCount, final double rate, final long dt) {
-        System.out.printf("%30s: %d lines read.  Rate = %.2e lines per second.  DT = %d%n", name, lineCount, rate, dt);
-        System.out.flush();
-    }
 }
 

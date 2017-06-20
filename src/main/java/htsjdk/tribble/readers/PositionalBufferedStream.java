@@ -28,7 +28,11 @@ import java.io.InputStreamReader;
 
 /**
  * A wrapper around an {@code InputStream} which performs it's own buffering, and keeps track of the position.
- * 
+ *
+ * TODO: This class implements Positional, which in turn extends LocationAware, which requires preservation of
+ * virtual file pointers on BGZF inputs. However, if the inputStream wrapped by this class is a BlockCompressedInputStream,
+ * it violates that contract by wrapping the stream and returning positional file offsets instead.
+ *
  * @author depristo
  */
 public final class PositionalBufferedStream extends InputStream implements Positional {
