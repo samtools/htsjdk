@@ -71,6 +71,7 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
             mAttributes.put(key, value);
         }
     }
+
     /**
      * Returns the Set of attributes.
      */
