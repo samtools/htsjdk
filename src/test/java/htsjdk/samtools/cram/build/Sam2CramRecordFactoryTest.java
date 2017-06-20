@@ -7,7 +7,6 @@ import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
-import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -85,7 +84,7 @@ public class Sam2CramRecordFactoryTest {
         final int nofReadBases = 1;
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(refBases.getBytes(), header, CramVersions.CRAM_v3);
-        sam2CramRecordFactory.addSubstitutionsAndMaskedBases(record, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases.getBytes(), SAMUtils.fastqToPhred(scores));
+        sam2CramRecordFactory.addSubstitutionsAndMaskedBases(record.alignmentStart, readFeatures, fromPosInRead, alignmentStartOffset, nofReadBases, readBases.getBytes(), SAMUtils.fastqToPhred(scores));
         return readFeatures;
     }
 }
