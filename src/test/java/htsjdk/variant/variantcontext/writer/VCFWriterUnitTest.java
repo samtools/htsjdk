@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureReader;
@@ -137,11 +138,15 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     }
 
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
-    @Test
-    public void testBlockWriteAndRead() throws IOException {
-        final File fakeVCFFile = File.createTempFile("testBlockWriteAndRead.", ".vcf");
+    @Test(dataProvider = "vcfExtensionsDataProvider")
+    public void testWriteAndReadVCFBody(final String extension) throws IOException {
+        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFBody.", extension);
         fakeVCFFile.deleteOnExit();
-
+        if (".vcf.gz".equals(extension)) {
+            new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
+        } else {
+            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+        }
         metaData = new HashSet<VCFHeaderLine>();
         additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
@@ -155,10 +160,15 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         writer.add(createVC(header));
         writer.add(createVC(header));
         writer.close();
+
         final VCFCodec codec = new VCFCodec();
         codec.setVCFHeader(header, VCFHeaderVersion.VCF4_0);
-
-        AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(fakeVCFFile)));
+        AsciiLineReaderIterator iterator;
+        if (".vcf.gz".equals(extension)) {
+            iterator = new AsciiLineReaderIterator(new AsciiLineReader(new BlockCompressedInputStream(fakeVCFFile)));
+        } else {
+            iterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(fakeVCFFile)));
+        }
         int counter = 0;
         while(iterator.hasNext()) {
             VariantContext context = codec.decode(iterator.next());
