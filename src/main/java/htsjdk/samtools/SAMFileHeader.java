@@ -270,7 +270,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
     public void setSortOrder(final SortOrder so) {
         sortOrder = so;
-        setAttribute(SORT_ORDER_TAG, so.name());
+        super.setAttribute(SORT_ORDER_TAG, so.name());
     }
 
     public GroupOrder getGroupOrder() {
@@ -292,7 +292,42 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
     public void setGroupOrder(final GroupOrder go) {
         groupOrder = go;
-        setAttribute(GROUP_ORDER_TAG, go.name());
+        super.setAttribute(GROUP_ORDER_TAG, go.name());
+    }
+
+
+    /**
+     * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
+     * If value is null, the attribute is removed.
+     * Otherwise, the value will be converted to a String with toString.
+     * @param key attribute name
+     * @param value attribute value
+     * @deprecated Use {@link #setAttribute(String, String) instead
+     */
+    @Deprecated
+    @Override
+    public void setAttribute(final String key, final Object value) {
+        if (key.equals(SORT_ORDER_TAG) || key.equals(GROUP_ORDER_TAG)) {
+            this.setAttribute(key, value.toString());
+        } else {
+            super.setAttribute(key, value);
+        }
+    }
+
+    /**
+     * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
+     * If value is null, the attribute is removed.
+     * @param key attribute name
+     * @param value attribute value
+     */
+    @Override
+    public void setAttribute(final String key, final String value) {
+        if (key.equals(SORT_ORDER_TAG)) {
+            this.sortOrder = null;
+        } else if (key.equals(GROUP_ORDER_TAG)) {
+            this.groupOrder = null;
+        }
+        super.setAttribute(key, value);
     }
 
     /**
