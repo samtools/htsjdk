@@ -463,7 +463,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     private SAMRecord createTestRecordHelper() {
-        return new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        return new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S33M", null, 2);
     }
 
     @Test

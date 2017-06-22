@@ -262,11 +262,11 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "testKmerGenerationTestCases")
     public void testKmerGeneration(final int length, final String[] expectedKmers) {
-        final Set<String> actualSet = new HashSet<String>();
+        final Set<String> actualSet = new HashSet<>();
         for (final byte[] kmer : SequenceUtil.generateAllKmers(length)) {
             actualSet.add(StringUtil.bytesToString(kmer));
         }
-        final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
+        final Set<String> expectedSet = new HashSet<>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
     }
 

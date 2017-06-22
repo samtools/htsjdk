@@ -147,6 +147,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_FIRST_OF_PAIR.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_SECOND_OF_PAIR.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_MATE_REF_INDEX.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNPAIRED_MATE_REFERENCE.getHistogramString()).getValue(), 1.0);
     }
 
     @Test
@@ -173,6 +174,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()).getValue(), 2.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString()).getValue(), 2.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString()).getValue(), 1.0);
     }
 
     @Test(dataProvider = "missingMateTestCases")
@@ -232,6 +234,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_CIGAR.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_FLAG_READ_UNMAPPED.getHistogramString()).getValue(), 1.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.MISSING_TAG_NM.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH.getHistogramString()).getValue(), 1.0);
     }
 
     @Test
@@ -300,10 +303,9 @@ public class ValidateSamFileTest extends HtsjdkTest {
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertNotNull(results.get(expectedError.getHistogramString()));
-        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0);
+        Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
+        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
     }
-
 
     @DataProvider(name = "testMateCigarScenarios")
     public Object[][] testMateCigarScenarios() {
@@ -318,8 +320,8 @@ public class ValidateSamFileTest extends HtsjdkTest {
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertNotNull(results.get(expectedError.getHistogramString()));
-        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0);
+        Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
+        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
     }
 
     @DataProvider(name = "testTruncatedScenarios")
@@ -400,9 +402,20 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testHeaderValidation() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
                 .open(new File(TEST_DATA_DIR, "buggyHeader.sam"));
-        final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
+        final File referenceFile = new File(TEST_DATA_DIR, "../hg19mini.fasta");
+        final ReferenceSequenceFile reference = new FastaSequenceFile(referenceFile, false);
+        final Histogram<String> results = executeValidation(samReader, reference, IndexValidationStringency.EXHAUSTIVE);
         Assert.assertEquals(results.get(SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE.getHistogramString()).getValue(), 3.0);
         Assert.assertEquals(results.get(SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED.getHistogramString()).getValue(), 1.0);
+        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_FILE_SEQ_DICT.getHistogramString()).getValue(), 1.0);
+    }
+
+    @Test
+    public void testSeqQualMismatch() throws Exception {
+        final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT)
+                .open(new File(TEST_DATA_DIR, "seq_qual_len_mismatch.sam"));
+        final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertEquals(results.get(SAMValidationError.Type.MISMATCH_SEQ_QUAL_LENGTH.getHistogramString()).getValue(), 8.0);
     }
 
     @Test

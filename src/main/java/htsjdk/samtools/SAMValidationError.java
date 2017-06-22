@@ -208,7 +208,22 @@ public class SAMValidationError implements Serializable {
         MISMATCH_MATE_CIGAR_STRING,
 
         /** There is a Cigar String (stored in the MC Tag) for a read whose mate is NOT mapped. */
-        MATE_CIGAR_STRING_INVALID_PRESENCE;
+        MATE_CIGAR_STRING_INVALID_PRESENCE,
+
+        /** The mate reference of the unpaired read should be "*" */
+        INVALID_UNPAIRED_MATE_REFERENCE,
+
+        /** The unaligned mate read start position should be 0 */
+        INVALID_UNALIGNED_MATE_START,
+
+        /** Mismatch between the number of bases covered by the CIGAR and sequence */
+        MISMATCH_CIGAR_SEQ_LENGTH,
+
+        /** Mismatch between the sequence and quality length */
+        MISMATCH_SEQ_QUAL_LENGTH,
+
+        /** Mismatch between file and sequence dictionaries */
+        MISMATCH_FILE_SEQ_DICT;
 
         public final Severity severity;
 

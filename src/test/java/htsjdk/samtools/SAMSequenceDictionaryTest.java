@@ -39,6 +39,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 public class SAMSequenceDictionaryTest extends HtsjdkTest {
     @Test
@@ -141,5 +142,28 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
         } else {
             throw new Exception("Expected to not be able to merge dictionaries, but was able");
         }
+    }
+
+    @DataProvider
+    public Object[][] testIsSameDictionaryData() {
+
+        final SAMSequenceRecord rec1, rec2;
+        rec1 = new SAMSequenceRecord("chr1", 100);
+        rec2 = new SAMSequenceRecord("chr2", 101);
+
+        return new Object[][]{
+                new Object[]{Arrays.asList(rec1), Arrays.asList(rec1), true},
+                new Object[]{Arrays.asList(rec1), Arrays.asList(rec2), false},
+                new Object[]{Arrays.asList(rec1, rec2), Arrays.asList(rec1), false}
+        };
+    }
+
+    @Test(dataProvider = "testIsSameDictionaryData")
+    public void testIsSameDictionary(final List<SAMSequenceRecord> recs1, final List<SAMSequenceRecord> recs2, final boolean isSameDictionary) {
+
+        final SAMSequenceDictionary dict1 = new SAMSequenceDictionary(recs1);
+        final SAMSequenceDictionary dict2 = new SAMSequenceDictionary(recs2);
+
+        Assert.assertEquals(dict1.isSameDictionary(dict2), isSameDictionary);
     }
 }
