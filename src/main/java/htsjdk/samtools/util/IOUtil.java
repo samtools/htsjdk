@@ -238,6 +238,29 @@ public class IOUtil {
         }
     }
 
+    public static void deletePaths(final Path... paths) {
+        for (final Path p : paths) {
+            boolean deleted;
+            try {
+                deleted = Files.deleteIfExists(p);
+            } catch (IOException e) {
+                deleted = false;
+            }
+            if (!deleted) System.err.println("Could not delete file " + p);
+        }
+    }
+
+    public static void deletePaths(final Iterable<Path> paths) {
+        for (final Path p : paths) {
+            boolean deleted;
+            try {
+                deleted = Files.deleteIfExists(p);
+            } catch (IOException e) {
+                deleted = false;
+            }
+            if (!deleted) System.err.println("Could not delete file " + p);
+        }
+    }
 
     /**
      * @return true if the path is not a device (e.g. /dev/null or /dev/stdin), and is not
@@ -282,7 +305,6 @@ public class IOUtil {
         return newTempFile(prefix, suffix, tmpDirs, FIVE_GBS);
     }
 
-
     /** Returns a default tmp directory. */
     public static File getDefaultTmpDir() {
         final String user = System.getProperty("user.name");
@@ -290,6 +312,64 @@ public class IOUtil {
 
         if (tmp.endsWith(File.separatorChar + user)) return new File(tmp);
         else return new File(tmp, user);
+    }
+
+    /**
+     * Creates a new tmp path on one of the available temp filesystems, registers it for deletion
+     * on JVM exit and then returns it.
+     */
+    public static Path newTempPath(final String prefix, final String suffix,
+            final Path[] tmpDirs, final long minBytesFree) throws IOException {
+        Path p = null;
+
+        for (int i = 0; i < tmpDirs.length; ++i) {
+            if (i == tmpDirs.length - 1 || Files.getFileStore(tmpDirs[i]).getUsableSpace() > minBytesFree) {
+                p = Files.createTempFile(tmpDirs[i], prefix, suffix);
+                deleteOnExit(p);
+                break;
+            }
+        }
+
+        return p;
+    }
+
+    /** Creates a new tmp file on one of the potential filesystems that has at least 5GB free. */
+    public static Path newTempPath(final String prefix, final String suffix,
+            final Path[] tmpDirs) throws IOException {
+        return newTempPath(prefix, suffix, tmpDirs, FIVE_GBS);
+    }
+
+    /** Returns a default tmp directory as a Path. */
+    public static Path getDefaultTmpDirPath() {
+        try {
+            final String user = System.getProperty("user.name");
+            final String tmp = System.getProperty("java.io.tmpdir");
+
+            final Path tmpParent = getPath(tmp);
+            if (tmpParent.endsWith(tmpParent.getFileSystem().getSeparator() + user)) {
+                return tmpParent;
+            } else {
+                return tmpParent.resolve(user);
+            }
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+    /**
+     * Deletes on exit a path by creating a shutdown hook.
+     */
+    public static void deleteOnExit(final Path path) {
+        // add a shutdown hook to remove the path on exit
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    Files.delete(path);
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
+                }
+            }
+        });
     }
 
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */
@@ -447,6 +527,27 @@ public class IOUtil {
         }
         else if (!dir.canWrite()) {
             throw new SAMException("Directory exists but is not writable: " + dir.getAbsolutePath());
+        }
+    }
+
+    /**
+     * Checks that a directory is non-null, extent, writable and a directory
+     * otherwise a runtime exception is thrown.
+     *
+     * @param dir the dir to check for writability
+     */
+    public static void assertDirectoryIsWritable(final Path dir) {
+        if (dir == null) {
+            throw new IllegalArgumentException("Cannot check readability of null file.");
+        }
+        else if (!Files.exists(dir)) {
+            throw new SAMException("Directory does not exist: " + dir.toUri().toString());
+        }
+        else if (!Files.isDirectory(dir)) {
+            throw new SAMException("Cannot write to directory because it is not a directory: " + dir.toUri().toString());
+        }
+        else if (!Files.isWritable(dir)) {
+            throw new SAMException("Directory exists but is not writable: " + dir.toUri().toString());
         }
     }
 
