@@ -16,11 +16,19 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also an number of useful utilities for 
 manipulating HTS data.
 
-Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
-
 > **NOTE: _HTSJDK does not currently support the latest Variant Call Format Specification (VCFv4.3 and BCFv2.2)._**
 
-#### Building HTSJDK
+### Documentation & Getting Help
+
+API documentation for all versions of HTSJDK since `1.128` are available through [javadoc.io](http://www.javadoc.io/doc/com.github.samtools/htsjdk).
+
+If you believe you have found a bug or have an issue with the library please a) search the open and recently closed issues to ensure it has not already been reported, then b) log an issue.
+
+The project has a [gitter chat room](https://gitter.im/samtools/htsjdk) if you would like to chat with the developers and others involved in the project.
+
+To receive announcements of releases and other significant project news please subscribe to the [htsjdk-announce](https://groups.google.com/forum/#!forum/htsjdk-announce) google group.
+
+### Building HTSJDK
 
 HTSJDK is now built using [gradle](http://gradle.org/).
 
@@ -74,7 +82,7 @@ Example gradle usage from the htsjdk root directory:
  ./gradlew tasks
  ```
 
-#### Create an HTSJDK project in IntelliJ
+### Create an HTSJDK project in IntelliJ
 To create a project in IntelliJ IDE for htsjdk do the following:
 
 1. Select fom the menu: `File -> New -> Project from Existing Sources`
@@ -83,11 +91,17 @@ To create a project in IntelliJ IDE for htsjdk do the following:
 
 From time to time if dependencies change in htsjdk you may need to refresh the project from the `View -> Gradle` menu.
 
-#### Licensing Information
+### Licensing Information
 
-Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
+Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. 
+Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
+Broadly speaking the majority of the code is covered under the MIT license with the following notable exceptions:
 
-#### Java Minimum Version Support Policy
+* Much of the CRAM code is under the Apache License, Version 2
+* Core `tribble` code (underlying VCF reading/writing amongst other things) is under LGPL
+* Code supporting the reading/writing of SRA format is uncopyrighted & public domain
+
+### Java Minimum Version Support Policy
 
 > **NOTE: _Effective November 24th 2015, HTSJDK has ended support of Java 7 and previous versions. Java 8 is now required_.**
 
@@ -97,7 +111,7 @@ Java SE Major Release | End of Java SE Oracle Public Updates | Proposed End of S
 ---- | ---- | ---- | ----
 6 | Feb 2013 | Aug 2013 | Oct 2015
 7 | Apr 2015 | Oct 2015 | Oct 2015
-8* | Mar 2017 | Sep 2017 | Sep 2017
+8* | Mar 2017 | Sep 2018 | Sep 2018
 
 * to be finalized
 
