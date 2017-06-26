@@ -119,7 +119,7 @@ public class QualityScorePreservationTest extends HtsjdkTest {
 
     @Test
     public void test3() {
-        String line1 = "98573 0 20 1 10 40M * 0 0 AAAAAAAAAA !!!!!!!!!!";
+        String line1 = "98573 0 20 1 10 10M * 0 0 AAAAAAAAAA !!!!!!!!!!";
         String seqName = "20";
 
         byte[] ref = new byte[40];

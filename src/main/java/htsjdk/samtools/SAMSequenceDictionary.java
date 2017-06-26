@@ -29,7 +29,6 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import javax.xml.bind.annotation.XmlElement;
@@ -50,8 +49,8 @@ public class SAMSequenceDictionary implements Serializable {
     getter because the later wraps the list into an unmodifiable List 
     see http://tech.joshuacummings.com/2010/10/problems-with-defensive-collection.html */
     @XmlElement(name="Reference")
-    private List<SAMSequenceRecord> mSequences = new ArrayList<SAMSequenceRecord>();
-    private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<String, SAMSequenceRecord>();
+    private List<SAMSequenceRecord> mSequences = new ArrayList<>();
+    private final Map<String, SAMSequenceRecord> mSequenceMap = new HashMap<>();
 
     public SAMSequenceDictionary() {
     }
@@ -150,7 +149,7 @@ public class SAMSequenceDictionary implements Serializable {
     private static String DICT_MISMATCH_TEMPLATE = "SAM dictionaries are not the same: %s.";
     /**
      * Non-comprehensive {@link #equals(Object)}-assertion: instead of calling {@link SAMSequenceRecord#equals(Object)} on constituent
-     * {@link SAMSequenceRecord}s in this dictionary against its pair in the target dictionary, in order,  call
+     * {@link SAMSequenceRecord}s in this dictionary against its pair in the target dictionary, in order, call
      * {@link SAMSequenceRecord#isSameSequence(SAMSequenceRecord)}.
      * Aliases are ignored.
      *
@@ -161,18 +160,47 @@ public class SAMSequenceDictionary implements Serializable {
 
         final Iterator<SAMSequenceRecord> thatSequences = that.mSequences.iterator();
         for (final SAMSequenceRecord thisSequence : mSequences) {
-            if (!thatSequences.hasNext())
+            if (!thatSequences.hasNext()) {
                 throw new AssertionError(String.format(DICT_MISMATCH_TEMPLATE, thisSequence + " is present in only one dictionary"));
-            else {
+            } else {
                 final SAMSequenceRecord thatSequence = thatSequences.next();
-                if(!thatSequence.isSameSequence(thisSequence))
+                if(!thatSequence.isSameSequence(thisSequence)) {
                     throw new AssertionError(
                             String.format(DICT_MISMATCH_TEMPLATE, thatSequence + " was found when " + thisSequence + " was expected")
                     );
+                }
             }
         }
         if (thatSequences.hasNext())
             throw new AssertionError(String.format(DICT_MISMATCH_TEMPLATE, thatSequences.next() + " is present in only one dictionary"));
+    }
+
+    /**
+     * Non-comprehensive {@link #equals(Object)}-validation: instead of calling {@link SAMSequenceRecord#equals(Object)} on constituent
+     * {@link SAMSequenceRecord}s in this dictionary against its pair in the target dictionary, in order, call
+     * {@link SAMSequenceRecord#isSameSequence(SAMSequenceRecord)}.
+     *
+     * @param that {@link SAMSequenceDictionary} to compare against
+     * @return true if the dictionaries are the same, false otherwise
+     *
+     */
+    public boolean isSameDictionary(final SAMSequenceDictionary that) {
+        if (that == null || that.mSequences == null) return false;
+        if (this == that) return true;
+
+        final Iterator<SAMSequenceRecord> thatSequences = that.mSequences.iterator();
+        for (final SAMSequenceRecord thisSequence : mSequences) {
+            if (!thatSequences.hasNext()) {
+                return false;
+            } else {
+                final SAMSequenceRecord thatSequence = thatSequences.next();
+                if (!thatSequence.isSameSequence(thisSequence)) {
+                    return false;
+                }
+            }
+        }
+
+        return !thatSequences.hasNext();
     }
 
     /** returns true if the two dictionaries are the same, aliases are NOT considered */
@@ -183,9 +211,7 @@ public class SAMSequenceDictionary implements Serializable {
 
         SAMSequenceDictionary that = (SAMSequenceDictionary) o;
 
-        if (!mSequences.equals(that.mSequences)) return false;
-
-        return true;
+       return mSequences.equals(that.mSequences);
     }
 
     /**
@@ -318,8 +344,8 @@ public class SAMSequenceDictionary implements Serializable {
             finalDict.addSequence(sMerged);
 
             final Set<String> allTags = new HashSet<>();
-            s1.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
-            s2.getAttributes().stream().forEach(a -> allTags.add(a.getKey()));
+            s1.getAttributes().forEach(a -> allTags.add(a.getKey()));
+            s2.getAttributes().forEach(a -> allTags.add(a.getKey()));
 
             for (final String tag : allTags) {
                 final String value1 = s1.getAttribute(tag);
