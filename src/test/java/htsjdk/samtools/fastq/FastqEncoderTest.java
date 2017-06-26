@@ -46,13 +46,15 @@ public class FastqEncoderTest extends HtsjdkTest {
         testRecord(record.getReadName() + FastqConstants.SECOND_OF_PAIR, FastqEncoder.asFastqRecord(record), record);
         record.setSecondOfPairFlag(false);
         testRecord(record.getReadName(), FastqEncoder.asFastqRecord(record), record);
+        record.setAttribute("CO", "Comment in SAM tag");
+        testRecord(record.getReadName(), FastqEncoder.asFastqRecord(record), record);
     }
 
     private void testRecord(final String expectedReadName, final FastqRecord fastqRecord, final SAMRecord samRecord) {
         Assert.assertEquals(fastqRecord.getReadName(), expectedReadName);
         Assert.assertEquals(fastqRecord.getBaseQualities(), samRecord.getBaseQualities());
         Assert.assertEquals(fastqRecord.getReadBases(), samRecord.getReadBases());
-        Assert.assertNull(fastqRecord.getBaseQualityHeader());
+        Assert.assertEquals(fastqRecord.getBaseQualityHeader(), samRecord.getStringAttribute("CO"));
     }
 
     @Test
@@ -65,12 +67,16 @@ public class FastqEncoderTest extends HtsjdkTest {
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
+        samRecord.setAttribute("CO", "Quality header comment");
+        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), samRecord.getStringAttribute("CO"), samRecord.getBaseQualities());
+        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
     }
 
     private void testConvertedSAMRecord(final SAMRecord converted, final SAMRecord original) {
         Assert.assertEquals(converted.getReadName(), original.getReadName());
         Assert.assertEquals(converted.getBaseQualities(), original.getBaseQualities());
         Assert.assertEquals(converted.getReadBases(), original.getReadBases());
+        Assert.assertEquals(converted.getStringAttribute("CO"), original.getStringAttribute("CO"));
         Assert.assertTrue(converted.getReadUnmappedFlag());
     }
 }

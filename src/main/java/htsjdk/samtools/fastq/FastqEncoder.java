@@ -26,6 +26,7 @@ package htsjdk.samtools.fastq;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.IOException;
@@ -91,7 +92,7 @@ public final class FastqEncoder {
         if(record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
             readName += (record.getFirstOfPairFlag()) ? FastqConstants.FIRST_OF_PAIR : FastqConstants.SECOND_OF_PAIR;
         }
-        return new FastqRecord(readName, record.getReadString(), null, record.getBaseQualityString());
+        return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO.name()), record.getBaseQualityString());
     }
 
     /**
@@ -106,6 +107,7 @@ public final class FastqEncoder {
         // set the basic information from the FastqRecord
         samRecord.setReadName(readName);
         samRecord.setReadBases(record.getReadBases());
+        samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader());
         samRecord.setBaseQualities(record.getBaseQualities());
         return samRecord;
     }
