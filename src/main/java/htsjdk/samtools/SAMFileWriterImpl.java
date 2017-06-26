@@ -105,14 +105,14 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * before spilling to disk.  Must be called before setHeader().
      * @param maxRecordsInRam
      */
-    void setMaxRecordsInRam(final int maxRecordsInRam) {
+    protected void setMaxRecordsInRam(final int maxRecordsInRam) {
         if (this.header != null) {
             throw new IllegalStateException("setMaxRecordsInRam must be called before setHeader()");
         }
         this.maxRecordsInRam = maxRecordsInRam;
     }
 
-    int getMaxRecordsInRam() {
+    protected int getMaxRecordsInRam() {
         return maxRecordsInRam;
     }
 
@@ -121,13 +121,13 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * for spilling to disk.  Must be called before setHeader().
      * @param tmpDir path to the temporary directory
      */
-    void setTempDirectory(final File tmpDir) {
+    protected void setTempDirectory(final File tmpDir) {
         if (tmpDir!=null) {
             this.tmpDir = tmpDir;
         }
     }
 
-    File getTempDirectory() {
+    protected File getTempDirectory() {
         return tmpDir;
     }
 
