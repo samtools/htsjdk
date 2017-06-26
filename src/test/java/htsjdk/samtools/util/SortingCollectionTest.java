@@ -26,9 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -47,7 +45,7 @@ public class SortingCollectionTest extends HtsjdkTest {
     protected File tmpDir() {
         return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());
     }
-    
+
     @BeforeMethod void setup() { resetTmpDir(); }
     @AfterMethod void tearDown() { resetTmpDir(); }
 
