@@ -69,7 +69,6 @@ import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * Miscellaneous stateless static IO-oriented methods.
@@ -361,15 +360,30 @@ public class IOUtil {
      */
     public static void deleteOnExit(final Path path) {
         // add a shutdown hook to remove the path on exit
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                try {
-                    Files.delete(path);
-                } catch (IOException e) {
-                    throw new RuntimeIOException(e);
-                }
+        Runtime.getRuntime().addShutdownHook(new DeletePathThread(path));
+    }
+
+    /**
+     * WARNING: visible for testing. Do not use.
+     *
+     * Class for delete a path, used in a shutdown hook for delete on exit.
+     *
+     * @see #deleteOnExit(Path)
+     */
+    protected static final class DeletePathThread extends Thread {
+
+        private final Path path;
+
+        protected DeletePathThread(Path path) {this.path = path;}
+
+        @Override
+        public void run() {
+            try {
+                Files.delete(path);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
             }
-        });
+        }
     }
 
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */

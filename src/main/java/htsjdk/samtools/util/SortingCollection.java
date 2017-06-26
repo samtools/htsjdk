@@ -230,7 +230,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
                 os.flush();
             } catch (RuntimeIOException ex) {
-                throw new RuntimeIOException("Problem writing temporary file " + f.toUri().toString() +
+                throw new RuntimeIOException("Problem writing temporary file " + f.toUri() +
                         ".  Try setting TMP_DIR to a file system with lots of space.", ex);
             } finally {
                 if (os != null) {

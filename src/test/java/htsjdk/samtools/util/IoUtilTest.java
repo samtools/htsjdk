@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools.util;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -30,6 +32,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,7 +47,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class IoUtilTest extends HtsjdkTest {
@@ -60,15 +68,23 @@ public class IoUtilTest extends HtsjdkTest {
     private File existingTempFile;
     private String systemTempDir;
 
+    private FileSystem inMemmoryfileSystem;
+
     @BeforeClass
     public void setUp() throws IOException {
         existingTempFile = File.createTempFile("FiletypeTest.", ".tmp");
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
+        inMemmoryfileSystem = Jimfs.newFileSystem(Configuration.unix());;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
+    }
+
+    @AfterClass
+    public void tearDown() throws IOException {
+        inMemmoryfileSystem.close();
     }
 
     @Test
@@ -216,4 +232,100 @@ public class IoUtilTest extends HtsjdkTest {
                 {"/non/existent/file", Boolean.TRUE},
         };
     }
+
+
+    @DataProvider(name = "fileNamesForDelete")
+    public Object[][] fileNamesForDelete() {
+        return new Object[][] {
+                {Collections.emptyList()},
+                {Collections.singletonList("file1")},
+                {Arrays.asList("file1", "file2")}
+        };
+    }
+
+    @Test
+    public void testHetDefaultTmpDirPath() throws Exception {
+        final Path tmpPath = IOUtil.getDefaultTmpDirPath();
+        final String user = System.getProperty("user.name");
+        Assert.assertEquals(tmpPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + user);
+    }
+
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeletePathLocal(final List<String> fileNames) throws Exception {
+        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final List<Path> paths = createLocalFiles(tmpDir, fileNames);
+        testDeletePath(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeletePathJims(final List<String> fileNames) throws Exception {
+        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        testDeletePath(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeleteArrayPathLocal(final List<String> fileNames) throws Exception {
+        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final List<Path> paths = createLocalFiles(tmpDir, fileNames);
+        testDeletePathArray(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeleteArrayPathJims(final List<String> fileNames) throws Exception {
+        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        testDeletePathArray(paths);
+    }
+
+    private static void testDeletePath(final List<Path> paths) {
+        paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
+        IOUtil.deletePaths(paths);
+        paths.forEach(p -> Assert.assertFalse(Files.exists(p)));
+    }
+
+    private static void testDeletePathArray(final List<Path> paths) {
+        paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
+        IOUtil.deletePaths(paths.toArray(new Path[paths.size()]));
+        paths.forEach(p -> Assert.assertFalse(Files.exists(p)));
+    }
+
+    private static List<Path> createLocalFiles(final File tmpDir, final List<String> fileNames) throws Exception {
+        final List<Path> paths = new ArrayList<>(fileNames.size());
+        for (final String f: fileNames) {
+            final File file = new File(tmpDir, f);
+            file.createNewFile();
+            paths.add(file.toPath());
+        }
+        return paths;
+    }
+
+    private List<Path> createJimsFiles(final String folderName, final List<String> fileNames) throws Exception {
+        final List<Path> paths = new ArrayList<>(fileNames.size());
+        final Path folder = inMemmoryfileSystem.getPath(folderName);
+        if (Files.notExists(folder)) Files.createDirectory(folder);
+
+        for (final String f: fileNames) {
+            final Path p = inMemmoryfileSystem.getPath(folderName, f);
+            Files.createFile(p);
+            paths.add(p);
+        }
+
+        return paths;
+    }
+
+    @DataProvider
+    public Object[][] pathsForDeletePathThread() throws Exception {
+        return new Object[][] {
+                {File.createTempFile("testDeletePathThread", "file").toPath()},
+                {Files.createFile(inMemmoryfileSystem.getPath("testDeletePathThread"))}
+        };
+    }
+
+    @Test(dataProvider = "pathsForDeletePathThread")
+    public void testDeletePathThread(final Path path) throws Exception {
+        Assert.assertTrue(Files.exists(path));
+        new IOUtil.DeletePathThread(path).run();
+        Assert.assertFalse(Files.exists(path));
+    }
+
 }
