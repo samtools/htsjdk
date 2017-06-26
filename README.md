@@ -10,6 +10,8 @@ Status of downstream projects automatically built on top of the current htsjdk m
 
 ## A Java API for high-throughput sequencing data (HTS) formats.  
 
+[![Join the chat at https://gitter.im/samtools/htsjdk](https://badges.gitter.im/samtools/htsjdk.svg)](https://gitter.im/samtools/htsjdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 HTSJDK is an implementation of a unified Java library for accessing
 common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also an number of useful utilities for 
