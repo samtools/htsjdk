@@ -28,6 +28,7 @@ import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.util.function.Supplier;
 
 /**
  * Base class for implementing SAM writer with any underlying format.
@@ -144,11 +145,12 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
              sortOrder = SAMFileHeader.SortOrder.unsorted;
         }
         header.setSortOrder(sortOrder);
-        final StringWriter headerTextBuffer = new StringWriter();
-        new SAMTextHeaderCodec().encode(headerTextBuffer, header);
-        final String headerText = headerTextBuffer.toString();
 
-        writeHeader(headerText);
+        writeHeader(() -> {
+            final StringWriter headerTextBuffer = new StringWriter();
+            new SAMTextHeaderCodec().encode(headerTextBuffer, header);
+            return headerTextBuffer.toString();
+        });
 
         if (presorted) {
             if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
@@ -243,8 +245,21 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Write the header to disk.  Header object is available via getHeader().
      * @param textHeader for convenience if the implementation needs it.
+     * @deprecated since 06/2017. {@link #writeHeader(Supplier)} is preferred for avoid String construction if not need it.
      */
+    @Deprecated
     abstract protected void writeHeader(String textHeader);
+
+    /**
+     * Write the header to disk. Header object is available via getHeader().
+     *
+     * <p>Note: default implementation uses {@link #writeHeader(String)}.
+     *
+     * @param textHeaderSupplier for convenience if the implementation needs it.
+     */
+    protected void writeHeader(Supplier<String> textHeaderSupplier) {
+        writeHeader(textHeaderSupplier.get());
+    }
 
     /**
      * Do any required flushing here.
