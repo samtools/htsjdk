@@ -265,8 +265,6 @@ public class Sam2CramRecordFactory {
      * <li>emit a {@link Substitution} read feature for each ACTGN-ACTGN mismatch.</li>
      * <li>emit {@link ReadBase} for a non-ACTGN mismatch. The side effect is the quality score stored twice.</li>
      * <p>
-     * The rest of the method handles quality score read features added if refSNPs is specified.
-     * <p>
      * IMPORTANT: reference and read bases are always compared for match/mismatch in upper case due to BAM limitations.
      *
      * @param alignmentStart       CRAM record alignment start
