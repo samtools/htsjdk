@@ -24,6 +24,7 @@
 
 package htsjdk.tribble.bed;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.SimpleFeature;
 import org.testng.Assert;
@@ -33,7 +34,7 @@ import org.testng.annotations.Test;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class BEDSimpleEncoderUnitTest {
+public class BEDSimpleEncoderUnitTest extends HtsjdkTest {
 
     private static final BEDSimpleEncoder TEST_ENCODER = new BEDSimpleEncoder();
 
