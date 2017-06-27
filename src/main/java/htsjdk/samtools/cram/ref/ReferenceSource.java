@@ -126,14 +126,8 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    // Upper case (in-place), and add to the cache
+    // Add the raw sequence to the cache, preserving original case
     private byte[] addToCache(final String sequenceName, final byte[] bases) {
-        // Normalize to upper case only. We can't use the cram normalization utility Utils.normalizeBases, since
-        // we don't want to normalize ambiguity codes, we can't use SamUtils.normalizeBases, since we don't want
-        // to normalize no-call ('.') bases.
-        for (int i = 0; i < bases.length; i++) {
-            bases[i] = StringUtil.toUpperCase(bases[i]);
-        }
         cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
         return bases;
     }
