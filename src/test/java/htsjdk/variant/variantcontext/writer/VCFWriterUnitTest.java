@@ -140,8 +140,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testWriteAndReadVCFBody(final String extension) throws IOException {
-        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFBody.", extension);
-        fakeVCFFile.deleteOnExit();
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", extension);
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
         } else {
@@ -151,33 +150,34 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
-        final VariantContextWriter writer = new VariantContextWriterBuilder()
-                .setOutputFile(fakeVCFFile)
-                .setReferenceDictionary(sequenceDict)
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
-                .build();
-        writer.setVcfHeader(header);
-        writer.add(createVC(header));
-        writer.add(createVC(header));
-        writer.close();
-
+                .build()) {
+            writer.setVcfHeader(header);
+            writer.add(createVC(header));
+            writer.add(createVC(header));
+        }
         final VCFCodec codec = new VCFCodec();
-        codec.setVCFHeader(header, VCFHeaderVersion.VCF4_0);
-        AsciiLineReaderIterator iterator;
-        if (".vcf.gz".equals(extension)) {
-            iterator = new AsciiLineReaderIterator(new AsciiLineReader(new BlockCompressedInputStream(fakeVCFFile)));
-        } else {
-            iterator = new AsciiLineReaderIterator(new AsciiLineReader(new FileInputStream(fakeVCFFile)));
-        }
-        int counter = 0;
-        while(iterator.hasNext()) {
-            VariantContext context = codec.decode(iterator.next());
-            if (context != null) {
-                counter++;
-            }
-        }
-        Assert.assertEquals(counter, 2);
+        codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
 
+        try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
+                FileInputStream fis = new FileInputStream(fakeVCFFile)) {
+            AsciiLineReaderIterator iterator;
+            if (".vcf.gz".equals(extension)) {
+                iterator = new AsciiLineReaderIterator(new AsciiLineReader(bcis));
+            } else {
+                iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
+            }
+            int counter = 0;
+            while (iterator.hasNext()) {
+                VariantContext context = codec.decode(iterator.next());
+                if (context != null) {
+                    counter++;
+                }
+            }
+            Assert.assertEquals(counter, 2);
+        }
     }
 
     /**
