@@ -66,7 +66,7 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertEquals(makeGB().filter("x;y;z").make().getFilters(), "x;y;z", "Multiple filter field values should be joined with ;");
         Assert.assertEquals(makeGB().filter("x;y;z").make().getAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "x;y;z", "getAnyAttribute(GENOTYPE_FILTER_KEY) should return the filter");
         Assert.assertTrue(makeGB().filter("x;y;z").make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return true");
-        Assert.assertTrue(makeGB().make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return true");
+        Assert.assertFalse(makeGB().make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return false");
         Assert.assertFalse(makeGB().filter("").make().isFiltered(), "empty filters should count as unfiltered");
         Assert.assertEquals(makeGB().filter("").make().getFilters(), null, "empty filter string should result in null filters");
     }
