@@ -50,5 +50,10 @@ public interface VariantContextWriter extends Closeable {
     
     public void add(VariantContext vc);
 
+    /**
+     * Sets the VCF header so that data blocks can be written without writing the header
+     *
+     * @param header VCF header
+     */
     void setVcfHeader(VCFHeader header);
 }
