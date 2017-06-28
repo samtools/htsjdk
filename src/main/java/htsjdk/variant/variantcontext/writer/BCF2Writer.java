@@ -223,7 +223,21 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void setVcfHeader(VCFHeader header) {
-        //no-op
+        header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+        this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
+        // create the config offsets map
+        if ( header.getContigLines().isEmpty() ) {
+            if ( ALLOW_MISSING_CONTIG_LINES ) {
+                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
+                }
+                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
+            } else {
+                throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
+            }
+        } else {
+            createContigDictionary(header.getContigLines());
+        }
     }
 
     // --------------------------------------------------------------------------------
