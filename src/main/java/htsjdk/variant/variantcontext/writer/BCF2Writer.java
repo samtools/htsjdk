@@ -238,6 +238,16 @@ class BCF2Writer extends IndexingVariantContextWriter {
         } else {
             createContigDictionary(header.getContigLines());
         }
+        // set up the map from dictionary string values -> offset
+        final ArrayList<String> dict = BCF2Utils.makeDictionary(header);
+        for ( int i = 0; i < dict.size(); i++ ) {
+            stringDictionaryMap.put(dict.get(i), i);
+        }
+
+        sampleNames = header.getGenotypeSamples().toArray(new String[header.getNGenotypeSamples()]);
+        // setup the field encodings
+        fieldManager.setup(header, encoder, stringDictionaryMap);
+
     }
 
     // --------------------------------------------------------------------------------

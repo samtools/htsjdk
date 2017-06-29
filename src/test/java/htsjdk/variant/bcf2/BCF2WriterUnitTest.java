@@ -27,7 +27,9 @@ package htsjdk.variant.bcf2;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.Tribble;
+import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.Genotype;
@@ -51,6 +53,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -116,10 +119,10 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     /**
-     * test, using the writer and reader, that we can output and input a VCF body without problems
+     * test, using the writer and reader, that we can output and input BCF without problems
      */
-    @Test()
-    public void testWriteAndReadBCFBody() throws IOException {
+    @Test
+    public void testWriteAndReadBCF() throws IOException {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", ".bcf");
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();
@@ -131,13 +134,82 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build()) {
-            //writer.setVcfHeader(header);
             writer.writeHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
         VariantContextTestProvider.VariantContextContainer container = VariantContextTestProvider
                 .readAllVCs(fakeVCFFile, new BCF2Codec());
+        int counter = 0;
+        final Iterator<VariantContext> it = container.getVCs().iterator();
+        while (it.hasNext()) {
+            it.next();
+            counter++;
+        }
+        Assert.assertEquals(counter, 2);
+    }
+
+    /**
+     * test, using the writer and reader, that we can output and input a BCF body without header
+     */
+    @Test
+    public void testWriteAndReadBCFBody() throws IOException {
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", ".bcf");
+        Tribble.indexFile(fakeVCFFile).deleteOnExit();
+        final File fakeVCFBodyFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", ".bcf");
+        Tribble.indexFile(fakeVCFBodyFile).deleteOnExit();
+
+        metaData = new HashSet<VCFHeaderLine>();
+        additionalColumns = new HashSet<String>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+
+        // we write two files, fakeVCFFile with the header and body, and fakeVCFBodyFile with just the body
+        try (final VariantContextWriter fakeVCFFileWriter = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build()) {
+            fakeVCFFileWriter.writeHeader(header); // writes header
+            fakeVCFFileWriter.add(createVC(header));
+            fakeVCFFileWriter.add(createVC(header));
+        }
+
+        try (final VariantContextWriter fakeVCFBodyFileWriter = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFBodyFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build()) {
+            fakeVCFBodyFileWriter.setVcfHeader(header); // does not write header
+            fakeVCFBodyFileWriter.add(createVC(header));
+            fakeVCFBodyFileWriter.add(createVC(header));
+        }
+
+        VariantContextTestProvider.VariantContextContainer container;
+
+        try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(fakeVCFFile));
+        final PositionalBufferedStream bodyPbs = new PositionalBufferedStream(new FileInputStream(fakeVCFBodyFile))) {
+
+            BCF2Codec codec = new BCF2Codec();
+            FeatureCodecHeader readHeader = codec.readHeader(headerPbs);
+            final VCFHeader vcfHeader = (VCFHeader) readHeader.getHeaderValue();
+            // we use the header information read from identical file with header+body to read just the body of second file
+            container =
+                    new VariantContextTestProvider.VariantContextContainer(vcfHeader, new VariantContextTestProvider.VCIterable(codec, vcfHeader) {
+                        @Override
+                        public boolean hasNext() {
+                            try {
+                                return !bodyPbs.isDone();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+
+                        @Override
+                        public Object nextSource() {
+                            return bodyPbs;
+                        }
+                    });
+        }
+
         int counter = 0;
         final Iterator<VariantContext> it = container.getVCs().iterator();
         while (it.hasNext()) {
