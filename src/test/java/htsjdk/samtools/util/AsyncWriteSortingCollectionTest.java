@@ -25,9 +25,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
 import java.lang.reflect.Field;
@@ -49,9 +47,6 @@ public class AsyncWriteSortingCollectionTest extends SortingCollectionTest {
         changeDefaultsParam(Defaults.class, "SORTING_COLLECTION_THREADS", sortColThreadsDefaults);
     }
 
-    @BeforeMethod void setup() { resetTmpDir(); }
-    @AfterMethod void tearDown() { resetTmpDir(); }
-
     @DataProvider(name = "test1")
     public Object[][] createTestData() {
         return new Object[][] {
@@ -59,13 +54,17 @@ public class AsyncWriteSortingCollectionTest extends SortingCollectionTest {
                 {"singleton", 1, 100},
 
                 // maxRecordInRam for AsyncWriteSortingCollection is equals to 300 / (sort_col_threads + 1) = 100
-                {"less than threshold", 100, 100 * (SORT_COL_THREADS + 1)},
+                {"less than threshold", 100, 200 * (SORT_COL_THREADS + 1)},
                 {"threshold minus 1", 99, 100 * (SORT_COL_THREADS + 1)},
                 {"greater than threshold", 550, 100 * (SORT_COL_THREADS + 1)},
                 {"threshold multiple", 600, 100 * (SORT_COL_THREADS + 1)},
                 {"threshold multiple plus one", 101, 100 * (SORT_COL_THREADS + 1)},
                 {"exactly threshold", 100, 100 * (SORT_COL_THREADS + 1)},
         };
+    }
+
+    boolean shouldTmpDirBeEmpty(int numStringsToGenerate, int maxRecordsInRam) {
+        return numStringsToGenerate <= maxRecordsInRam / (Defaults.SORTING_COLLECTION_THREADS + 1);
     }
 
     // for changing Defaults.SORTING_COLLECTION_THREADS
@@ -77,5 +76,11 @@ public class AsyncWriteSortingCollectionTest extends SortingCollectionTest {
         modifiers.setAccessible(true);
         modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
         field.set(null, newValue);
+    }
+
+    @Override
+    SortingCollection<String> makeSortingCollection(int maxRecordsInRam) {
+        return new AsyncWriteSortingCollection<>(String.class,
+                new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
     }
 }
