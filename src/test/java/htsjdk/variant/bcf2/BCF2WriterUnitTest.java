@@ -208,15 +208,15 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                             return bodyPbs;
                         }
                     });
-        }
 
-        int counter = 0;
-        final Iterator<VariantContext> it = container.getVCs().iterator();
-        while (it.hasNext()) {
-            it.next();
-            counter++;
+            int counter = 0;
+            final Iterator<VariantContext> it = container.getVCs().iterator();
+            while (it.hasNext()) {
+                it.next();
+                counter++;
+            }
+            Assert.assertEquals(counter, 2);
         }
-        Assert.assertEquals(counter, 2);
     }
 
     /**
