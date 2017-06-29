@@ -23,14 +23,31 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.Defaults;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+
 public class AsyncWriteSortingCollectionTest extends SortingCollectionTest {
 
-    @BeforeClass void setupClass() {System.setProperty("samjdk.sort_col_threads", "2");}
+    public static final int SORT_COL_THREADS = 2;
+    private int sortColThreadsDefaults;
+
+    @BeforeClass
+    void setupClass() throws NoSuchFieldException, IllegalAccessException {
+        sortColThreadsDefaults = Defaults.SORTING_COLLECTION_THREADS;
+        changeDefaultsParam(Defaults.class, "SORTING_COLLECTION_THREADS", SORT_COL_THREADS);
+    }
+
+    @AfterClass
+    void tearDownClass() throws NoSuchFieldException, IllegalAccessException {
+        changeDefaultsParam(Defaults.class, "SORTING_COLLECTION_THREADS", sortColThreadsDefaults);
+    }
 
     @BeforeMethod void setup() { resetTmpDir(); }
     @AfterMethod void tearDown() { resetTmpDir(); }
@@ -42,12 +59,23 @@ public class AsyncWriteSortingCollectionTest extends SortingCollectionTest {
                 {"singleton", 1, 100},
 
                 // maxRecordInRam for AsyncWriteSortingCollection is equals to 300 / (sort_col_threads + 1) = 100
-                {"less than threshold", 100, 300},
-                {"threshold minus 1", 99, 300},
-                {"greater than threshold", 550, 300},
-                {"threshold multiple", 600, 300},
-                {"threshold multiple plus one", 101, 300},
-                {"exactly threshold", 100, 300},
+                {"less than threshold", 100, 100 * (SORT_COL_THREADS + 1)},
+                {"threshold minus 1", 99, 100 * (SORT_COL_THREADS + 1)},
+                {"greater than threshold", 550, 100 * (SORT_COL_THREADS + 1)},
+                {"threshold multiple", 600, 100 * (SORT_COL_THREADS + 1)},
+                {"threshold multiple plus one", 101, 100 * (SORT_COL_THREADS + 1)},
+                {"exactly threshold", 100, 100 * (SORT_COL_THREADS + 1)},
         };
+    }
+
+    // for changing Defaults.SORTING_COLLECTION_THREADS
+    private static void changeDefaultsParam(Class clazz, String fieldName, Object newValue)
+            throws NoSuchFieldException, IllegalAccessException {
+        Field field = clazz.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        Field modifiers = field.getClass().getDeclaredField("modifiers");
+        modifiers.setAccessible(true);
+        modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+        field.set(null, newValue);
     }
 }
