@@ -58,7 +58,20 @@ public class LiftOverTest extends HtsjdkTest {
     public void testBasic(final Interval in, final Interval expected) {
         final Interval out = liftOver.liftOver(in);
         Assert.assertEquals(out, expected);
+    }
 
+    @Test(dataProvider = "testMaxOverlapIntervals")
+    public void testBasicMaxOverlapMultipleChains(final Interval in, final boolean useMaxOverlap, Interval expected) {
+        final Interval out = liftOver.liftOver(in, 0.10, useMaxOverlap);
+        Assert.assertEquals(out, expected);
+    }
+
+    @DataProvider(name = "testMaxOverlapIntervals")
+    public Object[][] makeTestaxOverlapIntervals() {
+        return new Object[][]{
+                {new Interval("chr2", 97446334, 97446434), true, new Interval("chr2", 98080300, 98080324)},
+                {new Interval("chr2", 97446334, 97446434), false, null}
+        };
     }
 
     @DataProvider(name = "testIntervals")
