@@ -595,27 +595,28 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test
     public void testIsBamReadBase() {
-        final String iupacUpperCasedWithoutDot = SequenceUtil.IUPAC_CODES_STRING.toUpperCase().replaceAll("\\.", "N");
-        for (byte code=0; code<Byte.MAX_VALUE; code++) {
-            if (iupacUpperCasedWithoutDot.contains(new String (new char[]{(char) code}))) {
+        final String iupacUpperCasedWithoutDot = "=" + SequenceUtil.IUPAC_CODES_STRING.toUpperCase().replaceAll("\\.", "N");
+
+        for (byte code = 0; code < Byte.MAX_VALUE; code++) {
+            if (iupacUpperCasedWithoutDot.contains(new String(new char[]{(char) code}))) {
                 Assert.assertTrue(SequenceUtil.isBamReadBase(code));
             } else {
-                Assert.assertFalse(SequenceUtil.isBamReadBase(code));
+                Assert.assertFalse(SequenceUtil.isBamReadBase(code), "" + code);
             }
         }
+        Assert.assertTrue(SequenceUtil.isBamReadBase((byte) '='));
     }
 
     @Test
     public void testToBamReadBases() {
-        final byte[] bases = new byte[Byte.MAX_VALUE];
-        for (byte i = 0; i < Byte.MAX_VALUE; i++) {
-            bases[i] = i;
-        }
+        final String testInput = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-=";
 
-        SequenceUtil.toBamReadBases(bases);
+        /**
+         * This can be obtained by :
+         * echo 'blah' | tr a-z A-Z | tr -c '=ABCDGHKMNRSTVWY' N
+         */
+        final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
 
-        for (byte i = 0; i < Byte.MAX_VALUE; i++) {
-            Assert.assertTrue(SequenceUtil.isBamReadBase(bases[i]));
-        }
+        Assert.assertEquals(SequenceUtil.toBamReadBases(testInput.getBytes()), expected.getBytes());
     }
 }

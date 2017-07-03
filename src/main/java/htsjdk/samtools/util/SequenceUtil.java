@@ -67,6 +67,7 @@ public class SequenceUtil {
         Arrays.fill(bamReadBaseLookup, N);
         for (final byte base: BAM_READ_BASE_SET) {
             bamReadBaseLookup[base] = base;
+            bamReadBaseLookup[base + 32] = base;
         }
     }
 
