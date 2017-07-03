@@ -7,15 +7,14 @@ import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.security.DigestInputStream;
 
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +34,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "partialVerification")
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
+                {"amb#amb"},
                 {"auxf#values"},    // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
@@ -170,7 +170,10 @@ public class CRAMComplianceTest extends HtsjdkTest {
          * https://github.com/samtools/htsjdk/issues/509
          */
         if (record1.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
-            Assert.assertEquals(record2.getReadBases(), record1.getReadBases());
+            // BAM and CRAM convert read bases to upper case IUPAC codes
+            final byte[] originalBases = record1.getReadBases();
+            SequenceUtil.toBamReadBases(originalBases);
+            Assert.assertEquals(record2.getReadBases(), originalBases);
         }
 
         Assert.assertEquals(record2.getBaseQualities(), record1.getBaseQualities());
