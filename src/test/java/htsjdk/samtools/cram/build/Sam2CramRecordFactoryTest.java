@@ -1,12 +1,14 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadBase;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -18,6 +20,27 @@ import java.util.List;
  * Created by vadim on 06/06/2017.
  */
 public class Sam2CramRecordFactoryTest {
+
+    /**
+     * This checks that all read bases returned in the record from {@link Sam2CramRecordFactory#createCramRecord(SAMRecord)}
+     * are from the {@link SequenceUtil#BAM_READ_BASE_SET_STRING} set.
+     */
+    @Test
+    public void testReadBaseNormalization() {
+        final SAMFileHeader header = new SAMFileHeader();
+
+        final SAMRecord record = new SAMRecord(header);
+        record.setReadName("test");
+        record.setReadUnmappedFlag(true);
+        record.setReadBases(SequenceUtil.IUPAC_CODES_STRING.getBytes());
+        record.setBaseQualities(SAMRecord.NULL_QUALS);
+
+        final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(null, header, CramVersions.CRAM_v3);
+        final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(record);
+
+        Assert.assertNotEquals(cramRecord.readBases, record.getReadBases());
+        Assert.assertEquals(cramRecord.readBases, SequenceUtil.toBamReadBases(record.getReadBases()));
+    }
 
     @DataProvider(name = "emptyFeatureListProvider")
     public Object[][] testPositive() {
@@ -36,7 +59,7 @@ public class Sam2CramRecordFactoryTest {
     }
 
     /**
-     * Test the outcome of a ACTGN mismatch.
+     * Test the outcome of a ACGTN mismatch.
      * The result should always be a {@link Substitution} read feature.
      */
     @Test

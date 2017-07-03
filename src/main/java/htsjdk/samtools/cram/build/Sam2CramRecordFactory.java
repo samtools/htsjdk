@@ -119,6 +119,13 @@ public class Sam2CramRecordFactory {
         } else cramRecord.readFeatures = Collections.emptyList();
 
         cramRecord.readBases = record.getReadBases();
+
+        /**
+         * CRAM read bases are limited to ACGTN, see https://github.com/samtools/hts-specs/blob/master/CRAMv3.pdf passage 10.2 on read bases.
+         * However, BAM format allows upper case IUPAC codes without a dot, so we follow the same approach to reproduce the behaviour of samtools.
+         */
+        // copy read bases to avoid changing the original record:
+        cramRecord.readBases = SequenceUtil.toBamReadBases(Arrays.copyOf(record.getReadBases(), record.getReadLength()));
         cramRecord.qualityScores = record.getBaseQualities();
         if (version.compatibleWith(CramVersions.CRAM_v3))
             cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
@@ -285,10 +292,7 @@ public class Sam2CramRecordFactory {
             if (refIndex >= refBases.length) refBase = 'N';
             else refBase = refBases[refIndex];
 
-            // explicitly upper case reference base:
-            refBase = SequenceUtil.upperCase(refBase);
-            // explicitly upper case read base:
-            final byte readBase = SequenceUtil.upperCase(bases[i + fromPosInRead]);
+            final byte readBase = bases[i + fromPosInRead];
 
             if (readBase != refBase) {
                 final boolean isSubstitution = SequenceUtil.isACGTN(readBase) && SequenceUtil.isACGTN(refBase);
