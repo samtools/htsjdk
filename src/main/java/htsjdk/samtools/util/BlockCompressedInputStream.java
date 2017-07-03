@@ -57,10 +57,12 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     public final static String INCORRECT_HEADER_SIZE_MSG = "Incorrect header size for file: ";
     public final static String UNEXPECTED_BLOCK_LENGTH_MSG = "Unexpected compressed block length: ";
     public final static String PREMATURE_END_MSG = "Premature end of file: ";
-    public final static String CANNOT_SEEK_STREAM_MSG = "Cannot seek on stream based file ";
+    public final static String CANNOT_SEEK_STREAM_MSG = "Cannot seek a position for a non-file stream";
+    public final static String CANNOT_SEEK_CLOSED_STREAM_MSG = "Cannot seek a position for a closed stream";
     public final static String INVALID_FILE_PTR_MSG = "Invalid file pointer: ";
 
     private InputStream mStream = null;
+    private boolean mIsClosed = false;
     private SeekableStream mFile = null;
     private byte[] mFileBuffer = null;
     private DecompressedBlock mCurrentBlock = null;
@@ -222,6 +224,9 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         // Encourage garbage collection
         mFileBuffer = null;
         mCurrentBlock = null;
+
+        // Mark as closed
+        mIsClosed = true;
     }
 
     /**
@@ -344,12 +349,20 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * Seek to the given position in the file.  Note that pos is a special virtual file pointer,
      * not an actual byte offset.
      *
-     * @param pos virtual file pointer
+     * @param pos virtual file pointer position
+     * @throws IOException if stream is closed or not a file based stream
      */
     public void seek(final long pos) throws IOException {
+        // Must be before the mFile == null check because mFile == null for closed files and streams
+        if (mIsClosed) {
+            throw new IOException(CANNOT_SEEK_CLOSED_STREAM_MSG);
+        }
+
+        // Cannot seek on streams that are not file based
         if (mFile == null) {
             throw new IOException(CANNOT_SEEK_STREAM_MSG);
         }
+
         // Decode virtual file pointer
         // Upper 48 bits is the byte offset into the compressed stream of a
         // block.
