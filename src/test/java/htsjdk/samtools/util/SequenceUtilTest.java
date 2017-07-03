@@ -573,4 +573,49 @@ public class SequenceUtilTest extends HtsjdkTest {
             }
         }
     }
+
+    @Test
+    public void testIsIUPAC() {
+        final String iupacString = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
+        for (byte code=0; code<Byte.MAX_VALUE; code++) {
+            if (iupacString.contains(new String (new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isIUPAC(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isIUPAC(code));
+            }
+        }
+    }
+
+    @Test
+    public void testIUPAC_CODES_STRING() {
+        for (final byte code:SequenceUtil.IUPAC_CODES_STRING.getBytes()) {
+            Assert.assertTrue(SequenceUtil.isIUPAC(code));
+        }
+    }
+
+    @Test
+    public void testIsBamReadBase() {
+        final String iupacUpperCasedWithoutDot = SequenceUtil.IUPAC_CODES_STRING.toUpperCase().replaceAll("\\.", "N");
+        for (byte code=0; code<Byte.MAX_VALUE; code++) {
+            if (iupacUpperCasedWithoutDot.contains(new String (new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isBamReadBase(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isBamReadBase(code));
+            }
+        }
+    }
+
+    @Test
+    public void testToBamReadBases() {
+        final byte[] bases = new byte[Byte.MAX_VALUE];
+        for (byte i = 0; i < Byte.MAX_VALUE; i++) {
+            bases[i] = i;
+        }
+
+        SequenceUtil.toBamReadBases(bases);
+
+        for (byte i = 0; i < Byte.MAX_VALUE; i++) {
+            Assert.assertTrue(SequenceUtil.isBamReadBase(bases[i]));
+        }
+    }
 }

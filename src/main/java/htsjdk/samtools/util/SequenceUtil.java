@@ -51,6 +51,24 @@ public class SequenceUtil {
     public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
     public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
     public static final byte[] ACGTN_BASES = new byte[]{A, C, G, T, N};
+    public static final String IUPAC_CODES_STRING = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
+    /**
+     * A set of bases supported by BAM in reads, see http://samtools.github.io/hts-specs/SAMv1.pdf chapter 4.2 on 'seq' field.
+     * Effectively these are upper cased IUPAC codes with equals sign ('=') and without dot ('.').
+     */
+    public static final String BAM_READ_BASE_SET_STRING = "=ABCDGHKMNRSTVWY";
+    private static final byte[] BAM_READ_BASE_SET = BAM_READ_BASE_SET_STRING.getBytes();
+
+    /**
+     * A lookup table to find a corresponding BAM read base.
+     */
+    private static final byte[] bamReadBaseLookup = new byte[127];
+    static {
+        Arrays.fill(bamReadBaseLookup, N);
+        for (final byte base: BAM_READ_BASE_SET) {
+            bamReadBaseLookup[base] = base;
+        }
+    }
 
     private static final byte A_MASK = 1;
     private static final byte C_MASK = 2;
@@ -153,6 +171,10 @@ public class SequenceUtil {
         return isValidBase(base, ACGTN_BASES);
     }
 
+    public static boolean isIUPAC(final byte base) {
+        return bases[base] != 0;
+    }
+
     /** Calculates the fraction of bases that are G/C in the sequence. */
     public static double calculateGc(final byte[] bases) {
         int gcs = 0;
@@ -162,6 +184,16 @@ public class SequenceUtil {
         }
 
         return gcs / (double) bases.length;
+    }
+
+    public static boolean isBamReadBase(final byte base) {
+        return isValidBase(base, BAM_READ_BASE_SET);
+    }
+
+    public static byte[] toBamReadBases(final byte[] bases) {
+        for (int i = 0; i < bases.length; i++)
+            bases[i] = bamReadBaseLookup[bases[i]];
+        return bases;
     }
 
     /**
