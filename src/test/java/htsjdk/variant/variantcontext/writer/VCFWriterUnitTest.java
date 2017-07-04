@@ -61,7 +61,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -81,15 +80,9 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @BeforeClass
     private void createTemporaryDirectory() {
         tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
+        tempDir.deleteOnExit();
     }
 
-    @AfterClass
-    private void deleteTemporaryDirectory() {
-        for (File f : tempDir.listFiles()) {
-            f.delete();
-        }
-        tempDir.delete();
-    }
 
     /** test, using the writer and reader, that we can output and input a VCF file without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
@@ -139,8 +132,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
-    public void testWriteAndReadVCFBody(final String extension) throws IOException {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", extension);
+    public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFHeaderless.", extension);
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
         } else {
@@ -172,9 +165,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
-                if (context != null) {
-                    counter++;
-                }
+                counter++;
             }
             Assert.assertEquals(counter, 2);
         }

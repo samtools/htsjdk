@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2012 The Broad Institute
+* Copyright (c) 2017 The Broad Institute
 * 
 * Permission is hereby granted, free of charge, to any person
 * obtaining a copy of this software and associated documentation
@@ -42,7 +42,6 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLine;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -65,31 +64,21 @@ import java.util.Set;
  *         This class tests out the ability of the VCF writer to correctly write VCF files with Asynchronous IO
  */
 public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
-    private Set<VCFHeaderLine> metaData;
-    private Set<String> additionalColumns;
-    private File tempDir;
 
     @BeforeClass
     private void createTemporaryDirectory() {
-        tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
-    }
-
-    @AfterClass
-    private void deleteTemporaryDirectory() {
-        for (File f : tempDir.listFiles()) {
-            f.delete();
-        }
-        tempDir.delete();
+        File tempDir = TestUtil.getTempDirectory("VCFWriter", "StaleIndex");
+        tempDir.deleteOnExit();
     }
 
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test
-    public void testWriteAndReadAsyncVCFBody() throws IOException {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFBody.", ".vcf");
+    public void testWriteAndReadAsyncVCFHeaderless() throws IOException {
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", ".vcf");
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();
-        metaData = new HashSet<VCFHeaderLine>();
-        additionalColumns = new HashSet<String>();
+        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
+        Set<String> additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -110,9 +99,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
-                if (context != null) {
-                    counter++;
-                }
+                counter++;
             }
             Assert.assertEquals(counter, 2);
         }
@@ -126,7 +113,6 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
      */
     public static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
                                              final SAMSequenceDictionary sequenceDict) {
-        metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_0.getFormatString(), VCFHeaderVersion.VCF4_0.getVersionString()));
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");
