@@ -145,39 +145,13 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(VCFHeader header) {
-        // make sure the header is sorted correctly
-        header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
-
-        // create the config offsets map
-        if ( header.getContigLines().isEmpty() ) {
-            if ( ALLOW_MISSING_CONTIG_LINES ) {
-                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
-                }
-                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
-            } else {
-                throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
-            }
-        } else {
-            createContigDictionary(header.getContigLines());
-        }
-
-        // set up the map from dictionary string values -> offset
-        final ArrayList<String> dict = BCF2Utils.makeDictionary(header);
-        for ( int i = 0; i < dict.size(); i++ ) {
-            stringDictionaryMap.put(dict.get(i), i);
-        }
-
-        sampleNames = header.getGenotypeSamples().toArray(new String[header.getNGenotypeSamples()]);
-
-        // setup the field encodings
-        fieldManager.setup(header, encoder, stringDictionaryMap);
+        setVcfHeader(header);
 
         try {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture);
-            this.header = VCFWriter.writeHeader(header, writer, doNotWriteGenotypes, VCFWriter.getVersionLine(), "BCF2 stream");
+            this.header = VCFWriter.writeHeader(header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 
@@ -223,7 +197,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void setVcfHeader(VCFHeader header) {
+        // make sure the header is sorted correctly
         header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+
         this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         // create the config offsets map
         if ( header.getContigLines().isEmpty() ) {
@@ -244,7 +220,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             stringDictionaryMap.put(dict.get(i), i);
         }
 
-        sampleNames = header.getGenotypeSamples().toArray(new String[header.getNGenotypeSamples()]);
+        sampleNames = this.header.getGenotypeSamples().toArray(new String[this.header.getNGenotypeSamples()]);
         // setup the field encodings
         fieldManager.setup(header, encoder, stringDictionaryMap);
 

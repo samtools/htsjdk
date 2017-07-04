@@ -131,8 +131,8 @@ class VCFWriter extends IndexingVariantContextWriter {
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         try {
-            this.mHeader = writeHeader(header, writer, doNotWriteGenotypes, getVersionLine(), getStreamName());
-            this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+            setVcfHeader(header);
+            writeHeader(header, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
 
         } catch ( IOException e ) {
@@ -146,11 +146,9 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     public static VCFHeader writeHeader(VCFHeader header,
                                         final Writer writer,
-                                        final boolean doNotWriteGenotypes,
                                         final String versionLine,
                                         final String streamNameForError) {
-        header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
-        
+
         try {
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
