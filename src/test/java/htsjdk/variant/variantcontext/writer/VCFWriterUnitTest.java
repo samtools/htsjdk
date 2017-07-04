@@ -87,12 +87,11 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF file without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testBasicWriteAndRead(final String extension) throws IOException {
-        final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension);
-        fakeVCFFile.deleteOnExit();
+        final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
         if (".vcf.gz".equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
+            new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
-            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+            Tribble.indexFile(fakeVCFFile);
         }
         metaData = new HashSet<VCFHeaderLine>();
         additionalColumns = new HashSet<String>();
@@ -133,11 +132,11 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadVCFHeaderless.", extension);
+        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
         if (".vcf.gz".equals(extension)) {
-            new File(fakeVCFFile.getAbsolutePath() + ".tbi").deleteOnExit();
+            new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
-            Tribble.indexFile(fakeVCFFile).deleteOnExit();
+            Tribble.indexFile(fakeVCFFile);
         }
         metaData = new HashSet<VCFHeaderLine>();
         additionalColumns = new HashSet<String>();
