@@ -1,10 +1,13 @@
 package htsjdk.samtools.util;
 
+import htsjdk.Htsjdk3;
+
 /**
  * Any class that has a single logical mapping onto the genome should implement Locatable
  * positions should be reported as 1-based and closed at both ends
  *
  */
+@Htsjdk3(newPackage = "", backwardsCompatible = true)
 public interface Locatable {
 
     /**
