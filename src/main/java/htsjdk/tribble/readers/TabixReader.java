@@ -56,6 +56,9 @@ public class TabixReader {
     private int mBc;
     private int mEc;
     private int mMeta;
+    /** longest line seen so far, used to allocate the capacity of the lines */
+    private int longestLineLength = 100;
+    
     //private int mSkip; (not used)
     private String[] mSeq;
 
@@ -189,13 +192,25 @@ public class TabixReader {
     }
 
     public static long readLong(final InputStream is) throws IOException {
-        byte[] buf = new byte[8];
+        final byte[] buf = new byte[8];
         is.read(buf);
         return ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN).getLong();
     }
 
     public static String readLine(final InputStream is) throws IOException {
-        StringBuffer buf = new StringBuffer();
+        return readLine(is,100);
+    }
+
+    /** 
+     * reads a line with a defined buffer-size 
+     * 
+     * @param is the input stream
+     * @param bufferCapacity the buffer size, must be greater than 0
+     * @return the line or null if there is no more input
+     * @throws IOException
+     */
+    private static String readLine(final InputStream is,final int bufferCapacity) throws IOException {
+        final StringBuffer buf = new StringBuffer(bufferCapacity);
         int c;
         while ((c = is.read()) >= 0 && c != '\n')
             buf.append((char) c);
@@ -203,19 +218,21 @@ public class TabixReader {
         return buf.toString();
     }
 
+    
+    
     /**
      * Read the Tabix index from a file
      *
      * @param fp File pointer
      */
-    private void readIndex(SeekableStream fp) throws IOException {
+    private void readIndex(final SeekableStream fp) throws IOException {
         if (fp == null) return;
-        BlockCompressedInputStream is = new BlockCompressedInputStream(fp);
+        final  BlockCompressedInputStream is = new BlockCompressedInputStream(fp);
         byte[] buf = new byte[4];
 
         is.read(buf, 0, 4); // read "TBI\1"
         mSeq = new String[readInt(is)]; // # sequences
-        mChr2tid = new HashMap<String, Integer>();
+        mChr2tid = new HashMap<String, Integer>( this.mSeq.length );
         mPreset = readInt(is);
         mSc = readInt(is);
         mBc = readInt(is);
@@ -230,9 +247,9 @@ public class TabixReader {
             if (buf[i] == 0) {
                 byte[] b = new byte[i - j];
                 System.arraycopy(buf, j, b, 0, b.length);
-                String s = new String(b);
-                mChr2tid.put(s, k);
-                mSeq[k++] = s;
+                final String contig = new String(b);
+                mChr2tid.put(contig, k);
+                mSeq[k++] = contig;
                 j = i + 1;
             }
         }
@@ -266,7 +283,7 @@ public class TabixReader {
      * Read the Tabix index from the default file.
      */
     private void readIndex() throws IOException {
-        ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
+        final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
         readIndex(ssf.getBufferedStream(ssf.getStreamFor(mIndexPath, mIndexWrapper), 128000));
     }
 
@@ -274,12 +291,16 @@ public class TabixReader {
      * Read one line from the data file.
      */
     public String readLine() throws IOException {
-        return readLine(mFp);
+        final String line = readLine(mFp,this.longestLineLength);
+        if (line != null) {
+            this.longestLineLength = Math.max(this.longestLineLength, line.length());
+            }
+        return line;
     }
 
     /** return chromosome ID or -1 if it is unknown */
     public int chr2tid(final String chr) {
-        Integer tid=this.mChr2tid.get(chr);
+       final Integer tid=this.mChr2tid.get(chr);
        return tid==null?-1:tid;
     }
 
@@ -414,11 +435,11 @@ public class TabixReader {
                     ++i;
                 }
                 String s;
-                if ((s = readLine(mFp)) != null) {
+                if ((s = readLine(mFp,TabixReader.this.longestLineLength)) != null) {
+                    TabixReader.this.longestLineLength = Math.max(s.length(), TabixReader.this.longestLineLength);
                     TIntv intv;
-                    char[] str = s.toCharArray();
                     curr_off = mFp.getFilePointer();
-                    if (str.length == 0 || str[0] == mMeta) continue;
+                    if (s.isEmpty() || s.charAt(0) == mMeta) continue;
                     intv = getIntv(s);
                     if (intv.tid != tid || intv.beg >= end) break; // no need to proceed
                     else if (intv.end > beg && intv.beg < end) return s; // overlap; return
@@ -533,6 +554,8 @@ public class TabixReader {
                     System.out.println(s);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
     }
 
