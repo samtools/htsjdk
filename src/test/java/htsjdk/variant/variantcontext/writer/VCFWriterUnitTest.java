@@ -127,6 +127,38 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             throw new RuntimeException(e.getMessage());
         }
 
+        // prevent writing header twice
+        final VariantContextWriter writer2 = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile)
+                .setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        writer2.writeHeader(header);
+        try {
+            writer2.writeHeader(header);
+            Assert.fail("Should not allow writing header twice");
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof IllegalStateException);
+        }
+        writer2.add(createVC(header));
+        writer2.close();
+
+        // prevent changing header if it's already written
+        final VariantContextWriter writer3 = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile)
+                .setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        writer3.writeHeader(header);
+        try {
+            writer3.setVcfHeader(header);
+            Assert.fail("Should not allow changing header if header is already written");
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof IllegalStateException);
+        }
+        writer3.add(createVC(header));
+        writer3.close();
+
     }
 
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
@@ -168,6 +200,23 @@ public class VCFWriterUnitTest extends VariantBaseTest {
             }
             Assert.assertEquals(counter, 2);
         }
+
+        // prevent changing header if part of body is already written
+        final VariantContextWriter writer2 = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile)
+                .setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build();
+        writer2.setVcfHeader(header);
+        writer2.add(createVC(header));
+        try {
+            writer2.setVcfHeader(header);
+            Assert.fail("Should not allow changing header if body is already written");
+        } catch (Exception e) {
+            Assert.assertTrue(e instanceof IllegalStateException);
+        }
+        writer2.close();
+
     }
 
     /**

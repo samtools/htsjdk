@@ -66,6 +66,12 @@ class VCFWriter extends IndexingVariantContextWriter {
     // should we always output a complete format record, even if we could drop trailing fields?
     private final boolean writeFullFormatField;
 
+    // is the header written to the output stream?
+    private boolean isHeaderWritten;
+
+    // is at least one part of body written to the output stream?
+    private boolean isBodyWritten;
+
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
      * to temp. buffer the header and per-site output before flushing the per line output
@@ -128,13 +134,17 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(final VCFHeader header) {
+
+        if (isHeaderWritten) {
+            throw new IllegalStateException("Header is already written");
+        }
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
         try {
             setVcfHeader(header);
             writeHeader(header, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
-
+            isHeaderWritten = true;
         } catch ( IOException e ) {
             throw new RuntimeIOException("Couldn't write file " + getStreamName(), e);
         }
@@ -221,7 +231,7 @@ class VCFWriter extends IndexingVariantContextWriter {
             write("\n");
 
             writeAndResetBuffer();
-
+            isBodyWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("Unable to write the VCF object to " + getStreamName(), e);
         }
@@ -229,6 +239,12 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void setVcfHeader(VCFHeader header) {
+        if (isHeaderWritten) {
+            throw new IllegalStateException("Header is already written");
+        }
+        if (isBodyWritten) {
+            throw new IllegalStateException("Body is already written");
+        }
         this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
         this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }
