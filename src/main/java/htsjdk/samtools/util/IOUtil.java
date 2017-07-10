@@ -366,7 +366,7 @@ public class IOUtil {
      * and if it is a file then not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
-     * @param files the list of files to check for readability
+     * @param inputs the list of files to check for readability
      */
     public static void assertInputsAreValid(final List<String> inputs) {
         for (final String input : inputs) assertInputIsValid(input);
@@ -465,7 +465,7 @@ public class IOUtil {
     public static void assertFilesEqual(final File f1, final File f2) {
         try {
             if (f1.length() != f2.length()) {
-                throw new SAMException("Files " + f1 + " and " + f2 + " are different lengths.");
+                throw new SAMException("File " + f1 + " is " + f1.length() + " bytes but file " + f2 + " is " + f2.length() + " bytes.");
             }
             final FileInputStream s1 = new FileInputStream(f1);
             final FileInputStream s2 = new FileInputStream(f2);

@@ -60,6 +60,8 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
         this.refDict = refDict;
     }
 
+    static String DEFAULT_READER_NAME = "Reader Name";
+
     /**
      * Create a VariantContextWriter with an associated index using the default index creator
      *
@@ -178,6 +180,6 @@ abstract class IndexingVariantContextWriter implements VariantContextWriter {
      * @return
      */
     protected static final String writerName(final File location, final OutputStream stream) {
-        return location == null ? stream.toString() : location.getAbsolutePath();
+        return location == null ? stream == null ? DEFAULT_READER_NAME : stream.toString() : location.getAbsolutePath();
     }
 }

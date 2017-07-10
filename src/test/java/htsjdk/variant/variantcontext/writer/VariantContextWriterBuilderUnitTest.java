@@ -396,4 +396,12 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
             Assert.assertFalse(builder.isOptionSet(option)); // has been unset
         }
     }
+
+    @Test
+    public void testStdOut() {
+        final VariantContextWriter writer = new VariantContextWriterBuilder().setOutputFile("/dev/stdout").clearOptions().build();
+        OutputStream s = ((VCFWriter) writer).getOutputStream();
+        Assert.assertNotNull(((VCFWriter) writer).getOutputStream());
+        Assert.assertNotEquals(((VCFWriter) writer).getStreamName(), IndexingVariantContextWriter.DEFAULT_READER_NAME);
+    }
 }
