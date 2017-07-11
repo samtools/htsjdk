@@ -6,8 +6,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 /**
@@ -16,10 +14,10 @@ import java.util.Arrays;
 public class ReferenceSourceTest {
 
     @Test
-    public void testReferenceSourceUpperCasesBases() throws NoSuchAlgorithmException, IOException {
+    public void testReferenceSourceUpperCasesBases() {
         final String sequenceName = "1";
         final String nonIupacCharacters = "1=eE";
-        final byte[] originalRefBases = (nonIupacCharacters+ SequenceUtil.getIUPACCodesString()).getBytes();
+        final byte[] originalRefBases = (nonIupacCharacters + SequenceUtil.getIUPACCodesString()).getBytes();
         SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(sequenceName, originalRefBases.length);
 
         InMemoryReferenceSequenceFile memoryReferenceSequenceFile = new InMemoryReferenceSequenceFile();
