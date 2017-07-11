@@ -67,7 +67,7 @@ import java.util.Set;
  *         <p/>
  *         Class BCF2WriterUnitTest
  *         <p/>
- *         This class tests out the ability of the VCF writer to correctly write VCF files
+ *         This class tests out the ability of the BCF writer to correctly write BCF files
  */
 public class BCF2WriterUnitTest extends VariantBaseTest {
 
@@ -133,36 +133,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         }
         Assert.assertEquals(counter, 2);
 
-
-        // prevent writing header twice
-        final VariantContextWriter writer2 = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
-                .build();
-        writer2.writeHeader(header);
-        try {
-            writer2.writeHeader(header);
-            Assert.fail("Should not allow writing header twice");
-        } catch (Exception e) {
-            Assert.assertTrue(e instanceof IllegalStateException);
-        }
-        writer2.add(createVC(header));
-        writer2.close();
-
-        // prevent changing header if it's already written
-        final VariantContextWriter writer3 = new VariantContextWriterBuilder()
-                .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
-                .build();
-        writer3.writeHeader(header);
-        try {
-            writer3.setVcfHeader(header);
-            Assert.fail("Should not allow changing header if header is already written");
-        } catch (Exception e) {
-            Assert.assertTrue(e instanceof IllegalStateException);
-        }
-        writer3.add(createVC(header));
-        writer3.close();
     }
 
     /**
@@ -192,7 +162,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         try (final VariantContextWriter fakeBCFBodyFileWriter = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputHeaderlessFile).setReferenceDictionary(sequenceDict)
                 .build()) {
-            fakeBCFBodyFileWriter.setVcfHeader(header); // does not write header
+            fakeBCFBodyFileWriter.setVCFHeader(header); // does not write header
             fakeBCFBodyFileWriter.add(createVC(header));
             fakeBCFBodyFileWriter.add(createVC(header));
         }
@@ -232,21 +202,69 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             Assert.assertEquals(counter, 2);
         }
 
-        // prevent changing header if part of body is already written
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testWriteHeaderTwice() {
+        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+
+        Tribble.indexFile(bcfOutputFile).deleteOnExit();
+        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
+        Set<String> additionalColumns = new HashSet<String>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+
+        // prevent writing header twice
+        final VariantContextWriter writer1 = new VariantContextWriterBuilder()
+                .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
+                .build();
+        writer1.writeHeader(header);
+        writer1.writeHeader(header);
+        writer1.add(createVC(header));
+        writer1.close();
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testChangeHeaderAfterWritingHeader() {
+        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+
+        Tribble.indexFile(bcfOutputFile).deleteOnExit();
+        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
+        Set<String> additionalColumns = new HashSet<String>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+
+        // prevent changing header if it's already written
         final VariantContextWriter writer2 = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
                 .build();
-        writer2.setVcfHeader(header);
+        writer2.writeHeader(header);
+        writer2.setVCFHeader(header);
         writer2.add(createVC(header));
-        try {
-            writer2.setVcfHeader(header);
-            Assert.fail("Should not allow changing header if body is already written");
-        } catch (Exception e) {
-            Assert.assertTrue(e instanceof IllegalStateException);
-        }
         writer2.close();
+    }
 
+    @Test(expectedExceptions = IllegalStateException.class)
+    public void testChangeHeaderAfterWritingBody() {
+        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+
+        Tribble.indexFile(bcfOutputFile).deleteOnExit();
+        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
+        Set<String> additionalColumns = new HashSet<String>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+
+        // prevent changing header if part of body is already written
+        final VariantContextWriter writer3 = new VariantContextWriterBuilder()
+                .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
+                .build();
+        writer3.setVCFHeader(header);
+        writer3.add(createVC(header));
+        writer3.setVCFHeader(header);
+        writer3.close();
     }
 
     /**

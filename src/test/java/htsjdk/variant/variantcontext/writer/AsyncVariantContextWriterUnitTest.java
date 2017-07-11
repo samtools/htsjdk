@@ -85,7 +85,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY, Options.USE_ASYNC_IO))
                 .build()) {
-            writer.setVcfHeader(header);
+            writer.setVCFHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }

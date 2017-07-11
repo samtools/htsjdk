@@ -55,8 +55,8 @@ public class AsyncVariantContextWriter extends AbstractAsyncWriter<VariantContex
     }
 
     @Override
-    public void setVcfHeader(VCFHeader header) {
-        this.underlyingWriter.setVcfHeader(header);
+    public void setVCFHeader(final VCFHeader header) {
+        this.underlyingWriter.setVCFHeader(header);
     }
 
 }

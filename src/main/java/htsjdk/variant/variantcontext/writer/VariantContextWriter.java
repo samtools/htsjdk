@@ -63,5 +63,5 @@ public interface VariantContextWriter extends Closeable {
      * @throws IllegalStateException if header or body is already written
 
      */
-    void setVcfHeader(VCFHeader header);
+    void setVCFHeader(VCFHeader header);
 }
