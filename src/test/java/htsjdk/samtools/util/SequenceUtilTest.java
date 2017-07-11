@@ -567,9 +567,9 @@ public class SequenceUtilTest extends HtsjdkTest {
     public void testIsACGTN() {
         for (byte base = Byte.MIN_VALUE; base < Byte.MAX_VALUE; base++) {
             if (base == 'A' || base == 'C' || base == 'G' || base == 'T' || base == 'N') {
-                Assert.assertTrue(SequenceUtil.isACGTN(base));
+                Assert.assertTrue(SequenceUtil.isUpperACGTN(base));
             } else {
-                Assert.assertFalse(SequenceUtil.isACGTN(base));
+                Assert.assertFalse(SequenceUtil.isUpperACGTN(base));
             }
         }
     }
@@ -588,14 +588,14 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test
     public void testIUPAC_CODES_STRING() {
-        for (final byte code:SequenceUtil.IUPAC_CODES_STRING.getBytes()) {
+        for (final byte code: SequenceUtil.getIUPACCodesString().getBytes()) {
             Assert.assertTrue(SequenceUtil.isIUPAC(code));
         }
     }
 
     @Test
     public void testIsBamReadBase() {
-        final String iupacUpperCasedWithoutDot = "=" + SequenceUtil.IUPAC_CODES_STRING.toUpperCase().replaceAll("\\.", "N");
+        final String iupacUpperCasedWithoutDot = "=" + SequenceUtil.getIUPACCodesString().toUpperCase().replaceAll("\\.", "N");
 
         for (byte code = 0; code < Byte.MAX_VALUE; code++) {
             if (iupacUpperCasedWithoutDot.contains(new String(new char[]{(char) code}))) {
@@ -617,6 +617,6 @@ public class SequenceUtilTest extends HtsjdkTest {
          */
         final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
 
-        Assert.assertEquals(SequenceUtil.toBamReadBases(testInput.getBytes()), expected.getBytes());
+        Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
     }
 }

@@ -26,7 +26,7 @@ public class CRAMSliceMD5Test {
 
     @Test
     public void testSliceMD5() throws IOException {
-        final byte[] referenceBases = SequenceUtil.IUPAC_CODES_STRING.getBytes();
+        final byte[] referenceBases = SequenceUtil.getIUPACCodesString().getBytes();
         final byte[] referenceBasesUpperCased = SequenceUtil.upperCase(Arrays.copyOf(referenceBases, referenceBases.length));
 
         final SAMFileHeader samFileHeader = new SAMFileHeader();

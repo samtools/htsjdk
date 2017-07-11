@@ -244,7 +244,7 @@ public class CramNormalizer {
                 System.arraycopy(ref, alignmentStart - refOffsetZeroBased,
                         bases, 0, bases.length);
 
-            return SequenceUtil.toBamReadBases(bases);
+            return SequenceUtil.toBamReadBasesInPlace(bases);
         }
         final List<ReadFeature> variations = record.readFeatures;
         for (final ReadFeature variation : variations) {
@@ -307,7 +307,7 @@ public class CramNormalizer {
             }
         }
 
-        return SequenceUtil.toBamReadBases(bases);
+        return SequenceUtil.toBamReadBasesInPlace(bases);
     }
 
     private static byte getByteOrDefault(final byte[] array, final int pos,

@@ -15,19 +15,19 @@ import java.io.IOException;
 public class BAMReadBasesTest {
 
     /**
-     * A test to check that BAM changes read bases according with {@link SequenceUtil#toBamReadBases}.
+     * A test to check that BAM changes read bases according with {@link SequenceUtil#toBamReadBasesInPlace}.
      */
     @Test
     public void testBAMReadBases() throws IOException {
         final SAMFileHeader header = new SAMFileHeader();
-        header.addSequence(new SAMSequenceRecord("1", SequenceUtil.IUPAC_CODES_STRING.length()));
+        header.addSequence(new SAMSequenceRecord("1", SequenceUtil.getIUPACCodesString().length()));
         header.addReadGroup(new SAMReadGroupRecord("rg1"));
 
         final SAMRecord originalSAMRecord = new SAMRecord(header);
         originalSAMRecord.setReadName("test");
         originalSAMRecord.setReferenceIndex(0);
         originalSAMRecord.setAlignmentStart(1);
-        originalSAMRecord.setReadBases(SequenceUtil.IUPAC_CODES_STRING.getBytes());
+        originalSAMRecord.setReadBases(SequenceUtil.getIUPACCodesString().getBytes());
         originalSAMRecord.setCigarString(originalSAMRecord.getReadLength() + "M");
         originalSAMRecord.setBaseQualities(SAMRecord.NULL_QUALS);
 
@@ -43,7 +43,7 @@ public class BAMReadBasesTest {
         final SAMRecord recordFromBAM = iterator.next();
 
         Assert.assertNotEquals(recordFromBAM.getReadBases(), originalSAMRecord.getReadBases());
-        Assert.assertEquals(recordFromBAM.getReadBases(), SequenceUtil.toBamReadBases(originalSAMRecord.getReadBases()));
+        Assert.assertEquals(recordFromBAM.getReadBases(), SequenceUtil.toBamReadBasesInPlace(originalSAMRecord.getReadBases()));
     }
 
 }

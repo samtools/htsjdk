@@ -23,7 +23,7 @@ public class Sam2CramRecordFactoryTest {
 
     /**
      * This checks that all read bases returned in the record from {@link Sam2CramRecordFactory#createCramRecord(SAMRecord)}
-     * are from the {@link SequenceUtil#BAM_READ_BASE_SET_STRING} set.
+     * are from the BAM read base set.
      */
     @Test
     public void testReadBaseNormalization() {
@@ -32,14 +32,14 @@ public class Sam2CramRecordFactoryTest {
         final SAMRecord record = new SAMRecord(header);
         record.setReadName("test");
         record.setReadUnmappedFlag(true);
-        record.setReadBases(SequenceUtil.IUPAC_CODES_STRING.getBytes());
+        record.setReadBases(SequenceUtil.getIUPACCodesString().getBytes());
         record.setBaseQualities(SAMRecord.NULL_QUALS);
 
         final Sam2CramRecordFactory sam2CramRecordFactory = new Sam2CramRecordFactory(null, header, CramVersions.CRAM_v3);
         final CramCompressionRecord cramRecord = sam2CramRecordFactory.createCramRecord(record);
 
         Assert.assertNotEquals(cramRecord.readBases, record.getReadBases());
-        Assert.assertEquals(cramRecord.readBases, SequenceUtil.toBamReadBases(record.getReadBases()));
+        Assert.assertEquals(cramRecord.readBases, SequenceUtil.toBamReadBasesInPlace(record.getReadBases()));
     }
 
     @DataProvider(name = "emptyFeatureListProvider")

@@ -172,7 +172,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         if (record1.getReadBases() != SAMRecord.NULL_SEQUENCE || majorVersion >= CramVersions.CRAM_v3.major) {
             // BAM and CRAM convert read bases to upper case IUPAC codes
             final byte[] originalBases = record1.getReadBases();
-            SequenceUtil.toBamReadBases(originalBases);
+            SequenceUtil.toBamReadBasesInPlace(originalBases);
             Assert.assertEquals(record2.getReadBases(), originalBases);
         }
 

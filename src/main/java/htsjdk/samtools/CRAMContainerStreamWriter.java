@@ -442,7 +442,7 @@ public class CRAMContainerStreamWriter {
                     if (!restoredSamRecord.getReadString().equals(samRecords.get(i).getReadString())) {
                         // try to fix the original read bases by normalizing them to BAM set:
                         final byte[] originalReadBases = samRecords.get(i).getReadString().getBytes();
-                        final String originalReadBasesUpperCaseIupacNoDot = new String(SequenceUtil.toBamReadBases(originalReadBases));
+                        final String originalReadBasesUpperCaseIupacNoDot = new String(SequenceUtil.toBamReadBasesInPlace(originalReadBases));
                         assert (restoredSamRecord.getReadString().equals(originalReadBasesUpperCaseIupacNoDot));
                     }
                     assert (restoredSamRecord.getBaseQualityString().equals(samRecords.get(i).getBaseQualityString()));

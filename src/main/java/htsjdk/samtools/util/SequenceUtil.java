@@ -50,14 +50,13 @@ public class SequenceUtil {
 
     public static final byte[] VALID_BASES_UPPER = new byte[]{A, C, G, T};
     public static final byte[] VALID_BASES_LOWER = new byte[]{a, c, g, t};
-    public static final byte[] ACGTN_BASES = new byte[]{A, C, G, T, N};
-    public static final String IUPAC_CODES_STRING = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
+    private static final byte[] ACGTN_BASES = new byte[]{A, C, G, T, N};
+    private static final String IUPAC_CODES_STRING = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
     /**
      * A set of bases supported by BAM in reads, see http://samtools.github.io/hts-specs/SAMv1.pdf chapter 4.2 on 'seq' field.
      * Effectively these are upper cased IUPAC codes with equals sign ('=') and without dot ('.').
      */
-    public static final String BAM_READ_BASE_SET_STRING = "=ABCDGHKMNRSTVWY";
-    private static final byte[] BAM_READ_BASE_SET = BAM_READ_BASE_SET_STRING.getBytes();
+    private static final byte[] BAM_READ_BASE_SET = "=ABCDGHKMNRSTVWY".getBytes();
 
     /**
      * A lookup table to find a corresponding BAM read base.
@@ -77,13 +76,13 @@ public class SequenceUtil {
     private static final byte T_MASK = 8;
 
     private static final byte[] bases = new byte[127];
-
+    private static final byte NON_IUPAC_CODE = 0;
     /*
      * Definition of IUPAC codes:
      * http://www.bioinformatics.org/sms2/iupac.html
      */
     static {
-        Arrays.fill(bases, (byte) 0);
+        Arrays.fill(bases, NON_IUPAC_CODE);
         bases[A] = A_MASK;
         bases[C] = C_MASK;
         bases[G] = G_MASK;
@@ -163,20 +162,23 @@ public class SequenceUtil {
     }
 
     /**
-     * Check if the given base is one of ACGTN
-     *
-     * @param base a base to check
-     * @return true if the base is one ACGTN false otherwise
-     */
-    public static boolean isACGTN(final byte base) {
+     * Check if the given base is one of upper case ACGTN */
+    public static boolean isUpperACGTN(final byte base) {
         return isValidBase(base, ACGTN_BASES);
     }
 
-    public static boolean isIUPAC(final byte base) {
-        return bases[base] != 0;
+
+    /** Returns all IUPAC codes as a string */
+    public static String getIUPACCodesString() {
+        return IUPAC_CODES_STRING;
     }
 
-    /** Calculates the fraction of bases that are G/C in the sequence. */
+    /** Checks if the given base is a IUPAC code */
+    public static boolean isIUPAC(final byte base) {
+        return bases[base] != NON_IUPAC_CODE;
+    }
+
+    /** Calculates the fraction of bases that are G/C in the sequence */
     public static double calculateGc(final byte[] bases) {
         int gcs = 0;
         for (int i = 0; i < bases.length; ++i) {
@@ -187,11 +189,13 @@ public class SequenceUtil {
         return gcs / (double) bases.length;
     }
 
+    /** Check if the given base belongs to BAM read base set '=ABCDGHKMNRSTVWY' */
     public static boolean isBamReadBase(final byte base) {
         return isValidBase(base, BAM_READ_BASE_SET);
     }
 
-    public static byte[] toBamReadBases(final byte[] bases) {
+    /** Update and return the given array of bases by upper casing and then replacing all non-BAM read bases with N */
+    public static byte[] toBamReadBasesInPlace(final byte[] bases) {
         for (int i = 0; i < bases.length; i++)
             bases[i] = bamReadBaseLookup[bases[i]];
         return bases;
@@ -256,7 +260,6 @@ public class SequenceUtil {
             }
         }
     }
-
 
     public static class SequenceListsDifferException extends SAMException {
         public SequenceListsDifferException() {

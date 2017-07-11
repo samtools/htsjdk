@@ -19,7 +19,7 @@ public class ReferenceSourceTest {
     public void testReferenceSourceUpperCasesBases() throws NoSuchAlgorithmException, IOException {
         final String sequenceName = "1";
         final String nonIupacCharacters = "1=eE";
-        final byte[] originalRefBases = (nonIupacCharacters+SequenceUtil.IUPAC_CODES_STRING).getBytes();
+        final byte[] originalRefBases = (nonIupacCharacters+ SequenceUtil.getIUPACCodesString()).getBytes();
         SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(sequenceName, originalRefBases.length);
 
         InMemoryReferenceSequenceFile memoryReferenceSequenceFile = new InMemoryReferenceSequenceFile();
