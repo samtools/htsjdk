@@ -122,6 +122,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
     private VCFHeader lastVCFHeaderOfUnparsedGenotypes = null;
     private boolean canPassOnUnparsedGenotypeDataForLastVCFHeader = false;
 
+    // is the header written to the output stream?
+    private boolean isHeaderWritten;
+
+    // is at least one part of body written to the output stream?
+    private boolean isBodyWritten;
+
     public BCF2Writer(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                       final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
@@ -145,6 +151,9 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(VCFHeader header) {
+        if (isHeaderWritten) {
+            throw new IllegalStateException("Header is already written");
+        }
         setVcfHeader(header);
 
         try {
@@ -159,6 +168,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             new BCFVersion(MAJOR_VERSION, MINOR_VERSION).write(outputStream);
             BCF2Type.INT32.write(headerBytes.length, outputStream);
             outputStream.write(headerBytes);
+            isHeaderWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
         }
@@ -178,6 +188,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
             // write the two blocks to disk
             writeBlock(infoBlock, genotypesBlock);
+            isBodyWritten = true;
         }
         catch ( IOException e ) {
             throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
@@ -197,6 +208,12 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void setVcfHeader(VCFHeader header) {
+        if (isHeaderWritten) {
+            throw new IllegalStateException("Header is already written");
+        }
+        if (isBodyWritten) {
+            throw new IllegalStateException("Body is already written");
+        }
         // make sure the header is sorted correctly
         header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
 
