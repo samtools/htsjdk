@@ -214,10 +214,11 @@ public class BAMFileWriterTest extends HtsjdkTest {
         originalSAMRecord.setBaseQualities(SAMRecord.NULL_QUALS);
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        final BAMFileWriter writer = new BAMFileWriter(baos, null);
-        writer.setHeader(header);
-        writer.addAlignment(originalSAMRecord);
-        writer.close();
+        try (final BAMFileWriter writer = new BAMFileWriter(baos, null)) {
+            writer.setHeader(header);
+            writer.addAlignment(originalSAMRecord);
+        }
+
 
         final BAMFileReader reader = new BAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, true, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
         final CloseableIterator<SAMRecord> iterator = reader.getIterator();
