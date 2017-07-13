@@ -180,11 +180,9 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final VariantContextWriter writer1 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
         writer1.writeHeader(header);
         writer1.writeHeader(header);
-        writer1.add(createVC(header));
         writer1.close();
     }
 
@@ -198,11 +196,9 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final VariantContextWriter writer2 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
         writer2.writeHeader(header);
         writer2.setVCFHeader(header);
-        writer2.add(createVC(header));
         writer2.close();
     }
 
@@ -215,7 +211,6 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final VariantContextWriter writer3 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build();
         writer3.setVCFHeader(header);
         writer3.add(createVC(header));

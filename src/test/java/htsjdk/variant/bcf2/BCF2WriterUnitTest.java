@@ -71,15 +71,16 @@ import java.util.Set;
  */
 public class BCF2WriterUnitTest extends VariantBaseTest {
 
+    private File tempDir;
+
     /**
      * create a fake header of known quantity
      *
-     * @param metaData          the header lines
-     * @param additionalColumns the additional column names
      * @return a fake VCF header
      */
-    public static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
-                                             final SAMSequenceDictionary sequenceDict) {
+    public static VCFHeader createFakeHeader(final SAMSequenceDictionary sequenceDict) {
+        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
+        Set<String> additionalColumns = new HashSet<String>();
         metaData.add(new VCFHeaderLine("two", "2"));
         additionalColumns.add("extra1");
         additionalColumns.add("extra2");
@@ -98,7 +99,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
 
     @BeforeClass
     private void createTemporaryDirectory() {
-        File tempDir = TestUtil.getTempDirectory("BCFWriter", "StaleIndex");
+        tempDir = TestUtil.getTempDirectory("BCFWriter", "StaleIndex");
         tempDir.deleteOnExit();
     }
 
@@ -108,13 +109,10 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
      */
     @Test
     public void testWriteAndReadBCF() throws IOException {
-        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
-
-        Tribble.indexFile(bcfOutputFile).deleteOnExit();
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadVCF.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputFile);
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
-        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VCFHeader header = createFakeHeader(sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
@@ -140,15 +138,13 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
      */
     @Test
     public void testWriteAndReadBCFHeaderless() throws IOException {
-        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf");
-        Tribble.indexFile(bcfOutputFile).deleteOnExit();
-        final File bcfOutputHeaderlessFile = VariantBaseTest.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf");
-        Tribble.indexFile(bcfOutputHeaderlessFile).deleteOnExit();
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputFile);
+        final File bcfOutputHeaderlessFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputHeaderlessFile);
 
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
-        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VCFHeader header = createFakeHeader(sequenceDict);
 
         // we write two files, bcfOutputFile with the header and body, and bcfOutputHeaderlessFile with just the body
         try (final VariantContextWriter fakeBCFFileWriter = new VariantContextWriterBuilder()
@@ -205,61 +201,50 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void testWriteHeaderTwice() {
-        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+    public void testWriteHeaderTwice() throws IOException {
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadVCF.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputFile);
 
-        Tribble.indexFile(bcfOutputFile).deleteOnExit();
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
-        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VCFHeader header = createFakeHeader(sequenceDict);
 
         // prevent writing header twice
         final VariantContextWriter writer1 = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
                 .build();
         writer1.writeHeader(header);
         writer1.writeHeader(header);
-        writer1.add(createVC(header));
         writer1.close();
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void testChangeHeaderAfterWritingHeader() {
-        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+    public void testChangeHeaderAfterWritingHeader() throws IOException {
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadVCF.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputFile);
 
-        Tribble.indexFile(bcfOutputFile).deleteOnExit();
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
-        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VCFHeader header = createFakeHeader(sequenceDict);
 
         // prevent changing header if it's already written
         final VariantContextWriter writer2 = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
                 .build();
         writer2.writeHeader(header);
         writer2.setVCFHeader(header);
-        writer2.add(createVC(header));
         writer2.close();
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void testChangeHeaderAfterWritingBody() {
-        final File bcfOutputFile = VariantBaseTest.createTempFile("testWriteAndReadVCF.", ".bcf");
+    public void testChangeHeaderAfterWritingBody() throws IOException {
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadVCF.", ".bcf", tempDir);
+        Tribble.indexFile(bcfOutputFile);
 
-        Tribble.indexFile(bcfOutputFile).deleteOnExit();
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
-        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        final VCFHeader header = createFakeHeader(sequenceDict);
 
         // prevent changing header if part of body is already written
         final VariantContextWriter writer3 = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(sequenceDict)
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY))
                 .build();
         writer3.setVCFHeader(header);
         writer3.add(createVC(header));
@@ -274,11 +259,6 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
      * @return a VCFRecord
      */
     private VariantContext createVC(final VCFHeader header) {
-
-        return createVCGeneral(header, "1", 1);
-    }
-
-    private VariantContext createVCGeneral(final VCFHeader header, final String chrom, final int position) {
         final List<Allele> alleles = new ArrayList<Allele>();
         final Map<String, Object> attributes = new HashMap<String, Object>();
         final GenotypesContext genotypes = GenotypesContext.create(header.getGenotypeSamples().size());
@@ -292,7 +272,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                     .make();
             genotypes.add(gt);
         }
-        return new VariantContextBuilder("RANDOM", chrom, position, position, alleles)
+        return new VariantContextBuilder("RANDOM", "1", 1, 1, alleles)
                 .genotypes(genotypes).attributes(attributes).make();
     }
 
