@@ -207,9 +207,8 @@ class BCF2Writer extends IndexingVariantContextWriter {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
         // make sure the header is sorted correctly
-        this.header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
-
-        this.header = doNotWriteGenotypes ? new VCFHeader(this.header.getMetaDataInSortedOrder()) : this.header;
+        this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(
+                header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
         // create the config offsets map
         if ( header.getContigLines().isEmpty() ) {
             if ( ALLOW_MISSING_CONTIG_LINES ) {
