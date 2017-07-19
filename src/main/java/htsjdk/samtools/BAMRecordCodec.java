@@ -128,9 +128,18 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         this.binaryCodec.writeInt(alignment.getAlignmentStart() - 1);
         this.binaryCodec.writeUByte((short)(alignment.getReadNameLength() + 1));
         this.binaryCodec.writeUByte((short)alignment.getMappingQuality());
-        this.binaryCodec.writeUShort(indexBin);
-        this.binaryCodec.writeUShort(cigarLength);
-        this.binaryCodec.writeUShort(alignment.getFlags());
+        if (cigarLength < 0x10000) { // if cigarLength fits 16 bits
+            this.binaryCodec.writeUShort(indexBin);
+            this.binaryCodec.writeUShort(cigarLength);
+            this.binaryCodec.writeUShort(alignment.getFlags());
+        } else { // if cigarLength doesn't fit 16 bits
+            final int fakeIndexBin = cigarLength >> 16;
+            final int fakeCigarLength = cigarLength & 0xffff;
+            final int fakeFlag = alignment.getFlags() | 0x8000;
+            this.binaryCodec.writeUShort(fakeIndexBin); // `bin` keeps the higher 16 bits of cigarLength
+            this.binaryCodec.writeUShort(fakeCigarLength); // `n_cigar` keeps the lower 16 bits
+            this.binaryCodec.writeUShort(fakeFlag); // bit 0x8000 marks long cigarLength
+        }
         this.binaryCodec.writeInt(alignment.getReadLength());
         this.binaryCodec.writeInt(alignment.getMateReferenceIndex());
         this.binaryCodec.writeInt(alignment.getMateAlignmentStart() - 1);
@@ -198,9 +207,19 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int coordinate = this.binaryCodec.readInt() + 1;
         final short readNameLength = this.binaryCodec.readUByte();
         final short mappingQuality = this.binaryCodec.readUByte();
-        final int bin = this.binaryCodec.readUShort();
-        final int cigarLen = this.binaryCodec.readUShort();
-        final int flags = this.binaryCodec.readUShort();
+        int bin, cigarLen, flags;
+        final int preBin = this.binaryCodec.readUShort();
+        final int preCigarLen = this.binaryCodec.readUShort();
+        final int preFlags = this.binaryCodec.readUShort();
+        if (preFlags & 0x8000) { // cigarLen has more than 16 bits
+            bin = null; // the true `bin` is not available
+            cigarLen = preBin << 16 | preCigarLen; // the real cigarLen
+            flags = preFlags & ~0x8000; // clear the highest bit
+        } else { // cigarLen fits 16 bits
+            bin = preBin;
+            cigarLen = preCigarLen;
+            flags = preFlags;
+        }
         final int readLen = this.binaryCodec.readInt();
         final int mateReferenceID = this.binaryCodec.readInt();
         final int mateCoordinate = this.binaryCodec.readInt() + 1;
@@ -211,6 +230,9 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 header, referenceID, coordinate, readNameLength, mappingQuality,
                 bin, cigarLen, flags, readLen, mateReferenceID, mateCoordinate, insertSize, restOfRecord);
 
+        if (null == bin) {
+            ret.setIndexingBin(ret.computeIndexingBin()); // update mIndexingBin to the correct value. Is it necessary?
+        }
         if (null != header) {
             // don't reset a null header as this will clobber the reference and mate reference indices
             ret.setHeader(header);
