@@ -208,11 +208,13 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final short readNameLength = this.binaryCodec.readUByte();
         final short mappingQuality = this.binaryCodec.readUByte();
         int bin, cigarLen, flags;
+        boolean isLongCigarLen = false;
         final int preBin = this.binaryCodec.readUShort();
         final int preCigarLen = this.binaryCodec.readUShort();
         final int preFlags = this.binaryCodec.readUShort();
-        if (preFlags & 0x8000) { // cigarLen has more than 16 bits
-            bin = null; // the true `bin` is not available
+        if (0x8000 == (preFlags & 0x8000)) { // cigarLen has more than 16 bits
+            isLongCigarLen = true;
+            bin = 0; // the true `bin` is not available
             cigarLen = preBin << 16 | preCigarLen; // the real cigarLen
             flags = preFlags & ~0x8000; // clear the highest bit
         } else { // cigarLen fits 16 bits
@@ -230,8 +232,8 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 header, referenceID, coordinate, readNameLength, mappingQuality,
                 bin, cigarLen, flags, readLen, mateReferenceID, mateCoordinate, insertSize, restOfRecord);
 
-        if (null == bin) {
-            //ret.setIndexingBin(ret.computeIndexingBin()); // update mIndexingBin to the correct value. Is it necessary?
+        if (isLongCigarLen) {
+            ret.setIndexingBin(ret.computeIndexingBin()); // update mIndexingBin to the correct value. Is it necessary?
         }
         if (null != header) {
             // don't reset a null header as this will clobber the reference and mate reference indices
