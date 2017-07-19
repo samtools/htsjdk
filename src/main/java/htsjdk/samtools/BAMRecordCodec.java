@@ -231,7 +231,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 bin, cigarLen, flags, readLen, mateReferenceID, mateCoordinate, insertSize, restOfRecord);
 
         if (null == bin) {
-            ret.setIndexingBin(ret.computeIndexingBin()); // update mIndexingBin to the correct value. Is it necessary?
+            //ret.setIndexingBin(ret.computeIndexingBin()); // update mIndexingBin to the correct value. Is it necessary?
         }
         if (null != header) {
             // don't reset a null header as this will clobber the reference and mate reference indices
