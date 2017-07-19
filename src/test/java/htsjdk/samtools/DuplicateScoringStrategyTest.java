@@ -1,10 +1,11 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class DuplicateScoringStrategyTest {
+public class DuplicateScoringStrategyTest extends HtsjdkTest {
 
     @DataProvider
     public Object [][] compareData() {

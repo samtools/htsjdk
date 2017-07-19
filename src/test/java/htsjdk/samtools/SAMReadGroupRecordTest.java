@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * Test for SAMReadGroupRecordTest
  */
-public class SAMReadGroupRecordTest {
+public class SAMReadGroupRecordTest extends HtsjdkTest {
 
     @Test
     public void testGetSAMString() {
