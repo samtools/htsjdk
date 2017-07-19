@@ -31,7 +31,10 @@ import java.io.File;
 
 /**
  * Command line utility for manipulating SAM/BAM files.
+ * @deprecated since 07/2017. This class does not add anything to the HTSJDK library except an example of how to iterate over a SAM/BAM file.
+ * In addition, it is not tested.
  */
+@Deprecated
 public class SAMTools {
     private String mCommand = null;
     private File mInputFile = null;
