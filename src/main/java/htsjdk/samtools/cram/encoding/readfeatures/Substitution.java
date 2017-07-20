@@ -22,6 +22,8 @@ import java.io.Serializable;
 /**
  * A substitution event captured in read coordinates. It is characterized by position in read, read base and reference base.
  * The class is also responsible for converting combinations of read base and reference base into a byte value (code).
+ *
+ * Both reference and read bases must be ACGTN only.
  */
 public class Substitution implements Serializable, ReadFeature {
     public static final int NO_CODE = -1;
@@ -31,17 +33,26 @@ public class Substitution implements Serializable, ReadFeature {
      */
     private int position;
     /**
-     * The read base (ACGTN)
+     * The read base, allowed values are ACGTN.
      */
     private byte base = -1;
     /**
-     * The reference sequence base matching the position of this substitution.
+     * The reference sequence base matching the position of this substitution, allowed values are ACGTN.
      */
     private byte referenceBase = -1;
     /**
      * A byte value denoting combination of the read base and the reference base.
      */
     private byte code = NO_CODE;
+
+    public Substitution() {
+    }
+
+    public Substitution(int position, byte base, byte referenceBase) {
+        this.position = position;
+        this.base = base;
+        this.referenceBase = referenceBase;
+    }
 
     public byte getCode() {
         return code;

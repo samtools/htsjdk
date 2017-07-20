@@ -26,11 +26,15 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 
 /**
  * Test that BAM writing doesn't blow up.  For presorted writing, the resulting BAM file is read and contents are
@@ -190,4 +194,39 @@ public class BAMFileWriterTest extends HtsjdkTest {
         testHelper(getRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.queryname, true);
         Assert.fail("Exception should be thrown");
     }
+
+
+    /**
+     * A test to check that BAM changes read bases according with {@link SequenceUtil#toBamReadBasesInPlace}.
+     */
+    @Test
+    public void testBAMReadBases() throws IOException {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.addSequence(new SAMSequenceRecord("1", SequenceUtil.getIUPACCodesString().length()));
+        header.addReadGroup(new SAMReadGroupRecord("rg1"));
+
+        final SAMRecord originalSAMRecord = new SAMRecord(header);
+        originalSAMRecord.setReadName("test");
+        originalSAMRecord.setReferenceIndex(0);
+        originalSAMRecord.setAlignmentStart(1);
+        originalSAMRecord.setReadBases(SequenceUtil.getIUPACCodesString().getBytes());
+        originalSAMRecord.setCigarString(originalSAMRecord.getReadLength() + "M");
+        originalSAMRecord.setBaseQualities(SAMRecord.NULL_QUALS);
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final BAMFileWriter writer = new BAMFileWriter(baos, null)) {
+            writer.setHeader(header);
+            writer.addAlignment(originalSAMRecord);
+        }
+
+
+        final BAMFileReader reader = new BAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, true, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        final CloseableIterator<SAMRecord> iterator = reader.getIterator();
+        iterator.hasNext();
+        final SAMRecord recordFromBAM = iterator.next();
+
+        Assert.assertNotEquals(recordFromBAM.getReadBases(), originalSAMRecord.getReadBases());
+        Assert.assertEquals(recordFromBAM.getReadBases(), SequenceUtil.toBamReadBasesInPlace(originalSAMRecord.getReadBases()));
+    }
+
 }

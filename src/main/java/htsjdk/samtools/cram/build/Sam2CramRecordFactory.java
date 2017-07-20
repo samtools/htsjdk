@@ -17,59 +17,27 @@
  */
 package htsjdk.samtools.cram.build;
 
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.*;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
-import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.common.Version;
-import htsjdk.samtools.cram.encoding.readfeatures.BaseQualityScore;
-import htsjdk.samtools.cram.encoding.readfeatures.Deletion;
-import htsjdk.samtools.cram.encoding.readfeatures.HardClip;
-import htsjdk.samtools.cram.encoding.readfeatures.InsertBase;
-import htsjdk.samtools.cram.encoding.readfeatures.Padding;
-import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
-import htsjdk.samtools.cram.encoding.readfeatures.RefSkip;
-import htsjdk.samtools.cram.encoding.readfeatures.SoftClip;
-import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
+import htsjdk.samtools.cram.encoding.readfeatures.*;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class Sam2CramRecordFactory {
-
-    public static final String UNKNOWN_READ_GROUP_ID = "UNKNOWN";
-    public static final String UNKNOWN_READ_GROUP_SAMPLE = "UNKNOWN";
-
-    private final static byte QS_asciiOffset = 33;
-    public final static byte unsetQualityScore = 32;
-    public final static byte ignorePositionsWithQualityScore = -1;
-
     private byte[] refBases;
     private final Version version;
-    private byte[] refSNPs;
 
     final private SAMFileHeader header;
 
     private static final Log log = Log.getInstance(Sam2CramRecordFactory.class);
 
     private final Map<String, Integer> readGroupMap = new HashMap<String, Integer>();
-
-    private long landedRefMaskScores = 0;
-    private long landedTotalScores = 0;
 
     public boolean captureAllTags = false;
     public boolean preserveReadNames = false;
@@ -151,8 +119,14 @@ public class Sam2CramRecordFactory {
         } else cramRecord.readFeatures = Collections.emptyList();
 
         cramRecord.readBases = record.getReadBases();
+
+        /**
+         * CRAM read bases are limited to ACGTN, see https://github.com/samtools/hts-specs/blob/master/CRAMv3.pdf passage 10.2 on read bases.
+         * However, BAM format allows upper case IUPAC codes without a dot, so we follow the same approach to reproduce the behaviour of samtools.
+         */
+        // copy read bases to avoid changing the original record:
+        cramRecord.readBases = SequenceUtil.toBamReadBasesInPlace(Arrays.copyOf(record.getReadBases(), record.getReadLength()));
         cramRecord.qualityScores = record.getBaseQualities();
-        landedTotalScores += cramRecord.readLength;
         if (version.compatibleWith(CramVersions.CRAM_v3))
             cramRecord.setUnknownBases(record.getReadBases() == SAMRecord.NULL_SEQUENCE);
 
@@ -187,7 +161,7 @@ public class Sam2CramRecordFactory {
      * A wrapper method to provide better diagnostics for ArrayIndexOutOfBoundsException.
      *
      * @param cramRecord CRAM record
-     * @param samRecord SAM record
+     * @param samRecord  SAM record
      * @return a list of read features created for the given {@link htsjdk.samtools.SAMRecord}
      */
     private List<ReadFeature> checkedCreateVariations(final CramCompressionRecord cramRecord, final SAMRecord samRecord) {
@@ -247,7 +221,7 @@ public class Sam2CramRecordFactory {
                 case M:
                 case X:
                 case EQ:
-                    addSubstitutionsAndMaskedBases(cramRecord, features, zeroBasedPositionInRead, alignmentStartOffset,
+                    addMismatchReadFeatures(cramRecord.alignmentStart, features, zeroBasedPositionInRead, alignmentStartOffset,
                             cigarElementLength, bases, qualityScore);
                     break;
                 default:
@@ -291,55 +265,45 @@ public class Sam2CramRecordFactory {
         }
     }
 
-    private void addSubstitutionsAndMaskedBases(final CramCompressionRecord cramRecord, final List<ReadFeature> features, final int fromPosInRead, final int
+    /**
+     * Processes a stretch of read bases marked as match or mismatch and emits appropriate read features.
+     * Briefly the algorithm is:
+     * <ul><li>emit nothing for a read base matching corresponding reference base.</li>
+     * <li>emit a {@link Substitution} read feature for each ACTGN-ACTGN mismatch.</li>
+     * <li>emit {@link ReadBase} for a non-ACTGN mismatch. The side effect is the quality score stored twice.</li>
+     * <p>
+     * IMPORTANT: reference and read bases are always compared for match/mismatch in upper case due to BAM limitations.
+     *
+     * @param alignmentStart       CRAM record alignment start
+     * @param features             a list of read features to add to
+     * @param fromPosInRead        a zero based position in the read to start with
+     * @param alignmentStartOffset offset into the reference array
+     * @param nofReadBases         how many read bases to process
+     * @param bases                the read bases array
+     * @param qualityScore         the quality score array
+     */
+    void addMismatchReadFeatures(final int alignmentStart, final List<ReadFeature> features, final int fromPosInRead, final int
             alignmentStartOffset, final int nofReadBases, final byte[] bases, final byte[] qualityScore) {
-        int oneBasedPositionInRead;
-        final boolean noQS = (qualityScore.length == 0);
+        int oneBasedPositionInRead = fromPosInRead + 1;
+        int refIndex = alignmentStart + alignmentStartOffset - 1;
 
-        int i;
-        boolean qualityAdded;
         byte refBase;
-        for (i = 0; i < nofReadBases; i++) {
-            oneBasedPositionInRead = i + fromPosInRead + 1;
-            final int referenceCoordinates = cramRecord.alignmentStart + i + alignmentStartOffset - 1;
-            qualityAdded = false;
-            if (referenceCoordinates >= refBases.length) refBase = 'N';
-            else refBase = refBases[referenceCoordinates];
-            refBase = Utils.normalizeBase(refBase);
+        for (int i = 0; i < nofReadBases; i++, oneBasedPositionInRead++, refIndex++) {
+            if (refIndex >= refBases.length) refBase = 'N';
+            else refBase = refBases[refIndex];
 
-            if (bases[i + fromPosInRead] != refBase) {
-                final Substitution substitution = new Substitution();
-                substitution.setPosition(oneBasedPositionInRead);
-                substitution.setBase(bases[i + fromPosInRead]);
-                substitution.setReferenceBase(refBase);
+            final byte readBase = bases[i + fromPosInRead];
 
-                features.add(substitution);
-
-                if (noQS) continue;
-            }
-
-            if (noQS) continue;
-
-            if (refSNPs != null) {
-                final byte snpOrNot = refSNPs[referenceCoordinates];
-                if (snpOrNot != 0) {
-                    final byte score = (byte) (QS_asciiOffset + qualityScore[i + fromPosInRead]);
-                    features.add(new BaseQualityScore(oneBasedPositionInRead, score));
-                    qualityAdded = true;
-                    landedRefMaskScores++;
+            if (readBase != refBase) {
+                final boolean isSubstitution = SequenceUtil.isUpperACGTN(readBase) && SequenceUtil.isUpperACGTN(refBase);
+                if (isSubstitution) {
+                    features.add(new Substitution(oneBasedPositionInRead, readBase, refBase));
+                } else {
+                    final byte score = qualityScore[i + fromPosInRead];
+                    features.add(new ReadBase(oneBasedPositionInRead, readBase, score));
                 }
             }
-
-            if (qualityAdded) landedTotalScores++;
         }
-    }
-
-    public long getLandedRefMaskScores() {
-        return landedRefMaskScores;
-    }
-
-    public long getLandedTotalScores() {
-        return landedTotalScores;
     }
 
     public byte[] getRefBases() {
@@ -348,14 +312,6 @@ public class Sam2CramRecordFactory {
 
     public void setRefBases(final byte[] refBases) {
         this.refBases = refBases;
-    }
-
-    public byte[] getRefSNPs() {
-        return refSNPs;
-    }
-
-    public void setRefSNPs(final byte[] refSNPs) {
-        this.refSNPs = refSNPs;
     }
 
     public Map<String, Integer> getReadGroupMap() {

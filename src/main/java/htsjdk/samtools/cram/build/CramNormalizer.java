@@ -32,6 +32,7 @@ import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -242,7 +243,8 @@ public class CramNormalizer {
             } else
                 System.arraycopy(ref, alignmentStart - refOffsetZeroBased,
                         bases, 0, bases.length);
-            return bases;
+
+            return SequenceUtil.toBamReadBasesInPlace(bases);
         }
         final List<ReadFeature> variations = record.readFeatures;
         for (final ReadFeature variation : variations) {
@@ -256,6 +258,7 @@ public class CramNormalizer {
                     final Substitution substitution = (Substitution) variation;
                     byte refBase = getByteOrDefault(ref, alignmentStart + posInSeq
                             - refOffsetZeroBased, (byte) 'N');
+                    // substitution requires ACGTN only:
                     refBase = Utils.normalizeBase(refBase);
                     final byte base = substitutionMatrix.base(refBase, substitution.getCode());
                     substitution.setBase(base);
@@ -304,11 +307,7 @@ public class CramNormalizer {
             }
         }
 
-        for (int i = 0; i < bases.length; i++) {
-            bases[i] = Utils.normalizeBase(bases[i]);
-        }
-
-        return bases;
+        return SequenceUtil.toBamReadBasesInPlace(bases);
     }
 
     private static byte getByteOrDefault(final byte[] array, final int pos,

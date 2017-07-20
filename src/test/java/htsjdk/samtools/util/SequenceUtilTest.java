@@ -562,4 +562,61 @@ public class SequenceUtilTest extends HtsjdkTest {
             Assert.assertEquals(actual[i], expected[i], "Array differ at position " + i);
         }
     }
+
+    @Test
+    public void testIsACGTN() {
+        for (byte base = Byte.MIN_VALUE; base < Byte.MAX_VALUE; base++) {
+            if (base == 'A' || base == 'C' || base == 'G' || base == 'T' || base == 'N') {
+                Assert.assertTrue(SequenceUtil.isUpperACGTN(base));
+            } else {
+                Assert.assertFalse(SequenceUtil.isUpperACGTN(base));
+            }
+        }
+    }
+
+    @Test
+    public void testIsIUPAC() {
+        final String iupacString = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
+        for (byte code=0; code<Byte.MAX_VALUE; code++) {
+            if (iupacString.contains(new String (new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isIUPAC(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isIUPAC(code));
+            }
+        }
+    }
+
+    @Test
+    public void testIUPAC_CODES_STRING() {
+        for (final byte code: SequenceUtil.getIUPACCodesString().getBytes()) {
+            Assert.assertTrue(SequenceUtil.isIUPAC(code));
+        }
+    }
+
+    @Test
+    public void testIsBamReadBase() {
+        final String iupacUpperCasedWithoutDot = "=" + SequenceUtil.getIUPACCodesString().toUpperCase().replaceAll("\\.", "N");
+
+        for (byte code = 0; code < Byte.MAX_VALUE; code++) {
+            if (iupacUpperCasedWithoutDot.contains(new String(new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isBamReadBase(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isBamReadBase(code), "" + code);
+            }
+        }
+        Assert.assertTrue(SequenceUtil.isBamReadBase((byte) '='));
+    }
+
+    @Test
+    public void testToBamReadBases() {
+        final String testInput = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-=";
+
+        /**
+         * This can be obtained by :
+         * echo 'blah' | tr a-z A-Z | tr -c '=ABCDGHKMNRSTVWY' N
+         */
+        final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
+
+        Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
+    }
 }
