@@ -24,6 +24,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.lang.reflect.Array;
 import java.math.BigInteger;
@@ -83,12 +84,13 @@ public class Slice {
         }
     }
 
-    public boolean validateRefMD5(final byte[] ref) {
+    public boolean validateRefMD5(final byte[] rawReferenceBases) {
         if(sequenceId == Slice.MULTI_REFERENCE)
             throw new SAMException("Cannot verify a slice with multiple references on a single reference.");
 
         if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return true;
 
+        final byte[] ref = getUpperCaseBases(rawReferenceBases);
         alignmentBordersSanityCheck(ref);
 
         if (!validateRefMD5(ref, alignmentStart, alignmentSpan, refMD5)) {
@@ -113,6 +115,15 @@ public class Slice {
         final int span = Math.min(alignmentSpan, ref.length - alignmentStart + 1);
         final String md5 = SequenceUtil.calculateMD5String(ref, alignmentStart - 1, span);
         return md5.equals(String.format("%032x", new BigInteger(1, expectedMD5)));
+    }
+
+    private static byte[] getUpperCaseBases(final byte[] rawBases) {
+        // Normalize to upper case for md5 calculation purposes.
+        final byte[] upperCaseBases = new byte[rawBases.length];
+        for (int i = 0; i < rawBases.length; i++) {
+            upperCaseBases[i] = StringUtil.toUpperCase(rawBases[i]);
+        }
+        return upperCaseBases;
     }
 
     private static String getBrief(final int startOneBased, final int span, final byte[] bases, final int shoulderLength) {
@@ -141,7 +152,8 @@ public class Slice {
         return String.format("slice: seqID %d, start %d, span %d, records %d.", sequenceId, alignmentStart, alignmentSpan, nofRecords);
     }
 
-    public void setRefMD5(final byte[] ref) {
+    public void setRefMD5(final byte[] rawBases) {
+        final byte[] ref = getUpperCaseBases(rawBases);
         alignmentBordersSanityCheck(ref);
 
         if (sequenceId < 0 && alignmentStart < 1) {
