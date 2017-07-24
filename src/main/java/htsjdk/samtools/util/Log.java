@@ -47,7 +47,7 @@ public final class Log {
 
     private final Class<?> clazz;
     private final String className;
-    private final PrintStream out = System.err;
+    private static PrintStream out = System.err;
 
     /**
      * Private constructor
@@ -70,6 +70,8 @@ public final class Log {
     public static void setGlobalLogLevel(final LogLevel logLevel) {
         globalLogLevel = logLevel;
     }
+
+    public static void setGlobalPrintStream(final PrintStream stream) { out = stream; }
 
     /** Returns true if the specified log level is enabled otherwise false. */
     public static final boolean isEnabled(final LogLevel level) {
