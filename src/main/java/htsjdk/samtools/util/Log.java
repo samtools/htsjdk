@@ -41,13 +41,13 @@ import java.util.Date;
  */
 public final class Log {
     /** Enumeration for setting log levels. */
-    public static enum LogLevel { ERROR, WARNING, INFO, DEBUG }
+    public enum LogLevel { ERROR, WARNING, INFO, DEBUG }
 
     private static LogLevel globalLogLevel = LogLevel.INFO;
+    private static PrintStream out = System.err;
 
     private final Class<?> clazz;
     private final String className;
-    private final PrintStream out = System.err;
 
     /**
      * Private constructor
@@ -67,9 +67,40 @@ public final class Log {
         return new Log(clazz);
     }
 
+    /**
+     * Set the log level.
+     *
+     * @param logLevel  The log level enumeration
+     */
     public static void setGlobalLogLevel(final LogLevel logLevel) {
         globalLogLevel = logLevel;
     }
+
+    /**
+     * Get the log level.
+     *
+     * @return The enumeration for setting log levels.
+     */
+    public static LogLevel getGlobalLogLevel() {
+        return globalLogLevel;
+    }
+
+    /**
+     * Set the {@link PrintStream} for writing.
+     *
+     * @param stream    {@link PrintStream} to write to.
+     */
+    public static void setGlobalPrintStream(final PrintStream stream) { out = stream; }
+
+    /**
+     * Get the {@link PrintStream} for writing.
+     *
+     * @return  {@link PrintStream} to write to.
+     */
+    public static PrintStream getGlobalPrintStream() {
+        return out;
+    }
+
 
     /** Returns true if the specified log level is enabled otherwise false. */
     public static final boolean isEnabled(final LogLevel level) {
