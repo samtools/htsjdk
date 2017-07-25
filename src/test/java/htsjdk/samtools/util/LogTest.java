@@ -20,12 +20,22 @@ public class LogTest extends HtsjdkTest {
     public void testLogToFile() throws IOException {
         final File logFile = File.createTempFile(getClass().getSimpleName(), ".tmp");
         logFile.deleteOnExit();
-        Log.setGlobalPrintStream(new PrintStream(new FileOutputStream(logFile.getPath(), true)));
 
-        final String words = "Hello World";
-        log.info(words);
-        final List<String> list = Files.readAllLines(logFile.toPath());
-        Assert.assertEquals(list.size(), 1);
-        Assert.assertTrue(list.get(0).contains(words));
+        final Log.LogLevel originalLogLevel = Log.getGlobalLogLevel();
+        final PrintStream originalStream = Log.getGlobalPrintStream();
+
+        try (final PrintStream stream = new PrintStream(new FileOutputStream(logFile.getPath(), true))) {
+            Log.setGlobalPrintStream(stream);
+            Log.setGlobalLogLevel(Log.LogLevel.DEBUG);
+            final String words = "Hello World";
+            log.info(words);
+            final List<String> list = Files.readAllLines(logFile.toPath());
+            Assert.assertEquals(Log.getGlobalLogLevel(), Log.LogLevel.DEBUG);
+            Assert.assertEquals(list.size(), 1);
+            Assert.assertTrue(list.get(0).contains(words));
+        } finally {
+            Log.setGlobalLogLevel(originalLogLevel);
+            Log.setGlobalPrintStream(originalStream);
+        }
     }
 }
