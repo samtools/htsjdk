@@ -34,7 +34,6 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @DataProvider(name = "partialVerification")
     public Object[][] getPartialVerificationData() {
         return new Object[][] {
-                {"amb#amb"},
                 {"auxf#values"},    // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
@@ -84,6 +83,36 @@ public class CRAMComplianceTest extends HtsjdkTest {
     @Test(dataProvider = "fullVerification")
     public void fullVerificationTest(String name) throws IOException {
         doComplianceTest(name, (version, expected, actual) -> Assert.assertEquals(expected, actual));
+    }
+
+    // Files that can be subjected to full verification only after read base normalization, because either
+    // the reference or the reads contain ambiguity codes that are normalized by SequenceUtil.toBamReadBasesInPlace
+    // during the round-trip process.
+    @DataProvider(name = "ambiguityCodeVerification")
+    public Object[][] getAmbiguityCodeVerificationData() {
+        return new Object[][]{
+                {"amb#amb"}
+        };
+    }
+
+    @Test(dataProvider = "ambiguityCodeVerification")
+    public void ambiguityCodeVerificationTest(String name) throws IOException {
+        doComplianceTest(name,
+                (version, expected, actual) ->
+                {
+                    if (expected.getReadString().equals(actual.getReadString())) {
+                        Assert.assertEquals(expected, actual);
+                    } else {
+                        // tolerate BAM and CRAM conversion of read bases to upper case IUPAC codes by
+                        // creating a deep copy of the expected reads and normalizing (upper case IUPAC)
+                        // the bases; then proceeding with the full compare with the actual
+                        SAMRecord expectedNormalized = actual.deepCopy();
+                        final byte[] expectedBases = expectedNormalized.getReadBases();
+                        SequenceUtil.toBamReadBasesInPlace(expectedBases);
+                        Assert.assertEquals(actual, expectedNormalized);
+                    }
+                }
+                );
     }
 
     @BeforeTest
