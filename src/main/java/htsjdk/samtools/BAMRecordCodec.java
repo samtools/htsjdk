@@ -24,6 +24,7 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.SortingCollection;
 
@@ -35,10 +36,14 @@ import java.util.Arrays;
  * Class for translating between in-memory and disk representation of BAMRecord.
  */
 public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
+    private final static Log LOG = Log.getInstance(BAMRecordCodec.class);
+
     private final SAMFileHeader header;
     private final BinaryCodec binaryCodec = new BinaryCodec();
     private final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCodec);
     private final SAMRecordFactory samRecordFactory;
+
+    private boolean isReferenceSizeWarningShowed = false;
 
     public BAMRecordCodec(final SAMFileHeader header) {
         this(header, new DefaultSAMRecordFactory());
@@ -113,11 +118,16 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         }
 
         int indexBin = 0;
-        if (alignment.getReferenceIndex() >= 0) {
+        if (alignment.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
+            if (isReferenceTooLargeForBAI() && alignment.getValidationStringency() != ValidationStringency.SILENT) {
+                LOG.warn("Reference length is too large for BAM bin field. Values in the bin field could be incorrect.");
+                isReferenceSizeWarningShowed = true;
+            }
+
             if (alignment.getIndexingBin() != null) {
                 indexBin = alignment.getIndexingBin();
             } else {
-                indexBin = alignment.computeIndexingBin();
+                indexBin = getUshort(alignment.computeIndexingBin());
             }
         }
 
@@ -172,6 +182,15 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 attribute = attribute.getNext();
             }
         }
+    }
+
+    private int getUshort(int value) {
+        return value & (int) BinaryCodec.MAX_USHORT;
+    }
+
+    private boolean isReferenceTooLargeForBAI() {
+        return header.getSequenceDictionary().getReferenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN
+                && !isReferenceSizeWarningShowed;
     }
 
     /**

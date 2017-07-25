@@ -26,6 +26,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
 
@@ -104,6 +105,8 @@ import java.util.*;
  * @author mishali.naik@intel.com
  */
 public class SAMRecord implements Cloneable, Locatable, Serializable {
+    private final static Log LOG = Log.getInstance(BAMRecordCodec.class);
+
     public static final long serialVersionUID = 1L;
 
     /**
@@ -2058,13 +2061,18 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (this.getAlignmentStart() != NO_ALIGNMENT_START && this.getIndexingBin() != null &&
-                this.computeIndexingBin() != this.getIndexingBin()) {
-            if (ret == null) ret = new ArrayList<>();
-            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
-                    "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
-                    getReadName()));
-            if (firstOnly) return ret;
+        if (this.getAlignmentStart() != NO_ALIGNMENT_START) {
+            if (getHeader() != null
+                    && isReferenceTooLargeForBAI()
+                    && getValidationStringency() != ValidationStringency.SILENT) {
+                LOG.warn(String.format("Reference length is too large for BAM bin field for %s record. Values in the bin field could be incorrect.", getReadName()));
+            } else if (isIndexingBinNotEqualsComputedBin()) {
+                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
+                        "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
+                        getReadName()));
+                if (firstOnly) return ret;
+            }
         }
 
         if (getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME) &&
@@ -2097,6 +2105,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return null;
         }
         return ret;
+    }
+
+    private boolean isIndexingBinNotEqualsComputedBin() {
+        return this.getIndexingBin() != null && this.computeIndexingBin() != this.getIndexingBin();
+    }
+
+    private boolean isReferenceTooLargeForBAI() {
+        return getHeader().getSequenceDictionary().getReferenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 
     /**
