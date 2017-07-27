@@ -137,7 +137,14 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 		}
 	}
 
-    /** Queries for records within the region specified. */
+    /**
+     * Queries for records overlapping the region specified.
+     * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
+     * @param chrom the chomosome to query
+     * @param start query interval start
+     * @param end query interval end
+     * @return non-null iterator over VariantContexts
+     */
     public CloseableIterator<VariantContext> query(final String chrom, final int start, final int end) {
         try { return reader.query(chrom, start, end); }
         catch (final IOException ioe) {
