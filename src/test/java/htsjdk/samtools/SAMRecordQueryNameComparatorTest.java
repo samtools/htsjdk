@@ -105,6 +105,8 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
                 {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)), record, 1},
                 // if both have HI tag, order by it
                 {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)),
+                        copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)), 0},
+                {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 1)),
                         copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 2)), -1},
                 {copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 16)),
                         copyAndSet(record, r -> r.setAttribute(SAMTag.HI.name(), 5)), 1}
