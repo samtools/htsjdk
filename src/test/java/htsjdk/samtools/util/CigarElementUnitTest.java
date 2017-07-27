@@ -36,6 +36,8 @@ public class CigarElementUnitTest extends HtsjdkTest {
     @Test(dataProvider = "elementsForEquals")
     public void testEqualsAndHashCode(final CigarElement element, final Object other, final boolean isEquals) {
         Assert.assertEquals(element.equals(other), isEquals);
-        Assert.assertEquals(element.hashCode() == other.hashCode(), isEquals);
+        if (isEquals) {
+            Assert.assertEquals(element.hashCode(), other.hashCode());
+        }
     }
 }
