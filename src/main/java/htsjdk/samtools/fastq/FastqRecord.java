@@ -101,7 +101,7 @@ public class FastqRecord implements Serializable {
     /**
      * Get the read name
      *
-     * @return the read name
+     * @return the read name (may be {@code null}).
      */
     public String getReadName() {
         return readName;
@@ -110,7 +110,7 @@ public class FastqRecord implements Serializable {
     /**
      * Get the DNA sequence
      *
-     * @return read sequence as a string of ACGTN=.
+     * @return read sequence as a string of ACGTN= (may be {@code null}).
      */
     public String getReadString() {
         return readString;
@@ -128,7 +128,7 @@ public class FastqRecord implements Serializable {
     /**
      * Get the base qualities encoded as a FASTQ string
      *
-     * @return the quality string
+     * @return the quality string (may be {@code null}).
      */
     public String getBaseQualityString() {
         return baseQualityString;
@@ -155,7 +155,7 @@ public class FastqRecord implements Serializable {
     /**
      * Get the base quality header
      *
-     * @return the base quality header
+     * @return the base quality header (may be {@code null}).
      */
     public String getBaseQualityHeader() {
         return qualityHeader;
@@ -228,8 +228,13 @@ public class FastqRecord implements Serializable {
     }
 
     /**
-     * Returns {@link #toFastQString()}
+     * Returns {@link #toFastQString()}.
+     *
+     * @deprecated since 07/2017. This method will be deprecated until it is changed in the future
+     * for a simpler representation of the object. For code relying on the formatting as a FASTQ
+     * String, please refactor your code to use {@link #toFastQString()}.
      */
+    @Deprecated
     @Override
     public String toString() {
         // TODO: this should be change in the future for a simpler and more informative form such as
