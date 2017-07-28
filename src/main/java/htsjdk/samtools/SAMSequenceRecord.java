@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlValue;
 import java.math.BigInteger;
 import java.net.URI;
@@ -48,6 +49,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     private String mSequenceName = null; // Value must be interned() if it's ever set/modified
+    @XmlAttribute(name = "alternative_sequece_names")
     private Set<String> mAlternativeSequenceName = new LinkedHashSet<>();
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
@@ -147,7 +149,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public void setSequenceIndex(final int value) { mSequenceIndex = value; }
 
     /** Returns unmodifiable set with alternative sequence names. */
-    @XmlAttribute(name = "alternative_sequece_names")
+    @XmlTransient //we use the field instead of getter/setter
     public Set<String> getAlternativeSequeneNames() {
         return Collections.unmodifiableSet(mAlternativeSequenceName);
     }
