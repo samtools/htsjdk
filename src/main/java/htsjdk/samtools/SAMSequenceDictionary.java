@@ -86,6 +86,8 @@ public class SAMSequenceDictionary implements Serializable {
             if (mSequenceMap.put(record.getSequenceName(), record) != null) {
                 throw new IllegalArgumentException("Cannot add sequence that already exists in SAMSequenceDictionary: " +
                         record.getSequenceName());
+            } else {
+                record.getAlternativeSequeneNames().forEach(an -> addSequenceAlias(record.getSequenceName(), an));
             }
         }
     }
@@ -98,6 +100,7 @@ public class SAMSequenceDictionary implements Serializable {
         sequenceRecord.setSequenceIndex(mSequences.size());
         mSequences.add(sequenceRecord);
         mSequenceMap.put(sequenceRecord.getSequenceName(), sequenceRecord);
+        sequenceRecord.getAlternativeSequeneNames().forEach(an -> addSequenceAlias(sequenceRecord.getSequenceName(), an));
     }
 
     /**
@@ -220,6 +223,9 @@ public class SAMSequenceDictionary implements Serializable {
      * <code>1,chr1,chr01,01,CM000663,NC_000001.10</code> e.g:
      * <code>MT,chrM</code>
      *
+     * NOTE: this method does not add the alias to the alternative sequence name tag (AN) in the SAMSequenceRecord.
+     * If you would like to add it to the AN tag, use {@link #setAlternativeSequenceName(String, String)} instead.
+     *
      * @param originalName
      *            existing contig name
      * @param altName
@@ -244,6 +250,27 @@ public class SAMSequenceDictionary implements Serializable {
         }
         mSequenceMap.put(altName, originalSeqRecord);
         return originalSeqRecord;
+    }
+
+    /**
+     * Add an alternative sequence name (AN tag) to a SAMSequenceRecord, including it into the aliases
+     * to retrieve the contigs (as with {@link #addSequenceAlias(String, String)}.
+     *
+     * <p>This can be use to provide some alternate names fo a given contig. e.g:
+     * <code>1,chr1,chr01,01,CM000663,NC_000001.10</code> or
+     * <code>MT,chrM</code>.
+     *
+     * @param originalName
+     *            existing contig name
+     * @param altName
+     *            new contig name
+     * @return the contig associated to the 'originalName/altName', with the AN tag including the altName
+     */
+    public SAMSequenceRecord addAlternativeSequenceName(final String originalName,
+            final String altName) {
+        final SAMSequenceRecord record = addSequenceAlias(originalName, altName);
+        record.addAlternativeSequenceName(altName);
+        return record;
     }
 
     /**

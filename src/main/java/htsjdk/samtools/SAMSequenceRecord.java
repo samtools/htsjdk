@@ -29,8 +29,13 @@ import javax.xml.bind.annotation.XmlValue;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -43,9 +48,11 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     private String mSequenceName = null; // Value must be interned() if it's ever set/modified
+    private Set<String> mAlternativeSequenceName = new LinkedHashSet<>();
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
     public static final String SEQUENCE_NAME_TAG = "SN";
+    public static final String ALTERNATIVE_SEQUENCE_NAME_TAG = "AN";
     public static final String SEQUENCE_LENGTH_TAG = "LN";
     public static final String MD5_TAG = "M5";
     public static final String ASSEMBLY_TAG = "AS";
@@ -67,7 +74,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
      * The standard tags are stored in text header without type information, because the type of these tags is known.
      */
     public static final Set<String> STANDARD_TAGS =
-            new HashSet<String>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, MD5_TAG, URI_TAG,
+            new HashSet<String>(Arrays.asList(SEQUENCE_NAME_TAG, SEQUENCE_LENGTH_TAG, ASSEMBLY_TAG, ALTERNATIVE_SEQUENCE_NAME_TAG, MD5_TAG, URI_TAG,
                                                 SPECIES_TAG));
 
     // Split on any whitespace
@@ -139,6 +146,32 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     // Private state used only by SAM implementation.
     public void setSequenceIndex(final int value) { mSequenceIndex = value; }
 
+    /** Returns unmodifiable set with alternative sequence names. */
+    @XmlAttribute(name = "alternative_sequece_names")
+    public Set<String> getAlternativeSequeneNames() {
+        return Collections.unmodifiableSet(mAlternativeSequenceName);
+    }
+
+    /** Adds an alternative sequence name if it is not the same as the sequence name or it is not present already. */
+    public void addAlternativeSequenceName(final String name) {
+        if (!mSequenceName.equals(name) && ! mAlternativeSequenceName.contains(name) ) {
+            mAlternativeSequenceName.add(name);
+        }
+    }
+
+    /** Sets the alternative sequence names in the order provided by iteration, removing the previous values. */
+    public void setAlternativeSequenceName(final Collection<String> alternativeSequences) {
+        mAlternativeSequenceName.clear();
+        if (alternativeSequences != null && !alternativeSequences.isEmpty()) {
+            mAlternativeSequenceName.addAll(alternativeSequences);
+        }
+    }
+
+    /** Returns {@code true} if there are alternative sequence names; {@code false} otherwise. */
+    public boolean hasAlternativeSequenceNames() {
+        return !mAlternativeSequenceName.isEmpty();
+    }
+
     /**
      * Looser comparison than equals().  We look only at sequence index, sequence length, and MD5 tag value
      * (or sequence names, if there is no MD5 tag in either record.
@@ -159,6 +192,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             }
         }
         else {
+            // TODO: should this also check in the alternative sequences names?
             if (mSequenceName != that.mSequenceName) return false; // Compare using == since we intern() the Strings
         }
 
@@ -184,6 +218,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         if (mSequenceLength != that.mSequenceLength) return false;
         if (!attributesEqual(that)) return false;
         if (mSequenceName != that.mSequenceName) return false; // Compare using == since we intern() the name
+        // TODO: should this also compare the alternative names?
 
         return true;
     }

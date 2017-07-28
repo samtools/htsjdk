@@ -29,6 +29,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Test for SAMReadGroupRecordTest
@@ -82,5 +84,29 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
             rec1.setSequenceIndex(index1);
             Assert.assertEquals(rec1.isSameSequence(rec2), isSame);
         }
+    }
+
+    @Test
+    public void testAlternativeSequences() {
+        final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
+
+        // no AN tag yet
+        Assert.assertFalse(chr1.hasAlternativeSequenceNames());
+        Assert.assertTrue(chr1.getAlternativeSequeneNames().isEmpty());
+
+        // set to a random alias
+        chr1.addAlternativeSequenceName("my_chromosome");
+        // TODO: if equals is changed, the two objects shouldn't be equals
+        Assert.assertEquals(chr1, new SAMSequenceRecord(chr1.getSequenceName(), chr1.getSequenceLength()));
+        Assert.assertTrue(chr1.hasAlternativeSequenceNames());
+        Assert.assertEquals(chr1.getAlternativeSequeneNames(), Collections.singleton("my_chromosome"));
+        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:my_chromosome", chr1.getSAMString());
+
+        // set to new chromosome aliases (removing previous)
+        final List<String> chr1AltNames = Arrays.asList("chr1","chr01","01","CM000663","NC_000001.10");
+        chr1.setAlternativeSequenceName(chr1AltNames);
+        Assert.assertTrue(chr1.hasAlternativeSequenceNames());
+        Assert.assertEquals(chr1.getAlternativeSequeneNames(),  chr1AltNames);
+        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:chr1,chr01,01,CM000663,NC_000001.10", chr1.getSAMString());
     }
 }
