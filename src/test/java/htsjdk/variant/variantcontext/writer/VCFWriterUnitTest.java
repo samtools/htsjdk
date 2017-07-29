@@ -91,7 +91,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
-            Tribble.indexFile(fakeVCFFile);
+            Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
         metaData = new HashSet<VCFHeaderLine>();
         additionalColumns = new HashSet<String>();
@@ -136,10 +136,10 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
-            Tribble.indexFile(fakeVCFFile);
+            Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
-        metaData = new HashSet<VCFHeaderLine>();
-        additionalColumns = new HashSet<String>();
+        metaData = new HashSet<>();
+        additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -155,12 +155,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         try (BlockCompressedInputStream bcis = new BlockCompressedInputStream(fakeVCFFile);
                 FileInputStream fis = new FileInputStream(fakeVCFFile)) {
-            AsciiLineReaderIterator iterator;
-            if (".vcf.gz".equals(extension)) {
-                iterator = new AsciiLineReaderIterator(new AsciiLineReader(bcis));
-            } else {
-                iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
-            }
+            AsciiLineReaderIterator iterator =
+                    new AsciiLineReaderIterator(new AsciiLineReader(".vcf.gz".equals(extension) ? bcis : fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
@@ -177,13 +173,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent writing header twice
-        final VariantContextWriter writer1 = new VariantContextWriterBuilder()
+        try (final VariantContextWriter writer1 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .build();
-        writer1.writeHeader(header);
-        writer1.writeHeader(header);
-        writer1.close();
+                .build()) {
+            writer1.writeHeader(header);
+            writer1.writeHeader(header);
+        }
     }
 
 
@@ -193,13 +189,13 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if it's already written
-        final VariantContextWriter writer2 = new VariantContextWriterBuilder()
+        try (final VariantContextWriter writer2 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .build();
-        writer2.writeHeader(header);
-        writer2.setVCFHeader(header);
-        writer2.close();
+                .build()) {
+            writer2.writeHeader(header);
+            writer2.setVCFHeader(header);
+        }
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
@@ -208,14 +204,14 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if part of body is already written
-        final VariantContextWriter writer3 = new VariantContextWriterBuilder()
+        try (final VariantContextWriter writer3 = new VariantContextWriterBuilder()
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
-                .build();
-        writer3.setVCFHeader(header);
-        writer3.add(createVC(header));
-        writer3.setVCFHeader(header);
-        writer3.close();
+                .build()) {
+            writer3.setVCFHeader(header);
+            writer3.add(createVC(header));
+            writer3.setVCFHeader(header);
+        }
     }
 
     /**

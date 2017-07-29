@@ -92,10 +92,8 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
         final VCFCodec codec = new VCFCodec();
         codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
 
-        try (FileInputStream fis = new FileInputStream(fakeVCFFile)) {
-            AsciiLineReaderIterator iterator;
-
-            iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
+        try (final FileInputStream fis = new FileInputStream(fakeVCFFile)) {
+            AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());
@@ -128,10 +126,6 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
      */
     private VariantContext createVC(final VCFHeader header) {
 
-       return createVCGeneral(header,"1",1);
-    }
-
-    private VariantContext createVCGeneral(final VCFHeader header, final String chrom, final int position) {
         final List<Allele> alleles = new ArrayList<Allele>();
         final Map<String, Object> attributes = new HashMap<String,Object>();
         final GenotypesContext genotypes = GenotypesContext.create(header.getGenotypeSamples().size());
@@ -144,12 +138,8 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
             final Genotype gt = new GenotypeBuilder(name,alleles.subList(1,2)).GQ(0).attribute("BB", "1").phased(true).make();
             genotypes.add(gt);
         }
-        return new VariantContextBuilder("RANDOM", chrom, position, position, alleles)
+        return new VariantContextBuilder("RANDOM", "1", 1, 1, alleles)
                 .genotypes(genotypes).attributes(attributes).make();
     }
-
-
-
-
 }
 
