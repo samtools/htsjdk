@@ -134,8 +134,8 @@ class VCFWriter extends IndexingVariantContextWriter {
 
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
+        setVCFHeader(header);
         try {
-            setVCFHeader(header);
             writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
             isWrittenToOutput = true;

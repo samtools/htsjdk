@@ -210,7 +210,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
         this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(
                 header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
         // create the config offsets map
-        if ( header.getContigLines().isEmpty() ) {
+        if ( this.header.getContigLines().isEmpty() ) {
             if ( ALLOW_MISSING_CONTIG_LINES ) {
                 if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
                     System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
@@ -220,17 +220,17 @@ class BCF2Writer extends IndexingVariantContextWriter {
                 throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
             }
         } else {
-            createContigDictionary(header.getContigLines());
+            createContigDictionary(this.header.getContigLines());
         }
         // set up the map from dictionary string values -> offset
-        final ArrayList<String> dict = BCF2Utils.makeDictionary(header);
+        final ArrayList<String> dict = BCF2Utils.makeDictionary(this.header);
         for ( int i = 0; i < dict.size(); i++ ) {
             stringDictionaryMap.put(dict.get(i), i);
         }
 
         sampleNames = this.header.getGenotypeSamples().toArray(new String[this.header.getNGenotypeSamples()]);
         // setup the field encodings
-        fieldManager.setup(header, encoder, stringDictionaryMap);
+        fieldManager.setup(this.header, encoder, stringDictionaryMap);
 
     }
 
