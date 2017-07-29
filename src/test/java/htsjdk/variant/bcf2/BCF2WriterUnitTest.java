@@ -164,14 +164,12 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         final File bcfOutputHeaderlessFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
 
         final VCFHeader header = createFakeHeader();
-        // we write two files, bcfOutputFile with the header and body, and bcfOutputHeaderlessFile with just the body
+        // we write two files, bcfOutputFile with the header, and bcfOutputHeaderlessFile with just the body
         try (final VariantContextWriter fakeBCFFileWriter = new VariantContextWriterBuilder()
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             fakeBCFFileWriter.writeHeader(header); // writes header
-            fakeBCFFileWriter.add(createVC(header));
-            fakeBCFFileWriter.add(createVC(header));
         }
 
         try (final VariantContextWriter fakeBCFBodyFileWriter = new VariantContextWriterBuilder()
