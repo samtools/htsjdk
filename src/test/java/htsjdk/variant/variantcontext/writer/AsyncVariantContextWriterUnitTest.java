@@ -77,8 +77,8 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", ".vcf");
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();
-        Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
-        Set<String> additionalColumns = new HashSet<String>();
+        final Set<VCFHeaderLine> metaData = new HashSet<>();
+        final Set<String> additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -93,7 +93,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
         codec.setVCFHeader(header, VCFHeaderVersion.VCF4_2);
 
         try (final FileInputStream fis = new FileInputStream(fakeVCFFile)) {
-            AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
+            final AsciiLineReaderIterator iterator = new AsciiLineReaderIterator(new AsciiLineReader(fis));
             int counter = 0;
             while (iterator.hasNext()) {
                 VariantContext context = codec.decode(iterator.next());

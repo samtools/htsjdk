@@ -93,8 +93,8 @@ public class VCFWriterUnitTest extends VariantBaseTest {
         } else {
             Tribble.indexFile(fakeVCFFile).deleteOnExit();
         }
-        metaData = new HashSet<VCFHeaderLine>();
-        additionalColumns = new HashSet<String>();
+        metaData = new HashSet<>();
+        additionalColumns = new HashSet<>();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         final VariantContextWriter writer = new VariantContextWriterBuilder()
@@ -220,7 +220,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      * @param additionalColumns  the additional column names
      * @return a fake VCF header
      */
-    public static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
+    private static VCFHeader createFakeHeader(final Set<VCFHeaderLine> metaData, final Set<String> additionalColumns,
                                              final SAMSequenceDictionary sequenceDict) {
         metaData.add(new VCFHeaderLine(VCFHeaderVersion.VCF4_0.getFormatString(), VCFHeaderVersion.VCF4_0.getVersionString()));
         metaData.add(new VCFHeaderLine("two", "2"));
@@ -263,7 +263,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
      * validate a VCF header
      * @param header the header to validate
      */
-    public void validateHeader(final VCFHeader header, final SAMSequenceDictionary sequenceDictionary) {
+    private void validateHeader(final VCFHeader header, final SAMSequenceDictionary sequenceDictionary) {
         // check the fields
         int index = 0;
         for (final VCFHeader.HEADER_FIELDS field : header.getHeaderFields()) {
