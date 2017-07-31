@@ -59,6 +59,24 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
         Assert.assertNull(dict.getSequence("chr2"));
     }
 
+    @Test
+    public void testAlternativeSequences() {
+        final SAMSequenceRecord ssr1 = new SAMSequenceRecord("1", 1);
+        final SAMSequenceRecord ssr2 = new SAMSequenceRecord("2", 1);
+
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(
+                Arrays.asList(ssr1, ssr2));
+        Assert.assertEquals(dict.size(), 2);
+        dict.addAlternativeSequenceName("1", "chr1");
+        dict.addAlternativeSequenceName("1", "01");
+        dict.addAlternativeSequenceName("1", "1");
+        dict.addAlternativeSequenceName("01", "chr01");
+        Assert.assertEquals(dict.size(), 2);
+        Assert.assertTrue(dict.getSequence("chr1").hasAlternativeSequenceNames());
+        Assert.assertEquals(dict.getSequence("1").getAlternativeSequeneNames().size(), 3);
+        Assert.assertNull(dict.getSequence("chr2"));
+    }
+
     /**
      * should be saved as XML
      * 

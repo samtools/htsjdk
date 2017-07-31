@@ -224,7 +224,7 @@ public class SAMSequenceDictionary implements Serializable {
      * <code>MT,chrM</code>
      *
      * NOTE: this method does not add the alias to the alternative sequence name tag (AN) in the SAMSequenceRecord.
-     * If you would like to add it to the AN tag, use {@link #setAlternativeSequenceName(String, String)} instead.
+     * If you would like to add it to the AN tag, use {@link #addAlternativeSequenceName(String, String)} instead.
      *
      * @param originalName
      *            existing contig name
