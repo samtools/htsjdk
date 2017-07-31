@@ -48,7 +48,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     public final static int UNAVAILABLE_SEQUENCE_INDEX = -1;
-    private final String mSequenceName = null; // Value must be interned() if it's ever set/modified
+    private final String mSequenceName; // Value must be interned() if it's ever set/modified
     private Set<String> mAlternativeSequenceName = new LinkedHashSet<>();
     private int mSequenceIndex = UNAVAILABLE_SEQUENCE_INDEX;
     private int mSequenceLength = 0;
@@ -133,7 +133,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public void setSequenceIndex(final int value) { mSequenceIndex = value; }
 
     /** Returns unmodifiable set with alternative sequence names. */
-    @XmlTransient //we use the field instead of getter/setter
     public Set<String> getAlternativeSequeneNames() {
         return Collections.unmodifiableSet(mAlternativeSequenceName);
     }
