@@ -35,6 +35,9 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 
 public class GenotypeUnitTest extends VariantBaseTest {
     Allele A, Aref, T;
@@ -69,6 +72,26 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertTrue(makeGB().make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return true");
         Assert.assertFalse(makeGB().filter("").make().isFiltered(), "empty filters should count as unfiltered");
         Assert.assertEquals(makeGB().filter("").make().getFilters(), null, "empty filter string should result in null filters");
+    }
+
+    @Test
+    public void testGetAnyAttribute() {
+        // test unset values always return null
+        Assert.assertNull(makeGB().make().getAnyAttribute("GT"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("GQ"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("AD"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("PL"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("FT"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("DP"));
+        Assert.assertNull(makeGB().make().getAnyAttribute("OTHER"));
+        // test set values
+        Assert.assertEquals(makeGB().alleles(Arrays.asList(Aref, T)).make().getAnyAttribute("GT"), Arrays.asList(Aref, T));
+        Assert.assertEquals(makeGB().GQ(10).make().getAnyAttribute("GQ"), 10);
+        Assert.assertEquals(makeGB().AD(new int[]{1, 2}).make().getAnyAttribute("AD"), Arrays.asList(1, 2));
+        Assert.assertEquals(makeGB().PL(new int[]{1, 2}).make().getAnyAttribute("PL"), Arrays.asList(1, 2));
+        Assert.assertEquals(makeGB().filter("LOWQUAL").make().getAnyAttribute("FT"), "LOWQUAL");
+        Assert.assertEquals(makeGB().DP(100).make().getAnyAttribute("DP"), 100);
+        Assert.assertEquals(makeGB().attribute("OTHER", 30).make().getAnyAttribute("OTHER"), 30);
     }
 
 //    public Genotype(String sampleName, List<Allele> alleles, double negLog10PError, Set<String> filters, Map<String, ?> attributes, boolean isPhased) {
