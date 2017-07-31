@@ -86,8 +86,11 @@ public class IOUtil {
     public static final long TWO_GBS = 2 * ONE_GB;
     public static final long FIVE_GBS = 5 * ONE_GB;
 
+    public static final String VCF_FILE_EXTENSION = ".vcf";
+    public static final String BCF_FILE_EXTENSION = ".bcf";
+    public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
     /** Possible extensions for VCF files and related formats. */
-    public static final String[] VCF_EXTENSIONS = new String[] {".vcf", ".vcf.gz", ".bcf"};
+    public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
 
     public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
 
