@@ -1071,4 +1071,35 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         sam.setReadString(readBases);
         Assert.assertEquals(sam.getReadLength(), readLength);
     }
+
+    @DataProvider(name = "attributeAccessTestData")
+    private Object[][] hasAttributeTestData() throws IOException {
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File("src/test/resources/htsjdk/samtools/SAMIntegerTagTest/variousAttributes.sam"));
+        final SAMRecord samRecordWithAttributes = reader.iterator().next();
+        final SAMRecord samRecordWithoutAnyAttributes = new SAMRecord(reader.getFileHeader());
+        reader.close();
+
+        return new Object[][] {
+                {samRecordWithAttributes, "MF", true},
+                {samRecordWithAttributes, "Nm", true},
+                {samRecordWithAttributes, "H0", true},
+                {samRecordWithAttributes, "H1", true},
+                {samRecordWithAttributes, "SB", true},
+                {samRecordWithAttributes, "UB", true},
+                {samRecordWithAttributes, "SS", true},
+                {samRecordWithAttributes, "US", true},
+                {samRecordWithAttributes, "SI", true},
+                {samRecordWithAttributes, "I2", true},
+                {samRecordWithAttributes, "UI", true},
+
+                {samRecordWithAttributes, "AS", false},
+
+                {samRecordWithoutAnyAttributes, "RG", false}
+        };
+    }
+
+    @Test(dataProvider = "attributeAccessTestData")
+    public void testHasAttribute(final SAMRecord samRecord, final String tag, final boolean expectedHasAttribute) {
+        Assert.assertEquals(samRecord.hasAttribute(tag), expectedHasAttribute);
+    }
 }
