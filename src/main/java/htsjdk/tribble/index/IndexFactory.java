@@ -436,7 +436,7 @@ public class IndexFactory {
             }
         }
 
-        private PositionalBufferedStream initIndexablePositionalStream(final File inputFile) {
+        private static PositionalBufferedStream initIndexablePositionalStream(final File inputFile) {
             try {
                 final FileInputStream fileStream = new FileInputStream(inputFile);
                 return new PositionalBufferedStream(fileStream);
@@ -445,13 +445,11 @@ public class IndexFactory {
             }
         }
 
-        private BlockCompressedInputStream initIndexableBlockCompressedStream(final File inputFile) {
-             try {
-                final FileInputStream fileStream = new FileInputStream(inputFile);
+        private static BlockCompressedInputStream initIndexableBlockCompressedStream(final File inputFile) {
+            final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
 
-                // make a buffered stream to test that this is in fact a valid block compressed file
-                final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-                final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream, bufferSize);
+            // make a buffered stream to test that this is in fact a valid block compressed file
+            try (final BufferedInputStream bufferedStream = new BufferedInputStream(new FileInputStream(inputFile), bufferSize)){
 
                 if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
                     throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
@@ -460,7 +458,7 @@ public class IndexFactory {
 
                 final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
                 final SeekableStream seekableStream = ssf.getStreamFor(inputFile.getAbsolutePath());
-                 return new BlockCompressedInputStream(seekableStream);
+                return new BlockCompressedInputStream(seekableStream);
             } catch (final FileNotFoundException e) {
                 throw new TribbleException.FeatureFileDoesntExist("Unable to open the input file, most likely the file doesn't exist.", inputFile.getAbsolutePath());
             } catch (final IOException e) {
