@@ -27,13 +27,28 @@ import java.io.InputStream;
 /**
  * The base interface for classes that read in features.
  * <p/>
- * FeatureCodecs have to implement two key methods:
+ * FeatureCodecs must implement several key methods:
  * <p/>
- * {@link #readHeader(SOURCE)} - Reads the header, provided a {@link SOURCE} pointing at the beginning of the source input.
- * {@link #decode(SOURCE)} - Reads a {@link Feature} record, provided a {@link SOURCE} pointing at the beginning of a record within the 
- * source input.
+ * <ul>
+ * <li>{@link #makeSourceFromStream} Return a {@link SOURCE} for this {@link FeatureCodec} given an input stream that is buffered.
+ * <li>{@link #makeIndexableSourceFromStream} Return a {@link SOURCE} for this {@link FeatureCodec} that implements {@link LocationAware},
+ * and is thus suitable for use during indexing. During the indexing process, the indexer passes the {@link SOURCE} to the codec
+ * to consume Features from the underlying {@link SOURCE}, one at a time, recording the Feature location via the {@link SOURCE}'s
+ * {@link LocationAware} interface. Therefore, it is essential that the {@link SOURCE} implementation, the {@link #readHeader}
+ * method, and the {@link #decodeLoc} method, not introduce any buffering that would that would advance the {@link SOURCE}
+ * more than a single feature (or the more than the size of the header, in the case of {@link #readHeader}). Otherwise the
+ * index will be corrupt.
+ * <li>{@link #readHeader} - Reads the header, provided a {@link SOURCE} pointing at the beginning of the source input.
+ * The implementation of this method must not consume any input from the underlying SOURCE beyond the end of the header.
+ * <li>{@link #decode} - Reads a {@link Feature} record, provided a {@link SOURCE} pointing at the beginning of a
+ * record within the source input.
+ * <li>{@link #decodeLoc} - Reads a {@link Feature} record, provided a {@link SOURCE} pointing at the beginning of a
+ * record within the source input. The implementation of this method must not consume any input from the underlying stream
+ * beyond the end of the {@link Feature} returned.
+ * </ul>
  * <p/>
- * Note that it's not safe to carry state about the {@link SOURCE} within the codec.  There's no guarantee about its  state between calls.
+ * Note that it's not safe to carry state about the {@link SOURCE} within the codec.  There's no guarantee about its
+ * state between calls.
  *
  * @param <FEATURE_TYPE> The type of {@link Feature} this codec generates
  * @param <SOURCE> The type of the data source this codec reads from
@@ -88,14 +103,22 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
     public SOURCE makeSourceFromStream(final InputStream bufferedInputStream);
 
     /**
-     * Generates a {@link LocationAware} reader of type {@link SOURCE}.  Like {@link #makeSourceFromStream(java.io.InputStream)}, except
+     * Return a {@link SOURCE} for this {@link FeatureCodec} that implements {@link LocationAware},
+     * and is thus suitable for use during indexing. Like {@link #makeSourceFromStream(java.io.InputStream)}, except
      * the {@link LocationAware} compatibility is required for creating indexes.
-     * 
+     * </p>
      * Implementers of this method must return a type that is both {@link LocationAware} as well as {@link SOURCE}.  Note that this 
      * requirement cannot be enforced via the method signature due to limitations in Java's generic typing system.  Instead, consumers
      * should cast the call result into a {@link SOURCE} when applicable.
+     *</p>
+     * NOTE: During the indexing process, the indexer passes the {@link SOURCE} to the codec
+     * to consume Features from the underlying {@link SOURCE}, one at a time, recording the Feature location via the {@link SOURCE}'s
+     * {@link LocationAware} interface. Therefore, it is essential that the {@link SOURCE} implementation, the {@link #readHeader}
+     * method, and the {@link #decodeLoc} method, which are used during indexing, not introduce any buffering that would that
+     * would advance the {@link SOURCE} more than a single feature (or the more than the size of the header, in the case of
+     * {@link #readHeader}).
      */
-    public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream);
+    public LocationAware makeIndexableSourceFromStream(final InputStream inputStream);
 
     /** Adapter method that assesses whether the provided {@link SOURCE} has more data. True if it does, false otherwise. */
     public boolean isDone(final SOURCE source);

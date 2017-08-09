@@ -25,26 +25,62 @@
 package htsjdk.tribble.bed;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureReader;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.annotation.Strand;
 import htsjdk.tribble.bed.FullBEDFeature.Exon;
-import htsjdk.tribble.index.IndexFactory;
-import htsjdk.tribble.index.linear.LinearIndex;
 import htsjdk.tribble.index.tabix.TabixFormat;
-import htsjdk.tribble.util.LittleEndianOutputStream;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.LineIterator;
+import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.util.ParsingUtils;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.awt.*;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public class BEDCodecTest extends HtsjdkTest {
+
+    @DataProvider(name = "gzippedBedTestData")
+    public Object[][] getBedTestData(){
+        return new Object[][] {
+                {
+                    // BGZP BED file with no header, 2 features
+                    new File(TestUtils.DATA_DIR, "bed/2featuresNoHeader.bed.gz"), 0  // header has length 0
+                },
+                {
+                    // BGZP BED file with one line header, 2 features
+                    new File(TestUtils.DATA_DIR, "bed/2featuresWithHeader.bed.gz"), 10 // header has length 10
+
+                }
+        };
+    }
+
+    @Test(dataProvider = "gzippedBedTestData")
+    public void testReadActualHeader(final File gzippedBedFile, final int firstFeatureOffset) throws IOException {
+        // Given an indexable SOURCE on a BED file, test that readActualHeader retains the correct offset
+        // of the first feature, whether there is a header or not
+        BEDCodec bedCodec = new BEDCodec();
+        try (final InputStream is = ParsingUtils.openInputStream(gzippedBedFile.getPath());
+             final BlockCompressedInputStream bcis = new BlockCompressedInputStream(is))
+        {
+            AsciiLineReaderIterator it = (AsciiLineReaderIterator) bedCodec.makeIndexableSourceFromStream(bcis);
+            Object header = bedCodec.readActualHeader(it);
+            // BEDCodec doesn't model or return the BED header, even when there is one!
+            Assert.assertNull(header);
+            Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(it.getPosition()), 0);
+            Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(it.getPosition()), firstFeatureOffset);
+        }
+    }
 
     @Test
     public void testSimpleDecode() {
@@ -203,24 +239,6 @@ public class BEDCodecTest extends HtsjdkTest {
             count += 1;
         }
         reader.close();
-    }
-
-    private void createIndex(File testFile, File idxFile) throws IOException {
-        // Create an index if missing
-        if (idxFile.exists()) {
-            idxFile.delete();
-        }
-        LinearIndex idx = (LinearIndex) IndexFactory.createLinearIndex(testFile, new BEDCodec());
-
-        LittleEndianOutputStream stream = null;
-        try {
-            stream = new LittleEndianOutputStream(new BufferedOutputStream(new FileOutputStream(idxFile)));
-            idx.write(stream);
-        } finally {
-            if (stream != null) {
-                stream.close();
-            }
-        }
     }
 
     @Test

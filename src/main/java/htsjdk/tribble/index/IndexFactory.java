@@ -28,9 +28,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
-import htsjdk.samtools.util.BlockCompressedInputStream;
-import htsjdk.samtools.util.BlockCompressedStreamConstants;
-import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.*;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
@@ -39,7 +37,7 @@ import htsjdk.tribble.index.linear.LinearIndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
-import htsjdk.tribble.readers.PositionalBufferedStream;
+import htsjdk.tribble.readers.*;
 import htsjdk.tribble.util.LittleEndianInputStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
@@ -60,7 +58,7 @@ import java.util.zip.GZIPInputStream;
 
 /**
  * Factory class for creating indexes.  It is the responsibility of this class to determine and create the
- * correct index type from the input file or stream.  Only LinearIndex and IntervalTreeIndex are supported
+ * correct index type from the input file or stream.  LinearIndex, IntervalTreeIndex, and TabixIndex are supported
  * by this factory.
  */
 public class IndexFactory {
@@ -378,8 +376,10 @@ public class IndexFactory {
             lastFeature = currentFeature;
         }
 
+        // Get the end position of the last feature before closing the iterator
+        long finalPosition = iterator.getPosition();
         iterator.close();
-        return creator.finalizeIndex(iterator.getPosition());
+        return creator.finalizeIndex(finalPosition);
     }
 
     private static String featToString(final Feature feature){
@@ -412,62 +412,55 @@ public class IndexFactory {
 
         /**
          *
-         * @param inputFile The file from which to read. Stream for reading is opened on construction.
+         * @param inputFile The file from which to read. Stream for reading is opened on construction. May not be null.
          * @param codec
          */
         public FeatureIterator(final File inputFile, final FeatureCodec<FEATURE_TYPE, SOURCE> codec) {
+            if (inputFile == null) {
+                throw new IllegalArgumentException("FeatureIterator input file cannot be null");
+            }
             this.codec = codec;
             this.inputFile = inputFile;
-            final FeatureCodecHeader header = readHeader();
-            source = (SOURCE) codec.makeIndexableSourceFromStream(initStream(inputFile, header.getHeaderEnd()));
-            readNextFeature();
-        }
-
-        /**
-         * Some codecs,  e.g. VCF files,  need the header to decode features.  This is a rather poor design,
-         * the internal header is set as a side-affect of reading it, but we have to live with it for now.
-         */
-        private FeatureCodecHeader readHeader() {
             try {
-                final SOURCE source = this.codec.makeSourceFromStream(initStream(inputFile, 0));
-                final FeatureCodecHeader header = this.codec.readHeader(source);
-                codec.close(source);
-                return header;
+                if (AbstractFeatureReader.hasBlockCompressedExtension(inputFile)) {
+                    final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(inputFile);
+                    source = (SOURCE) codec.makeIndexableSourceFromStream(bcs);
+                } else {
+                    final PositionalBufferedStream ps = initIndexablePositionalStream(inputFile);
+                    source = (SOURCE) codec.makeIndexableSourceFromStream(ps);
+                }
+                this.codec.readHeader(source);
+                readNextFeature();
             } catch (final IOException e) {
                 throw new TribbleException.InvalidHeader("Error reading header " + e.getMessage());
             }
         }
 
-        private PositionalBufferedStream initStream(final File inputFile, final long skip) {
+        private PositionalBufferedStream initIndexablePositionalStream(final File inputFile) {
             try {
                 final FileInputStream fileStream = new FileInputStream(inputFile);
-                final InputStream is;
+                return new PositionalBufferedStream(fileStream);
+            } catch (final FileNotFoundException e) {
+                throw new TribbleException.FeatureFileDoesntExist("Unable to open the input file, most likely the file doesn't exist.", inputFile.getAbsolutePath());
+            }
+        }
 
-                // if this looks like a block compressed file and it in fact is, we will use it
-                // otherwise we will use the file as is
-                if (AbstractFeatureReader.hasBlockCompressedExtension(inputFile)) {
-                    // make a buffered stream to test that this is in fact a valid block compressed file
-                    final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-                    final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream, bufferSize);
+        private BlockCompressedInputStream initIndexableBlockCompressedStream(final File inputFile) {
+             try {
+                final FileInputStream fileStream = new FileInputStream(inputFile);
 
-                    if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
-                        throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.", inputFile.getAbsolutePath());
-                    }
+                // make a buffered stream to test that this is in fact a valid block compressed file
+                final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
+                final BufferedInputStream bufferedStream = new BufferedInputStream(fileStream, bufferSize);
 
-                    final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
-                    // if we got here, the file is valid, make a SeekableStream for the BlockCompressedInputStream to read from
-                    final SeekableStream seekableStream =
-                            ssf.getBufferedStream(ssf.getStreamFor(inputFile.getAbsolutePath()));
-                    is = new BlockCompressedInputStream(seekableStream);
-                }
-                else {
-                    is = fileStream;
+                if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
+                    throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
+                            inputFile.getAbsolutePath());
                 }
 
-                final PositionalBufferedStream pbs = new PositionalBufferedStream(is);
-
-                if ( skip > 0 ) pbs.skip(skip);
-                return pbs;
+                final ISeekableStreamFactory ssf = SeekableStreamFactory.getInstance();
+                final SeekableStream seekableStream = ssf.getStreamFor(inputFile.getAbsolutePath());
+                 return new BlockCompressedInputStream(seekableStream);
             } catch (final FileNotFoundException e) {
                 throw new TribbleException.FeatureFileDoesntExist("Unable to open the input file, most likely the file doesn't exist.", inputFile.getAbsolutePath());
             } catch (final IOException e) {

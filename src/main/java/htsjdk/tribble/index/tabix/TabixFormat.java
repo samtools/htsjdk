@@ -55,7 +55,8 @@ public class TabixFormat implements Cloneable {
     public int endPositionColumn;
     /** Lines in the file being indexed that start with this character are ignored. */
     public char metaCharacter;
-    /** This is part of the index header, but does not appear to be used. */
+
+    /** TODO: This is written, and part of the index header, but does not appear to be used. */
     public int numHeaderLinesToSkip;
 
     public TabixFormat() {
