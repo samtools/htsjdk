@@ -34,7 +34,7 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.testng.Assert.assertEquals;
 
 /**
  * Tests check that for each alignment block of processed reads, iterator returns a <code>EdgingRecordAndOffset</code>
@@ -80,16 +80,16 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
         int pos = 1;
         final int coveredStart = 165;
         for (final AbstractLocusInfo li : sli) {
-            Assert.assertEquals(li.getPosition(), pos++);
+            assertEquals(li.getPosition(), pos++);
             final int expectedReads;
             if (li.getPosition() == coveredStart || li.getPosition() == coveredEnd) {
                 expectedReads = 2;
             } else {
                 expectedReads = 0;
             }
-            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReads);
+            assertEquals(li.getRecordAndOffsets().size(), expectedReads);
         }
-        Assert.assertEquals(pos, 100001);
+        assertEquals(pos, 100001);
     }
 
     /**
@@ -196,16 +196,16 @@ public class EdgeReadIteratorTest extends AbstractLocusIteratorTestTemplate {
 
         i = 0;
         for (final AbstractLocusInfo<EdgingRecordAndOffset> li : sli) {
-            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedDepths[i]);
-            Assert.assertEquals(li.getPosition(), expectedReferencePositions[i]);
-            Assert.assertEquals(li.getRecordAndOffsets().size(), expectedReadOffsets[i].length);
+            assertEquals(li.getRecordAndOffsets().size(), expectedDepths[i]);
+            assertEquals(li.getPosition(), expectedReferencePositions[i]);
+            assertEquals(li.getRecordAndOffsets().size(), expectedReadOffsets[i].length);
             for (int j = 0; j < expectedReadOffsets[i].length; ++j) {
-                Assert.assertEquals(li.getRecordAndOffsets().get(j).getOffset(), expectedReadOffsets[i][j]);
+                assertEquals(li.getRecordAndOffsets().get(j).getOffset(), expectedReadOffsets[i][j]);
                 if (start.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.BEGIN);
+                    assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.BEGIN);
                 }
                 if (end.contains(li.getPosition() - 1)) {
-                    Assert.assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.END);
+                    assertEquals(li.getRecordAndOffsets().get(j).getType(), EdgingRecordAndOffset.Type.END);
                 }
             }
             ++i;

@@ -1,4 +1,4 @@
-#/bin/bash
+#!/usr/bin/env bash
 
 # Check that Scala files only exist in the scala test dir and
 # that java files do not reside in the scala test dir

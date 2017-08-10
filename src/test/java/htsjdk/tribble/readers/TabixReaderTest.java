@@ -14,9 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static org.testng.AssertJUnit.assertTrue;
-
-
 /**
  * Created by IntelliJ IDEA.
  * User: jrobinso
@@ -129,10 +126,10 @@ public class TabixReaderTest extends HtsjdkTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
 
     }
@@ -154,10 +151,10 @@ public class TabixReaderTest extends HtsjdkTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
     }
 }

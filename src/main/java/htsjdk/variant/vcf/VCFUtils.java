@@ -183,6 +183,8 @@ public class VCFUtils {
             assembly = "hg18";
         else if (refPath.contains("hg19"))
             assembly = "hg19";
+        else if (refPath.contains("hg38"))
+            assembly = "hg38";
         return assembly;
     }
 
