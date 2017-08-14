@@ -44,6 +44,8 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.lang.IllegalArgumentException;
+import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -265,6 +267,22 @@ public class IOUtilTest extends HtsjdkTest {
                 {"/non/existent/file", Boolean.TRUE},
         };
     }
+
+
+    @DataProvider
+    public Object[][] getFiles(){
+        final File file = new File("someFile");
+        return new Object[][] {
+                {null, null},
+                {file, file.toPath()}
+        };
+    }
+
+    @Test(dataProvider = "getFiles")
+    public void testToPath(final File file, final Path expected){
+        Assert.assertEquals(IOUtil.toPath(file), expected);
+    }
+
 
     @DataProvider(name = "fileNamesForDelete")
     public Object[][] fileNamesForDelete() {

@@ -50,7 +50,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      * @param file Fasta file to read.  Also acts as a prefix for supporting files.
      */
     AbstractFastaSequenceFile(final File file) {
-        this(file == null ? null : file.toPath());
+        this(IOUtil.toPath(file));
     }
 
     /**
@@ -86,10 +86,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     }
 
     protected static File findSequenceDictionary(final File file) {
-        if (file == null) {
-            return null;
-        }
-        Path dictionary = findSequenceDictionary(file.toPath());
+        final Path dictionary = findSequenceDictionary(IOUtil.toPath(file));
         if (dictionary == null) {
             return null;
         }

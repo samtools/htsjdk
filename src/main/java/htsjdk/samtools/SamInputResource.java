@@ -271,7 +271,7 @@ class FileInputResource extends InputResource {
 
     @Override
     public Path asPath() {
-        return fileResource.toPath();
+        return IOUtil.toPath(fileResource);
     }
 
     @Override

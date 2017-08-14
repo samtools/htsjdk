@@ -53,7 +53,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
 
     /** Constructs a FastaSequenceFile that reads from the specified file. */
     public FastaSequenceFile(final File file, final boolean truncateNamesAtWhitespace) {
-        this(file == null ? null : file.toPath(), truncateNamesAtWhitespace);
+        this(IOUtil.toPath(file), truncateNamesAtWhitespace);
     }
 
     /** Constructs a FastaSequenceFile that reads from the specified file. */

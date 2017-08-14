@@ -18,6 +18,7 @@
 
 package htsjdk.tribble.index.linear;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.index.AbstractIndex;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -84,7 +85,7 @@ public class LinearIndex extends AbstractIndex {
      * @param featureFile
      */
     public LinearIndex(final List<ChrIndex> indices, final File featureFile) {
-        this(indices, featureFile.toPath());
+        this(indices, IOUtil.toPath(featureFile));
     }
 
     private LinearIndex(final LinearIndex parent, final List<ChrIndex> indices) {

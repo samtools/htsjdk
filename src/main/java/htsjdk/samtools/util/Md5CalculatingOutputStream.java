@@ -27,7 +27,6 @@ import htsjdk.samtools.SAMException;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -68,7 +67,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
     }
 
     public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
-        this(os, digestFile == null ? (Path) null : digestFile.toPath());
+        this(os, IOUtil.toPath(digestFile));
     }
 
     @Override
