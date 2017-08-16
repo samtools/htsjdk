@@ -68,7 +68,7 @@ public class VCFHeader implements Serializable {
     private final Map<String, VCFFormatHeaderLine> mFormatMetaData = new LinkedHashMap<String, VCFFormatHeaderLine>();
     private final Map<String, VCFFilterHeaderLine> mFilterMetaData = new LinkedHashMap<String, VCFFilterHeaderLine>();
     private final Map<String, VCFHeaderLine> mOtherMetaData = new LinkedHashMap<String, VCFHeaderLine>();
-    private final List<VCFContigHeaderLine> contigMetaData = new ArrayList<VCFContigHeaderLine>();
+    private final Map<String, VCFContigHeaderLine> contigMetaData = new LinkedHashMap<>();
 
     // the list of auxillary tags
     private final List<String> mGenotypeSampleNames = new ArrayList<String>();
@@ -188,7 +188,8 @@ public class VCFHeader implements Serializable {
      * @return all of the VCF header lines of the ##contig form in order, or an empty list if none were present
      */
     public List<VCFContigHeaderLine> getContigLines() {
-        return Collections.unmodifiableList(contigMetaData);
+        // this must preserve input order
+        return Collections.unmodifiableList(new ArrayList<>(contigMetaData.values()));
     }
 
     /**
@@ -223,10 +224,8 @@ public class VCFHeader implements Serializable {
         }
         mMetaData.removeAll(toRemove);
         for (final SAMSequenceRecord record : dictionary.getSequences()) {
-            contigMetaData.add(new VCFContigHeaderLine(record, record.getAssembly()));
+            addMetaDataLine(new VCFContigHeaderLine(record, record.getAssembly()));
         }
-
-        this.mMetaData.addAll(contigMetaData);
     }
 
     public VariantContextComparator getVCFRecordComparator() {
@@ -321,18 +320,15 @@ public class VCFHeader implements Serializable {
      * @return true if line was added to the list of contig lines, otherwise false
      */
     private boolean addContigMetaDataLineLookupEntry(final VCFContigHeaderLine line) {
-        for (VCFContigHeaderLine vcfContigHeaderLine : contigMetaData) {
-            // if we are trying to add a contig for the same ID
-            if (vcfContigHeaderLine.getID().equals(line.getID())) {
-                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                    System.err.println("Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only" );
-                }
-                // do not add this contig if it exists
-                return false;
+        // if we are trying to add a contig for the same ID
+        if (contigMetaData.containsKey(line.getID())) {
+            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                System.err.println("Found duplicate VCF contig header lines for " + line.getID() + "; keeping the first only" );
             }
+            // do not add this contig if it exists
+            return false;
         }
-
-        contigMetaData.add(line);
+        contigMetaData.put(line.getID(), line);
         return true;
     }
 
