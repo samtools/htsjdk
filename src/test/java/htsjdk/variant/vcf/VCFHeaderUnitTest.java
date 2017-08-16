@@ -223,7 +223,8 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     @Test
     public void testVCFHeaderAddContigLine() {
         final VCFHeader header = getHiSeqVCFHeader();
-        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine("<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, "chr1", 0);
+        final VCFContigHeaderLine contigLine = new VCFContigHeaderLine(
+                "<ID=chr1,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">", VCFHeaderVersion.VCF4_0, VCFHeader.CONTIG_KEY, 0);
         header.addMetaDataLine(contigLine);
 
         Assert.assertTrue(header.getContigLines().contains(contigLine), "Test contig line not found in contig header lines");
@@ -233,6 +234,36 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertFalse(header.getFormatHeaderLines().contains(contigLine), "Test contig line present in format header lines");
         Assert.assertFalse(header.getFilterLines().contains(contigLine), "Test contig line present in filter header lines");
         Assert.assertFalse(header.getOtherHeaderLines().contains(contigLine), "Test contig line present in other header lines");
+    }
+
+    @Test
+    public void testVCFHeaderHonorContigLineOrder() throws IOException {
+        try (final VCFFileReader vcfReader = new VCFFileReader(new File(variantTestDataRoot + "dbsnp_135.b37.1000.vcf"), false)) {
+            // start with a header with a bunch of contig lines
+            final VCFHeader header = vcfReader.getFileHeader();
+            final List<VCFContigHeaderLine> originalHeaderList = header.getContigLines();
+            Assert.assertTrue(originalHeaderList.size() > 0);
+
+            // copy the contig lines to a new list, sticking an extra contig line in the middle
+            final List<VCFContigHeaderLine> orderedList = new ArrayList<>();
+            final int splitInTheMiddle = originalHeaderList.size() / 2;
+            orderedList.addAll(originalHeaderList.subList(0, splitInTheMiddle));
+            final VCFContigHeaderLine outrageousContigLine = new VCFContigHeaderLine(
+                    "<ID=outrageousID,length=1234567890,assembly=FAKE,md5=f126cdf8a6e0c7f379d618ff66beb2da,species=\"Homo sapiens\">",
+                    VCFHeaderVersion.VCF4_2,
+                    VCFHeader.CONTIG_KEY,
+                    0);
+            orderedList.add(outrageousContigLine);
+            // make sure the extra contig line is outrageous enough to not collide with a real contig ID
+            Assert.assertTrue(orderedList.contains(outrageousContigLine));
+            orderedList.addAll(originalHeaderList.subList(splitInTheMiddle, originalHeaderList.size()));
+            Assert.assertEquals(originalHeaderList.size() + 1, orderedList.size());
+
+            // crete a new header from the ordered list, and test that getContigLines honors the input order
+            final VCFHeader orderedHeader = new VCFHeader();
+            orderedList.forEach(hl -> orderedHeader.addMetaDataLine(hl));
+            Assert.assertEquals(orderedList, orderedHeader.getContigLines());
+        }
     }
 
     @Test
