@@ -48,28 +48,57 @@ public class SAMReadGroupRecordTest extends HtsjdkTest {
     }
 
     @Test
-    public void testGettersAndSetters() throws Exception {
+    public void testReadGroupIdGetters() throws Exception {
         final SAMReadGroupRecord rg = new SAMReadGroupRecord("rg1");
-        // test the ID from the two getters
         Assert.assertEquals(rg.getId(), "rg1");
         Assert.assertEquals(rg.getReadGroupId(), "rg1");
-
-        // test that the rest of getters returns null if unset
-        testGetterAndSetter(rg, "sample", SAMReadGroupRecord::setSample, SAMReadGroupRecord::getSample);
-        testGetterAndSetter(rg, "library", SAMReadGroupRecord::setLibrary, SAMReadGroupRecord::getLibrary);
-        testGetterAndSetter(rg, "library", SAMReadGroupRecord::setPlatformUnit, SAMReadGroupRecord::getPlatformUnit);
-        testGetterAndSetter(rg, "platform", SAMReadGroupRecord::setPlatform, SAMReadGroupRecord::getPlatform);
-        testGetterAndSetter(rg, new Iso8601Date(new Date()), SAMReadGroupRecord::setRunDate, SAMReadGroupRecord::getRunDate);
-        testGetterAndSetter(rg, "flow_order", SAMReadGroupRecord::setFlowOrder, SAMReadGroupRecord::getFlowOrder);
-        testGetterAndSetter(rg, "key_sequence", SAMReadGroupRecord::setKeySequence, SAMReadGroupRecord::getKeySequence);
-        testGetterAndSetter(rg, "sequencing_center", SAMReadGroupRecord::setSequencingCenter, SAMReadGroupRecord::getSequencingCenter);
-        testGetterAndSetter(rg, "description", SAMReadGroupRecord::setDescription, SAMReadGroupRecord::getDescription);
-        testGetterAndSetter(rg, 10, SAMReadGroupRecord::setPredictedMedianInsertSize, SAMReadGroupRecord::getPredictedMedianInsertSize);
-        testGetterAndSetter(rg, "program_group", SAMReadGroupRecord::setProgramGroup, SAMReadGroupRecord::getProgramGroup);
-        testGetterAndSetter(rg, "platform_model", SAMReadGroupRecord::setPlatformModel, SAMReadGroupRecord::getPlatformModel);
     }
 
-    private static <T> void testGetterAndSetter(final SAMReadGroupRecord record, final T value,
+    @DataProvider
+    public Object[][] gettersAndSetters() {
+        final SAMReadGroupRecord rg = new SAMReadGroupRecord("rg");
+        return new Object[][] {
+                {rg, "sample",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setSample,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getSample},
+                {rg, "library",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setLibrary,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getLibrary},
+                {rg, "library",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setPlatformUnit,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getPlatformUnit},
+                {rg, "platform",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setPlatform,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getPlatform},
+                {rg, new Iso8601Date(new Date()),
+                        (BiConsumer<SAMReadGroupRecord, Date>) SAMReadGroupRecord::setRunDate,
+                        (Function<SAMReadGroupRecord, Date>) SAMReadGroupRecord::getRunDate},
+                {rg, "flow_order",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setFlowOrder,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getFlowOrder},
+                {rg, "key_sequence",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setKeySequence,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getKeySequence},
+                {rg, "sequencing_center",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setSequencingCenter,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getSequencingCenter},
+                {rg, "description",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setDescription,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getDescription},
+                {rg, 10,
+                        (BiConsumer<SAMReadGroupRecord, Integer>) SAMReadGroupRecord::setPredictedMedianInsertSize,
+                        (Function<SAMReadGroupRecord, Integer>) SAMReadGroupRecord::getPredictedMedianInsertSize},
+                {rg, "program_group",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setProgramGroup,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getProgramGroup},
+                {rg, "platform_model",
+                        (BiConsumer<SAMReadGroupRecord, String>) SAMReadGroupRecord::setPlatformModel,
+                        (Function<SAMReadGroupRecord, String>) SAMReadGroupRecord::getPlatformModel}
+        };
+    }
+
+    @Test(dataProvider = "gettersAndSetters")
+    public <T> void testGetterAndSetter(final SAMReadGroupRecord record, final T value,
             final BiConsumer<SAMReadGroupRecord, T> setter,
             final Function<SAMReadGroupRecord, T> getter) {
         Assert.assertNull(getter.apply(record));
