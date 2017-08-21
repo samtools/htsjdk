@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.StringUtil;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -49,8 +51,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     private String mSequenceName = null; // Value must be interned() if it's ever set/modified
-    @XmlAttribute(name = "alternative_sequence_names")
-    private Set<String> mAlternativeSequenceName = new LinkedHashSet<>();
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
     public static final String SEQUENCE_NAME_TAG = "SN";
@@ -86,6 +86,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     // alternative sequence name regexp
     private static final Pattern ALTERNATIVE_SEQUENCE_NAME_REGEXP = Pattern.compile("[0-9A-Za-z][0-9A-Za-z*+.@-]*");
+    private static final String ALTERNATIVE_SEQUENCE_NAME_SEPARATOR = ",";
 
     /** a (private) empty constructor is required for JAXB.XML-serialisation */
     @SuppressWarnings("unused")
@@ -151,35 +152,47 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     // Private state used only by SAM implementation.
     public void setSequenceIndex(final int value) { mSequenceIndex = value; }
 
-    /** Returns unmodifiable set with alternative sequence names. */
-    @XmlTransient //we use the field instead of getter/setter
+    /** Returns a set with alternative sequence names. Modifications will not affect the record instance. */
+    @XmlAttribute(name = "alternative_sequence_names")
     public Set<String> getAlternativeSequenceNames() {
-        return Collections.unmodifiableSet(mAlternativeSequenceName);
+        final String anTag = getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG);
+        return (anTag == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)));
     }
 
     /** Adds an alternative sequence name if it is not the same as the sequence name or it is not present already. */
     public void addAlternativeSequenceName(final String name) {
-        if (!ALTERNATIVE_SEQUENCE_NAME_REGEXP.matcher(name).matches()) {
-            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, ALTERNATIVE_SEQUENCE_NAME_REGEXP));
+        validateAltRegExp(name);
+        final Set<String> altSequences = getAlternativeSequenceNames();
+        if (!mSequenceName.equals(name) && ! altSequences.contains(name) ) {
+            altSequences.add(name);
         }
-        if (!mSequenceName.equals(name) && ! mAlternativeSequenceName.contains(name) ) {
-            mAlternativeSequenceName.add(name);
-        }
+        encodeAltSequences(altSequences);
     }
 
     /** Sets the alternative sequence names in the order provided by iteration, removing the previous values. */
     public void setAlternativeSequenceName(final Collection<String> alternativeSequences) {
-        mAlternativeSequenceName.clear();
-        if (alternativeSequences != null) {
-            for(final String altSeq: alternativeSequences) {
-                addAlternativeSequenceName(altSeq);
-            }
+        if (alternativeSequences == null) {
+            setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, null);
+        } else {
+            // validate all the names and encode afterwards
+            alternativeSequences.forEach(SAMSequenceRecord::validateAltRegExp);
+            encodeAltSequences(alternativeSequences);
         }
+    }
+
+    private static void validateAltRegExp(final String name) {
+        if (!ALTERNATIVE_SEQUENCE_NAME_REGEXP.matcher(name).matches()) {
+            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, ALTERNATIVE_SEQUENCE_NAME_REGEXP));
+        }
+    }
+
+    private void encodeAltSequences(final Collection<String> alternativeSequences) {
+        setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, StringUtil.join(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR, alternativeSequences));
     }
 
     /** Returns {@code true} if there are alternative sequence names; {@code false} otherwise. */
     public boolean hasAlternativeSequenceNames() {
-        return !mAlternativeSequenceName.isEmpty();
+        return getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG) != null;
     }
 
     /**

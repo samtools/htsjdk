@@ -498,14 +498,12 @@ public class SAMTextHeaderCodec {
     }
 
     protected String getSQLine(final SAMSequenceRecord sequenceRecord) {
-        int numAttributes = sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
-        if (sequenceRecord.hasAlternativeSequenceNames()) numAttributes++;
+        final int numAttributes = sequenceRecord.getAttributes() != null ? sequenceRecord.getAttributes().size() : 0;
         final String[] fields = new String[3 + numAttributes];
         fields[0] = HEADER_LINE_START + HeaderRecordType.SQ;
         fields[1] = SAMSequenceRecord.SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + sequenceRecord.getSequenceName();
         fields[2] = SAMSequenceRecord.SEQUENCE_LENGTH_TAG + TAG_KEY_VALUE_SEPARATOR + Integer.toString(sequenceRecord.getSequenceLength());
         encodeTags(sequenceRecord, fields, 3);
-        if (sequenceRecord.hasAlternativeSequenceNames()) fields[fields.length - 1] = SAMSequenceRecord.ALTERNATIVE_SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + String.join(",", sequenceRecord.getAlternativeSequenceNames());
         return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
