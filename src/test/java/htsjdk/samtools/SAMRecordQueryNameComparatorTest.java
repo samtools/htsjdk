@@ -118,19 +118,7 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
     @Test(dataProvider = "equalNameComparisonData")
     public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
         final int comparisonResult = COMPARATOR.compare(record1, record2);
-        switch (sign) {
-            case -1:
-                Assert.assertTrue(comparisonResult < 0);
-                break;
-            case 0:
-                Assert.assertEquals(comparisonResult, 0);
-                break;
-            case 1:
-                Assert.assertTrue(comparisonResult > 0);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid sign: " + sign);
-        }
+        Assert.assertEquals(Integer.signum(comparisonResult),sign);
     }
 
 }

@@ -42,8 +42,8 @@ public class SAMRecordQueryHashComparatorTest extends HtsjdkTest {
         final SAMRecord b = new SAMRecord(null);
         b.setReadName("B");
         // hashes are providing a different order in this case
-        Assert.assertTrue(COMPARATOR.compare(a, b) > 0);
-        Assert.assertTrue(COMPARATOR.compare(b, a) < 0);
+        Assert.assertTrue(COMPARATOR.compare(a, b) != 0);
+        Assert.assertTrue(COMPARATOR.compare(b, a) != 0);
     }
 
     // with equal names, it delegates to the SAMRecordQuerynameComparator methods
@@ -51,18 +51,6 @@ public class SAMRecordQueryHashComparatorTest extends HtsjdkTest {
     @Test(dataProvider = "equalNameComparisonData", dataProviderClass = SAMRecordQueryNameComparatorTest.class)
     public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
         final int comparisonResult = COMPARATOR.compare(record1, record2);
-        switch (sign) {
-            case -1:
-                Assert.assertTrue(comparisonResult < 0);
-                break;
-            case 0:
-                Assert.assertEquals(comparisonResult, 0);
-                break;
-            case 1:
-                Assert.assertTrue(comparisonResult > 0);
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid sign: " + sign);
-        }
+        Assert.assertEquals(Integer.signum(comparisonResult), sign);
     }
 }
