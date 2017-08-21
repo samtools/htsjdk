@@ -73,7 +73,7 @@ public class SAMSequenceDictionaryTest extends HtsjdkTest {
         dict.addAlternativeSequenceName("01", "chr01");
         Assert.assertEquals(dict.size(), 2);
         Assert.assertTrue(dict.getSequence("chr1").hasAlternativeSequenceNames());
-        Assert.assertEquals(dict.getSequence("1").getAlternativeSequeneNames().size(), 3);
+        Assert.assertEquals(dict.getSequence("1").getAlternativeSequenceNames().size(), 3);
         Assert.assertNull(dict.getSequence("chr2"));
     }
 

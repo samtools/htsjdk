@@ -49,7 +49,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
     private String mSequenceName = null; // Value must be interned() if it's ever set/modified
-    @XmlAttribute(name = "alternative_sequece_names")
+    @XmlAttribute(name = "alternative_sequence_names")
     private Set<String> mAlternativeSequenceName = new LinkedHashSet<>();
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
@@ -83,6 +83,9 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     private static Pattern SEQUENCE_NAME_SPLITTER = Pattern.compile("\\s");
     // These are the chars matched by \\s.
     private static char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
+
+    // alternative sequence name regexp
+    private static final Pattern ALTERNATIVE_SEQUENCE_NAME_REGEXP = Pattern.compile("[0-9A-Za-z][0-9A-Za-z*+.@-]*");
 
     /** a (private) empty constructor is required for JAXB.XML-serialisation */
     @SuppressWarnings("unused")
@@ -150,12 +153,15 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     /** Returns unmodifiable set with alternative sequence names. */
     @XmlTransient //we use the field instead of getter/setter
-    public Set<String> getAlternativeSequeneNames() {
+    public Set<String> getAlternativeSequenceNames() {
         return Collections.unmodifiableSet(mAlternativeSequenceName);
     }
 
     /** Adds an alternative sequence name if it is not the same as the sequence name or it is not present already. */
     public void addAlternativeSequenceName(final String name) {
+        if (!ALTERNATIVE_SEQUENCE_NAME_REGEXP.matcher(name).matches()) {
+            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, ALTERNATIVE_SEQUENCE_NAME_REGEXP));
+        }
         if (!mSequenceName.equals(name) && ! mAlternativeSequenceName.contains(name) ) {
             mAlternativeSequenceName.add(name);
         }
@@ -164,8 +170,10 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     /** Sets the alternative sequence names in the order provided by iteration, removing the previous values. */
     public void setAlternativeSequenceName(final Collection<String> alternativeSequences) {
         mAlternativeSequenceName.clear();
-        if (alternativeSequences != null && !alternativeSequences.isEmpty()) {
-            mAlternativeSequenceName.addAll(alternativeSequences);
+        if (alternativeSequences != null) {
+            for(final String altSeq: alternativeSequences) {
+                addAlternativeSequenceName(altSeq);
+            }
         }
     }
 
@@ -194,8 +202,16 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             }
         }
         else {
-            // TODO: should this also check in the alternative sequences names?
-            if (mSequenceName != that.mSequenceName) return false; // Compare using == since we intern() the Strings
+            // Compare using == since we intern() the Strings
+            if (mSequenceName != that.mSequenceName) {
+                // if they are different, they could still be the same based on the alternative sequences
+                if (getAlternativeSequenceNames().contains(that.mSequenceName) ||
+                        that.getAlternativeSequenceNames().contains(mSequenceName)) {
+                    return true;
+                }
+                return false;
+            }
+
         }
 
         return true;
@@ -220,7 +236,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         if (mSequenceLength != that.mSequenceLength) return false;
         if (!attributesEqual(that)) return false;
         if (mSequenceName != that.mSequenceName) return false; // Compare using == since we intern() the name
-        // TODO: should this also compare the alternative names?
+        if (!getAlternativeSequenceNames().equals(that.getAlternativeSequenceNames())) return false;
 
         return true;
     }

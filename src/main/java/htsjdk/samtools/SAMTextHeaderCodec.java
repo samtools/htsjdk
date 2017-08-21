@@ -505,7 +505,7 @@ public class SAMTextHeaderCodec {
         fields[1] = SAMSequenceRecord.SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + sequenceRecord.getSequenceName();
         fields[2] = SAMSequenceRecord.SEQUENCE_LENGTH_TAG + TAG_KEY_VALUE_SEPARATOR + Integer.toString(sequenceRecord.getSequenceLength());
         encodeTags(sequenceRecord, fields, 3);
-        if (sequenceRecord.hasAlternativeSequenceNames()) fields[fields.length - 1] = SAMSequenceRecord.ALTERNATIVE_SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + String.join(",", sequenceRecord.getAlternativeSequeneNames());
+        if (sequenceRecord.hasAlternativeSequenceNames()) fields[fields.length - 1] = SAMSequenceRecord.ALTERNATIVE_SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + String.join(",", sequenceRecord.getAlternativeSequenceNames());
         return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 

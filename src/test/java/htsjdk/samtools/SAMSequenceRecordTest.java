@@ -92,21 +92,39 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
 
         // no AN tag yet
         Assert.assertFalse(chr1.hasAlternativeSequenceNames());
-        Assert.assertTrue(chr1.getAlternativeSequeneNames().isEmpty());
+        Assert.assertTrue(chr1.getAlternativeSequenceNames().isEmpty());
 
         // set to a random alias
-        chr1.addAlternativeSequenceName("my_chromosome");
-        // TODO: if equals is changed, the two objects shouldn't be equals
-        Assert.assertEquals(chr1, new SAMSequenceRecord(chr1.getSequenceName(), chr1.getSequenceLength()));
+        chr1.addAlternativeSequenceName("my-chromosome");
+        Assert.assertNotEquals(chr1, new SAMSequenceRecord(chr1.getSequenceName(), chr1.getSequenceLength()));
         Assert.assertTrue(chr1.hasAlternativeSequenceNames());
-        Assert.assertEquals(chr1.getAlternativeSequeneNames(), Collections.singleton("my_chromosome"));
-        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:my_chromosome", chr1.getSAMString());
+        Assert.assertEquals(chr1.getAlternativeSequenceNames(), Collections.singleton("my-chromosome"));
+        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:my-chromosome", chr1.getSAMString());
 
         // set to new chromosome aliases (removing previous)
-        final List<String> chr1AltNames = Arrays.asList("chr1","chr01","01","CM000663","NC_000001.10");
+        final List<String> chr1AltNames = Arrays.asList("chr1","chr01","01","CM000663");
         chr1.setAlternativeSequenceName(chr1AltNames);
         Assert.assertTrue(chr1.hasAlternativeSequenceNames());
-        Assert.assertEquals(chr1.getAlternativeSequeneNames(),  chr1AltNames);
-        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:chr1,chr01,01,CM000663,NC_000001.10", chr1.getSAMString());
+        Assert.assertEquals(chr1.getAlternativeSequenceNames(),  chr1AltNames);
+        Assert.assertEquals("@SQ\tSN:1\tLN:100\tAN:chr1,chr01,01,CM000663", chr1.getSAMString());
+    }
+
+    @DataProvider
+    public Object[][] invalidAlternativeSequences() {
+        return new Object[][] {
+                // invalid start
+                {"@chr1"}, {",chr1"},
+                // comma-separated
+                {"chr1,alt"},
+                // coordinate-like
+                {"chr1:1000"}, {"chr1:100-200"}
+        };
+    }
+
+    @Test(dataProvider = "invalidAlternativeSequences")
+    public void testInvalidAlternativeSequences(final String altName) {
+        final SAMSequenceRecord chr1 = new SAMSequenceRecord("1", 100);
+        Assert.assertThrows(IllegalArgumentException.class, () -> chr1.addAlternativeSequenceName(altName));
+        Assert.assertThrows(IllegalArgumentException.class, () -> chr1.setAlternativeSequenceName(Collections.singleton(altName)));
     }
 }
