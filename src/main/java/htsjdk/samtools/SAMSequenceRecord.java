@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.StringUtil;
 
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
@@ -86,6 +87,8 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     // These are the chars matched by \\s.
     private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
+    // alternative sequence name separator
+    private static final String ALTERNATIVE_SEQUENCE_NAME_SEPARATOR = ",";
     private static final Pattern LEGAL_RNAME_PATTERN = Pattern.compile("[0-9A-Za-z!#$%&+./:;?@^_|~-][0-9A-Za-z!#$%&*+./:;=?@^_|~-]*");
 
     /**
@@ -134,32 +137,44 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     /** Returns unmodifiable set with alternative sequence names. */
     public Set<String> getAlternativeSequenceNames() {
-        return Collections.unmodifiableSet(mAlternativeSequenceName);
+        final String anTag = getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG);
+        return (anTag == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(Arrays.asList(anTag.split(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR)));
     }
 
     /** Adds an alternative sequence name if it is not the same as the sequence name or it is not present already. */
     public void addAlternativeSequenceName(final String name) {
-        if (!LEGAL_RNAME_PATTERN.matcher(name).matches()) {
-            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, LEGAL_RNAME_PATTERN));
+        validateAltRegExp(name);
+        final Set<String> altSequences = getAlternativeSequenceNames();
+        if (!mSequenceName.equals(name) && ! altSequences.contains(name) ) {
+            altSequences.add(name);
         }
-        if (!mSequenceName.equals(name) && ! mAlternativeSequenceName.contains(name) ) {
-            mAlternativeSequenceName.add(name);
-        }
+        encodeAltSequences(altSequences);
     }
 
     /** Sets the alternative sequence names in the order provided by iteration, removing the previous values. */
     public void setAlternativeSequenceName(final Collection<String> alternativeSequences) {
-        mAlternativeSequenceName.clear();
-        if (alternativeSequences != null) {
-            for(final String altSeq: alternativeSequences) {
-                addAlternativeSequenceName(altSeq);
-            }
+        if (alternativeSequences == null) {
+            setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, null);
+        } else {
+            // validate all the names and encode afterwards
+            alternativeSequences.forEach(SAMSequenceRecord::validateAltRegExp);
+            encodeAltSequences(alternativeSequences);
         }
+    }
+
+    private static void validateAltRegExp(final String name) {
+        if (!LEGAL_RNAME_PATTERN.matcher(name).matches()) {
+            throw new IllegalArgumentException(String.format("Invalid alternative sequence name '%s': do not match the pattern %s", name, LEGAL_RNAME_PATTERN));
+        }
+    }
+
+    private void encodeAltSequences(final Collection<String> alternativeSequences) {
+        setAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG, StringUtil.join(ALTERNATIVE_SEQUENCE_NAME_SEPARATOR, alternativeSequences));
     }
 
     /** Returns {@code true} if there are alternative sequence names; {@code false} otherwise. */
     public boolean hasAlternativeSequenceNames() {
-        return !mAlternativeSequenceName.isEmpty();
+        return getAttribute(ALTERNATIVE_SEQUENCE_NAME_TAG) != null;
     }
 
     /**
