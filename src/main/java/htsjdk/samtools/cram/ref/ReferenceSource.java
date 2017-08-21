@@ -54,21 +54,17 @@ import java.util.regex.Pattern;
  */
 public class ReferenceSource implements CRAMReferenceSource {
     private static final Log log = Log.getInstance(ReferenceSource.class);
-    private ReferenceSequenceFile rsFile;
+    private final ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
-    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
-
-    private ReferenceSource() {
-    }
+    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
 
     public ReferenceSource(final File file) {
         this(file == null ? null : file.toPath());
     }
 
     public ReferenceSource(final Path path) {
-        if (path != null)
-            rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(path);
+        this( path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
     }
 
     public ReferenceSource(final ReferenceSequenceFile rsFile) {
@@ -104,7 +100,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             }
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
-            return new ReferenceSource();
+            return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {
             throw new IllegalStateException(
@@ -134,7 +130,7 @@ public class ReferenceSource implements CRAMReferenceSource {
         for (int i = 0; i < bases.length; i++) {
             bases[i] = StringUtil.toUpperCase(bases[i]);
         }
-        cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
+        cacheW.put(sequenceName, new WeakReference<>(bases));
         return bases;
     }
 
@@ -255,7 +251,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             Pattern.CASE_INSENSITIVE);
 
     List<String> getVariants(final String name) {
-        final List<String> variants = new ArrayList<String>();
+        final List<String> variants = new ArrayList<>();
 
         if (name.equals("M"))
             variants.add("MT");
