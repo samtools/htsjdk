@@ -47,8 +47,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.EOFException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.channels.SeekableByteChannel;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -181,6 +183,11 @@ public class IndexFactory {
             throw ex;
         } catch (final IOException ex) {
             throw new TribbleException.UnableToReadIndexFile("Unable to read index file", indexFile, ex);
+        } catch (final InvocationTargetException ex) {
+            if (ex.getCause() instanceof EOFException) {
+                throw new TribbleException.CorruptedIndexFile("Index file is corrupted", indexFile, ex);
+            }
+            throw new RuntimeException(ex);
         } catch (final Exception ex) {
             throw new RuntimeException(ex);
         }

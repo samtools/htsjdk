@@ -126,6 +126,13 @@ public class TribbleException extends RuntimeException {
         }
     }
 
+    public static class CorruptedIndexFile extends TribbleException {
+        public CorruptedIndexFile(String message, String f, Exception e) {
+            super(message,e);
+            setSource(f);
+        }
+    }
+
     public static class TabixReaderFailure extends TribbleException {
         public TabixReaderFailure(String message, String f, Exception e) {
             super(message,e);
