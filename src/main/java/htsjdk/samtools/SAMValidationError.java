@@ -223,7 +223,10 @@ public class SAMValidationError implements Serializable {
         MISMATCH_SEQ_QUAL_LENGTH,
 
         /** Mismatch between file and sequence dictionaries */
-        MISMATCH_FILE_SEQ_DICT;
+        MISMATCH_FILE_SEQ_DICT,
+
+        /** Base quality is not stored for the read. */
+        QUALITY_NOT_STORED(Severity.WARNING);
 
         public final Severity severity;
 
