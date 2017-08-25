@@ -27,6 +27,8 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+/** @deprecated testing a deprecated class */
+@Deprecated
 public class StringLineReaderTest extends HtsjdkTest {
 
     private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};

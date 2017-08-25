@@ -25,8 +25,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
-import htsjdk.samtools.util.StringLineReader;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -68,11 +68,11 @@ public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
         try {
             codec.encode(dictionary);
             bufferedWriter.close();
-            readerOne = new StringLineReader(writer.toString());
+            readerOne = BufferedLineReader.fromString(writer.toString());
             SAMSequenceDictionary actual = codec.decode(readerOne, null);
             assertEquals(actual, dictionary);
 
-            readerTwo = new StringLineReader(writer.toString());
+            readerTwo = BufferedLineReader.fromString(writer.toString());
 
             String line = readerTwo.readLine();
             assertTrue(line.startsWith("@HD"));
@@ -100,10 +100,10 @@ public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
             codec.encodeHeaderLine(false);
             sequences.forEach(codec::encodeSequenceRecord);
             bufferedWriter.close();
-            readerOne = new StringLineReader(writer.toString());
+            readerOne = BufferedLineReader.fromString(writer.toString());
             SAMSequenceDictionary actual = codec.decode(readerOne, null);
             assertEquals(actual, dictionary);
-            readerTwo = new StringLineReader(writer.toString());
+            readerTwo = BufferedLineReader.fromString(writer.toString());
 
             String line = readerTwo.readLine();
             assertTrue(line.startsWith("@HD"));

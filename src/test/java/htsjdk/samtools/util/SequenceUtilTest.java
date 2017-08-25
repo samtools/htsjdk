@@ -59,7 +59,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
         return new Object[][]{ {makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
                 "3332ed720ac7eaa9b3655c06f6b9e196"),
-                new SAMTextHeaderCodec().decode(new StringLineReader(s), null).getSequenceDictionary()}};
+                new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null).getSequenceDictionary()}};
     }
 
     @Test(dataProvider = "compatibleNonEqualLists")
@@ -103,7 +103,7 @@ public class SequenceUtilTest extends HtsjdkTest {
     private SAMSequenceDictionary makeSequenceDictionary(final int length, final String ur, final String m5) {
         final String s = HEADER +
                 String.format("@SQ\tSN:phix174.seq\tLN:%d\tUR:%s\tAS:PhiX174\tM5:%s\n", length, ur, m5);
-        return new SAMTextHeaderCodec().decode(new StringLineReader(s), null).getSequenceDictionary();
+        return new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null).getSequenceDictionary();
     }
 
     @Test(dataProvider = "makeReferenceFromAlignment")

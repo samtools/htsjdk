@@ -464,7 +464,7 @@ public class IntervalList implements Iterable<Interval> {
                 throw new IllegalStateException("Interval list file must contain header. ");
             }
 
-            final StringLineReader headerReader = new StringLineReader(builder.toString());
+            final BufferedLineReader headerReader = BufferedLineReader.fromString(builder.toString());
             final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
             final IntervalList list = new IntervalList(codec.decode(headerReader, "BufferedReader"));
             final SAMSequenceDictionary dict = list.getHeader().getSequenceDictionary();
