@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,6 +48,14 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
 
     public BufferedLineReader(final InputStream is, final int bufferSize) {
         super(new InputStreamReader(is, Charset.forName("UTF-8")), bufferSize);
+    }
+
+    /**
+     * Returns a {@link BufferedLineReader} that gets its input from a String. No charset conversion
+     * is necessary because the String is in unicode.
+     */
+    public static BufferedLineReader fromString(final String s) {
+        return new BufferedLineReader(new ByteArrayInputStream(s.getBytes()));
     }
 
     /**
