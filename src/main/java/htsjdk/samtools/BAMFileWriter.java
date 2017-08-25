@@ -23,8 +23,10 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.AbstractBlockCompressedOutputStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.ParallelBlockCompressedOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
@@ -42,35 +44,50 @@ class BAMFileWriter extends SAMFileWriterImpl {
 
     private final BinaryCodec outputBinaryCodec;
     private BAMRecordCodec bamRecordCodec = null;
-    private final BlockCompressedOutputStream blockCompressedOutputStream;
+    private final AbstractBlockCompressedOutputStream blockCompressedOutputStream;
     private BAMIndexer bamIndexer = null;
 
-    protected BAMFileWriter(final File path) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(path);
+    protected BAMFileWriter(final File path, boolean createIndex) {
+        blockCompressedOutputStream = Defaults.ZIP_THREADS > 0 && !createIndex ?
+                new ParallelBlockCompressedOutputStream(path) :
+                new BlockCompressedOutputStream(path);
+
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
     }
 
-    protected BAMFileWriter(final File path, final int compressionLevel) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(path, compressionLevel);
+    protected BAMFileWriter(final File path, final int compressionLevel, boolean createIndex) {
+        blockCompressedOutputStream = Defaults.ZIP_THREADS > 0 && !createIndex ?
+                new ParallelBlockCompressedOutputStream(path, compressionLevel) :
+                new BlockCompressedOutputStream(path, compressionLevel);
+
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
     }
 
-    protected BAMFileWriter(final OutputStream os, final File file) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file);
+    protected BAMFileWriter(final OutputStream os, final File file, boolean createIndex) {
+        blockCompressedOutputStream = Defaults.ZIP_THREADS > 0 && !createIndex ?
+                new ParallelBlockCompressedOutputStream(os, file) :
+                new BlockCompressedOutputStream(os, file);
+
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
-    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel);
+    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel, boolean createIndex) {
+        blockCompressedOutputStream = Defaults.ZIP_THREADS > 0 && !createIndex ?
+                new ParallelBlockCompressedOutputStream(os, file, compressionLevel) :
+                new BlockCompressedOutputStream(os, file, compressionLevel);
+
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
-    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
+    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel,
+                            final DeflaterFactory deflaterFactory, boolean createIndex) {
+        blockCompressedOutputStream = Defaults.ZIP_THREADS > 0 && !createIndex ?
+                new ParallelBlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory) :
+                new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
         outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }

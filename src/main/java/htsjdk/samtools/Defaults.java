@@ -15,7 +15,7 @@ import java.util.TreeMap;
  */
 public class Defaults {
     private static Log log = Log.getInstance(Defaults.class);
-    
+
     /** Should BAM index files be created when writing out coordinate sorted BAM files?  Default = false. */
     public static final boolean CREATE_INDEX;
 
@@ -84,6 +84,7 @@ public class Defaults {
      */
     public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
+    public static final int ZIP_THREADS;
 
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
@@ -104,6 +105,7 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
+        ZIP_THREADS = getIntProperty("zip_threads", 0);
     }
 
     /**

@@ -24,6 +24,7 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.Defaults;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
@@ -50,7 +51,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         f.deleteOnExit();
         final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
+        final AbstractBlockCompressedOutputStream bcos = create(f);
         String s = "Hi, Mom!\n";
         bcos.write(s.getBytes());
         linesWritten.add(s);
@@ -141,7 +142,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         f.deleteOnExit();
         final List<String> linesWritten = new ArrayList<>();
         System.out.println("Creating file " + f);
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f);
+        final AbstractBlockCompressedOutputStream bcos = create(f);
         Random r = new Random(15555);
         final int INPUT_SIZE = 64 * 1024;
         byte[] input = new byte[INPUT_SIZE];
@@ -166,7 +167,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
     // I don't think this will work on Windows, because /dev/null doesn't work
     @Test(groups = "broken")
     public void testDevNull() throws Exception {
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream("/dev/null");
+        final AbstractBlockCompressedOutputStream bcos = create("/dev/null");
         bcos.write("Hi, Mom!".getBytes());
         bcos.close();
     }
@@ -197,7 +198,7 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
             }
         };
         final List<String> linesWritten = new ArrayList<>();
-        final BlockCompressedOutputStream bcos = new BlockCompressedOutputStream(f, 5, myDeflaterFactory);
+        final AbstractBlockCompressedOutputStream bcos = create(f, 5, myDeflaterFactory);
         String s = "Hi, Mom!\n";
         bcos.write(s.getBytes()); //Call 1
         linesWritten.add(s);
@@ -222,5 +223,23 @@ public class BlockCompressedOutputStreamTest extends HtsjdkTest {
         bcis.close();
         Assert.assertEquals(deflateCalls[0], 3, "deflate calls");
         Assert.assertEquals(reader.readLine(), null);
+    }
+
+    static AbstractBlockCompressedOutputStream create(File f) {
+        return Defaults.ZIP_THREADS > 0
+                ? new ParallelBlockCompressedOutputStream(f)
+                : new BlockCompressedOutputStream(f);
+    }
+
+    static AbstractBlockCompressedOutputStream create(String name) {
+        return Defaults.ZIP_THREADS > 0
+                ? new ParallelBlockCompressedOutputStream(name)
+                : new BlockCompressedOutputStream(name);
+    }
+
+    static AbstractBlockCompressedOutputStream create(File f, int compLevel, DeflaterFactory df) {
+        return Defaults.ZIP_THREADS > 0
+                ? new ParallelBlockCompressedOutputStream(f, compLevel, df)
+                : new BlockCompressedOutputStream(f, compLevel, df);
     }
 }
