@@ -30,7 +30,7 @@ import java.io.ByteArrayInputStream;
  * is necessary because the String is in unicode.  Handles CR, LF or CRLF line termination,
  * but if asked to return the line terminator, it always comes back as LF.
  *
- * @deprecated use
+ * @deprecated use {@link BufferedLineReader#fromString(String)}.
  */
 @Deprecated
 public class StringLineReader extends BufferedLineReader {
