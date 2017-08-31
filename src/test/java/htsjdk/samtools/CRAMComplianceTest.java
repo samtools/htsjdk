@@ -1,6 +1,8 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -8,6 +10,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.Log;
 
 import htsjdk.samtools.util.SequenceUtil;
+import java.nio.file.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -237,11 +240,14 @@ public class CRAMComplianceTest extends HtsjdkTest {
         originalCRAMRecords.forEach(origRec -> copiedCRAMRecords.add(origRec.deepCopy()));
 
         // write copies of the CRAM records to a BAM, and then read them back in
-        final File tempBamFile = File.createTempFile("testCRAMToBAMToCRAM", BamFileIoUtils.BAM_FILE_EXTENSION);
-        tempBamFile.deleteOnExit();
-        SAMFileHeader samHeader = getFileHeader(originalCRAMFile, referenceFile);
-        writeRecordsToFile(copiedCRAMRecords, tempBamFile, referenceFile, samHeader);
-        List<SAMRecord> bamRecords = getSAMRecordsFromFile(tempBamFile, referenceFile);
+        SAMFileHeader samHeader;
+        List<SAMRecord> bamRecords;
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path tempBam = jimfs.getPath("testCRAMToBAMToCRAM" + BamFileIoUtils.BAM_FILE_EXTENSION);
+            samHeader = getFileHeader(originalCRAMFile, referenceFile);
+            writeRecordsToPath(copiedCRAMRecords, tempBam, referenceFile, samHeader);
+            bamRecords = getSAMRecordsFromPath(tempBam, referenceFile);
+        }
 
         // compare to originals
         int i = 0;
@@ -252,10 +258,12 @@ public class CRAMComplianceTest extends HtsjdkTest {
         Assert.assertEquals(i, originalCRAMRecords.size());
 
         // write the BAM records to a CRAM and read them back in
-        final File tempCRAMFile = File.createTempFile("testCRAMToBAMToCRAM", CramIO.CRAM_FILE_EXTENSION);
-        tempCRAMFile.deleteOnExit();
-        writeRecordsToFile(bamRecords, tempCRAMFile, referenceFile, samHeader);
-        List<SAMRecord> roundTripCRAMRecords = getSAMRecordsFromFile(tempCRAMFile, referenceFile);
+        List<SAMRecord> roundTripCRAMRecords;
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path tempCRAM = jimfs.getPath("testCRAMToBAMToCRAM" + CramIO.CRAM_FILE_EXTENSION);
+            writeRecordsToPath(bamRecords, tempCRAM, referenceFile, samHeader);
+            roundTripCRAMRecords = getSAMRecordsFromPath(tempCRAM, referenceFile);
+        }
 
         // compare to originals
         i = 0;
@@ -298,6 +306,40 @@ public class CRAMComplianceTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testBAMThroughCRAMRoundTripViaPath() throws IOException, NoSuchAlgorithmException {
+        final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
+
+        // These files are reduced versions of the CEUTrio.HiSeq.WGS.b37.NA12878.20.21.bam and human_g1k_v37.20.21.fasta
+        // files used in GATK4 tests. The first 8000 records from chr20 were extracted; from those around 80 placed but
+        // unmapped reads that contained cigar elements were removed, along with one read who's mate was on chr21.
+        // Finally all read positions were remapped to the subsetted reference file, which contains only the ~9000 bases
+        // used by the reduced read set.
+        final File originalBAMInputFile = new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
+        final File referenceFile = new File(TEST_DATA_DIR, "human_g1k_v37.20.subset.fasta");
+
+        // retrieve all records from the bam and reset the indexing bins to keep comparisons with
+        // cram records from failing
+        List<SAMRecord> originalBAMRecords = getSAMRecordsFromFile(originalBAMInputFile, referenceFile);
+        for (int i = 0; i < originalBAMRecords.size(); i++) {
+            originalBAMRecords.get(i).setIndexingBin(null);
+        }
+
+        // write the BAM records to a temporary CRAM
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path tempCRAM = jimfs.getPath("testBAMThroughCRAMRoundTrip" + CramIO.CRAM_FILE_EXTENSION);
+            SAMFileHeader samHeader = getFileHeader(originalBAMInputFile, referenceFile);
+            writeRecordsToPath(originalBAMRecords, tempCRAM, referenceFile, samHeader);
+
+            // read the CRAM records back in and compare to the original BAM records
+            List<SAMRecord> cramRecords = getSAMRecordsFromPath(tempCRAM, referenceFile);
+            Assert.assertEquals(cramRecords.size(), originalBAMRecords.size());
+            for (int i = 0; i < originalBAMRecords.size(); i++) {
+                Assert.assertEquals(originalBAMRecords.get(i), cramRecords.get(i));
+            }
+        }
+    }
+
     private SAMFileHeader getFileHeader(final File sourceFile, final File referenceFile) throws IOException {
         try (final SamReader reader = SamReaderFactory.make()
                 .validationStringency(ValidationStringency.SILENT)
@@ -307,10 +349,14 @@ public class CRAMComplianceTest extends HtsjdkTest {
     }
 
     private List<SAMRecord> getSAMRecordsFromFile(final File sourceFile, final File referenceFile) throws IOException {
+        return getSAMRecordsFromPath(sourceFile.toPath(), referenceFile);
+    }
+
+    private List<SAMRecord> getSAMRecordsFromPath(final Path sourcePath, final File referenceFile) throws IOException {
         List<SAMRecord> recs = new ArrayList<>();
         try (SamReader reader = SamReaderFactory.make()
-                .validationStringency(ValidationStringency.SILENT)
-                .referenceSequence(referenceFile).open(sourceFile))
+            .validationStringency(ValidationStringency.SILENT)
+            .referenceSequence(referenceFile).open(sourcePath))
         {
             for (SAMRecord rec : reader) {
                 recs.add(rec);
@@ -332,6 +378,23 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 .makeWriter(samHeader, true, targetFile, referenceFile)) {
             for (SAMRecord rec : recs) {
                  writer.addAlignment(rec);
+            }
+        }
+    }
+
+    private void writeRecordsToPath (
+        final List<SAMRecord> recs,
+        final Path targetPath,
+        final File referenceFile,
+        final SAMFileHeader samHeader) {
+
+        // NOTE: even when the input is coord-sorted, using assumePresorted=false will cause some
+        // tests to fail since it can change the order of some unmapped reads - this is allowed
+        // by the spec since the order is arbitrary for unmapped.
+        try (final SAMFileWriter writer = new SAMFileWriterFactory()
+            .makeWriter(samHeader, true, targetPath, referenceFile)) {
+            for (SAMRecord rec : recs) {
+                writer.addAlignment(rec);
             }
         }
     }

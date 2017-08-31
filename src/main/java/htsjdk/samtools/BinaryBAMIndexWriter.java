@@ -29,6 +29,7 @@ import htsjdk.samtools.util.BinaryCodec;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -41,12 +42,20 @@ class BinaryBAMIndexWriter implements BAMIndexWriter {
     private int count = 0;
 
     /**
-     * constructor
      *
      * @param nRef    Number of reference sequences
      * @param output  BAM Index output file
      */
     public BinaryBAMIndexWriter(final int nRef, final File output) {
+        this(nRef, null == output ? null : output.toPath());
+    }
+
+    /**
+     *
+     * @param nRef    Number of reference sequences
+     * @param output  BAM Index output file
+     */
+    public BinaryBAMIndexWriter(final int nRef, final Path output) {
 
         this.nRef = nRef;
 
