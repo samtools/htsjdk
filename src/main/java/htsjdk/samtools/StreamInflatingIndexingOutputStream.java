@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.file.Path;
 
 /**
  * OutputStream implementation that writes output to an underlying output stream while also copying the
@@ -22,11 +23,15 @@ class StreamInflatingIndexingOutputStream extends OutputStream {
     private final Thread thread;
 
     public StreamInflatingIndexingOutputStream(final OutputStream s1, final File indexFile) {
+        this(s1, indexFile.toPath());
+    }
+
+    public StreamInflatingIndexingOutputStream(final OutputStream s1, final Path indexPath) {
         try {
             this.s1 = s1;
             this.s2 = new PipedOutputStream();
             final PipedInputStream pin = new PipedInputStream(this.s2, Defaults.NON_ZERO_BUFFER_SIZE);
-            this.thread = new Thread(new Indexer(indexFile, pin), "BamIndexingThread");
+            this.thread = new Thread(new Indexer(indexPath, pin), "BamIndexingThread");
             this.thread.start();
         } catch (final IOException ioe) {
             throw new RuntimeIOException(ioe);
@@ -72,15 +77,15 @@ class StreamInflatingIndexingOutputStream extends OutputStream {
 
 /**
  * A little class that takes an InputStream from which it reads a BAM file, generates
- * a BAMIndex and then writes the index to the File provided.  All operations are designed
+ * a BAMIndex and then writes the index to the Path provided.  All operations are designed
  * to be carried out in a separate thread.
  */
 class Indexer implements Runnable {
-    private final File index;
+    private final Path index;
     private final InputStream stream;
 
-    /** Constructs an indexer that reads from the stream provided and writes an index to the File provided. */
-    Indexer(final File index, final InputStream stream) {
+    /** Constructs an indexer that reads from the stream provided and writes an index to the Path provided. */
+    Indexer(final Path index, final InputStream stream) {
         this.index = index;
         this.stream = stream;
     }

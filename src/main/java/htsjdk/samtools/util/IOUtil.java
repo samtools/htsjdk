@@ -249,6 +249,15 @@ public class IOUtil {
     }
 
     /**
+     * @return true if the path is not a device (e.g. /dev/null or /dev/stdin), and is not
+     * an existing directory.  I.e. is is a regular path that may correspond to an existing
+     * file, or a path that could be a regular output file.
+     */
+    public static boolean isRegularPath(final Path path) {
+        return !Files.exists(path) || Files.isRegularFile(path);
+    }
+
+    /**
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
@@ -995,5 +1004,16 @@ public class IOUtil {
             }
             return FileSystems.newFileSystem(uri, new HashMap<>(), cl).provider().getPath(uri);
         }
+    }
+
+    /**
+     * Adds the extension to the given path.
+     *
+     * @param path       the path to start from, eg. "/folder/file.jpg"
+     * @param extension  the extension to add, eg. ".bak"
+     * @return           "/folder/file.jpg.bak"
+     */
+    public static Path addExtension(Path path, String extension) {
+        return path.resolveSibling(path.getFileName() + extension);
     }
 }
