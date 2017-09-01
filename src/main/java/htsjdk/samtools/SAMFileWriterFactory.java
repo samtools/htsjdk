@@ -345,8 +345,11 @@ public class SAMFileWriterFactory implements Cloneable {
         try {
             final SAMTextWriter ret = this.createMd5File
                     ? new SAMTextWriter(new Md5CalculatingOutputStream(Files.newOutputStream(outputPath),
-                          IOUtil.addExtension(outputPath, ".md5"), samFlagFieldOutput)
-                    : new SAMTextWriter(outputFile, samFlagFieldOutput);
+                          IOUtil.addExtension(outputPath, ".md5")), samFlagFieldOutput)
+                    : new SAMTextWriter(null == outputPath
+                                        ? null
+                                        : Files.newOutputStream(outputPath),
+                                        samFlagFieldOutput);
             return initWriter(header, presorted, ret);
         } catch (final IOException ioe) {
             throw new RuntimeIOException("Error opening file: " + outputPath.toUri());
