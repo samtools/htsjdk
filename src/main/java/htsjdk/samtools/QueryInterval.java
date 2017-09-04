@@ -42,10 +42,10 @@ public class QueryInterval implements Comparable<QueryInterval> {
     }
 
     /**
-     * @return true if both are on same reference, and other starts exactly where this ends.
+     * @return true if both are on same reference, and other starts exactly before this ends.
      */
     public boolean abuts(final QueryInterval other) {
-        return this.referenceIndex == other.referenceIndex && this.end == other.start;
+        return this.referenceIndex == other.referenceIndex && this.end + 1 == other.start;
     }
 
     /**
@@ -93,5 +93,25 @@ public class QueryInterval implements Comparable<QueryInterval> {
         if (previous != null) unique.add(previous);
 
         return unique.toArray(EMPTY_QUERY_INTERVAL_ARRAY);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        QueryInterval that = (QueryInterval) o;
+
+        if (referenceIndex != that.referenceIndex) return false;
+        if (start != that.start) return false;
+        return end == that.end;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = referenceIndex;
+        result = 31 * result + start;
+        result = 31 * result + end;
+        return result;
     }
 }
