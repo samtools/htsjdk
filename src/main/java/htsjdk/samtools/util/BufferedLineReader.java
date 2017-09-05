@@ -29,29 +29,24 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 
 /**
  * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
  * than AsciiLineReaderImpl.  If you use AsciiLineReader rather than this class, it will detect the OS
  * and delegate to the preferred implementation.
- *
- * TODO: Replace this with {@link java.io.LineNumberReader}?
  * 
  * @author alecw@broadinstitute.org
  */
-public class BufferedLineReader implements LineReader {
-
-    private final BufferedReader reader;
-    private int lineNumber = 0;
-    private String peekedLine;
+public class BufferedLineReader extends LineNumberReader implements LineReader {
 
     public BufferedLineReader(final InputStream is) {
         this(is, Defaults.NON_ZERO_BUFFER_SIZE);
     }
 
     public BufferedLineReader(final InputStream is, final int bufferSize) {
-        reader = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")), bufferSize);
+        super(new InputStreamReader(is, Charset.forName("UTF-8")), bufferSize);
     }
 
     /**
@@ -61,27 +56,11 @@ public class BufferedLineReader implements LineReader {
      */
     @Override
     public String readLine() {
-        ++lineNumber;
         try {
-            final String ret;
-            if (peekedLine != null) {
-                ret = peekedLine;
-                peekedLine = null;
-            } else {
-            ret = reader.readLine();
-            }
-            return ret;
+            return super.readLine();
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
-    }
-
-    /**
-     * @return 1-based number of line most recently read
-     */
-    @Override
-    public int getLineNumber() {
-        return lineNumber;
     }
 
     /**
@@ -91,27 +70,20 @@ public class BufferedLineReader implements LineReader {
      */
     @Override
     public int peek() {
-        if (peekedLine == null) {
-            try {
-                peekedLine = reader.readLine();
-            } catch (IOException e) {
+        try {
+            mark(1);
+            final int ret = read();
+            reset();
+            return ret;
+        } catch (IOException e) {
                 throw new RuntimeIOException(e);
-            }
         }
-        if (peekedLine == null) {
-            return -1;
-        }
-        if (peekedLine.isEmpty()) {
-            return '\n';
-        }
-        return peekedLine.charAt(0);
     }
 
     @Override
     public void close() {
-        peekedLine = null;
         try {
-            reader.close();
+            super.close();
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
