@@ -1116,8 +1116,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         this.mValidationStringency = validationStringency;
     }
 
+    /**
+     * @return {@code true} if the SAM record has the requested attribute set, {@code false} otherwise.
+     */
     public boolean hasAttribute(final String tag) {
-        return hasAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag))!=null;
+        return getAttribute(tag)!=null;
     }
 
     /**
@@ -1360,7 +1363,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *          1) {@link #mAttributes} is null or
      *          2) this record does not have the requested attribute
      */
-    private SAMBinaryTagAndValue hasAttribute(final short tag) {
+    private SAMBinaryTagAndValue getAttributeMayBeNull(final short tag) {
         if (this.mAttributes == null) return null;
         return this.mAttributes.find(tag);
     }
@@ -1370,7 +1373,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
      */
     public Object getAttribute(final short tag) {
-        final SAMBinaryTagAndValue mayBeNull = hasAttribute(tag);
+        final SAMBinaryTagAndValue mayBeNull = getAttributeMayBeNull(tag);
         return mayBeNull==null ? null : mayBeNull.value;
     }
 
