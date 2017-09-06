@@ -160,4 +160,16 @@ public class TabixReaderTest extends HtsjdkTest {
         assertTrue(nRecords > 0);
 
     }
+    
+    /**
+     * Test TabixReader.readLine
+     *
+     * @throws java.io.IOException
+     */
+    @Test
+    public void testTabixReaderReadLine() throws IOException {
+        TabixReader tabixReader = new TabixReader(tabixFile);
+        Assert.assertNotNull(tabixReader.readLine());
+        tabixReader.close();
+    }
 }

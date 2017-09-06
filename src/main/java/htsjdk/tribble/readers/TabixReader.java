@@ -56,8 +56,6 @@ public class TabixReader {
     private int mBc;
     private int mEc;
     private int mMeta;
-    /** longest line seen so far, used to allocate the capacity of the lines */
-    private int longestLineLength = 100;
     
     //private int mSkip; (not used)
     private String[] mSeq;
@@ -67,6 +65,8 @@ public class TabixReader {
     private static int MAX_BIN = 37450;
     //private static int TAD_MIN_CHUNK_GAP = 32768; (not used)
     private static int TAD_LIDX_SHIFT = 14;
+    /** default buffer size for <code>readLine()</code> */
+    private static final int DEFAULT_BUFFER_SIZE = 1000;
 
     protected static class TPair64 implements Comparable<TPair64> {
         long u, v;
@@ -198,7 +198,7 @@ public class TabixReader {
     }
 
     public static String readLine(final InputStream is) throws IOException {
-        return readLine(is,100);
+        return readLine(is, DEFAULT_BUFFER_SIZE);
     }
 
     /** 
@@ -209,7 +209,7 @@ public class TabixReader {
      * @return the line or null if there is no more input
      * @throws IOException
      */
-    private static String readLine(final InputStream is,final int bufferCapacity) throws IOException {
+    private static String readLine(final InputStream is, final int bufferCapacity) throws IOException {
         final StringBuffer buf = new StringBuffer(bufferCapacity);
         int c;
         while ((c = is.read()) >= 0 && c != '\n')
@@ -291,16 +291,12 @@ public class TabixReader {
      * Read one line from the data file.
      */
     public String readLine() throws IOException {
-        final String line = readLine(mFp,this.longestLineLength);
-        if (line != null) {
-            this.longestLineLength = Math.max(this.longestLineLength, line.length());
-            }
-        return line;
+        return readLine(mFp, DEFAULT_BUFFER_SIZE);
     }
 
     /** return chromosome ID or -1 if it is unknown */
     public int chr2tid(final String chr) {
-       final Integer tid=this.mChr2tid.get(chr);
+       final Integer tid = this.mChr2tid.get(chr);
        return tid==null?-1:tid;
     }
 
@@ -435,8 +431,7 @@ public class TabixReader {
                     ++i;
                 }
                 String s;
-                if ((s = readLine(mFp,TabixReader.this.longestLineLength)) != null) {
-                    TabixReader.this.longestLineLength = Math.max(s.length(), TabixReader.this.longestLineLength);
+                if ((s = readLine(mFp, DEFAULT_BUFFER_SIZE)) != null) {
                     TIntv intv;
                     curr_off = mFp.getFilePointer();
                     if (s.isEmpty() || s.charAt(0) == mMeta) continue;
@@ -536,28 +531,6 @@ public class TabixReader {
        if(tid==-1) return EOF_ITERATOR;
        return query(tid, start, end);
    }
-
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            System.out.println("Usage: java -cp .:sam.jar TabixReader <in.gz> [region]");
-            System.exit(1);
-        }
-        try {
-            TabixReader tr = new TabixReader(args[0]);
-            String s;
-            if (args.length == 1) { // no region is specified; print the whole file
-                while ((s = tr.readLine()) != null)
-                    System.out.println(s);
-            } else { // a region is specified; random access
-                TabixReader.Iterator iter = tr.query(args[1]); // get the iterator
-                while ((s = iter.next()) != null)
-                    System.out.println(s);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(-1);
-        }
-    }
 
     // ADDED BY JTR
     public void close() {
