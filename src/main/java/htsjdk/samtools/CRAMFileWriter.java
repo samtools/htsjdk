@@ -18,8 +18,8 @@ package htsjdk.samtools;
 import htsjdk.samtools.cram.lossy.PreservationPolicy;
 import htsjdk.samtools.cram.ref.CRAMReferenceSource;
 import htsjdk.samtools.cram.ref.ReferenceSource;
+import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.StringLineReader;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -117,7 +117,7 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
     @Override
     protected void writeHeader(final String textHeader) {
         cramContainerStream.writeHeader(
-                new SAMTextHeaderCodec().decode(new StringLineReader(textHeader),fileName != null ? fileName : null));
+                new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(textHeader),fileName != null ? fileName : null));
     }
 
     @Override

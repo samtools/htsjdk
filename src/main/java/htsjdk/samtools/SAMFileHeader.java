@@ -24,9 +24,9 @@
 package htsjdk.samtools;
 
 
+import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.StringLineReader;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -417,7 +417,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public final SAMFileHeader clone() {
         final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
         codec.setValidationStringency(ValidationStringency.SILENT);
-        return codec.decode(new StringLineReader(getSAMString()), "SAMFileHeader.clone");
+        return codec.decode(BufferedLineReader.fromString(getSAMString()), "SAMFileHeader.clone");
     }
 
     @Override
