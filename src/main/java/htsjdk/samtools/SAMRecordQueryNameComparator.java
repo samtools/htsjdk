@@ -51,8 +51,8 @@ public class SAMRecordQueryNameComparator implements SAMRecordComparator, Serial
         if (samRecord1.getReadNegativeStrandFlag() != samRecord2.getReadNegativeStrandFlag()) {
             return (samRecord1.getReadNegativeStrandFlag()? 1: -1);
         }
-        if (samRecord1.getSecondaryAlignmentFlag() != samRecord2.getSecondaryAlignmentFlag()) {
-            return samRecord2.getSecondaryAlignmentFlag()? -1: 1;
+        if (samRecord1.isSecondaryAlignment() != samRecord2.isSecondaryAlignment()) {
+            return samRecord2.isSecondaryAlignment()? -1: 1;
         }
         if (samRecord1.getSupplementaryAlignmentFlag() != samRecord2.getSupplementaryAlignmentFlag()) {
             return samRecord2.getSupplementaryAlignmentFlag() ? -1 : 1;

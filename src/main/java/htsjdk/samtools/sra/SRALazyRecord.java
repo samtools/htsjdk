@@ -156,7 +156,7 @@ public class SRALazyRecord extends SAMRecord {
         SECONDARY_ALIGNMENT(true) {
             @Override
             public boolean getFlag(SRALazyRecord self) {
-                return self.getSecondaryAlignmentFlag();
+                return self.isSecondaryAlignment();
             }
         },
         MATE_NEGATIVE_STRAND(false) {
@@ -529,19 +529,19 @@ public class SRALazyRecord extends SAMRecord {
     }
 
     @Override
-    public boolean getSecondaryAlignmentFlag() {
+    public boolean isSecondaryAlignment() {
         if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
-            setSecondaryAlignmentFlag(getSecondaryAlignmentFlagImpl());
+            setSecondaryAlignment(getSecondaryAlignmentFlagImpl());
         }
-        return super.getSecondaryAlignmentFlag();
+        return super.isSecondaryAlignment();
     }
 
     @Override
-    public void setSecondaryAlignmentFlag(final boolean flag) {
+    public void setSecondaryAlignment(final boolean flag) {
         if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
             initializedFlags.add(LazyFlag.SECONDARY_ALIGNMENT);
         }
-        super.setSecondaryAlignmentFlag(flag);
+        super.setSecondaryAlignment(flag);
     }
 
     @Override

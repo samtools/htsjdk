@@ -55,7 +55,7 @@ public class SecondaryAlignmentSkippingIterator {
     }
 
     private void skipAnySecondary() {
-        while (it.hasNext() && it.peek().getSecondaryAlignmentFlag()) {
+        while (it.hasNext() && it.peek().isSecondaryAlignment()) {
             it.next();
         }
     }

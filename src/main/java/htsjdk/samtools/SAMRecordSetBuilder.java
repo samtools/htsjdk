@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -287,7 +286,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                              final boolean recordUnmapped, final String cigar, final String qualityString,
                              final int defaultQuality, final boolean isSecondary) throws SAMException {
         final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
-        if (isSecondary) rec.setSecondaryAlignmentFlag(true);
+        if (isSecondary) rec.setSecondaryAlignment(true);
         this.records.add(rec);
         return rec;
     }
@@ -300,7 +299,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
                              final boolean recordUnmapped, final String cigar, final String qualityString,
                              final int defaultQuality, final boolean isSecondary, final boolean isSupplementary) throws SAMException {
         final htsjdk.samtools.SAMRecord rec = createReadNoFlag(name, contig, start, negativeStrand, recordUnmapped, cigar, qualityString, defaultQuality);
-        if (isSecondary) rec.setSecondaryAlignmentFlag(true);
+        if (isSecondary) rec.setSecondaryAlignment(true);
         if (isSupplementary) rec.setSupplementaryAlignmentFlag(true);
         this.records.add(rec);
         return rec;
@@ -434,11 +433,11 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setReadPairedFlag(true);
         end2.setSecondOfPairFlag(true);
 
-        if (record1NonPrimary) end1.setSecondaryAlignmentFlag(true);
-        if (record2NonPrimary) end2.setSecondaryAlignmentFlag(true);
+        if (record1NonPrimary) end1.setSecondaryAlignment(true);
+        if (record2NonPrimary) end2.setSecondaryAlignment(true);
 
-        if (record1NonPrimary) end1.setSecondaryAlignmentFlag(true);
-        if (record2NonPrimary) end2.setSecondaryAlignmentFlag(true);
+        if (record1NonPrimary) end1.setSecondaryAlignment(true);
+        if (record2NonPrimary) end2.setSecondaryAlignment(true);
 
         // set mate info
         SamPairUtil.setMateInfo(end1, end2, true);
