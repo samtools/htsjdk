@@ -208,7 +208,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         }
         final Iterator<SAMRecord> records = samBuilder.iterator();
         records.next().setReadNegativeStrandFlag(true);
-        records.next().setNotPrimaryAlignmentFlag(true);
+        records.next().setSecondaryAlignmentFlag(true);
         records.next().setMappingQuality(10);
         records.next().setCigarString("36M");
 

@@ -43,15 +43,11 @@ import ngs.Read;
 import ngs.Fragment;
 import ngs.ErrorMsg;
 
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 /**
  * Extends SAMRecord so that any of the fields will be loaded only when needed.
@@ -157,10 +153,10 @@ public class SRALazyRecord extends SAMRecord {
                 return self.getProperPairFlag();
             }
         },
-        NOT_PRIMARY_ALIGNMENT(true) {
+        SECONDARY_ALIGNMENT(true) {
             @Override
             public boolean getFlag(SRALazyRecord self) {
-                return self.getNotPrimaryAlignmentFlag();
+                return self.getSecondaryAlignmentFlag();
             }
         },
         MATE_NEGATIVE_STRAND(false) {
@@ -533,19 +529,19 @@ public class SRALazyRecord extends SAMRecord {
     }
 
     @Override
-    public boolean getNotPrimaryAlignmentFlag() {
-        if (!initializedFlags.contains(LazyFlag.NOT_PRIMARY_ALIGNMENT)) {
-            setNotPrimaryAlignmentFlag(getNotPrimaryAlignmentFlagImpl());
+    public boolean getSecondaryAlignmentFlag() {
+        if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
+            setSecondaryAlignmentFlag(getSecondaryAlignmentFlagImpl());
         }
-        return super.getNotPrimaryAlignmentFlag();
+        return super.getSecondaryAlignmentFlag();
     }
 
     @Override
-    public void setNotPrimaryAlignmentFlag(final boolean flag) {
-        if (!initializedFlags.contains(LazyFlag.NOT_PRIMARY_ALIGNMENT)) {
-            initializedFlags.add(LazyFlag.NOT_PRIMARY_ALIGNMENT);
+    public void setSecondaryAlignmentFlag(final boolean flag) {
+        if (!initializedFlags.contains(LazyFlag.SECONDARY_ALIGNMENT)) {
+            initializedFlags.add(LazyFlag.SECONDARY_ALIGNMENT);
         }
-        super.setNotPrimaryAlignmentFlag(flag);
+        super.setSecondaryAlignmentFlag(flag);
     }
 
     @Override
@@ -951,7 +947,7 @@ public class SRALazyRecord extends SAMRecord {
         return isAligned && getReadPairedFlag() && !getMateUnmappedFlag();
     }
 
-    private boolean getNotPrimaryAlignmentFlagImpl() {
+    private boolean getSecondaryAlignmentFlagImpl() {
         try {
             if (isAligned) {
                 return getCurrentAlignment().getAlignmentCategory() == Alignment.secondaryAlignment;

@@ -580,7 +580,7 @@ public final class SAMUtils {
         rec.setCigarString(SAMRecord.NO_ALIGNMENT_CIGAR);
         rec.setMappingQuality(SAMRecord.NO_MAPPING_QUALITY);
         rec.setInferredInsertSize(0);
-        rec.setNotPrimaryAlignmentFlag(false);
+        rec.setSecondaryAlignmentFlag(false);
         rec.setSupplementaryAlignmentFlag(false);
         rec.setProperPairFlag(false);
         rec.setReadUnmappedFlag(true);

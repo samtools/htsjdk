@@ -91,7 +91,7 @@ public class IntervalKeepPairFilterTest extends HtsjdkTest {
 
         boolean notPrimary = StreamSupport.stream(builder.spliterator(), false)
                 .filter(rec -> !filter.filterOut(rec))
-                .anyMatch(rec -> rec.getNotPrimaryAlignmentFlag() || rec.getSupplementaryAlignmentFlag());
+                .anyMatch(rec -> rec.getSecondaryAlignmentFlag() || rec.getSupplementaryAlignmentFlag());
 
         Assert.assertFalse(notPrimary);
     }

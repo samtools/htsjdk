@@ -363,7 +363,7 @@ public class SRATest extends AbstractSRATest {
             }
 
             if (currentRecord.getReadName().equals(readName)
-                    && currentRecord.getNotPrimaryAlignmentFlag() == isSecondaryAlignment
+                    && currentRecord.getSecondaryAlignmentFlag() == isSecondaryAlignment
                     && (!hasMate || currentRecord.getSecondOfPairFlag() == isSecondOfPair)) {
                 record = currentRecord;
                 break;
@@ -412,7 +412,7 @@ public class SRATest extends AbstractSRATest {
         Assert.assertEquals(record.getBaseQualityString(), quals);
         Assert.assertEquals(record.getReadPairedFlag(), hasMate);
         Assert.assertEquals(record.getFlags(), flags);
-        Assert.assertEquals(record.getNotPrimaryAlignmentFlag(), isSecondaryAlignment);
+        Assert.assertEquals(record.getSecondaryAlignmentFlag(), isSecondaryAlignment);
         if (hasMate) {
             Assert.assertEquals(record.getSecondOfPairFlag(), isSecondOfPair);
         }

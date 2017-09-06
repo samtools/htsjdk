@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
 /**
  * Created by farjoun on 5/27/17.
  */
-public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
+public class SecondaryAlignmentFilterTest extends HtsjdkTest {
 
     @Test
     public void testSecondaryRecords() {
@@ -36,7 +36,7 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
         }
 
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
-                new NotPrimaryAlignmentFilter());
+                new SecondaryAlignmentFilter());
 
         Assert.assertEquals(filteringSamIterator.hasNext(), false);
     }
@@ -67,7 +67,7 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
         }
 
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
-                new NotPrimaryAlignmentFilter());
+                new SecondaryAlignmentFilter());
 
         // i is incremented once for each 3 records that are added (a pair and a fragment)
         Assert.assertEquals(filteringSamIterator.stream().count(), i * 3);
@@ -100,7 +100,7 @@ public class NotPrimaryAlignmentFilterTest extends HtsjdkTest {
         builder.forEach(r -> r.setSupplementaryAlignmentFlag(true));
 
         FilteringSamIterator filteringSamIterator = new FilteringSamIterator(builder.getRecords().iterator(),
-                new NotPrimaryAlignmentFilter());
+                new SecondaryAlignmentFilter());
 
         // i is incremented once for each 3 records that are added (a pair and a fragment)
         Assert.assertEquals(filteringSamIterator.stream().count(), i * 3);

@@ -24,39 +24,17 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.PeekIterator;
 
 /**
  * Wrapper around SAMRecord iterator that skips over non-primary elements.
  * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
  * handle those concerns separately.
+ * @deprecated use {@link SecondarySkippingIterator} instead.
  */
-public class NotPrimarySkippingIterator {
-    private final PeekIterator<SAMRecord> it;
+@Deprecated
+public class NotPrimarySkippingIterator extends SecondarySkippingIterator {
 
-    public NotPrimarySkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
-        it = new PeekIterator<SAMRecord>(underlyingIt);
-        skipAnyNotprimary();
-    }
-
-    public boolean hasCurrent() {
-        return it.hasNext();
-    }
-
-    public SAMRecord getCurrent() {
-        assert(hasCurrent());
-        return it.peek();
-    }
-
-    public boolean advance() {
-        it.next();
-        skipAnyNotprimary();
-        return hasCurrent();
-    }
-
-    private void skipAnyNotprimary() {
-        while (it.hasNext() && it.peek().getNotPrimaryAlignmentFlag()) {
-            it.next();
-        }
+    public NotPrimarySkippingIterator(CloseableIterator<SAMRecord> underlyingIt) {
+        super(underlyingIt);
     }
 }
