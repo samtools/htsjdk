@@ -59,6 +59,8 @@ public interface VariantContextWriter extends Closeable {
     /**
      * Sets the VCF header so that data blocks can be written without writing the header
      *
+     * Exactly one of writeHeader() or setVCFHeader() should be called when using a writer
+     *
      * @param header VCF header
      * @throws IllegalStateException if header or body is already written
 

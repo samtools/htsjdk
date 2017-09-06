@@ -75,6 +75,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
     @Test
     public void testWriteAndReadAsyncVCFHeaderless() throws IOException {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", ".vcf");
+        fakeVCFFile.deleteOnExit();
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();
         final Set<VCFHeaderLine> metaData = new HashSet<>();

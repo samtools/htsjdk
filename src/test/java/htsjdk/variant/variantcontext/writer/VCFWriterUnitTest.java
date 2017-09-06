@@ -88,6 +88,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testBasicWriteAndRead(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testBasicWriteAndRead.", extension, tempDir);
+        fakeVCFFile.deleteOnExit();
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
@@ -133,6 +134,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(dataProvider = "vcfExtensionsDataProvider")
     public void testWriteAndReadVCFHeaderless(final String extension) throws IOException {
         final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
+        fakeVCFFile.deleteOnExit();
         if (".vcf.gz".equals(extension)) {
             new File(fakeVCFFile.getAbsolutePath() + ".tbi");
         } else {
@@ -170,6 +172,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testWriteHeaderTwice() {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent writing header twice
@@ -186,6 +189,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingHeader() {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if it's already written
@@ -201,6 +205,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testChangeHeaderAfterWritingBody() {
         final File fakeVCFFile = VariantBaseTest.createTempFile("testBasicWriteAndRead.", ".vcf");
+        fakeVCFFile.deleteOnExit();
         final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
         final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
         // prevent changing header if part of body is already written

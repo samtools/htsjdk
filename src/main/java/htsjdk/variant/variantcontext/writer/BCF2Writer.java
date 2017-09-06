@@ -123,7 +123,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     private boolean canPassOnUnparsedGenotypeDataForLastVCFHeader = false;
 
     // is the header or body written to the output stream?
-    private boolean isWrittenToOutput;
+    private boolean outputHasBeenWritten;
 
 
     public BCF2Writer(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
@@ -163,7 +163,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             new BCFVersion(MAJOR_VERSION, MINOR_VERSION).write(outputStream);
             BCF2Type.INT32.write(headerBytes.length, outputStream);
             outputStream.write(headerBytes);
-            isWrittenToOutput = true;
+            outputHasBeenWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
         }
@@ -183,7 +183,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
             // write the two blocks to disk
             writeBlock(infoBlock, genotypesBlock);
-            isWrittenToOutput = true;
+            outputHasBeenWritten = true;
         }
         catch ( IOException e ) {
             throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
@@ -203,7 +203,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void setVCFHeader(final VCFHeader header) {
-        if (isWrittenToOutput) {
+        if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }
         // make sure the header is sorted correctly
