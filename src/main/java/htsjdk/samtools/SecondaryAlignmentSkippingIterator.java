@@ -31,10 +31,10 @@ import htsjdk.samtools.util.PeekIterator;
  * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
  * handle those concerns separately.
  */
-public class SecondarySkippingIterator {
+public class SecondaryAlignmentSkippingIterator {
     private final PeekIterator<SAMRecord> it;
 
-    public SecondarySkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
+    public SecondaryAlignmentSkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
         it = new PeekIterator<>(underlyingIt);
         skipAnySecondary();
     }

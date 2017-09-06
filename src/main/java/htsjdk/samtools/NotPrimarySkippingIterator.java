@@ -29,10 +29,10 @@ import htsjdk.samtools.util.CloseableIterator;
  * Wrapper around SAMRecord iterator that skips over non-primary elements.
  * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
  * handle those concerns separately.
- * @deprecated use {@link SecondarySkippingIterator} instead.
+ * @deprecated use {@link SecondaryAlignmentSkippingIterator} instead.
  */
 @Deprecated
-public class NotPrimarySkippingIterator extends SecondarySkippingIterator {
+public class NotPrimarySkippingIterator extends SecondaryAlignmentSkippingIterator {
 
     public NotPrimarySkippingIterator(CloseableIterator<SAMRecord> underlyingIt) {
         super(underlyingIt);

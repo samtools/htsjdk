@@ -6,7 +6,7 @@ import htsjdk.samtools.util.PeekIterator;
 /**
  * Wrapper around SAMRecord iterator that skips over secondary and supplementary elements.
  * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
- * handle those concerns separately. This class should be viewed as a replacement for SecondarySkippingIterator,
+ * handle those concerns separately. This class should be viewed as a replacement for SecondaryAlignmentSkippingIterator,
  * in that we did not want to change the functionality of NPSI to no longer match its name
  */
 public class SecondaryOrSupplementarySkippingIterator {
