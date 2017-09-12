@@ -320,13 +320,13 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     public Object[][] multipleIntervalOverlapping() {
         return new Object[][]{
             {cramQueryWithCRAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             {cramQueryWithLocalCRAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             {cramQueryWithBAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             // no matching reads
             {cramQueryReadsWithBAI, cramQueryReadsReference,

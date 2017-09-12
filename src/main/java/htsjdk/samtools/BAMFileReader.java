@@ -879,7 +879,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             if (prev.overlaps(thisInterval)) {
                 throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
             }
-            if (prev.abuts(thisInterval)) {
+            if (prev.endsAtStartOf(thisInterval)) {
                 throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
             }
         }
