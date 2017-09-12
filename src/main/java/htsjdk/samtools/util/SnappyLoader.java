@@ -44,7 +44,11 @@ public class SnappyLoader {
     private final boolean snappyAvailable;
 
     public SnappyLoader() {
-        if (Defaults.DISABLE_SNAPPY_COMPRESSOR) {
+        this(Defaults.DISABLE_SNAPPY_COMPRESSOR);
+    }
+
+    public SnappyLoader(boolean disableSnappyCompressor) {
+        if (disableSnappyCompressor) {
             logger.debug("Snappy is disabled via system property.");
             snappyAvailable = false;
         }
