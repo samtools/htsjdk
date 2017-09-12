@@ -44,16 +44,8 @@ public class SnappyLoader {
     private final boolean snappyAvailable;
 
     public SnappyLoader() {
-        this(Defaults.SNAPPY_EXTRA_VERBOSE);
-    }
-
-    /**
-     * Constructs a new SnappyLoader which will check to see if snappy is available in the JVM/library path.
-     * @param verbose if true output a small number of log messages
-     */
-    public SnappyLoader(final boolean verbose) {
         if (Defaults.DISABLE_SNAPPY_COMPRESSOR) {
-            if(verbose) logger.info("Snappy is disabled via system property.");
+            logger.debug("Snappy is disabled via system property.");
             snappyAvailable = false;
         }
         else {
@@ -61,7 +53,7 @@ public class SnappyLoader {
             try (final OutputStream test = new SnappyOutputStream(new ByteArrayOutputStream(1000))){
                 test.write("Hello World!".getBytes());
                 tmpSnappyAvailable = true;
-                if (verbose) logger.info("Snappy successfully loaded.");
+                logger.debug("Snappy successfully loaded.");
             }
             /*
              * ExceptionInInitializerError: thrown by Snappy if native libs fail to load.
@@ -70,7 +62,7 @@ public class SnappyLoader {
              * SnappyError: potentially thrown for a variety of reasons by Snappy.
              */
             catch (final ExceptionInInitializerError | IllegalStateException | IOException | SnappyError e) {
-                if (verbose) logger.warn("Snappy native library failed to load: " + e.getMessage());
+                logger.warn(e, "Snappy native library failed to load.");
             }
             snappyAvailable = tmpSnappyAvailable;
         }
