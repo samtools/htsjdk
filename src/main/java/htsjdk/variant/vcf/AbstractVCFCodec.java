@@ -27,6 +27,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.AsciiFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.NameAwareCodec;
@@ -62,6 +63,9 @@ import java.util.zip.GZIPInputStream;
 
 
 public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext> implements NameAwareCodec {
+
+    private final static Log LOG = Log.getInstance(AbstractVCFCodec.class);
+
     public final static int MAX_ALLELE_SIZE_BEFORE_WARNING = (int)Math.pow(2, 20);
 
     protected final static int NUM_STANDARD_FIELDS = 8;  // INFO is the 8th column
@@ -151,6 +155,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         Set<VCFHeaderLine> metaData = new LinkedHashSet<VCFHeaderLine>();
         Set<String> sampleNames = new LinkedHashSet<String>();
+        boolean contigsExist = false;
         int contigCounter = 0;
         // iterate over all the passed in strings
         for ( String str : headerStrings ) {
@@ -209,6 +214,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                     final VCFFormatHeaderLine format = new VCFFormatHeaderLine(str.substring(9), version);
                     metaData.add(format);
                 } else if ( str.startsWith(VCFConstants.CONTIG_HEADER_START) ) {
+                    contigsExist = true;
                     final VCFContigHeaderLine contig = new VCFContigHeaderLine(str.substring(9), version, VCFConstants.CONTIG_HEADER_START.substring(2), contigCounter++);
                     metaData.add(contig);
                 } else if ( str.startsWith(VCFConstants.ALT_HEADER_START) ) {
@@ -222,6 +228,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
             }
         }
 
+        if (!contigsExist) LOG.warn("There are no contig lines in vcf file header");
         this.header = new VCFHeader(metaData, sampleNames);
         if ( doOnTheFlyModifications )
             this.header = VCFStandardHeaderLines.repairStandardHeaderLines(this.header);

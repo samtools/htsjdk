@@ -27,6 +27,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.tribble.TribbleException;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
@@ -150,6 +151,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      * Look up sequence record by name.
      */
     public SAMSequenceRecord getSequence(final String name) {
+        if (mSequenceDictionary == null) throw new TribbleException.InvalidHeader("sequence dictionary is empty");
         return mSequenceDictionary.getSequence(name);
     }
 
