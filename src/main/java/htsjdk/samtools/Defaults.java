@@ -14,7 +14,7 @@ import java.util.TreeMap;
  * @author Tim Fennell
  */
 public class Defaults {
-    private static Log log = Log.getInstance(Defaults.class);
+      private static final Log log = Log.getInstance(Defaults.class);
     
     /** Should BAM index files be created when writing out coordinate sorted BAM files?  Default = false. */
     public static final boolean CREATE_INDEX;
@@ -85,6 +85,21 @@ public class Defaults {
     public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
 
+    /**
+     * the name of the system property that disables snappy
+     */
+    public static final String DISABLE_SNAPPY_PROPERTY_NAME = "snappy.disable";
+
+    /**
+     * Disable use of the Snappy compressor
+     */
+    public static final boolean DISABLE_SNAPPY_COMPRESSOR;
+
+    /**
+     * determines if snappy should emit log messages when snappy is successfully loaded
+     */
+    public static final boolean SNAPPY_EXTRA_VERBOSE;
+
     static {
         CREATE_INDEX = getBooleanProperty("create_index", false);
         CREATE_MD5 = getBooleanProperty("create_md5", false);
@@ -104,6 +119,8 @@ public class Defaults {
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
+        SNAPPY_EXTRA_VERBOSE = getBooleanProperty("snappy.loader.verbosity", false);
+        DISABLE_SNAPPY_COMPRESSOR = getBooleanProperty(DISABLE_SNAPPY_PROPERTY_NAME, false);
     }
 
     /**
@@ -126,6 +143,8 @@ public class Defaults {
         result.put("EBI_REFERENCE_SERVICE_URL_MASK", EBI_REFERENCE_SERVICE_URL_MASK);
         result.put("CUSTOM_READER_FACTORY", CUSTOM_READER_FACTORY);
         result.put("SAM_FLAG_FIELD_FORMAT", SAM_FLAG_FIELD_FORMAT);
+        result.put("DISABLE_SNAPPY_COMPRESSOR", DISABLE_SNAPPY_COMPRESSOR);
+        result.put("SNAPPY_EXTRA_VERBOSE", SNAPPY_EXTRA_VERBOSE);
         return Collections.unmodifiableSortedMap(result);
     }
 
