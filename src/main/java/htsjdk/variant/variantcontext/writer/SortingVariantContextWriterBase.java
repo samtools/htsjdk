@@ -132,6 +132,11 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
         emitSafeRecords();
     }
 
+    @Override
+    public void setVCFHeader(final VCFHeader header) {
+        innerWriter.setVCFHeader(header);
+    }
+
     /**
      * Gets a string representation of this object.
      * @return a string representation of this object

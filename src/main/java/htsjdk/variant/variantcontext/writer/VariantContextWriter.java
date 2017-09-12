@@ -35,6 +35,12 @@ import htsjdk.variant.vcf.VCFHeader;
  */
 public interface VariantContextWriter extends Closeable {
 
+    /**
+     * Writes the header
+     *
+     * @param header header
+     * @throws IllegalStateException if header is already written
+     */
     public void writeHeader(VCFHeader header);
 
     /**
@@ -49,4 +55,15 @@ public interface VariantContextWriter extends Closeable {
     public boolean checkError();
     
     public void add(VariantContext vc);
+
+    /**
+     * Sets the VCF header so that data blocks can be written without writing the header
+     *
+     * Exactly one of writeHeader() or setVCFHeader() should be called when using a writer
+     *
+     * @param header VCF header
+     * @throws IllegalStateException if header or body is already written
+
+     */
+    void setVCFHeader(VCFHeader header);
 }
