@@ -26,9 +26,7 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -47,7 +45,7 @@ public class SortingCollectionTest extends HtsjdkTest {
     protected File tmpDir() {
         return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());
     }
-    
+
     @BeforeMethod void setup() { resetTmpDir(); }
     @AfterMethod void tearDown() { resetTmpDir(); }
 
@@ -92,9 +90,10 @@ public class SortingCollectionTest extends HtsjdkTest {
             sortingCollection.add(s);
             strings[numStringsGenerated++] = s;
         }
+        sortingCollection.doneAdding();
         Arrays.sort(strings, new StringComparator());
 
-        Assert.assertEquals(tmpDirIsEmpty(), numStringsToGenerate <= maxRecordsInRam);
+        Assert.assertEquals(tmpDirIsEmpty(), shouldTmpDirBeEmpty(numStringsToGenerate, maxRecordsInRam));
         sortingCollection.setDestructiveIteration(false);
         assertIteratorEqualsList(strings, sortingCollection.iterator());
         assertIteratorEqualsList(strings, sortingCollection.iterator());
@@ -103,7 +102,7 @@ public class SortingCollectionTest extends HtsjdkTest {
         Assert.assertEquals(tmpDir().list().length, 0);
     }
 
-    private void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
+    protected void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
         int i = 0;
         while (sortingCollection.hasNext()) {
             final String s = sortingCollection.next();
@@ -112,8 +111,13 @@ public class SortingCollectionTest extends HtsjdkTest {
         Assert.assertEquals(i, strings.length);
     }
 
-    private SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
-        return SortingCollection.newInstance(String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
+    boolean shouldTmpDirBeEmpty(int numStringsToGenerate, int maxRecordsInRam) {
+        return numStringsToGenerate <= maxRecordsInRam;
+    }
+
+    SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
+            return new SortingCollection<>(String.class, new StringCodec(),
+                    new StringComparator(), maxRecordsInRam, tmpDir());
     }
 
     /**
