@@ -43,12 +43,13 @@ public class SnappyLoader {
 
     private final boolean snappyAvailable;
 
+
     public SnappyLoader() {
         this(Defaults.DISABLE_SNAPPY_COMPRESSOR);
     }
 
-    public SnappyLoader(boolean disableSnappyCompressor) {
-        if (disableSnappyCompressor) {
+    SnappyLoader(boolean disableSnappy) {
+        if (disableSnappy) {
             logger.debug("Snappy is disabled via system property.");
             snappyAvailable = false;
         }
@@ -100,7 +101,7 @@ public class SnappyLoader {
             try {
                 return wrapper.apply(stream);
             } catch (Exception e) {
-                throw new SAMException("Error instantiating SnappyInputStream", e);
+                throw new SAMException("Error wrapping stream with snappy", e);
             }
         } else {
             final String errorMessage = Defaults.DISABLE_SNAPPY_COMPRESSOR
