@@ -2112,7 +2112,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private boolean isReferenceTooLargeForBAI() {
-        return getHeader().getSequenceDictionary().getReferenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+        final int referenceLength = getHeader().getSequence(this.getReferenceName()).getSequenceLength();
+        return referenceLength > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 
     /**
