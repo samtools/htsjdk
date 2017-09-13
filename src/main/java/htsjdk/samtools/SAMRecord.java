@@ -2062,12 +2062,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
 
         if (this.getAlignmentStart() != NO_ALIGNMENT_START) {
-            if (getHeader() != null
-                    && isReferenceTooLargeForBAI()
-                    && getValidationStringency() != ValidationStringency.SILENT) {
-                LOG.warn(String.format("Reference length is too large for BAM bin field for %s record. Values in the bin field could be incorrect.", getReadName()));
+            if (getHeader() != null && isReferenceTooLargeForBAI()) {
+                if (getValidationStringency() != ValidationStringency.SILENT) {
+                    LOG.warn(String.format("Reference length is too large for BAM bin field for %s record. Values in the bin field could be incorrect.", getReadName()));
+                }
             } else if (isIndexingBinNotEqualsComputedBin()) {
-                if (ret == null) ret = new ArrayList<SAMValidationError>();
+                if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
                         "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
                         getReadName()));
