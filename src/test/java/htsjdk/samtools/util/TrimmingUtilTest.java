@@ -23,13 +23,14 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * Tests for a simple phred-style quality trimming algorithm.
  */
-public class TrimmingUtilTest {
+public class TrimmingUtilTest extends HtsjdkTest {
     @Test
     public void testEasyCases() {
         Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(30,30,30,30,30, 2, 2, 2, 2, 2), 15), 5);

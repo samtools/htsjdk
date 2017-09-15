@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -36,7 +37,7 @@ import static htsjdk.samtools.util.IntervalTree.Node.HAS_OVERLAPPING_PART;
  * @author alecw@broadinstitute.org
  */
 @Test(singleThreaded=true) // to assure that the common resources aren't clobbered
-public class IntervalTreeTest {
+public class IntervalTreeTest extends HtsjdkTest {
     @Test
     public void testNoMatches()
     {

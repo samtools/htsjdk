@@ -664,7 +664,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         final String textHeader = stream.readString(headerTextLength);
         final SAMTextHeaderCodec headerCodec = new SAMTextHeaderCodec();
         headerCodec.setValidationStringency(validationStringency);
-        final SAMFileHeader samFileHeader = headerCodec.decode(new StringLineReader(textHeader),
+        final SAMFileHeader samFileHeader = headerCodec.decode(BufferedLineReader.fromString(textHeader),
                 source);
 
         final int sequenceCount = stream.readInt();
@@ -879,7 +879,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             if (prev.overlaps(thisInterval)) {
                 throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s intersects %s", prev, thisInterval));
             }
-            if (prev.abuts(thisInterval)) {
+            if (prev.endsAtStartOf(thisInterval)) {
                 throw new IllegalArgumentException(String.format("List of intervals is not optimized: %s abuts %s", prev, thisInterval));
             }
         }

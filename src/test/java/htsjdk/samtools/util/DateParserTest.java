@@ -72,11 +72,11 @@ webmaster
 
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.text.DateFormat;
 import java.util.Date;
 
 /**
@@ -89,7 +89,7 @@ import java.util.Date;
  * @author  bmahe@w3.org
  */
 
-public class DateParserTest {
+public class DateParserTest extends HtsjdkTest {
 
     private static void test(final String isodate) {
         Date date = DateParser.parse(isodate);
@@ -107,8 +107,7 @@ public class DateParserTest {
         final Date dateRoundTrip = DateParser.parse(isodate);
 
         assertDatesAreClose(date, dateRoundTrip);
-        Assert.assertTrue(Math.abs(Date.parse(date.toString()) - Date.parse(dateRoundTrip.toString())) < 10);
-
+        Assert.assertTrue(Math.abs(date.getTime() - dateRoundTrip.getTime()) < 10);
     }
 
     @DataProvider(name="dateDate")

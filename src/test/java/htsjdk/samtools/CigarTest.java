@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * @author alecw@broadinstitute.org
  */
-public class CigarTest {
+public class CigarTest extends HtsjdkTest {
 
     @DataProvider(name = "positiveTestsData")
     public Object[][] testPositive() {
@@ -62,6 +63,9 @@ public class CigarTest {
     public Object[][] negativeTestsData() {
 
         return new Object[][]{
+                // CIGAR element with zero length
+                {"0M", SAMValidationError.Type.INVALID_CIGAR},
+
                 // Cannot have two consecutive insertions (of the same type)
                 {"1M1D1D1M", SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR},
                 {"1M1I1I1M", SAMValidationError.Type.ADJACENT_INDEL_IN_CIGAR},
@@ -79,11 +83,15 @@ public class CigarTest {
                 {"1H1S", SAMValidationError.Type.INVALID_CIGAR},
                 {"1S1H", SAMValidationError.Type.INVALID_CIGAR},
                 {"1H1H", SAMValidationError.Type.INVALID_CIGAR},
+
+                // Hard clipping operator not at start or end of CIGAR
+                {"1M1H1M", SAMValidationError.Type.INVALID_CIGAR},
+
+                // Padding operator not valid at end of CIGAR
+                {"1M1P", SAMValidationError.Type.INVALID_CIGAR},
+                // Padding operator not between real operators in CIGAR
+                {"1S1P1M", SAMValidationError.Type.INVALID_CIGAR}
         };
-/*
-        // Zero length for an element not allowed. TODO: not sure why this is commented out
-       {"100M0D10M1D10M", SAMValidationError.Type.INVALID_CIGAR}
-*/
     }
 
     @Test(dataProvider = "negativeTestsData")
@@ -115,4 +123,115 @@ public class CigarTest {
         Assert.assertFalse(cigar.isRightClipped());
         Assert.assertTrue(cigar.isClipped());
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testMakeCigarFromNullOperator() {
+        Cigar.fromCigarOperators(null);
+    }
+
+    @DataProvider
+    public Object[][] referenceLengthData() {
+        return new Object[][] {
+                // consuming reference
+                {"1M", 1, 1},
+                {"1=", 1, 1},
+                {"1X", 1, 1},
+                {"1N", 1, 1},
+                {"1D", 1, 1},
+
+                // non-consuming reference
+                {"1S", 0, 0},
+                {"1H", 0, 0},
+
+                // special case: padding
+                {"1P", 0, 1}
+        };
+    }
+
+    @Test(dataProvider = "referenceLengthData")
+    public void testGetReferenceLength(final String textCigar,
+            final int referenceLength, final int paddedReferenceLenght) throws Exception{
+        final Cigar cigar = TextCigarCodec.decode(textCigar);
+        Assert.assertEquals(cigar.getReferenceLength(), referenceLength);
+        Assert.assertEquals(cigar.getPaddedReferenceLength(), paddedReferenceLenght);
+    }
+
+    @DataProvider
+    public Object[][] readLengthData() {
+        return new Object[][] {
+                // consuming read bases
+                {"1M", 1},
+                {"2I", 2},
+                {"3S", 3},
+                {"4X", 4},
+                {"5=", 5},
+
+                // non-consuming reference
+                {"1D", 0},
+                {"2N", 0},
+                {"4H", 0},
+                {"4P", 0}
+        };
+    }
+
+    @Test(dataProvider = "readLengthData")
+    public void testGetReadLength(final String textCigar, final int readLength) throws Exception{
+        final Cigar cigar = TextCigarCodec.decode(textCigar);
+        Assert.assertEquals(cigar.getReadLength(), readLength);
+    }
+
+    @Test
+    public void testContainsOperator() {
+        final Cigar cigar = TextCigarCodec.decode("10M1S");
+        Assert.assertTrue(cigar.containsOperator(CigarOperator.M));
+        Assert.assertTrue(cigar.containsOperator(CigarOperator.S));
+        Assert.assertFalse(cigar.containsOperator(CigarOperator.X));
+    }
+
+    @DataProvider
+    public Object[][] firstLastData() {
+        final CigarElement M_ELEMENT = new CigarElement(1, CigarOperator.M);
+        final CigarElement S_ELEMENT = new CigarElement(1, CigarOperator.S);
+        return new Object[][] {
+                {"*", null, null},
+                {"1M", M_ELEMENT, M_ELEMENT},
+                {"1M1S", M_ELEMENT, S_ELEMENT},
+                {"1S1M", S_ELEMENT, M_ELEMENT},
+                {"1S1M1S", S_ELEMENT, S_ELEMENT},
+                {"1M1D1M1D1M", M_ELEMENT, M_ELEMENT}
+        };
+    }
+
+    @Test(dataProvider = "firstLastData")
+    public void testGetFirstOrLastCigarElement(final String textCigar, final CigarElement first, final CigarElement last) {
+        final Cigar cigar = TextCigarCodec.decode(textCigar);
+        Assert.assertEquals(cigar.getFirstCigarElement(), first);
+        Assert.assertEquals(cigar.getLastCigarElement(), last);
+    }
+
+    @DataProvider
+    public Object[][] clippedData() {
+        return new Object[][] {
+                // no clipped
+                {"10M", false},
+                // wrong place for soft-clip and hard-clip returns false
+                {"1M1S1M", false},
+                {"1M1H1M", false},
+
+                // clipped
+                {"1S1M", true},
+                {"1M1S", true},
+                {"1S1M1S", true},
+                {"1H1M", true},
+                {"1M1H", true},
+                {"1H1M1H", true}
+        };
+    }
+
+    @Test(dataProvider = "clippedData")
+    public void testIsClipped(final String textCigar, final boolean isClipped) {
+        // this test is indirectly testing both left and right clipping methods
+        Assert.assertEquals(TextCigarCodec.decode(textCigar).isClipped(), isClipped);
+    }
+
 }

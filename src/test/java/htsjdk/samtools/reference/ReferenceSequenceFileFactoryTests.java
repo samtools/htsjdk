@@ -1,5 +1,6 @@
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -9,7 +10,7 @@ import java.io.File;
 /**
  * Simple tests for the reference sequence file factory
  */
-public class ReferenceSequenceFileFactoryTests {
+public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
     public static final File hg18 = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
 
     @Test public void testPositivePath() {

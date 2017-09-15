@@ -24,6 +24,7 @@
 
 package htsjdk.variant.variantcontext.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
@@ -36,7 +37,7 @@ import java.io.File;
  * Tests for testing the (VariantContext)FilteringVariantContextIterator, and the HeterozygosityFilter
  */
 
-public class FilteringVariantContextIteratorTest {
+public class FilteringVariantContextIteratorTest extends HtsjdkTest {
     final File testDir = new File("src/test/resources/htsjdk/variant");
 
     @DataProvider

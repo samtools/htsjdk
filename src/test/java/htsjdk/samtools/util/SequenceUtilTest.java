@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
@@ -36,7 +37,7 @@ import java.util.*;
 /**
  * @author alecw@broadinstitute.org
  */
-public class SequenceUtilTest {
+public class SequenceUtilTest extends HtsjdkTest {
     private static final String HEADER = "@HD\tVN:1.0\tSO:unsorted\n";
     private static final String SEQUENCE_NAME=
         "@SQ\tSN:phix174.seq\tLN:5386\tUR:/seq/references/PhiX174/v0/PhiX174.fasta\tAS:PhiX174\tM5:3332ed720ac7eaa9b3655c06f6b9e196";
@@ -58,7 +59,7 @@ public class SequenceUtilTest {
 
         return new Object[][]{ {makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
                 "3332ed720ac7eaa9b3655c06f6b9e196"),
-                new SAMTextHeaderCodec().decode(new StringLineReader(s), null).getSequenceDictionary()}};
+                new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null).getSequenceDictionary()}};
     }
 
     @Test(dataProvider = "compatibleNonEqualLists")
@@ -102,7 +103,7 @@ public class SequenceUtilTest {
     private SAMSequenceDictionary makeSequenceDictionary(final int length, final String ur, final String m5) {
         final String s = HEADER +
                 String.format("@SQ\tSN:phix174.seq\tLN:%d\tUR:%s\tAS:PhiX174\tM5:%s\n", length, ur, m5);
-        return new SAMTextHeaderCodec().decode(new StringLineReader(s), null).getSequenceDictionary();
+        return new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null).getSequenceDictionary();
     }
 
     @Test(dataProvider = "makeReferenceFromAlignment")
@@ -261,11 +262,11 @@ public class SequenceUtilTest {
 
     @Test(dataProvider = "testKmerGenerationTestCases")
     public void testKmerGeneration(final int length, final String[] expectedKmers) {
-        final Set<String> actualSet = new HashSet<String>();
+        final Set<String> actualSet = new HashSet<>();
         for (final byte[] kmer : SequenceUtil.generateAllKmers(length)) {
             actualSet.add(StringUtil.bytesToString(kmer));
         }
-        final Set<String> expectedSet = new HashSet<String>(Arrays.asList(expectedKmers));
+        final Set<String> expectedSet = new HashSet<>(Arrays.asList(expectedKmers));
         Assert.assertTrue(actualSet.equals(expectedSet));
     }
 
@@ -560,5 +561,62 @@ public class SequenceUtilTest {
         for (int i = 0; i < actual.length; ++i) {
             Assert.assertEquals(actual[i], expected[i], "Array differ at position " + i);
         }
+    }
+
+    @Test
+    public void testIsACGTN() {
+        for (byte base = Byte.MIN_VALUE; base < Byte.MAX_VALUE; base++) {
+            if (base == 'A' || base == 'C' || base == 'G' || base == 'T' || base == 'N') {
+                Assert.assertTrue(SequenceUtil.isUpperACGTN(base));
+            } else {
+                Assert.assertFalse(SequenceUtil.isUpperACGTN(base));
+            }
+        }
+    }
+
+    @Test
+    public void testIsIUPAC() {
+        final String iupacString = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
+        for (byte code=0; code<Byte.MAX_VALUE; code++) {
+            if (iupacString.contains(new String (new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isIUPAC(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isIUPAC(code));
+            }
+        }
+    }
+
+    @Test
+    public void testIUPAC_CODES_STRING() {
+        for (final byte code: SequenceUtil.getIUPACCodesString().getBytes()) {
+            Assert.assertTrue(SequenceUtil.isIUPAC(code));
+        }
+    }
+
+    @Test
+    public void testIsBamReadBase() {
+        final String iupacUpperCasedWithoutDot = "=" + SequenceUtil.getIUPACCodesString().toUpperCase().replaceAll("\\.", "N");
+
+        for (byte code = 0; code < Byte.MAX_VALUE; code++) {
+            if (iupacUpperCasedWithoutDot.contains(new String(new char[]{(char) code}))) {
+                Assert.assertTrue(SequenceUtil.isBamReadBase(code));
+            } else {
+                Assert.assertFalse(SequenceUtil.isBamReadBase(code), "" + code);
+            }
+        }
+        Assert.assertTrue(SequenceUtil.isBamReadBase((byte) '='));
+    }
+
+    @Test
+    public void testToBamReadBases() {
+        final String testInput = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_.-=";
+
+        /**
+         * This can be obtained by :
+         * echo 'blah' | tr a-z A-Z | tr -c '=ABCDGHKMNRSTVWY' N
+         */
+        final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
+
+        Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
     }
 }

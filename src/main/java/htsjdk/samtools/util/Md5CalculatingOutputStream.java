@@ -68,7 +68,7 @@ public class Md5CalculatingOutputStream extends OutputStream {
     }
 
     public Md5CalculatingOutputStream(OutputStream os, File digestFile) {
-        this(os, digestFile.toPath());
+        this(os, digestFile == null ? (Path) null : digestFile.toPath());
     }
 
     @Override

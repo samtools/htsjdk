@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2016 The Broad Institute
+ * Copyright (c) 2015 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +24,11 @@
 
 package htsjdk.samtools.seekablestream;
 
-import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.IOException;
 
 /**
-* Created by vadim on 23/03/2015.
-*/
+ * Created by vadim on 23/03/2015.
+ */
 public class ByteArraySeekableStream extends SeekableStream {
     private byte[] bytes;
     private long position = 0;
@@ -51,21 +49,27 @@ public class ByteArraySeekableStream extends SeekableStream {
 
     @Override
     public void seek(long position) throws IOException {
-        this.position = position;
+        if (position < 0) {
+            throw new IllegalArgumentException("Cannot seek to a negative position, position=" + position + ".");
+        } else {
+            this.position = position;
+        }
     }
 
     @Override
     public int read() throws IOException {
-        if (position < bytes.length)
+        if (position < bytes.length) {
             return 0xFF & bytes[((int) position++)];
-        else return -1;
+        } else {
+            return -1;
+        }
     }
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         if (b == null) {
             throw new NullPointerException();
-        } else if (off < 0 || len < 0 || len > b.length - off) {
+        } else if (off < 0 || len < 0 || len + off > b.length) {
             throw new IndexOutOfBoundsException();
         }
         if (position >= bytes.length) {
@@ -85,6 +89,7 @@ public class ByteArraySeekableStream extends SeekableStream {
     @Override
     public void close() throws IOException {
         bytes = null;
+        position = -1;
     }
 
     @Override

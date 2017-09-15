@@ -23,12 +23,15 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
-public class SAMUtilsTest {
+public class SAMUtilsTest extends HtsjdkTest {
     @Test
     public void testCompareMapqs() {
         Assert.assertEquals(SAMUtils.compareMapqs(0, 0), 0);
@@ -244,7 +247,41 @@ public class SAMUtilsTest {
         Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),null);
         Assert.assertEquals(other.getCigarString(),"8M2S");
         Assert.assertEquals(other.getInferredInsertSize(),-91);//100(mate) - 191(other)
-
     }
 
+    @Test()
+    public void testBytesToCompressedBases() {
+        final byte[] bases = new byte[]{'=', 'a', 'A', 'c', 'C', 'g', 'G', 't', 'T', 'n', 'N', '.', 'M', 'm',
+                'R', 'r', 'S', 's', 'V', 'v', 'W', 'w', 'Y', 'y', 'H', 'h', 'K', 'k', 'D', 'd', 'B', 'b'};
+        final byte[] compressedBases = SAMUtils.bytesToCompressedBases(bases);
+        String expectedCompressedBases = "[1, 18, 36, 72, -113, -1, 51, 85, 102, 119, -103, -86, -69, -52, -35, -18]";
+        Assert.assertEquals(Arrays.toString(compressedBases), expectedCompressedBases);
+    }
+
+    @DataProvider
+    public Object[][] testBadBase() {
+        return new Object[][]{
+                {new byte[]{'>', 'A'}, '>'},
+                {new byte[]{'A', '>'} , '>'}
+        };
+    }
+
+    @Test(dataProvider = "testBadBase", expectedExceptions = IllegalArgumentException.class)
+    public void testBytesToCompressedBasesException(final byte[] bases, final char failingBase) {
+        try {
+            SAMUtils.bytesToCompressedBases(bases);
+        } catch ( final IllegalArgumentException ex ) {
+            Assert.assertTrue(ex.getMessage().contains(Character.toString(failingBase)));
+            throw ex;
+        }
+    }
+
+    @Test
+    public void testCompressedBasesToBytes() {
+        final byte[] compressedBases = new byte[]{1, 18, 36, 72, -113, -1, 51, 85, 102, 119, -103, -86, -69, -52, -35, -18};
+        final byte[] bytes = SAMUtils.compressedBasesToBytes(2*compressedBases.length, compressedBases, 0);
+        final byte[] expectedBases = new byte[]{'=', 'A', 'A', 'C', 'C', 'G', 'G', 'T', 'T', 'N', 'N', 'N', 'M', 'M',
+                'R', 'R', 'S', 'S', 'V', 'V', 'W', 'W', 'Y', 'Y', 'H', 'H', 'K', 'K', 'D', 'D', 'B', 'B'};
+        Assert.assertEquals(new String(bytes), new String(expectedBases));
+    }
 }

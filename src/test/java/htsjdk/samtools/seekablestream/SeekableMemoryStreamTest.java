@@ -24,13 +24,14 @@
 
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.EOFException;
 import java.io.IOException;
 
-public class SeekableMemoryStreamTest {
+public class SeekableMemoryStreamTest extends HtsjdkTest {
 
     @Test
     public void test_getSource() {

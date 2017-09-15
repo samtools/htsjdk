@@ -20,6 +20,7 @@ package htsjdk.samtools.cram.ref;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.cram.build.Utils;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -27,6 +28,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,21 +54,17 @@ import java.util.regex.Pattern;
  */
 public class ReferenceSource implements CRAMReferenceSource {
     private static final Log log = Log.getInstance(ReferenceSource.class);
-    private ReferenceSequenceFile rsFile;
+    private final ReferenceSequenceFile rsFile;
     private int downloadTriesBeforeFailing = 2;
 
-    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<String, WeakReference<byte[]>>();
-
-    private ReferenceSource() {
-    }
+    private final Map<String, WeakReference<byte[]>> cacheW = new HashMap<>();
 
     public ReferenceSource(final File file) {
         this(file == null ? null : file.toPath());
     }
 
     public ReferenceSource(final Path path) {
-        if (path != null)
-            rsFile = ReferenceSequenceFileFactory.getReferenceSequenceFile(path);
+        this( path == null ? null : ReferenceSequenceFileFactory.getReferenceSequenceFile(path));
     }
 
     public ReferenceSource(final ReferenceSequenceFile rsFile) {
@@ -102,7 +100,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             }
         }
         else if (Defaults.USE_CRAM_REF_DOWNLOAD) {
-            return new ReferenceSource();
+            return new ReferenceSource((ReferenceSequenceFile)null);
         }
         else {
             throw new IllegalStateException(
@@ -124,12 +122,15 @@ public class ReferenceSource implements CRAMReferenceSource {
         return null;
     }
 
-    // Upper case and normalize (-> ACGTN) in-place, and add to the cache
+    // Upper case (in-place), and add to the cache
     private byte[] addToCache(final String sequenceName, final byte[] bases) {
+        // Normalize to upper case only. We can't use the cram normalization utility Utils.normalizeBases, since
+        // we don't want to normalize ambiguity codes, we can't use SamUtils.normalizeBases, since we don't want
+        // to normalize no-call ('.') bases.
         for (int i = 0; i < bases.length; i++) {
-            bases[i] = Utils.normalizeBase(bases[i]);
+            bases[i] = StringUtil.toUpperCase(bases[i]);
         }
-        cacheW.put(sequenceName, new WeakReference<byte[]>(bases));
+        cacheW.put(sequenceName, new WeakReference<>(bases));
         return bases;
     }
 
@@ -250,7 +251,7 @@ public class ReferenceSource implements CRAMReferenceSource {
             Pattern.CASE_INSENSITIVE);
 
     List<String> getVariants(final String name) {
-        final List<String> variants = new ArrayList<String>();
+        final List<String> variants = new ArrayList<>();
 
         if (name.equals("M"))
             variants.add("MT");

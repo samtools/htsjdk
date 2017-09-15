@@ -1,6 +1,7 @@
 package htsjdk.tribble.readers;
 
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
@@ -13,9 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static org.testng.AssertJUnit.assertTrue;
-
-
 /**
  * Created by IntelliJ IDEA.
  * User: jrobinso
@@ -23,7 +21,7 @@ import static org.testng.AssertJUnit.assertTrue;
  * Time: 8:57:40 PM
  * To change this template use File | Settings | File Templates.
  */
-public class TabixReaderTest {
+public class TabixReaderTest extends HtsjdkTest {
 
     static String tabixFile = TestUtils.DATA_DIR + "tabix/trioDup.vcf.gz";
     static TabixReader tabixReader;
@@ -128,10 +126,10 @@ public class TabixReaderTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
 
     }
@@ -153,10 +151,22 @@ public class TabixReaderTest {
         int nRecords = 0;
         String nextLine;
         while ((nextLine = lineReader.readLine()) != null) {
-            assertTrue(nextLine.startsWith("4"));
+            Assert.assertTrue(nextLine.startsWith("4"));
             nRecords++;
         }
-        assertTrue(nRecords > 0);
+        Assert.assertTrue(nRecords > 0);
 
+    }
+    
+    /**
+     * Test TabixReader.readLine
+     *
+     * @throws java.io.IOException
+     */
+    @Test
+    public void testTabixReaderReadLine() throws IOException {
+        TabixReader tabixReader = new TabixReader(tabixFile);
+        Assert.assertNotNull(tabixReader.readLine());
+        tabixReader.close();
     }
 }

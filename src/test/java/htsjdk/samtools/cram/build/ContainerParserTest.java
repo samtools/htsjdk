@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
@@ -24,7 +25,7 @@ import java.util.Map;
 /**
  * Created by vadim on 11/01/2016.
  */
-public class ContainerParserTest {
+public class ContainerParserTest extends HtsjdkTest {
 
     @Test
     public void testEOF() throws IOException, IllegalAccessException {

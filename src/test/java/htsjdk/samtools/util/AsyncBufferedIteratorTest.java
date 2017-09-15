@@ -23,10 +23,11 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class AsyncBufferedIteratorTest {
+public class AsyncBufferedIteratorTest extends HtsjdkTest {
     private static class TestCloseableIterator implements CloseableIterator<Integer> {
         private int[] results;
         private volatile int offset = 0;
@@ -73,9 +74,15 @@ public class AsyncBufferedIteratorTest {
         TestCloseableIterator it = new TestCloseableIterator(new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
         AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 3, 2, "testBackgroundBlocks");
         Assert.assertNotNull(getThreadWithName("testBackgroundBlocks"));
-        Thread.sleep(10); // how do we write this test and not be subject to race conditions?
+        // how do we write this test and not be subject to race conditions?
         // should have read 9 records: 2*3 in the buffers, and another 3 read but
-        // blocking waiting to be added 
+        // blocking waiting to be added
+        for (int i = 0; i < 64; i++) {
+        	if (it.consumed() >= 9) {
+        		break;
+        	}
+        	Thread.sleep(1);
+        }
         Assert.assertEquals(it.consumed(), 9);
         abi.close();
     }

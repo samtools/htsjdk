@@ -1,24 +1,21 @@
 package htsjdk.samtools.util;
 
-import java.io.*;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.Inflater;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.nio.file.Files;
-import java.util.Arrays;
-
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import htsjdk.samtools.seekablestream.SeekableFileStream;
+import java.io.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.zip.Inflater;
 
-public class BlockCompressedInputStreamTest {
+public class BlockCompressedInputStreamTest extends HtsjdkTest {
 	// random data pulled from /dev/random then compressed using bgzip from tabix
 	private static final File BLOCK_UNCOMPRESSED = new File("src/test/resources/htsjdk/samtools/util/random.bin");
 	private static final File BLOCK_COMPRESSED = new File("src/test/resources/htsjdk/samtools/util/random.bin.gz");

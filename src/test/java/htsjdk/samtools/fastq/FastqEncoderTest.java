@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.fastq;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
@@ -31,7 +32,7 @@ import org.testng.annotations.Test;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class FastqEncoderTest {
+public class FastqEncoderTest extends HtsjdkTest {
 
     @Test
     public void testAsFastqRecord() throws Exception {

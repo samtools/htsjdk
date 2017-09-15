@@ -1,7 +1,7 @@
 /*
- * The MIT License
+ * The MIT License (MIT)
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2017 Daniel Gomez-Sanchez
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -10,23 +10,27 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
+
 package htsjdk.samtools.util;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class StringLineReaderTest {
+/**
+ * @author Daniel Gomez-Sanchez (magicDGS)
+ */
+public class BufferedLineReaderTest {
 
     private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
     private static final boolean[] LAST_LINE_TERMINATED = {false, true};
@@ -39,14 +43,15 @@ public class StringLineReaderTest {
      * Test a bunch of combinations instead of writing a method for each.
      */
     @Test
-    public void testBasic() {
+    public void testFromString() {
         for (final String terminator : TERMINATORS) {
             for (final boolean lastLineTerminated : LAST_LINE_TERMINATED) {
-                for (final EmptyLineState emptyLineState : EmptyLineState.values()) {
+                for (final EmptyLineState emptyLineState : EmptyLineState
+                        .values()) {
                     if (emptyLineState == EmptyLineState.COMPLETELY_EMPTY) {
-                        emptyTestHelper(terminator, lastLineTerminated);
+                        fromStringEmptyTestHelper(terminator, lastLineTerminated);
                     } else {
-                        testHelper(terminator, lastLineTerminated, emptyLineState);
+                        fromStringTestHelper(terminator, lastLineTerminated, emptyLineState);
                     }
                 }
             }
@@ -58,19 +63,19 @@ public class StringLineReaderTest {
      * @param terminator what the terminator should be in the input
      * @param lastLineTerminated does the input have a terminator
      */
-    private void emptyTestHelper(final String terminator, final boolean lastLineTerminated) {
+    private void fromStringEmptyTestHelper(final String terminator, final boolean lastLineTerminated) {
         final String input;
         if (lastLineTerminated) {
             input = terminator;
         } else {
             input = "";
         }
-        final StringLineReader slr = new StringLineReader(input);
-        final String output = slr.readLine();
+        final BufferedLineReader blr = BufferedLineReader.fromString(input);
+        final String output = blr.readLine();
         if (lastLineTerminated) {
             Assert.assertEquals(output, "");
         }
-        Assert.assertNull(slr.readLine());
+        Assert.assertNull(blr.readLine());
     }
 
     /**
@@ -79,7 +84,7 @@ public class StringLineReaderTest {
      * @param lastLineTerminated should the input end with a terminator
      * @param emptyLineState where in the input should an empty line be.
      */
-    private void testHelper(final String terminator, final boolean lastLineTerminated, final EmptyLineState emptyLineState) {
+    private void fromStringTestHelper(final String terminator, final boolean lastLineTerminated, final EmptyLineState emptyLineState) {
         final String[] lines = new String[3];
         if (emptyLineState == EmptyLineState.FIRST_LINE) {
             lines[0] = "";
@@ -89,7 +94,7 @@ public class StringLineReaderTest {
             lines[0] = "Hi, Dad?";
             lines[1] = "Hi, Mom!";
             lines[2] = "";
-        } else  if (emptyLineState == EmptyLineState.MIDDLE_LINE) {
+        } else if (emptyLineState == EmptyLineState.MIDDLE_LINE) {
             lines[0] = "Hi, Dad?";
             lines[1] = "";
             lines[2] = "Hi, Mom!";
@@ -98,22 +103,24 @@ public class StringLineReaderTest {
         if (lastLineTerminated) {
             input = input.concat(terminator);
         }
-        final StringLineReader slr = new StringLineReader(input);
+        final BufferedLineReader blr = BufferedLineReader.fromString(input);
         for (int i = 0; i < lines.length - 1; ++i) {
-            final String s = slr.readLine();
+            final String s = blr.readLine();
             String expected = lines[i];
             Assert.assertEquals(s, expected);
         }
 
         // Last line may need to be handled specially
-        String s = slr.readLine();
-        if (!lastLineTerminated && emptyLineState == EmptyLineState.LAST_LINE) {
+        String s = blr.readLine();
+        if (!lastLineTerminated
+                && emptyLineState == EmptyLineState.LAST_LINE) {
             Assert.assertNull(s);
         } else {
             String expected = lines[lines.length - 1];
             Assert.assertEquals(s, expected);
         }
-        s = slr.readLine();
+        s = blr.readLine();
         Assert.assertNull(s);
     }
+
 }

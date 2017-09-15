@@ -27,6 +27,10 @@ import htsjdk.samtools.util.CloserUtil;
 
 import java.io.File;
 
+/**
+ * @deprecated since 07/2017. This tool is undocumented and untested.
+ */
+@Deprecated
 public class FixBAMFile {
     public static void main(String[] args) {
         File inputFile = new File(args[0]);

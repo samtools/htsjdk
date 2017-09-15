@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.annotations.Test;
@@ -40,7 +41,7 @@ import static org.testng.Assert.*;
 /**
  * Test BAM file indexing.
  */
-public class BAMRemoteFileTest {
+public class BAMRemoteFileTest extends HtsjdkTest {
     private final File BAM_INDEX_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai");
     private final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
     private final String BAM_URL_STRING = TestUtil.BASE_URL_FOR_HTTP_TESTS + "index_test.bam";

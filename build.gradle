@@ -5,12 +5,14 @@ buildscript {
 }
 
 plugins {
-    id "java"
+    id 'java'
+    id 'scala'
     id 'maven'
     id 'signing'
     id 'jacoco'
     id 'com.palantir.git-version' version '0.5.1'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
+    id 'com.github.maiflai.scalatest' version '0.15'
 }
 
 repositories {
@@ -18,7 +20,6 @@ repositories {
 }
 
 jacocoTestReport {
-    dependsOn test
     group = "Reporting"
     description = "Generate Jacoco coverage reports after running tests."
     additionalSourceDirs = files(sourceSets.main.allJava.srcDirs)
@@ -29,18 +30,17 @@ jacocoTestReport {
     }
 }
 
-jacoco {
-    toolVersion = "0.7.5.201505241946"
-}
-
 dependencies {
     compile "org.apache.commons:commons-jexl:2.1.1"
     compile "commons-logging:commons-logging:1.1.1"
-    compile "org.xerial.snappy:snappy-java:1.0.3-rc3"
+    compile "org.xerial.snappy:snappy-java:1.1.4"
     compile "org.apache.commons:commons-compress:1.4.1"
     compile "org.tukaani:xz:1.5"
     compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
 
+    testCompile "org.scala-lang:scala-library:2.12.1"
+    testCompile "org.scalatest:scalatest_2.12:3.0.1"
+    testRuntime 'org.pegdown:pegdown:1.4.2' // Necessary for generating HTML reports with ScalaTest
     testCompile "org.testng:testng:6.9.9"
     testCompile "com.google.jimfs:jimfs:1.1"
 }
@@ -67,70 +67,51 @@ jar {
 
 import org.gradle.internal.os.OperatingSystem;
 
-tasks.withType(Test) {
-    outputs.upToDateWhen { false } // tests will always rerun
-    useTestNG()
+tasks.withType(Test) { task ->
+    task.outputs.upToDateWhen { false } // tests will always rerun
+
+    // Always run serially because there are some very badly behaved tests in HTSJDK that
+    // will cause errors and even deadlocks if run multi-threaded
+    task.maxParallelForks = 1
 
     // set heap size for the test JVM(s)
-    minHeapSize = "1G"
-    maxHeapSize = "2G"
+    task.minHeapSize = "1G"
+    task.maxHeapSize = "2G"
 
-    jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
+    task.jvmArgs '-Djava.awt.headless=true'  //this prevents awt from displaying a java icon while the tests are running
+}
 
-    if (System.env.CI == "true") {  //if running under a CI output less into the logs
-        int count = 0
-
-        beforeTest { descriptor ->
-            count++
-            if( count % 100 == 0) {
-                logger.lifecycle("Finished "+ Integer.toString(count++) + " tests")
-            }
-        }
-    } else {
-        // show standard out and standard error of the test JVM(s) on the console
-        testLogging.showStandardStreams = true
-        beforeTest { descriptor ->
-            logger.lifecycle("Running Test: " + descriptor)
-        }
-
-        // listen to standard out and standard error of the test JVM(s)
-        onOutput { descriptor, event ->
-            logger.lifecycle("Test: " + descriptor + " produced standard out/err: " + event.message )
-        }
-    }
-
-    testLogging {
-        testLogging {
-            events "skipped", "failed"
-            exceptionFormat = "full"
-        }
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
-                println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
-            }
-        }
-    }
+task findScalaAndJavaTypes(type: Exec) {
+    description = "Check that Scala files only exist in the scala test dir and that java files do not reside in the scala test dir."
+    commandLine './scripts/checkScalaAndJavaFiles.sh'
 }
 
 test {
     description = "Runs the unit tests other than the SRA tests"
 
-    useTestNG {
-        if( OperatingSystem.current().isUnix() ){
-            excludeGroups "slow", "broken", "sra"
-        } else {
-            excludeGroups "slow", "broken", "unix", "sra"
-        }
+    testLogging {
+        events "failed", "skipped"
     }
-}
+
+    if (System.env.CI == "true") {
+        jvmArgs += '-Dsamjdk.sra_libraries_download=true'
+    }
+
+    tags {
+        exclude "slow"
+        exclude "broken"
+        if (System.env.CI == "false") exclude "sra"
+        if (!OperatingSystem.current().isUnix()) exclude "unix"
+    }
+} dependsOn findScalaAndJavaTypes
 
 task testSRA(type: Test) {
-    jvmArgs '-Dsamjdk.sra_libraries_download=true'
+    description = "Run the SRA tests"
+    jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
-    description "Run the SRA tests"
-    useTestNG {
-        configFailurePolicy 'continue'
-        includeGroups "sra"
+    tags {
+        exclude "slow"
+        exclude "broken"
     }
 }
 
@@ -188,7 +169,7 @@ uploadArchives {
                 authentication(userName: project.findProperty("sonatypeUsername"), password: project.findProperty("sonatypePassword"))
             }
 
-            snapshotRepository(url: "https://artifactory.broadinstitute.org/artifactory/libs-snapshot-local/") {
+            snapshotRepository(url: "https://broadinstitute.jfrog.io/broadinstitute/libs-snapshot-local/") {
                 authentication(userName: System.env.ARTIFACTORY_USERNAME, password: System.env.ARTIFACTORY_PASSWORD)
             }
 

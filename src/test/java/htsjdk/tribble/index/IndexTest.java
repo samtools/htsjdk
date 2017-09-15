@@ -2,15 +2,14 @@ package htsjdk.tribble.index;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.TestUtils;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.index.interval.IntervalTreeIndex;
 import htsjdk.tribble.index.linear.LinearIndex;
-import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndex;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 import htsjdk.tribble.util.TabixUtils;
@@ -22,26 +21,19 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class IndexTest {
+public class IndexTest extends HtsjdkTest {
     private final static String CHR = "1";
     private final static File MassiveIndexFile = new File(TestUtils.DATA_DIR + "Tb.vcf.idx");
 
     @DataProvider(name = "StartProvider")
     public Object[][] makeStartProvider() {
-        List<Object[]> tests = new ArrayList<Object[]>();
-
-//        for ( int mid = 0; mid <= end; mid += 1000000 ) {
-//            tests.add(new Object[]{0, mid, mid+1000000, end});
-//        }
+        List<Object[]> tests = new ArrayList<>();
 
         tests.add(new Object[]{1226943, 1226943, 1226943, 2000000});
 
@@ -96,7 +88,8 @@ public class IndexTest {
         Assert.assertTrue(tempIndex.exists());
         // load the generated index
         final Index loadedIndex = IndexFactory.loadIndex(tempIndex.getAbsolutePath());
-        // tess that the sequences and properties are the same
+        //TODO: This is just a smoke test; it can pass even if the generated index is unusable for queries.
+        // test that the sequences and properties are the same
         Assert.assertEquals(loadedIndex.getSequenceNames(), index.getSequenceNames());
         Assert.assertEquals(loadedIndex.getProperties(), index.getProperties());
         // test that write to a stream does not blows ip
@@ -125,5 +118,14 @@ public class IndexTest {
                     break;
             }
         }
+    }
+
+    @Test(dataProvider = "writeIndexData")
+    public void testWriteBasedOnNonRegularFeatureFile(final File inputFile, final IndexFactory.IndexType type, final  FeatureCodec codec) throws Exception {
+        final File tmpFolder = IOUtil.createTempDir("NonRegultarFeatureFile", null);
+        // create the index
+        final Index index = IndexFactory.createIndex(inputFile, codec, type);
+        // try to write based on the tmpFolder
+        Assert.assertThrows(IOException.class, () -> index.writeBasedOnFeatureFile(tmpFolder));
     }
 }

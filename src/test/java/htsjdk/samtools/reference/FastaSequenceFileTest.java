@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -33,7 +34,7 @@ import java.io.PrintWriter;
 /**
  * @author alecw@broadinstitute.org
  */
-public class FastaSequenceFileTest {
+public class FastaSequenceFileTest extends HtsjdkTest {
     @Test
     public void testTrailingWhitespace() throws Exception {
         final File fasta = File.createTempFile("test", ".fasta");

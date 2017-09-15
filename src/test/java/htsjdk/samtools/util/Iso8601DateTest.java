@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -31,7 +32,7 @@ import java.util.Date;
 /**
  * @author alecw@broadinstitute.org
  */
-public class Iso8601DateTest {
+public class Iso8601DateTest extends HtsjdkTest {
     @Test
     public void testBasic() {
         final String dateStr = "2008-12-15";

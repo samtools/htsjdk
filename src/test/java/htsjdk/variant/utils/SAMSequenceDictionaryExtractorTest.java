@@ -23,6 +23,7 @@
  */
 package htsjdk.variant.utils;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.annotations.DataProvider;
@@ -34,7 +35,7 @@ import java.io.File;
 /**
  * @author farjoun on 4/9/14.
  */
-public class SAMSequenceDictionaryExtractorTest {
+public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
     String path = "src/test/resources/htsjdk/variant/utils/SamSequenceDictionaryExtractor/";
 
     @DataProvider(name = "testExtractDictionaries")

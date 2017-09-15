@@ -36,7 +36,7 @@ import java.util.Iterator;
  *
  * @author Kathleen Tibbetts
  *
- * use {@link FilteringSamIterator} instead
+ * @deprecated use {@link FilteringSamIterator} instead
  */
 
 @Deprecated /** use {@link FilteringSamIterator} instead **/

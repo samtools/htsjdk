@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAIEntry;
 import htsjdk.samtools.cram.CRAIIndex;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-public class SamIndexesTest {
+public class SamIndexesTest extends HtsjdkTest {
 
     @Test
     public void testEmptyBai() throws IOException {

@@ -1,6 +1,7 @@
 package htsjdk.tribble.readers;
 
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -18,7 +19,7 @@ import java.util.List;
 /**
  * Tests for streams and readers
  */
-public class ReaderTest {
+public class ReaderTest extends HtsjdkTest {
     @BeforeClass
     public void setup() throws IOException {
     }

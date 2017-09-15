@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -19,7 +20,7 @@ import java.util.List;
 /**
  * Created by vadim on 15/12/2015.
  */
-public class ContainerFactoryTest {
+public class ContainerFactoryTest extends HtsjdkTest {
 
     @Test
     public void testUnmapped() throws IOException, IllegalAccessException {

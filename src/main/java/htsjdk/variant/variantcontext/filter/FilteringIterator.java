@@ -36,7 +36,7 @@ import java.util.Iterator;
  *
  * @author Yossi Farjoun
  *
- * use {@link FilteringVariantContextIterator} instead
+ * @deprecated  since 2/29/16 use {@link FilteringVariantContextIterator} instead
  */
 
 @Deprecated

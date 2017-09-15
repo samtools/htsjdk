@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.encoding.rans;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -10,7 +11,7 @@ import java.util.Random;
 /**
  * Created by vadim on 22/04/2015.
  */
-public class RansTest {
+public class RansTest extends HtsjdkTest {
     @Test
     public void testEmpty() {
         roundTrip(new byte[0]);

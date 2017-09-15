@@ -136,18 +136,14 @@ public class IndexedFastaSequenceFile extends AbstractFastaSequenceFile implemen
     }
 
     private static Path findFastaIndex(Path fastaFile) {
-        Path indexFile = getFastaIndexFileName(fastaFile);
+        Path indexFile = ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile);
         if (!Files.exists(indexFile)) return null;
         return indexFile;
     }
 
-    private static Path getFastaIndexFileName(Path fastaFile) {
-        return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
-    }
-
     private static Path findRequiredFastaIndexFile(Path fastaFile) throws FileNotFoundException {
         Path ret = findFastaIndex(fastaFile);
-        if (ret == null) throw new FileNotFoundException(getFastaIndexFileName(fastaFile) + " not found.");
+        if (ret == null) throw new FileNotFoundException(ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) + " not found.");
         return ret;
     }
 

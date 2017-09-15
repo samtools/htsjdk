@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
@@ -34,6 +35,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Concrete implementation of SAMFileWriter for writing gzipped BAM files.
@@ -75,7 +79,13 @@ class BAMFileWriter extends SAMFileWriterImpl {
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
-    private void prepareToWriteAlignments() {
+    protected BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
+      blockCompressedOutputStream = new BlockCompressedOutputStream(os, null, compressionLevel, deflaterFactory);
+      outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+      outputBinaryCodec.setOutputFileName(absoluteFilename);
+    }
+
+  private void prepareToWriteAlignments() {
         if (bamRecordCodec == null) {
             bamRecordCodec = new BAMRecordCodec(getFileHeader());
             bamRecordCodec.setOutputStream(outputBinaryCodec.getOutputStream(), getFilename());
@@ -99,17 +109,17 @@ class BAMFileWriter extends SAMFileWriterImpl {
         bamIndexer = createBamIndex(getFilename());
     }
 
-    private BAMIndexer createBamIndex(final String path) {
+    private BAMIndexer createBamIndex(final String pathURI) {
         try {
-            final String indexFileBase = path.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
-                    path.substring(0, path.lastIndexOf('.')) : path;
-            final File indexFile = new File(indexFileBase + BAMIndex.BAMIndexSuffix);
-            if (indexFile.exists()) {
-                if (!indexFile.canWrite()) {
-                    throw new SAMException("Not creating BAM index since unable to write index file " + indexFile);
+            final String indexFileBase = pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
+                    pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
+            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAMIndexSuffix);
+            if (Files.exists(indexPath)) {
+                if (!Files.isWritable(indexPath)) {
+                    throw new SAMException("Not creating BAM index since unable to write index file " + indexPath.toUri());
                 }
             }
-            return new BAMIndexer(indexFile, getFileHeader());
+            return new BAMIndexer(indexPath, getFileHeader());
         } catch (Exception e) {
             throw new SAMException("Not creating BAM index", e);
         }
@@ -153,7 +163,8 @@ class BAMFileWriter extends SAMFileWriterImpl {
             }
     }
 
-    /** @return absolute path, or null if this writer does not correspond to a file.  */
+    /** @return absolute path in URI format, or null if this writer does not correspond to a file.
+     * To get a Path from this, use: IOUtil.getPath(getFilename()) */
     @Override
     protected String getFilename() {
         return outputBinaryCodec.getOutputFileName();

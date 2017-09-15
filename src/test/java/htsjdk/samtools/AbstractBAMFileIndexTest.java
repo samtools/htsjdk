@@ -1,11 +1,12 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-public class AbstractBAMFileIndexTest {
+public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
     /**
      * @see <a href="https://github.com/samtools/htsjdk/issues/73">https://github.com/samtools/htsjdk/issues/73</a>

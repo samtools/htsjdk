@@ -23,37 +23,103 @@
  */
 package htsjdk.samtools.util;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SeekableByteChannelFromBuffer;
 import org.testng.Assert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.EOFException;
 import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 
 /**
  * @author alecw@broadinstitute.org
  */
-public class BlockCompressedTerminatorTest {
+public class BlockCompressedTerminatorTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/util");
+    private static final File DEFECTIVE = new File(TEST_DATA_DIR, "defective_bgzf.bam");
+    private static final File NO_TERMINATOR = new File(TEST_DATA_DIR, "no_bgzf_terminator.bam");
 
-    @Test
-    public void testFileWithTerminator() throws Exception {
+    @DataProvider
+    public Object[][] getFiles() throws IOException {
+        return new Object[][]{
+                {getValidCompressedFile(), BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK},
+                {NO_TERMINATOR, BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK},
+                {DEFECTIVE, BlockCompressedInputStream.FileTermination.DEFECTIVE}
+        };
+    }
+
+    @Test( dataProvider = "getFiles")
+    public void testCheckTerminationForFiles(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+        Assert.assertEquals(BlockCompressedInputStream.checkTermination(compressedFile), expected);
+    }
+
+    @Test( dataProvider = "getFiles")
+    public void testCheckTerminationForPaths(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+        try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())){
+            final Path compressedFileInJimfs = Files.copy(compressedFile.toPath(), fs.getPath("something"));
+            Assert.assertEquals(BlockCompressedInputStream.checkTermination(compressedFileInJimfs), expected);
+        }
+    }
+
+    @Test( dataProvider = "getFiles")
+    public void testCheckTerminationForSeekableByteChannels(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+        try(SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())){
+            Assert.assertEquals(BlockCompressedInputStream.checkTermination(channel), expected);
+        }
+    }
+
+    @Test(dataProvider = "getFiles")
+    public void testChannelPositionIsRestored(File compressedFile, BlockCompressedInputStream.FileTermination expected) throws IOException {
+        final long position = 50;
+        try(SeekableByteChannel channel = Files.newByteChannel(compressedFile.toPath())){
+            channel.position(position);
+            Assert.assertEquals(channel.position(), position);
+            Assert.assertEquals(BlockCompressedInputStream.checkTermination(channel), expected);
+            Assert.assertEquals(channel.position(), position);
+        }
+    }
+
+    private static File getValidCompressedFile() throws IOException {
         final File tmpCompressedFile = File.createTempFile("test.", ".bgzf");
         tmpCompressedFile.deleteOnExit();
         final BlockCompressedOutputStream os = new BlockCompressedOutputStream(tmpCompressedFile);
         os.write("Hi, Mom!\n".getBytes());
         os.close();
-        Assert.assertEquals(BlockCompressedInputStream.checkTermination(tmpCompressedFile),
-                BlockCompressedInputStream.FileTermination.HAS_TERMINATOR_BLOCK);
+        return tmpCompressedFile;
     }
 
     @Test
-    public void testValidFileWithoutTerminator() throws Exception {
-        Assert.assertEquals(BlockCompressedInputStream.checkTermination(new File(TEST_DATA_DIR, "no_bgzf_terminator.bam")),
-                BlockCompressedInputStream.FileTermination.HAS_HEALTHY_LAST_BLOCK);
+    public void testReadFullyReadsBytesCorrectly() throws IOException {
+        try(final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())){
+            final ByteBuffer readBuffer = ByteBuffer.allocate(10);
+            Assert.assertTrue(channel.size() > readBuffer.capacity());
+            BlockCompressedInputStream.readFully(channel, readBuffer);
+
+            ByteBuffer expected = ByteBuffer.allocate(10);
+            channel.position(0).read(expected);
+            Assert.assertEquals(readBuffer.array(), expected.array());
+        }
     }
 
-    @Test
-    public void testDefectiveFile() throws Exception {
-        Assert.assertEquals(BlockCompressedInputStream.checkTermination(new File(TEST_DATA_DIR, "defective_bgzf.bam")),
-                BlockCompressedInputStream.FileTermination.DEFECTIVE);
+    @Test(expectedExceptions = EOFException.class)
+    public void testReadFullyThrowWhenItCantReadEnough() throws IOException {
+        try(final SeekableByteChannel channel = Files.newByteChannel(DEFECTIVE.toPath())){
+            final ByteBuffer readBuffer = ByteBuffer.allocate(1000);
+            Assert.assertTrue(channel.size() < readBuffer.capacity());
+            BlockCompressedInputStream.readFully(channel, readBuffer);
+        }
     }
+
+
+
 }

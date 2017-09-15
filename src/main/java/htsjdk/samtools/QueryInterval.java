@@ -42,10 +42,10 @@ public class QueryInterval implements Comparable<QueryInterval> {
     }
 
     /**
-     * @return true if both are on same reference, and other starts exactly where this ends.
+     * @return true if both are on same reference, and other starts exactly before this ends.
      */
-    public boolean abuts(final QueryInterval other) {
-        return this.referenceIndex == other.referenceIndex && this.end == other.start;
+    public boolean endsAtStartOf(final QueryInterval other) {
+        return this.referenceIndex == other.referenceIndex && this.end + 1 == other.start;
     }
 
     /**
@@ -81,7 +81,7 @@ public class QueryInterval implements Comparable<QueryInterval> {
 
         for (int i = 1; i < inputIntervals.length; ++i) {
             final QueryInterval next = inputIntervals[i];
-            if (previous.abuts(next) || previous.overlaps(next)) {
+            if (previous.endsAtStartOf(next) || previous.overlaps(next)) {
                 final int newEnd = ((previous.end == 0 || next.end == 0) ? 0 : Math.max(previous.end, next.end));
                 previous = new QueryInterval(previous.referenceIndex, previous.start, newEnd);
             } else {
@@ -93,5 +93,23 @@ public class QueryInterval implements Comparable<QueryInterval> {
         if (previous != null) unique.add(previous);
 
         return unique.toArray(EMPTY_QUERY_INTERVAL_ARRAY);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        QueryInterval that = (QueryInterval) o;
+
+        return this.compareTo(that) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = referenceIndex;
+        result = 31 * result + start;
+        result = 31 * result + end;
+        return result;
     }
 }

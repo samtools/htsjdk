@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.structure;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.CRAMFileReader;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.CRAMException;
@@ -17,7 +17,7 @@ import java.util.Iterator;
 /**
  * Created by vadim on 07/12/2015.
  */
-public class SliceTests {
+public class SliceTests extends HtsjdkTest {
     @Test
     public void testUnmappedValidateRef() {
         Slice slice = new Slice();

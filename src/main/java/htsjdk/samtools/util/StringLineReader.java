@@ -23,81 +23,18 @@
  */
 package htsjdk.samtools.util;
 
-import java.util.regex.Pattern;
+import java.io.ByteArrayInputStream;
 
 /**
  * Implementation of LineReader that gets its input from a String.  No charset conversion
  * is necessary because the String is in unicode.  Handles CR, LF or CRLF line termination,
  * but if asked to return the line terminator, it always comes back as LF.
+ *
+ * @deprecated use {@link BufferedLineReader#fromString(String)}.
  */
-public class StringLineReader implements LineReader {
-    private static final Pattern CRLF = Pattern.compile("\r\n");
-    private final String theString;
-    private int curPos = 0;
-    private int lineNumber = 0;
-
+@Deprecated
+public class StringLineReader extends BufferedLineReader {
     public StringLineReader(final String s) {
-        // Simplify later processing by replacing crlf with just lf, and replacing solo cr with lf.
-        // Note that String.replace(String, String) causes a regex to be used, so precompilation should be
-        // the best we can do short of handling the string directly.
-        this.theString = CRLF.matcher(s).replaceAll("\n").replace('\r', '\n');
-    }
-
-    /**
-     * Read a line and remove the line terminator
-     */
-    @Override
-    public String readLine() {
-        return readLine(false);
-    }
-
-    /**
-     * Read a line and optionally include the line terminator
-     *
-     * @param includeTerminators
-     * @return the next line from the input, with \n terminator if present and requested, or null if no more input.
-     */
-    private String readLine(final boolean includeTerminators) {
-        if (curPos == theString.length()) {
-            return null;
-        }
-        final int nextLfIndex = theString.indexOf('\n', curPos);
-        if (nextLfIndex == -1) {
-            final int startPos = curPos;
-            curPos = theString.length();
-            ++lineNumber;
-            return theString.substring(startPos);
-        }
-        final int startPos = curPos;
-        final int endPos = nextLfIndex + (includeTerminators? 1: 0);
-        curPos = nextLfIndex + 1;
-        ++lineNumber;
-        return theString.substring(startPos, endPos);
-    }
-
-    /**
-     * @return 1-based number of line most recently read
-     */
-    @Override
-    public int getLineNumber() {
-        return lineNumber;
-    }
-
-    /**
-     * Non-destructive one-character look-ahead.
-     *
-     * @return If not eof, the next character that would be read.  If eof, -1.
-     */
-    @Override
-    public int peek() {
-        if (curPos == theString.length()) {
-            return -1;
-        }
-        return theString.charAt(curPos);
-    }
-
-    @Override
-    public void close() {
-        curPos = theString.length();
+        super(new ByteArrayInputStream(s.getBytes()));
     }
 }

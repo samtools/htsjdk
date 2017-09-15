@@ -1,5 +1,6 @@
 package htsjdk.tribble.util.popgen;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 /**
  * Created by farjoun on 7/18/14.
  */
-public class HardyWeinbergCalculationTest {
+public class HardyWeinbergCalculationTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] testHwCalculateData() {

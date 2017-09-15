@@ -1,5 +1,6 @@
 package htsjdk.tribble.readers;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.TestUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -12,7 +13,7 @@ import java.io.InputStreamReader;
 /**
  * @author mccowan
  */
-public class SynchronousLineReaderUnitTest {
+public class SynchronousLineReaderUnitTest extends HtsjdkTest {
     @Test
     public void testLineReaderIterator_streamConstructor() throws Exception {
         final File filePath = new File(TestUtils.DATA_DIR + "gwas/smallp.gwas");

@@ -38,7 +38,11 @@ import java.util.concurrent.PriorityBlockingQueue;
 /**
  * This class writes VCF files, allowing records to be passed in unsorted.
  * It also enforces that it is never passed records of the same chromosome with any other chromosome in between them.
+ *
+ * @deprecated 9/2017, this class is completely untested and unsupported, there is no replacement at this time
+ * if you use this class please file an issue on github or it will be removed at some point in the future
  */
+@Deprecated
 abstract class SortingVariantContextWriterBase implements VariantContextWriter {
 
     // The VCFWriter to which to actually write the sorted VCF records
@@ -130,6 +134,11 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
 
         queue.add(new VCFRecord(vc));
         emitSafeRecords();
+    }
+
+    @Override
+    public void setVCFHeader(final VCFHeader header) {
+        innerWriter.setVCFHeader(header);
     }
 
     /**

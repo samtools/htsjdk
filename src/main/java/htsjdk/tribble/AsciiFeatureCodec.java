@@ -18,8 +18,10 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
+import htsjdk.samtools.util.Log;
 import htsjdk.tribble.readers.*;
 
 import java.io.IOException;
@@ -34,6 +36,7 @@ import java.io.InputStream;
  * @param <T> The feature type this codec reads
  */
 public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatureCodec<T, LineIterator> {
+    private static final Log log = Log.getInstance(AsciiFeatureCodec.class);
     protected AsciiFeatureCodec(final Class<T> myClass) {
         super(myClass);
     }
@@ -49,14 +52,8 @@ public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatu
     }
 
     @Override
-    public LocationAware makeIndexableSourceFromStream(final InputStream bufferedInputStream) {
-        final PositionalBufferedStream pbs;
-        if (bufferedInputStream instanceof PositionalBufferedStream) {
-            pbs = (PositionalBufferedStream) bufferedInputStream;
-        } else {
-            pbs = new PositionalBufferedStream(bufferedInputStream);
-        }
-        return new AsciiLineReaderIterator(new AsciiLineReader(pbs));
+    public LocationAware makeIndexableSourceFromStream(final InputStream inputStream) {
+        return new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
     }
 
     @Override

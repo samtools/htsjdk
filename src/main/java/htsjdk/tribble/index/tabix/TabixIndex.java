@@ -66,8 +66,6 @@ public class TabixIndex implements Index {
         MAGIC_NUMBER = bb.order(ByteOrder.LITTLE_ENDIAN).getInt();
     }
 
-    private static final Log LOGGER = Log.getInstance(TabixIndex.class);
-
     private final TabixFormat formatSpec;
     private final List<String> sequenceNames;
     private final BinningIndexContent[] indices;
@@ -226,12 +224,12 @@ public class TabixIndex implements Index {
      * Writes to a path with appropriate name and directory based on feature path.
      *
      * @param featurePath Path being indexed.
+     * @throws IOException if featureFile is not a normal file.
      */
     @Override
     public void writeBasedOnFeaturePath(final Path featurePath) throws IOException {
         if (!Files.isRegularFile(featurePath)) {
-            LOGGER.warn("Index not written into ", featurePath);
-            return;
+            throw new IOException("Cannot write based on a non-regular file: " + featurePath.toUri());
         }
         write(Tribble.tabixIndexPath(featurePath));
     }

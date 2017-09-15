@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 import org.testng.Assert;
@@ -39,7 +40,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.zip.Deflater;
 
-public class BlockCompressedOutputStreamTest {
+public class BlockCompressedOutputStreamTest extends HtsjdkTest {
 
     private static final String HTSJDK_TRIBBLE_RESOURCES = "src/test/resources/htsjdk/tribble/";
 
@@ -80,6 +81,7 @@ public class BlockCompressedOutputStreamTest {
         Assert.assertEquals(bcis2.read(buffer), available, "Should read to end of block");
         Assert.assertTrue(bcis2.endOfBlock(), "Should be at end of block");
         bcis2.close();
+        Assert.assertEquals(bcis2.read(buffer), -1, "Should be end of file");
     }
 
     @DataProvider(name = "seekReadExceptionsData")
@@ -88,24 +90,32 @@ public class BlockCompressedOutputStreamTest {
         return new Object[][]{
                 {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", FileTruncatedException.class,
                         BlockCompressedInputStream.PREMATURE_END_MSG + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", true, false, 0},
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.gz", true, false, false, 0},
                 {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", IOException.class,
                         BlockCompressedInputStream.INCORRECT_HEADER_SIZE_MSG + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", true, false, 0},
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.truncated.hdr.gz", true, false, false, 0},
                 {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
-                        BlockCompressedInputStream.CANNOT_SEEK_STREAM_MSG, false, true, 0},
+                        BlockCompressedInputStream.CANNOT_SEEK_STREAM_MSG, false, true, false, 0},
+                {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
+                        BlockCompressedInputStream.CANNOT_SEEK_CLOSED_STREAM_MSG, false, true, true, 0},
                 {HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", IOException.class,
                         BlockCompressedInputStream.INVALID_FILE_PTR_MSG + 1000 + " for " + System.getProperty("user.dir") + "/" +
-                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", true, true, 1000 }
+                                HTSJDK_TRIBBLE_RESOURCES + "vcfexample.vcf.gz", true, true, false, 1000 }
         };
     }
 
     @Test(dataProvider = "seekReadExceptionsData")
-    public void testSeekReadExceptions(final String filePath, final Class c, final String msg, final boolean isFile, final boolean isSeek, final int pos) throws Exception {
+    public void testSeekReadExceptions(final String filePath, final Class c, final String msg, final boolean isFile, final boolean isSeek, final boolean isClosed,
+                                       final int pos) throws Exception {
 
         final BlockCompressedInputStream bcis = isFile ?
                 new BlockCompressedInputStream(new File(filePath)) :
                 new BlockCompressedInputStream(new FileInputStream(filePath));
+
+        if ( isClosed ) {
+            bcis.close();
+        }
+
         boolean haveException = false;
         try {
             if ( isSeek ) {
@@ -211,5 +221,6 @@ public class BlockCompressedOutputStreamTest {
         }
         bcis.close();
         Assert.assertEquals(deflateCalls[0], 3, "deflate calls");
+        Assert.assertEquals(reader.readLine(), null);
     }
 }

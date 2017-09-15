@@ -24,6 +24,7 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.StringUtil;
@@ -37,7 +38,7 @@ import java.io.FileNotFoundException;
 /**
  * Test the indexed fasta sequence file reader.
  */
-public class IndexedFastaSequenceFileTest{
+public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
     private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");

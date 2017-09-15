@@ -1,12 +1,13 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * Created by farjoun on 1/29/16.
  */
-public class TupleTest {
+public class TupleTest extends HtsjdkTest {
 
     @Test
     public void testEquals() throws Exception {

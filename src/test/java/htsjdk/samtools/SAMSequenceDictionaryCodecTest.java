@@ -24,23 +24,24 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
-import htsjdk.samtools.util.StringLineReader;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.sound.sampled.Line;
 import java.io.BufferedWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Random;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
-public class SAMSequenceDictionaryCodecTest {
+public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
 
     private static final Random random = new Random();
     private SAMSequenceDictionary dictionary;
@@ -67,11 +68,11 @@ public class SAMSequenceDictionaryCodecTest {
         try {
             codec.encode(dictionary);
             bufferedWriter.close();
-            readerOne = new StringLineReader(writer.toString());
+            readerOne = BufferedLineReader.fromString(writer.toString());
             SAMSequenceDictionary actual = codec.decode(readerOne, null);
             assertEquals(actual, dictionary);
 
-            readerTwo = new StringLineReader(writer.toString());
+            readerTwo = BufferedLineReader.fromString(writer.toString());
 
             String line = readerTwo.readLine();
             assertTrue(line.startsWith("@HD"));
@@ -99,10 +100,10 @@ public class SAMSequenceDictionaryCodecTest {
             codec.encodeHeaderLine(false);
             sequences.forEach(codec::encodeSequenceRecord);
             bufferedWriter.close();
-            readerOne = new StringLineReader(writer.toString());
+            readerOne = BufferedLineReader.fromString(writer.toString());
             SAMSequenceDictionary actual = codec.decode(readerOne, null);
             assertEquals(actual, dictionary);
-            readerTwo = new StringLineReader(writer.toString());
+            readerTwo = BufferedLineReader.fromString(writer.toString());
 
             String line = readerTwo.readLine();
             assertTrue(line.startsWith("@HD"));

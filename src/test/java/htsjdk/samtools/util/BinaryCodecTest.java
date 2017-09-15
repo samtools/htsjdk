@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -44,7 +45,7 @@ import java.io.IOException;
   * the Broad Institute nor MIT can be responsible for its use, misuse, or functionality.
   */
 
-public class BinaryCodecTest {
+public class BinaryCodecTest extends HtsjdkTest {
 	public final static String TEST_BASENAME = "htsjdk-BinaryCodecTest";
 
     @Test

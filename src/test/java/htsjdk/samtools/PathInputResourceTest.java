@@ -5,10 +5,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.function.Function;
+
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public class PathInputResourceTest {
+public class PathInputResourceTest extends HtsjdkTest {
   final String localBam = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
 
   @Test

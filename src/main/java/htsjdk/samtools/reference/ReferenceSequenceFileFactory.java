@@ -163,4 +163,13 @@ public class ReferenceSequenceFileFactory {
                 .orElseGet(() -> {throw new IllegalArgumentException("File is not a supported reference file type: " + path.toAbsolutePath());});
     }
 
+    /**
+     * Returns the index name for a FASTA file.
+     *
+     * @param fastaFile the reference sequence file path.
+     */
+    public static Path getFastaIndexFileName(Path fastaFile) {
+        return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
+    }
+
 }

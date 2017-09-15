@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
@@ -31,7 +32,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class OverclippedReadFilterTest {
+public class OverclippedReadFilterTest extends HtsjdkTest {
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
     private final int unclippedBasesThreshold = 30;
 

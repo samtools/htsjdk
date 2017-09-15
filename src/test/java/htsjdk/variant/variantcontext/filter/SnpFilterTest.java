@@ -1,5 +1,6 @@
 package htsjdk.variant.variantcontext.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -16,7 +17,7 @@ import java.util.List;
 /**
  * Created by farjoun on 9/9/15.
  */
-public class SnpFilterTest {
+public class SnpFilterTest extends HtsjdkTest {
     Allele refA = Allele.create("A", true);
     Allele refAG = Allele.create("AG", true);
 

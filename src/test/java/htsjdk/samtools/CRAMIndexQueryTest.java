@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloseableIterator;
 import org.testng.Assert;
@@ -42,7 +43,7 @@ import java.util.function.Function;
  * whatever index format (.bai or .crai converted to .bai) is available for the
  * target file.
  */
-public class CRAMIndexQueryTest {
+public class CRAMIndexQueryTest extends HtsjdkTest {
 
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/cram");
 
@@ -319,13 +320,13 @@ public class CRAMIndexQueryTest {
     public Object[][] multipleIntervalOverlapping() {
         return new Object[][]{
             {cramQueryWithCRAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             {cramQueryWithLocalCRAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             {cramQueryWithBAI, cramQueryReference,
-                    new QueryInterval[]{new QueryInterval(0, 100010, 100010), new QueryInterval(0, 100011, 100011)},
+                    new QueryInterval[]{new QueryInterval(0, 100009, 100009), new QueryInterval(0, 100011, 100011)},
                     new String[]{"a", "b", "c", "d", "e"}},
             // no matching reads
             {cramQueryReadsWithBAI, cramQueryReadsReference,

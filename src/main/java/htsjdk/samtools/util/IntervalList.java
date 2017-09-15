@@ -34,6 +34,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -395,12 +396,21 @@ public class IntervalList implements Iterable<Interval> {
      * @return an IntervalList object that contains the headers and intervals from the file
      */
     public static IntervalList fromFile(final File file) {
-        final BufferedReader reader= IOUtil.openFileForBufferedReading(file);
+        return fromPath(file.toPath());
+    }
+
+    /**
+     * Parses an interval list from a path.
+     * @param path the path containing the intervals
+     * @return an IntervalList object that contains the headers and intervals from the path
+     */
+    public static IntervalList fromPath(final Path path) {
+        final BufferedReader reader = IOUtil.openFileForBufferedReading(path);
         final IntervalList list = fromReader(reader);
         try {
             reader.close();
         } catch (final IOException e) {
-            throw new SAMException(String.format("Failed to close file %s after reading",file));
+            throw new SAMException(String.format("Failed to close file %s after reading", path.toUri().toString()));
         }
 
         return list;
@@ -454,7 +464,7 @@ public class IntervalList implements Iterable<Interval> {
                 throw new IllegalStateException("Interval list file must contain header. ");
             }
 
-            final StringLineReader headerReader = new StringLineReader(builder.toString());
+            final BufferedLineReader headerReader = BufferedLineReader.fromString(builder.toString());
             final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
             final IntervalList list = new IntervalList(codec.decode(headerReader, "BufferedReader"));
             final SAMSequenceDictionary dict = list.getHeader().getSequenceDictionary();
@@ -727,6 +737,64 @@ public class IntervalList implements Iterable<Interval> {
         return union(
                 subtract(lists1, lists2),
                 subtract(lists2, lists1));
+    }
+
+    /**
+     * A utility function for finding the intervals in the first list that have at least 1bp overlap with any interval
+     * in the second list.
+     *
+     * @param lhs the first collection of IntervalLists
+     * @param lhs the second collection of IntervalLists
+     * @return an IntervalList comprising of all intervals in the first IntervalList that have at least 1bp overlap with
+     * any interval in the second.
+     */
+    public static IntervalList overlaps(final IntervalList lhs, final IntervalList rhs) {
+        return overlaps(Collections.singletonList(lhs), Collections.singletonList(rhs));
+    }
+
+    /**
+     * A utility function for finding the intervals in the first list that have at least 1bp overlap with any interval
+     * in the second list.
+     *
+     * @param lists1 the first collection of IntervalLists
+     * @param lists2 the second collection of IntervalLists
+     * @return an IntervalList comprising of all intervals in the first collection of lists that have at least 1bp
+     * overlap with any interval in the second lists.
+     */
+    public static IntervalList overlaps(final Collection<IntervalList> lists1, final Collection<IntervalList> lists2) {
+        if(lists1.isEmpty()){
+            throw new SAMException("Cannot call overlaps with the first collection having empty list of IntervalLists.");
+        }
+
+        final SAMFileHeader header = lists1.iterator().next().getHeader().clone();
+        header.setSortOrder(SAMFileHeader.SortOrder.unsorted);
+
+        // Create an overlap detector on list2
+        final IntervalList overlapIntervals = new IntervalList(header);
+        for (final IntervalList list : lists2) {
+            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                    list.getHeader().getSequenceDictionary());
+            overlapIntervals.addall(list.getIntervals());
+        }
+        final OverlapDetector<Integer> detector = new OverlapDetector<>(0, 0);
+        final int dummy = -1; // NB: since we don't actually use the returned objects, we can use a dummy value
+        for (final Interval interval : overlapIntervals.sorted().uniqued()) {
+            detector.addLhs(dummy, interval);
+        }
+
+        // Go through each input interval in in lists1 and see if overlaps any interval in lists2
+        final IntervalList merged = new IntervalList(header);
+        for (final IntervalList list : lists1) {
+            SequenceUtil.assertSequenceDictionariesEqual(header.getSequenceDictionary(),
+                    list.getHeader().getSequenceDictionary());
+            for (final Interval interval : list.getIntervals()) {
+                if (detector.overlapsAny(interval)) {
+                    merged.add(interval);
+                }
+            }
+        }
+
+        return merged;
     }
 
     @Override

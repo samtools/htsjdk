@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SamPairUtil.SetMateInfoIterator;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -32,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class SamPairUtilTest {
+public class SamPairUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "testGetPairOrientation")
     public void testGetPairOrientation(final String testName,

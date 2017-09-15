@@ -1,23 +1,14 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.BAMFileSpan;
-import htsjdk.samtools.CRAMCRAIIndexer;
-import htsjdk.samtools.DiskBasedBAMFileIndex;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.*;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -26,7 +17,7 @@ import java.util.zip.GZIPOutputStream;
 /**
  * Created by vadim on 25/08/2015.
  */
-public class CRAIIndexTest {
+public class CRAIIndexTest extends HtsjdkTest {
 
     @Test
     public void testFind() throws IOException, CloneNotSupportedException {

@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.lossy;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamInputResource;
@@ -23,7 +24,7 @@ import java.util.List;
 
 import static org.testng.Assert.*;
 
-public class QualityScorePreservationTest {
+public class QualityScorePreservationTest extends HtsjdkTest {
 
     @Test
     public void test1() {
@@ -96,12 +97,10 @@ public class QualityScorePreservationTest {
         }
     }
 
-    private SAMFileHeader samFileHeader = new SAMFileHeader();
-
     private SAMRecord buildSAMRecord(String seqName, String line) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            baos.write("@HD\tVN:1.0\tGO:none SO:coordinate\n".getBytes());
+            baos.write("@HD\tVN:1.0\tGO:none\tSO:coordinate\n".getBytes());
             baos.write(("@SQ\tSN:" + seqName + "\tLN:247249719\n").getBytes());
             baos.write(line.replaceAll("\\s+", "\t").getBytes());
             baos.close();
@@ -120,7 +119,7 @@ public class QualityScorePreservationTest {
 
     @Test
     public void test3() {
-        String line1 = "98573 0 20 1 10 40M * 0 0 AAAAAAAAAA !!!!!!!!!!";
+        String line1 = "98573 0 20 1 10 10M * 0 0 AAAAAAAAAA !!!!!!!!!!";
         String seqName = "20";
 
         byte[] ref = new byte[40];

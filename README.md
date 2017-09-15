@@ -3,6 +3,7 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.samtools/htsjdk/badge.svg)](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22com.github.samtools%22%20AND%20a%3A%22htsjdk%22)
 [![License](http://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/samtools/htsjdk)
 [![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
+[![Join the chat at https://gitter.im/samtools/htsjdk](https://badges.gitter.im/samtools/htsjdk.svg)](https://gitter.im/samtools/htsjdk?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Status of downstream projects automatically built on top of the current htsjdk master branch. See [gatk-jenkins](https://gatk-jenkins.broadinstitute.org/view/HTSJDK%20Release%20Tests/) for detailed logs. Failure may indicate problems  in htsjdk, but may also be due to expected incompatibilities between versions, or unrelated failures in downstream projects.
 - [Picard](https://github.com/broadinstitute/picard):  [![Build Status](https://gatk-jenkins.broadinstitute.org/buildStatus/icon?job=picard-on-htsjdk-master)](https://gatk-jenkins.broadinstitute.org/job/picard-on-htsjdk-master/)
@@ -15,11 +16,19 @@ common file formats, such as [SAM][1] and [VCF][2], used for high-throughput
 sequencing data.  There are also an number of useful utilities for 
 manipulating HTS data.
 
-Please see the [HTSJDK Documentation](http://samtools.github.io/htsjdk) for more information.
-
 > **NOTE: _HTSJDK does not currently support the latest Variant Call Format Specification (VCFv4.3 and BCFv2.2)._**
 
-#### Building HTSJDK
+### Documentation & Getting Help
+
+API documentation for all versions of HTSJDK since `1.128` are available through [javadoc.io](http://www.javadoc.io/doc/com.github.samtools/htsjdk).
+
+If you believe you have found a bug or have an issue with the library please a) search the open and recently closed issues to ensure it has not already been reported, then b) log an issue.
+
+The project has a [gitter chat room](https://gitter.im/samtools/htsjdk) if you would like to chat with the developers and others involved in the project.
+
+To receive announcements of releases and other significant project news please subscribe to the [htsjdk-announce](https://groups.google.com/forum/#!forum/htsjdk-announce) google group.
+
+### Building HTSJDK
 
 HTSJDK is now built using [gradle](http://gradle.org/).
 
@@ -73,7 +82,7 @@ Example gradle usage from the htsjdk root directory:
  ./gradlew tasks
  ```
 
-#### Create an HTSJDK project in IntelliJ
+### Create an HTSJDK project in IntelliJ
 To create a project in IntelliJ IDE for htsjdk do the following:
 
 1. Select fom the menu: `File -> New -> Project from Existing Sources`
@@ -82,13 +91,17 @@ To create a project in IntelliJ IDE for htsjdk do the following:
 
 From time to time if dependencies change in htsjdk you may need to refresh the project from the `View -> Gradle` menu.
 
-#### Licensing Information
+### Licensing Information
 
-Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
+Not all sub-packages of htsjdk are subject to the same license, so a license notice is included in each source file or sub-package as appropriate. 
+Please check the relevant license notice whenever you start working with a part of htsjdk that you have not previously worked with to avoid any surprises. 
+Broadly speaking the majority of the code is covered under the MIT license with the following notable exceptions:
 
-#### Java Minimum Version Support Policy
+* Much of the CRAM code is under the Apache License, Version 2
+* Core `tribble` code (underlying VCF reading/writing amongst other things) is under LGPL
+* Code supporting the reading/writing of SRA format is uncopyrighted & public domain
 
-> **NOTE: _Effective November 24th 2015, HTSJDK has ended support of Java 7 and previous versions. Java 8 is now required_.**
+### Java Minimum Version Support Policy
 
 We will support all Java SE versions supported by Oracle until at least six months after Oracle's Public Updates period has ended ([see this link](http://www.oracle.com/technetwork/java/eol-135779.html)).
 
@@ -96,9 +109,8 @@ Java SE Major Release | End of Java SE Oracle Public Updates | Proposed End of S
 ---- | ---- | ---- | ----
 6 | Feb 2013 | Aug 2013 | Oct 2015
 7 | Apr 2015 | Oct 2015 | Oct 2015
-8* | Mar 2017 | Sep 2017 | Sep 2017
+8 | Jul 2018 | Jul 2018 | TBD
 
-* to be finalized
 
 HTSJDK is migrating to semantic versioning (http://semver.org/). We will eventually adhere to it strictly and bump our major version whenever there are breaking changes to our API, but until we more clearly define what constitutes our official API, clients should assume that every release potentially contains at least minor changes to public methods.
 

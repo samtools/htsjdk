@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.annotations.DataProvider;
@@ -38,7 +39,7 @@ import static org.testng.Assert.assertTrue;
 /**
  * Test BAM file index creation
  */
-public class BAMIndexWriterTest {
+public class BAMIndexWriterTest extends HtsjdkTest {
     // Two input files for basic test
     private final String BAM_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam";
     private final String BAI_FILE_LOCATION = "src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai";
@@ -57,7 +58,7 @@ public class BAMIndexWriterTest {
         final File javaBaiFile = File.createTempFile("javaBai.", "java.bai");
         final File javaBaiTxtFile = new File(javaBaiFile.getAbsolutePath() + ".txt");
         final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile);
+        BAMIndexer.createIndex(bam, javaBaiFile.toPath());
         verbose("Wrote binary Java BAM Index file " + javaBaiFile);
 
         // now, turn the bai file into text
@@ -76,7 +77,7 @@ public class BAMIndexWriterTest {
         // Compare java-generated bai file with c-generated and sorted bai file
         final File javaBaiFile = File.createTempFile("javaBai.", ".bai");
         final SamReader bam = SamReaderFactory.makeDefault().enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(BAM_FILE);
-        BAMIndexer.createIndex(bam, javaBaiFile);
+        BAMIndexer.createIndex(bam, javaBaiFile.toPath());
         verbose("Wrote binary java BAM Index file " + javaBaiFile);
 
         final File cRegeneratedBaiFile = File.createTempFile("cBai.", ".bai");
@@ -213,7 +214,7 @@ public class BAMIndexWriterTest {
     private File createIndexFile(File bamFile) throws IOException {
         final File bamIndexFile = File.createTempFile("Bai.", ".bai");
         final SamReader bam = SamReaderFactory.makeDefault().open(bamFile);
-        BAMIndexer.createIndex(bam, bamIndexFile);
+        BAMIndexer.createIndex(bam, bamIndexFile.toPath());
         verbose("Wrote BAM Index file " + bamIndexFile);
         bam.close();
         return bamIndexFile;

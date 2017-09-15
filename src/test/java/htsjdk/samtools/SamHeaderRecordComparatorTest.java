@@ -24,11 +24,12 @@ package htsjdk.samtools;
  * THE SOFTWARE.
  */
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class SamHeaderRecordComparatorTest {
+public class SamHeaderRecordComparatorTest extends HtsjdkTest {
 
 	@DataProvider(name="UsualSuspects")
 	public Object[][] createData() {

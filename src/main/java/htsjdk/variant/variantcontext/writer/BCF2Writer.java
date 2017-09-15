@@ -122,6 +122,10 @@ class BCF2Writer extends IndexingVariantContextWriter {
     private VCFHeader lastVCFHeaderOfUnparsedGenotypes = null;
     private boolean canPassOnUnparsedGenotypeDataForLastVCFHeader = false;
 
+    // is the header or body written to the output stream?
+    private boolean outputHasBeenWritten;
+
+
     public BCF2Writer(final File location, final OutputStream output, final SAMSequenceDictionary refDict,
                       final boolean enableOnTheFlyIndexing, final boolean doNotWriteGenotypes) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
@@ -145,39 +149,13 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(VCFHeader header) {
-        // make sure the header is sorted correctly
-        header = new VCFHeader(header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
-
-        // create the config offsets map
-        if ( header.getContigLines().isEmpty() ) {
-            if ( ALLOW_MISSING_CONTIG_LINES ) {
-                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
-                }
-                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
-            } else {
-                throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
-            }
-        } else {
-            createContigDictionary(header.getContigLines());
-        }
-
-        // set up the map from dictionary string values -> offset
-        final ArrayList<String> dict = BCF2Utils.makeDictionary(header);
-        for ( int i = 0; i < dict.size(); i++ ) {
-            stringDictionaryMap.put(dict.get(i), i);
-        }
-
-        sampleNames = header.getGenotypeSamples().toArray(new String[header.getNGenotypeSamples()]);
-
-        // setup the field encodings
-        fieldManager.setup(header, encoder, stringDictionaryMap);
+        setVCFHeader(header);
 
         try {
             // write out the header into a byte stream, get its length, and write everything to the file
             final ByteArrayOutputStream capture = new ByteArrayOutputStream();
             final OutputStreamWriter writer = new OutputStreamWriter(capture);
-            this.header = VCFWriter.writeHeader(header, writer, doNotWriteGenotypes, VCFWriter.getVersionLine(), "BCF2 stream");
+            this.header = VCFWriter.writeHeader(this.header, writer, VCFWriter.getVersionLine(), "BCF2 stream");
             writer.append('\0'); // the header is null terminated by a byte
             writer.close();
 
@@ -185,6 +163,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
             new BCFVersion(MAJOR_VERSION, MINOR_VERSION).write(outputStream);
             BCF2Type.INT32.write(headerBytes.length, outputStream);
             outputStream.write(headerBytes);
+            outputHasBeenWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("BCF2 stream: Got IOException while trying to write BCF2 header", e);
         }
@@ -204,6 +183,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
             // write the two blocks to disk
             writeBlock(infoBlock, genotypesBlock);
+            outputHasBeenWritten = true;
         }
         catch ( IOException e ) {
             throw new RuntimeIOException("Error writing record to BCF2 file: " + vc.toString(), e);
@@ -219,6 +199,39 @@ class BCF2Writer extends IndexingVariantContextWriter {
             throw new RuntimeIOException("Failed to flush BCF2 file");
         }
         super.close();
+    }
+
+    @Override
+    public void setVCFHeader(final VCFHeader header) {
+        if (outputHasBeenWritten) {
+            throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
+        }
+        // make sure the header is sorted correctly
+        this.header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : new VCFHeader(
+                header.getMetaDataInSortedOrder(), header.getGenotypeSamples());
+        // create the config offsets map
+        if ( this.header.getContigLines().isEmpty() ) {
+            if ( ALLOW_MISSING_CONTIG_LINES ) {
+                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                    System.err.println("No contig dictionary found in header, falling back to reference sequence dictionary");
+                }
+                createContigDictionary(VCFUtils.makeContigHeaderLines(getRefDict(), null));
+            } else {
+                throw new IllegalStateException("Cannot write BCF2 file with missing contig lines");
+            }
+        } else {
+            createContigDictionary(this.header.getContigLines());
+        }
+        // set up the map from dictionary string values -> offset
+        final ArrayList<String> dict = BCF2Utils.makeDictionary(this.header);
+        for ( int i = 0; i < dict.size(); i++ ) {
+            stringDictionaryMap.put(dict.get(i), i);
+        }
+
+        sampleNames = this.header.getGenotypeSamples().toArray(new String[this.header.getNGenotypeSamples()]);
+        // setup the field encodings
+        fieldManager.setup(this.header, encoder, stringDictionaryMap);
+
     }
 
     // --------------------------------------------------------------------------------

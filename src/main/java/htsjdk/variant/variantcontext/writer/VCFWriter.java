@@ -66,6 +66,9 @@ class VCFWriter extends IndexingVariantContextWriter {
     // should we always output a complete format record, even if we could drop trailing fields?
     private final boolean writeFullFormatField;
 
+    // is the header or body written to the output stream?
+    private boolean outputHasBeenWritten;
+
     /*
      * The VCF writer uses an internal Writer, based by the ByteArrayOutputStream lineBuffer,
      * to temp. buffer the header and per-site output before flushing the per line output
@@ -128,13 +131,14 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(final VCFHeader header) {
+
         // note we need to update the mHeader object after this call because they header
         // may have genotypes trimmed out of it, if doNotWriteGenotypes is true
+        setVCFHeader(header);
         try {
-            this.mHeader = writeHeader(header, writer, doNotWriteGenotypes, getVersionLine(), getStreamName());
-            this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
+            writeHeader(this.mHeader, writer, getVersionLine(), getStreamName());
             writeAndResetBuffer();
-
+            outputHasBeenWritten = true;
         } catch ( IOException e ) {
             throw new RuntimeIOException("Couldn't write file " + getStreamName(), e);
         }
@@ -146,11 +150,9 @@ class VCFWriter extends IndexingVariantContextWriter {
 
     public static VCFHeader writeHeader(VCFHeader header,
                                         final Writer writer,
-                                        final boolean doNotWriteGenotypes,
                                         final String versionLine,
                                         final String streamNameForError) {
-        header = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
-        
+
         try {
             // the file format field needs to be written first
             writer.write(versionLine + "\n");
@@ -223,9 +225,18 @@ class VCFWriter extends IndexingVariantContextWriter {
             write("\n");
 
             writeAndResetBuffer();
-
+            outputHasBeenWritten = true;
         } catch (IOException e) {
             throw new RuntimeIOException("Unable to write the VCF object to " + getStreamName(), e);
         }
+    }
+
+    @Override
+    public void setVCFHeader(final VCFHeader header) {
+        if (outputHasBeenWritten) {
+            throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
+        }
+        this.mHeader = doNotWriteGenotypes ? new VCFHeader(header.getMetaDataInSortedOrder()) : header;
+        this.vcfEncoder = new VCFEncoder(this.mHeader, this.allowMissingFieldsInHeader, this.writeFullFormatField);
     }
 }

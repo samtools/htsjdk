@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.CRAMFileWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -26,7 +27,7 @@ import java.util.zip.CRC32;
 /**
  * Created by vadim on 18/02/2016.
  */
-public class VersionTest {
+public class VersionTest extends HtsjdkTest {
     /**
      * The test purpose is to ensure that a CRAM written by {@link CRAMFileWriter} adheres to CRAM3 specs expectations:
      * 1. version 3.+, via both actual byte comparison and CramIO API

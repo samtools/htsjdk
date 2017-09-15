@@ -406,8 +406,9 @@ public class VariantContextWriterBuilder {
                 typeToBuild = OutputType.BCF_STREAM;
         }
 
+        // If we are writing to a file, or a special file type (ex. pipe) where the stream is not yet open.
         OutputStream outStreamFromFile = this.outStream;
-        if (FILE_TYPES.contains(this.outType)) {
+        if (FILE_TYPES.contains(this.outType) || (STREAM_TYPES.contains(this.outType) && this.outStream == null)) {
             try {
                 outStreamFromFile = IOUtil.maybeBufferOutputStream(new FileOutputStream(outFile), bufferSize);
             } catch (final FileNotFoundException e) {
@@ -445,7 +446,7 @@ public class VariantContextWriterBuilder {
                 if (options.contains(Options.INDEX_ON_THE_FLY))
                     throw new IllegalArgumentException("VCF index creation not supported for stream output.");
 
-                writer = createVCFWriter(null, outStream);
+                writer = createVCFWriter(null, outStreamFromFile);
                 break;
             case BCF_STREAM:
                 if (options.contains(Options.INDEX_ON_THE_FLY))

@@ -1,11 +1,13 @@
 package htsjdk.samtools;
 
 import java.util.Arrays;
+
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class BAMFileSpanTest {
+public class BAMFileSpanTest extends HtsjdkTest {
   @Test(dataProvider = "testRemoveContentsBeforeProvider")
   public void testRemoveContentsBefore(BAMFileSpan originalSpan, BAMFileSpan cutoff,
       BAMFileSpan expectedSpan) {

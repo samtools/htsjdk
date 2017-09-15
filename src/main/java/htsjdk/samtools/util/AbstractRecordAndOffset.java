@@ -49,16 +49,6 @@ public class AbstractRecordAndOffset {
     /**
      * @param record inner SAMRecord
      * @param offset from the start of the read
-     * @param length of alignment block
-     * @param refPos corresponding to read offset reference position
-     */
-    public AbstractRecordAndOffset(final SAMRecord record, final int offset, int length, int refPos) {
-        this(record, offset);
-    }
-
-    /**
-     * @param record inner SAMRecord
-     * @param offset from the start of the read
      */
     public AbstractRecordAndOffset(final SAMRecord record, final int offset) {
         this.offset = offset;
@@ -91,13 +81,6 @@ public class AbstractRecordAndOffset {
      */
     public int getLength() {
         return 1;
-    }
-
-    /**
-     * @return the position in reference sequence, to which the start of alignment block is aligned.
-     */
-    public int getRefPos() {
-        return -1;
     }
 
     /**

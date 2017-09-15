@@ -1,5 +1,6 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.CRAMException;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
@@ -20,7 +21,7 @@ import java.util.Iterator;
 /**
  * A collection of CRAM test based on round trip comparison of SAMRecord before and after CRAM compression.
  */
-public class CRAMEdgeCasesTest {
+public class CRAMEdgeCasesTest extends HtsjdkTest {
 
     @BeforeTest
     public void beforeTest() {

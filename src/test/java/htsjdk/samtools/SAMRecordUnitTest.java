@@ -24,6 +24,7 @@
 
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
@@ -34,7 +35,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 
-public class SAMRecordUnitTest {
+public class SAMRecordUnitTest extends HtsjdkTest {
 
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
@@ -462,7 +463,7 @@ public class SAMRecordUnitTest {
     }
 
     private SAMRecord createTestRecordHelper() {
-        return new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S9M", null, 2);
+        return new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "3S33M", null, 2);
     }
 
     @Test
@@ -775,7 +776,7 @@ public class SAMRecordUnitTest {
     }
 
     @Test
-    private void testNullHeaderDeepCopy() {
+    public void testNullHeaderDeepCopy() {
         SAMRecord sam = createTestRecordHelper();
         sam.setHeader(null);
         final SAMRecord deepCopy = sam.deepCopy();
@@ -804,13 +805,13 @@ public class SAMRecordUnitTest {
     }
 
     @Test
-    private void testNullHeadGetCigarSAM() {
-        SAMRecord sam = createTestRecordHelper();
+    public void testNullHeadGetCigarSAM() {
+        final SAMRecord sam = createTestRecordHelper();
         testNullHeaderCigar(sam);
     }
 
     @Test
-    private void testNullHeadGetCigarBAM() {
+    public void testNullHeadGetCigarBAM() {
         SAMRecord sam = createTestRecordHelper();
         SAMRecordFactory factory = new DefaultSAMRecordFactory();
         BAMRecord bamRec = factory.createBAMRecord(
@@ -1037,5 +1038,37 @@ public class SAMRecordUnitTest {
         rec.setAttribute("Y1", "AAAAGAAAAC");
 
         return(rec);
+    }
+
+    @DataProvider
+    public Object [][] readBasesArrayGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE, 0 },
+                { new byte[] {'A', 'C'}, 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesArrayGetReadLengthData")
+    public void testReadBasesGetReadLength(final byte[] readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadBases(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
+    }
+
+    @DataProvider
+    public Object [][] readBasesStringGetReadLengthData() {
+        return new Object[][]{
+                { null, 0 },
+                { SAMRecord.NULL_SEQUENCE_STRING, 0 },
+                { "AC", 2 }
+        };
+    }
+
+    @Test(dataProvider = "readBasesStringGetReadLengthData")
+    public void testReadStringGetReadLength(final String readBases, final int readLength) {
+        final SAMRecord sam = createTestRecordHelper();
+        sam.setReadString(readBases);
+        Assert.assertEquals(sam.getReadLength(), readLength);
     }
 }

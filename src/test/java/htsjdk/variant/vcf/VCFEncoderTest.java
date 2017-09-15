@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.GenotypeBuilder;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class VCFEncoderTest {
+public class VCFEncoderTest extends HtsjdkTest {
 
 	@DataProvider(name = "VCFWriterDoubleFormatTestData")
 	public Object[][] makeVCFWriterDoubleFormatTestData() {

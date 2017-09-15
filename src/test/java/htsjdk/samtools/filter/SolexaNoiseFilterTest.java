@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordSetBuilder;
 import org.testng.Assert;
@@ -32,7 +33,7 @@ import org.testng.annotations.Test;
 /**
  * Basic test for the SolexaNoiseFilter
  */
-public class SolexaNoiseFilterTest {
+public class SolexaNoiseFilterTest extends HtsjdkTest {
 
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
     private final SolexaNoiseFilter filter = new SolexaNoiseFilter();

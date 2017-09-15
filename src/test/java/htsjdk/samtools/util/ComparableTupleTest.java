@@ -1,5 +1,6 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.Allele;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -8,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * Created by farjoun on 1/28/16.
  */
-public class ComparableTupleTest {
+public class ComparableTupleTest extends HtsjdkTest {
 
     private enum Tenum {
         Hi,

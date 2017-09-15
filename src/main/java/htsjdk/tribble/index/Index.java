@@ -92,11 +92,11 @@ public interface Index {
 
     /**
      * Write an appropriately named and located Index file based on the name and location of the featureFile.
-     * If featureFile is not a normal file, the index will silently not be written.
      *
      * Default implementation delegates to {@link #writeBasedOnFeaturePath(Path)}
      *
      * @param featureFile
+     * @throws IOException if featureFile is not a normal file.
      */
     public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
         writeBasedOnFeaturePath(featureFile.toPath());
@@ -107,6 +107,7 @@ public interface Index {
      * If featureFile is not a normal file, the index will silently not be written.
      *
      * @param featurePath
+     * @throws IOException if featureFile is not a normal file.
      */
     public void writeBasedOnFeaturePath(Path featurePath) throws IOException;
 

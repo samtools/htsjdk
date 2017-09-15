@@ -1,9 +1,13 @@
 package htsjdk.samtools.fastq;
 
+import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-public final class FastqRecordTest {
+import java.util.ArrayList;
+
+public final class FastqRecordTest extends HtsjdkTest {
 
     @Test
     public void testBasic() {
@@ -205,5 +209,15 @@ public final class FastqRecordTest {
 
         new FastqRecord("header", seqLine1, "qualHeaderPrefix", qualLine1);
         //Note: this does not blow up now but it will once we enforce that seqLine and qualLine be the same length
+    }
+
+    @Test
+    public void testFastqSerialize() throws Exception {
+        final ArrayList<FastqRecord> records = new ArrayList<>();
+        records.add(new FastqRecord("q1", "ACGTACGT",     "", "########"));
+        records.add(new FastqRecord("q2", "CCAGCGTAATA",  "", "????????###"));
+        records.add(new FastqRecord("q3", "NNNNNNNNNNNN", "", "############"));
+
+        Assert.assertEquals(TestUtil.serializeAndDeserialize(records),records);
     }
 }
