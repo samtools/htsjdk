@@ -29,9 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.StreamSupport;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -49,12 +46,15 @@ public class VCFIteratorTest extends VariantBaseTest {
                 new Object[] { "src/test/resources/htsjdk/variant/serialization_test.bcf", 12 } };
     }
 
-    private void countVariants(final VCFIterator r, final int expectVariants) {
-        Assert.assertNotNull(r.getFileHeader());
-        final int nVariants =  (int) StreamSupport.stream(Spliterators.spliteratorUnknownSize(r, Spliterator.ORDERED), true).count();
-        Assert.assertNotNull(r.getFileHeader());
-        Assert.assertEquals(nVariants, expectVariants);
-        r.close();
+    private void assertExpectedNumberOfVariants(final VCFIterator r, final int expectVariants) {
+        try {
+            Assert.assertNotNull(r.getHeader());
+            final int nVariants =  (int)r.stream().count();
+            Assert.assertNotNull(r.getHeader());
+            Assert.assertEquals(nVariants, expectVariants);
+        } finally {
+            r.close();
+        }
     }
 
     @Test(dataProvider = "VcfFiles")

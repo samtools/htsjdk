@@ -71,29 +71,40 @@ public class VCFIteratorBuilder {
      * @return the VCFIterator
      * @throws IOException
      */
+    @SuppressWarnings("static-method")
     public VCFIterator open(final InputStream in) throws IOException {
         if (in == null) {
             throw new IllegalArgumentException("input stream is null");
             }
-        // buffer must be large enough to contain the BCF header (+ min/max version) and/or GZIP signature
-        final int bufferSize = Math.max(BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES , IOUtil.GZIP_SIGNATURE.length);
-        // try to read the BCF header
-        final BufferedInputStream bufferedinput = new BufferedInputStream(in,bufferSize);
-        bufferedinput.mark(bufferSize);
+        // sizeof a BCF header (+ min/max version)
+        final int sizeof_bcf_header =  BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES;
+        // wrap the input stream into a BufferedInputStream to reset/read a BCFHeader or a GZIP
+        // buffer must be large enough to contain the BCF header and/or GZIP signature
+        BufferedInputStream  bufferedinput = new BufferedInputStream(in, Math.max(
+               sizeof_bcf_header,
+               IOUtil.GZIP_HEADER_READ_LENGTH
+               ));
+        // test for gzipped inputstream 
+        if(IOUtil.isGZIPInputStream(bufferedinput)) {
+            // this is a gzipped input stream, wrap it into GZIPInputStream
+            // and re-wrap it into BufferedInputStream so we can test for the BCF header
+            bufferedinput = new BufferedInputStream(
+                    new GZIPInputStream(bufferedinput),
+                    sizeof_bcf_header
+                    );
+        }
+
+        // try to read a BCF header
+        bufferedinput.mark(sizeof_bcf_header);
         final BCFVersion bcfVersion = BCFVersion.readBCFVersion(bufferedinput);
         bufferedinput.reset();
 
-        try {
-            if (bcfVersion != null) {
-                //this is BCF
-                return new BCFInputStreamIterator(bufferedinput);
-            } else {
-                //this is VCF or VCF.gz, gunzip the input stream if needed
-                return new VCFReaderIterator( IOUtil.isGZIPInputStream(bufferedinput) ? 
-                        new GZIPInputStream(bufferedinput) : bufferedinput );
-            }
-        } catch (final IOException error) {
-           throw new IOException("Cannot read the input stream as 'BCF' or 'VCF.gz' or 'VCF'", error);
+        if (bcfVersion != null) {
+            //this is BCF
+            return new BCFInputStreamIterator(bufferedinput);
+        } else {
+            //this is VCF
+            return new VCFReaderIterator(bufferedinput);
         }
     }
 
@@ -147,12 +158,12 @@ public class VCFIteratorBuilder {
 
         VCFReaderIterator(final InputStream inputStream) {
             this.inputStream = inputStream;
-            this.lineIterator = new AsciiLineReaderIterator(new AsciiLineReader(inputStream));
+            this.lineIterator = new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
             this.vcfHeader = (VCFHeader) this.codec.readActualHeader(this.lineIterator);
         }
 
         @Override
-        public VCFHeader getFileHeader() {
+        public VCFHeader getHeader() {
             return this.vcfHeader;
         }
 
@@ -187,7 +198,7 @@ public class VCFIteratorBuilder {
         }
 
         @Override
-        public VCFHeader getFileHeader() {
+        public VCFHeader getHeader() {
             return this.vcfHeader;
         }
 

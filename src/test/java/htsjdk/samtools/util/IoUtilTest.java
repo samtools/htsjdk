@@ -23,6 +23,12 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -45,7 +51,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
-public class IoUtilTest {
+public class IoUtilTest extends HtsjdkTest {
 
     private static final File SLURP_TEST_FILE = new File("src/test/resources/htsjdk/samtools/io/slurptest.txt");
     private static final File EMPTY_FILE = new File("src/test/resources/htsjdk/samtools/io/empty.txt");
@@ -166,12 +172,35 @@ public class IoUtilTest {
     public void testFileType(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
+        if (null != file) {
+            Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
+        }
     }
 
     @Test(dataProvider = "unixFileTypeTestCases", groups = {"unix"})
     public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
+        if (null != file) {
+            Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
+        }
+    }
+
+    @Test
+    public void testAddExtension() throws IOException {
+        Path p = IOUtil.getPath("/folder/file");
+        List<FileSystemProvider> fileSystemProviders = FileSystemProvider.installedProviders();
+        Assert.assertEquals(IOUtil.addExtension(p, ".ext"), IOUtil.getPath("/folder/file.ext"));
+        p = IOUtil.getPath("folder/file");
+        Assert.assertEquals(IOUtil.addExtension(p, ".ext"), IOUtil.getPath("folder/file.ext"));
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            p = jimfs.getPath("folder/sub/file");
+            Assert.assertEquals(IOUtil.addExtension(p, ".ext"), jimfs.getPath("folder/sub/file.ext"));
+            p = jimfs.getPath("folder/file");
+            Assert.assertEquals(IOUtil.addExtension(p, ".ext"), jimfs.getPath("folder/file.ext"));
+            p = jimfs.getPath("file");
+            Assert.assertEquals(IOUtil.addExtension(p, ".ext"), jimfs.getPath("file.ext"));
+        }
     }
 
     @DataProvider(name = "fileTypeTestCases")
@@ -214,12 +243,5 @@ public class IoUtilTest {
         // call twice to verify 'in.reset()' was called
         Assert.assertTrue(IOUtil.isGZIPInputStream(in));
         in.close();
-    }
-    @DataProvider(name = "mayBeGZippedInputStreamTestCases")
-    private Object[][] mayBeGZippedInputStreamTestCases() {
-        return new Object[][]{
-                {"Hello World", Boolean.FALSE},
-                {"Hello World", Boolean.TRUE}
-        };
     }
 }

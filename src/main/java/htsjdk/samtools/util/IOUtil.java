@@ -26,6 +26,7 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SamStreams;
 import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
@@ -85,8 +86,11 @@ public class IOUtil {
     public static final long TWO_GBS = 2 * ONE_GB;
     public static final long FIVE_GBS = 5 * ONE_GB;
 
+    public static final String VCF_FILE_EXTENSION = ".vcf";
+    public static final String BCF_FILE_EXTENSION = ".bcf";
+    public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
     /** Possible extensions for VCF files and related formats. */
-    public static final String[] VCF_EXTENSIONS = new String[] {".vcf", ".vcf.gz", ".bcf"};
+    public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
 
     public static final String INTERVAL_LIST_FILE_EXTENSION = IntervalList.INTERVAL_LIST_FILE_EXTENSION;
 
@@ -97,9 +101,12 @@ public class IOUtil {
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
 
     /** signature of a gzip stream used by {@link isGZIPInputStream} 
-     * @see {@linkplain http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped}
+     * @see  <a href="https://stackoverflow.com/q/4818468/58082">https://stackoverflow.com/q/4818468/58082</a>
      */
-    public static final byte GZIP_SIGNATURE[]= {(byte) 0x1f, (byte) 0x8b};
+    public static final byte GZIP_SIGNATURE[]= {
+            (byte) (GZIPInputStream.GZIP_MAGIC),//0x1f,
+            (byte) (GZIPInputStream.GZIP_MAGIC >> 8) //0x8b
+            };
     
     /**
      * Sets the GZip compression level for subsequent GZIPOutputStream object creation.
@@ -250,6 +257,15 @@ public class IOUtil {
     }
 
     /**
+     * @return true if the path is not a device (e.g. /dev/null or /dev/stdin), and is not
+     * an existing directory.  I.e. is is a regular path that may correspond to an existing
+     * file, or a path that could be a regular output file.
+     */
+    public static boolean isRegularPath(final Path path) {
+        return !Files.exists(path) || Files.isRegularFile(path);
+    }
+
+    /**
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
@@ -370,7 +386,7 @@ public class IOUtil {
      * and if it is a file then not a directory and is readable.  If any
      * condition is false then a runtime exception is thrown.
      *
-     * @param files the list of files to check for readability
+     * @param inputs the list of files to check for readability
      */
     public static void assertInputsAreValid(final List<String> inputs) {
         for (final String input : inputs) assertInputIsValid(input);
@@ -467,34 +483,28 @@ public class IOUtil {
      * Checks that the two files are the same length, and have the same content, otherwise throws a runtime exception.
      */
     public static void assertFilesEqual(final File f1, final File f2) {
-        try {
-            if (f1.length() != f2.length()) {
-                throw new SAMException("Files " + f1 + " and " + f2 + " are different lengths.");
-            }
+        if (f1.length() != f2.length()) {
+            throw new SAMException("File " + f1 + " is " + f1.length() + " bytes but file " + f2 + " is " + f2.length() + " bytes.");
+        }
+        try (
             final FileInputStream s1 = new FileInputStream(f1);
             final FileInputStream s2 = new FileInputStream(f2);
+            ) {
             final byte[] buf1 = new byte[1024 * 1024];
             final byte[] buf2 = new byte[1024 * 1024];
             int len1;
             while ((len1 = s1.read(buf1)) != -1) {
                 final int len2 = s2.read(buf2);
                 if (len1 != len2) {
-                    s1.close();
-                    s2.close();
                     throw new SAMException("Unexpected EOF comparing files that are supposed to be the same length.");
                 }
                 if (!Arrays.equals(buf1, buf2)) {
-                    s1.close();
-                    s2.close();
                     throw new SAMException("Files " + f1 + " and " + f2 + " differ.");
                 }
             }
-            s1.close();
-            s2.close();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new SAMException("Exception comparing files " + f1 + " and " + f2, e);
         }
-
     }
 
     /**
@@ -786,8 +796,13 @@ public class IOUtil {
 
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
-        return new BufferedReader(new InputStreamReader(openFileForReading(file)), Defaults.NON_ZERO_BUFFER_SIZE);
+        return openFileForBufferedReading(file.toPath());
 	}
+
+    /** Checks that a path exists and is readable, and then returns a buffered reader for it. */
+    public static BufferedReader openFileForBufferedReading(final Path path) {
+        return new BufferedReader(new InputStreamReader(openFileForReading(path)), Defaults.NON_ZERO_BUFFER_SIZE);
+    }
 
     /** Takes a string and replaces any characters that are not safe for filenames with an underscore */
     public static String makeFileNameSafe(final String str) {
@@ -997,19 +1012,46 @@ public class IOUtil {
         }
     }
 
+    /** number of bytes that will be read for the GZIP-header in the function {@link #isGZIPInputStream(InputStream)} */
+    public static final int GZIP_HEADER_READ_LENGTH = 8000;
+
     /**
      * Test whether a input stream looks like a GZIP input.
-     * @param bufferedinput the input stream. The buffer must be large enough to contain {@link GZIP_SIGNATURE}
-     * @return true if `bufferedinput` starts with a gzip signature 
-     * @throws IOException if `bufferedinput` cannot mark or reset the stream
-     * @see {@linkplain http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped}
+     * @param stream the input stream.
+     * @return true if `stream` starts with a gzip signature 
+     * @throws IllegalArgumentException if `stream` cannot mark or reset the stream
+     * @see {@link SamStreams#isGzippedSAMFile(InputStream)}
      */
-    public static boolean isGZIPInputStream(final BufferedInputStream bufferedinput) throws IOException {
-        // see http://stackoverflow.com/questions/4818468/how-to-check-if-inputstream-is-gzipped
-        final byte[] signature = new byte[ GZIP_SIGNATURE.length ];
-        bufferedinput.mark(GZIP_SIGNATURE.length);
-        bufferedinput.read(signature); // read the signature
-        bufferedinput.reset(); // push back the signature to the stream
-        return Arrays.equals(signature, GZIP_SIGNATURE);
+    public static boolean isGZIPInputStream(final InputStream stream) {
+        /* this function was previously implemented in SamStreams.isGzippedSAMFile */
+        if (!stream.markSupported()) {
+            throw new IllegalArgumentException("isGZIPInputStream() : Cannot test a stream that doesn't support marking.");
+        }
+        stream.mark(GZIP_HEADER_READ_LENGTH);
+
+        try {
+            final GZIPInputStream gunzip = new GZIPInputStream(stream);
+            final int ch = gunzip.read();
+            return true;
+        } catch (final IOException ioe) {
+            return false;
+        } finally {
+            try {
+                stream.reset();
+            } catch (final IOException ioe) {
+                throw new IllegalStateException("isGZIPInputStream(): Could not reset stream.");
+            }
+        }
+    }
+
+    /** 
+     * Adds the extension to the given path.
+     *
+     * @param path       the path to start from, eg. "/folder/file.jpg"
+     * @param extension  the extension to add, eg. ".bak"
+     * @return           "/folder/file.jpg.bak"
+     */
+    public static Path addExtension(final Path path,final String extension) {
+        return path.resolveSibling(path.getFileName() + extension);
     }
 }

@@ -4,6 +4,7 @@ import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedStreamConstants;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -66,26 +67,11 @@ public class SamStreams {
     /**
      * Checks whether the file is a gzipped sam file.  Returns true if it
      * is and false otherwise.
+     * @see {@link IOUtil#isGZIPInputStream(InputStream)}
      */
     public static boolean isGzippedSAMFile(final InputStream stream) {
-        if (!stream.markSupported()) {
-            throw new IllegalArgumentException("Cannot test a stream that doesn't support marking.");
-        }
-        stream.mark(8000);
-
-        try {
-            final GZIPInputStream gunzip = new GZIPInputStream(stream);
-            final int ch = gunzip.read();
-            return true;
-        } catch (final IOException ioe) {
-            return false;
-        } finally {
-            try {
-                stream.reset();
-            } catch (final IOException ioe) {
-                throw new IllegalStateException("Could not reset stream.");
-            }
-        }
+        //this function has moved to IOUtil
+        return IOUtil.isGZIPInputStream(stream);
     }
 
     // Its too expensive to examine the remote file to determine type.

@@ -27,11 +27,11 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- * An iterator used to read variants from an InputStream. It can be used to
+ * An iterator of `VariantContext`. This iterator can be used to
  * decode VCF data on the fly .
- * 
+ *
  * Example:
- * 
+ *
  * <pre>
  * VCFIterator r = new VCFIteratorBuilder().open(System.in);
  * while (r.hasNext()) {
@@ -46,7 +46,7 @@ import htsjdk.variant.variantcontext.VariantContext;
  */
 public interface VCFIterator extends CloseableIterator<VariantContext> {
     /** Returns the VCFHeader associated with this VCF/BCF file. */
-    public VCFHeader getFileHeader();
+    public VCFHeader getHeader();
 
     /**
      * Returns the next object but does not advance the iterator. Subsequent
