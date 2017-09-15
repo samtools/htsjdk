@@ -25,15 +25,23 @@ package htsjdk.variant.vcf;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Function;
+import java.util.zip.GZIPOutputStream;
 
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.VariantBaseTest;
 
 public class VCFIteratorTest extends VariantBaseTest {
@@ -68,6 +76,36 @@ public class VCFIteratorTest extends VariantBaseTest {
         final VCFIterator r = new VCFIteratorBuilder().open(new File(file));
         assertExpectedNumberOfVariants(r, nVariants);
 
+    }
+
+    private void testUsingZippedStreams(final String filepath, final int nVariants,
+            final Function<File,OutputStream> outputStreamProvider) throws IOException {
+        final File tmp =  new File(filepath);
+        if( !tmp.getName().endsWith(".gz")) {
+            tmp = File.createTempFile("tmp", ".gz");
+            tmp.deleteOnExit();
+            try(    FileInputStream in = new FileInputStream(filepath);
+                    OutputStream out =  outputStreamProvider.apply(tmp); ) {
+                    IOUtil.copyStream(in, out);
+                    out.flush();
+               } catch(IOException err) {
+                   throw err;
+               }        
+            }
+        
+        final VCFIterator r = new VCFIteratorBuilder().open(tmp);
+        assertExpectedNumberOfVariants(r, nVariants);
+        r.close();
+    }
+    
+    @Test(dataProvider = "VcfFiles")
+    public void testUsingBGZippedStreams(final String filepath, final int nVariants) throws IOException {
+        testUsingZippedStreams(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
+    }
+
+    @Test(dataProvider = "VcfFiles")
+    public void testUsingGZippedStreams(final String filepath, final int nVariants) throws IOException {
+        testUsingZippedStreams(filepath, nVariants, (F)-> new GZIPOutputStream(new FileOutputStream(F)));
     }
 
     @Test(dataProvider = "VcfFiles")
