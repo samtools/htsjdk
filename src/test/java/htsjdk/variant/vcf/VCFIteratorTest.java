@@ -60,13 +60,13 @@ public class VCFIteratorTest extends VariantBaseTest {
     @Test(dataProvider = "VcfFiles")
     public void testUsingUri(final String uri, final int nVariants) throws IOException {
         final VCFIterator r = new VCFIteratorBuilder().open(uri);
-        countVariants(r, nVariants);
+        assertExpectedNumberOfVariants(r, nVariants);
     }
 
     @Test(dataProvider = "VcfFiles")
     public void testUsingFile(final String file, final int nVariants) throws IOException {
         final VCFIterator r = new VCFIteratorBuilder().open(new File(file));
-        countVariants(r, nVariants);
+        assertExpectedNumberOfVariants(r, nVariants);
 
     }
 
@@ -74,7 +74,7 @@ public class VCFIteratorTest extends VariantBaseTest {
     public void testUsingStreams(final String filepath, final int nVariants) throws IOException {
         final InputStream in = new FileInputStream(filepath); 
         final VCFIterator r = new VCFIteratorBuilder().open(in);
-        countVariants(r, nVariants);
+        assertExpectedNumberOfVariants(r, nVariants);
         in.close();
     }
     
@@ -82,6 +82,6 @@ public class VCFIteratorTest extends VariantBaseTest {
     public void testUsingPath(final String path, final int nVariants) throws IOException {
         final Path a_path = Paths.get(path);
         final VCFIterator r = new VCFIteratorBuilder().open(a_path);
-        countVariants(r, nVariants);
+        assertExpectedNumberOfVariants(r, nVariants);
     }
 }
