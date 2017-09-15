@@ -42,6 +42,7 @@ import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.variant.VariantBaseTest;
 
 public class VCFIteratorTest extends VariantBaseTest {
@@ -100,12 +101,24 @@ public class VCFIteratorTest extends VariantBaseTest {
     
     @Test(dataProvider = "VcfFiles")
     public void testUsingBGZippedStreams(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedStreams(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
+        testUsingZippedStreams(filepath, nVariants, (F)-> {
+            try {
+                return new BlockCompressedOutputStream(F);
+            } catch(final IOException err) {
+                throw new RuntimeIOException(err);
+            }
+        });
     }
 
     @Test(dataProvider = "VcfFiles")
     public void testUsingGZippedStreams(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedStreams(filepath, nVariants, (F)-> new GZIPOutputStream(new FileOutputStream(F)));
+        testUsingZippedStreams(filepath, nVariants, (F)-> {
+            try {
+                return new GZIPOutputStream(new FileOutputStream(F));
+            } catch(final IOException err) {
+                throw new RuntimeIOException(err);
+            }
+        });
     }
 
     @Test(dataProvider = "VcfFiles")
