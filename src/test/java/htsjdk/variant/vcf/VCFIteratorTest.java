@@ -80,7 +80,7 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     private void testUsingZippedStreams(final String filepath, final int nVariants,
             final Function<File,OutputStream> outputStreamProvider) throws IOException {
-        final File tmp =  new File(filepath);
+        File tmp =  new File(filepath);
         if( !tmp.getName().endsWith(".gz")) {
             tmp = File.createTempFile("tmp", ".gz");
             tmp.deleteOnExit();
