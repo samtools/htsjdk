@@ -182,17 +182,18 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
     }
 
     private void warnIfReferenceIsTooLargeForBinField(final SAMRecord rec) {
+        final SAMSequenceRecord sequence = rec.getHeader() != null ? rec.getHeader().getSequence(rec.getReferenceName()) : null;
         if (!isReferenceSizeWarningShowed
-                && isReferenceTooLargeForBAI(rec)
+                && sequence != null
+                && isReferenceTooLargeForBAI(sequence)
                 && rec.getValidationStringency() != ValidationStringency.SILENT) {
             LOG.warn("Reference length is too large for BAM bin field. Values in the bin field could be incorrect.");
             isReferenceSizeWarningShowed = true;
         }
     }
 
-    private boolean isReferenceTooLargeForBAI(final SAMRecord rec) {
-        final int referenceLength = header.getSequence(rec.getReferenceName()).getSequenceLength();
-        return referenceLength > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+    private boolean isReferenceTooLargeForBAI(final SAMSequenceRecord sequence) {
+        return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 
     private int getUshort(int value) {

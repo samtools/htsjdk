@@ -2062,7 +2062,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
 
         if (this.getAlignmentStart() != NO_ALIGNMENT_START) {
-            if (getHeader() != null && isReferenceTooLargeForBAI()) {
+            final SAMSequenceRecord sequence = getHeader() != null ? getHeader().getSequence(getReferenceName()) : null;
+            if (sequence != null && isReferenceTooLargeForBAI(sequence)) {
                 if (getValidationStringency() != ValidationStringency.SILENT) {
                     LOG.warn(String.format("Reference length is too large for BAM bin field for %s record. Values in the bin field could be incorrect.", getReadName()));
                 }
@@ -2111,9 +2112,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return this.getIndexingBin() != null && this.computeIndexingBin() != this.getIndexingBin();
     }
 
-    private boolean isReferenceTooLargeForBAI() {
-        final int referenceLength = getHeader().getSequence(this.getReferenceName()).getSequenceLength();
-        return referenceLength > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+    private boolean isReferenceTooLargeForBAI(final SAMSequenceRecord sequence) {
+        return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
     }
 
     /**
