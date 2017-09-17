@@ -47,12 +47,21 @@ import htsjdk.variant.VariantBaseTest;
 
 public class VCFIteratorTest extends VariantBaseTest {
 
-    @DataProvider(name = "VcfFiles")
-    public Object[][] getVcfFiles() {
+    @DataProvider(name = "VariantFiles")
+    public Object[][] getVariantFiles() {
         return new Object[][] { 
                 new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", 25 },
                 new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", 25 },
-                new Object[] { "src/test/resources/htsjdk/variant/serialization_test.bcf", 12 } };
+                new Object[] { "src/test/resources/htsjdk/variant/serialization_test.bcf", 12 }
+        };
+    }
+
+    @DataProvider(name = "VcfFiles")
+    public Object[][] getVcfFiles() {
+        return new Object[][] {
+                new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", 25 },
+                new Object[] { "src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", 25 }
+        };
     }
 
     private void assertExpectedNumberOfVariants(final VCFIterator r, final int expectVariants) {
@@ -66,13 +75,13 @@ public class VCFIteratorTest extends VariantBaseTest {
         }
     }
 
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingUri(final String uri, final int nVariants) throws IOException {
         final VCFIterator r = new VCFIteratorBuilder().open(uri);
         assertExpectedNumberOfVariants(r, nVariants);
     }
 
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingFile(final String file, final int nVariants) throws IOException {
         final VCFIterator r = new VCFIteratorBuilder().open(new File(file));
         assertExpectedNumberOfVariants(r, nVariants);
@@ -81,24 +90,24 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     private void testUsingZippedStreams(final String filepath, final int nVariants,
             final Function<File,OutputStream> outputStreamProvider) throws IOException {
-        File tmp =  new File(filepath);
-        if( !tmp.getName().endsWith(".gz")) {
-            tmp = File.createTempFile("tmp", ".gz");
+	File tmp =  new File(filepath);
+        if( tmp.getName().endsWith(".vcf")) {
+            tmp = File.createTempFile("tmp",".vcf.gz");
             tmp.deleteOnExit();
             try(    FileInputStream in = new FileInputStream(filepath);
                     OutputStream out =  outputStreamProvider.apply(tmp); ) {
                     IOUtil.copyStream(in, out);
                     out.flush();
-               } catch(IOException err) {
+               } catch(final IOException err) {
                    throw err;
-               }        
+               }
             }
-        
+
         final VCFIterator r = new VCFIteratorBuilder().open(tmp);
         assertExpectedNumberOfVariants(r, nVariants);
         r.close();
     }
-    
+
     @Test(dataProvider = "VcfFiles")
     public void testUsingBGZippedStreams(final String filepath, final int nVariants) throws IOException {
         testUsingZippedStreams(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
@@ -115,7 +124,7 @@ public class VCFIteratorTest extends VariantBaseTest {
         });
     }
 
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingStreams(final String filepath, final int nVariants) throws IOException {
         final InputStream in = new FileInputStream(filepath); 
         final VCFIterator r = new VCFIteratorBuilder().open(in);
@@ -123,7 +132,7 @@ public class VCFIteratorTest extends VariantBaseTest {
         in.close();
     }
     
-    @Test(dataProvider = "VcfFiles")
+    @Test(dataProvider = "VariantFiles")
     public void testUsingPath(final String path, final int nVariants) throws IOException {
         final Path a_path = Paths.get(path);
         final VCFIterator r = new VCFIteratorBuilder().open(a_path);

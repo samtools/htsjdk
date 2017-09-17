@@ -25,14 +25,17 @@ package htsjdk.variant.vcf;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.AbstractIterator;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.readers.AsciiLineReader;
@@ -128,8 +131,29 @@ public class VCFIteratorBuilder {
      * @throws IOException
      */
     public VCFIterator open(final Path path) throws IOException {
-        return open(new SeekablePathStream(path, null));
+       return open(path, null);
     }
+    
+    /**
+     * creates a VCF iterator from a Path
+     * 
+     * @param path the path
+     * @param wrapper wrapper for {@link SeekablePathStream}. Can be null.
+     * @return the VCFIterator
+     * @throws IOException
+     */
+    public VCFIterator open(final Path path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        if( wrapper==null && Files.isRegularFile(path)) {// File implementation is faster
+            final File file = path.toFile();
+            if(    file.getName().endsWith(".vcf") || 
+                   file.getName().endsWith(".vcf.gz") )
+                {
+                return open(path.toFile()); 
+                }
+        }
+        return open(new SeekablePathStream(path, wrapper));
+    }
+
     
     /**
      * creates a VCF iterator from a File
@@ -139,12 +163,43 @@ public class VCFIteratorBuilder {
      * @throws IOException
      */
     public VCFIterator open(final File file) throws IOException {
-        IOUtil.assertFileIsReadable(file);
-        return open(new FileInputStream(file));
+        return new FileBasedVCFIterator(file);
+    }
+
+    /** implementation of VCFIterator, wrapping a VCFFileReader */
+    private static class FileBasedVCFIterator
+        extends AbstractIterator<VariantContext>
+        implements VCFIterator
+        {
+        /** delegate VCF File reader */
+        private final VCFFileReader vcfFileReader;
+        /** iterator of the VCFFileReader */
+        private final CloseableIterator<VariantContext> iter;
+
+        FileBasedVCFIterator(final File vcfFile) {
+            this.vcfFileReader = new VCFFileReader(vcfFile, false);
+            this.iter = this.vcfFileReader.iterator();
+        }
+
+        @Override
+        public VCFHeader getHeader() {
+            return this.vcfFileReader.getFileHeader();
+        }
+
+        @Override
+        protected VariantContext advance() {
+            return this.iter.hasNext()? this.iter.next(): null;
+        }
+
+        @Override
+        public void close() {
+            CloserUtil.close(this.iter);
+            CloserUtil.close(this.vcfFileReader);
+        }
     }
 
     /** implementation of VCFIterator, reading VCF */
-    private static class VCFReaderIterator 
+    private static class VCFReaderIterator
             extends AbstractIterator<VariantContext>
             implements VCFIterator {
         /** delegate input stream */
@@ -182,7 +237,7 @@ public class VCFIteratorBuilder {
     }
 
     /** implementation of VCFIterator, reading BCF */
-    private static class BCFInputStreamIterator 
+    private static class BCFInputStreamIterator
             extends AbstractIterator<VariantContext>
             implements VCFIterator {
         /** the underlying input stream */
