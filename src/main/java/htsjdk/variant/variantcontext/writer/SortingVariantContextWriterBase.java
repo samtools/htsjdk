@@ -137,8 +137,8 @@ abstract class SortingVariantContextWriterBase implements VariantContextWriter {
     }
 
     @Override
-    public void setVCFHeader(final VCFHeader header) {
-        innerWriter.setVCFHeader(header);
+    public void setHeader(final VCFHeader header) {
+        innerWriter.setHeader(header);
     }
 
     /**
