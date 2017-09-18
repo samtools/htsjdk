@@ -152,7 +152,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      * Look up sequence record by name.
      */
     public SAMSequenceRecord getSequence(final String name) {
-        if (mSequenceDictionary == null) throw new TribbleException.InvalidHeader("sequence dictionary is null");
+        if (mSequenceDictionary == null) throw new TribbleException.InvalidHeader("sequence dictionary is empty");
         return mSequenceDictionary.getSequence(name);
     }
 
