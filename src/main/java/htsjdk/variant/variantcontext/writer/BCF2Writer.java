@@ -149,7 +149,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
 
     @Override
     public void writeHeader(VCFHeader header) {
-        setVCFHeader(header);
+        setHeader(header);
 
         try {
             // write out the header into a byte stream, get its length, and write everything to the file
@@ -202,7 +202,7 @@ class BCF2Writer extends IndexingVariantContextWriter {
     }
 
     @Override
-    public void setVCFHeader(final VCFHeader header) {
+    public void setHeader(final VCFHeader header) {
         if (outputHasBeenWritten) {
             throw new IllegalStateException("The header cannot be modified after the header or variants have been written to the output stream.");
         }

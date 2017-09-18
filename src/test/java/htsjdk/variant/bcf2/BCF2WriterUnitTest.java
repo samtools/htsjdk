@@ -180,7 +180,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputFile(bcfOutputHeaderlessFile).setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
-            fakeBCFBodyFileWriter.setVCFHeader(header); // does not write header
+            fakeBCFBodyFileWriter.setHeader(header); // does not write header
             fakeBCFBodyFileWriter.add(createVC(header));
             fakeBCFBodyFileWriter.add(createVC(header));
         }
@@ -232,7 +232,7 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
             writer.writeHeader(header);
-            writer.setVCFHeader(header);
+            writer.setHeader(header);
         }
     }
 
@@ -247,9 +247,9 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 .setOutputFile(bcfOutputFile).setReferenceDictionary(header.getSequenceDictionary())
                 .unsetOption(Options.INDEX_ON_THE_FLY)
                 .build()) {
-            writer.setVCFHeader(header);
+            writer.setHeader(header);
             writer.add(createVC(header));
-            writer.setVCFHeader(header);
+            writer.setHeader(header);
         }
     }
 

@@ -148,7 +148,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
                 .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
                 .build()) {
-            writer.setVCFHeader(header);
+            writer.setHeader(header);
             writer.add(createVC(header));
             writer.add(createVC(header));
         }
@@ -198,7 +198,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
             writer2.writeHeader(header);
-            writer2.setVCFHeader(header);
+            writer2.setHeader(header);
         }
     }
 
@@ -213,9 +213,9 @@ public class VCFWriterUnitTest extends VariantBaseTest {
                 .setOutputFile(fakeVCFFile)
                 .setReferenceDictionary(sequenceDict)
                 .build()) {
-            writer3.setVCFHeader(header);
+            writer3.setHeader(header);
             writer3.add(createVC(header));
-            writer3.setVCFHeader(header);
+            writer3.setHeader(header);
         }
     }
 
