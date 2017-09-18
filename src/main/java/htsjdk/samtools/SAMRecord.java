@@ -1359,22 +1359,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @return SAMBinaryTagAndValue may be null if
-     *          1) {@link #mAttributes} is null or
-     *          2) this record does not have the requested attribute
-     */
-    private SAMBinaryTagAndValue getAttributeMayBeNull(final short tag) {
-        if (this.mAttributes == null) return null;
-        return this.mAttributes.find(tag);
-    }
-
-    /**
      * @see SAMRecord#getAttribute(java.lang.String)
      * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
      */
     public Object getAttribute(final short tag) {
-        final SAMBinaryTagAndValue mayBeNull = getAttributeMayBeNull(tag);
-        return mayBeNull==null ? null : mayBeNull.value;
+        if (this.mAttributes == null) return null;
+        else {
+            final SAMBinaryTagAndValue tmp = this.mAttributes.find(tag);
+            if (tmp != null) return tmp.value;
+            else return null;
+        }
     }
 
     /**
