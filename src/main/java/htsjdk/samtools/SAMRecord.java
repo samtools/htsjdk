@@ -1117,6 +1117,13 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
+     * @return {@code true} if the SAM record has the requested attribute set, {@code false} otherwise.
+     */
+    public boolean hasAttribute(final String tag) {
+        return getAttribute(tag)!=null;
+    }
+
+    /**
      * Get the value for a SAM tag.
      * WARNING: Some value types (e.g. byte[]) are mutable.  It is dangerous to change one of these values in
      * place, because some SAMRecord implementations keep track of when attributes have been changed.  If you
