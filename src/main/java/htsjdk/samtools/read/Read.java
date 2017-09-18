@@ -233,7 +233,7 @@ public interface Read extends Locatable {
     String getContig();
 
     /**
-     * Gets the 1-based inclusive leftmost position of the sequence remaining after clipping.
+     * Gets the 1-based leftmost mapping POSition of the first CIGAR operation that “consumes” a reference base.
      *
      * <p>Equivalent to <b>POS</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -243,7 +243,7 @@ public interface Read extends Locatable {
     int getStart();
 
     /**
-     * Gets the 1-based inclusive rightmost position of the sequence remaining after clipping.
+     * Gets the 1-based inclusive rightmost mapping POSition of the first CIGAR operation that “consumes” a reference base.
      *
      * @return 1-based closed-ended position; {@link ReadConstants#NO_ALIGNMENT_START} if there is no position (e.g. for unmapped read).
      */
@@ -285,7 +285,7 @@ public interface Read extends Locatable {
      *
      * <p>Note: this is not necessarily the same as the number of reference bases the read is aligned to.
      *
-     * @return The number of bases in the read
+     * @return The number of bases in the read-sequence.
      */
     int getLength();
 
@@ -301,7 +301,7 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the PHERD scaled mapping quality.
+     * Gets the phred scaled mapping quality.
      *
      * <p>The {@link ReadConstants#UNKNOWN_MAPPING_QUALITY} implies valid mapping, but hard to compute quality.
      *
@@ -312,7 +312,7 @@ public interface Read extends Locatable {
     int getMappingQuality();
 
     /**
-     * Sets the PHRED scaled mapping quality.
+     * Sets the phred scaled mapping quality.
      *
      * <p>Equivalent to <b>MAPQ</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -323,6 +323,8 @@ public interface Read extends Locatable {
     /**
      * Gets the {@link Cigar} object describing how the read aligns to the reference.
      *
+     * <p>Equivalent to <b>CIGAR</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     *
      * <p>This method should make a defensive copy of the {@link Cigar} before returning it to allow
      * modification of the returned {@link Cigar} without effects on the {@link Read}.
      *
@@ -332,6 +334,8 @@ public interface Read extends Locatable {
 
     /**
      * Gets the number of cigar elements (number + operator) in the cigar string.
+     *
+     * <p>Equivalent to <b>CIGAR</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Default implementation returns {@code getCigar().numCigarElements()}.
      * Subclasses may override to provide more efficient implementations.
@@ -344,6 +348,8 @@ public interface Read extends Locatable {
 
     /**
      * Sets the {@link Cigar} object describing how the read aligns to the reference.
+     *
+     * <p>Equivalent to <b>CIGAR</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * @param cigar Cigar object for the read; empty Cigar if there is none.
      *
@@ -397,27 +403,33 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the insert size (difference between the 5' end of the read and the 5' end of the mate).
-     * The insert size is negative if the mate maps to lower position than the read.
+     * Gets the signed observed template length. If  all  segments  are  mapped  to  the  same  reference,
+     * the unsigned observed template length equals the number of bases from the leftmost mapped base to the
+     * rightmost mapped base.  The leftmost segment has a plus sign and the rightmost has a minus sign.
+     * The sign of segments in the middle is undefined. It is set as 0 for single-segment template or when the
+     * information is unavailable.
      *
      * <p>Equivalent to <b>TLEN</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * @return insert size if possible; {@code 0} otherwise.
+     * @return insert size if possible to compute; {@code 0} otherwise.
      */
     int getInferredInsertSize();
 
     /**
-     * Sets the insert size (difference between the 5' end of the read and the 5' end of the mate).
-     * The insert size is negative if the mate maps to lower position than the read.
+     * Sets the signed observed template length. If  all  segments  are  mapped  to  the  same  reference,
+     * the unsigned observed template length equals the number of bases from the leftmost mapped base to the
+     * rightmost mapped base.  The leftmost segment has a plus sign and the rightmost has a minus sign.
+     * The sign of segments in the middle is undefined. It is set as 0 for single-segment template or when the
+     * information is unavailable.
      *
      * <p>Equivalent to <b>TLEN</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * @param insertSize insert size (negative if mate mapts to lower position than the read) if possible; {@code 0} otherwise.
+     * @param insertSize insert size if possible to compute; {@code 0} otherwise.
      */
     void setInsertSize(final int insertSize);
 
     /**
-     * Gets the read sequence as ASCII bytes ACGTN=
+     * Gets the read sequence as ASCII bytes.
      *
      * <p>Equivalent to <b>SEQ</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -436,7 +448,7 @@ public interface Read extends Locatable {
      * <p>Default implementation returns {@code getBases()[i]}.
      * Subclasses may override to provide a more efficient implementation.
      *
-     * @return base at index i.
+     * @return base at index i (0-based).
      *
      * @throws IndexOutOfBoundsException if i is negative or of i is not smaller than the number
      * of bases (as reported by {@link #getLength()}. In particular, if no sequence is present.
@@ -446,7 +458,7 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets all the bases in the read as a String of ACGTN=
+     * Gets all the bases in the read as an ASCII String.
      *
      * <p>Equivalent to <b>SEQ</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -464,14 +476,14 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>SEQ</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * @param bases read sequence as ASCII bytes ACGTN=; {@link ReadConstants#NULL_SEQUENCE} if no sequence is present.
+     * @param bases read sequence as ASCII bytes; {@link ReadConstants#NULL_SEQUENCE} if no sequence is present.
      *
      * @throws IllegalArgumentException if the bases are null.
      */
     void setBases(final byte[] bases);
 
     /**
-     * Gets the base qualities, as binary PHRED scores (not ASCII).
+     * Gets the base qualities, as binary phred scores (not ASCII).
      *
      * <p>Equivalent to <b>QUAL</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -513,7 +525,7 @@ public interface Read extends Locatable {
      * <p>Default implementation returns {@code getBaseQualities()[i]}.
      * Subclasses may override to provide a more efficient implementation.
      *
-     * @return The base quality at index i.
+     * @return The base quality at index i (0-based).
      *
      * @throws IndexOutOfBoundsException if i is negative or of i is not smaller than the number
      * of base qualities (as reported by {@link #getBaseQualityLength()}.
@@ -549,7 +561,7 @@ public interface Read extends Locatable {
     ///////////////////////////////////////////////////////////
 
     /**
-     * Gets the list of optional fields for the read. This are encoded as tag/value pairs, where
+     * Gets the list of optional fields for the read. These are encoded as tag/value pairs, where
      * the tag is a 2-character String and the value is from a concrete type.
      *
      * @return immutable list of attributes.
@@ -563,7 +575,7 @@ public interface Read extends Locatable {
      * and returns the first one matching the tag.
      * Subclasses may override to provide more efficient implementations.
      *
-     * @param tag attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return optional value associated with the tag; may be empty if the attribute is not present.
      *
@@ -583,7 +595,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation returns {@code getAttribute(tag).isPresent()}.
      *
-     * @param tag attribute tag.
+     * @param tag attribute tag (two character string).
      * @return {@code true} if the attribute was set; {@code false} otherwise.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -597,7 +609,7 @@ public interface Read extends Locatable {
      *
      * <p>Note: it is preferable to use setters for typed objects.
      *
-     * @param tag attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value object value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -613,7 +625,7 @@ public interface Read extends Locatable {
     /**
      * Clear an individual attribute on the read.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
      */
@@ -691,6 +703,7 @@ public interface Read extends Locatable {
      *
      * @return {@code true} if this read is unmapped; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default boolean isUnmapped() {
         return isSet(SAMFlag.READ_UNMAPPED);
     }
@@ -704,6 +717,7 @@ public interface Read extends Locatable {
      *
      * @param unmapped {@code true} if this read is unmapped; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default void setUnmapped(final boolean unmapped) {
         addFlag(SAMFlag.READ_UNMAPPED, unmapped);
     }
@@ -717,6 +731,7 @@ public interface Read extends Locatable {
      *
      * @return {@code true} if this read's mate is unmapped; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default boolean isMateUnmapped() {
         return isSet(SAMFlag.MATE_UNMAPPED);
     }
@@ -730,6 +745,7 @@ public interface Read extends Locatable {
      *
      * @param mateUnmapped {@code true} if this read's mate is unmapped; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default void setMateUnmapped(final boolean mateUnmapped) {
         addFlag(SAMFlag.MATE_UNMAPPED, mateUnmapped);
     }
@@ -743,6 +759,7 @@ public interface Read extends Locatable {
      *
      * @return {@code true} if the read is in the reverse strand; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default boolean isReverseStrand() {
         return isSet(SAMFlag.READ_REVERSE_STRAND);
     }
@@ -756,6 +773,7 @@ public interface Read extends Locatable {
      *
      * @param reverseStrand {@code true} if the read is in the reverse strand; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default void setReverseStrand(final boolean reverseStrand) {
         addFlag(SAMFlag.READ_REVERSE_STRAND, reverseStrand);
     }
@@ -769,6 +787,7 @@ public interface Read extends Locatable {
      *
      * @return {@code true} if the read's mate is in the reverse strand; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default boolean isMateReverseStrand() {
         return isSet(SAMFlag.MATE_REVERSE_STRAND);
     }
@@ -782,6 +801,7 @@ public interface Read extends Locatable {
      *
      * @param mateReverseStrand {@code true} if the read's mate is in the reverse strand; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default void setMateReverseStrand(final boolean mateReverseStrand) {
         addFlag(SAMFlag.MATE_REVERSE_STRAND, mateReverseStrand);
     }
@@ -873,6 +893,7 @@ public interface Read extends Locatable {
      *
      * @return {@code true} if the read fails the quality vendor check; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default boolean failsQualityVendorCheck() {
         return isSet(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK);
     }
@@ -886,6 +907,7 @@ public interface Read extends Locatable {
      *
      * @param failsQualityVendorCheck {@code true} if the read fails the quality vendor check; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get/set the reverse
     default void setFailsQualityVendorCheck(final boolean failsQualityVendorCheck) {
         addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityVendorCheck);
     }
@@ -938,10 +960,23 @@ public interface Read extends Locatable {
      *
      * @param supplementaryAlignment {@code true} if the read is a supplementary alignment; {@code false} otherwise.
      */
+    // TODO (before merging) - add method for get the reverse
     default void setSupplementaryAlignment(final boolean supplementaryAlignment) {
         addFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementaryAlignment);
     }
 
+    /**
+     * Checks if the read is a secondary or supplementary alignment.
+     *
+     * <p>Equivalent to the 0x100 or 0x800 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     *
+     * <p>Default implementation calls {@code isSecondaryAlignment() || isSupplementaryAlignment()}.
+     *
+     * @return {@code true} if the read is secondary or supplementary; {@code false} otherwise.
+     */
+    default boolean isSecondaryOrSupplementary() {
+        return isSecondaryAlignment() || isSupplementaryAlignment();
+    }
 
     ///////////////////////////////////////////////////////////
     // OPTIONAL FIELDS - typed getters/setters
@@ -954,7 +989,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@link Character}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return the character value.
      *
@@ -975,18 +1010,18 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the singed integer value associated with the tag.
+     * Gets the signed Integer value associated with the tag.
      *
-     * <p>Equivalent to an attribute with <b>TYPE i</b> or any <b>TYPE B</b> integer (signed or unsigned) in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     * <p>Equivalent to an attribute with <b>TYPE i</b> (signed or unsigned) in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a numeric value within the integer range.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
-     * @return the integer value.
+     * @return the Integer value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
-     * @throws SAMException if the attribute value is not an integer.
+     * @throws SAMException if the attribute value is not an Integer.
      */
     default Optional<Integer> getIntegerAttribute(final String tag) {
         final Optional<Object> attr = getAttribute(tag);
@@ -1006,18 +1041,18 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the float value associated with the tag.
+     * Gets the Float value associated with the tag.
      *
-     * <p>Equivalent to an attribute with <b>TYPE f</b> or <b>TYPE B</b> float in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     * <p>Equivalent to an attribute with <b>TYPE f</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@link Float}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
-     * @return the float value.
+     * @return the Float value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
-     * @throws SAMException if the attribute is not a float.
+     * @throws SAMException if the attribute is not a Float.
      */
     default Optional<Float> getFloatAttribute(final String tag) {
         final Optional<Object> attr = getAttribute(tag);
@@ -1032,18 +1067,18 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the string associated with the tag.
+     * Gets the String associated with the tag.
      *
      * <p>Equivalent to an attribute with <b>TYPE Z</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@link String}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
-     * @return the string value.
+     * @return the String value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
-     * @throws SAMException if the attribute is not a string.
+     * @throws SAMException if the attribute is not a String.
      */
     default Optional<String> getStringAttribute(final String tag) {
         final Optional<Object> attr = getAttribute(tag);
@@ -1058,18 +1093,18 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the short associated with the tag.
+     * Gets the Byte associated with the tag.
      *
      * <p>Equivalent to an attribute with <b>TYPE B</b> byte (signed or unsigned) in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a numeric within the byte range.
+     * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a numeric within the Byte range.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
-     * @return the byte array value.
+     * @return the Byte value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
-     * @throws SAMException if the attribute is not a float.
+     * @throws SAMException if the attribute is not a Byte.
      */
     default Optional<Byte> getByteAttribute(final String tag) {
         final Optional<Object> attr = getAttribute(tag);
@@ -1091,18 +1126,18 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Gets the short associated with the tag.
+     * Gets the Short associated with the tag.
      *
      * <p>Equivalent to an attribute with <b>TYPE B</b> short (signed or unsigned) in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a numeric within the short range.
+     * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a numeric within the Short range.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
-     * @return the byte array value.
+     * @return the Short value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
-     * @throws SAMException if the attribute is not a float.
+     * @throws SAMException if the attribute is not a Short.
      */
     default Optional<Short> getShortAttribute(final String tag) {
         final Optional<Object> attr = getAttribute(tag);
@@ -1130,7 +1165,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@code int[]}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return the int array value.
      *
@@ -1152,11 +1187,11 @@ public interface Read extends Locatable {
     /**
      * Gets the float array associated with the tag.
      *
-     * <p>Equivalent to an attribute with <b>TYPE B</b> float array (signed or unsigned) in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     * <p>Equivalent to an attribute with <b>TYPE B</b> float array in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@code float[]}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return the float array value.
      *
@@ -1172,7 +1207,7 @@ public interface Read extends Locatable {
         if (val instanceof float[]) {
             return Optional.of((float[])val);
         }
-        throw new SAMException("Value for tag " + tag + " is not a byte[]: " + val.getClass());
+        throw new SAMException("Value for tag " + tag + " is not a float[]: " + val.getClass());
     }
 
     /**
@@ -1182,7 +1217,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@code byte[]}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return the byte array value.
      *
@@ -1208,7 +1243,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation gets the attribute with {@link #getAttribute(String)}, checking if it is a {@code short[]}.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      *
      * @return the short array value.
      *
@@ -1232,7 +1267,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the character value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1246,7 +1281,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the integer value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1260,7 +1295,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the float value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1274,7 +1309,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the string value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1288,7 +1323,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the byte value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1302,7 +1337,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the short value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1316,7 +1351,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the integer value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1330,7 +1365,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the float array value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1344,7 +1379,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the byte array value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.
@@ -1358,7 +1393,7 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@link #setAttribute(String, Object)} casting the value.
      *
-     * @param tag the attribute tag.
+     * @param tag attribute tag (two character string).
      * @param value the short array value.
      *
      * @throws SAMException if the tag is invalid following the contract of {@link ReadAttribute#isValidTag(String)}.

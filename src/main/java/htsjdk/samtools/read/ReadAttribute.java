@@ -45,8 +45,7 @@ public interface ReadAttribute<T> {
     /**
      * Gets the read attribute value.
      *
-     * <p>Subclasses should return a value that returns {@code true} by {@link
-     * #isAllowedAttributeValue(Object)}.
+     * <p>Subclasses should return a value on which {@link #isAllowedAttributeValue(Object)} returns {@code true}.
      *
      * @return the value associated with the tag. Never {@code null}.
      */
