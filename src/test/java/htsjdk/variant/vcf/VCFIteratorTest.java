@@ -68,7 +68,6 @@ public class VCFIteratorTest extends VariantBaseTest {
         try {
             Assert.assertNotNull(r.getHeader());
             final int nVariants =  (int)r.stream().count();
-            Assert.assertNotNull(r.getHeader());
             Assert.assertEquals(nVariants, expectVariants);
         } finally {
             r.close();
@@ -88,11 +87,15 @@ public class VCFIteratorTest extends VariantBaseTest {
 
     }
 
-    private void testUsingZippedStreams(final String filepath, final int nVariants,
+    private void testUsingZippedInput(final String filepath, final int nVariants,
             final Function<File,OutputStream> outputStreamProvider) throws IOException {
-	File tmp =  new File(filepath);
-        if( tmp.getName().endsWith(".vcf")) {
-            tmp = File.createTempFile("tmp",".vcf.gz");
+    	File tmp =  new File(filepath);
+        /* TODO fix this when VCFFileReader will support BCF see 
+         * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
+         * https://github.com/samtools/htsjdk/issues/946
+         */
+        if( tmp.getName().endsWith(IOUtil.VCF_FILE_EXTENSION)) {
+            tmp = File.createTempFile("tmp",IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
             tmp.deleteOnExit();
             try(    FileInputStream in = new FileInputStream(filepath);
                     OutputStream out =  outputStreamProvider.apply(tmp); ) {
@@ -109,13 +112,13 @@ public class VCFIteratorTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingBGZippedStreams(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedStreams(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
+    public void testUsingBGZippedUInput(final String filepath, final int nVariants) throws IOException {
+        testUsingZippedInput(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingGZippedStreams(final String filepath, final int nVariants) throws IOException {
-        testUsingZippedStreams(filepath, nVariants, (F)-> {
+    public void testUsingGZippedInput(final String filepath, final int nVariants) throws IOException {
+        testUsingZippedInput(filepath, nVariants, (F)-> {
             try {
                 return new GZIPOutputStream(new FileOutputStream(F));
             } catch(final IOException err) {

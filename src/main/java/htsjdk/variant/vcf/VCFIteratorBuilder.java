@@ -137,18 +137,22 @@ public class VCFIteratorBuilder {
     /**
      * creates a VCF iterator from a Path
      * 
-     * @param path the path
+     * @param path the file path
      * @param wrapper wrapper for {@link SeekablePathStream}. Can be null.
      * @return the VCFIterator
      * @throws IOException
      */
     public VCFIterator open(final Path path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
         if( wrapper==null && Files.isRegularFile(path)) {// File implementation is faster
-            final File file = path.toFile();
-            if(    file.getName().endsWith(".vcf") || 
-                   file.getName().endsWith(".vcf.gz") )
+            final File vcfFile = path.toFile();
+            /* TODO fix this when VCFFileReader will support BCF see 
+             * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
+             * https://github.com/samtools/htsjdk/issues/946
+             */
+            if(    vcfFile.getName().endsWith(IOUtil.VCF_FILE_EXTENSION) || 
+                   vcfFile.getName().endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION) )
                 {
-                return open(path.toFile()); 
+                return open(vcfFile); 
                 }
         }
         return open(new SeekablePathStream(path, wrapper));
@@ -162,11 +166,16 @@ public class VCFIteratorBuilder {
      * @return the VCFIterator
      * @throws IOException
      */
+    @SuppressWarnings("static-method")
     public VCFIterator open(final File file) throws IOException {
         return new FileBasedVCFIterator(file);
     }
 
-    /** implementation of VCFIterator, wrapping a VCFFileReader */
+    /** 
+     * implementation of VCFIterator, wrapping a VCFFileReader.
+     * using this class instead of VCFReaderIterator below,
+     * avoid to wrap an InputStream into a set of BufferedInputStream 
+     * */
     private static class FileBasedVCFIterator
         extends AbstractIterator<VariantContext>
         implements VCFIterator
