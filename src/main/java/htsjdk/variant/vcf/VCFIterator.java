@@ -41,7 +41,7 @@ import htsjdk.variant.variantcontext.VariantContext;
  * </pre>
  * 
  * @author Pierre Lindenbaum / @yokofakun
- * @see {@link VCFIteratorBuilder}
+ * @see {@link htsjdk.variant.vcf.VCFIteratorBuilder}
  *
  */
 public interface VCFIterator extends CloseableIterator<VariantContext> {

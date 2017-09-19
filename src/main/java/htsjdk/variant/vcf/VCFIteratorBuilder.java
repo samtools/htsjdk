@@ -47,7 +47,7 @@ import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- * A Class building {@link VCFReaderIterator}
+ * A Class building {@link htsjdk.variant.vcf.VCFIterator}
  * 
  * Example:
  * 
@@ -60,7 +60,7 @@ import htsjdk.variant.variantcontext.VariantContext;
  * </pre>
  * 
  * @author Pierre Lindenbaum / @yokofakun
- * @see {@link VCFIterator}
+ * @see {@link htsjdk.variant.vcf.VCFIterator}
  *
  */
 
@@ -138,7 +138,7 @@ public class VCFIteratorBuilder {
      * creates a VCF iterator from a Path
      * 
      * @param path the file path
-     * @param wrapper wrapper for {@link SeekablePathStream}. Can be null.
+     * @param wrapper wrapper for {@link htsjdk.samtools.seekablestream.SeekablePathStream}. Can be null.
      * @return the VCFIterator
      * @throws IOException
      */
