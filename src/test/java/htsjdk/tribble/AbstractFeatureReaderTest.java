@@ -45,6 +45,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     private static final String VCF_TABIX_INDEX = TEST_PATH + "baseVariants.vcf.gz.tbi";
     private static final String MANGLED_VCF_TABIX_BLOCK_GZIPPED = TEST_PATH + "baseVariants.mangled.vcf.gz";
     private static final String MANGLED_VCF_TABIX_INDEX = TEST_PATH + "baseVariants.mangled.vcf.gz.tbi";
+    private static final String CORRUPTED_VCF_INDEX = TEST_PATH + "corruptedBaseVariants.vcf.idx";
 
     //wrapper which skips the first byte of a file and leaves the rest unchanged
     private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
@@ -166,6 +167,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     private static Object[][] failsWithoutWrappers(){
         return new Object[][] {
                 {MANGLED_VCF, MANGLED_VCF_INDEX},
+                {VCF, CORRUPTED_VCF_INDEX},
                 {VCF, MANGLED_VCF_INDEX},
                 {MANGLED_VCF, VCF_INDEX},
                 {MANGLED_VCF_TABIX_BLOCK_GZIPPED, MANGLED_VCF_TABIX_INDEX},
