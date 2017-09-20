@@ -885,7 +885,7 @@ public interface Read extends Locatable {
     }
 
     /**
-     * Checks if the read fails the quality vendor check.
+     * Checks if the read fails quality filters, such as platform/vendor quality controls.
      *
      * <p>Equivalent to the 0x200 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
@@ -894,22 +894,22 @@ public interface Read extends Locatable {
      * @return {@code true} if the read fails the quality vendor check; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
-    default boolean failsQualityVendorCheck() {
+    default boolean failsQualityFilters() {
         return isSet(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK);
     }
 
     /**
-     * Marks the read as failing the quality vendor check or not.
+     * Marks the read as failing quality filters, such as platform/vendor quality controls.
      *
      * <p>Equivalent to the 0x200 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityVendorCheck)}.
+     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters)}.
      *
-     * @param failsQualityVendorCheck {@code true} if the read fails the quality vendor check; {@code false} otherwise.
+     * @param failsQualityFilters {@code true} if the read fails the quality filters; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
-    default void setFailsQualityVendorCheck(final boolean failsQualityVendorCheck) {
-        addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityVendorCheck);
+    default void setFailsQualityFilters(final boolean failsQualityFilters) {
+        addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters);
     }
 
     /**
