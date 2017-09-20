@@ -411,9 +411,9 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>TLEN</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * @return insert size if possible to compute; {@code 0} otherwise.
+     * @return template length if available; {@code 0} otherwise.
      */
-    int getInferredInsertSize();
+    int getTemplateLength();
 
     /**
      * Sets the signed observed template length. If  all  segments  are  mapped  to  the  same  reference,
@@ -424,9 +424,9 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>TLEN</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * @param insertSize insert size if possible to compute; {@code 0} otherwise.
+     * @param templateLength template length if available; {@code 0} otherwise.
      */
-    void setInsertSize(final int insertSize);
+    void setTemplateLength(final int templateLength);
 
     /**
      * Gets the read sequence as ASCII bytes.
