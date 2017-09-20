@@ -72,52 +72,11 @@ public interface Read extends Locatable {
      * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Note: it is preferable to use the methods for testing if specific flags are set (using {@link #isSet(SAMFlag)} or {@link #isUnset(SAMFlag)}),
-     * get all the set flags with {@link #getSetFlags()} or testing specific flags with the shortcuts.
+     * get all the set flags with {@link #getTrueFlags()} or testing specific flags with the shortcuts.
      *
      * @return the bitwise flag as an integer.
      */
-    int getFlag();
-
-    /**
-     * Gets the {@link SAMFlag} that are set.
-     *
-     * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
-     *
-     * <p>Default implementation calls {@code SAMFlag.getFlags(getFlag())}.
-     *
-     * @return a set of the flags that are set for the read.
-     */
-    default Set<SAMFlag> getSetFlags() {
-        return SAMFlag.getFlags(getFlag());
-    }
-
-    /**
-     * Checks if the flag is set.
-     *
-     * <p>Default implementation calls {@code flag.isSet(getFlag())}.
-     *
-     * @param flag the flag to test.
-     * @return {@code true} if the flag is set; {@code false} otherwise.
-     *
-     * @throws IllegalArgumentException if the flag is {@code null}.
-     */
-    default boolean isSet(final SAMFlag flag) {
-        return flag.isSet(getFlag());
-    }
-
-    /**
-     * Checks if the flag is unset.
-     *
-     * <p>Default implementation calls {@code flag.isUnset(getFlag())}.
-     *
-     * @param flag the flag to test.
-     * @return {@code true} if the flag is unset; {@code false} otherwise.
-     *
-     * @throws IllegalArgumentException if the flag is {@code null}.
-     */
-    default boolean isUnset(final SAMFlag flag) {
-        return flag.isUnset(getFlag());
-    }
+    int getFlags();
 
     /**
      * Sets the bitwise flag.
@@ -125,12 +84,12 @@ public interface Read extends Locatable {
      * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
      * <p>Note: it is preferable to use the methods for set/unset specific flags are set (using {@link #setFlag(SAMFlag)} or {@link #unsetFlag(SAMFlag)}),
-     * clear the flags using {@link #clearFlag()}, set/unset the specific flags (using {@link #setFlags(Set) and {@link #unsetFlags(Set)}},
+     * clear the flags using {@link #clearFlags()}, set/unset the specific flags (using {@link #setTrueFlags(Set) and {@link #unsetFlags(Set)}},
      * or use the shortcuts.
      *
      * @param flag bitwise flag to assign to the read.
      */
-    void setFlag(final int flag);
+    void setFlags(final int flag);
 
     /**
      * Clears the bitwise flag, un-setting all the bits.
@@ -139,8 +98,36 @@ public interface Read extends Locatable {
      *
      * <p>Default implementation calls {@code setFlag(0)}.
      */
-    default void clearFlag() {
-        setFlag(0);
+    default void clearFlags() {
+        setFlags(0);
+    }
+
+    /**
+     * Checks if the flag is set.
+     *
+     * <p>Default implementation calls {@code flag.isSet(getFlags())}.
+     *
+     * @param flag the flag to test.
+     * @return {@code true} if the flag is set; {@code false} otherwise.
+     *
+     * @throws IllegalArgumentException if the flag is {@code null}.
+     */
+    default boolean isSet(final SAMFlag flag) {
+        return flag.isSet(getFlags());
+    }
+
+    /**
+     * Checks if the flag is unset.
+     *
+     * <p>Default implementation calls {@code flag.isUnset(getFlags())}.
+     *
+     * @param flag the flag to test.
+     * @return {@code true} if the flag is unset; {@code false} otherwise.
+     *
+     * @throws IllegalArgumentException if the flag is {@code null}.
+     */
+    default boolean isUnset(final SAMFlag flag) {
+        return flag.isUnset(getFlags());
     }
 
     /**
@@ -148,24 +135,24 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Deafault implementation modifies the {@link SAMFlag} bit of the {@link #getFlag()}, setting it afterwards with {@link #setFlag(int)} .
+     * <p>Deafault implementation modifies the {@link SAMFlag} bit of the {@link #getFlags()}, setting it afterwards with {@link #setFlags(int)} .
      *
      * @param flag flag to be set or unset.
      * @param set {@code true} if the flag should be set; {@code false} otherwise.
      *
      * @throws IllegalArgumentException if the flag is {@code null}.
      */
-    default void addFlag(final SAMFlag flag, final boolean set) {
+    default void setFlag(final SAMFlag flag, final boolean set) {
         if (flag == null) {
             throw new IllegalArgumentException("null flag");
         }
-        int bitwiseFlag = getFlag();
+        int bitwiseFlag = getFlags();
         if (set) {
             bitwiseFlag |= flag.intValue();
         } else {
             bitwiseFlag &= ~flag.intValue();
         }
-        setFlag(bitwiseFlag);
+        setFlags(bitwiseFlag);
     }
 
     /**
@@ -173,14 +160,14 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls {@code addFlag(flag, true)}.
+     * <p>Default implementation calls {@code setFlag(flag, true)}.
      *
      * @param flag flag to be set.
      *
      * @throws IllegalArgumentException if the flag is {@code null}.
      */
     default void setFlag(final SAMFlag flag) {
-        addFlag(flag, true);
+        setFlag(flag, true);
     }
 
     /**
@@ -188,12 +175,25 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls {@code addFlag(flag, false)}.
+     * <p>Default implementation calls {@code setFlag(flag, false)}.
      *
      * @param flag flag to be unset.
      */
     default void unsetFlag(final SAMFlag flag) {
-        addFlag(flag, false);
+        setFlag(flag, false);
+    }
+
+    /**
+     * Gets the {@link SAMFlag} that are set.
+     *
+     * <p>Equivalent to <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
+     *
+     * <p>Default implementation calls {@code SAMFlag.getFlags(getFlags())}.
+     *
+     * @return a set of the flags that are set for the read.
+     */
+    default Set<SAMFlag> getTrueFlags() {
+        return SAMFlag.getFlags(getFlags());
     }
 
     /**
@@ -205,7 +205,7 @@ public interface Read extends Locatable {
      *
      * @param flags flags to be set.
      */
-    default void setFlags(final Set<SAMFlag> flags) {
+    default void setTrueFlags(final Set<SAMFlag> flags) {
         flags.forEach(this::setFlag);
     }
 
@@ -660,12 +660,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x1 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_PAIRED, paired)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.READ_PAIRED, paired)}.
      *
      * @param paired {@code true} if the read is paired; {@code false} otherwise.
      */
     default void setPaired(final boolean paired) {
-        addFlag(SAMFlag.READ_PAIRED, paired);
+        setFlag(SAMFlag.READ_PAIRED, paired);
     }
 
     /**
@@ -686,12 +686,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x2 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.PROPER_PAIR, properlyPaired)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.PROPER_PAIR, properlyPaired)}.
      *
      * @param properlyPaired {@code true} if the read is properly paired; {@code false} otherwise.
      */
     default void setProperlyPaired(final boolean properlyPaired) {
-        addFlag(SAMFlag.PROPER_PAIR, properlyPaired);
+        setFlag(SAMFlag.PROPER_PAIR, properlyPaired);
     }
 
     /**
@@ -713,13 +713,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x4 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_UNMAPPED, unmapped)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.READ_UNMAPPED, unmapped)}.
      *
      * @param unmapped {@code true} if this read is unmapped; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
     default void setUnmapped(final boolean unmapped) {
-        addFlag(SAMFlag.READ_UNMAPPED, unmapped);
+        setFlag(SAMFlag.READ_UNMAPPED, unmapped);
     }
 
     /**
@@ -741,13 +741,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x8 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.MATE_UNMAPPED, mateUnmapped)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.MATE_UNMAPPED, mateUnmapped)}.
      *
      * @param mateUnmapped {@code true} if this read's mate is unmapped; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
     default void setMateUnmapped(final boolean mateUnmapped) {
-        addFlag(SAMFlag.MATE_UNMAPPED, mateUnmapped);
+        setFlag(SAMFlag.MATE_UNMAPPED, mateUnmapped);
     }
 
     /**
@@ -769,13 +769,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x10 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_REVERSE_STRAND, reverseStrand)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.READ_REVERSE_STRAND, reverseStrand)}.
      *
      * @param reverseStrand {@code true} if the read is in the reverse strand; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
     default void setReverseStrand(final boolean reverseStrand) {
-        addFlag(SAMFlag.READ_REVERSE_STRAND, reverseStrand);
+        setFlag(SAMFlag.READ_REVERSE_STRAND, reverseStrand);
     }
 
     /**
@@ -797,13 +797,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x20 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.MATE_REVERSE_STRAND, mateReverseStrand)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.MATE_REVERSE_STRAND, mateReverseStrand)}.
      *
      * @param mateReverseStrand {@code true} if the read's mate is in the reverse strand; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
     default void setMateReverseStrand(final boolean mateReverseStrand) {
-        addFlag(SAMFlag.MATE_REVERSE_STRAND, mateReverseStrand);
+        setFlag(SAMFlag.MATE_REVERSE_STRAND, mateReverseStrand);
     }
 
     /**
@@ -824,12 +824,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x40 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.FIRST_OF_PAIR, firstOfPair)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.FIRST_OF_PAIR, firstOfPair)}.
      *
      * @param firstOfPair {@code true} if the read is in the first of a pair; {@code false} otherwise.
      */
     default void setFirstOfPair(final boolean firstOfPair) {
-        addFlag(SAMFlag.FIRST_OF_PAIR, firstOfPair);
+        setFlag(SAMFlag.FIRST_OF_PAIR, firstOfPair);
     }
 
     /**
@@ -850,12 +850,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x80 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.SECOND_OF_PAIR, secondOfPair)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.SECOND_OF_PAIR, secondOfPair)}.
      *
      * @param secondOfPair {@code true} if the read is in the second of a pair; {@code false} otherwise.
      */
     default void setSecondOfPair(final boolean secondOfPair) {
-        addFlag(SAMFlag.SECOND_OF_PAIR, secondOfPair);
+        setFlag(SAMFlag.SECOND_OF_PAIR, secondOfPair);
     }
 
     /**
@@ -876,12 +876,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x100 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondaryAlignment)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondaryAlignment)}.
      *
      * @param secondaryAlignment {@code true} if the read is a secondary alignment; {@code false} otherwise.
      */
     default void setSecondaryAlignment(final boolean secondaryAlignment) {
-        addFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondaryAlignment);
+        setFlag(SAMFlag.NOT_PRIMARY_ALIGNMENT, secondaryAlignment);
     }
 
     /**
@@ -903,13 +903,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x200 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters)}.
      *
      * @param failsQualityFilters {@code true} if the read fails the quality filters; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get/set the reverse
     default void setFailsQualityFilters(final boolean failsQualityFilters) {
-        addFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters);
+        setFlag(SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK, failsQualityFilters);
     }
 
     /**
@@ -930,12 +930,12 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x400 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.DUPLICATE_READ, duplicate)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.DUPLICATE_READ, duplicate)}.
      *
      * @param duplicate {@code true} if the read is a duplicate; {@code false} otherwise.
      */
     default void setDuplicate(final boolean duplicate) {
-        addFlag(SAMFlag.DUPLICATE_READ, duplicate);
+        setFlag(SAMFlag.DUPLICATE_READ, duplicate);
     }
 
     /**
@@ -956,13 +956,13 @@ public interface Read extends Locatable {
      *
      * <p>Equivalent to the 0x800 <b>FLAG</b> in the <a href="http://samtools.github.io/hts-specs/SAMv1.pdf">SAM specifications</a>.
      *
-     * <p>Default implementation calls the {@code addFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementaryAlignment)}.
+     * <p>Default implementation calls the {@code setFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementaryAlignment)}.
      *
      * @param supplementaryAlignment {@code true} if the read is a supplementary alignment; {@code false} otherwise.
      */
     // TODO (before merging) - add method for get the reverse
     default void setSupplementaryAlignment(final boolean supplementaryAlignment) {
-        addFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementaryAlignment);
+        setFlag(SAMFlag.SUPPLEMENTARY_ALIGNMENT, supplementaryAlignment);
     }
 
     /**
