@@ -362,9 +362,9 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(deserializedHeader.toString(), originalHeader.toString(), "String representation of header not the same before/after serialization");
     }
 
-    @Test(expectedExceptions = TribbleException.class)
+    @Test(expectedExceptions = IllegalArgumentException.class)
     public void testContigsAbsenceInHeader() {
-        String vcf = "src/test/resources/htsjdk/variant/HiSeq.10000.vcf";
+        String vcf = "src/test/resources/htsjdk/variant/noContigLines.vcf";
         final File vcfFile = new File(vcf);
         VCFFileReader.fromVcf(vcfFile);
     }
