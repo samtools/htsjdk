@@ -89,7 +89,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testSamFileVersion1pt5() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertFalse(results.isEmpty());
+        Assert.assertEquals(results.getCount(),2.0);
     }
 
     @Test
@@ -307,7 +307,6 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
     }
 
-
     @DataProvider(name = "testMateCigarScenarios")
     public Object[][] testMateCigarScenarios() {
         return new Object[][]{
@@ -362,6 +361,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     @DataProvider(name="testQualitiesNotStored")
     public Object[][] NotStoredQualitiesFieldsScenarios() {
             return new Object[][]{
+                    {"not_stored_qualities_more_than_100.sam",100.0},
                     {"not_stored_qualities.sam", 2.0},
                     {"not_stored_qualities.bam", 1.0}
             };

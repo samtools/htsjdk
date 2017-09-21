@@ -326,8 +326,7 @@ public class SamFileValidator {
 
                 }
 
-                if ((qualityNotStoredErrorCount < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")){
-                    qualityNotStoredErrorCount++;
+                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")){
                     addError(new SAMValidationError(Type.QUALITY_NOT_STORED,
                             "QUAL field is set to * (unspecified quality scores) and can cause crashes",
                             record.getReadName(), recordNumber));
