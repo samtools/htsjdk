@@ -12,7 +12,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Utilities related to processing of {@link java.io.InputStream}s encoding SAM data
@@ -69,8 +68,8 @@ public class SamStreams {
      * is and false otherwise.
      * @see {@link IOUtil#isGZIPInputStream(InputStream)}
      */
+    @Deprecated
     public static boolean isGzippedSAMFile(final InputStream stream) {
-        //this function has moved to IOUtil
         return IOUtil.isGZIPInputStream(stream);
     }
 

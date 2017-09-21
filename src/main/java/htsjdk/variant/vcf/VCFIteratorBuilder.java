@@ -28,18 +28,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.AbstractIterator;
-import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.bcf2.BCF2Codec;
@@ -79,12 +76,10 @@ public class VCFIteratorBuilder {
         if (in == null) {
             throw new IllegalArgumentException("input stream is null");
             }
-        // sizeof a BCF header (+ min/max version)
-        final int sizeof_bcf_header =  BCFVersion.MAGIC_HEADER_START.length + 2*Byte.BYTES;
         // wrap the input stream into a BufferedInputStream to reset/read a BCFHeader or a GZIP
         // buffer must be large enough to contain the BCF header and/or GZIP signature
         BufferedInputStream  bufferedinput = new BufferedInputStream(in, Math.max(
-               sizeof_bcf_header,
+               BCF2Codec.SIZEOF_BCF_HEADER,
                IOUtil.GZIP_HEADER_READ_LENGTH
                ));
         // test for gzipped inputstream 
@@ -93,15 +88,13 @@ public class VCFIteratorBuilder {
             // and re-wrap it into BufferedInputStream so we can test for the BCF header
             bufferedinput = new BufferedInputStream(
                     new GZIPInputStream(bufferedinput),
-                    sizeof_bcf_header
+                    BCF2Codec.SIZEOF_BCF_HEADER
                     );
         }
 
         // try to read a BCF header
-        bufferedinput.mark(sizeof_bcf_header);
-        final BCFVersion bcfVersion = BCFVersion.readBCFVersion(bufferedinput);
-        bufferedinput.reset();
-
+        final BCFVersion bcfVersion = BCF2Codec.tryReadBCFVersion(bufferedinput);
+        
         if (bcfVersion != null) {
             //this is BCF
             return new BCFInputStreamIterator(bufferedinput);
@@ -143,21 +136,8 @@ public class VCFIteratorBuilder {
      * @throws IOException
      */
     public VCFIterator open(final Path path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
-        if( wrapper==null && Files.isRegularFile(path)) {// File implementation is faster
-            final File vcfFile = path.toFile();
-            /* TODO fix this when VCFFileReader will support BCF see 
-             * https://github.com/samtools/htsjdk/pull/837#discussion_r139490218
-             * https://github.com/samtools/htsjdk/issues/946
-             */
-            if(    vcfFile.getName().endsWith(IOUtil.VCF_FILE_EXTENSION) || 
-                   vcfFile.getName().endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION) )
-                {
-                return open(vcfFile); 
-                }
-        }
         return open(new SeekablePathStream(path, wrapper));
     }
-
     
     /**
      * creates a VCF iterator from a File
@@ -168,43 +148,7 @@ public class VCFIteratorBuilder {
      */
     @SuppressWarnings("static-method")
     public VCFIterator open(final File file) throws IOException {
-        return new FileBasedVCFIterator(file);
-    }
-
-    /** 
-     * implementation of VCFIterator, wrapping a VCFFileReader.
-     * using this class instead of VCFReaderIterator below,
-     * avoid to wrap an InputStream into a set of BufferedInputStream 
-     * */
-    private static class FileBasedVCFIterator
-        extends AbstractIterator<VariantContext>
-        implements VCFIterator
-        {
-        /** delegate VCF File reader */
-        private final VCFFileReader vcfFileReader;
-        /** iterator of the VCFFileReader */
-        private final CloseableIterator<VariantContext> iter;
-
-        FileBasedVCFIterator(final File vcfFile) {
-            this.vcfFileReader = new VCFFileReader(vcfFile, false);
-            this.iter = this.vcfFileReader.iterator();
-        }
-
-        @Override
-        public VCFHeader getHeader() {
-            return this.vcfFileReader.getFileHeader();
-        }
-
-        @Override
-        protected VariantContext advance() {
-            return this.iter.hasNext()? this.iter.next(): null;
-        }
-
-        @Override
-        public void close() {
-            CloserUtil.close(this.iter);
-            CloserUtil.close(this.vcfFileReader);
-        }
+        return this.open(file.toPath());
     }
 
     /** implementation of VCFIterator, reading VCF */
@@ -218,11 +162,11 @@ public class VCFIteratorBuilder {
         /** VCF header */
         private final VCFHeader vcfHeader;
         /** Iterator over the lines of the VCF */
-        private final AsciiLineReaderIterator lineIterator;
+        private final LineIterator lineIterator;
 
         VCFReaderIterator(final InputStream inputStream) {
             this.inputStream = inputStream;
-            this.lineIterator = new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
+            this.lineIterator = this.codec.makeSourceFromStream(this.inputStream);
             this.vcfHeader = (VCFHeader) this.codec.readActualHeader(this.lineIterator);
         }
 
@@ -257,7 +201,7 @@ public class VCFIteratorBuilder {
         private final VCFHeader vcfHeader;
 
         BCFInputStreamIterator(final InputStream inputStream) {
-            this.inputStream = new PositionalBufferedStream(inputStream);
+            this.inputStream = this.codec.makeSourceFromStream(inputStream);
             this.vcfHeader = (VCFHeader) this.codec.readHeader(this.inputStream).getHeaderValue();
         }
 

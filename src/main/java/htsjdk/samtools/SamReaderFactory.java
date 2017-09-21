@@ -379,7 +379,7 @@ public abstract class SamReaderFactory {
                         }
                     } else if (BlockCompressedInputStream.isValidFile(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new BlockCompressedInputStream(bufferedStream), validationStringency, this.samRecordFactory);
-                    } else if (SamStreams.isGzippedSAMFile(bufferedStream)) {
+                    } else if (IOUtil.isGZIPInputStream(bufferedStream)) {
                         primitiveSamReader = new SAMTextReader(new GZIPInputStream(bufferedStream), validationStringency, this.samRecordFactory);
                     } else if (SamStreams.isCRAMFile(bufferedStream)) {
                         if (referenceSource == null) {

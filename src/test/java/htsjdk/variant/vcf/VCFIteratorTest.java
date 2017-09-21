@@ -105,14 +105,13 @@ public class VCFIteratorTest extends VariantBaseTest {
                    throw err;
                }
             }
-
-        final VCFIterator r = new VCFIteratorBuilder().open(tmp);
-        assertExpectedNumberOfVariants(r, nVariants);
-        r.close();
+        try (final VCFIterator r = new VCFIteratorBuilder().open(tmp) ) {
+            assertExpectedNumberOfVariants(r, nVariants);
+        }
     }
 
     @Test(dataProvider = "VcfFiles")
-    public void testUsingBGZippedUInput(final String filepath, final int nVariants) throws IOException {
+    public void testUsingBGZippedInput(final String filepath, final int nVariants) throws IOException {
         testUsingZippedInput(filepath, nVariants, (F)-> new BlockCompressedOutputStream(F));
     }
 
