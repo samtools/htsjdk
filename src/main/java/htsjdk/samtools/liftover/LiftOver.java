@@ -57,7 +57,7 @@ public class LiftOver {
     private boolean logFailedIntervals = true;
 
     /**
-     * By default any lifted interval that falls below DEFAULT_LIFTOVER_MINMATCH
+     * By default any lifted interval that falls below liftOverMinMatch
      * will be logged.  Set this to false to prevent logging.
      * @param logFailedIntervals
      */
