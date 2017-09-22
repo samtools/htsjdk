@@ -338,6 +338,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     public boolean isPair(final SAMRecord record) {
         return record != null
+                && Objects.equals(this.getReadName(), record.getReadName())
                 && this.getMateAlignmentStart() == record.getAlignmentStart()
                 && record.getMateAlignmentStart() == this.getAlignmentStart()
                 && !NO_ALIGNMENT_REFERENCE_NAME.equals(this.getMateReferenceName())

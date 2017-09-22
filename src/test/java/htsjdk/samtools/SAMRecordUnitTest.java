@@ -1124,9 +1124,11 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void testRecordsArePairIfTheyHaveNoMateFields() {
         final SAMRecord first = new SAMRecord(new SAMFileHeader(new SAMSequenceDictionary()));
+        first.setReadName("example1");
         first.setAlignmentStart(42);
         first.setReferenceName("chrm1");
         final SAMRecord second = new SAMRecord(new SAMFileHeader(new SAMSequenceDictionary()));
+        first.setReadName("example1");
         second.setAlignmentStart(142);
         second.setReferenceName("chrm2");
 
