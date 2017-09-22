@@ -54,6 +54,17 @@ public class LiftOver {
     private final OverlapDetector<Chain> chains;
     private final Map<String, Set<String>> contigMap = new HashMap<>();
 
+    private boolean logFailedIntervals = true;
+
+    /**
+     * By default any lifted interval that falls below DEFAULT_LIFTOVER_MINMATCH
+     * will be logged.  Set this to false to prevent logging.
+     * @param logFailedIntervals
+     */
+    public void setLogFailedIntervals(boolean logFailedIntervals) {
+        this.logFailedIntervals = logFailedIntervals;
+    }
+
     /**
      * Load UCSC chain file in order to lift over Intervals.
      */
@@ -125,10 +136,12 @@ public class LiftOver {
                 chainHit = chain;
                 targetIntersection = candidateIntersection;
             } else if (candidateIntersection != null) {
-                LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
-                " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
-                + minMatchSize +
-                " (" + (candidateIntersection.intersectionLength/(float)interval.length()) + " < " + liftOverMinMatch + ")");
+                if (logFailedIntervals){
+                    LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
+                            " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
+                            + minMatchSize +
+                            " (" + (candidateIntersection.intersectionLength/(float)interval.length()) + " < " + liftOverMinMatch + ")");
+                }
             }
         }
         if (chainHit == null) {
