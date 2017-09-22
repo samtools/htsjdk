@@ -624,4 +624,11 @@ public class IntervalListTest extends HtsjdkTest {
             Assert.assertEquals(unique.size(), 2);
         }
     }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testContigsAbsentInHeader() {
+        String vcf = "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFNoContigLines.vcf";
+        final File vcfFile = new File(vcf);
+        VCFFileReader.fromVcf(vcfFile);
+    }
 }
