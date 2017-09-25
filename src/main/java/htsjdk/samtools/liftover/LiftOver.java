@@ -55,6 +55,7 @@ public class LiftOver {
     private final Map<String, Set<String>> contigMap = new HashMap<>();
 
     private boolean logFailedIntervals = true;
+    private long totalFailedIntervalsBelowThreshold = 0L;
 
     /**
      * By default any lifted interval that falls below liftOverMinMatch
@@ -63,6 +64,21 @@ public class LiftOver {
      */
     public void setLogFailedIntervals(boolean logFailedIntervals) {
         this.logFailedIntervals = logFailedIntervals;
+    }
+
+    /**
+     * Resets the internal counter that tracks intervals that failed liftover due to insufficient intersection length
+     */
+    public void resetFailedIntervalCounter(){
+        this.totalFailedIntervalsBelowThreshold = 0L;
+    }
+
+    /**
+     *
+     * @return The total number of intervals that have failed liftover due to insufficient intersection length
+     */
+    public long getFailedIntervalCounter(){
+        return totalFailedIntervalsBelowThreshold;
     }
 
     /**
@@ -126,6 +142,7 @@ public class LiftOver {
         double minMatchSize = liftOverMinMatch * interval.length();
 
         // Find the appropriate Chain, and the part of the chain corresponding to the interval to be lifted over.
+        boolean hasOverlapBelowThreshold = false;
         for (final Chain chain : chains.getOverlaps(interval)) {
             final TargetIntersection candidateIntersection = targetIntersection(chain, interval);
             if (candidateIntersection != null && candidateIntersection.intersectionLength >= minMatchSize) {
@@ -136,6 +153,7 @@ public class LiftOver {
                 chainHit = chain;
                 targetIntersection = candidateIntersection;
             } else if (candidateIntersection != null) {
+                hasOverlapBelowThreshold = true;
                 if (logFailedIntervals){
                     LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
                             " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
@@ -145,6 +163,10 @@ public class LiftOver {
             }
         }
         if (chainHit == null) {
+            if (hasOverlapBelowThreshold){
+                totalFailedIntervalsBelowThreshold++;
+            }
+
             // Can't be lifted over.
             return null;
         }

@@ -56,8 +56,11 @@ public class LiftOverTest extends HtsjdkTest {
 
     @Test(dataProvider = "testIntervals")
     public void testBasic(final Interval in, final Interval expected) {
+        liftOver.resetFailedIntervalCounter();
         final Interval out = liftOver.liftOver(in);
         Assert.assertEquals(out, expected);
+
+        Assert.assertEquals(liftOver.getFailedIntervalCounter(), expected == null ? 1 : 0);
 
     }
 
