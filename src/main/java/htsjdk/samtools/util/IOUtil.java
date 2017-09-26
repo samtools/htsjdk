@@ -530,18 +530,8 @@ public class IOUtil {
      * @param dir the dir to check for writability
      */
     public static void assertDirectoryIsWritable(final File dir) {
-        if (dir == null) {
-            throw new IllegalArgumentException("Cannot check readability of null file.");
-        }
-        else if (!dir.exists()) {
-            throw new SAMException("Directory does not exist: " + dir.getAbsolutePath());
-        }
-        else if (!dir.isDirectory()) {
-            throw new SAMException("Cannot write to directory because it is not a directory: " + dir.getAbsolutePath());
-        }
-        else if (!dir.canWrite()) {
-            throw new SAMException("Directory exists but is not writable: " + dir.getAbsolutePath());
-        }
+        final Path asPath = (dir == null) ? null : dir.toPath();
+        assertDirectoryIsWritable(asPath);
     }
 
     /**

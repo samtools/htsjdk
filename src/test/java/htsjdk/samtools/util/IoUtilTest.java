@@ -26,11 +26,10 @@ package htsjdk.samtools.util;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -47,9 +46,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -326,6 +323,60 @@ public class IoUtilTest extends HtsjdkTest {
         Assert.assertTrue(Files.exists(path));
         new IOUtil.DeletePathThread(path).run();
         Assert.assertFalse(Files.exists(path));
+    }
+
+    @DataProvider
+    public Object[][] pathsForWritableDirectory() throws Exception {
+        return new Object[][] {
+                // non existent
+                {inMemmoryfileSystem.getPath("no_exists"), false},
+                // non directory
+                {Files.createFile(inMemmoryfileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
+                // TODO - how to do in inMemmoryFileSystem a non-writable directory?
+                // writable directory
+                {Files.createDirectory(inMemmoryfileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
+        };
+    }
+
+    @Test(dataProvider = "pathsForWritableDirectory")
+    public void testAssertDirectoryIsWritablePath(final Path path, final boolean writable) {
+        try {
+            IOUtil.assertDirectoryIsWritable(path);
+        } catch (SAMException e) {
+            if (writable) {
+                Assert.fail(e.getMessage());
+            }
+        }
+    }
+
+
+    @DataProvider
+    public Object[][] filesForWritableDirectory() throws Exception {
+        final File nonWritableFile = new File(systemTempDir, "testAssertDirectoryIsWritable_non_writable_dir");
+        nonWritableFile.mkdir();
+        nonWritableFile.setWritable(false);
+
+        return new Object[][] {
+                // non existent
+                {new File("no_exists"), false},
+                // non directory
+                {existingTempFile, false},
+                // non-writable directory
+                {nonWritableFile, false},
+                // writable directory
+                {new File(systemTempDir), true},
+        };
+    }
+
+    @Test(dataProvider = "filesForWritableDirectory")
+    public void testAssertDirectoryIsWritableFile(final File file, final boolean writable) {
+        try {
+            IOUtil.assertDirectoryIsWritable(file);
+        } catch (SAMException e) {
+            if (writable) {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 
 }

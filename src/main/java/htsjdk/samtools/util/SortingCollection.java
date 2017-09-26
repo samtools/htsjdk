@@ -292,7 +292,10 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param comparator Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
+     *
+     * @deprecated since 2017-09. Use {@link #newInstance(Class, Codec, Comparator, int, Path...)} instead
      */
+    @Deprecated
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
                                                        final SortingCollection.Codec<T> codec,
                                                        final Comparator<T> comparator,
@@ -310,7 +313,10 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param comparator Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
      * @param tmpDirs Where to write files of records that will not fit in RAM
+     *
+     * @deprecated since 2017-09. Use {@link #newInstanceFromPaths(Class, Codec, Comparator, int, Collection)} instead
      */
+    @Deprecated
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
                                                        final SortingCollection.Codec<T> codec,
                                                        final Comparator<T> comparator,
