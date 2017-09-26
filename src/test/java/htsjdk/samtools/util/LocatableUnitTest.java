@@ -38,6 +38,7 @@ public class LocatableUnitTest {
                 { getLocatable("1", 1, 2), 2 },
                 { getLocatable("1", 1, 10), 10 },
                 { getLocatable("1", 2, 10), 9 },
+                { getLocatable("1", 1,0), 0}
         };
     }
 
@@ -89,6 +90,7 @@ public class LocatableUnitTest {
     public Object[][] overlapsWithMargin(){
         final Locatable standardInterval = getLocatable("1", 10, 20);
         final Locatable middleInterval = getLocatable("1", 100, 200);
+        final Locatable zeroLengthInterval = getLocatable("1", 1, 0);
 
         return new Object[][] {
                 { standardInterval, getLocatable("2", 10, 20), 100, false },
@@ -98,6 +100,10 @@ public class LocatableUnitTest {
                 { middleInterval, getLocatable("1", 50, 99), 0, false },
                 { middleInterval, getLocatable("1", 50, 90), 9, false },
                 { middleInterval, getLocatable("1", 50, 90), 10, true },
+                { middleInterval, getLocatable("1", 150, 149), 0, true },
+                { middleInterval, getLocatable("1", 100, 99), 0, true },
+                { middleInterval, getLocatable("1", 99, 98), 0, false },
+                { standardInterval, getLocatable(null, 10, 20), 100, false }
         };
     }
 
@@ -110,7 +116,7 @@ public class LocatableUnitTest {
     @DataProvider(name = "IntervalContainsData")
     public Object[][] getIntervalContainsData() {
         final Locatable containingInterval = getLocatable("1", 10, 20);
-
+        final Locatable zeroLengthIntervalBetween9And10 = getLocatable("1", 10, 9);
         return new Object[][] {
                 { containingInterval, getLocatable("2", 10, 20), false },
                 { containingInterval, getLocatable("1", 1, 5), false },
@@ -130,15 +136,19 @@ public class LocatableUnitTest {
                 { containingInterval, getLocatable("1", 25, 30), false },
                 { containingInterval, null, false },
                 { containingInterval, containingInterval, true },
+                { containingInterval, getLocatable(null, 10, 20), false},
+                { getLocatable(null, 10, 20), getLocatable(null, 10, 20), false},
 
-                //0 based intervals are w
-                { containingInterval, getLocatable("1", 10, 9), true},
+                //0 length intervals
+                { containingInterval, zeroLengthIntervalBetween9And10, true},
                 { containingInterval, getLocatable("1", 15, 14), true},
                 { containingInterval, getLocatable("1", 21,20), true},
                 { containingInterval, getLocatable("1", 25, 24), false},
-                { getLocatable("1", 10,9), getLocatable("1",9,8), false},
-                { getLocatable("1", 10,9), getLocatable("1",11,10), false},
-                { getLocatable("1", 10, 9), getLocatable("1", 10, 9), true}
+                {zeroLengthIntervalBetween9And10, getLocatable("1", 9, 8), false},
+                {zeroLengthIntervalBetween9And10, getLocatable("1", 11, 10), false},
+
+                //0 length interval is considered to contain itself
+                {zeroLengthIntervalBetween9And10, zeroLengthIntervalBetween9And10, true}
         };
     }
 
