@@ -2,6 +2,9 @@ buildscript {
     repositories {
         mavenCentral()
     }
+    dependencies {
+
+    }
 }
 
 plugins {
@@ -12,7 +15,7 @@ plugins {
     id 'jacoco'
     id 'com.palantir.git-version' version '0.5.1'
     id 'com.github.johnrengelman.shadow' version '1.2.3'
-    id 'com.github.maiflai.scalatest' version '0.15'
+    id 'com.github.maiflai.scalatest' version '0.15' apply false
 }
 
 repositories {
@@ -67,6 +70,12 @@ jar {
 
 import org.gradle.internal.os.OperatingSystem;
 
+import com.github.maiflai.ScalaTestAction
+import com.github.maiflai.JacocoTestAction
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 tasks.withType(Test) { task ->
     task.outputs.upToDateWhen { false } // tests will always rerun
 
@@ -86,6 +95,29 @@ task findScalaAndJavaTypes(type: Exec) {
     commandLine './scripts/checkScalaAndJavaFiles.sh'
 }
 
+task scalaTest(type: Test) {
+    test.maxParallelForks = Runtime.runtime.availableProcessors()
+    //noinspection GroovyAssignabilityCheck
+    test.actions = [
+            new JacocoTestAction(),
+            new ScalaTestAction()
+    ]
+    test.testLogging.exceptionFormat = TestExceptionFormat.SHORT
+    test.extensions.add(ScalaTestAction.TAGS, new PatternSet())
+    List<String> suites = []
+    test.extensions.add(ScalaTestAction.SUITES, suites)
+    test.extensions.add("suite", { String name -> suites.add(name) } )
+    test.extensions.add("suites", { String... name -> suites.addAll(name) } )
+    Map<String, ?> config = [:]
+    test.extensions.add(ScalaTestAction.CONFIG, config)
+    test.extensions.add("config", { String name, value -> config.put(name, value) } )
+    test.extensions.add("configMap", { Map<String, ?> c -> config.putAll(c) } )
+    if (test.name != JavaPlugin.TEST_TASK_NAME) {
+        test.reports.html.destination = project.reporting.file(test.name)
+    }
+    test.testLogging.events = TestLogEvent.values() as Set
+} dependsOn findScalaAndJavaTypes
+
 test {
     description = "Runs the unit tests other than the SRA tests"
 
@@ -97,11 +129,12 @@ test {
         jvmArgs += '-Dsamjdk.sra_libraries_download=true'
     }
 
-    tags {
-        exclude "slow"
-        exclude "broken"
-        if (System.env.CI == "false") exclude "sra"
-        if (!OperatingSystem.current().isUnix()) exclude "unix"
+    useTestNG {
+        if( OperatingSystem.current().isUnix() ){
+            excludeGroups "slow", "broken", "sra"
+        } else {
+            excludeGroups "slow", "broken", "unix", "sra"
+        }
     }
 } dependsOn findScalaAndJavaTypes
 
@@ -109,9 +142,8 @@ task testSRA(type: Test) {
     description = "Run the SRA tests"
     jvmArgs += '-Dsamjdk.sra_libraries_download=true'
 
-    tags {
-        exclude "slow"
-        exclude "broken"
+    useTestNG {
+        excludeGroups "slow", "broken"
     }
 }
 
