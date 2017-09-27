@@ -35,7 +35,7 @@ import java.nio.file.Files;
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class BlockCompressedIndexTest extends HtsjdkTest {
+public class GZIIndexTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] indexFiles() {
@@ -48,7 +48,7 @@ public class BlockCompressedIndexTest extends HtsjdkTest {
     @Test(dataProvider = "indexFiles")
     public void testLoadIndex(final File indexFile, final int expectedBlocks) throws Exception {
         // test reading of the input file
-        final BlockCompressedIndex index = BlockCompressedIndex.loadIndex(indexFile.toPath());
+        final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
         index.getIndexEntries().forEach(System.err::println);
         Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
     }
@@ -56,7 +56,7 @@ public class BlockCompressedIndexTest extends HtsjdkTest {
     @Test(dataProvider = "indexFiles")
     public void testWriteIndex(final File indexFile, final int exprectedBlocks) throws Exception {
         // load the index and write it down
-        final BlockCompressedIndex index = BlockCompressedIndex.loadIndex(indexFile.toPath());
+        final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
         final File temp = File.createTempFile("testWriteIndex", indexFile.getName());
         temp.deleteOnExit();
         index.writeIndex(temp.toPath());
@@ -79,9 +79,9 @@ public class BlockCompressedIndexTest extends HtsjdkTest {
     @Test(dataProvider = "filesWithIndex")
     public void testCreateIndex(final File fileToIndex, final File expectedIndex) throws Exception {
         // create the index for the provided file
-        final BlockCompressedIndex actual = BlockCompressedIndex.createIndex(fileToIndex.toPath());
+        final GZIIndex actual = GZIIndex.buildIndex(fileToIndex.toPath());
         // load the expected index to check for equality
-        final BlockCompressedIndex expected = BlockCompressedIndex.loadIndex(expectedIndex.toPath());
+        final GZIIndex expected = GZIIndex.loadIndex(expectedIndex.toPath());
         Assert.assertEquals(actual, expected);
     }
 
