@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.tribble.index.Index;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -33,6 +35,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Represents a .gzi index of a block-compressed file.
@@ -133,6 +137,34 @@ public final class GZIIndex {
      */
     public List<IndexEntry> getIndexEntries() {
         return Collections.unmodifiableList(entries);
+    }
+
+    /**
+     * Gets the virtual offset for seek with {@link BlockCompressedInputStream#seek(long)}.
+     *
+     * @param uncompressedOffset the file-offset.
+     *
+     * @return virtual offset for {@link BlockCompressedInputStream}.
+     * @see BlockCompressedFilePointerUtil
+     */
+    public long getVirtualOffsetForSeek(final long uncompressedOffset) {
+        if (uncompressedOffset == 0) {
+            return BlockCompressedFilePointerUtil.makeFilePointer(0, 0);
+        }
+
+        // list of entries at the uncompressed-offset (or afterwards)
+        final IndexEntry indexEntry = entries.stream()
+                // filter for only the ones where the uncompressed offset is larger than the requested
+                .filter(entry -> entry.getUncompressedOffset() >= uncompressedOffset)
+                // get the first, and if there is any, the first entry
+                // TODO - the first entry can be removed from the list if we use this code
+                // TODO - and we remove the method to get the index entries (unnecessary for most of the cases)
+                .findFirst().orElse(FIRST_MAPPING);
+
+        // convert to an offset within the block
+        final int blockOffset = Math.toIntExact(indexEntry.getUncompressedOffset() - uncompressedOffset);
+
+        return BlockCompressedFilePointerUtil.makeFilePointer(indexEntry.getCompressedOffset(), blockOffset);
     }
 
     @Override
@@ -297,7 +329,7 @@ public final class GZIIndex {
 
     /**
      * Creates a {@link GZIIndex} from a BGZIP file and store it in memory and disk.
-     * 
+     *
      * @param bgzipFile the bgzip file.
      * @param overwrite if the .fai index already exists override it if {@code true}; otherwise, throws a {@link IOException}.
      *
