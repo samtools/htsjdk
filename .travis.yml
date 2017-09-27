@@ -10,6 +10,8 @@ cache:
     - $HOME/.m2
 jdk:
   - oraclejdk8
+  - oraclejdk9
+  - openjdk8
   - openjdk8
 script: ./gradlew test jacocoTestReport;
 after_success:
