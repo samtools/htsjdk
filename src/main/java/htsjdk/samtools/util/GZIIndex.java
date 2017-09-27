@@ -33,8 +33,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Represents a .gzi index of a block-compressed file.
@@ -51,6 +49,9 @@ import java.util.function.Supplier;
  * @see <a href="http://github.com/samtools/htslib/issues/473">https://github.com/samtools/htslib/issues/473</a>
  */
 public final class GZIIndex {
+
+    /** Default extension for the files storing a {@link GZIIndex}. */
+    public static final String DEFAULT_EXTENSION = ".gzi";
 
     /**
      * Index entry mapping the block-offset (compressed offset) to the uncompressed offset where the
@@ -292,6 +293,32 @@ public final class GZIIndex {
             // construct by converting into an array
             return new GZIIndex(entries);
         }
+    }
+
+    /**
+     * Creates a {@link GZIIndex} from a BGZIP file and store it in memory and disk.
+     * 
+     * @param bgzipFile the bgzip file.
+     * @param overwrite if the .fai index already exists override it if {@code true}; otherwise, throws a {@link IOException}.
+     *
+     * @return the in-memory representation for the created index.
+     * @throws IOException  if an IO error occurs.
+     */
+    public static GZIIndex createIndex(final Path bgzipFile, final boolean overwrite) throws IOException {
+        final Path indexFile = resolveIndexNameForBgzipFile(bgzipFile);
+        if (!overwrite && Files.exists(indexFile)) {
+            // throw an exception if the file already exists
+            throw new IOException("Index file " + indexFile + " already exists for " + bgzipFile);
+        }
+        // build the index, write and return
+        final GZIIndex index = buildIndex(bgzipFile);
+        index.writeIndex(indexFile);
+        return index;
+    }
+
+    /** Gets the default index path for the bgzip file. */
+    public static Path resolveIndexNameForBgzipFile(final Path bgzipFile) {
+        return bgzipFile.resolveSibling(bgzipFile.getFileName().toString() + DEFAULT_EXTENSION);
     }
 
     // helper method for allocate a buffer for read/write
