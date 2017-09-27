@@ -41,8 +41,8 @@ public class GZIIndexTest extends HtsjdkTest {
     public Object[][] indexFiles() {
         return new Object[][] {
                 // TODO - requires more test files
-                {new File("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi"), 1},
-                {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi"), 16}
+                {new File("src/test/resources/htsjdk/samtools/block_compressed.sam.gz.gzi"), 2},
+                {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz.gzi"), 17}
         };
     }
 
@@ -50,7 +50,6 @@ public class GZIIndexTest extends HtsjdkTest {
     public void testLoadIndex(final File indexFile, final int expectedBlocks) throws Exception {
         // test reading of the input file
         final GZIIndex index = GZIIndex.loadIndex(indexFile.toPath());
-        index.getIndexEntries().forEach(System.err::println);
         Assert.assertEquals(index.getNumberOfBlocks(), expectedBlocks);
     }
 

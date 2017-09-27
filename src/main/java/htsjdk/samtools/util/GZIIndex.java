@@ -33,6 +33,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Represents a .gzi index of a block-compressed file.
@@ -56,11 +58,17 @@ public final class GZIIndex {
      *
      * @see <a href="http://github.com/samtools/htslib/issues/473">https://github.com/samtools/htslib/issues/473</a>
      */
-    public static class IndexEntry {
+    public static final class IndexEntry {
         private final long compressedOffset;
         private final long uncompressedOffset;
 
         private IndexEntry(final long compressedOffset, final long uncompressedOffset) {
+            if (Long.signum(compressedOffset) == -1) {
+                throw new IllegalArgumentException("negative compressed offset: " + compressedOffset);
+            }
+            if (Long.signum(uncompressedOffset) == -1) {
+                throw new IllegalArgumentException("negative uncompressed offset: " + uncompressedOffset);
+            }
             this.compressedOffset = compressedOffset;
             this.uncompressedOffset = uncompressedOffset;
         }
@@ -98,7 +106,9 @@ public final class GZIIndex {
         }
     }
 
-    // TODO - we should store always the first entry (0,0)
+    // first entry in the mapping (do not write down)
+    private static final IndexEntry FIRST_MAPPING = new IndexEntry(0, 0);
+
     private final List<IndexEntry> entries;
 
     // private constructors
@@ -154,13 +164,16 @@ public final class GZIIndex {
             throw new IllegalArgumentException("null output path");
         }
 
-        final ByteBuffer buffer = allocateBuffer(entries.size(), true);
+        // the first entry is never written - 0, 0
+        final int numberOfBlocksToWrite = getNumberOfBlocks() - 1;
 
+        final ByteBuffer buffer = allocateBuffer(numberOfBlocksToWrite, true);
         // put the number of entries
-        buffer.putLong(Integer.toUnsignedLong(entries.size()));
+        buffer.putLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
 
-        for (final IndexEntry entry : entries) {
-            // TODO - check that they are non-negative
+        // except the first, iterate over all the entries
+        for (final IndexEntry entry : entries.subList(1, entries.size())) {
+            // implementation of entry ensures that the offsets are no negative
             buffer.putLong(entry.getCompressedOffset());
             buffer.putLong(entry.getUncompressedOffset());
         }
@@ -188,7 +201,7 @@ public final class GZIIndex {
 
         try (final ByteChannel channel = Files.newByteChannel(indexPath)) {
             if (Long.BYTES != channel.read(buffer)) {
-                throw new IOException("corrupted index file: " + indexPath.toUri());
+                throw getCorruptedIndexException(indexPath, "less than " + Long.BYTES+ "bytes");
             }
             buffer.flip();
 
@@ -197,26 +210,47 @@ public final class GZIIndex {
                 numberOfEntries = Math.toIntExact(buffer.getLong());
             } catch (ArithmeticException e) {
                 buffer.flip();
-                throw new IOException(String.format("HTSJDK cannot handle more than %d entries in %s. Found %s entries for %s",
-                        Integer.MAX_VALUE, GZIIndex.class.getSimpleName(),
-                        buffer.getLong(), indexPath.toUri()));
+                throw getCorruptedIndexException(indexPath,
+                        String.format("HTSJDK cannot handle more than %d entries in .gzi index, but found %s",
+                                Integer.MAX_VALUE, buffer.getLong()));
             }
 
-            // allocate array with the entries
-            final List<IndexEntry> entries = new ArrayList<>(numberOfEntries);
+            // allocate array with the entries and add the first one
+            final List<IndexEntry> entries = new ArrayList<>(numberOfEntries + 1);
+            entries.add(FIRST_MAPPING);
 
             // create a new buffer with the correct size and read into it
             buffer = allocateBuffer(numberOfEntries, false);
             channel.read(buffer);
             buffer.flip();
 
-            for (int i = 0; i < numberOfEntries; i++) {
-                // TODO - check that the entries are increasing and positive
-                entries.add(new IndexEntry(buffer.getLong(), buffer.getLong()));
+            for (int i = 1; i <= numberOfEntries; i++) {
+                final IndexEntry entry;
+                try {
+                    entry = new IndexEntry(buffer.getLong(), buffer.getLong());
+                } catch (IllegalArgumentException e) {
+                    throw new IOException(String.format("Corrupted index file: %s (%s)",
+                            indexPath.toUri(), e.getMessage()));
+                }
+                // check if the entry is increasing in order
+                if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
+                        || entries.get(i - 1).getUncompressedOffset() >= entry.getUncompressedOffset()) {
+                    throw getCorruptedIndexException(indexPath,
+                            String.format("index entries in misplaced order - %s vs %s",
+                                    entries.get(i - 1), entry));
+                }
+
+                entries.add(entry);
             }
 
             return new GZIIndex(entries);
         }
+    }
+
+    private static final IOException getCorruptedIndexException(final Path indexPath, final String msg) {
+        return new IOException(String.format("Corrupted index file: %s (%s)",
+                msg,
+                indexPath == null ? "unknown" : indexPath.toUri()));
     }
 
     /**
@@ -231,8 +265,7 @@ public final class GZIIndex {
      *
      * @throws IOException if an I/O error occurs.
      */
-    public static final GZIIndex buildIndex(final Path bgzipFile)
-            throws IOException {
+    public static final GZIIndex buildIndex(final Path bgzipFile) throws IOException {
         if (bgzipFile == null) {
             throw new IllegalArgumentException("null input path");
         }
@@ -240,7 +273,8 @@ public final class GZIIndex {
         try (final BlockCompressedInputStream bgzipStream = new BlockCompressedInputStream(Files.newInputStream(bgzipFile))) {
 
             // store the entries as a list
-            final List<IndexEntry> entries = new ArrayList<>();
+            final List<IndexEntry> entries = new ArrayList<>(2);
+            entries.add(FIRST_MAPPING);
 
             // accumulator for number of bytes read to use in the offset for the index-entry
             int currentOffset = 0;
