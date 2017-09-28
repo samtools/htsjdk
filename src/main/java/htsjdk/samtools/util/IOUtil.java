@@ -238,15 +238,7 @@ public class IOUtil {
     }
 
     public static void deletePaths(final Path... paths) {
-        for (final Path p : paths) {
-            boolean deleted;
-            try {
-                deleted = Files.deleteIfExists(p);
-            } catch (IOException e) {
-                deleted = false;
-            }
-            if (!deleted) System.err.println("Could not delete file " + p);
-        }
+        deletePaths(Arrays.asList(paths));
     }
 
     public static void deletePaths(final Iterable<Path> paths) {

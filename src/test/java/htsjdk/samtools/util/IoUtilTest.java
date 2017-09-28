@@ -230,7 +230,6 @@ public class IoUtilTest extends HtsjdkTest {
         };
     }
 
-
     @DataProvider(name = "fileNamesForDelete")
     public Object[][] fileNamesForDelete() {
         return new Object[][] {
@@ -241,12 +240,11 @@ public class IoUtilTest extends HtsjdkTest {
     }
 
     @Test
-    public void testHetDefaultTmpDirPath() throws Exception {
+    public void testGetDefaultTmpDirPath() throws Exception {
         final Path tmpPath = IOUtil.getDefaultTmpDirPath();
         final String user = System.getProperty("user.name");
         Assert.assertEquals(tmpPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + user);
     }
-
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeletePathLocal(final List<String> fileNames) throws Exception {
@@ -349,7 +347,6 @@ public class IoUtilTest extends HtsjdkTest {
         }
     }
 
-
     @DataProvider
     public Object[][] filesForWritableDirectory() throws Exception {
         final File nonWritableFile = new File(systemTempDir, "testAssertDirectoryIsWritable_non_writable_dir");
@@ -378,5 +375,4 @@ public class IoUtilTest extends HtsjdkTest {
             }
         }
     }
-
 }
