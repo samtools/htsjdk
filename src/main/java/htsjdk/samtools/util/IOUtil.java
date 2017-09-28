@@ -245,7 +245,7 @@ public class IOUtil {
         for (final Path p : paths) {
             boolean deleted;
             try {
-                deleted = Files.deleteIfExists(p);
+                deleted = Files.delete(p);
             } catch (IOException e) {
                 deleted = false;
             }
