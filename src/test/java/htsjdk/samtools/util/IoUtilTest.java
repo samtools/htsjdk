@@ -63,6 +63,7 @@ public class IoUtilTest extends HtsjdkTest {
     private static final String TEST_FILE_EXTENSIONS[] = {".txt", ".txt.gz"};
     private static final String TEST_STRING = "bar!";
     private File existingTempFile;
+    private String systemUser;
     private String systemTempDir;
 
     private FileSystem inMemmoryfileSystem;
@@ -77,10 +78,14 @@ public class IoUtilTest extends HtsjdkTest {
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
+        systemUser = System.getProperty("user.name");
     }
 
     @AfterClass
     public void tearDown() throws IOException {
+        // reset java properties to original
+        System.setProperty("java.io.tmpdir", systemTempDir);
+        System.setProperty("user.name", systemUser);
         inMemmoryfileSystem.close();
     }
 
@@ -241,9 +246,23 @@ public class IoUtilTest extends HtsjdkTest {
 
     @Test
     public void testGetDefaultTmpDirPath() throws Exception {
-        final Path tmpPath = IOUtil.getDefaultTmpDirPath();
-        final String user = System.getProperty("user.name");
-        Assert.assertEquals(tmpPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + user);
+        try {
+            Path testPath = IOUtil.getDefaultTmpDirPath();
+            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + systemUser);
+
+            // change the properties to test others
+            final String newTempPath = Files.createTempDirectory("testGetDefaultTmpDirPath").toString();
+            final String newUser = "my_user";
+            System.setProperty("java.io.tmpdir", newTempPath);
+            System.setProperty("user.name", newUser);
+            testPath = IOUtil.getDefaultTmpDirPath();
+            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(newTempPath).getAbsolutePath() + "/" + newUser);
+
+        } finally {
+            // reset system properties
+            System.setProperty("java.io.tmpdir", systemTempDir);
+            System.setProperty("user.name", systemUser);
+        }
     }
 
     @Test(dataProvider = "fileNamesForDelete")
