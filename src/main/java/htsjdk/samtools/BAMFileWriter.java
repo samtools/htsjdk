@@ -29,7 +29,6 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,7 +36,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Concrete implementation of SAMFileWriter for writing gzipped BAM files.
@@ -51,37 +49,37 @@ class BAMFileWriter extends SAMFileWriterImpl {
 
     protected BAMFileWriter(final File path) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(path);
-        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
     }
 
     protected BAMFileWriter(final File path, final int compressionLevel) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(path, compressionLevel);
-        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
     }
 
     protected BAMFileWriter(final OutputStream os, final File file) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(os, file);
-        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
     protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel);
-        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
     protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
         blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
-        outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         outputBinaryCodec.setOutputFileName(getPathString(file));
     }
 
     protected BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
       blockCompressedOutputStream = new BlockCompressedOutputStream(os, null, compressionLevel, deflaterFactory);
-      outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+      outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
       outputBinaryCodec.setOutputFileName(absoluteFilename);
     }
 
@@ -204,7 +202,7 @@ class BAMFileWriter extends SAMFileWriterImpl {
 
     protected static void writeHeader(final OutputStream outputStream, final SAMFileHeader samFileHeader) {
         final BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, null);
-        final BinaryCodec outputBinaryCodec = new BinaryCodec(new DataOutputStream(blockCompressedOutputStream));
+        final BinaryCodec outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         writeHeader(outputBinaryCodec, samFileHeader);
         try {
             blockCompressedOutputStream.flush();
