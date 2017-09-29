@@ -4,6 +4,7 @@ import htsjdk.utils.ClassFinder;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.NoInjection;
 import org.testng.annotations.Test;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,7 +17,7 @@ import java.util.List;
 /**
  * This test is a mechanism to check that none of the data-providers fail to run.
  * It is needed because in the case that a data-provider fails (for some reason, perhaps a change in some other code
- * causes it to throw an exception) the tests that rely on it will be sliently skipped.
+ * causes it to throw an exception) the tests that rely on it will be silently skipped.
  * The only mention of this will be in test logs but since we normally avoid reading these logs and rely on the
  * exit code, it will look like all the tests have passed.
  *
@@ -24,22 +25,6 @@ import java.util.List;
  */
 public class TestDataProviders {
 
-    private static class Container {
-        public final Method method;
-        public final Class<?> clazz;
-
-        // Encapsulation (of the Method) is required due to what seems to be a bug in TestNG.
-
-        public Container(Method method, Class clazz) {
-            this.method = method;
-            this.clazz = clazz;
-        }
-
-        @Override
-        public String toString() {
-            return clazz.getName() + "::" + method.getName();
-        }
-    }
 
     @Test
     public void IndependentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -48,7 +33,7 @@ public class TestDataProviders {
 
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
     public Iterator<Object[]> testAllDataProvidersdata() throws IllegalAccessException, InstantiationException, InvocationTargetException {
-        int i = 0;
+
         List<Object[]> data = new ArrayList<>();
         final ClassFinder classFinder = new ClassFinder();
         classFinder.find("htsjdk", Object.class);
@@ -57,22 +42,23 @@ public class TestDataProviders {
             if (Modifier.isAbstract(testClass.getModifiers())) continue;
             for (final Method method : testClass.getMethods()) {
                 if (method.isAnnotationPresent(DataProvider.class)) {
-                    data.add(new Object[]{new Container(method, testClass)});
+                    data.add(new Object[]{method, testClass});
                 }
             }
         }
         Assert.assertTrue(data.size() > 1);
 
         // make sure that this @DataProvider is in the list
-        Assert.assertEquals(data.stream().filter(c -> ((Container) c[0]).method.getName().equals("testAllDataProvidersdata")).count(), 1);
+        Assert.assertEquals(data.stream().filter(c -> ((Method) c[0]).getName().equals("testAllDataProvidersdata")).count(), 1);
 
         return data.iterator();
     }
 
+    // @NoInjection annotations required according to this test:
+    // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
     @Test(dataProvider = "DataprovidersThatDontTestThemselves")
-    public void testDataProviderswithDP(final Container container) throws IllegalAccessException, InstantiationException, InvocationTargetException {
-        final Method method = container.method;
-        final Class clazz = container.clazz;
+    public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz) throws IllegalAccessException, InstantiationException, InvocationTargetException {
+
         System.err.println("Method: " + method + " Class: " + clazz.getName());
 
         Object instance = clazz.newInstance();
