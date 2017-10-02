@@ -21,17 +21,28 @@ import java.util.*;
  */
 public class TestDataProviders extends HtsjdkTest{
 
+     private ClassFinder classFinder;
+
     @Test
     public void independentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         testAllDataProvidersData();
     }
 
-    @DataProvider(name = "DataprovidersThatDontTestThemselves")
-    public Iterator<Object[]> testAllDataProvidersData() throws IllegalAccessException, InstantiationException, InvocationTargetException {
+    @BeforeSuite // @BeforeSuite is executed before @BeforeClass
+    private void setupBeforeClassClassFinder(){
+        classFinder = new ClassFinder();
+    }
 
-        List<Object[]> data = new ArrayList<>();
-        final ClassFinder classFinder = new ClassFinder();
+    @BeforeClass // @BeforeSuite is executed before @BeforeClass
+    private void setupBeforeSuiteClassFinder(){
         classFinder.find("htsjdk", HtsjdkTest.class);
+    }
+
+
+    @DataProvider(name = "DataprovidersThatDontTestThemselves")
+    private Iterator<Object[]> testAllDataProvidersData() throws IllegalAccessException, InstantiationException, InvocationTargetException {
+
+        final List<Object[]> data = new ArrayList<>();
 
         for (final Class<?> testClass : classFinder.getConcreteClasses()) {
             Set<Method> methodSet = Sets.newHashSet();
@@ -45,14 +56,14 @@ public class TestDataProviders extends HtsjdkTest{
         }
         Assert.assertTrue(data.size() > 1);
 
-        // make sure that this @DataProvider is in the list
-        // make sure that this @DataProvider is in the list
+        // make sure that this @DataProvider is in the list even though it's private
         Assert.assertEquals(data.stream().filter(c ->
                         ((Method) c[0]).getName().equals("testAllDataProvidersData") &&
                         ((Class)  c[1]).getName().equals(this.getClass().getName())).count(), 1L);
 
         return data.iterator();
     }
+
 
     // @NoInjection annotations required according to this test:
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
@@ -63,9 +74,13 @@ public class TestDataProviders extends HtsjdkTest{
 
         Assert.assertTrue(HtsjdkTest.class.isAssignableFrom(clazz), "Test Classes must extend HtsJdkTest: " + clazz.getName());
 
-        // Some tests assume that the @BeforeSuite methods will be called before the @DataProviders
-        for (final Method otherMethod : clazz.getMethods()) {
-            if (otherMethod.isAnnotationPresent(BeforeClass.class)) {
+        // Some tests assume that the @BeforeSuite methods will be called before the @DataProvidersSet<Method> methodSet = Sets.newHashSet();
+        Set<Method> methodSet = Sets.newHashSet();
+        methodSet.addAll(Arrays.asList(clazz.getDeclaredMethods()));
+        methodSet.addAll(Arrays.asList(clazz.getMethods()));
+
+        for (final Method otherMethod : methodSet) {
+            if (otherMethod.isAnnotationPresent(BeforeSuite.class)) {
                 try {
                     otherMethod.setAccessible(true);
                     otherMethod.invoke(instance);
@@ -74,7 +89,7 @@ public class TestDataProviders extends HtsjdkTest{
                 }
             }
 
-            if (otherMethod.isAnnotationPresent(BeforeSuite.class)) {
+            if (otherMethod.isAnnotationPresent(BeforeClass.class)) {
                 try {
                     otherMethod.setAccessible(true);
                     otherMethod.invoke(instance);

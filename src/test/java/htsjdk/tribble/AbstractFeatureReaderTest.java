@@ -150,7 +150,6 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     public void testGetFeatureReaderWithPathAndWrappers(String file, String index,
                                                         Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                                         Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException, URISyntaxException {
-        Assert.assertTrue(false);
         try(FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix());
             final AbstractFeatureReader<VariantContext, ?> featureReader = getFeatureReader(file, index, wrapper,
                                                                                             indexWrapper,
