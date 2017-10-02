@@ -3,12 +3,12 @@ package htsjdk;
 import htsjdk.utils.ClassFinder;
 import org.testng.Assert;
 import org.testng.annotations.*;
+import org.testng.collections.Sets;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 /**
  * This test is a mechanism to check that none of the data-providers fail to run.
@@ -34,7 +34,10 @@ public class TestDataProviders extends HtsjdkTest{
         classFinder.find("htsjdk", HtsjdkTest.class);
 
         for (final Class<?> testClass : classFinder.getConcreteClasses()) {
-            for (final Method method : testClass.getMethods()) {
+            Set<Method> methodSet = Sets.newHashSet();
+            methodSet.addAll(Arrays.asList(testClass.getDeclaredMethods()));
+            methodSet.addAll(Arrays.asList(testClass.getMethods()));
+            for (final Method method : methodSet) {
                 if (method.isAnnotationPresent(DataProvider.class)) {
                     data.add(new Object[]{method, testClass});
                 }
@@ -45,7 +48,7 @@ public class TestDataProviders extends HtsjdkTest{
         // make sure that this @DataProvider is in the list
         // make sure that this @DataProvider is in the list
         Assert.assertEquals(data.stream().filter(c ->
-                        ((Method) c[0]).getName().equals("testDependenceData") &&
+                        ((Method) c[0]).getName().equals("testAllDataProvidersData") &&
                         ((Class)  c[1]).getName().equals(this.getClass().getName())).count(), 1L);
 
         return data.iterator();
@@ -54,22 +57,38 @@ public class TestDataProviders extends HtsjdkTest{
     // @NoInjection annotations required according to this test:
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
     @Test(dataProvider = "DataprovidersThatDontTestThemselves")
-    public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz) throws IllegalAccessException, InstantiationException, InvocationTargetException {
+    public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz) throws IllegalAccessException, InstantiationException {
 
         Object instance = clazz.newInstance();
 
+        Assert.assertTrue(HtsjdkTest.class.isAssignableFrom(clazz), "Test Classes must extend HtsJdkTest: " + clazz.getName());
+
         // Some tests assume that the @BeforeSuite methods will be called before the @DataProviders
         for (final Method otherMethod : clazz.getMethods()) {
-            if (otherMethod.isAnnotationPresent(BeforeSuite.class)) {
-                otherMethod.invoke(instance);
-            }
             if (otherMethod.isAnnotationPresent(BeforeClass.class)) {
-                otherMethod.invoke(instance);
+                try {
+                    otherMethod.setAccessible(true);
+                    otherMethod.invoke(instance);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalStateException(String.format("@BeforeClass threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                }
             }
-            if (otherMethod.isAnnotationPresent(BeforeMethod.class)) {
-                otherMethod.invoke(instance);
+
+            if (otherMethod.isAnnotationPresent(BeforeSuite.class)) {
+                try {
+                    otherMethod.setAccessible(true);
+                    otherMethod.invoke(instance);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalStateException(String.format("@BeforeSuite threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+                }
             }
         }
-        method.invoke(instance);
+
+        try {
+            method.setAccessible(true);
+            method.invoke(instance);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalStateException(String.format("@DataProvider threw an exception (%s::%s). Dependent tests will be skipped. Please fix.", clazz.getName(), method.getName()), e);
+        }
     }
 }
