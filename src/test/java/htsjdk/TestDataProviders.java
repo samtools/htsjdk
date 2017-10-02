@@ -1,6 +1,7 @@
 package htsjdk;
 
 import htsjdk.utils.ClassFinder;
+import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
 import org.testng.annotations.*;
 import org.testng.collections.Sets;
@@ -9,6 +10,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This test is a mechanism to check that none of the data-providers fail to run.
@@ -19,51 +22,27 @@ import java.util.*;
  *
  * @author Yossi Farjoun
  */
-public class TestDataProviders extends HtsjdkTest{
-
-     private ClassFinder classFinder;
+public class TestDataProviders extends HtsjdkTest {
 
     @Test
-    public void independentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        testAllDataProvidersData();
-    }
+    public void independentTestOfDataProviderTest() throws Exception {
+        final Iterator<Object[]> data = TestNGUtils.getDataProviders("htsjdk");
 
-    @BeforeSuite // @BeforeSuite is executed before @BeforeClass
-    private void setupBeforeClassClassFinder(){
-        classFinder = new ClassFinder();
-    }
+        Assert.assertTrue(data.hasNext(), "Found no data from testAllDataProvidersdata. Something is wrong");
 
-    @BeforeClass // @BeforeSuite is executed before @BeforeClass
-    private void setupBeforeSuiteClassFinder(){
-        classFinder.find("htsjdk", HtsjdkTest.class);
+        Assert.assertEquals(StreamSupport.stream(Spliterators.spliteratorUnknownSize(data, 0), false)
+                        .filter(c -> ((Method) c[0]).getName().equals("testAllDataProvidersData")).count(), 1,
+                "getDataProviders didn't find testAllDataProvidersData, which is in this class. Something is wrong.");
     }
-
 
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
-    private Iterator<Object[]> testAllDataProvidersData() throws IllegalAccessException, InstantiationException, InvocationTargetException {
+    private Iterator<Object[]> testAllDataProvidersData() throws Exception {
 
-        final List<Object[]> data = new ArrayList<>();
-
-        for (final Class<?> testClass : classFinder.getConcreteClasses()) {
-            Set<Method> methodSet = Sets.newHashSet();
-            methodSet.addAll(Arrays.asList(testClass.getDeclaredMethods()));
-            methodSet.addAll(Arrays.asList(testClass.getMethods()));
-            for (final Method method : methodSet) {
-                if (method.isAnnotationPresent(DataProvider.class)) {
-                    data.add(new Object[]{method, testClass});
-                }
-            }
-        }
-        Assert.assertTrue(data.size() > 1);
-
-        // make sure that this @DataProvider is in the list even though it's private
-        Assert.assertEquals(data.stream().filter(c ->
-                        ((Method) c[0]).getName().equals("testAllDataProvidersData") &&
-                        ((Class)  c[1]).getName().equals(this.getClass().getName())).count(), 1L);
-
-        return data.iterator();
+        return TestNGUtils.getDataProviders("htsjdk");
     }
 
+    // runs all the @DataProviders it gets from DataprovidersThatDontTestThemselves.
+    // runs the BeforeSuite and BeforeClass methods of the same class before it runs the provider itself.
 
     // @NoInjection annotations required according to this test:
     // https://github.com/cbeust/testng/blob/master/src/test/java/test/inject/NoInjectionTest.java
