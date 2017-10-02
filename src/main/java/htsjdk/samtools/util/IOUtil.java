@@ -243,13 +243,11 @@ public class IOUtil {
 
     public static void deletePaths(final Iterable<Path> paths) {
         for (final Path p : paths) {
-            boolean deleted;
             try {
                 Files.delete(p);
             } catch (IOException e) {
-                deleted = false;
+                System.err.println("Could not delete file " + p);
             }
-            if (!deleted) System.err.println("Could not delete file " + p);
         }
     }
 
