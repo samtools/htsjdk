@@ -108,10 +108,6 @@ public final class GZIIndex {
         }
     }
 
-    // first entry in the mapping (do not write down)
-    public static final IndexEntry FIRST_MAPPING = new IndexEntry(0, 0);
-
-
     private final List<IndexEntry> entries;
 
     // private constructors
@@ -125,11 +121,15 @@ public final class GZIIndex {
      * @return the number of blocks.
      */
     public int getNumberOfBlocks() {
-        return entries.size();
+        // +1 because the first block is not included in the entry list
+        return entries.size() + 1;
     }
 
     /**
      * Gets an unmodifiable list with the index entries.
+     *
+     * <p>Note: because the first block corresponds to a dummy index entry (0, 0), the returned list
+     * does not include it. Thus, the size of the list is {@code getNumberOfBlocks() - 1}.
      *
      * @return index entries.
      */
@@ -155,35 +155,46 @@ public final class GZIIndex {
      * @see BlockCompressedFilePointerUtil
      */
     public long getVirtualOffsetForSeek(final long uncompressedOffset) {
-        if (uncompressedOffset == 0) {
-            return BlockCompressedFilePointerUtil.makeFilePointer(0, 0);
+        try {
+            if (uncompressedOffset == 0) {
+                return BlockCompressedFilePointerUtil.makeFilePointer(0, 0);
+            }
+
+            // binary search in the entries for the uncompressed offset
+            final int pos = Collections.binarySearch(entries,
+                    // this is a fake index for getting the uncompressed offsets
+                    new IndexEntry(0, uncompressedOffset),
+                    Comparator.comparingLong(IndexEntry::getUncompressedOffset));
+
+            // if it is found, it is at the beginning of the block
+            if (pos >= 0) {
+                return BlockCompressedFilePointerUtil.makeFilePointer(
+                        entries.get(pos).getCompressedOffset(),
+                        // offset in the block is always 0 (beginning of the block)
+                        0);
+            }
+
+            // if pos < 0, then the offset is in the previous block to the insertion point
+            // the insertion_point == -pos - 1
+            // previous block = inserion_point - 1
+            final int entryPos = -pos - 2;
+
+            // if the insertion point is -1, it means that it is in the first block
+            // so the virtual offset is just the uncompressed offset on the first block
+            if (entryPos == -1) {
+                return BlockCompressedFilePointerUtil.makeFilePointer(0, Math.toIntExact(uncompressedOffset));
+            }
+
+            final IndexEntry indexEntry = entries.get(entryPos);
+
+            // now we should convert the uncompressed offste to an offset within the block
+            final int blockOffset = Math.toIntExact(uncompressedOffset - indexEntry.getUncompressedOffset());
+
+            // we use the file pointer utils to convert to the virtual-offset representation
+            return BlockCompressedFilePointerUtil.makeFilePointer(indexEntry.getCompressedOffset(), blockOffset);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("Cannot handle offsets within blocks larger than " +  Integer.MAX_VALUE, e);
         }
-
-        // binary search in the entries for the uncompressed offset
-        final int pos = Collections.binarySearch(entries,
-                // this is a fake index for getting the uncompressed offsets
-                new IndexEntry(0, uncompressedOffset),
-                Comparator.comparingLong(IndexEntry::getUncompressedOffset));
-
-        // if it is found, it is at the beginning of the block
-        if (pos >= 0) {
-            return BlockCompressedFilePointerUtil.makeFilePointer(
-                    entries.get(pos).getCompressedOffset(),
-                    // offset in the block is always 0 (beginning of the block)
-                    0);
-        }
-
-        // if pos < 0, then the offset is in the previous block to the insertion point
-        // the insertion_point == -pos - 1
-        // previous block = inserion_point - 1
-        final int entryPos = -pos - 2;
-        final IndexEntry indexEntry = entries.get(entryPos);
-
-        // now we should convert the uncompressed offste to an offset within the block
-        final int blockOffset = Math.toIntExact(uncompressedOffset - indexEntry.getUncompressedOffset());
-
-        // we use the file pointer utils to convert to the virtual-offset representation
-        return BlockCompressedFilePointerUtil.makeFilePointer(indexEntry.getCompressedOffset(), blockOffset);
     }
 
     @Override
@@ -217,14 +228,14 @@ public final class GZIIndex {
         }
 
         // the first entry is never written - 0, 0
-        final int numberOfBlocksToWrite = getNumberOfBlocks() - 1;
+        final int numberOfBlocksToWrite = entries.size();
 
         final ByteBuffer buffer = allocateBuffer(numberOfBlocksToWrite, true);
         // put the number of entries
         buffer.putLong(Integer.toUnsignedLong(numberOfBlocksToWrite));
 
         // except the first, iterate over all the entries
-        for (final IndexEntry entry : entries.subList(1, entries.size())) {
+        for (final IndexEntry entry : entries) {
             // implementation of entry ensures that the offsets are no negative
             buffer.putLong(entry.getCompressedOffset());
             buffer.putLong(entry.getUncompressedOffset());
@@ -269,15 +280,14 @@ public final class GZIIndex {
             }
 
             // allocate array with the entries and add the first one
-            final List<IndexEntry> entries = new ArrayList<>(numberOfEntries + 1);
-            entries.add(FIRST_MAPPING);
+            final List<IndexEntry> entries = new ArrayList<>(numberOfEntries);
 
             // create a new buffer with the correct size and read into it
             buffer = allocateBuffer(numberOfEntries, false);
             channel.read(buffer);
             buffer.flip();
 
-            for (int i = 1; i <= numberOfEntries; i++) {
+            for (int i = 0; i < numberOfEntries; i++) {
                 final IndexEntry entry;
                 try {
                     entry = new IndexEntry(buffer.getLong(), buffer.getLong());
@@ -285,7 +295,11 @@ public final class GZIIndex {
                     throw getCorruptedIndexException(indexPath, e.getMessage(), e);
                 }
                 // check if the entry is increasing in order
-                if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
+                if (i == 0) {
+                    if (entry.getUncompressedOffset() == 0 && entry.getCompressedOffset() == 0) {
+                        throw getCorruptedIndexException(indexPath, "first block index entry should not be present", null);
+                    }
+                } else if (entries.get(i - 1).getCompressedOffset() >= entry.getCompressedOffset()
                         || entries.get(i - 1).getUncompressedOffset() >= entry.getUncompressedOffset()) {
                     throw getCorruptedIndexException(indexPath,
                             String.format("index entries in misplaced order - %s vs %s",
@@ -327,8 +341,7 @@ public final class GZIIndex {
         try (final BlockCompressedInputStream bgzipStream = new BlockCompressedInputStream(Files.newInputStream(bgzipFile))) {
 
             // store the entries as a list
-            final List<IndexEntry> entries = new ArrayList<>(2);
-            entries.add(FIRST_MAPPING);
+            final List<IndexEntry> entries = new ArrayList<>();
 
             // accumulator for number of bytes read to use in the offset for the index-entry
             int currentOffset = 0;

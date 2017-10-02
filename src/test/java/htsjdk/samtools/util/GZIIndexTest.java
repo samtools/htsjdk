@@ -95,8 +95,8 @@ public class GZIIndexTest extends HtsjdkTest {
         final List<Object[]> data = new ArrayList<>(2 * index.getNumberOfBlocks() + 3);
         // position 0
         data.add(new Object[]{0, 0, 0, index});
-        // postion 10 bytes before the first index - TODO: this should be get(0) if the in-memory representation does not have the first mapping
-        final GZIIndex.IndexEntry firstFileEntry = index.getIndexEntries().get(1);
+        // postion 10 bytes before the first index
+        final GZIIndex.IndexEntry firstFileEntry = index.getIndexEntries().get(0);
         data.add(new Object[]{firstFileEntry.getUncompressedOffset() - 10, 0, firstFileEntry.getUncompressedOffset() - 10, index});
 
         // add for each entry 2 tests (the entry itself and 10 bytes after the block)
