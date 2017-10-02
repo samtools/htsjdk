@@ -28,13 +28,16 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -74,7 +77,8 @@ public class ClassFinder {
     /** Convert a filename to a class name by removing '.class' and converting '/'s to '.'s. */
     public String toClassName(final String filename) {
         return filename.substring(0, filename.lastIndexOf(".class"))
-                .replace('/', '.').replace('\\', '.');
+                .replace('/', '.')
+                .replace('\\', '.');
     }
 
     /**
@@ -188,5 +192,27 @@ public class ClassFinder {
     /** Fetches the set of classes discovered so far. */
     public Set<Class<?>> getClasses() {
         return this.classes;
+    }
+
+
+    /**
+     * Fetches the set of classes discovered so far, subsetted down to concrete (non-abstract/interface) classes only
+     *
+     * @return subset of classes discovered so far including only concrete (non-abstract/interface) classes
+     */
+    public Set<Class<?>> getConcreteClasses() {
+        return getClasses().stream()
+                .filter(ClassFinder::isConcrete)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Determines whether or not the specified class is concrete (ie., non-abstract and non-interface)
+     *
+     * @param clazz class to check
+     * @return true if the class is neither abstract nor an interface, otherwise false
+     */
+    public static boolean isConcrete( final Class<?> clazz ) {
+        return ! Modifier.isAbstract(clazz.getModifiers()) && ! Modifier.isInterface(clazz.getModifiers());
     }
 }

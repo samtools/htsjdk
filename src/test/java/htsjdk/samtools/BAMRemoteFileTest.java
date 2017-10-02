@@ -55,7 +55,7 @@ public class BAMRemoteFileTest extends HtsjdkTest {
 
 
     @Test
-    void testRemoteLocal()
+    public void testRemoteLocal()
             throws Exception {
         runLocalRemoteTest(bamURL, BAM_FILE, "chrM", 10400, 10600, false);
     }

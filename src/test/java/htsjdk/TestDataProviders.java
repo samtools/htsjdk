@@ -2,14 +2,10 @@ package htsjdk;
 
 import htsjdk.utils.ClassFinder;
 import org.testng.Assert;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.NoInjection;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,23 +19,21 @@ import java.util.List;
  *
  * @author Yossi Farjoun
  */
-public class TestDataProviders {
-
+public class TestDataProviders extends HtsjdkTest{
 
     @Test
-    public void IndependentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        testAllDataProvidersdata();
+    public void independentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        testAllDataProvidersData();
     }
 
     @DataProvider(name = "DataprovidersThatDontTestThemselves")
-    public Iterator<Object[]> testAllDataProvidersdata() throws IllegalAccessException, InstantiationException, InvocationTargetException {
+    public Iterator<Object[]> testAllDataProvidersData() throws IllegalAccessException, InstantiationException, InvocationTargetException {
 
         List<Object[]> data = new ArrayList<>();
         final ClassFinder classFinder = new ClassFinder();
-        classFinder.find("htsjdk", Object.class);
+        classFinder.find("htsjdk", HtsjdkTest.class);
 
-        for (final Class<?> testClass : classFinder.getClasses()) {
-            if (Modifier.isAbstract(testClass.getModifiers())) continue;
+        for (final Class<?> testClass : classFinder.getConcreteClasses()) {
             for (final Method method : testClass.getMethods()) {
                 if (method.isAnnotationPresent(DataProvider.class)) {
                     data.add(new Object[]{method, testClass});
@@ -49,7 +43,10 @@ public class TestDataProviders {
         Assert.assertTrue(data.size() > 1);
 
         // make sure that this @DataProvider is in the list
-        Assert.assertEquals(data.stream().filter(c -> ((Method) c[0]).getName().equals("testAllDataProvidersdata")).count(), 1);
+        // make sure that this @DataProvider is in the list
+        Assert.assertEquals(data.stream().filter(c ->
+                        ((Method) c[0]).getName().equals("testDependenceData") &&
+                        ((Class)  c[1]).getName().equals(this.getClass().getName())).count(), 1L);
 
         return data.iterator();
     }
@@ -59,8 +56,6 @@ public class TestDataProviders {
     @Test(dataProvider = "DataprovidersThatDontTestThemselves")
     public void testDataProviderswithDP(@NoInjection final Method method, final Class clazz) throws IllegalAccessException, InstantiationException, InvocationTargetException {
 
-        System.err.println("Method: " + method + " Class: " + clazz.getName());
-
         Object instance = clazz.newInstance();
 
         // Some tests assume that the @BeforeSuite methods will be called before the @DataProviders
@@ -68,8 +63,13 @@ public class TestDataProviders {
             if (otherMethod.isAnnotationPresent(BeforeSuite.class)) {
                 otherMethod.invoke(instance);
             }
+            if (otherMethod.isAnnotationPresent(BeforeClass.class)) {
+                otherMethod.invoke(instance);
+            }
+            if (otherMethod.isAnnotationPresent(BeforeMethod.class)) {
+                otherMethod.invoke(instance);
+            }
         }
-
         method.invoke(instance);
     }
 }

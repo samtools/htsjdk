@@ -686,7 +686,7 @@ public class CRAMIndexQueryTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "unmappedSliceTest")
-    private void testUnmappedMultiSlice(
+    public void testUnmappedMultiSlice(
             final File cramFileName,
             final File referenceFileName,
             final int expectedCount) throws IOException
