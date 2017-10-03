@@ -111,6 +111,9 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 attribute = attribute.getNext();
             }
         }
+        if (cigarLength > 0xffff) {
+            blockSize += 12; // 12: "CGBI" + realCigarLen + fakeCigar
+        }
 
         int indexBin = 0;
         if (alignment.getReferenceIndex() >= 0) {
@@ -129,7 +132,11 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         this.binaryCodec.writeUByte((short)(alignment.getReadNameLength() + 1));
         this.binaryCodec.writeUByte((short)alignment.getMappingQuality());
         this.binaryCodec.writeUShort(indexBin);
-        this.binaryCodec.writeUShort(cigarLength);
+        if (cigarLength > 0xffff) {
+            this.binaryCodec.writeUShort(1);
+        } else {
+            this.binaryCodec.writeUShort(cigarLength);
+        }
         this.binaryCodec.writeUShort(alignment.getFlags());
         this.binaryCodec.writeInt(alignment.getReadLength());
         this.binaryCodec.writeInt(alignment.getMateReferenceIndex());
@@ -137,9 +144,23 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         this.binaryCodec.writeInt(alignment.getInferredInsertSize());
         final byte[] variableLengthBinaryBlock = alignment.getVariableBinaryRepresentation();
         if (variableLengthBinaryBlock != null) {
-            // Don't need to encode variable-length block, because it is unchanged from
-            // when the record was read from a BAM file.
-            this.binaryCodec.writeBytes(variableLengthBinaryBlock);
+            if (cigarLength <= 0xffff) {
+                // Don't need to encode variable-length block, because it is unchanged from
+                // when the record was read from a BAM file.
+                this.binaryCodec.writeBytes(variableLengthBinaryBlock);
+            } else {
+                final int cigarOffset = alignment.getReadNameLength() + 1;
+                final int seqOffset = cigarOffset + cigarLength * 4;
+                this.binaryCodec.writeBytes(variableLengthBinaryBlock, 0, alignment.getReadNameLength() + 1); // write QNAME; +1 for the trailing NULL
+                if (readLength >= 1<<28) { // Can't be encoded with one full clipping CIGAR
+                    throw new RuntimeException("Read length is longer than " + ((1<<28) - 1) + " and can't be encoded");
+                }
+                this.binaryCodec.writeInt(readLength << 4 | 4); // write the fake CIGAR: <readLength>S
+                this.binaryCodec.writeBytes(variableLengthBinaryBlock, seqOffset, variableLengthBinaryBlock.length - seqOffset); // write the rest
+                this.binaryCodec.writeString("CGBI", false, false); // write the CG tag and its type
+                this.binaryCodec.writeInt(cigarLength); // write the array length
+                this.binaryCodec.writeBytes(variableLengthBinaryBlock, cigarOffset, cigarLength * 4); // write the CIGAR array
+            }
         } else {
             if (alignment.getReadLength() != alignment.getBaseQualities().length &&
                 alignment.getBaseQualities().length != 0) {
@@ -148,11 +169,17 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
                 "; quals length: " + alignment.getBaseQualities().length);
             }
             this.binaryCodec.writeString(alignment.getReadName(), false, true);
-            final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
-            for (final int cigarElement : binaryCigar) {
-                // Assumption that this will fit into an integer, despite the fact
-                // that it is specced as a uint.
-                this.binaryCodec.writeInt(cigarElement);
+            if (cigarLength <= 0xffff) {
+                final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
+                for (final int cigarElement : binaryCigar) {
+                    // Assumption that this will fit into an integer, despite the fact
+                    // that it is specced as a uint.
+                    this.binaryCodec.writeInt(cigarElement);
+                }
+            } else { // then write a fake CIGAR: <readLength>S
+                if (readLength >= 1<<28) // Can't be encoded with one full clipping CIGAR
+                    throw new RuntimeException("Read length is longer than " + ((1<<28) - 1));
+                this.binaryCodec.writeInt(readLength << 4 | 4);
             }
             try {
                 this.binaryCodec.writeBytes(SAMUtils.bytesToCompressedBases(alignment.getReadBases()));
@@ -170,6 +197,14 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
             while (attribute != null) {
                 this.binaryTagCodec.writeTag(attribute.tag, attribute.value, attribute.isUnsignedArray());
                 attribute = attribute.getNext();
+            }
+            if (cigarLength > 0xffff) {
+                this.binaryCodec.writeString("CGBI", false, false);
+                this.binaryCodec.writeInt(cigarLength);
+                final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
+                for (final int cigarElement : binaryCigar) {
+                    this.binaryCodec.writeInt(cigarElement);
+                }
             }
         }
     }

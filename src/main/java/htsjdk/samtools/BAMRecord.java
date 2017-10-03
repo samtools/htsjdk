@@ -88,13 +88,56 @@ public class BAMRecord extends SAMRecord {
         setAlignmentStart(coordinate);
         mReadNameLength = readNameLength;
         setMappingQuality(mappingQuality);
-        mCigarLength = cigarLen;
         setFlags(flags);
         mReadLength = readLen;
         setMateReferenceIndex(mateReferenceID);
         setMateAlignmentStart(mateCoordinate);
         setInferredInsertSize(insertSize);
-        mRestOfBinaryData = restOfData;
+
+        // Test if the real CIGAR is kept in the CG:B,I tag. If so, get its length and the offset in restOfData.
+        int tagCigarLen = -1, tagCigarOffset = -1;
+        if (cigarLen == 1 && referenceID >= 0 && restOfData.length - readNameLength >= 12) { // 12 = "CGBI" + realCigarLen + fakeCigar
+            int cigar1 = (int)restOfData[readNameLength]
+                        | (int)restOfData[readNameLength+1]<<8
+                        | (int)restOfData[readNameLength+2]<<16
+                        | (int)restOfData[readNameLength+3]<<24; // manually decode the current CIGAR (for performance); one operation only
+            if ((cigar1 & 0xf) == 4 && cigar1 >> 4 == readLen) { // the CIGAR is <readLength>S; then search for the CG:B,I tag
+                final ByteBuffer r = ByteBuffer.wrap(restOfData);
+                r.order(ByteOrder.LITTLE_ENDIAN);
+                r.position(readNameLength + cigarLen + (readLen + 1) / 2 + readLen); // point to the offset of the first tag
+                while (r.remaining() >= 4) {
+                    char tag1 = r.getChar(), tag2 = r.getChar(), type1 = r.getChar();
+                    if (type1 == 'B') { // array type
+                        char type2 = r.getChar();
+                        int len = r.getInt();
+                        if (tag1 == 'C' && tag2 == 'G' && type2 == 'I') { // found CG:B,I
+                            tagCigarLen = len;
+                            tagCigarOffset = r.position();
+                            break;
+                        }
+                        r.position(r.position() + typeLength(type2) * len);
+                    } else {
+                        r.position(r.position() + typeLength(type1));
+                    }
+                }
+            }
+        }
+
+        // Set mCigarLength and mRestOfBinaryData
+        if (tagCigarLen > 0 && tagCigarOffset > 0) { // the real CIGAR is kept at the CG:B,I tag; move it out
+            final ByteBuffer w = ByteBuffer.allocate(restOfData.length - 12);
+            final int seqOffset = readNameLength + cigarLen;
+            w.put(restOfData, 0, readNameLength); // copy read name
+            w.put(restOfData, tagCigarOffset, tagCigarLen * 4); // copy the real CIGAR
+            w.put(restOfData, seqOffset, tagCigarOffset - 8 - seqOffset); // copy seq, qual and tags before CG; 8 = "CGBI" + sizeof(uint32_t)
+            if (tagCigarOffset + tagCigarLen * 4 < restOfData.length) // copy tags following CG, if there is any
+                w.put(restOfData, tagCigarOffset + tagCigarLen * 4, restOfData.length - (tagCigarOffset + tagCigarLen * 4));
+            mCigarLength = tagCigarLen;
+            mRestOfBinaryData = w.array();
+        } else {
+            mCigarLength = cigarLen;
+            mRestOfBinaryData = restOfData;
+        }
 
         // Set these to null in order to mark them as being candidates for lazy initialization.
         // If this is not done, they will have non-null defaults.
@@ -367,5 +410,12 @@ public class BAMRecord extends SAMRecord {
 
     private int qualsSize() {
         return mReadLength;
+    }
+
+    private int typeLength(char type) {
+        if (type == 'C' || type == 'c' || type == 'A') return 1;
+        if (type == 'S' || type == 's') return 2;
+        if (type == 'I' || type == 'i' || type == 'f') return 4;
+        return 0;
     }
 }
