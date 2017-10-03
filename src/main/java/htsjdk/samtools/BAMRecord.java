@@ -116,6 +116,8 @@ public class BAMRecord extends SAMRecord {
                             break;
                         }
                         r.position(r.position() + typeLength(type2) * len);
+                    } else if (type1 == 'Z' || type1 == 'H') {
+                        while (r.getChar() != 0);
                     } else {
                         r.position(r.position() + typeLength(type1));
                     }
