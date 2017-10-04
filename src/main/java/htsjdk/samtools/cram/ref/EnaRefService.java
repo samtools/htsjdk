@@ -45,6 +45,7 @@ public class EnaRefService {
         if (!md5.matches("[a-z0-9]{32}"))
             throw new RuntimeException("Does not look like an md5 checksum: " + md5);
 
+        // from https://www.ebi.ac.uk/ena/software/cram-reference-registry
         final String httpEbiString = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         final String urlString = String.format(httpEbiString, md5);
         final URL url;
