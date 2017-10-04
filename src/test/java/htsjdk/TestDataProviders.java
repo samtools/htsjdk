@@ -1,6 +1,5 @@
 package htsjdk;
 
-import htsjdk.utils.ClassFinder;
 import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
 import org.testng.annotations.*;
@@ -8,9 +7,10 @@ import org.testng.collections.Sets;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
 /**
