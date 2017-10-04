@@ -16,6 +16,8 @@ public class EnaRefService {
     private static final int HTTP_NOT_FOUND = 404;
     private static final int HTTP_INTERNAL_SEVER_PROBLEM = 500;
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
+    private static final int HTTP_MOVED_PERMANENTLY = 301;
+
 
     byte[] getSequence(final String md5) throws GaveUpException {
         final int restBetweenTries_ms = 0;
@@ -43,7 +45,7 @@ public class EnaRefService {
         if (!md5.matches("[a-z0-9]{32}"))
             throw new RuntimeException("Does not look like an md5 checksum: " + md5);
 
-        final String httpEbiString = "http://www.ebi.ac.uk/ena/cram/md5/%s";
+        final String httpEbiString = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         final String urlString = String.format(httpEbiString, md5);
         final URL url;
         try {
@@ -75,6 +77,12 @@ public class EnaRefService {
                     case HTTP_CONNECTION_TIMEOUT:
                     case HTTP_INTERNAL_SEVER_PROBLEM:
                         break;
+                    case HTTP_MOVED_PERMANENTLY:
+                        log.error("It seems that the base URL for the ENA service has changed permanently. Got error:" + code +
+                        "\n Please contact the HtsJdk developers at www.github.com/samtools/htsjdk. \n" +
+                                "Tried to access "+ url + "\n" +
+                                "Response header: " + http.getHeaderFields().toString());
+                        throw new RuntimeException("Bad http status code: " + code);
                     default:
                         throw new RuntimeException("Unknown http status code: " + code);
                 }
