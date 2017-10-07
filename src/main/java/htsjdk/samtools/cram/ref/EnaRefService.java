@@ -11,12 +11,13 @@ import java.net.URL;
 
 public class EnaRefService {
     private static final Log log = Log.getInstance(EnaRefService.class);
-    private static final int HTTP_OK = 200;
+    private static final int HTTP_OK = HttpURLConnection.HTTP_OK;
     private static final int HTTP_FOUND = 302;
-    private static final int HTTP_NOT_FOUND = 404;
-    private static final int HTTP_INTERNAL_SEVER_PROBLEM = 500;
+    private static final int HTTP_NOT_FOUND = HttpURLConnection.HTTP_NOT_FOUND;
+    private static final int HTTP_INTERNAL_SEVER_PROBLEM = HttpURLConnection.HTTP_INTERNAL_ERROR;
+    // this is a non-standard code and I'm not sure why it's here
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
-    private static final int HTTP_MOVED_PERMANENTLY = 301;
+    private static final int HTTP_MOVED_PERMANENTLY = HttpURLConnection.HTTP_MOVED_PERM;
 
 
     byte[] getSequence(final String md5) throws GaveUpException {
