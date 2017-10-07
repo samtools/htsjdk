@@ -19,7 +19,6 @@ public class EnaRefService {
     private static final int HTTP_CONNECTION_TIMEOUT = 522;
     private static final int HTTP_MOVED_PERMANENTLY = HttpURLConnection.HTTP_MOVED_PERM;
 
-
     byte[] getSequence(final String md5) throws GaveUpException {
         final int restBetweenTries_ms = 0;
         final int maxTries = 1;
