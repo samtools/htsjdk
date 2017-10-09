@@ -69,7 +69,7 @@ public class LiftOver {
     /**
      * Resets the internal counter that tracks intervals that failed liftover due to insufficient intersection length
      */
-    public void resetFailedIntervalCounter(){
+    public void resetFailedIntervalCounter() {
         this.totalFailedIntervalsBelowThreshold = 0L;
     }
 
@@ -77,7 +77,7 @@ public class LiftOver {
      *
      * @return The total number of intervals that have failed liftover due to insufficient intersection length
      */
-    public long getFailedIntervalCounter(){
+    public long getFailedIntervalCounter() {
         return totalFailedIntervalsBelowThreshold;
     }
 
@@ -154,7 +154,7 @@ public class LiftOver {
                 targetIntersection = candidateIntersection;
             } else if (candidateIntersection != null) {
                 hasOverlapBelowThreshold = true;
-                if (logFailedIntervals){
+                if (logFailedIntervals) {
                     LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
                             " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
                             + minMatchSize +
@@ -163,7 +163,7 @@ public class LiftOver {
             }
         }
         if (chainHit == null) {
-            if (hasOverlapBelowThreshold){
+            if (hasOverlapBelowThreshold) {
                 totalFailedIntervalsBelowThreshold++;
             }
 
