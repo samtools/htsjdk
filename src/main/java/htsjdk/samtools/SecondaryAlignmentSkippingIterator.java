@@ -21,15 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package htsjdk.samtools.filter;
+package htsjdk.samtools;
+
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.PeekIterator;
 
 /**
- * Filter out SAMRecords with NotPrimaryAlignment flag set
- *
- * $Id$
- * @deprecated use {@link SecondaryAlignmentFilter} instead.
+ * Wrapper around SAMRecord iterator that skips over secondary elements.
+ * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
+ * handle those concerns separately.
  */
-@Deprecated
-public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {
+public class SecondaryAlignmentSkippingIterator {
+    private final PeekIterator<SAMRecord> it;
 
+    public SecondaryAlignmentSkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
+        it = new PeekIterator<>(underlyingIt);
+        skipAnySecondary();
+    }
+
+    public boolean hasCurrent() {
+        return it.hasNext();
+    }
+
+    public SAMRecord getCurrent() {
+        assert(hasCurrent());
+        return it.peek();
+    }
+
+    public boolean advance() {
+        it.next();
+        skipAnySecondary();
+        return hasCurrent();
+    }
+
+    private void skipAnySecondary() {
+        while (it.hasNext() && it.peek().isSecondaryAlignment()) {
+            it.next();
+        }
+    }
 }
