@@ -62,14 +62,14 @@ public class LiftOver {
      * will be logged.  Set this to false to prevent logging.
      * @param logFailedIntervals
      */
-    public void setLogFailedIntervals(boolean logFailedIntervals) {
+    public void setShouldLogFailedIntervalsBelowThreshold(boolean logFailedIntervals) {
         this.logFailedIntervals = logFailedIntervals;
     }
 
     /**
      * Resets the internal counter that tracks intervals that failed liftover due to insufficient intersection length
      */
-    public void resetFailedIntervalCounter() {
+    public void resetFailedIntervalsBelowThresholdCounter() {
         this.totalFailedIntervalsBelowThreshold = 0L;
     }
 
@@ -77,7 +77,7 @@ public class LiftOver {
      *
      * @return The total number of intervals that have failed liftover due to insufficient intersection length
      */
-    public long getFailedIntervalCounter() {
+    public long getFailedIntervalsBelowThreshold() {
         return totalFailedIntervalsBelowThreshold;
     }
 
