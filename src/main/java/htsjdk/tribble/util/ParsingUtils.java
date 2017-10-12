@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
@@ -100,16 +101,16 @@ public class ParsingUtils {
      * @return
      * @throws IOException
      */
-    public static InputStream openInputStream(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+    public static InputStream openInputStream(final String path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
 
         final InputStream inputStream;
         if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
             inputStream = getURLHelper(new URL(path)).openInputStream();
-        } else if (IOUtil.hasScheme(path)) {
+        } else if (IOUtil.hasScheme(path) && !IOUtil.getScheme(path).equals("file")) {
             inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
         } else {
-            File file = new File(path);
+            File file = IOUtil.getScheme(path).equals("file") ? new File(path.substring("file:".length())):new File(path);
             inputStream = new FileInputStream(file);
         }
         return inputStream;

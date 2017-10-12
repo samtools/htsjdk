@@ -1079,6 +1079,18 @@ public class IOUtil {
     }
 
     /**
+     * Get URI's scheme or empty string.
+     *
+     */
+    public static String getScheme(String uriString) {
+        try {
+            return new URI(uriString).getScheme();
+        } catch (URISyntaxException e) {
+            return "";
+        }
+    }
+
+    /**
      * Converts the given URI to a {@link Path} object. If the filesystem cannot be found in the usual way, then attempt
      * to load the filesystem provider using the thread context classloader. This is needed when the filesystem
      * provider is loaded using a URL classloader (e.g. in spark-submit).
