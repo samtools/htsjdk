@@ -23,12 +23,14 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import htsjdk.HtsjdkTest;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+
 import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -46,7 +48,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -393,5 +394,11 @@ public class IoUtilTest extends HtsjdkTest {
                 Assert.fail(e.getMessage());
             }
         }
+    }
+
+    @Test
+    public void testUnrollPaths(final String pathUri, final String[] extensions, final int expectedNumberOfUnrolledPaths) throws IOException {
+        Path p = IOUtil.getPath(pathUri);
+        IOUtil.unrollPaths( Collections.singleton(p), extensions);
     }
 }

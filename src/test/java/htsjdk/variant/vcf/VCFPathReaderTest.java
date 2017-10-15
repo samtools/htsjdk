@@ -1,5 +1,6 @@
 package htsjdk.variant.vcf;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -9,7 +10,7 @@ import java.nio.file.Paths;
 /**
  * Created by farjoun on 10/12/17.
  */
-public class VCFPathReaderTest {
+public class VCFPathReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "pathsData")
     Object[][] pathsData() {

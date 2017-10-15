@@ -984,6 +984,45 @@ public class IOUtil {
         }
     }
 
+
+    /**
+     * Returns an iterator over the lines in a text file. The underlying resources are automatically
+     * closed when the iterator hits the end of the input, or manually by calling close().
+     *
+     * @param p a {@link Path} that is to be read in as text
+     * @return an iterator over the lines in the file
+     */
+    public static IterableOnceIterator<String> readLines(final Path p) {
+        try {
+            final BufferedReader in = IOUtil.openFileForBufferedReading(p);
+
+            return new IterableOnceIterator<String>() {
+                private String next = in.readLine();
+
+                /** Returns true if there is another line to read or false otherwise. */
+                @Override public boolean hasNext() { return next != null; }
+
+                /** Returns the next line in the file or null if there are no more lines. */
+                @Override public String next() {
+                    try {
+                        final String tmp = next;
+                        next = in.readLine();
+                        if (next == null) in.close();
+                        return tmp;
+                    }
+                    catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
+                }
+
+                /** Closes the underlying input stream. Not required if end of stream has already been hit. */
+                @Override public void close() throws IOException { CloserUtil.close(in); }
+            };
+        }
+        catch (final IOException e) {
+            throw new RuntimeIOException(e);
+        }
+    }
+
+
     /** Returns all of the untrimmed lines in the provided file. */
     public static List<String> slurpLines(final File file) throws FileNotFoundException {
         return slurpLines(new FileInputStream(file));
@@ -1014,7 +1053,7 @@ public class IOUtil {
     private static List<String> tokenSlurp(final InputStream is, final Charset charSet, final String delimiterPattern) {
         try {
             final Scanner s = new Scanner(is, charSet.toString()).useDelimiter(delimiterPattern);
-            final LinkedList<String> tokens = new LinkedList<String>();
+            final LinkedList<String> tokens = new LinkedList<>();
             while (s.hasNext()) {
                 tokens.add(s.next());
             }
@@ -1031,8 +1070,8 @@ public class IOUtil {
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
         if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
 
-        final Stack<File> stack = new Stack<File>();
-        final List<File> output = new ArrayList<File>();
+        final Stack<File> stack = new Stack<>();
+        final List<File> output = new ArrayList<>();
         stack.addAll(inputs);
 
         while (!stack.empty()) {
@@ -1062,6 +1101,55 @@ public class IOUtil {
 
         return output;
     }
+
+    /**
+     * Go through the files provided and if they have one of the provided file extensions pass the file into the output
+     * otherwise assume that file is a list of filenames and unfold it into the output.
+     */
+    public static List<Path> unrollPaths(final Collection<Path> inputs, final String... extensions) {
+        if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
+
+        final Stack<Path> stack = new Stack<>();
+        final List<Path> output = new ArrayList<>();
+        stack.addAll(inputs);
+
+        while (!stack.empty()) {
+            final Path p = stack.pop();
+            final String name = p.toUri().getRawQuery();
+            boolean matched = false;
+
+            for (final String ext : extensions) {
+                if (!matched && name.endsWith(ext)) {
+                    output.add(p);
+                    matched = true;
+                }
+            }
+
+            // If the file didn't match a given extension, treat it as a list of files
+            if (!matched) {
+                IOUtil.assertFileIsReadable(p);
+
+                for (final String s : IOUtil.readLines(p)) {
+                    if (!s.trim().isEmpty()) {
+
+                        final Path innerPath;
+                        try {
+                            innerPath = getPath(s.trim());
+                            stack.push(innerPath);
+                        } catch (IOException e) {
+                            throw new IllegalArgumentException("cannot convert " + s.trim() + " to a Path.");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Preserve input order (since we're using a stack above) for things that care
+        Collections.reverse(output);
+
+        return output;
+    }
+
 
     /**
      * Check if the given URI has a scheme.
