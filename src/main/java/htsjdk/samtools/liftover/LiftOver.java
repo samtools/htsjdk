@@ -51,13 +51,13 @@ public class LiftOver {
     public static final double DEFAULT_LIFTOVER_MINMATCH = 0.95;
 
     private double liftOverMinMatch = DEFAULT_LIFTOVER_MINMATCH;
-    private final OverlapDetector<Chain> chains;
+    private OverlapDetector<Chain> chains;
     private final Map<String, Set<String>> contigMap = new HashMap<>();
 
     /**
      * Load UCSC chain file in order to lift over Intervals.
      */
-    public LiftOver(File chainFile) {
+    public LiftOver(final File chainFile) {
         IOUtil.assertFileIsReadable(chainFile);
         chains = Chain.loadChains(chainFile);
 
@@ -105,6 +105,17 @@ public class LiftOver {
      * @return Interval in the output build coordinates, or null if it cannot be lifted over.
      */
     public Interval liftOver(final Interval interval, final double liftOverMinMatch) {
+        return liftOver(interval, liftOverMinMatch, false);
+    }
+
+    /**
+     * Lift over the given interval to the new genome build.
+     * @param interval Interval to be lifted over.
+     * @param liftOverMinMatch Minimum fraction of bases that must remap.
+     * @param useMaxOverlap Use the remapped interval that has the maximume overlap the lift over interval.
+     * @return Interval in the output build coordinates, or null if it cannot be lifted over.
+     */
+    public Interval liftOver(final Interval interval, final double liftOverMinMatch, final boolean useMaxOverlap) {
         if (interval.length() == 0) {
             throw new IllegalArgumentException("Zero-length interval cannot be lifted over.  Interval: " +
                     interval.getName());
@@ -115,12 +126,21 @@ public class LiftOver {
         double minMatchSize = liftOverMinMatch * interval.length();
 
         // Find the appropriate Chain, and the part of the chain corresponding to the interval to be lifted over.
+        int maxIntersectionSize = 0;
         for (final Chain chain : chains.getOverlaps(interval)) {
             final TargetIntersection candidateIntersection = targetIntersection(chain, interval);
             if (candidateIntersection != null && candidateIntersection.intersectionLength >= minMatchSize) {
                 if (chainHit != null) {
-                    // In basic liftOver, multiple hits are not allowed.
-                    return null;
+                    if (useMaxOverlap) {
+                        if (candidateIntersection.intersectionLength > maxIntersectionSize) {
+                            maxIntersectionSize = candidateIntersection.intersectionLength;
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        // In basic liftOver, multiple hits are not allowed.
+                        return null;
+                    }
                 }
                 chainHit = chain;
                 targetIntersection = candidateIntersection;
