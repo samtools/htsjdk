@@ -25,7 +25,6 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,7 +79,7 @@ public class BufferedLineReader extends LineNumberReader implements LineReader {
     @Override
     public int peek() {
         try {
-            mark(1);
+            mark(2); // Two characters required here as the next read will collapse \r\n to a single \n
             final int ret = read();
             reset();
             return ret;
