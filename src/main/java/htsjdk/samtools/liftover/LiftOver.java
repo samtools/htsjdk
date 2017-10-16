@@ -54,6 +54,33 @@ public class LiftOver {
     private final OverlapDetector<Chain> chains;
     private final Map<String, Set<String>> contigMap = new HashMap<>();
 
+    private boolean logFailedIntervals = true;
+    private long totalFailedIntervalsBelowThreshold = 0L;
+
+    /**
+     * By default any lifted interval that falls below liftOverMinMatch
+     * will be logged.  Set this to false to prevent logging.
+     * @param logFailedIntervals
+     */
+    public void setShouldLogFailedIntervalsBelowThreshold(boolean logFailedIntervals) {
+        this.logFailedIntervals = logFailedIntervals;
+    }
+
+    /**
+     * Resets the internal counter that tracks intervals that failed liftover due to insufficient intersection length
+     */
+    public void resetFailedIntervalsBelowThresholdCounter() {
+        this.totalFailedIntervalsBelowThreshold = 0L;
+    }
+
+    /**
+     *
+     * @return The total number of intervals that have failed liftover due to insufficient intersection length
+     */
+    public long getFailedIntervalsBelowThreshold() {
+        return totalFailedIntervalsBelowThreshold;
+    }
+
     /**
      * Load UCSC chain file in order to lift over Intervals.
      */
@@ -115,6 +142,7 @@ public class LiftOver {
         double minMatchSize = liftOverMinMatch * interval.length();
 
         // Find the appropriate Chain, and the part of the chain corresponding to the interval to be lifted over.
+        boolean hasOverlapBelowThreshold = false;
         for (final Chain chain : chains.getOverlaps(interval)) {
             final TargetIntersection candidateIntersection = targetIntersection(chain, interval);
             if (candidateIntersection != null && candidateIntersection.intersectionLength >= minMatchSize) {
@@ -125,13 +153,20 @@ public class LiftOver {
                 chainHit = chain;
                 targetIntersection = candidateIntersection;
             } else if (candidateIntersection != null) {
-                LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
-                " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
-                + minMatchSize +
-                " (" + (candidateIntersection.intersectionLength/(float)interval.length()) + " < " + liftOverMinMatch + ")");
+                hasOverlapBelowThreshold = true;
+                if (logFailedIntervals) {
+                    LOG.info("Interval " + interval.getName() + " failed to match chain " + chain.id +
+                            " because intersection length " + candidateIntersection.intersectionLength + " < minMatchSize "
+                            + minMatchSize +
+                            " (" + (candidateIntersection.intersectionLength/(float)interval.length()) + " < " + liftOverMinMatch + ")");
+                }
             }
         }
         if (chainHit == null) {
+            if (hasOverlapBelowThreshold) {
+                totalFailedIntervalsBelowThreshold++;
+            }
+
             // Can't be lifted over.
             return null;
         }
