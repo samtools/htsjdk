@@ -353,9 +353,10 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     @Test(dataProvider = "testQualitiesNotStored")
     public void testNotStoredQualitiesFields(final String inputFile, final double expectedValue) throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().open((new File(TEST_DATA_DIR, inputFile)));
-        final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertEquals(results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString()).getValue(), expectedValue);
+        try (final SamReader reader = SamReaderFactory.makeDefault().open((new File(TEST_DATA_DIR, inputFile)))) {
+            final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
+            Assert.assertEquals(results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString()).getValue(), expectedValue);
+        }
     }
 
     @DataProvider(name="testQualitiesNotStored")
