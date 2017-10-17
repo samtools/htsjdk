@@ -148,9 +148,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
 
     /**
      * Look up sequence record by name.
+     * @return sequence record if it's found by name,
+     * or null if sequence dictionary is empty or if the sequence is not found in the dictionary.
      */
     public SAMSequenceRecord getSequence(final String name) {
-        return mSequenceDictionary.getSequence(name);
+        return mSequenceDictionary == null ? null : mSequenceDictionary.getSequence(name);
     }
 
     /**
