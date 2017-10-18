@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -95,7 +96,7 @@ public class BAMRecord extends SAMRecord {
         setInferredInsertSize(insertSize);
 
         // Test if the real CIGAR is kept in the CG:B,I tag. If so, get its length and the offset in restOfData.
-        int tagCigarLen = -1, tagCigarOffset = -1;
+        int tagCigarLen = -1, tagCigarOffset = -1, newIndexingBin;
         if (cigarLen == 1 && referenceID >= 0 && restOfData.length - readNameLength >= 12) { // 12 = "CGBI" + realCigarLen + fakeCigar
             int cigar1 = (int)restOfData[readNameLength]
                         | (int)restOfData[readNameLength+1]<<8
@@ -127,6 +128,20 @@ public class BAMRecord extends SAMRecord {
 
         // Set mCigarLength and mRestOfBinaryData
         if (tagCigarLen > 0 && tagCigarOffset > 0) { // the real CIGAR is kept at the CG:B,I tag; move it out
+            // recompute indexing bin in case it was calculated with older tools unaware of the correct CIGAR
+            final ByteBuffer r = ByteBuffer.wrap(restOfData, tagCigarOffset, tagCigarLen * 4);
+            final int alignmentStart = coordinate - 1;
+            int alignmentEnd = alignmentStart;
+            for (int i = 0; i < tagCigarLen; ++i) {
+                final int cigar1 = r.getInt();
+                final int op = cigar1 & 0xf;
+                if (op == 0 || op == 2 || op == 3 || op == 7 || op == 8) {
+                    alignmentEnd += cigar1 >> 4;
+                }
+            }
+            newIndexingBin = GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
+
+            // move the real CIGAR out to the correct position
             final ByteBuffer w = ByteBuffer.allocate(restOfData.length - 12);
             final int seqOffset = readNameLength + cigarLen;
             w.put(restOfData, 0, readNameLength); // copy read name
@@ -137,6 +152,7 @@ public class BAMRecord extends SAMRecord {
             mCigarLength = tagCigarLen;
             mRestOfBinaryData = w.array();
         } else {
+            newIndexingBin = indexingBin;
             mCigarLength = cigarLen;
             mRestOfBinaryData = restOfData;
         }
@@ -149,7 +165,7 @@ public class BAMRecord extends SAMRecord {
         super.setBaseQualities(null);
 
         // Do this after the above because setCigarString will clear it.
-        setIndexingBin(indexingBin);
+        setIndexingBin(newIndexingBin);
 
         // Mark the binary block as being valid for writing back out to disk
         mBinaryDataStale = false;
