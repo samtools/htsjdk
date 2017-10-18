@@ -98,18 +98,17 @@ public class BAMRecord extends SAMRecord {
         // Test if the real CIGAR is kept in the CG:B,I tag. If so, get its length and the offset in restOfData.
         int tagCigarLen = -1, tagCigarOffset = -1, newIndexingBin;
         if (cigarLen == 1 && referenceID >= 0 && restOfData.length - readNameLength >= 12) { // 12 = "CGBI" + realCigarLen + fakeCigar
-            int cigar1 = (int)restOfData[readNameLength]
-                        | (int)restOfData[readNameLength+1]<<8
-                        | (int)restOfData[readNameLength+2]<<16
-                        | (int)restOfData[readNameLength+3]<<24; // manually decode the current CIGAR (for performance); one operation only
+            final ByteBuffer cigarReader = ByteBuffer.wrap(restOfData, readNameLength, 4);
+            cigarReader.order(ByteOrder.LITTLE_ENDIAN);
+            int cigar1 = cigarReader.getInt();
             if ((cigar1 & 0xf) == 4 && cigar1 >> 4 == readLen) { // the CIGAR is <readLength>S; then search for the CG:B,I tag
                 final ByteBuffer r = ByteBuffer.wrap(restOfData);
                 r.order(ByteOrder.LITTLE_ENDIAN);
-                r.position(readNameLength + cigarLen + (readLen + 1) / 2 + readLen); // point to the offset of the first tag
+                r.position(readNameLength + cigarLen * 4 + (readLen + 1) / 2 + readLen); // point to the offset of the first tag
                 while (r.remaining() >= 4) {
-                    char tag1 = r.getChar(), tag2 = r.getChar(), type1 = r.getChar();
+                    char tag1 = (char)r.get(), tag2 = (char)r.get(), type1 = (char)r.get();
                     if (type1 == 'B') { // array type
-                        char type2 = r.getChar();
+                        char type2 = (char)r.get();
                         int len = r.getInt();
                         if (tag1 == 'C' && tag2 == 'G' && type2 == 'I') { // found CG:B,I
                             tagCigarLen = len;
@@ -118,7 +117,7 @@ public class BAMRecord extends SAMRecord {
                         }
                         r.position(r.position() + typeLength(type2) * len);
                     } else if (type1 == 'Z' || type1 == 'H') {
-                        while (r.getChar() != 0);
+                        while (r.get() != 0);
                     } else {
                         r.position(r.position() + typeLength(type1));
                     }
@@ -130,12 +129,13 @@ public class BAMRecord extends SAMRecord {
         if (tagCigarLen > 0 && tagCigarOffset > 0) { // the real CIGAR is kept at the CG:B,I tag; move it out
             // recompute indexing bin in case it was calculated with older tools unaware of the correct CIGAR
             final ByteBuffer r = ByteBuffer.wrap(restOfData, tagCigarOffset, tagCigarLen * 4);
+            r.order(ByteOrder.LITTLE_ENDIAN);
             final int alignmentStart = coordinate - 1;
             int alignmentEnd = alignmentStart;
             for (int i = 0; i < tagCigarLen; ++i) {
                 final int cigar1 = r.getInt();
                 final int op = cigar1 & 0xf;
-                if (op == 0 || op == 2 || op == 3 || op == 7 || op == 8) {
+                if (op == 0 || op == 2 || op == 3 || op == 7 || op == 8) { // M, D, N, = or X
                     alignmentEnd += cigar1 >> 4;
                 }
             }
@@ -143,7 +143,7 @@ public class BAMRecord extends SAMRecord {
 
             // move the real CIGAR out to the correct position
             final ByteBuffer w = ByteBuffer.allocate(restOfData.length - 12);
-            final int seqOffset = readNameLength + cigarLen;
+            final int seqOffset = readNameLength + cigarLen * 4;
             w.put(restOfData, 0, readNameLength); // copy read name
             w.put(restOfData, tagCigarOffset, tagCigarLen * 4); // copy the real CIGAR
             w.put(restOfData, seqOffset, tagCigarOffset - 8 - seqOffset); // copy seq, qual and tags before CG; 8 = "CGBI" + sizeof(uint32_t)
