@@ -313,4 +313,14 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
         new IndexedFastaSequenceFile(new File(TEST_DATA_DIR, "non-existent.fasta"));
         Assert.fail("FileNotFoundException should have been thrown");
     }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testBadInputForIndexedFastaSequenceFile() throws Exception {
+        new IndexedFastaSequenceFile(SEQUENCE_FILE_GZ);
+    }
+
+    @Test(expectedExceptions = SAMException.class)
+    public void testBadInputForBlockCompressedIndexedFastaSequenceFile() throws Exception {
+        new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE.toPath());
+    }
 }

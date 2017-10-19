@@ -57,7 +57,7 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
         super(path, index);
         if (!canCreateBlockCompresedIndexedFastaSequence(path)) {
-            throw new IllegalArgumentException("Invalid block-compressed Fasta file");
+            throw new SAMException("Invalid block-compressed Fasta file");
         }
         try {
             stream = new BlockCompressedInputStream(new SeekablePathStream(path));
