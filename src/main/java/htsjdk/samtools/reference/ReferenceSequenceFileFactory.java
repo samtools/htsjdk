@@ -140,7 +140,22 @@ public class ReferenceSequenceFileFactory {
         }
     }
 
+    /**
+     * Checks if the provided FASTA file can be open as indexed.
+     *
+     * <p>For a FASTA file to be indexed, it requires to have:
+     * <ul>
+     *     <li>Associated .fai index ({@link FastaSequenceIndex}).</li>
+     *     <li>Associated .gzi index if it is block-compressed ({@link GZIIndex}).</li>
+     * </ul>
+     *
+     * @param fastaFile the reference sequence file path.
+     * @return {@code true} if the file can be open as indexed; {@code false} otherwise.
+     */
     public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
+        // this should thrown an exception if the fasta file is not supported
+        getFastaExtension(fastaFile);
+
         // both the FASTA file should exists and the .fai index should exist
         if (Files.exists(fastaFile) && Files.exists(getFastaIndexFileName(fastaFile))) {
             // open the file for checking for block-compressed input

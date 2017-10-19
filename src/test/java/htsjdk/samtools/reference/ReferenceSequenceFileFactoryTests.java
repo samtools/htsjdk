@@ -45,6 +45,22 @@ public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
     }
 
     @DataProvider
+    public Object[][] canCreateIndexedFastaParams() {
+        return new Object[][] {
+                {hg18, true},
+                {hg18bgzip, true},
+                {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta"), false},
+                {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.noindex.fasta.gz"), false},
+                {new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.nogzindex.fasta.gz"), false}
+        };
+    }
+
+    @Test(dataProvider = "canCreateIndexedFastaParams")
+    public void testCanCreateIndexedFastaReader(final File path, final boolean indexed) {
+        Assert.assertEquals(ReferenceSequenceFileFactory.canCreateIndexedFastaReader(path.toPath()), indexed);
+    }
+
+    @DataProvider
     public Object[][] fastaNames() {
         return new Object[][] {
                 {"break.fa", "break.dict"},
