@@ -93,7 +93,7 @@ public class MarkSeekableStream extends SeekableStream {
     /**
      * Mark the current position of the stream.
      *
-     * <p>Note: there is not limit for reading.
+     * <p>Note: there is no limit for reading.
      *
      * @param readlimit ignored.
      */
