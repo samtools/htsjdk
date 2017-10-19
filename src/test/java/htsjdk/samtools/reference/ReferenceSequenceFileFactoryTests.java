@@ -12,6 +12,7 @@ import java.io.File;
  */
 public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
     public static final File hg18 = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta");
+    public static final File hg18bgzip = new File("src/test/resources/htsjdk/samtools/reference/Homo_sapiens_assembly18.trimmed.fasta.gz");
 
     @Test public void testPositivePath() {
         final ReferenceSequenceFile f = ReferenceSequenceFileFactory.getReferenceSequenceFile(hg18);
@@ -38,6 +39,10 @@ public class ReferenceSequenceFileFactoryTests extends HtsjdkTest {
         Assert.assertTrue(f instanceof IndexedFastaSequenceFile, "Got non-indexed reader by default.");
     }
 
+    @Test public void testBlockCompressedIndexed() {
+        final ReferenceSequenceFile f = ReferenceSequenceFileFactory.getReferenceSequenceFile(hg18bgzip, true);
+        Assert.assertTrue(f instanceof BlockCompressedIndexedFastaSequenceFile);
+    }
 
     @DataProvider
     public Object[][] fastaNames() {

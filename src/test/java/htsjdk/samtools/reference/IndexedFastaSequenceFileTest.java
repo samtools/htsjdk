@@ -41,6 +41,7 @@ import java.io.FileNotFoundException;
 public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
+    private static File SEQUENCE_FILE_GZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
@@ -56,7 +57,8 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
-                { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) }};
+                { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) },
+                { new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())}};
     }
 
     @DataProvider(name="comparative")
@@ -69,11 +71,16 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.toPath()),
                                                new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.toPath(), true),
-                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },};
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE_GZ),
+                                               new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())},
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE_GZ, true),
+                                               new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())}
+        };
     }
 
     @Test(dataProvider="homosapiens")
-    public void testOpenFile(IndexedFastaSequenceFile sequenceFile) {
+    public void testOpenFile(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         Assert.assertNotNull(sequenceFile);
         long endTime = System.currentTimeMillis();
@@ -83,7 +90,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens")
-    public void testFirstSequence(IndexedFastaSequenceFile sequenceFile) {
+    public void testFirstSequence(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         ReferenceSequence sequence = sequenceFile.getSubsequenceAt("chrM",1,firstBasesOfChrM.length());
         long endTime = System.currentTimeMillis();
@@ -98,7 +105,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens")
-    public void testFirstSequenceExtended(IndexedFastaSequenceFile sequenceFile) {
+    public void testFirstSequenceExtended(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         ReferenceSequence sequence = sequenceFile.getSubsequenceAt("chrM",1,extendedBasesOfChrM.length());
         long endTime = System.currentTimeMillis();
@@ -113,7 +120,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens")
-    public void testReadStartingInCenterOfFirstLine(IndexedFastaSequenceFile sequenceFile) {
+    public void testReadStartingInCenterOfFirstLine(AbstractIndexedFastaSequenceFile sequenceFile) {
         final int bytesToChopOff = 5;
         String truncated = extendedBasesOfChrM.substring(bytesToChopOff);
 
@@ -133,7 +140,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens")
-    public void testReadStartingInCenterOfMiddleLine(IndexedFastaSequenceFile sequenceFile) {
+    public void testReadStartingInCenterOfMiddleLine(AbstractIndexedFastaSequenceFile sequenceFile) {
         final int bytesToChopOff = 120;
         String truncated = extendedBasesOfChrM.substring(bytesToChopOff);
 
@@ -153,7 +160,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="comparative")
-    public void testFirstCompleteContigRead(ReferenceSequenceFile originalSequenceFile, IndexedFastaSequenceFile sequenceFile) {
+    public void testFirstCompleteContigRead(ReferenceSequenceFile originalSequenceFile, AbstractIndexedFastaSequenceFile sequenceFile) {
         ReferenceSequence expectedSequence = originalSequenceFile.nextSequence();
 
         long startTime = System.currentTimeMillis();
@@ -171,7 +178,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens",expectedExceptions=SAMException.class)
-    public void testReadThroughEndOfContig(IndexedFastaSequenceFile sequenceFile) {
+    public void testReadThroughEndOfContig(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         try {
             sequenceFile.getSubsequenceAt("chrM",16500,16600);
@@ -186,7 +193,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="homosapiens",expectedExceptions=SAMException.class)
-    public void testReadPastEndOfContig(IndexedFastaSequenceFile sequenceFile) {
+    public void testReadPastEndOfContig(AbstractIndexedFastaSequenceFile sequenceFile) {
          long startTime = System.currentTimeMillis();
          try {
              sequenceFile.getSubsequenceAt("chrM",16800,16900);
@@ -201,7 +208,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
      }
 
     @Test(dataProvider="comparative")
-    public void testLastCompleteContigRead(ReferenceSequenceFile originalSequenceFile, IndexedFastaSequenceFile sequenceFile) {
+    public void testLastCompleteContigRead(ReferenceSequenceFile originalSequenceFile, AbstractIndexedFastaSequenceFile sequenceFile) {
         ReferenceSequence expectedSequence = originalSequenceFile.nextSequence();
         while( !expectedSequence.getName().equals("chr20") )
             expectedSequence = originalSequenceFile.nextSequence();
@@ -222,7 +229,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
 
 
     @Test(dataProvider="homosapiens")
-    public void testLastOfChr20(IndexedFastaSequenceFile sequenceFile) {
+    public void testLastOfChr20(AbstractIndexedFastaSequenceFile sequenceFile) {
         long startTime = System.currentTimeMillis();
         ReferenceSequence sequence = sequenceFile.getSubsequenceAt("chr20",
                                                                    CHR20_LENGTH - lastBasesOfChr20.length()+1,
@@ -239,7 +246,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="comparative")
-    public void testFirstElementOfIterator(ReferenceSequenceFile originalSequenceFile,IndexedFastaSequenceFile sequenceFile) {
+    public void testFirstElementOfIterator(ReferenceSequenceFile originalSequenceFile, AbstractIndexedFastaSequenceFile sequenceFile) {
         ReferenceSequence expectedSequence = originalSequenceFile.nextSequence();
 
         long startTime = System.currentTimeMillis();
@@ -257,7 +264,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="comparative")
-    public void testNextElementOfIterator(ReferenceSequenceFile originalSequenceFile, IndexedFastaSequenceFile sequenceFile) {
+    public void testNextElementOfIterator(ReferenceSequenceFile originalSequenceFile, AbstractIndexedFastaSequenceFile sequenceFile) {
         // Skip past the first one and load the second one.
         originalSequenceFile.nextSequence();
         ReferenceSequence expectedSequence = originalSequenceFile.nextSequence();
@@ -279,7 +286,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     }
 
     @Test(dataProvider="comparative")
-    public void testReset(ReferenceSequenceFile originalSequenceFile, IndexedFastaSequenceFile sequenceFile) {
+    public void testReset(ReferenceSequenceFile originalSequenceFile, AbstractIndexedFastaSequenceFile sequenceFile) {
         // Skip past the first one and load the second one.
         ReferenceSequence expectedSequence = originalSequenceFile.nextSequence();
 
