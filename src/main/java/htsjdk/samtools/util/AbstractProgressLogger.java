@@ -44,6 +44,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     abstract protected void log(String ... message);
 
+
+
     @Override
     public synchronized boolean record(final String chrom, final int pos) {
 	    if (this.lastStartTime == -1) this.lastStartTime = System.currentTimeMillis();
@@ -69,6 +71,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
             return false;
         }
     }
+
+
 
     /**
      * Records that a given record has been processed and triggers logging if necessary.

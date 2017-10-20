@@ -1,5 +1,6 @@
 package htsjdk.tribble;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -8,7 +9,7 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 
-public class AsciiFeatureCodecTest {
+public class AsciiFeatureCodecTest extends HtsjdkTest{
 
     @Test
     public void testMakeIndexableSourceFromUnknownStream() {

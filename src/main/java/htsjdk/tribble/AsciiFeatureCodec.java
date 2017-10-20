@@ -18,7 +18,6 @@
 
 package htsjdk.tribble;
 
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.Log;

@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.build;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
@@ -19,7 +20,7 @@ import java.util.List;
 /**
  * Created by vadim on 06/06/2017.
  */
-public class Sam2CramRecordFactoryTest {
+public class Sam2CramRecordFactoryTest extends HtsjdkTest{
 
     /**
      * This checks that all read bases returned in the record from {@link Sam2CramRecordFactory#createCramRecord(SAMRecord)}

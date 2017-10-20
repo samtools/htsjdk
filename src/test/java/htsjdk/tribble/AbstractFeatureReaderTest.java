@@ -132,7 +132,6 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURI), expected);
     }
 
-
     @DataProvider(name = "vcfFileAndWrapperCombinations")
     private static Object[][] vcfFileAndWrapperCombinations(){
         return new Object[][] {
@@ -164,7 +163,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     }
 
     @DataProvider(name = "failsWithoutWrappers")
-    private static Object[][] failsWithoutWrappers(){
+    public static Object[][] failsWithoutWrappers(){
         return new Object[][] {
                 {MANGLED_VCF, MANGLED_VCF_INDEX},
                 {VCF, CORRUPTED_VCF_INDEX},
@@ -269,5 +268,4 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         Files.copy(idxPath, root.resolve(idxDestination.getFileName().toString()));
         return Files.copy(vcfPath, root.resolve(vcfPath.getFileName().toString()));
     }
-
 }

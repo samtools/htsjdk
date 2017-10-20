@@ -24,13 +24,14 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
-public class BufferedLineReaderTest {
+public class BufferedLineReaderTest extends HtsjdkTest{
 
     private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
     private static final boolean[] LAST_LINE_TERMINATED = {false, true};

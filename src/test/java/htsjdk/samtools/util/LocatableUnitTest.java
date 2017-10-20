@@ -1,10 +1,11 @@
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class LocatableUnitTest {
+public class LocatableUnitTest extends HtsjdkTest{
 
     private static Locatable getLocatable(final String contig, final int start, final int end) {
         return new Locatable() {

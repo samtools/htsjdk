@@ -1,5 +1,6 @@
 package htsjdk.samtools.cram.ref;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
@@ -11,7 +12,7 @@ import java.util.Arrays;
 /**
  * Created by vadim on 29/06/2017.
  */
-public class ReferenceSourceTest {
+public class ReferenceSourceTest extends HtsjdkTest{
 
     @Test
     public void testReferenceSourceUpperCasesBases() {
