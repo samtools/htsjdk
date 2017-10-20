@@ -13,10 +13,19 @@ import java.lang.reflect.Modifier;
 import java.util.*;
 
 /**
- * Created by farjoun on 10/2/17.
+ * Our testing framework assumes that all java tests extend HtsjdkTest (while Scala tests extend from UnitSpec)
+ *
+ * Tests that do not extend HtsjdkTest will not be run during testing leading to possible silent "passage" of broken tests.
+ * This test suite examines the all classes that contain methods that are annotated with the {@link Test} annotation,
+ * and checks that they extend HtsjdkTest.
  */
 public class TestClassDependenceTest extends HtsjdkTest {
 
+
+    // since there are assertions inside the dataprovider, this test check that the dataprovider completes succeessfully.
+    // This is needed since a failing data-provider will result in silently skipping the tests that rely on it.
+
+    // This idea led to the creation of {@link TestDataProviders}, which renders it no-longer needed....
     @Test
     public void independentTestOfDataProviderTest() throws IllegalAccessException, InvocationTargetException, InstantiationException {
         testAllTestsData();
