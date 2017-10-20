@@ -132,6 +132,9 @@ public class Allele implements Comparable<Allele>, Serializable {
     /** A generic static SPAN_DEL allele for use */
     public final static String SPAN_DEL_STRING = "*";
 
+    /** A generic static NON_REF allele for use */
+    public final static String NON_REF_STRING = "<NON_REF>";
+
     // no public way to create an allele
     protected Allele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
@@ -195,6 +198,8 @@ public class Allele implements Comparable<Allele>, Serializable {
     private final static Allele ALT_N = new Allele("N", false);
     public final static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
     public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
+    public final static Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);
+
 
     // ---------------------------------------------------------------------------------------------------------
     //

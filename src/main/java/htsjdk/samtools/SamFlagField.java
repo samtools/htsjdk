@@ -111,7 +111,7 @@ public enum SamFlagField {
             if ((flag & SAMFlag.FIRST_OF_PAIR.flag) != 0)                   value.append('1');
             if ((flag & SAMFlag.SECOND_OF_PAIR.flag) != 0)                  value.append('2');
 
-            if ((flag & SAMFlag.NOT_PRIMARY_ALIGNMENT.flag) != 0)           value.append('s');
+            if ((flag & SAMFlag.SECONDARY_ALIGNMENT.flag) != 0)           value.append('s');
             if ((flag & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0)         value.append('S');
             if ((flag & SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag) != 0) value.append('x');
             if ((flag & SAMFlag.DUPLICATE_READ.flag) != 0)                  value.append('d');
@@ -138,7 +138,7 @@ public enum SamFlagField {
                     case 'R':  value |= SAMFlag.MATE_REVERSE_STRAND.flag;  break;
                     case '1':  value |= SAMFlag.FIRST_OF_PAIR.flag;  break;
                     case '2':  value |= SAMFlag.SECOND_OF_PAIR.flag;  break;
-                    case 's':  value |= SAMFlag.NOT_PRIMARY_ALIGNMENT.flag;  break;
+                    case 's':  value |= SAMFlag.SECONDARY_ALIGNMENT.flag;  break;
                     case 'x':  value |= SAMFlag.READ_FAILS_VENDOR_QUALITY_CHECK.flag;  break;
                     case 'd':  value |= SAMFlag.DUPLICATE_READ.flag;  break;
                     case 'S':  value |= SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag;  break;

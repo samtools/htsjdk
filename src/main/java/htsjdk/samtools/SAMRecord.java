@@ -967,9 +967,18 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * the alignment is not primary (a read having split hits may have multiple primary alignment records).
+     * @deprecated use {@link #isSecondaryAlignment()} instead.
      */
+    @Deprecated
     public boolean getNotPrimaryAlignmentFlag() {
-        return (mFlags & SAMFlag.NOT_PRIMARY_ALIGNMENT.flag) != 0;
+        return isSecondaryAlignment();
+    }
+
+    /**
+     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     */
+    public boolean isSecondaryAlignment() {
+        return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) != 0;
     }
 
     /**
@@ -1063,9 +1072,18 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * the alignment is not primary (a read having split hits may have multiple primary alignment records).
+     * @deprecated use {@link #setSecondaryAlignment(boolean)} instead.
      */
+    @Deprecated
     public void setNotPrimaryAlignmentFlag(final boolean flag) {
-        setFlag(flag, SAMFlag.NOT_PRIMARY_ALIGNMENT.flag);
+        setSecondaryAlignment(flag);
+    }
+
+    /**
+     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     */
+    public void setSecondaryAlignment(final boolean flag) {
+        setFlag(flag, SAMFlag.SECONDARY_ALIGNMENT.flag);
     }
 
     /**
@@ -1094,7 +1112,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * equivalent to {@code (getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag())}.
      */
     public boolean isSecondaryOrSupplementary() {
-        return getNotPrimaryAlignmentFlag() || getSupplementaryAlignmentFlag();
+        return isSecondaryAlignment() || getSupplementaryAlignmentFlag();
     }
 
     private void setFlag(final boolean flag, final int bit) {
@@ -1954,9 +1972,9 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
         if (getReadUnmappedFlag()) {
-            if (getNotPrimaryAlignmentFlag()) {
+            if (isSecondaryAlignment()) {
                 if (ret == null) ret = new ArrayList<>();
-                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT, "Not primary alignment flag should not be set for unmapped read.", getReadName()));
+                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_FLAG_NOT_PRIM_ALIGNMENT, "Secondary alignment flag should not be set for unmapped read.", getReadName()));
                 if (firstOnly) return ret;
             }
             if (getSupplementaryAlignmentFlag()) {
@@ -2030,7 +2048,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
         // TODO(mccowan): Is this asking "is this the primary alignment"?
-        if (this.getReadLength() == 0 && !this.getNotPrimaryAlignmentFlag()) {
+        if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
             final Object fz = getAttribute(SAMTagUtil.getSingleton().FZ);
             if (fz == null) {
                 final String cq = (String)getAttribute(SAMTagUtil.getSingleton().CQ);

@@ -93,7 +93,7 @@ public class Sam2CramRecordFactory {
         cramRecord.setNegativeStrand(record.getReadNegativeStrandFlag());
         cramRecord.setFirstSegment(record.getReadPairedFlag() && record.getFirstOfPairFlag());
         cramRecord.setLastSegment(record.getReadPairedFlag() && record.getSecondOfPairFlag());
-        cramRecord.setSecondaryAlignment(record.getNotPrimaryAlignmentFlag());
+        cramRecord.setSecondaryAlignment(record.isSecondaryAlignment());
         cramRecord.setVendorFiltered(record.getReadFailsVendorQualityCheckFlag());
         cramRecord.setDuplicate(record.getDuplicateReadFlag());
         cramRecord.setSupplementary(record.getSupplementaryAlignmentFlag());

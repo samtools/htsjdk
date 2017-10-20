@@ -133,6 +133,9 @@ public abstract class SamReaderFactory {
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSequence(File referenceSequence);
 
+    /** Sets the specified reference sequence. */
+    abstract public SamReaderFactory referenceSequence(Path referenceSequence);
+
     /** Sets the specified reference sequence * */
     abstract public SamReaderFactory referenceSource(CRAMReferenceSource referenceSequence);
 
@@ -250,6 +253,12 @@ public abstract class SamReaderFactory {
 
         @Override
         public SamReaderFactory referenceSequence(final File referenceSequence) {
+            this.referenceSource = new ReferenceSource(referenceSequence);
+            return this;
+        }
+
+        @Override
+        public SamReaderFactory referenceSequence(final Path referenceSequence) {
             this.referenceSource = new ReferenceSource(referenceSequence);
             return this;
         }

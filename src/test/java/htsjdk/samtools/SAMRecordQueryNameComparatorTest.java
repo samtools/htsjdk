@@ -71,7 +71,7 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
         record.setFirstOfPairFlag(false);
         record.setSecondOfPairFlag(false);
         // primary/secondary/supplementary alignments
-        record.setNotPrimaryAlignmentFlag(false);
+        record.setSecondaryAlignment(false);
         record.setSupplementaryAlignmentFlag(false);
 
         // record1, record2, comparison value
@@ -94,8 +94,8 @@ public class SAMRecordQueryNameComparatorTest extends HtsjdkTest {
                 {record, copyAndSet(record, r -> r.setReadNegativeStrandFlag(true)), -1},
 
                 // primary alignment is first compared to not primary
-                {record, copyAndSet(record, r -> r.setNotPrimaryAlignmentFlag(true)), -1},
-                {copyAndSet(record, r -> r.setNotPrimaryAlignmentFlag(true)), record, 1},
+                {record, copyAndSet(record, r -> r.setSecondaryAlignment(true)), -1},
+                {copyAndSet(record, r -> r.setSecondaryAlignment(true)), record, 1},
                 // secondary alignment is last compared to primary
                 {record, copyAndSet(record, r -> r.setSupplementaryAlignmentFlag(true)), -1},
                 {copyAndSet(record, r -> r.setSupplementaryAlignmentFlag(true)), record, 1},

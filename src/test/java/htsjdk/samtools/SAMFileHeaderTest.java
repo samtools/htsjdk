@@ -26,6 +26,8 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 public class SAMFileHeaderTest extends HtsjdkTest {
 
     @Test
@@ -60,5 +62,23 @@ public class SAMFileHeaderTest extends HtsjdkTest {
         header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.query);
         Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
         Assert.assertEquals(header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.query.name());
+    }
+
+    @Test
+    public void testGetSequenceIfSequenceDictionaryIsEmpty() {
+        final SAMFileHeader header = new SAMFileHeader();
+        header.setSequenceDictionary(null);
+
+        Assert.assertNull(header.getSequence("chr1"));
+    }
+
+    @Test
+    public void testGetSequenceIfNameIsNotFound() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMSequenceRecord rec = new SAMSequenceRecord("chr1",1);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(Arrays.asList(rec));
+        header.setSequenceDictionary(dict);
+
+        Assert.assertNull(header.getSequence("chr2"));
     }
 }

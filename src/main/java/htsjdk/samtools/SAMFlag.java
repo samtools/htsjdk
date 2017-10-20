@@ -39,6 +39,9 @@ public enum SAMFlag {
     MATE_REVERSE_STRAND(            0x20,   "SEQ of the next segment in the template being reverse complemented"),
     FIRST_OF_PAIR(                  0x40,   "The first segment in the template"),
     SECOND_OF_PAIR(                 0x80,   "The last segment in the template"),
+    SECONDARY_ALIGNMENT(            0x100,  "Secondary alignment"),
+    /** @deprecated use {@link #SECONDARY_ALIGNMENT} instead. */
+    @Deprecated
     NOT_PRIMARY_ALIGNMENT(          0x100,  "Secondary alignment"),
     READ_FAILS_VENDOR_QUALITY_CHECK(0x200,  "Not passing quality controls"),
     DUPLICATE_READ(                 0x400,  "PCR or optical duplicate"), 

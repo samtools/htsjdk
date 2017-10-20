@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2015 The Broad Institute
+ * Copyright (c) 2009 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package htsjdk.variant.variantcontext.filter;
+package htsjdk.samtools;
 
-import htsjdk.variant.variantcontext.VariantContext;
-import java.util.function.Predicate;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.PeekIterator;
 
 /**
- *
- * API for filtering VariantContexts.
- *
- * @author Yossi Farjoun
- *
+ * Wrapper around SAMRecord iterator that skips over secondary elements.
+ * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
+ * handle those concerns separately.
  */
-public interface VariantContextFilter extends Predicate<VariantContext> {
+public class SecondaryAlignmentSkippingIterator {
+    private final PeekIterator<SAMRecord> it;
+
+    public SecondaryAlignmentSkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
+        it = new PeekIterator<>(underlyingIt);
+        skipAnySecondary();
+    }
+
+    public boolean hasCurrent() {
+        return it.hasNext();
+    }
+
+    public SAMRecord getCurrent() {
+        assert(hasCurrent());
+        return it.peek();
+    }
+
+    public boolean advance() {
+        it.next();
+        skipAnySecondary();
+        return hasCurrent();
+    }
+
+    private void skipAnySecondary() {
+        while (it.hasNext() && it.peek().isSecondaryAlignment()) {
+            it.next();
+        }
+    }
 }

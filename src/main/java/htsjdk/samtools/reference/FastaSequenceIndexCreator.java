@@ -26,6 +26,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.readers.AsciiLineReader;
 
@@ -67,8 +68,9 @@ public final class FastaSequenceIndexCreator {
     /**
      * Builds a FastaSequenceIndex on the fly from a FASTA file.
      *
-     * Note: this also alows to create an index for a compressed file, but does not generate the
-     * .gzi index required for use it with samtools.
+     * <p>Note: this also allows to create an index for a compressed file, but does not generate the
+     * .gzi index required for use it with samtools. To generate that index, use
+     * {@link GZIIndex#buildIndex(Path)}.
      *
      * @param fastaFile the FASTA file.
      *

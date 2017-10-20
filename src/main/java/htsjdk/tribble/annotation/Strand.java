@@ -24,29 +24,113 @@
 package htsjdk.tribble.annotation;
 
 /**
- * Enum for strand, which can be encoded as string
+ * Enum for strand, which can be encoded as a string
  */
 public enum Strand {
-    POSITIVE("+"), NEGATIVE("-"), NONE("!");  // not really sure what we should do for the NONE Enum
 
     /**
-     * How we represent the strand information as text
+     * Represents the positive or forward strand.
      */
-    private String encoding;
-    Strand(String str) {
-        encoding = str;
+    POSITIVE('+'),
+
+    /**
+     * Represents the negative or reverse strand.
+     */
+    NEGATIVE('-'),
+
+    /**
+     * Denotes that a strand designation is not applicable
+     * or is unknown.
+     */
+    NONE('.');  // not really sure what we should do for the NONE Enum
+
+    /**
+     * Common alias for the {@link #POSITIVE} strand.
+     */
+    public static final Strand FORWARD = POSITIVE;
+
+    /**
+     * Common alias for the {@link #NEGATIVE} strand.
+     */
+    public static final Strand REVERSE = NEGATIVE;
+
+    /**
+     * Cached array of instances.
+     */
+    private final static Strand[] VALUES = values();
+
+    /**
+     * How we represent the strand as a single {@code char}.
+     */
+    private final char charEncoding;
+
+    /**
+     * How we represent the strand as a {@link String}.
+     */
+    private final String stringEncoding;
+
+    Strand(final char ch) {
+        charEncoding = ch;
+        stringEncoding = String.valueOf(charEncoding);
     }
 
     /**
      * provide a way to take an encoding string, and produce a Strand
      * @param encoding the encoding string
      * @return a Strand object, if an appropriate one cannot be located an IllegalArg exception
+     * @deprecated please use {@link #decode} instead.
      */
-    public static Strand toStrand(String encoding) {
-        for (Strand st : Strand.values())
-            if (st.encoding.equals(encoding))
-                return st;
-        throw new IllegalArgumentException("Unable to match encoding to Strand enum for encoding string " + encoding);
+    @Deprecated
+    public static Strand toStrand(final String encoding) {
+        return decode(encoding);
     }
 
+    /**
+     * Returns the {@link Strand} that a {@code char} value represents.
+     * @param ch the char encoding for a Strand.
+     * @return never {@code null}, a value so that {@code decode(c).encodeAsChar() == c} or {@link #NONE} if
+     *   the encoding char is not recognized.
+     */
+    public static Strand decode(final char ch) {
+        for(final Strand value : VALUES) {
+            if (value.charEncoding == ch) {
+                return value;
+            }
+        }
+        return NONE;
+    }
+
+    /**
+     * Returns the {@link Strand} that a {@link String} encodes for.
+     * @param encoding the strand string representation.
+     * @return never {@code null}, a value so that {@code decode(s).encode().equals(s)}, or {@link #NONE} if
+     * the encoding string is not recognized.
+     */
+    public static Strand decode(final String encoding) {
+        if (encoding != null && encoding.length() == 1) {
+            return decode(encoding.charAt(0));
+        }
+        return NONE;
+    }
+
+    /**
+     * Returns a string representation of this {@link Strand}
+     * @return never {@code null}, a value so that {@code decode(encode(X)) == X}.
+     */
+    public String encode() {
+        return stringEncoding;
+    }
+
+    /**
+     * Returns a single char encoding of this {@link Strand}.
+     * @return a value so that {@code decode(encodeAsChar(X)) == X}.
+     */
+    public char encodeAsChar() {
+        return charEncoding;
+    }
+
+    @Override
+    public String toString() {
+        return stringEncoding;
+    }
 }

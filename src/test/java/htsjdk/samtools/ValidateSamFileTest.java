@@ -89,7 +89,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testSamFileVersion1pt5() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "test_samfile_version_1pt5.bam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertTrue(results.isEmpty());
+        Assert.assertEquals(results.getCount(),2.0);
     }
 
     @Test
@@ -208,7 +208,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         }
         final Iterator<SAMRecord> records = samBuilder.iterator();
         records.next().setReadNegativeStrandFlag(true);
-        records.next().setNotPrimaryAlignmentFlag(true);
+        records.next().setSecondaryAlignment(true);
         records.next().setMappingQuality(10);
         records.next().setCigarString("36M");
 
@@ -349,6 +349,23 @@ public class ValidateSamFileTest extends HtsjdkTest {
                 {"missing fields", "missing_fields.sam"},
                 {"zero length read", "zero_length_read.sam"}
         };
+    }
+
+    @Test(dataProvider = "testQualitiesNotStored")
+    public void testNotStoredQualitiesFields(final String inputFile, final double expectedValue) throws IOException {
+        try (final SamReader reader = SamReaderFactory.makeDefault().open((new File(TEST_DATA_DIR, inputFile)))) {
+            final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
+            Assert.assertEquals(results.get(SAMValidationError.Type.QUALITY_NOT_STORED.getHistogramString()).getValue(), expectedValue);
+        }
+    }
+
+    @DataProvider(name="testQualitiesNotStored")
+    public Object[][] NotStoredQualitiesFieldsScenarios() {
+            return new Object[][]{
+                    {"not_stored_qualities_more_than_100.sam",100.0},
+                    {"not_stored_qualities.sam", 2.0},
+                    {"not_stored_qualities.bam", 1.0}
+            };
     }
 
     @Test
