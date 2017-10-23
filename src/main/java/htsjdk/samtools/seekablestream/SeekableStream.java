@@ -28,6 +28,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.OptionalLong;
 
+/**
+ * InputStream with random access support (seek).
+ *
+ * <p>{@link SeekableStream} provides an interface for random access support in {@link InputStream},
+ * thought the implementation of {@link #seek(long)}. As a random access stream, it supports mark
+ * by design, being able to seek to a concrete position.
+ */
 public abstract class SeekableStream extends InputStream {
 
     /**
@@ -36,10 +43,13 @@ public abstract class SeekableStream extends InputStream {
      */
     protected OptionalLong mark = OptionalLong.empty();
 
+    /** @return the length of the stream; 0 if not available or empty. */
     public abstract long length();
 
+    /** @return the current byte position of the stream. */
     public abstract long position() throws IOException;
 
+    /** Seeks the stream to the provided position. */
     public abstract void seek(long position) throws IOException;
 
     @Override
@@ -48,6 +58,7 @@ public abstract class SeekableStream extends InputStream {
     @Override
     public abstract void close() throws IOException;
 
+    /** @return {@code true} if the stream is already consumed; {@code false} otherwise. */
     public abstract boolean eof() throws IOException;
 
     /**
