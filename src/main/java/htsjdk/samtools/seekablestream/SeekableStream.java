@@ -26,8 +26,15 @@ package htsjdk.samtools.seekablestream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.OptionalLong;
 
 public abstract class SeekableStream extends InputStream {
+
+    /**
+     * If the stream is marked with {@link #mark(int)} this represents the {@link #position()}
+     * where the stream was; otherwise, this is empty.
+     */
+    protected OptionalLong mark = OptionalLong.empty();
 
     public abstract long length();
 
@@ -66,6 +73,40 @@ public abstract class SeekableStream extends InputStream {
             }
             n += count;
         }
+    }
+
+    /**
+     * Mark the current position of the stream.
+     *
+     * <p>Note: there is no limit for reading.
+     *
+     * @param readlimit ignored.
+     */
+    @Override
+    public final synchronized void mark(int readlimit) {
+        try {
+            mark = OptionalLong.of(position());
+        } catch (IOException e) {
+            // do nothing (most likely already closed stream)
+        }
+    }
+
+    /**
+     * Seeks to the marked position if set; otherwise to the beginning of the stream.
+     */
+    @Override
+    public synchronized void reset() throws IOException {
+        if (mark.isPresent()) {
+            seek(mark.getAsLong());
+        } else {
+            seek(0);
+        }
+    }
+
+    /** Mark is always supported by any {@link SeekableStream}. */
+    @Override
+    public final boolean markSupported() {
+        return true;
     }
 
 }
