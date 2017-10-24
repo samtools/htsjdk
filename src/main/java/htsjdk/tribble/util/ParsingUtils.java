@@ -110,7 +110,7 @@ public class ParsingUtils {
         } else if (IOUtil.hasScheme(path) && !IOUtil.getScheme(path).equals("file")) {
             inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
         } else {
-            File file = IOUtil.getScheme(path).equals("file") ? new File(path.substring("file:".length())):new File(path);
+            File file = IOUtil.getScheme(path) != null && IOUtil.getScheme(path).equals("file") ? new File(path.substring("file:".length())) : new File(path);
             inputStream = new FileInputStream(file);
         }
         return inputStream;

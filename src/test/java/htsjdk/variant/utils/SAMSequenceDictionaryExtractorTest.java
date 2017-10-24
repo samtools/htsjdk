@@ -48,7 +48,6 @@ public class SAMSequenceDictionaryExtractorTest extends HtsjdkTest {
                 new Object[]{"Homo_sapiens_assembly18.trimmed.fasta", "Homo_sapiens_assembly18.trimmed.dict"},
                 new Object[]{"test2_comp.interval_list", "Homo_sapiens_assembly18.trimmed.dict"},
                 new Object[]{"ScreenSamReads.100.input.sam", "test3_comp.interval_list"},
-                new Object[]{"ScreenSamReads.100.input.sam", "test4_comp.interval_list"},
         };
     }
 
