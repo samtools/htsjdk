@@ -142,6 +142,9 @@ public abstract class SamReaderFactory {
     /** Utility method to open the file get the header and close the file */
     abstract public SAMFileHeader getFileHeader(File samFile);
 
+    /** Utility method to open the file get the header and close the file */
+    abstract public SAMFileHeader getFileHeader(Path samFile);
+
     /** Reapplies any changed options to the reader * */
     abstract public void reapplyOptions(SamReader reader);
 
@@ -271,6 +274,14 @@ public abstract class SamReaderFactory {
 
         @Override
         public SAMFileHeader getFileHeader(final File samFile) {
+            final SamReader reader = open(samFile);
+            final SAMFileHeader header = reader.getFileHeader();
+            CloserUtil.close(reader);
+            return header;
+        }
+
+        @Override
+        public SAMFileHeader getFileHeader(final Path samFile) {
             final SamReader reader = open(samFile);
             final SAMFileHeader header = reader.getFileHeader();
             CloserUtil.close(reader);

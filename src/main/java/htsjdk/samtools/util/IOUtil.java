@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 
@@ -437,13 +438,13 @@ public class IOUtil {
         if (path == null) {
             throw new IllegalArgumentException("Cannot check readability of null file.");
         } else if (!Files.exists(path)) {
-            throw new SAMException("Cannot read non-existent file: " + path.toAbsolutePath());
+            throw new SAMException("Cannot read non-existent file: " + path.toUri().toString());
         }
         else if (Files.isDirectory(path)) {
-            throw new SAMException("Cannot read file because it is a directory: " + path.toAbsolutePath());
+            throw new SAMException("Cannot read file because it is a directory: " + path.toUri().toString());
         }
         else if (!Files.isReadable(path)) {
-            throw new SAMException("File exists but is not readable: " + path.toAbsolutePath());
+            throw new SAMException("File exists but is not readable: " + path.toUri().toString());
         }
     }
 
@@ -456,7 +457,18 @@ public class IOUtil {
     public static void assertFilesAreReadable(final List<File> files) {
         for (final File file : files) assertFileIsReadable(file);
     }
-    
+
+    /**
+     * Checks that each path is non-null, exists, is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param paths the list of paths to check for readability
+     */
+    public static void assertPathsAreReadable(final List<Path> paths) {
+        for (final Path path: paths) assertFileIsReadable(path);
+    }
+
+
     /**
      * Checks that each string is non-null, exists or is a URL, 
      * and if it is a file then not a directory and is readable.  If any
@@ -477,8 +489,8 @@ public class IOUtil {
      */
     public static void assertFileIsWritable(final File file) {
         if (file == null) {
-			throw new IllegalArgumentException("Cannot check readability of null file.");
-		} else if (!file.exists()) {
+            throw new IllegalArgumentException("Cannot check readability of null file.");
+        } else if (!file.exists()) {
             // If the file doesn't exist, check that it's parent directory does and is writable
             final File parent = file.getAbsoluteFile().getParentFile();
             if (!parent.exists()) {
@@ -886,7 +898,7 @@ public class IOUtil {
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
         return openFileForBufferedReading(file.toPath());
-	}
+    }
 
     /** Checks that a path exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final Path path) {
@@ -1115,7 +1127,7 @@ public class IOUtil {
 
         while (!stack.empty()) {
             final Path p = stack.pop();
-            final String name = p.toUri().getRawQuery();
+            final String name = p.toUri().toString();
             boolean matched = false;
 
             for (final String ext : extensions) {
@@ -1199,6 +1211,20 @@ public class IOUtil {
             }
             return FileSystems.newFileSystem(uri, new HashMap<>(), cl).provider().getPath(uri);
         }
+    }
+
+    public static List<Path> getPaths(List<String> uriStrings) throws RuntimeException {
+        return uriStrings.stream().map(s -> {
+            try {
+                return IOUtil.getPath(s);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }).collect(Collectors.toList());
+    }
+
+    public static List<Path> promoteFiles(List<File> files){
+        return files.stream().map(File::toPath).collect(Collectors.toList());
     }
 
     /**

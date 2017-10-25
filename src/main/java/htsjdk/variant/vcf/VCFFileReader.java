@@ -16,6 +16,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
