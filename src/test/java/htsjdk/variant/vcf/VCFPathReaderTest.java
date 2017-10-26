@@ -17,22 +17,34 @@ public class VCFPathReaderTest extends HtsjdkTest {
         return new Object[][]{
                 // various ways to refer to a local file
                 {"src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf", false, true},
+
                 {Paths.get("").toAbsolutePath().toString() + "/src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf", false, true},
                 {"file://" + Paths.get("").toAbsolutePath().toString() + "/src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf", false, true},
 
                 //testing GCS files:
 
                 // this is almost a vcf, but not quite it's missing the #CHROM line and it has no content...
-                {"gs://broad-references/hg38/v0/Homo_sapiens_assembly38.tile_db_header.vcf", false, false},
+                {"gs://htsjdk-testdata/htsjdk/variant/Homo_sapiens_assembly38.tile_db_header.vcf", false, false},
 
                 // test that have indexes
-                {"gs://broad-references/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz", true, true},
-                {"gs://broad-references/hg38/v0/WholeGenomeShotgunContam.vcf", true, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/test.vcf.bgz", true, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/serialization_test.bcf", true, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/test1.vcf", true, true},
+
+                // test that lack indexes (should succeed)
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf.gz", false, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf", false, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.bcf", false, true},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf.bgz", false, true},
+
+                // test that lack indexes should fail)
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf.gz", true, false},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf", true, false},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.bcf", true, false},
+                {"gs://htsjdk-testdata/htsjdk/variant/VcfThatLacksAnIndex.vcf.bgz", true, false},
 
                 // testing a non-existent scheme:
-
                 {"bogus://" + Paths.get("").toAbsolutePath().toString() + "/src/test/resources/htsjdk/variant/VCF4HeaderTest.vcf", false, false},
-
         };
     }
 
