@@ -364,9 +364,6 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(deserializedHeader.toString(), originalHeader.toString(), "String representation of header not the same before/after serialization");
     }
 
-
-
-
     @Test
     public void testVCFHeaderQuoteEscaping() throws Exception {
         // this test ensures that the end-to-end process of quote escaping is stable when headers are
