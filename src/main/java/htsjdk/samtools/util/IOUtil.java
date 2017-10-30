@@ -1141,20 +1141,25 @@ public class IOUtil {
             if (!matched) {
                 IOUtil.assertFileIsReadable(p);
 
-                for (final String s : IOUtil.readLines(p)) {
-                    if (!s.trim().isEmpty()) {
+                try {
+                    Files.lines(p).forEach(s -> {
+                        if (!s.trim().isEmpty()) {
 
-                        final Path innerPath;
-                        try {
-                            innerPath = getPath(s.trim());
-                            stack.push(innerPath);
-                        } catch (IOException e) {
-                            throw new IllegalArgumentException("cannot convert " + s.trim() + " to a Path.");
+                            final Path innerPath;
+                            try {
+                                innerPath = getPath(s.trim());
+                                stack.push(innerPath);
+                            } catch (IOException e) {
+                                throw new IllegalArgumentException("cannot convert " + s.trim() + " to a Path.");
+                            }
                         }
-                    }
+                    });
+
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());
                 }
             }
-        }
+    }
 
         // Preserve input order (since we're using a stack above) for things that care
         Collections.reverse(output);
