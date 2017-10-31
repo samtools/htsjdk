@@ -28,17 +28,18 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+import java.util.stream.Collectors;
 
 /**
  * A single-ended FIFO queue. Writes elements to temporary files when the queue gets too big.
@@ -56,7 +57,7 @@ import java.util.Queue;
 public class DiskBackedQueue<E> implements Queue<E> {
     private final int maxRecordsInRamQueue;
     private final Queue<E> ramRecords;
-    private File diskRecords = null;
+    private Path diskRecords = null;
     private final TempStreamFactory tempStreamFactory = new TempStreamFactory();
     private OutputStream outputStream = null;
     private InputStream inputStream = null;
@@ -67,7 +68,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private E headRecord = null;
 
     /** Directories where file of records go. **/
-    private final List<File> tmpDirs;
+    private final List<Path> tmpDirs;
 
     /**
      * Used to write records to file, and used as a prototype to create codecs for reading.
@@ -83,14 +84,14 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @param tmpDirs Where to write files of records that will not fit in RAM
      */
     private DiskBackedQueue(final SortingCollection.Codec<E> codec,
-                            final int maxRecordsInRam, final List<File> tmpDirs) {
+                            final int maxRecordsInRam, final List<Path> tmpDirs) {
         if (maxRecordsInRam < 0) {
             throw new IllegalArgumentException("maxRecordsInRamQueue must be >= 0");
         }
         if (tmpDirs == null || tmpDirs.isEmpty()) {
             throw new IllegalArgumentException("At least one temp directory must be provided.");
         }
-        for (final File tmpDir : tmpDirs) IOUtil.assertDirectoryIsWritable(tmpDir);
+        for (final Path tmpDir : tmpDirs) IOUtil.assertDirectoryIsWritable(tmpDir);
         this.tmpDirs = tmpDirs;
         this.codec = codec;
         this.maxRecordsInRamQueue = (maxRecordsInRam == 0) ? 0 : maxRecordsInRam - 1; // the first of our ram records is stored as headRecord
@@ -107,6 +108,19 @@ public class DiskBackedQueue<E> implements Queue<E> {
     public static <T> DiskBackedQueue<T> newInstance(final SortingCollection.Codec<T> codec,
                                                      final int maxRecordsInRam,
                                                      final List<File> tmpDir) {
+        return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir.stream().map(File::toPath).collect(Collectors.toList()));
+    }
+
+    /**
+     * Syntactic sugar around the ctor, to save some typing of type parameters
+     *
+     * @param codec For writing records to file and reading them back into RAM
+     * @param maxRecordsInRam how many records to accumulate in memory before spilling to disk
+     * @param tmpDir Where to write files of records that will not fit in RAM
+     */
+    public static <T> DiskBackedQueue<T> newInstanceFromPaths(final SortingCollection.Codec<T> codec,
+            final int maxRecordsInRam,
+            final List<Path> tmpDir) {
         return new DiskBackedQueue<T>(codec, maxRecordsInRam, tmpDir);
     }
 
@@ -254,7 +268,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         try {
             if (this.diskRecords == null) {
                 this.diskRecords = newTempFile();
-                this.outputStream = tempStreamFactory.wrapTempOutputStream(new FileOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
+                this.outputStream = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(this.diskRecords), Defaults.BUFFER_SIZE);
                 this.codec.setOutputStream(this.outputStream);
             }
             this.codec.encode(record);
@@ -269,8 +283,8 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
-    private File newTempFile() throws IOException {
-        return IOUtil.newTempFile("diskbackedqueue.", ".tmp", this.tmpDirs.toArray(new File[tmpDirs.size()]), IOUtil.FIVE_GBS);
+    private Path newTempFile() throws IOException {
+        return IOUtil.newTempPath("diskbackedqueue.", ".tmp", this.tmpDirs.toArray(new Path[tmpDirs.size()]), IOUtil.FIVE_GBS);
     }
 
     /**
@@ -300,7 +314,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
      * @return The next element from the head of the file, or null if end-of-file is reached
      * @throws RuntimeIOException
      */
-    private E readFileRecord (final File file) {
+    private E readFileRecord (final Path file) {
         if (this.canAdd) this.canAdd = false; // NB: should this just be an assignment regardless?
 
         // we never wrote a record to disk
@@ -309,7 +323,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
         }
         try {
             if (this.inputStream == null) {
-                inputStream = new FileInputStream(file);
+                inputStream = Files.newInputStream(file);
                 this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(inputStream, Defaults.BUFFER_SIZE));
             }
             final E record = this.codec.decode(); // NB: returns null if end-of-file is reached.
@@ -325,7 +339,7 @@ public class DiskBackedQueue<E> implements Queue<E> {
     private void closeIOResources() {
         CloserUtil.close(this.outputStream);
         CloserUtil.close(this.inputStream);
-        if (this.diskRecords != null) IOUtil.deleteFiles(this.diskRecords);
+        if (this.diskRecords != null) IOUtil.deletePaths(this.diskRecords);
     }
 
     /**

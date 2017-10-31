@@ -23,13 +23,15 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+import htsjdk.HtsjdkTest;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+import htsjdk.samtools.SAMException;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -44,7 +46,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class IoUtilTest extends HtsjdkTest {
@@ -58,7 +63,10 @@ public class IoUtilTest extends HtsjdkTest {
     private static final String TEST_FILE_EXTENSIONS[] = {".txt", ".txt.gz"};
     private static final String TEST_STRING = "bar!";
     private File existingTempFile;
+    private String systemUser;
     private String systemTempDir;
+
+    private FileSystem inMemoryfileSystem;
 
     @BeforeClass
     public void setUp() throws IOException {
@@ -66,9 +74,19 @@ public class IoUtilTest extends HtsjdkTest {
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
+        inMemoryfileSystem = Jimfs.newFileSystem(Configuration.unix());;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
+        systemUser = System.getProperty("user.name");
+    }
+
+    @AfterClass
+    public void tearDown() throws IOException {
+        // reset java properties to original
+        System.setProperty("java.io.tmpdir", systemTempDir);
+        System.setProperty("user.name", systemUser);
+        inMemoryfileSystem.close();
     }
 
     @Test
@@ -215,5 +233,165 @@ public class IoUtilTest extends HtsjdkTest {
                 {"/dev/stdout", Boolean.FALSE},
                 {"/non/existent/file", Boolean.TRUE},
         };
+    }
+
+    @DataProvider(name = "fileNamesForDelete")
+    public Object[][] fileNamesForDelete() {
+        return new Object[][] {
+                {Collections.emptyList()},
+                {Collections.singletonList("file1")},
+                {Arrays.asList("file1", "file2")}
+        };
+    }
+
+    @Test
+    public void testGetDefaultTmpDirPath() throws Exception {
+        try {
+            Path testPath = IOUtil.getDefaultTmpDirPath();
+            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(systemTempDir).getAbsolutePath() + "/" + systemUser);
+
+            // change the properties to test others
+            final String newTempPath = Files.createTempDirectory("testGetDefaultTmpDirPath").toString();
+            final String newUser = "my_user";
+            System.setProperty("java.io.tmpdir", newTempPath);
+            System.setProperty("user.name", newUser);
+            testPath = IOUtil.getDefaultTmpDirPath();
+            Assert.assertEquals(testPath.toFile().getAbsolutePath(), new File(newTempPath).getAbsolutePath() + "/" + newUser);
+
+        } finally {
+            // reset system properties
+            System.setProperty("java.io.tmpdir", systemTempDir);
+            System.setProperty("user.name", systemUser);
+        }
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeletePathLocal(final List<String> fileNames) throws Exception {
+        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final List<Path> paths = createLocalFiles(tmpDir, fileNames);
+        testDeletePath(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeletePathJims(final List<String> fileNames) throws Exception {
+        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        testDeletePath(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeleteArrayPathLocal(final List<String> fileNames) throws Exception {
+        final File tmpDir = IOUtil.createTempDir("testDeletePath", "");
+        final List<Path> paths = createLocalFiles(tmpDir, fileNames);
+        testDeletePathArray(paths);
+    }
+
+    @Test(dataProvider = "fileNamesForDelete")
+    public void testDeleteArrayPathJims(final List<String> fileNames) throws Exception {
+        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        testDeletePathArray(paths);
+    }
+
+    private static void testDeletePath(final List<Path> paths) {
+        paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
+        IOUtil.deletePaths(paths);
+        paths.forEach(p -> Assert.assertFalse(Files.exists(p)));
+    }
+
+    private static void testDeletePathArray(final List<Path> paths) {
+        paths.forEach(p -> Assert.assertTrue(Files.exists(p)));
+        IOUtil.deletePaths(paths.toArray(new Path[paths.size()]));
+        paths.forEach(p -> Assert.assertFalse(Files.exists(p)));
+    }
+
+    private static List<Path> createLocalFiles(final File tmpDir, final List<String> fileNames) throws Exception {
+        final List<Path> paths = new ArrayList<>(fileNames.size());
+        for (final String f: fileNames) {
+            final File file = new File(tmpDir, f);
+            file.createNewFile();
+            paths.add(file.toPath());
+        }
+        return paths;
+    }
+
+    private List<Path> createJimsFiles(final String folderName, final List<String> fileNames) throws Exception {
+        final List<Path> paths = new ArrayList<>(fileNames.size());
+        final Path folder = inMemoryfileSystem.getPath(folderName);
+        if (Files.notExists(folder)) Files.createDirectory(folder);
+
+        for (final String f: fileNames) {
+            final Path p = inMemoryfileSystem.getPath(folderName, f);
+            Files.createFile(p);
+            paths.add(p);
+        }
+
+        return paths;
+    }
+
+    @DataProvider
+    public Object[][] pathsForDeletePathThread() throws Exception {
+        return new Object[][] {
+                {File.createTempFile("testDeletePathThread", "file").toPath()},
+                {Files.createFile(inMemoryfileSystem.getPath("testDeletePathThread"))}
+        };
+    }
+
+    @Test(dataProvider = "pathsForDeletePathThread")
+    public void testDeletePathThread(final Path path) throws Exception {
+        Assert.assertTrue(Files.exists(path));
+        new IOUtil.DeletePathThread(path).run();
+        Assert.assertFalse(Files.exists(path));
+    }
+
+    @DataProvider
+    public Object[][] pathsForWritableDirectory() throws Exception {
+        return new Object[][] {
+                // non existent
+                {inMemoryfileSystem.getPath("no_exists"), false},
+                // non directory
+                {Files.createFile(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
+                // TODO - how to do in inMemmoryFileSystem a non-writable directory?
+                // writable directory
+                {Files.createDirectory(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
+        };
+    }
+
+    @Test(dataProvider = "pathsForWritableDirectory")
+    public void testAssertDirectoryIsWritablePath(final Path path, final boolean writable) {
+        try {
+            IOUtil.assertDirectoryIsWritable(path);
+        } catch (SAMException e) {
+            if (writable) {
+                Assert.fail(e.getMessage());
+            }
+        }
+    }
+
+    @DataProvider
+    public Object[][] filesForWritableDirectory() throws Exception {
+        final File nonWritableFile = new File(systemTempDir, "testAssertDirectoryIsWritable_non_writable_dir");
+        nonWritableFile.mkdir();
+        nonWritableFile.setWritable(false);
+
+        return new Object[][] {
+                // non existent
+                {new File("no_exists"), false},
+                // non directory
+                {existingTempFile, false},
+                // non-writable directory
+                {nonWritableFile, false},
+                // writable directory
+                {new File(systemTempDir), true},
+        };
+    }
+
+    @Test(dataProvider = "filesForWritableDirectory")
+    public void testAssertDirectoryIsWritableFile(final File file, final boolean writable) {
+        try {
+            IOUtil.assertDirectoryIsWritable(file);
+        } catch (SAMException e) {
+            if (writable) {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 }

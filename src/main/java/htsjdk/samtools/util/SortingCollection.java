@@ -26,14 +26,14 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -96,7 +96,7 @@ public class SortingCollection<T> implements Iterable<T> {
     }
 
     /** Directories where files of sorted records go. */
-    private final File[] tmpDirs;
+    private final Path[] tmpDirs;
 
     /** The minimum amount of space free on a temp filesystem to write a file there. */
     private final long TMP_SPACE_FREE = IOUtil.FIVE_GBS;
@@ -124,7 +124,7 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * List of files in tmpDir containing sorted records
      */
-    private final List<File> files = new ArrayList<File>();
+    private final List<Path> files = new ArrayList<>();
 
     private boolean destructiveIteration = true;
 
@@ -139,7 +139,7 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param tmpDir Where to write files of records that will not fit in RAM
      */
     private SortingCollection(final Class<T> componentType, final SortingCollection.Codec<T> codec,
-                             final Comparator<T> comparator, final int maxRecordsInRam, final File... tmpDir) {
+                             final Comparator<T> comparator, final int maxRecordsInRam, final Path... tmpDir) {
         if (maxRecordsInRam <= 0) {
             throw new IllegalArgumentException("maxRecordsInRam must be > 0");
         }
@@ -217,10 +217,10 @@ public class SortingCollection<T> implements Iterable<T> {
     private void spillToDisk() {
         try {
             Arrays.sort(this.ramRecords, 0, this.numRecordsInRam, this.comparator);
-            final File f = newTempFile();
+            final Path f = newTempFile();
             OutputStream os = null;
             try {
-                os = tempStreamFactory.wrapTempOutputStream(new FileOutputStream(f), Defaults.BUFFER_SIZE);
+                os = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(f), Defaults.BUFFER_SIZE);
                 this.codec.setOutputStream(os);
                 for (int i = 0; i < this.numRecordsInRam; ++i) {
                     this.codec.encode(ramRecords[i]);
@@ -230,7 +230,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
                 os.flush();
             } catch (RuntimeIOException ex) {
-                throw new RuntimeIOException("Problem writing temporary file " + f.getAbsolutePath() +
+                throw new RuntimeIOException("Problem writing temporary file " + f.toUri() +
                         ".  Try setting TMP_DIR to a file system with lots of space.", ex);
             } finally {
                 if (os != null) {
@@ -251,8 +251,8 @@ public class SortingCollection<T> implements Iterable<T> {
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
-    private File newTempFile() throws IOException {
-        return IOUtil.newTempFile("sortingcollection.", ".tmp", this.tmpDirs, TMP_SPACE_FREE);
+    private Path newTempFile() throws IOException {
+        return IOUtil.newTempPath("sortingcollection.", ".tmp", this.tmpDirs, TMP_SPACE_FREE);
     }
 
     /**
@@ -281,7 +281,7 @@ public class SortingCollection<T> implements Iterable<T> {
         this.iterationStarted = true;
         this.cleanedUp = true;
 
-        IOUtil.deleteFiles(this.files);
+        IOUtil.deletePaths(this.files);
     }
 
     /**
@@ -292,13 +292,16 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param comparator Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
+     *
+     * @deprecated since 2017-09. Use {@link #newInstance(Class, Codec, Comparator, int, Path...)} instead
      */
+    @Deprecated
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
                                                        final SortingCollection.Codec<T> codec,
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final File... tmpDir) {
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
 
     }
 
@@ -310,7 +313,10 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param comparator Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
      * @param tmpDirs Where to write files of records that will not fit in RAM
+     *
+     * @deprecated since 2017-09. Use {@link #newInstanceFromPaths(Class, Codec, Comparator, int, Collection)} instead
      */
+    @Deprecated
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
                                                        final SortingCollection.Codec<T> codec,
                                                        final Comparator<T> comparator,
@@ -320,7 +326,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                         codec,
                                         comparator,
                                         maxRecordsInRAM,
-                                        tmpDirs.toArray(new File[tmpDirs.size()]));
+                                        tmpDirs.stream().map(File::toPath).toArray(Path[]::new));
 
     }
 
@@ -338,8 +344,48 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM) {
 
-        final File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+        final Path tmpDir = IOUtil.getDefaultTmpDirPath();
         return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+    }
+
+    /**
+     * Syntactic sugar around the ctor, to save some typing of type parameters
+     *
+     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec For writing records to file and reading them back into RAM
+     * @param comparator Defines output sort order
+     * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
+     * @param tmpDir Where to write files of records that will not fit in RAM
+     */
+    public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
+            final SortingCollection.Codec<T> codec,
+            final Comparator<T> comparator,
+            final int maxRecordsInRAM,
+            final Path... tmpDir) {
+        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+
+    }
+
+    /**
+     * Syntactic sugar around the ctor, to save some typing of type parameters
+     *
+     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec For writing records to file and reading them back into RAM
+     * @param comparator Defines output sort order
+     * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
+     * @param tmpDirs Where to write files of records that will not fit in RAM
+     */
+    public static <T> SortingCollection<T> newInstanceFromPaths(final Class<T> componentType,
+            final SortingCollection.Codec<T> codec,
+            final Comparator<T> comparator,
+            final int maxRecordsInRAM,
+            final Collection<Path> tmpDirs) {
+        return new SortingCollection<T>(componentType,
+                codec,
+                comparator,
+                maxRecordsInRAM,
+                tmpDirs.toArray(new Path[tmpDirs.size()]));
+
     }
 
     /**
@@ -403,7 +449,7 @@ public class SortingCollection<T> implements Iterable<T> {
         MergingIterator() {
             this.queue = new TreeSet<PeekFileRecordIterator>(new PeekFileRecordIteratorComparator());
             int n = 0;
-            for (final File f : SortingCollection.this.files) {
+            for (final Path f : SortingCollection.this.files) {
                 final FileRecordIterator it = new FileRecordIterator(f);
                 if (it.hasNext()) {
                     this.queue.add(new PeekFileRecordIterator(it, n++));
@@ -455,20 +501,20 @@ public class SortingCollection<T> implements Iterable<T> {
      * Read a file of records in format defined by the codec
      */
     class FileRecordIterator implements CloseableIterator<T> {
-        private final File file;
-        private final FileInputStream is;
+        private final Path file;
+        private final InputStream is;
         private final Codec<T> codec;
         private T currentRecord = null;
 
-        FileRecordIterator(final File file) {
+        FileRecordIterator(final Path file) {
             this.file = file;
             try {
-                this.is = new FileInputStream(file);
+                this.is = Files.newInputStream(file);
                 this.codec = SortingCollection.this.codec.clone();
                 this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(this.is, Defaults.BUFFER_SIZE));
                 advance();
             }
-            catch (FileNotFoundException e) {
+            catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
         }
