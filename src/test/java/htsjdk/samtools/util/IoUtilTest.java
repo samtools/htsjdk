@@ -66,7 +66,7 @@ public class IoUtilTest extends HtsjdkTest {
     private String systemUser;
     private String systemTempDir;
 
-    private FileSystem inMemmoryfileSystem;
+    private FileSystem inMemoryfileSystem;
 
     @BeforeClass
     public void setUp() throws IOException {
@@ -74,7 +74,7 @@ public class IoUtilTest extends HtsjdkTest {
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
-        inMemmoryfileSystem = Jimfs.newFileSystem(Configuration.unix());;
+        inMemoryfileSystem = Jimfs.newFileSystem(Configuration.unix());;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
@@ -86,7 +86,7 @@ public class IoUtilTest extends HtsjdkTest {
         // reset java properties to original
         System.setProperty("java.io.tmpdir", systemTempDir);
         System.setProperty("user.name", systemUser);
-        inMemmoryfileSystem.close();
+        inMemoryfileSystem.close();
     }
 
     @Test
@@ -315,11 +315,11 @@ public class IoUtilTest extends HtsjdkTest {
 
     private List<Path> createJimsFiles(final String folderName, final List<String> fileNames) throws Exception {
         final List<Path> paths = new ArrayList<>(fileNames.size());
-        final Path folder = inMemmoryfileSystem.getPath(folderName);
+        final Path folder = inMemoryfileSystem.getPath(folderName);
         if (Files.notExists(folder)) Files.createDirectory(folder);
 
         for (final String f: fileNames) {
-            final Path p = inMemmoryfileSystem.getPath(folderName, f);
+            final Path p = inMemoryfileSystem.getPath(folderName, f);
             Files.createFile(p);
             paths.add(p);
         }
@@ -331,7 +331,7 @@ public class IoUtilTest extends HtsjdkTest {
     public Object[][] pathsForDeletePathThread() throws Exception {
         return new Object[][] {
                 {File.createTempFile("testDeletePathThread", "file").toPath()},
-                {Files.createFile(inMemmoryfileSystem.getPath("testDeletePathThread"))}
+                {Files.createFile(inMemoryfileSystem.getPath("testDeletePathThread"))}
         };
     }
 
@@ -346,12 +346,12 @@ public class IoUtilTest extends HtsjdkTest {
     public Object[][] pathsForWritableDirectory() throws Exception {
         return new Object[][] {
                 // non existent
-                {inMemmoryfileSystem.getPath("no_exists"), false},
+                {inMemoryfileSystem.getPath("no_exists"), false},
                 // non directory
-                {Files.createFile(inMemmoryfileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
+                {Files.createFile(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
                 // TODO - how to do in inMemmoryFileSystem a non-writable directory?
                 // writable directory
-                {Files.createDirectory(inMemmoryfileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
+                {Files.createDirectory(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
         };
     }
 
