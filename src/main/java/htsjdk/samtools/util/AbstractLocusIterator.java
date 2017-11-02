@@ -438,10 +438,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     private void populateCompleteQueue(final Locus stopBeforeLocus) {
         // Because of gapped alignments, it is possible to create LocusInfo's with no reads associated with them.
         // Skip over these if not including indels
-        while (!accumulator.isEmpty() && accumulator.get(0).isEmpty() &&
-                locusComparator.compare(accumulator.get(0), stopBeforeLocus) < 0) {
-            accumulator.remove(0);
-        }
+        accumulator.removeIf(x -> x.isEmpty() && locusComparator.compare(x, stopBeforeLocus) < 0);
+
         if (accumulator.isEmpty()) {
             return;
         }
