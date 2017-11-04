@@ -97,11 +97,11 @@ public class BAMRecord extends SAMRecord {
 
         // Test if the real CIGAR is kept in the CG:B,I tag. If so, get its length and the offset in restOfData.
         int tagCigarLen = -1, tagCigarOffset = -1, newIndexingBin;
-        if (cigarLen == 1 && referenceID >= 0 && restOfData.length - readNameLength >= 12) { // 12 = "CGBI" + realCigarLen + fakeCigar
+        if (cigarLen >= 1 && referenceID >= 0 && restOfData.length - readNameLength >= 8 + cigarLen * 4) { // "CGBI"(4) + realCigarLen(4) + fakeCigar
             final ByteBuffer cigarReader = ByteBuffer.wrap(restOfData, readNameLength, 4);
             cigarReader.order(ByteOrder.LITTLE_ENDIAN);
             int cigar1 = cigarReader.getInt();
-            if ((cigar1 & 0xf) == 4 && cigar1 >> 4 == readLen) { // the CIGAR is <readLength>S; then search for the CG:B,I tag
+            if ((cigar1 & 0xf) == 4 && cigar1 >> 4 == readLen) { // the first CIGAR is <readLength>S; then search for the CG:B,I tag
                 final ByteBuffer r = ByteBuffer.wrap(restOfData);
                 r.order(ByteOrder.LITTLE_ENDIAN);
                 r.position(readNameLength + cigarLen * 4 + (readLen + 1) / 2 + readLen); // point to the offset of the first tag
@@ -142,7 +142,7 @@ public class BAMRecord extends SAMRecord {
             newIndexingBin = GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
 
             // move the real CIGAR out to the correct position
-            final ByteBuffer w = ByteBuffer.allocate(restOfData.length - 12);
+            final ByteBuffer w = ByteBuffer.allocate(restOfData.length - 8 - cigarLen * 4);
             final int seqOffset = readNameLength + cigarLen * 4;
             w.put(restOfData, 0, readNameLength); // copy read name
             w.put(restOfData, tagCigarOffset, tagCigarLen * 4); // copy the real CIGAR
