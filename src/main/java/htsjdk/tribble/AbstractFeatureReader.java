@@ -189,7 +189,13 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return
      */
     public static boolean hasBlockCompressedExtension (final URI uri) {
-        return hasBlockCompressedExtension(uri.getPath());
+
+        String path = uri.getPath();
+        int qIdx = path.indexOf('?');
+        if(qIdx > 0) {
+            path = path.substring(0, qIdx);
+        }
+        return hasBlockCompressedExtension(path);
     }
 
     /**
