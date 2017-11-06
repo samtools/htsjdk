@@ -107,6 +107,10 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The first bin in this level.
      */
     public static int getFirstBinInLevel(final int levelNumber) {
+        if (levelNumber >= getNumIndexLevels()) {
+            throw new SAMException("Level number is too big (" + levelNumber + ").");
+        }
+
         return GenomicIndexUtil.LEVEL_STARTS[levelNumber];
     }
 
@@ -116,10 +120,15 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      * @return The size (number of possible bins) of the given level.
      */
     public int getLevelSize(final int levelNumber) {
-        if(levelNumber == getNumIndexLevels())
-            return GenomicIndexUtil.MAX_BINS+1-GenomicIndexUtil.LEVEL_STARTS[levelNumber];
-        else
-            return GenomicIndexUtil.LEVEL_STARTS[levelNumber+1]-GenomicIndexUtil.LEVEL_STARTS[levelNumber];
+        if (levelNumber >= getNumIndexLevels()) {
+            throw new SAMException("Level number is too big (" + levelNumber + ").");
+        }
+
+        if (levelNumber == getNumIndexLevels()-1) {
+            return GenomicIndexUtil.MAX_BINS - GenomicIndexUtil.LEVEL_STARTS[levelNumber] - 1;
+        } else {
+            return GenomicIndexUtil.LEVEL_STARTS[levelNumber + 1] - GenomicIndexUtil.LEVEL_STARTS[levelNumber];
+        }
     }
 
     /**
@@ -363,30 +372,6 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
      */
     protected int getMaxAddressibleGenomicLocation() {
         return GenomicIndexUtil.BIN_GENOMIC_SPAN;
-    }
-
-    /**
-     * Get candidate bins for the specified region
-     * @param startPos 1-based start of target region, inclusive.
-     * @param endPos 1-based end of target region, inclusive.
-     * @return bit set for each bin that may contain SAMRecords in the target region.
-     */
-    protected BitSet regionToBins(final int startPos, final int endPos) {
-        final int maxPos = 0x1FFFFFFF;
-        final int start = (startPos <= 0) ? 0 : (startPos-1) & maxPos;
-        final int end = (endPos <= 0) ? maxPos : (endPos-1) & maxPos;
-        if (start > end) {
-            return null;
-        }
-        int k;
-        final BitSet bitSet = new BitSet(GenomicIndexUtil.MAX_BINS);
-        bitSet.set(0);
-        for (k =    1 + (start>>26); k <=    1 + (end>>26); ++k) bitSet.set(k);
-        for (k =    9 + (start>>23); k <=    9 + (end>>23); ++k) bitSet.set(k);
-        for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bitSet.set(k);
-        for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bitSet.set(k);
-        for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bitSet.set(k);
-        return bitSet;
     }
 
     /**
