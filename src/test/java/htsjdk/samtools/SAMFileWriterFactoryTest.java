@@ -29,9 +29,11 @@ import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.FileSystem;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -73,6 +75,17 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Assert.assertTrue(Files.size(outputPath) > 0);
             Assert.assertTrue(Files.size(indexPath) > 0);
             Assert.assertTrue(Files.size(md5File) > 0);
+        }
+    }
+
+    @Test()
+    public void pathWriterFailureMentionsCause() throws Exception {
+        try {
+            final Path outputPath = Paths.get("nope://no.txt");
+            createSmallBam(outputPath);
+            Assert.fail("Should have thrown a RuntimeIOException");
+        } catch (RuntimeIOException expected) {
+            Assert.assertTrue(expected.getCause().toString().contains("NoSuchFileException"));
         }
     }
 
