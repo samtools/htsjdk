@@ -32,7 +32,6 @@ import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;

@@ -86,7 +86,6 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Assert.assertFalse(true, "Should have thrown a RuntimeIOException");
         } catch (RuntimeIOException expected) {
             Assert.assertTrue(expected.getCause().toString().contains("NoSuchFileException"));
-            throw(expected);
         }
     }
 
