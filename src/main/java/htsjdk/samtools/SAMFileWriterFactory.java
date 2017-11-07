@@ -300,7 +300,7 @@ public class SAMFileWriterFactory implements Cloneable {
             if (this.useAsyncIo) return new AsyncSAMFileWriter(ret, this.asyncOutputBufferSize);
             else return ret;
         } catch (final IOException ioe) {
-            throw new RuntimeIOException("Error opening file: " + outputPath.toUri());
+            throw new RuntimeIOException("Error opening file '" + outputPath.toUri() + "': " + ioe);
         }
     }
 
@@ -352,7 +352,7 @@ public class SAMFileWriterFactory implements Cloneable {
                                         samFlagFieldOutput);
             return initWriter(header, presorted, ret);
         } catch (final IOException ioe) {
-            throw new RuntimeIOException("Error opening file: " + outputPath.toUri());
+            throw new RuntimeIOException("Error opening file '" + outputPath.toUri() + "': " + ioe);
         }
     }
 
@@ -588,7 +588,7 @@ public class SAMFileWriterFactory implements Cloneable {
                     indexOS = Files.newOutputStream(indexPath);
                 }
                 catch (final IOException ioe) {
-                    throw new RuntimeIOException("Error creating index file for: " + indexPath.toUri());
+                    throw new RuntimeIOException("Error creating index file for '" + indexPath.toUri()+ "': " + ioe);
                 }
             }
         }
@@ -597,7 +597,7 @@ public class SAMFileWriterFactory implements Cloneable {
             cramOS = IOUtil.maybeBufferOutputStream(Files.newOutputStream(outputFile), bufferSize);
         }
         catch (final IOException ioe) {
-            throw new RuntimeIOException("Error creating CRAM file: " + outputFile.toUri());
+            throw new RuntimeIOException("Error creating CRAM file '" + outputFile.toUri() + "': " + ioe);
         }
 
         final Path md5Path = IOUtil.addExtension(outputFile, ".md5");

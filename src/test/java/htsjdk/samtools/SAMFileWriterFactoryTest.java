@@ -32,6 +32,7 @@ import htsjdk.samtools.util.IOUtil;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.FileSystem;
+import java.nio.file.Paths;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -73,6 +74,14 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Assert.assertTrue(Files.size(outputPath) > 0);
             Assert.assertTrue(Files.size(indexPath) > 0);
             Assert.assertTrue(Files.size(md5File) > 0);
+        }
+    }
+
+    @Test(expectedExceptions = {htsjdk.samtools.util.RuntimeIOException.class}, expectedExceptionsMessageRegExp = ".*NoSuchFileException.*")
+    public void PathWriterFailureMentionsCause() throws Exception {
+        try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path outputPath = Paths.get("nope://no.txt");
+            createSmallBam(outputPath);
         }
     }
 
