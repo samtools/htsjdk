@@ -94,6 +94,7 @@ public class SamFileValidator {
     private SAMSortOrderChecker orderChecker;
     private Set<Type> errorsToIgnore;
     private boolean ignoreWarnings;
+    private boolean skipMateValidation;
     private boolean bisulfiteSequenced;
     private IndexValidationStringency indexValidationStringency;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted;
@@ -114,6 +115,7 @@ public class SamFileValidator {
         this.errorsToIgnore = EnumSet.noneOf(Type.class);
         this.verbose = false;
         this.ignoreWarnings = false;
+        this.skipMateValidation = false;
         this.bisulfiteSequenced = false;
         this.sequenceDictionaryEmptyAndNoWarningEmitted = false;
         this.numWarnings = 0;
@@ -135,6 +137,14 @@ public class SamFileValidator {
 
     public void setIgnoreWarnings(final boolean ignoreWarnings) {
         this.ignoreWarnings = ignoreWarnings;
+    }
+
+    /**
+     * Sets whether or not we should go ahead and run mate validation.  For extreme cases, mate validation
+     * can require a ton of memory and we want to provide the option of skipping it.
+     */
+    public void setSkipMateValidation(final boolean skipMateValidation) {
+        this.skipMateValidation = skipMateValidation;
     }
 
     /**
@@ -301,7 +311,10 @@ public class SamFileValidator {
                     }
                 }
 
-                validateMateFields(record, recordNumber);
+                if (!skipMateValidation) {
+                    validateMateFields(record, recordNumber);
+                }
+
                 final boolean hasValidSortOrder = validateSortOrder(record, recordNumber);
                 validateReadGroup(record, header);
                 final boolean cigarIsValid = validateCigar(record, recordNumber);
