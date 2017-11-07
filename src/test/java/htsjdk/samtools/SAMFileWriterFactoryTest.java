@@ -79,7 +79,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
     }
 
     @Test()
-    public void PathWriterFailureMentionsCause() throws Exception {
+    public void pathWriterFailureMentionsCause() throws Exception {
         try {
             final Path outputPath = Paths.get("nope://no.txt");
             createSmallBam(outputPath);
