@@ -104,6 +104,6 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
         final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(new File(BAM_FILE.getPath() + ".bai"),
                 null);
-        afi.getFirstBinInLevel(6);
+        afi.getLevelSize(6);
     }
 }
