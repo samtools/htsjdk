@@ -10,7 +10,7 @@ import java.io.IOException;
 
 public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
-    private static final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/9211_1#49.bam");
 
     /**
      * @see <a href="https://github.com/samtools/htsjdk/issues/73">https://github.com/samtools/htsjdk/issues/73</a>

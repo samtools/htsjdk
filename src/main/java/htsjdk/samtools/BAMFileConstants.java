@@ -42,4 +42,5 @@ class BAMFileConstants {
      * BAM index file magic number.
      */
     static final byte[] BAM_INDEX_MAGIC = "BAI\1".getBytes();
+    static final byte[] CSI_INDEX_MAGIC = "CSI\1".getBytes();
 }
