@@ -94,6 +94,7 @@ public class SamFileValidator {
     private SAMSortOrderChecker orderChecker;
     private Set<Type> errorsToIgnore;
     private boolean ignoreWarnings;
+    private boolean skipMateValidation;
     private boolean bisulfiteSequenced;
     private IndexValidationStringency indexValidationStringency;
     private boolean sequenceDictionaryEmptyAndNoWarningEmitted;
@@ -114,6 +115,7 @@ public class SamFileValidator {
         this.errorsToIgnore = EnumSet.noneOf(Type.class);
         this.verbose = false;
         this.ignoreWarnings = false;
+        this.skipMateValidation = false;
         this.bisulfiteSequenced = false;
         this.sequenceDictionaryEmptyAndNoWarningEmitted = false;
         this.numWarnings = 0;
@@ -135,6 +137,23 @@ public class SamFileValidator {
 
     public void setIgnoreWarnings(final boolean ignoreWarnings) {
         this.ignoreWarnings = ignoreWarnings;
+    }
+
+    /**
+     * Sets whether or not we should run mate validation beyond the mate cigar check, which
+     * is useful in extreme edge cases that would require a lot of memory to do the validation.
+     *
+     * @param skipMateValidation should this tool skip mate validation
+     */
+    public void setSkipMateValidation(final boolean skipMateValidation) {
+        this.skipMateValidation = skipMateValidation;
+    }
+
+    /**
+     * @return true if the validator will skip mate validation, otherwise false
+     */
+    public boolean getSkipMateValidation() {
+        return skipMateValidation;
     }
 
     /**
@@ -241,7 +260,6 @@ public class SamFileValidator {
             out.flush();
         }
     }
-
 
     /**
      * Report on reads marked as paired, for which the mate was not found.
@@ -507,6 +525,10 @@ public class SamFileValidator {
             return;
         }
         validateMateCigar(record, recordNumber);
+
+        if (skipMateValidation) {
+            return;
+        }
 
         final PairEndInfo pairEndInfo = pairEndInfoByName.remove(record.getReferenceIndex(), record.getReadName());
         if (pairEndInfo == null) {

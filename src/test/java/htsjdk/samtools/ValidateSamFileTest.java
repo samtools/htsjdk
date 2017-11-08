@@ -177,6 +177,29 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString()).getValue(), 1.0);
     }
 
+    @Test
+    public void testSkipMateValidation() throws IOException {
+        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
+
+        for (int i = 0; i < 5; i++) {
+            samBuilder.addPair(String.valueOf(i), i, i, i + 100);
+        }
+        final Iterator<SAMRecord> records = samBuilder.iterator();
+        records.next().setMateReferenceName("*");
+        records.next().setMateAlignmentStart(Integer.MAX_VALUE);
+        records.next().setMateAlignmentStart(records.next().getAlignmentStart() + 1);
+        records.next().setMateNegativeStrandFlag(!records.next().getReadNegativeStrandFlag());
+        records.next().setMateReferenceIndex(records.next().getReferenceIndex() + 1);
+        records.next().setMateUnmappedFlag(!records.next().getReadUnmappedFlag());
+
+        final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
+
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString()));
+    }
+
     @Test(dataProvider = "missingMateTestCases")
     public void testMissingMate(final SAMFileHeader.SortOrder sortOrder) throws IOException {
         final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder(true, sortOrder);
@@ -584,17 +607,21 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference,
                                                 final IndexValidationStringency stringency) throws IOException {
-        return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST);
+        return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST, false);
     }
 
-    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader, final ReferenceSequenceFile reference,
-                                                                 final IndexValidationStringency stringency, Collection<SAMValidationError.Type> ignoringError) throws IOException {
+    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader,
+                                                                 final ReferenceSequenceFile reference,
+                                                                 final IndexValidationStringency stringency,
+                                                                 final Collection<SAMValidationError.Type> ignoringError,
+                                                                 final boolean skipMateValidation) throws IOException {
         final File outFile = File.createTempFile("validation", ".txt");
         outFile.deleteOnExit();
 
         final PrintWriter out = new PrintWriter(outFile);
         final SamFileValidator samFileValidator = new SamFileValidator(out, 8000);
         samFileValidator.setIndexValidationStringency(stringency).setErrorsToIgnore(ignoringError);
+        samFileValidator.setSkipMateValidation(skipMateValidation);
         samFileValidator.validateSamFileSummary(samReader, reference);
 
         final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
