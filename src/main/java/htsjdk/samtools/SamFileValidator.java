@@ -140,8 +140,8 @@ public class SamFileValidator {
     }
 
     /**
-     * Sets whether or not we should go ahead and run mate validation.  For extreme cases, mate validation
-     * can require a ton of memory and we want to provide the option of skipping it.
+     * Sets whether or not we should go ahead and run mate validation beyond the mate cigar check.  For extreme cases,
+     * mate validation can require a ton of memory and we want to provide the option of skipping it.
      */
     public void setSkipMateValidation(final boolean skipMateValidation) {
         this.skipMateValidation = skipMateValidation;
@@ -311,10 +311,7 @@ public class SamFileValidator {
                     }
                 }
 
-                if (!skipMateValidation) {
-                    validateMateFields(record, recordNumber);
-                }
-
+                validateMateFields(record, recordNumber);
                 final boolean hasValidSortOrder = validateSortOrder(record, recordNumber);
                 validateReadGroup(record, header);
                 final boolean cigarIsValid = validateCigar(record, recordNumber);
@@ -520,6 +517,10 @@ public class SamFileValidator {
             return;
         }
         validateMateCigar(record, recordNumber);
+
+        if (skipMateValidation) {
+            return;
+        }
 
         final PairEndInfo pairEndInfo = pairEndInfoByName.remove(record.getReferenceIndex(), record.getReadName());
         if (pairEndInfo == null) {
