@@ -140,13 +140,18 @@ public class SamFileValidator {
     }
 
     /**
-     * Sets whether or not we should go ahead and run mate validation beyond the mate cigar check.  For extreme cases,
-     * mate validation can require a ton of memory and we want to provide the option of skipping it.
+     * Sets whether or not we should run mate validation beyond the mate cigar check, which
+     * is useful in extreme edge cases that would require a lot of memory to do the validation.
+     *
+     * @param skipMateValidation should this tool skip mate validation
      */
     public void setSkipMateValidation(final boolean skipMateValidation) {
         this.skipMateValidation = skipMateValidation;
     }
 
+    /**
+     * @return true if the validator will skip mate validation, otherwise false
+     */
     public boolean getSkipMateValidation() {
         return skipMateValidation;
     }
@@ -255,7 +260,6 @@ public class SamFileValidator {
             out.flush();
         }
     }
-
 
     /**
      * Report on reads marked as paired, for which the mate was not found.

@@ -177,6 +177,29 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.INVALID_UNALIGNED_MATE_START.getHistogramString()).getValue(), 1.0);
     }
 
+    @Test
+    public void testSkipMateValidation() throws IOException {
+        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
+
+        for (int i = 0; i < 5; i++) {
+            samBuilder.addPair(String.valueOf(i), i, i, i + 100);
+        }
+        final Iterator<SAMRecord> records = samBuilder.iterator();
+        records.next().setMateReferenceName("*");
+        records.next().setMateAlignmentStart(Integer.MAX_VALUE);
+        records.next().setMateAlignmentStart(records.next().getAlignmentStart() + 1);
+        records.next().setMateNegativeStrandFlag(!records.next().getReadNegativeStrandFlag());
+        records.next().setMateReferenceIndex(records.next().getReferenceIndex() + 1);
+        records.next().setMateUnmappedFlag(!records.next().getReadUnmappedFlag());
+
+        final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
+
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_NEG_STRAND.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_FLAG_MATE_UNMAPPED.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_MATE_ALIGNMENT_START.getHistogramString()));
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_MATE_REF_INDEX.getHistogramString()));
+    }
+
     @Test(dataProvider = "missingMateTestCases")
     public void testMissingMate(final SAMFileHeader.SortOrder sortOrder) throws IOException {
         final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder(true, sortOrder);
@@ -188,18 +211,6 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
 
         Assert.assertEquals(results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString()).getValue(), 1.0);
-    }
-
-    @Test(dataProvider = "missingMateTestCases")
-    public void testMissingMateDoesNotFailWhenSkippingValidation(final SAMFileHeader.SortOrder sortOrder) throws IOException {
-        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder(true, sortOrder);
-
-        samBuilder.addPair(String.valueOf(1), 1, 1, 101);
-        final Iterator<SAMRecord> records = samBuilder.iterator();
-        records.next();
-        records.remove();
-        final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
-        Assert.assertEquals(results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString()).getValue(), 0.0);
     }
 
     @DataProvider(name = "missingMateTestCases")
@@ -315,15 +326,6 @@ public class ValidateSamFileTest extends HtsjdkTest {
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
-        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
-    }
-
-    @Test(dataProvider = "testMateCigarScenarios")
-    public void testMateCigarScenariosStillFailWithoutMateValidation(final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
-            throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
-        final Histogram<String> results = executeValidationWithErrorIgnoring(reader, null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
         Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
     }
@@ -619,8 +621,8 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final PrintWriter out = new PrintWriter(outFile);
         final SamFileValidator samFileValidator = new SamFileValidator(out, 8000);
         samFileValidator.setIndexValidationStringency(stringency).setErrorsToIgnore(ignoringError);
-        samFileValidator.validateSamFileSummary(samReader, reference);
         samFileValidator.setSkipMateValidation(skipMateValidation);
+        samFileValidator.validateSamFileSummary(samReader, reference);
 
         final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
         if (reader.readLine().equals("No errors found")) {
