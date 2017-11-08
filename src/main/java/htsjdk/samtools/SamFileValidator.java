@@ -147,6 +147,10 @@ public class SamFileValidator {
         this.skipMateValidation = skipMateValidation;
     }
 
+    public boolean getSkipMateValidation() {
+        return skipMateValidation;
+    }
+
     /**
      * Outputs validation summary report to out.
      *

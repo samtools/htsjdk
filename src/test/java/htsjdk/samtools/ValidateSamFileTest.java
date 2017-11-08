@@ -190,6 +190,18 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertEquals(results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString()).getValue(), 1.0);
     }
 
+    @Test(dataProvider = "missingMateTestCases")
+    public void testMissingMateDoesNotFailWhenSkippingValidation(final SAMFileHeader.SortOrder sortOrder) throws IOException {
+        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder(true, sortOrder);
+
+        samBuilder.addPair(String.valueOf(1), 1, 1, 101);
+        final Iterator<SAMRecord> records = samBuilder.iterator();
+        records.next();
+        records.remove();
+        final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
+        Assert.assertEquals(results.isEmpty(), true);
+    }
+
     @DataProvider(name = "missingMateTestCases")
     public Object[][] missingMateTestCases() {
         return new Object[][]{
@@ -303,6 +315,15 @@ public class ValidateSamFileTest extends HtsjdkTest {
             throws Exception {
         final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
         final Histogram<String> results = executeValidation(reader, null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
+        Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
+    }
+
+    @Test(dataProvider = "testMateCigarScenarios")
+    public void testMateCigarScenariosStillFailWithoutMateValidation(final String scenario, final String inputFile, final SAMValidationError.Type expectedError)
+            throws Exception {
+        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, inputFile));
+        final Histogram<String> results = executeValidationWithErrorIgnoring(reader, null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
         Assert.assertNotNull(results.get(expectedError.getHistogramString()), scenario);
         Assert.assertEquals(results.get(expectedError.getHistogramString()).getValue(), 1.0, scenario);
     }
@@ -584,11 +605,14 @@ public class ValidateSamFileTest extends HtsjdkTest {
 
     private Histogram<String> executeValidation(final SamReader samReader, final ReferenceSequenceFile reference,
                                                 final IndexValidationStringency stringency) throws IOException {
-        return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST);
+        return executeValidationWithErrorIgnoring(samReader, reference, stringency, Collections.EMPTY_LIST, false);
     }
 
-    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader, final ReferenceSequenceFile reference,
-                                                                 final IndexValidationStringency stringency, Collection<SAMValidationError.Type> ignoringError) throws IOException {
+    private Histogram<String> executeValidationWithErrorIgnoring(final SamReader samReader,
+                                                                 final ReferenceSequenceFile reference,
+                                                                 final IndexValidationStringency stringency,
+                                                                 final Collection<SAMValidationError.Type> ignoringError,
+                                                                 final boolean skipMateValidation) throws IOException {
         final File outFile = File.createTempFile("validation", ".txt");
         outFile.deleteOnExit();
 
@@ -596,6 +620,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         final SamFileValidator samFileValidator = new SamFileValidator(out, 8000);
         samFileValidator.setIndexValidationStringency(stringency).setErrorsToIgnore(ignoringError);
         samFileValidator.validateSamFileSummary(samReader, reference);
+        samFileValidator.setSkipMateValidation(skipMateValidation);
 
         final LineNumberReader reader = new LineNumberReader(new FileReader(outFile));
         if (reader.readLine().equals("No errors found")) {
