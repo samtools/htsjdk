@@ -199,7 +199,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         records.next();
         records.remove();
         final Histogram<String> results = executeValidationWithErrorIgnoring(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE, Collections.EMPTY_LIST, true);
-        Assert.assertEquals(results.isEmpty(), true);
+        Assert.assertEquals(results.get(SAMValidationError.Type.MATE_NOT_FOUND.getHistogramString()).getValue(), 0.0);
     }
 
     @DataProvider(name = "missingMateTestCases")
