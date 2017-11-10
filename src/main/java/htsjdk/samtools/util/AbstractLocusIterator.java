@@ -480,9 +480,7 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
             i++;
         }
         if (i > 0){
-            List<K> temporaryList = new ArrayList<>(accumulator.subList(i, accumulator.size()));
-            accumulator.clear();
-            accumulator.addAll(temporaryList);
+            accumulator.subList(0, i).clear();
         }
     }
 
