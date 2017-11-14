@@ -438,10 +438,8 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
     private void populateCompleteQueue(final Locus stopBeforeLocus) {
         // Because of gapped alignments, it is possible to create LocusInfo's with no reads associated with them.
         // Skip over these if not including indels
-        while (!accumulator.isEmpty() && accumulator.get(0).isEmpty() &&
-                locusComparator.compare(accumulator.get(0), stopBeforeLocus) < 0) {
-            accumulator.remove(0);
-        }
+        removeSkippedRegion(stopBeforeLocus);
+
         if (accumulator.isEmpty()) {
             return;
         }
@@ -473,6 +471,17 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
 
         lastReferenceSequence = sequenceIndex;
         lastPosition = locusInfo.getPosition();
+    }
+
+    private void removeSkippedRegion(Locus stopBeforeLocus) {
+        int i = 0;
+        while (i < accumulator.size() && accumulator.get(i).isEmpty() &&
+                locusComparator.compare(accumulator.get(i), stopBeforeLocus) < 0) {
+            i++;
+        }
+        if (i > 0){
+            accumulator.subList(0, i).clear();
+        }
     }
 
     protected SAMSequenceRecord getReferenceSequence(final int referenceSequenceIndex) {
