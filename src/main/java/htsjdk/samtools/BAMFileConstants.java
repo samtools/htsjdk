@@ -43,4 +43,11 @@ class BAMFileConstants {
      */
     static final byte[] BAM_INDEX_MAGIC = "BAI\1".getBytes();
     static final byte[] CSI_INDEX_MAGIC = "CSI\1".getBytes();
+
+    /**
+     * CSI index related constants
+     */
+    static final int CSI_MAGIC_OFFSET = 0;
+    static final int CSI_MISHIFT_OFFSET = 4;
+    static final int CSI_AUXDATA_OFFSET = 12;
 }

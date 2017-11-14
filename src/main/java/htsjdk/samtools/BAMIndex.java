@@ -34,6 +34,7 @@ import java.io.Closeable;
 public interface BAMIndex extends Closeable {
 
     public static final String BAMIndexSuffix = ".bai";
+    public static final String BAMIndexSuffix2 = ".csi";
 
     /**
      * Gets the compressed chunks which should be searched for the contents of records contained by the span

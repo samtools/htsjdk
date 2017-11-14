@@ -70,6 +70,29 @@ public class GenomicIndexUtil {
         return 0;
     }
 
+    /**
+     * calculate the bin given an alignment in [beg,end)
+     * Described in "The Human Genome Browser at UCSC. Kent & al. doi: 10.1101/gr.229102 "
+     * @param beg 0-based start of read (inclusive)
+     * @param end 0-based end of read (exclusive)
+     * @param minShift minimum bin width (2^minShift)
+     * @param binDepth number of levels in the binning scheme (including bin 0)
+     */
+    public static int regionToBin(final int beg, int end, final int minShift, final int binDepth)
+    {
+        --end;
+        int binWidth = minShift, maxShift = minShift + 3*(binDepth-1);
+
+        while (binWidth < maxShift) {
+            if (beg>>binWidth == end>>binWidth) {
+                return ((1<<(maxShift - binWidth)) - 1)/7 + (beg>>binWidth);
+            }
+            binWidth+=3;
+        }
+
+        return 0;
+    }
+
     // TODO: It is disturbing that regionToBins is 0-based, but regionToBins is 1-based.
     // TODO: It is also suspicious that regionToBins decrements endPos.  Test it!
     // TODO: However end is decremented in regionToBins so perhaps there is no conflict.
@@ -94,6 +117,36 @@ public class GenomicIndexUtil {
         for (k =   73 + (start>>20); k <=   73 + (end>>20); ++k) bitSet.set(k);
         for (k =  585 + (start>>17); k <=  585 + (end>>17); ++k) bitSet.set(k);
         for (k = 4681 + (start>>14); k <= 4681 + (end>>14); ++k) bitSet.set(k);
+        return bitSet;
+    }
+    /**
+     * Get candidate bins for the specified region
+     * @param startPos 1-based start of target region, inclusive.
+     * @param endPos 1-based end of target region, inclusive.
+     * @return bit set for each bin that may contain SAMRecords in the target region.
+     * @param minShift minimum bin width (2^minShift).
+     * @param binDepth number of levels in the binning scheme (including bin 0).
+     */
+    public static BitSet regionToBins(final int startPos, final int endPos, final int minShift, final int binDepth) {
+        final int maxPos = 0x1FFFFFFF;
+        final int start = (startPos <= 0) ? 0 : (startPos-1) & maxPos;
+        final int end = (endPos <= 0) ? maxPos : (endPos-1) & maxPos;
+        if (start > end) {
+            return null;
+        }
+        int k, firstBinOnLevel = 1, level = 1, binWidth = minShift + 3*(binDepth - 2);
+        final BitSet bitSet = new BitSet((1<<3*binDepth - 1)/7);
+
+        bitSet.set(0);
+        while (level < binDepth) {
+            for (k = firstBinOnLevel + (start >> binWidth); k <= firstBinOnLevel + (end >> binWidth); ++k) {
+                bitSet.set(k);
+            }
+
+            firstBinOnLevel = firstBinOnLevel + (1<<3*level);
+            binWidth = binWidth - 3;
+            level = level + 1;
+        }
         return bitSet;
     }
 

@@ -27,6 +27,7 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
+import org.apache.commons.compress.compressors.FileNameUtil;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -398,12 +399,18 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         if(!hasIndex())
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
-            if (mIndexFile != null)
-                mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
-                                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
-            else
+            if (mIndexFile != null) {
+                if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix)) {
+                    mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
+                            : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
+                } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix2)) {
+                    mIndex = new BAMCSIFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
+
+                }
+            } else {
                 mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary())
-                                             : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+                        : new DiskBasedBAMFileIndex(mIndexStream, getFileHeader().getSequenceDictionary());
+            }
         }
         return mIndex;
     }
