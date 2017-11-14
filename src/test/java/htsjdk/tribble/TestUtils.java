@@ -18,6 +18,12 @@
 
 package htsjdk.tribble;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * User: jacob
@@ -25,4 +31,17 @@ package htsjdk.tribble;
  */
 public class TestUtils {
     public static String DATA_DIR = "src/test/resources/htsjdk/tribble/";
+
+
+    public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
+        final FileSystem fs = fileSystem;
+        final Path root = fs.getPath("/");
+        final Path vcfPath = Paths.get(vcf);
+        if (index != null) {
+            final Path idxPath = Paths.get(index);
+            final Path idxDestination = Paths.get(AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexFile(vcf) : Tribble.indexFile(vcf));
+            Files.copy(idxPath, root.resolve(idxDestination.getFileName().toString()));
+        }
+        return Files.copy(vcfPath, root.resolve(vcfPath.getFileName().toString()));
+    }
 }
