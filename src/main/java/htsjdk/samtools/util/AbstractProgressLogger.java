@@ -46,7 +46,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     abstract protected void log(String ... message);
 
-    private synchronized void log(final String chrom, final int pos) {
+    private synchronized void record() {
         final long now = System.currentTimeMillis();
         final long lastPeriodSeconds = (now - this.lastStartTime) / 1000;
         this.lastStartTime = now;
@@ -57,20 +57,22 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         final String processed = pad(fmt.format(this.processed), 13);
 
         final String readInfo;
-        if (chrom == null) readInfo = "*/*";
-        else readInfo = chrom + ":" + fmt.format(pos);
+        if (this.lastChrom == null) readInfo = "*/*";
+        else readInfo = this.lastChrom + ":" + fmt.format(this.lastPos);
 
-        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(this.n),
+        final long n = (this.processed % this.n == 0) ? this.n : this.processed % this.n;
+
+        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(n),
                 ": ", period, "s.  Last read position: ", readInfo);
     }
 
     /**
-     * Logs the last last record if it wasn't previoiusly logged.
+     * Logs the last last record if it wasn't previously logged.
      * @return boolean true if logging was triggered, false otherwise
      */
-    public synchronized boolean recordLast() {
+    public synchronized boolean log() {
         if (this.processed % this.n != 0) {
-            log(this.lastChrom, this.lastPos);
+            record();
             return true;
         }
         else {
@@ -82,9 +84,11 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     public synchronized boolean record(final String chrom, final int pos) {
         this.lastChrom = chrom;
         this.lastPos = pos;
-        if (this.lastStartTime == -1) this.lastStartTime = System.currentTimeMillis();
-	    if (++this.processed % this.n == 0) {
-            log(chrom, pos);
+        if (this.lastStartTime == -1) {
+            this.lastStartTime = System.currentTimeMillis();
+        }
+        if (++this.processed % this.n == 0) {
+            record();
             return true;
         }
         else {
