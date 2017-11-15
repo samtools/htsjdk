@@ -1076,8 +1076,8 @@ public class IOUtil {
     }
 
     /**
-     * Go through the files provided and if they have one of the provided file extensions pass the file into the output
-     * otherwise assume that file is a list of filenames and unfold it into the output.
+     * Go through the files provided and if they have one of the provided file extensions pass the file to the output
+     * otherwise assume that file is a list of filenames and unfold it into the output (recursively).
      */
     public static List<Path> unrollPaths(final Collection<Path> inputs, final String... extensions) {
         if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
@@ -1103,18 +1103,19 @@ public class IOUtil {
                 IOUtil.assertFileIsReadable(p);
 
                 try {
-                    Files.lines(p).forEach(s -> {
-                        if (!s.trim().isEmpty()) {
-
-                            final Path innerPath;
-                            try {
-                                innerPath = getPath(s.trim());
-                                stack.push(innerPath);
-                            } catch (IOException e) {
-                                throw new IllegalArgumentException("cannot convert " + s.trim() + " to a Path.");
-                            }
-                        }
-                    });
+                    Files.lines(p)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .forEach(s -> {
+                                        final Path innerPath;
+                                        try {
+                                            innerPath = getPath(s);
+                                            stack.push(innerPath);
+                                        } catch (IOException e) {
+                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.");
+                                        }
+                                    }
+                            );
 
                 } catch (IOException e) {
                     throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());

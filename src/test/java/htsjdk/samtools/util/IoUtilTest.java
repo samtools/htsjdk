@@ -29,6 +29,7 @@ import com.google.common.jimfs.Jimfs;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 
 import htsjdk.samtools.SAMException;
@@ -56,10 +57,10 @@ import java.util.List;
 public class IoUtilTest extends HtsjdkTest {
 
 
-    private static final File TEST_DATA_DIR = new File ("src/test/resources/htsjdk/samtools/io/");
-    private static final File SLURP_TEST_FILE = new File(TEST_DATA_DIR,"slurptest.txt");
-    private static final File EMPTY_FILE = new File(TEST_DATA_DIR,"empty.txt");
-    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File(TEST_DATA_DIR,"5newline5.txt");
+    private static final Path TEST_DATA_DIR = Paths.get ("src/test/resources/htsjdk/samtools/io/");
+    private static final Path SLURP_TEST_FILE = TEST_DATA_DIR.resolve("slurptest.txt");
+    private static final Path EMPTY_FILE = TEST_DATA_DIR.resolve("empty.txt");
+    private static final Path FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = TEST_DATA_DIR.resolve("5newline5.txt");
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
@@ -167,22 +168,22 @@ public class IoUtilTest extends HtsjdkTest {
 
     @Test
     public void slurpLinesTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE), SLURP_TEST_LINES);
+        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE.toFile()), SLURP_TEST_LINES);
     }
 
     @Test
     public void slurpWhitespaceOnlyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
+        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE.toFile()), "     \n     ");
     }
 
     @Test
     public void slurpEmptyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE), "");
+        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE.toFile()), "");
     }
 
     @Test
     public void slurpTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE.toFile()), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
     }
 
     @Test(dataProvider = "fileTypeTestCases")
@@ -400,14 +401,14 @@ public class IoUtilTest extends HtsjdkTest {
     @DataProvider
     public Object[][] fofnData() throws IOException {
         Path fofnPath1 = inMemoryfileSystem.getPath("Level1.fofn");
-        Files.copy(new File(TEST_DATA_DIR.getAbsolutePath(),"Level1.fofn").toPath(), fofnPath1);
+        Files.copy(TEST_DATA_DIR.resolve("Level1.fofn"), fofnPath1);
 
         Path fofnPath2 = inMemoryfileSystem.getPath("Level2.fofn");
-        Files.copy(new File(TEST_DATA_DIR.getAbsolutePath(),"Level2.fofn").toPath(), fofnPath2);
+        Files.copy(TEST_DATA_DIR.resolve("Level2.fofn"), fofnPath2);
 
         return new Object[][]{
-                {TEST_DATA_DIR.getAbsolutePath() + "/Level1.fofn", new String[]{".vcf", ".vcf.gz"}, 2},
-                {TEST_DATA_DIR.getAbsolutePath() + "/Level2.fofn", new String[]{".vcf", ".vcf.gz"}, 4},
+                {TEST_DATA_DIR + "/Level1.fofn", new String[]{".vcf", ".vcf.gz"}, 2},
+                {TEST_DATA_DIR + "/Level2.fofn", new String[]{".vcf", ".vcf.gz"}, 4},
                 {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
                 {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
         };

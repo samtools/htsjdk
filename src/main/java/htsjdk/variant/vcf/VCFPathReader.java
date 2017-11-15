@@ -127,8 +127,9 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
             if (includeFiltered || !vc.isFiltered()) {
                 String name = vc.getID();
                 final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt("END", vc.getEnd());
-                if (".".equals(name) || name == null)
+                if (name == null || name.equals(".")) {
                     name = "interval-" + (++intervals);
+                }
                 list.add(new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name));
             }
         }
