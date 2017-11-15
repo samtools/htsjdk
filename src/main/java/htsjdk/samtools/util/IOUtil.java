@@ -996,45 +996,6 @@ public class IOUtil {
         }
     }
 
-
-    /**
-     * Returns an iterator over the lines in a text file. The underlying resources are automatically
-     * closed when the iterator hits the end of the input, or manually by calling close().
-     *
-     * @param p a {@link Path} that is to be read in as text
-     * @return an iterator over the lines in the file
-     */
-    public static IterableOnceIterator<String> readLines(final Path p) {
-        try {
-            final BufferedReader in = IOUtil.openFileForBufferedReading(p);
-
-            return new IterableOnceIterator<String>() {
-                private String next = in.readLine();
-
-                /** Returns true if there is another line to read or false otherwise. */
-                @Override public boolean hasNext() { return next != null; }
-
-                /** Returns the next line in the file or null if there are no more lines. */
-                @Override public String next() {
-                    try {
-                        final String tmp = next;
-                        next = in.readLine();
-                        if (next == null) in.close();
-                        return tmp;
-                    }
-                    catch (final IOException ioe) { throw new RuntimeIOException(ioe); }
-                }
-
-                /** Closes the underlying input stream. Not required if end of stream has already been hit. */
-                @Override public void close() throws IOException { CloserUtil.close(in); }
-            };
-        }
-        catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
-
-
     /** Returns all of the untrimmed lines in the provided file. */
     public static List<String> slurpLines(final File file) throws FileNotFoundException {
         return slurpLines(new FileInputStream(file));
