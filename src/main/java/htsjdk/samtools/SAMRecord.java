@@ -975,7 +975,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     * the alignment is secondary (a read having split hits may have multiple alignment records).
      */
     public boolean isSecondaryAlignment() {
         return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) != 0;
@@ -1080,7 +1080,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     * the alignment is secondary (a read having split hits may have multiple alignment records).
      */
     public void setSecondaryAlignment(final boolean flag) {
         setFlag(flag, SAMFlag.SECONDARY_ALIGNMENT.flag);
