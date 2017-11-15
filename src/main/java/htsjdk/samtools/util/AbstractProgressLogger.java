@@ -21,6 +21,8 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private long processed = 0;
     // Set to -1 until the first record is added
     private long lastStartTime = -1;
+    private String lastChrom = null;
+    private int lastPos = 0;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -44,27 +46,31 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
      */
     abstract protected void log(String ... message);
 
+    private synchronized void log(final String chrom, final int pos) {
+        final long now = System.currentTimeMillis();
+        final long lastPeriodSeconds = (now - this.lastStartTime) / 1000;
+        this.lastStartTime = now;
 
+        final long seconds = (now - startTime) / 1000;
+        final String elapsed   = formatElapseTime(seconds);
+        final String period    = pad(fmt.format(lastPeriodSeconds), 4);
+        final String processed = pad(fmt.format(this.processed), 13);
 
-    @Override
-    public synchronized boolean record(final String chrom, final int pos) {
-	    if (this.lastStartTime == -1) this.lastStartTime = System.currentTimeMillis();
-	    if (++this.processed % this.n == 0) {
-            final long now = System.currentTimeMillis();
-            final long lastPeriodSeconds = (now - this.lastStartTime) / 1000;
-            this.lastStartTime = now;
+        final String readInfo;
+        if (chrom == null) readInfo = "*/*";
+        else readInfo = chrom + ":" + fmt.format(pos);
 
-            final long seconds = (System.currentTimeMillis() - startTime) / 1000;
-            final String elapsed   = formatElapseTime(seconds);
-            final String period    = pad(fmt.format(lastPeriodSeconds), 4);
-            final String processed = pad(fmt.format(this.processed), 13);
+        log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(this.n),
+                ": ", period, "s.  Last read position: ", readInfo);
+    }
 
-            final String readInfo;
-            if (chrom == null) readInfo = "*/*";
-            else readInfo = chrom + ":" + fmt.format(pos);
-
-            log(this.verb, " ", processed, " " + noun + ".  Elapsed time: ", elapsed, "s.  Time for last ", fmt.format(this.n),
-                    ": ", period, "s.  Last read position: ", readInfo);
+    /**
+     * Logs the last last record if it wasn't previoiusly logged.
+     * @return boolean true if logging was triggered, false otherwise
+     */
+    public synchronized boolean recordLast() {
+        if (this.processed % this.n != 0) {
+            log(this.lastChrom, this.lastPos);
             return true;
         }
         else {
@@ -72,7 +78,19 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         }
     }
 
-
+    @Override
+    public synchronized boolean record(final String chrom, final int pos) {
+        this.lastChrom = chrom;
+        this.lastPos = pos;
+        if (this.lastStartTime == -1) this.lastStartTime = System.currentTimeMillis();
+	    if (++this.processed % this.n == 0) {
+            log(chrom, pos);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 
     /**
      * Records that a given record has been processed and triggers logging if necessary.
