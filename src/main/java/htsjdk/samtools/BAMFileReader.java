@@ -400,10 +400,10 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             throw new SAMException("No index is available for this BAM file.");
         if(mIndex == null) {
             if (mIndexFile != null) {
-                if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix)) {
+                if (getIndexType().equals(SamIndexes.BAI)) {
                     mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
-                } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix2)) {
+                } else if (getIndexType().equals(SamIndexes.CSI)) {
                     mIndex = new BAMCSIFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
 
                 }
@@ -413,6 +413,18 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
             }
         }
         return mIndex;
+    }
+
+    public SamIndexes getIndexType() {
+        if (mIndexFile != null) {
+            if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix)) {
+                return SamIndexes.BAI;
+            } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix2)) {
+                return SamIndexes.CSI;
+            }
+        }
+
+        return null;
     }
 
     public void setEagerDecode(final boolean desired) { this.eagerDecode = desired; }

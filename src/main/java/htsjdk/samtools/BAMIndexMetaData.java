@@ -219,10 +219,21 @@ public class BAMIndexMetaData {
     static public void printIndexStats(final File inputBamFile) {
         try {
             final BAMFileReader bam = new BAMFileReader(inputBamFile, null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
-            if (!bam.hasIndex()) {
+            if (!bam.hasIndex() || bam.getIndexType() == null) {
                 throw new SAMException("No index for bam file " + inputBamFile);
             }
-            BAMIndexMetaData[] data = getIndexStats(bam);
+
+            BAMIndexMetaData[] data = null;
+            if (bam.getIndexType().equals(SamIndexes.BAI)) {
+                data = getIndexStats(bam);
+            } else if (bam.getIndexType().equals(SamIndexes.CSI)) {
+                data = getCSIIndexStats(bam);
+            }
+
+            if (data == null) {
+                throw new SAMException("Exception in getting index statistics");
+            }
+
             // read through all the bins of every reference.
             int nRefs = bam.getFileHeader().getSequenceDictionary().size();
             for (int i = 0; i < nRefs; i++) {
@@ -252,6 +263,31 @@ public class BAMIndexMetaData {
     static public BAMIndexMetaData[] getIndexStats(final BAMFileReader bam) {
 
         AbstractBAMFileIndex index = (AbstractBAMFileIndex) bam.getIndex();
+        // read through all the bins of every reference.
+        int nRefs = index.getNumberOfReferences();
+        BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];
+        for (int i = 0; i < nRefs; i++) {
+            result[i] = index.getMetaData(i);
+        }
+
+        if (result[0] == null) {
+            result[0] = new BAMIndexMetaData();
+        }
+        final Long noCoordCount = index.getNoCoordinateCount();
+        if (noCoordCount != null)  // null in old index files without metadata
+            result[0].setNoCoordinateRecordCount(noCoordCount);
+
+        return result;
+    }
+
+    /**
+     * Prints meta-data statistics from BAM index (.csi) file
+     * Statistics include count of aligned and unaligned reads for each reference sequence
+     * and a count of all records with no start coordinate
+     */
+    static public BAMIndexMetaData[] getCSIIndexStats(final BAMFileReader bam) {
+
+        BAMCSIFileIndex index = (BAMCSIFileIndex) bam.getIndex();
         // read through all the bins of every reference.
         int nRefs = index.getNumberOfReferences();
         BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];

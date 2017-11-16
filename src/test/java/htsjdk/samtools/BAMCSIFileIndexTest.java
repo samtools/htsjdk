@@ -1,12 +1,10 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.seekablestream.SeekableStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
-import java.io.IOException;
 
 public class BAMCSIFileIndexTest extends HtsjdkTest {
 
@@ -65,7 +63,7 @@ public class BAMCSIFileIndexTest extends HtsjdkTest {
 
     @Test
     public static void testGetNReferences() {
-        Assert.assertEquals(csi.getnReferences(), 45);
+        Assert.assertEquals(csi.getNumberOfReferences(), 45);
     }
 
     @Test
@@ -80,7 +78,7 @@ public class BAMCSIFileIndexTest extends HtsjdkTest {
 
     @Test
     public static void testIndexArraySize() {
-        Assert.assertEquals(csi.sequenceIndexes.length, csi.getnReferences() + 1);
+        Assert.assertEquals(csi.sequenceIndexes.length, csi.getNumberOfReferences() + 1);
     }
 
     @Test

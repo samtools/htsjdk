@@ -42,7 +42,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         readMinShiftAndBinDepth();
         readAuxDataAndNRef();
 
-        sequenceIndexes = new int[getnReferences() + 1];
+        sequenceIndexes = new int[getNumberOfReferences() + 1];
         Arrays.fill(sequenceIndexes, -1);
     }
 
@@ -55,7 +55,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         readAuxDataAndNRef();
 
 
-        sequenceIndexes = new int[getnReferences() + 1];
+        sequenceIndexes = new int[getNumberOfReferences() + 1];
         Arrays.fill(sequenceIndexes, -1);
     }
 
@@ -111,9 +111,9 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
 
     public void setAuxData(byte[] auxData) { this.auxData = auxData; }
 
-    public int getnReferences() { return nReferences; }
+    public int getNumberOfReferences() { return nReferences; }
 
-    public void setnReferences(int nReferences) { this.nReferences = nReferences; }
+    public void setNumberOfReferences(int nReferences) { this.nReferences = nReferences; }
 
 
     /**
@@ -278,7 +278,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         byte[] auxData = new byte[readInteger()]; // l_aux
         readBytes(auxData); // aux
         setAuxData(auxData);
-        setnReferences(readInteger()); // n_ref
+        setNumberOfReferences(readInteger()); // n_ref
         metaDataPos = position(); // save the metadata position for delayed reading
     }
 
@@ -326,7 +326,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
 
         final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
 
-        final int sequenceCount = getnReferences();
+        final int sequenceCount = getNumberOfReferences();
 
         if (referenceSequence >= sequenceCount || endPos < startPos) {
             return null;
@@ -395,7 +395,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
 
         final List<Chunk> metaDataChunks = new ArrayList<Chunk>();
 
-        final int sequenceCount = getnReferences();
+        final int sequenceCount = getNumberOfReferences();
 
         if (reference >= sequenceCount) {
             return null;
@@ -432,7 +432,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
             seek(metaDataPos);
         }
 
-        skipToSequence(getnReferences());
+        skipToSequence(getNumberOfReferences());
         try { // in case of old index file without meta data
             return readLong();
         } catch (final Exception e) {
