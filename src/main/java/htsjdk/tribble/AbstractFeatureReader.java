@@ -167,8 +167,16 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return
      */
     public static boolean hasBlockCompressedExtension (final String fileName) {
+
+        String path = fileName;
+        if(path.startsWith("http://") || path.startsWith("https://")) {
+            int qIdx = path.indexOf('?');
+            if (qIdx > 0) {
+                path = path.substring(0, qIdx);
+            }
+        }
         for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
-            if (fileName.toLowerCase().endsWith(extension))
+            if (path.toLowerCase().endsWith(extension))
                 return true;
         }
         return false;
@@ -189,7 +197,18 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return
      */
     public static boolean hasBlockCompressedExtension (final URI uri) {
-        return hasBlockCompressedExtension(uri.getPath());
+
+        String path = uri.getPath();
+
+        // JTR -- it appears that this method is called for both local and remote files.
+        // Path might be a local file, in which case a '?' is a legal part of the filename.
+        if(path.startsWith("http://") || path.startsWith("https://")) {
+            int qIdx = path.indexOf('?');
+            if (qIdx > 0) {
+                path = path.substring(0, qIdx);
+            }
+        }
+        return hasBlockCompressedExtension(path);
     }
 
     /**
