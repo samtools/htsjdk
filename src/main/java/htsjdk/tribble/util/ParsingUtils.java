@@ -100,13 +100,13 @@ public class ParsingUtils {
         final String scheme = Optional.ofNullable(IOUtil.getScheme(uri)).orElse("");
 
         final InputStream inputStream;
-        final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http","ftp","https"));
+        final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http", "ftp", "https"));
 
-        if (URL_SCHEMES.contains(scheme)) {
+        if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
             inputStream = getURLHelper(new URL(uri)).openInputStream();
         } else if (scheme.isEmpty()) {
             File file = new File(uri);
-            inputStream = new FileInputStream(file);
+            inputStream = Files.newInputStream(file.toPath());
         } else {
             inputStream = new SeekablePathStream(IOUtil.getPath(uri), wrapper);
         }

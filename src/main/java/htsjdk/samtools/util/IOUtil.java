@@ -1151,6 +1151,7 @@ public class IOUtil {
      */
     public static String getScheme(String uriString) {
         try {
+            // illegal characters in the uri will screw up
             return new URI(uriString).getScheme();
         } catch (URISyntaxException e) {
             return "";

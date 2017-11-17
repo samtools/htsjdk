@@ -36,6 +36,7 @@ public class VCFPathReaderTest extends HtsjdkTest {
                 // test that lack indexes (should succeed)
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.gz", null, false, true},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf", null, false, true},
+                {TEST_DATA_DIR + "VcfThatLacksAnIndex but has a space.vcf", null, false, true},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.bcf", null, false, true},
                 {TEST_DATA_DIR + "VcfThatLacksAnIndex.vcf.bgz", null, false, true},
 
