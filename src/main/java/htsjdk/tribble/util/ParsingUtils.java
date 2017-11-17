@@ -36,15 +36,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -96,22 +88,27 @@ public class ParsingUtils {
      *
      * the wrapper will only be applied to paths that are not http, https, ftp, or file, i.e. any {@link java.nio.file.Path}
      * using a custom filesystem plugin
-     * @param path a uri like string
+     * @param uri a uri like string
      * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
-     * @return
-     * @throws IOException
+     * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases
+     * @throws IOException when stream cannot be opened against uri
      */
-    public static InputStream openInputStream(final String path, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+    public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
 
+        // will be empty string if there's no scheme
+        final String scheme = Optional.ofNullable(IOUtil.getScheme(uri)).orElse("");
+
         final InputStream inputStream;
-        if (path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:")) {
-            inputStream = getURLHelper(new URL(path)).openInputStream();
-        } else if (IOUtil.hasScheme(path) && !IOUtil.getScheme(path).equals("file")) {
-            inputStream = new SeekablePathStream(IOUtil.getPath(path), wrapper);
-        } else {
-            File file = IOUtil.getScheme(path) != null && IOUtil.getScheme(path).equals("file") ? new File(path.substring("file:".length())) : new File(path);
+        final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http","ftp","https"));
+
+        if (URL_SCHEMES.contains(scheme)) {
+            inputStream = getURLHelper(new URL(uri)).openInputStream();
+        } else if (scheme.isEmpty()) {
+            File file = new File(uri);
             inputStream = new FileInputStream(file);
+        } else {
+            inputStream = new SeekablePathStream(IOUtil.getPath(uri), wrapper);
         }
         return inputStream;
     }

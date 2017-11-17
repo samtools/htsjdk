@@ -105,12 +105,12 @@ public class SAMSequenceDictionaryExtractor {
         VCF(IOUtil.VCF_EXTENSIONS) {
             @Override
             SAMSequenceDictionary extractDictionary(final File vcf) {
-                VCFFileReader vcfFileReader = null;
+                VCFPathReader vcfReader = null;
                 try {
-                    vcfFileReader = new VCFFileReader(vcf, false);
-                    return vcfFileReader.getFileHeader().getSequenceDictionary();
+                    vcfReader = new VCFPathReader(vcf.toPath(), false);
+                    return vcfReader.getFileHeader().getSequenceDictionary();
                 } finally {
-                    CloserUtil.close(vcfFileReader);
+                    CloserUtil.close(vcfReader);
                 }
             }
 
@@ -144,6 +144,8 @@ public class SAMSequenceDictionaryExtractor {
             applicableExtensions = extensions;
         }
 
+        /** @deprecated in favor of extractDictionary(final Path file) */
+        @Deprecated
         abstract SAMSequenceDictionary extractDictionary(final File file);
         abstract SAMSequenceDictionary extractDictionary(final Path file);
 

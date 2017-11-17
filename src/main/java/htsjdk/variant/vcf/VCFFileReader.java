@@ -20,7 +20,10 @@ import java.nio.file.Path;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
+ *
+ * @deprecated in favor of {@link VCFPathReader} 11/16/2017
  */
+@Deprecated
 public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     private final FeatureReader<VariantContext> reader;
@@ -94,10 +97,9 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
-        final VCFFileReader vcfFileReader = new VCFFileReader(file, false);
-        final IntervalList intervalList = fromVcf(vcfFileReader, includeFiltered);
-        vcfFileReader.close();
-        return intervalList;
+        try(final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
+            return fromVcf(vcfFileReader, includeFiltered);
+        }
     }
 
     /**

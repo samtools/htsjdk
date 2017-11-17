@@ -3,7 +3,6 @@ package htsjdk.variant.vcf;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Interval;
 import htsjdk.samtools.util.IntervalList;
 import htsjdk.tribble.AbstractFeatureReader;
@@ -14,7 +13,6 @@ import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
@@ -33,11 +31,21 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
     }
 
     /**
+     * returns Correct Feature codec for Path depending whether
+     * the name seems to indicate that it's a BCF.
+     *
+     * @param path to vcf/bcf
+     * @return FeatureCodec for input Path
+     */
+    private static FeatureCodec<VariantContext, ?> getCodecForPath(Path path) {
+        return isBCF(path) ? new BCF2Codec() : new VCFCodec();
+    }
+
+    /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
         final SAMSequenceDictionary dict = new VCFPathReader(path, false).getFileHeader().getSequenceDictionary();
-        CloserUtil.close(path);
         return dict;
     }
 
@@ -59,12 +67,9 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      */
     public VCFPathReader(final Path path, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
-        FeatureCodec<VariantContext, ?> codec = isBCF(path) ? new BCF2Codec() : new VCFCodec();
         this.reader = AbstractFeatureReader.getFeatureReader(
                 path.toUri().toString(),
-                codec,
+                getCodecForPath(path),
                 requireIndex);
     }
 
@@ -72,13 +77,10 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
      * Allows construction of a VCFFileReader with a specified index path.
      */
     public VCFPathReader(final Path path, final Path indexPath, final boolean requireIndex) {
-        // Note how we deal with type safety here, just casting to (FeatureCodec)
-        // in the call to getFeatureReader is not enough for Java 8.
-        FeatureCodec<VariantContext, ?> codec = isBCF(path) ? new BCF2Codec() : new VCFCodec();
         this.reader = AbstractFeatureReader.getFeatureReader(
                 path.toUri().toString(),
                 indexPath.toUri().toString(),
-                codec,
+                getCodecForPath(path),
                 requireIndex);
     }
 
@@ -90,15 +92,27 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
      * @param path
      * @return
      */
-    public static IntervalList fromVcf(final Path path) {
-        return fromVcf(path, false);
+    public static IntervalList toIntervalList(final Path path) {
+        return toIntervalList(path, false);
     }
 
-    public static IntervalList fromVcf(final Path path, final boolean includeFiltered) {
-        final VCFPathReader vcfReader = new VCFPathReader(path, false);
-        final IntervalList intervalList = fromVcf(vcfReader, includeFiltered);
-        vcfReader.close();
-        return intervalList;
+    public static IntervalList toIntervalList(final Path path, final boolean includeFiltered) {
+        try(final VCFPathReader vcfReader = new VCFPathReader(path, false)) {
+            return vcfReader.toIntervalList(includeFiltered);
+        }
+    }
+
+
+    /**
+     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
+     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
+     * Will use a "END" tag in the info field as the end of the interval (if exists).
+     *
+     * @return an IntervalList constructed from input vcf
+     */
+
+    public IntervalList toIntervalList() {
+        return toIntervalList(false);
     }
 
     /**
@@ -106,24 +120,19 @@ public class VCFPathReader implements Closeable, Iterable<VariantContext> {
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
      * Will use a "END" tag in the info field as the end of the interval (if exists).
      *
-     * @param vcf the vcfReader to be used for the conversion
+     * @param includeFiltered a flag indicating if filtered variants should also be included in the result
      * @return an IntervalList constructed from input vcf
      */
-
-    public static IntervalList fromVcf(final VCFPathReader vcf) {
-        return fromVcf(vcf, false);
-    }
-
-    public static IntervalList fromVcf(final VCFPathReader vcf, final boolean includeFiltered) {
+    public IntervalList toIntervalList(final boolean includeFiltered) {
 
         //grab the dictionary from the VCF and use it in the IntervalList
-        final SAMSequenceDictionary dict = vcf.getFileHeader().getSequenceDictionary();
+        final SAMSequenceDictionary dict = getFileHeader().getSequenceDictionary();
         final SAMFileHeader samFileHeader = new SAMFileHeader();
         samFileHeader.setSequenceDictionary(dict);
         final IntervalList list = new IntervalList(samFileHeader);
 
         int intervals = 0;
-        for (final VariantContext vc : vcf) {
+        for (final VariantContext vc : this) {
             if (includeFiltered || !vc.isFiltered()) {
                 String name = vc.getID();
                 final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt("END", vc.getEnd());
