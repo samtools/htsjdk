@@ -53,7 +53,7 @@ public class VCFPathReaderTest extends HtsjdkTest {
     public void testCanOpenVCFPathReader(final String file, final String index, final boolean requiresIndex, final boolean shouldSucceed) throws Exception {
         try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
             final Path tribbleFileInJimfs = TestUtils.getTribbleFileInJimfs(file, index, fs);
-            try (final VCFPathReader reader = new VCFPathReader(tribbleFileInJimfs, requiresIndex)) {
+            try (final VCFFileReader reader = new VCFFileReader(tribbleFileInJimfs, requiresIndex)) {
                 final VCFHeader header = reader.getFileHeader();
             } catch (Exception e) {
                 if (shouldSucceed) throw e;

@@ -424,7 +424,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
         }
 
-
         @Override
         public boolean hasNext() {
             return currentRecord != null;

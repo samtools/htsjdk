@@ -73,7 +73,6 @@ public class ParsingUtils {
         colorSymbols.put("magenta", "FF00FF");
     }
 
-
     /**
      * @return an input stream from the given path
      * @throws IOException
@@ -82,6 +81,8 @@ public class ParsingUtils {
             throws IOException {
         return openInputStream(path, null);
     }
+
+    static private final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http", "ftp", "https"));
 
     /**
      * open an input stream from the given path and wrap the raw byte stream with a wrapper if given
@@ -98,9 +99,7 @@ public class ParsingUtils {
 
         // will be empty string if there's no scheme
         final String scheme = Optional.ofNullable(IOUtil.getScheme(uri)).orElse("");
-
         final InputStream inputStream;
-        final Set<String> URL_SCHEMES = new HashSet<>(Arrays.asList("http", "ftp", "https"));
 
         if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
             inputStream = getURLHelper(new URL(uri)).openInputStream();
@@ -112,10 +111,6 @@ public class ParsingUtils {
         }
         return inputStream;
     }
-
-    //public static String join(String separator, Collection<String> strings) {
-    //    return join( separator, strings.toArray(new String[0]) );
-    //}
 
     public static <T> String join(String separator, Collection<T> objects) {
         if (objects.isEmpty()) {
