@@ -360,16 +360,16 @@ public class IOUtil {
      *
      * @see #deleteOnExit(Path)
      */
-    protected static final class DeletePathThread extends Thread {
+    static final class DeletePathThread extends Thread {
 
         private final Path path;
 
-        protected DeletePathThread(Path path) {this.path = path;}
+        DeletePathThread(Path path) {this.path = path;}
 
         @Override
         public void run() {
             try {
-                Files.delete(path);
+                Files.deleteIfExists(path);
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
