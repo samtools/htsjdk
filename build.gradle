@@ -53,7 +53,7 @@ final gitVersion = gitVersion().replaceAll(".dirty", "")
 version = isRelease ? gitVersion : gitVersion + "-SNAPSHOT"
 
 logger.info("build for version:" + version)
-group = 'com.github.samtools'
+group = 'com.github.tbl3rd'
 
 defaultTasks 'jar'
 
@@ -188,8 +188,8 @@ uploadArchives {
                 }
 
                 scm {
-                    url 'git@github.com:samtools/htsjdk.git'
-                    connection 'scm:git:git@github.com:samtools/htsjdk.git'
+                    url 'git@github.com:tbl3rd/htsjdk.git'
+                    connection 'scm:git:git@github.com:tbl3rd/htsjdk.git'
                 }
 
                 licenses {
