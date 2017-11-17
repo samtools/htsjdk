@@ -1088,7 +1088,7 @@ public class IOUtil {
 
         while (!stack.empty()) {
             final Path p = stack.pop();
-            final String name = p.toUri().toString();
+            final String name = p.toString();
             boolean matched = false;
 
             for (final String ext : extensions) {
