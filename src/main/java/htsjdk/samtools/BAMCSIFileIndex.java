@@ -440,6 +440,9 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         }
     }
 
+    public BAMIndexContent getQueryResults(final int referenceSequence) {
+        return query(referenceSequence, 0, Integer.MAX_VALUE);
+    }
 
 
     private void skipToSequence(final int sequenceIndex) {

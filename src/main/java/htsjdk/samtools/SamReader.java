@@ -80,11 +80,12 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
                 return String.format("TypeImpl{name='%s', fileExtension='%s', indexExtension='%s'}", name, fileExtension, indexExtension);
             }
         }
-
+        
         public static final Type SRA_TYPE = new TypeImpl("SRA", "sra", null);
         public static final Type CRAM_TYPE = new TypeImpl("CRAM", "cram", "crai");
         public static final Type BAM_TYPE = new TypeImpl("BAM", "bam", "bai");
         public static final Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
+        public static final Type BAM_CSI_TYPE = new TypeImpl("BAM", "bam", "csi");
     }
 
     /**

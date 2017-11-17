@@ -212,7 +212,7 @@ public class BAMIndexMetaData {
     }
 
     /**
-     * Prints meta-data statistics from BAM index (.bai) file
+     * Prints meta-data statistics from BAM index (.bai or .csi) file
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */

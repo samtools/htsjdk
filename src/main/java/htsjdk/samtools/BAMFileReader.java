@@ -379,6 +379,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     @Override
     public SamReader.Type type() {
+        if (mIndexFile != null && getIndexType().equals(SamIndexes.CSI)) {
+            return SamReader.Type.BAM_CSI_TYPE;
+        }
         return SamReader.Type.BAM_TYPE;
     }
 
