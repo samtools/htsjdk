@@ -34,6 +34,7 @@ import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -344,7 +345,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM) {
 
-        final Path tmpDir = IOUtil.getDefaultTmpDirPath();
+        final Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
         return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
     }
 
