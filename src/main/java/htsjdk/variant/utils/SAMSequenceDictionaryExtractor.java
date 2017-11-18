@@ -24,17 +24,20 @@
 
 package htsjdk.variant.utils;
 
-import htsjdk.samtools.BamFileIoUtils;
-import htsjdk.samtools.SAMException;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
+import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.IntervalList;
+import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,8 +62,15 @@ public class SAMSequenceDictionaryExtractor {
         DICTIONARY(IOUtil.DICT_FILE_EXTENSION) {
 
             @Override
-            SAMSequenceDictionary extractDictionary(Path dictionary) {
-                return extractDictionary(dictionary.toFile());
+            SAMSequenceDictionary extractDictionary(final Path dictionary) {
+                try (BufferedLineReader bufferedLineReader =
+                             new BufferedLineReader(ParsingUtils.openInputStream(dictionary.toUri().toString()))) {
+                    final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
+                    final SAMFileHeader header = codec.decode(bufferedLineReader, dictionary.toString());
+                    return header.getSequenceDictionary();
+                } catch (final IOException e) {
+                    throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
+                }
             }
         },
         SAM(IOUtil.SAM_FILE_EXTENSION, BamFileIoUtils.BAM_FILE_EXTENSION) {
@@ -74,7 +84,7 @@ public class SAMSequenceDictionaryExtractor {
 
             @Override
             SAMSequenceDictionary extractDictionary(Path vcf) {
-                try(VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)){
+                try (VCFFileReader vcfPathReader = new VCFFileReader(vcf, false)){
                     return vcfPathReader.getFileHeader().getSequenceDictionary();
                 }
             }
