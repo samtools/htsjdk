@@ -26,7 +26,6 @@ package htsjdk.variant.utils;
 
 import htsjdk.samtools.*;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
@@ -35,8 +34,6 @@ import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
