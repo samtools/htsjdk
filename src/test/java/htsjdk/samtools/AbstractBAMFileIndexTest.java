@@ -10,7 +10,7 @@ import java.io.IOException;
 
 public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
-    private static final File BAM_FILE = new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam");
+    private static final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
 
     /**
      * @see <a href="https://github.com/samtools/htsjdk/issues/73">https://github.com/samtools/htsjdk/issues/73</a>
@@ -87,10 +87,6 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
     @Test
     public static void testGetLevelSizeOK() {
-
-        final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(new File(BAM_FILE.getPath() + ".bai"),
-                null);
-
         Assert.assertEquals(afi.getLevelSize(0), 1);
         Assert.assertEquals(afi.getLevelSize(1), 8);
         Assert.assertEquals(afi.getLevelSize(2), 64);
@@ -101,9 +97,6 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
 
     @Test (expectedExceptions = SAMException.class)
     public static void testGetLevelSizeFail() {
-
-        final AbstractBAMFileIndex afi = new DiskBasedBAMFileIndex(new File(BAM_FILE.getPath() + ".bai"),
-                null);
         afi.getLevelSize(6);
     }
 }
