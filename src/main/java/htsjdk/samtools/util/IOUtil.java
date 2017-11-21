@@ -31,6 +31,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.tribble.Tribble;
+import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -353,34 +354,12 @@ public class IOUtil {
     }
 
     /**
-     * Deletes on exit a path by creating a shutdown hook.
+     * Register a {@link Path} for deletion on JVM exit.
+     *
+     * @see DeleteOnExitPathHook
      */
     public static void deleteOnExit(final Path path) {
-        // add a shutdown hook to remove the path on exit
-        Runtime.getRuntime().addShutdownHook(new DeletePathThread(path));
-    }
-
-    /**
-     * WARNING: visible for testing. Do not use.
-     *
-     * Class for delete a path, used in a shutdown hook for delete on exit.
-     *
-     * @see #deleteOnExit(Path)
-     */
-    static final class DeletePathThread extends Thread {
-
-        private final Path path;
-
-        DeletePathThread(Path path) {this.path = path;}
-
-        @Override
-        public void run() {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
+        DeleteOnExitPathHook.add(path);
     }
 
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */

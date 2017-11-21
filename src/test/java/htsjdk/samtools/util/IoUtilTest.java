@@ -353,21 +353,6 @@ public class IoUtilTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] pathsForDeletePathThread() throws Exception {
-        return new Object[][] {
-                {File.createTempFile("testDeletePathThread", "file").toPath()},
-                {Files.createFile(inMemoryfileSystem.getPath("testDeletePathThread"))}
-        };
-    }
-
-    @Test(dataProvider = "pathsForDeletePathThread")
-    public void testDeletePathThread(final Path path) throws Exception {
-        Assert.assertTrue(Files.exists(path));
-        new IOUtil.DeletePathThread(path).run();
-        Assert.assertFalse(Files.exists(path));
-    }
-
-    @DataProvider
     public Object[][] pathsForWritableDirectory() throws Exception {
         return new Object[][] {
                 // non existent
