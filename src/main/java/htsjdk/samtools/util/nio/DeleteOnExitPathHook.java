@@ -55,7 +55,7 @@ public class DeleteOnExitPathHook {
         for (Path path : toBeDeleted) {
             try {
                 Files.delete(path);
-            } catch (IOException | RuntimeException e) {
+            } catch (IOException | SecurityException e) {
                 // do nothing if cannot be deleted, because it is a shutdown hook
             }
         }
