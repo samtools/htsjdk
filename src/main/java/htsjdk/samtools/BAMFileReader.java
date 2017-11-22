@@ -27,7 +27,6 @@ package htsjdk.samtools;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.*;
 import htsjdk.samtools.util.zip.InflaterFactory;
-import org.apache.commons.compress.compressors.FileNameUtil;
 
 import java.io.DataInputStream;
 import java.io.File;

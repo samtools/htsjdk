@@ -27,7 +27,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
     private final IndexFileBuffer mIndexBuffer;
     private SAMSequenceDictionary mBamDictionary = null;
 
-    final int [] sequenceIndexes;
+    private final int [] sequenceIndexes;
 
     /**
      * Constructors
@@ -283,17 +283,20 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
     }
 
     public int getParentBinNumber(int binNumber) {
-        if (binNumber > getMaxBins()) {
+        if (binNumber >= getMaxBins()) {
             throw new SAMException("Tried to get parent bin for invalid bin (" + binNumber + ").");
+        }
+        if (binNumber == 0) {
+            return 0;
         }
         return (binNumber - 1) >> 3;
     }
 
-    private int getParentBinNumber(Bin bin) {
-        if (bin == null || bin.getBinNumber() > getMaxBins()) {
-            throw new SAMException("Tried to get parent bin for invalid bin (" + bin.getBinNumber() + ").");
+    public int getParentBinNumber(Bin bin) {
+        if (bin == null) {
+            throw new SAMException("Tried to get parent bin for null bin.");
         }
-        return (bin.getBinNumber() - 1) >> 3;
+        return getParentBinNumber(bin.getBinNumber());
     }
 
 
