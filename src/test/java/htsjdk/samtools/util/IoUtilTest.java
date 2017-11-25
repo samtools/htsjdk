@@ -398,17 +398,22 @@ public class IoUtilTest extends HtsjdkTest {
             }
         }
     }
+
+    static final String level1 = "Level1.fofn";
+    static final String level2 = "Level2.fofn";
+
     @DataProvider
     public Object[][] fofnData() throws IOException {
-        Path fofnPath1 = inMemoryfileSystem.getPath("Level1.fofn");
-        Files.copy(TEST_DATA_DIR.resolve("Level1.fofn"), fofnPath1);
 
-        Path fofnPath2 = inMemoryfileSystem.getPath("Level2.fofn");
-        Files.copy(TEST_DATA_DIR.resolve("Level2.fofn"), fofnPath2);
+        Path fofnPath1 = inMemoryfileSystem.getPath(level1);
+        Files.copy(TEST_DATA_DIR.resolve(level1), fofnPath1);
+
+        Path fofnPath2 = inMemoryfileSystem.getPath(level2);
+        Files.copy(TEST_DATA_DIR.resolve(level2), fofnPath2);
 
         return new Object[][]{
-                {TEST_DATA_DIR + "/Level1.fofn", new String[]{".vcf", ".vcf.gz"}, 2},
-                {TEST_DATA_DIR + "/Level2.fofn", new String[]{".vcf", ".vcf.gz"}, 4},
+                {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 2},
+                {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 4},
                 {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
                 {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
         };

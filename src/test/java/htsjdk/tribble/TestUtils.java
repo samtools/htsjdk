@@ -32,16 +32,29 @@ import java.nio.file.Paths;
 public class TestUtils {
     public static String DATA_DIR = "src/test/resources/htsjdk/tribble/";
 
+    /**
+     * A utility method for copying a tribble file (and possibly its index) into a Jimfs-like FileSystem
+     *
+     * @param vcf The string pointing to the Tribble file
+     * @param index a (nullable) string pointing to the index
+     * @param fileSystem a (JimFs-like) Filesystem into which the tribble file will be copied
+     * @return the {@link Path} to the copied file inside fileSystem
+     *
+     * @throws IOException if there an error with copying into the FileSystem
+     * @throws URISyntaxException if the provided strings cannot be understoos as Uris.
+     */
 
     public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
         final FileSystem fs = fileSystem;
         final Path root = fs.getPath("/");
         final Path vcfPath = Paths.get(vcf);
+
+        final Path vcfDestination = root.resolve(vcfPath.getFileName().toString());
         if (index != null) {
             final Path idxPath = Paths.get(index);
-            final Path idxDestination = Paths.get(AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexFile(vcf) : Tribble.indexFile(vcf));
-            Files.copy(idxPath, root.resolve(idxDestination.getFileName().toString()));
+            final Path idxDestination = AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexPath(vcfDestination) : Tribble.indexPath(vcfDestination);
+            Files.copy(idxPath, idxDestination);
         }
-        return Files.copy(vcfPath, root.resolve(vcfPath.getFileName().toString()));
+        return Files.copy(vcfPath, vcfDestination);
     }
 }

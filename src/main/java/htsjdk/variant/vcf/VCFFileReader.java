@@ -85,11 +85,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     public VCFFileReader(final File file, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
         // in the call to getFeatureReader is not enough for Java 8.
-        FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
-        this.reader = AbstractFeatureReader.getFeatureReader(
-                file.getAbsolutePath(),
-                codec,
-                requireIndex);
+        this(file.toPath(), requireIndex);
     }
 
     /**
@@ -101,12 +97,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
         // in the call to getFeatureReader is not enough for Java 8.
-        FeatureCodec<VariantContext, ?> codec = isBCF(file) ? new BCF2Codec() : new VCFCodec();
-        this.reader = AbstractFeatureReader.getFeatureReader(
-                file.getAbsolutePath(),
-                indexFile.getAbsolutePath(),
-                codec,
-                requireIndex);
+        this(file.toPath(), indexFile.toPath(), requireIndex);
     }
 
     /**

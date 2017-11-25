@@ -26,10 +26,12 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.*;
+import htsjdk.tribble.readers.AsciiLineReader;
+import htsjdk.tribble.readers.AsciiLineReaderIterator;
+import htsjdk.tribble.readers.LineIteratorImpl;
+import htsjdk.tribble.readers.SynchronousLineReader;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -41,23 +43,11 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.io.StringReader;
+import java.io.*;
 import java.math.BigInteger;
-import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by IntelliJ IDEA.

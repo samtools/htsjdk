@@ -13,7 +13,7 @@ import java.nio.file.Path;
 /**
  * Created by farjoun on 10/12/17.
  */
-public class VCFPathReaderTest extends HtsjdkTest {
+public class VCFFileReaderTest extends HtsjdkTest {
 
     @DataProvider(name = "pathsData")
     Object[][] pathsData() {
