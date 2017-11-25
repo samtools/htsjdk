@@ -412,7 +412,7 @@ public class IoUtilTest extends HtsjdkTest {
         Files.copy(TEST_DATA_DIR.resolve(level2), fofnPath2);
 
         return new Object[][]{
-                {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 2},
+                {TEST_DATA_DIR + "/" + level1, new String[]{".vcf", ".vcf.gz"}, 2},
                 {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 4},
                 {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
                 {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
