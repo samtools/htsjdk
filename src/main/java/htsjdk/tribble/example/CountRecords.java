@@ -188,7 +188,7 @@ public class CountRecords {
      */
     public static FeatureCodec getFeatureCodec(File featureFile) {
         // quickly determine the codec type
-        //if (featureFile.getName().endsWith(".vcf") || featureFile.getName().endsWith(".VCF") )
+        //if (featureFile.getName().endsWith(IOUtil.VCF_FILE_EXTENSION) || featureFile.getName().endsWith(".VCF") )
         //    return new VCFCodec();
         if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();

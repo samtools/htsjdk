@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.readers.AsciiLineReader;
@@ -37,10 +38,7 @@ import htsjdk.variant.variantcontext.GenotypeBuilder;
 import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import htsjdk.variant.vcf.VCFCodec;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLine;
-import htsjdk.variant.vcf.VCFHeaderVersion;
+import htsjdk.variant.vcf.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -74,7 +72,7 @@ public class AsyncVariantContextWriterUnitTest extends VariantBaseTest {
     /** test, using the writer and reader, that we can output and input a VCF body without problems */
     @Test
     public void testWriteAndReadAsyncVCFHeaderless() throws IOException {
-        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", ".vcf");
+        final File fakeVCFFile = VariantBaseTest.createTempFile("testWriteAndReadAsyncVCFHeaderless.", IOUtil.VCF_FILE_EXTENSION);
         fakeVCFFile.deleteOnExit();
 
         Tribble.indexFile(fakeVCFFile).deleteOnExit();

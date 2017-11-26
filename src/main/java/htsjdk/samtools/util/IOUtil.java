@@ -30,6 +30,7 @@ import htsjdk.samtools.seekablestream.SeekableBufferedStream;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.tribble.Tribble;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -87,8 +88,13 @@ public class IOUtil {
     public static final long FIVE_GBS = 5 * ONE_GB;
 
     public static final String VCF_FILE_EXTENSION = ".vcf";
+    public static final String VCF_INDEX_EXTENSION = Tribble.STANDARD_INDEX_EXTENSION;
+
     public static final String BCF_FILE_EXTENSION = ".bcf";
     public static final String COMPRESSED_VCF_FILE_EXTENSION = ".vcf.gz";
+    public static final String COMPRESSED_VCF_INDEX_EXTENSION = ".tbi";
+
+
     /** Possible extensions for VCF files and related formats. */
     public static final String[] VCF_EXTENSIONS = {VCF_FILE_EXTENSION, COMPRESSED_VCF_FILE_EXTENSION, BCF_FILE_EXTENSION};
 

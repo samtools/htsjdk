@@ -30,12 +30,14 @@ package htsjdk.variant.variantcontext.writer;
 
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.bcf2.BCF2Codec;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFUtils;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -127,7 +129,7 @@ public class VariantContextWritersUnitTest extends VariantBaseTest {
     private class VCFIOTester extends VariantContextTestProvider.VariantContextIOTest<VCFCodec> {
         @Override
         public String getExtension() {
-            return ".vcf";
+            return IOUtil.VCF_FILE_EXTENSION;
         }
 
         @Override

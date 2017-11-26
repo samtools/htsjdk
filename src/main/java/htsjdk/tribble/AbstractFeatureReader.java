@@ -151,7 +151,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     /**
      * Whether the reader has an index or not
      * Default implementation returns false
-     * @return
+     * @return false
      */
     public boolean hasIndex(){
         return false;

@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.Tribble;
@@ -50,7 +51,7 @@ import java.util.EnumSet;
 public class IndexFactoryUnitTest extends VariantBaseTest {
 
     File inputFile = new File(variantTestDataRoot + "HiSeq.10000.vcf");
-    File outputFile = createTempFile("onTheFlyOutputTest", ".vcf");
+    File outputFile = createTempFile("onTheFlyOutputTest", IOUtil.VCF_FILE_EXTENSION);
     File outputFileIndex = Tribble.indexFile(outputFile);
 
     private SAMSequenceDictionary dict;

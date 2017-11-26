@@ -2,10 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -20,9 +17,7 @@ import java.nio.file.Path;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
- *
  */
-
 public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     private final FeatureReader<VariantContext> reader;
@@ -39,12 +34,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
-        return path.toUri().getRawPath().endsWith(".bcf");
+        return path.toUri().getRawPath().endsWith(IOUtil.BCF_FILE_EXTENSION);
     }
 
     /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
-     *
      */
     public static SAMSequenceDictionary getSequenceDictionary(final File file) {
         try (final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
@@ -307,5 +301,9 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         } catch (final IOException ioe) {
             throw new TribbleException("Could not close a variant context feature reader.", ioe);
         }
+    }
+
+    public boolean isQueriable() {
+        return reader.hasIndex();
     }
 }

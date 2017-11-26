@@ -491,11 +491,11 @@ public class VariantContextWriterBuilder {
     }
 
     private static boolean isVCF(final File outFile) {
-        return outFile != null && outFile.getName().endsWith(".vcf");
+        return outFile != null && outFile.getName().endsWith(IOUtil.VCF_FILE_EXTENSION);
     }
 
     private static boolean isBCF(final File outFile) {
-        return outFile != null && outFile.getName().endsWith(".bcf");
+        return outFile != null && outFile.getName().endsWith(IOUtil.BCF_FILE_EXTENSION);
     }
 
     private static boolean isCompressedVCF(final File outFile) {

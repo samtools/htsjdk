@@ -27,19 +27,21 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.tribble.Tribble;
 import htsjdk.variant.utils.GeneralUtils;
+import htsjdk.variant.variantcontext.GenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 
 public class VCFUtils {
+
 
     public static Set<VCFHeaderLine> smartMergeHeaders(final Collection<VCFHeader> headers, final boolean emitWarnings) throws IllegalStateException {
         // We need to maintain the order of the VCFHeaderLines, otherwise they will be scrambled in the returned Set.
@@ -122,7 +124,7 @@ public class VCFUtils {
     }
 
     public static Set<VCFHeaderLine> withUpdatedContigsAsLines(final Set<VCFHeaderLine> oldLines, final File referenceFile, final SAMSequenceDictionary refDict, final boolean referenceNameOnly) {
-        final Set<VCFHeaderLine> lines = new LinkedHashSet<VCFHeaderLine>(oldLines.size());
+        final Set<VCFHeaderLine> lines = new LinkedHashSet<>(oldLines.size());
 
         for ( final VCFHeaderLine line : oldLines ) {
             if ( line instanceof VCFContigHeaderLine )
@@ -157,7 +159,7 @@ public class VCFUtils {
      */
     public static List<VCFContigHeaderLine> makeContigHeaderLines(final SAMSequenceDictionary refDict,
                                                                   final File referenceFile) {
-        final List<VCFContigHeaderLine> lines = new ArrayList<VCFContigHeaderLine>();
+        final List<VCFContigHeaderLine> lines = new ArrayList<>();
         final String assembly = referenceFile != null ? getReferenceAssembly(referenceFile.getName()) : null;
         for ( final SAMSequenceRecord contig : refDict.getSequences() )
             lines.add(makeContigHeaderLine(contig, assembly));
@@ -165,11 +167,67 @@ public class VCFUtils {
     }
 
     private static VCFContigHeaderLine makeContigHeaderLine(final SAMSequenceRecord contig, final String assembly) {
-        final Map<String, String> map = new LinkedHashMap<String, String>(3);
+        final Map<String, String> map = new LinkedHashMap<>(3);
         map.put("ID", contig.getSequenceName());
         map.put("length", String.valueOf(contig.getSequenceLength()));
         if ( assembly != null ) map.put("assembly", assembly);
         return new VCFContigHeaderLine(map, contig.getSequenceIndex());
+    }
+
+    /**
+     * This method creates a temporary VCF file and it's appropriately named index file, and will delete them on exit.
+     * @param prefix - The prefix string to be used in generating the file's name; must be at least three characters long
+     * @param suffix - The suffix string to be used in generating the file's name; may be null, in which case the suffix ".tmp" will be used
+     * @return A File object referencing the newly created temporary VCF file
+     * @throws IOException - if a file could not be created.
+     */
+    public static File createTemporaryIndexedVcfFile(final String prefix, final String suffix) throws IOException {
+        final File out = File.createTempFile(prefix, suffix);
+        out.deleteOnExit();
+        String indexFileExtension = null;
+        if (suffix.endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION)) {
+            indexFileExtension = IOUtil.COMPRESSED_VCF_INDEX_EXTENSION;
+        }
+        else if (suffix.endsWith(IOUtil.VCF_FILE_EXTENSION)) {
+            indexFileExtension = IOUtil.VCF_INDEX_EXTENSION;
+        }
+        if (indexFileExtension != null) {
+            final File indexOut = new File(out.getAbsolutePath() + indexFileExtension);
+            indexOut.deleteOnExit();
+        }
+        return out;
+    }
+
+    /**
+     * This method makes a copy of the input VCF and creates an index file for it in the same location.
+     * This is done so that we don't need to store the index file in the same repo
+     * The copy of the input is done so that it and its index are in the same directory which is typically required.
+     * @param vcfFile the vcf file to index
+     * @return File a vcf file (index file is created in same path).
+     */
+    public static File createTemporaryIndexedVcfFromInput(final File vcfFile, final String tempFilePrefix) throws IOException {
+        final String extension;
+
+        if (vcfFile.getAbsolutePath().endsWith(IOUtil.VCF_FILE_EXTENSION) ) extension = IOUtil.VCF_FILE_EXTENSION;
+        else if (vcfFile.getAbsolutePath().endsWith(IOUtil.COMPRESSED_VCF_FILE_EXTENSION) ) extension = IOUtil.COMPRESSED_VCF_FILE_EXTENSION;
+        else throw new IllegalArgumentException("couldn't find a " + IOUtil.VCF_FILE_EXTENSION + " or " + IOUtil.COMPRESSED_VCF_FILE_EXTENSION + " ending for input file " + vcfFile.getAbsolutePath());
+
+        File output = createTemporaryIndexedVcfFile(tempFilePrefix, extension);
+
+        final VCFFileReader in = new VCFFileReader(vcfFile, false);
+        final VCFHeader header = in.getFileHeader();
+
+        final VariantContextWriter out = new VariantContextWriterBuilder().
+                setReferenceDictionary(header.getSequenceDictionary()).
+                setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY)).
+                setOutputFile(output).build();
+        out.writeHeader(header);
+        for (final VariantContext ctx : in) {
+            out.add(ctx);
+        }
+        out.close();
+        in.close();
+        return output;
     }
 
     private static String getReferenceAssembly(final String refPath) {
@@ -191,7 +249,7 @@ public class VCFUtils {
     /** Only displays a warning if warnings are enabled and an identical warning hasn't been already issued */
     private static final class HeaderConflictWarner {
         boolean emitWarnings;
-        Set<String> alreadyIssued = new HashSet<String>();
+        Set<String> alreadyIssued = new HashSet<>();
 
         private HeaderConflictWarner( final boolean emitWarnings ) {
             this.emitWarnings = emitWarnings;

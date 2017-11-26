@@ -28,12 +28,14 @@ package htsjdk.variant.variantcontext.writer;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
+import htsjdk.variant.vcf.VCFUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -61,13 +63,13 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     @BeforeSuite
     public void before() throws IOException {
         dictionary = createArtificialSequenceDictionary();
-        vcf = File.createTempFile(TEST_BASENAME, ".vcf");
+        vcf = File.createTempFile(TEST_BASENAME, IOUtil.VCF_FILE_EXTENSION);
         vcf.deleteOnExit();
         vcfIdx = Tribble.indexFile(vcf);
         vcfIdx.deleteOnExit();
         vcfMD5 = new File(vcf.getAbsolutePath() + ".md5");
         vcfMD5.deleteOnExit();
-        bcf = File.createTempFile(TEST_BASENAME, ".bcf");
+        bcf = File.createTempFile(TEST_BASENAME, IOUtil.BCF_FILE_EXTENSION);
         bcf.deleteOnExit();
         bcfIdx = Tribble.indexFile(bcf);
         bcfIdx.deleteOnExit();
@@ -77,7 +79,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         blockCompressedVCFs = new ArrayList<File>();
         blockCompressedIndices = new ArrayList<File>();
         for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
-            final File blockCompressed = File.createTempFile(TEST_BASENAME, ".vcf" + extension);
+            final File blockCompressed = File.createTempFile(TEST_BASENAME, IOUtil.VCF_FILE_EXTENSION + extension);
             blockCompressed.deleteOnExit();
             blockCompressedVCFs.add(blockCompressed);
 

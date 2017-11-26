@@ -138,7 +138,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
     }
 
 
-
     /**
      * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
      * @param codec       - codec to decode the features
@@ -217,7 +216,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      */
     @Override
     public List<String> getSequenceNames() {
-        return !this.hasIndex() ? new ArrayList<String>() : new ArrayList<String>(index.getSequenceNames());
+        return !this.hasIndex() ? new ArrayList<>() : new ArrayList<>(index.getSequenceNames());
     }
 
     @Override
@@ -287,7 +286,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             final List<Block> blocks = index.getBlocks(chr, start - 1, end);
             return new QueryIterator(chr, start, end, blocks);
         } else {
-            return new EmptyIterator<T>();
+            return new EmptyIterator<>();
         }
     }
 
