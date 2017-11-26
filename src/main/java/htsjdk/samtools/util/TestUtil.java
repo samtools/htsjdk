@@ -73,6 +73,20 @@ public class TestUtil {
     }
 
     /**
+     * Schedule a file or directory to be (recursively) deleted on jvm exit.
+     *
+     * This will silently delete the directory as well as it's contents.
+     * It improves upon {@link TestUtil#recursiveDelete(File)} by deleting directories and files that did not exist at call time.
+     *
+     * It cannot be undone, dir will be deleted unless program is killed.
+     *
+     * @param dir to be deleted
+     */
+    public static void deleteRecursivelyOnExit(final File dir){
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> recursiveDelete(dir)));
+    }
+
+    /**
      * Serialize and Deserialize an object
      * Useful for testing if serialization is correctly handled for a class.
      * @param input an object to serialize and then deserialize
