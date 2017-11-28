@@ -18,6 +18,8 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.util.Locatable;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
@@ -38,6 +40,18 @@ public interface FeatureReader<T extends Feature> extends Closeable {
      * @throws IOException If there's a problem reading or if the reader is not queryable, e.g. if it doesn't have an index.
      */
     CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException;
+
+
+    /**
+     * Query the reader for a particular interval corresponding to a contig and a 1-based closed
+     *
+     * @param locus The locus to be queried
+     * @return an iterator containing the features that at in the interval.
+     * @throws IOException If there's a problem reading or if the reader is not queryable, e.g. if it doesn't have an index.
+     */
+    default CloseableTribbleIterator<T> query(Locatable locus) throws IOException {
+        return query(locus.getContig(), locus.getStart(), locus.getEnd());
+    }
 
     /**
      * Provides access to all the features in the reader
@@ -61,7 +75,7 @@ public interface FeatureReader<T extends Feature> extends Closeable {
 
     /**
      * Provide access to the header of the reader
-     * @return the header of the reader
+     * @return the header of the reader. May be null.
      */
     Object getHeader();
 

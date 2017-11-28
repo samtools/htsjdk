@@ -38,7 +38,7 @@ public class FeatureCodecHeader {
     /** The value of the headerEnd field when there's no header */
     public final static long NO_HEADER_END = 0;
 
-    /** An public instance representing no header */
+    /** A public instance representing no header */
     public final static FeatureCodecHeader EMPTY_HEADER = new FeatureCodecHeader(null, NO_HEADER_END);
 
     private final Object headerValue;

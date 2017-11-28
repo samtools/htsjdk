@@ -303,6 +303,12 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
+    /**
+     * a method to check if the reader is queriable, i.e. if a call to {@link VCFFileReader#query(String, int, int)}
+     * can be successful
+     *
+     * @return true if the reader can be quried, i.e. if the underlying Tribble reader has an index.
+     */
     public boolean isQueriable() {
         return reader.hasIndex();
     }
