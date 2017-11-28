@@ -66,7 +66,13 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
         if (value == null) {
             mAttributes.remove(key);
         } else {
-            mAttributes.put(key, value);
+            if (!key.equals("SO") && !key.equals("GO")) {
+                mAttributes.put(key, value);
+            } else if (!value.matches("[a-z]+")) {
+                mAttributes.put(key, value.toLowerCase());
+                System.out.printf("Warning! %s must be assigned with a value in lowercase instead of \"%s\", "
+                                          + "reformatted input data to lowercase.\n", key, value);
+            } else mAttributes.put(key, value);
         }
     }
 
