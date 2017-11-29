@@ -212,6 +212,29 @@ public class HistogramTest extends HtsjdkTest {
         Assert.assertEquals(histo.getPercentile(0.99999), 6.0);
     }
 
+    @DataProvider
+    Object[][] percentileFailData(){
+        Histogram<Integer> histo1 = new Histogram<>();
+        Histogram<Integer> histo2 = new Histogram<>();
+        histo2.increment(0,0);
+
+        Histogram<Integer> histo3 = new Histogram<>();
+        final int[] is = {2, 3, 4, -1};
+        int j=0;
+        for (final int i : is) histo3.increment(j++, i);
+
+        return new Object[][]{
+                {histo1},
+                {histo2},
+                {histo3},
+        };
+    }
+
+    @Test(dataProvider = "percentileFailData",expectedExceptions = IllegalArgumentException.class)
+    public void testPercentileFail1(final Histogram<Integer> histo) {
+        histo.getPercentile(0.01);
+    }
+
     @Test
     public void testGetMinMax() {
         final int[] is = {4,4,5,5,5,6,6,6,6};

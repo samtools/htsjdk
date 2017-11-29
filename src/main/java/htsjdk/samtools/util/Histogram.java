@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.util;
 
+import htsjdk.samtools.SamReaderFactory;
+
 import java.io.Serializable;
 import java.util.*;
 
@@ -265,27 +267,27 @@ public final class Histogram<K extends Comparable> implements Serializable {
     }
 
     /**
-	 * Calculates the median bin size
-	 */
-	public double getMedianBinSize() {
-		if (size() == 0) {
-			return 0;
-		}
+     * Calculates the median bin size
+     */
+    public double getMedianBinSize() {
+        if (size() == 0) {
+            return 0;
+        }
 
-		final List<Double> binValues = new ArrayList<>();
-		for (final Bin<K> bin : values()) {
-			binValues.add(bin.getValue());
-		}
-		Collections.sort(binValues);
+        final List<Double> binValues = new ArrayList<>();
+        for (final Bin<K> bin : values()) {
+            binValues.add(bin.getValue());
+        }
+        Collections.sort(binValues);
 
-		final int midPoint = binValues.size() / 2;
-		double median = binValues.get(midPoint);
-		if (binValues.size() % 2 == 0) {
-			median = (median + binValues.get(midPoint-1)) / 2;
-		}
+        final int midPoint = binValues.size() / 2;
+        double median = binValues.get(midPoint);
+        if (binValues.size() % 2 == 0) {
+            median = (median + binValues.get(midPoint - 1)) / 2;
+        }
 
-		return median;
-	}
+        return median;
+    }
 
     /**
      * Returns a {@link Collection} view of the values contained in this histogram.
@@ -309,6 +311,7 @@ public final class Histogram<K extends Comparable> implements Serializable {
 
     /**
      * Gets the bin in which the given percentile falls.
+     * Should only be called on histograms with non-negative values and a positive sum of values.
      *
      * @param percentile a value between 0 and 1
      * @return the bin value in which the percentile falls
@@ -317,14 +320,24 @@ public final class Histogram<K extends Comparable> implements Serializable {
         if (percentile <= 0) throw new IllegalArgumentException("Cannot query percentiles of 0 or below");
         if (percentile >= 1) throw new IllegalArgumentException("Cannot query percentiles of 1 or above");
 
-        double total = getCount();
+        values().stream()
+                .filter(b -> b.getValue() < 0)
+                .findFirst()
+                .ifPresent(b -> {
+            throw new IllegalArgumentException("Cannot calculate Percentile when negative counts are present " +
+                    "in histogram. Bin " + b.getId() + "=" + b.getValue());
+        });
+
+        final double total = getCount();
+        if (total == 0) throw new IllegalArgumentException("Cannot calculate percentiles when total is zero.");
+
         double sofar = 0;
         for (Bin<K> bin : values()) {
             sofar += bin.getValue();
             if (sofar / total >= percentile) return bin.getIdValue();
         }
 
-        throw new IllegalStateException("Could not find percentile: " + percentile);
+        throw new IllegalStateException("UNPOSSIBLE! Could not find percentile: " + percentile);
     }
 
     /**
