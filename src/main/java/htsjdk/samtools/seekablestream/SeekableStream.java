@@ -23,9 +23,12 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.ClosedChannelException;
 import java.util.OptionalLong;
 
 /**
@@ -92,13 +95,17 @@ public abstract class SeekableStream extends InputStream {
      * <p>Note: there is no limit for reading.
      *
      * @param readlimit ignored.
+     * @throws RuntimeIOException if an IO error occurs other than an already closed stream.
      */
     @Override
     public final synchronized void mark(int readlimit) {
         try {
             mark = OptionalLong.of(position());
-        } catch (IOException e) {
-            // do nothing (most likely already closed stream)
+        } catch (final ClosedChannelException e) {
+            // do nothing, respecting the contract of mark
+        } catch (final IOException e) {
+            // other exceptions are re-thrown
+            throw new RuntimeIOException(e);
         }
     }
 
