@@ -136,7 +136,6 @@ public class SAMTextHeaderCodec {
             return null;
         }
         mCurrentLine = mReader.readLine();
-        textHeader.append(mCurrentLine).append('\n');
         return mCurrentLine;
     }
 
