@@ -28,6 +28,7 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import htsjdk.samtools.util.Log;
 
 /**
  * Base class for the various concrete records in a SAM header, providing uniform
@@ -38,6 +39,8 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 
     private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
+    private static final Log log = Log.getInstance(AbstractSAMHeaderRecord.class);
+
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);
@@ -66,13 +69,14 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
         if (value == null) {
             mAttributes.remove(key);
         } else {
-            if (!key.equals("SO") && !key.equals("GO")) {
-                mAttributes.put(key, value);
-            } else if (!value.matches("[a-z]+")) {
-                mAttributes.put(key, value.toLowerCase());
-                System.out.printf("Warning! %s must be assigned with a value in lowercase instead of \"%s\", "
-                                          + "reformatted input data to lowercase.\n", key, value);
-            } else mAttributes.put(key, value);
+            String modified = value;
+            if ((key.equals("SO") || key.equals("GO")) && !modified.matches("[a-z]+")) {
+                log.warn("Warning! "
+                                 + key + " must be assigned with a value in lowercase instead of "
+                                 + value + ", reformatted input data to lowercase.");
+                modified = modified.toLowerCase();
+            }
+            mAttributes.put(key, modified);
         }
     }
 

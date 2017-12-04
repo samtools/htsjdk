@@ -27,6 +27,7 @@ import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.Log;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -70,6 +71,8 @@ public class SAMTextHeaderCodec {
 
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
 
+    private static final Log log = Log.getInstance(AbstractSAMHeaderRecord.class);
+
     void setWriter(final BufferedWriter writer) {
         this.writer = writer;
     }
@@ -80,7 +83,6 @@ public class SAMTextHeaderCodec {
 
     /**
      * Reads text SAM header and converts to a SAMFileHeader object.
-     *
      * @param reader Where to get header text from.
      * @param source Name of the input file, for error messages.  May be null.
      * @return complete header object.
@@ -116,7 +118,7 @@ public class SAMTextHeaderCodec {
                     break;
                 default:
                     throw new IllegalStateException("Unrecognized header record type: " +
-                                                            parsedHeaderLine.getHeaderRecordType());
+                            parsedHeaderLine.getHeaderRecordType());
             }
         }
         mFileHeader.setSequenceDictionary(new SAMSequenceDictionary(sequences));
@@ -144,8 +146,7 @@ public class SAMTextHeaderCodec {
     /**
      * Transfer standard and non-standard tags from text representation to in-memory representation.
      * All values are now stored as Strings.
-     *
-     * @param record         attributes get set into this object.
+     * @param record attributes get set into this object.
      * @param textAttributes Map of tag type to value.  Some values may be removed by this method.
      */
     private void transferAttributes(final AbstractSAMHeaderRecord record, final Map<String, String> textAttributes) {
@@ -157,47 +158,42 @@ public class SAMTextHeaderCodec {
     }
 
     private void parsePGLine(final ParsedHeaderLine parsedHeaderLine) {
-        assert (HeaderRecordType.PG.equals(parsedHeaderLine.getHeaderRecordType()));
+        assert(HeaderRecordType.PG.equals(parsedHeaderLine.getHeaderRecordType()));
         if (!parsedHeaderLine.requireTag(SAMProgramRecord.PROGRAM_GROUP_ID_TAG)) {
             return;
         }
-        final SAMProgramRecord programRecord = new SAMProgramRecord(
-                parsedHeaderLine.removeValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG));
+        final SAMProgramRecord programRecord = new SAMProgramRecord(parsedHeaderLine.removeValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG));
 
         transferAttributes(programRecord, parsedHeaderLine.mKeyValuePairs);
         mFileHeader.addProgramRecord(programRecord);
     }
 
     private void parseRGLine(final ParsedHeaderLine parsedHeaderLine) {
-        assert (HeaderRecordType.RG.equals(parsedHeaderLine.getHeaderRecordType()));
+        assert(HeaderRecordType.RG.equals(parsedHeaderLine.getHeaderRecordType()));
         if (!parsedHeaderLine.requireTag(SAMReadGroupRecord.READ_GROUP_ID_TAG)) {
             return;
         }
         // Allow no SM tag if validation stringency is not strict.  This call has the side effect of reporting an error
         // or throwing an exception depending on validation stringency if this is missing.
         parsedHeaderLine.requireTag(SAMReadGroupRecord.READ_GROUP_SAMPLE_TAG);
-        final SAMReadGroupRecord samReadGroupRecord = new SAMReadGroupRecord(
-                parsedHeaderLine.removeValue(SAMReadGroupRecord.READ_GROUP_ID_TAG));
+        final SAMReadGroupRecord samReadGroupRecord = new SAMReadGroupRecord(parsedHeaderLine.removeValue(SAMReadGroupRecord.READ_GROUP_ID_TAG));
         transferAttributes(samReadGroupRecord, parsedHeaderLine.mKeyValuePairs);
 
         // Convert non-String attributes to the appropriate types
         final String predictedMedianInsertSize =
-                (String) samReadGroupRecord.getAttribute(SAMReadGroupRecord.PREDICTED_MEDIAN_INSERT_SIZE_TAG);
+                (String)samReadGroupRecord.getAttribute(SAMReadGroupRecord.PREDICTED_MEDIAN_INSERT_SIZE_TAG);
         if (predictedMedianInsertSize != null) {
             try {
                 Integer.parseInt(predictedMedianInsertSize);
-                samReadGroupRecord
-                        .setAttribute(SAMReadGroupRecord.PREDICTED_MEDIAN_INSERT_SIZE_TAG, predictedMedianInsertSize);
+                samReadGroupRecord.setAttribute(SAMReadGroupRecord.PREDICTED_MEDIAN_INSERT_SIZE_TAG,predictedMedianInsertSize);
             } catch (NumberFormatException e) {
                 reportErrorParsingLine(SAMReadGroupRecord.PREDICTED_MEDIAN_INSERT_SIZE_TAG +
-                                               " is not numeric: " + predictedMedianInsertSize,
-                                       SAMValidationError.Type.INVALID_PREDICTED_MEDIAN_INSERT_SIZE,
-                                       e);
+                        " is not numeric: " + predictedMedianInsertSize, SAMValidationError.Type.INVALID_PREDICTED_MEDIAN_INSERT_SIZE,
+                        e);
             }
         }
 
-        final String dateRunProduced = (String) samReadGroupRecord
-                .getAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG);
+        final String dateRunProduced = (String)samReadGroupRecord.getAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG);
         if (dateRunProduced != null) {
             Object date;
             try {
@@ -207,9 +203,8 @@ public class SAMTextHeaderCodec {
                 //  stringency allows it.
                 date = dateRunProduced;
                 reportErrorParsingLine(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG + " tag value '" +
-                                               dateRunProduced + "' is not parseable as a date",
-                                       SAMValidationError.Type.INVALID_DATE_STRING,
-                                       e);
+                dateRunProduced + "' is not parseable as a date", SAMValidationError.Type.INVALID_DATE_STRING,
+                        e);
             }
             samReadGroupRecord.setAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG, date.toString());
         }
@@ -218,7 +213,7 @@ public class SAMTextHeaderCodec {
     }
 
     private void parseSQLine(final ParsedHeaderLine parsedHeaderLine) {
-        assert (HeaderRecordType.SQ.equals(parsedHeaderLine.getHeaderRecordType()));
+        assert(HeaderRecordType.SQ.equals(parsedHeaderLine.getHeaderRecordType()));
         if (!parsedHeaderLine.requireTag(SAMSequenceRecord.SEQUENCE_NAME_TAG) ||
                 !parsedHeaderLine.requireTag(SAMSequenceRecord.SEQUENCE_LENGTH_TAG)) {
             return;
@@ -226,14 +221,13 @@ public class SAMTextHeaderCodec {
         String sequenceName = parsedHeaderLine.removeValue(SAMSequenceRecord.SEQUENCE_NAME_TAG);
         sequenceName = SAMSequenceRecord.truncateSequenceName(sequenceName);
         final SAMSequenceRecord samSequenceRecord = new SAMSequenceRecord(sequenceName,
-                                                                          Integer.parseInt(parsedHeaderLine.removeValue(
-                                                                                  SAMSequenceRecord.SEQUENCE_LENGTH_TAG)));
+                Integer.parseInt(parsedHeaderLine.removeValue(SAMSequenceRecord.SEQUENCE_LENGTH_TAG)));
         transferAttributes(samSequenceRecord, parsedHeaderLine.mKeyValuePairs);
         sequences.add(samSequenceRecord);
     }
 
     private void parseHDLine(final ParsedHeaderLine parsedHeaderLine) {
-        assert (HeaderRecordType.HD.equals(parsedHeaderLine.getHeaderRecordType()));
+        assert(HeaderRecordType.HD.equals(parsedHeaderLine.getHeaderRecordType()));
         if (!parsedHeaderLine.requireTag(SAMFileHeader.VERSION_TAG)) {
             return;
         }
@@ -243,8 +237,8 @@ public class SAMTextHeaderCodec {
             if (soString != null) SAMFileHeader.SortOrder.valueOf(soString);
         } catch (IllegalArgumentException e) {
             reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
-                                           " line has non-conforming SO tag value: " + soString + ".",
-                                   SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+                            " line has non-conforming SO tag value: "+ soString + ".",
+                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
         }
 
         final String goString = parsedHeaderLine.getValue(SAMFileHeader.GROUP_ORDER_TAG);
@@ -252,15 +246,14 @@ public class SAMTextHeaderCodec {
             if (goString != null) SAMFileHeader.GroupOrder.valueOf(goString);
         } catch (IllegalArgumentException e) {
             reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
-                                           " line has non-conforming GO tag value: " + goString + ".",
-                                   SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+                            " line has non-conforming GO tag value: "+ goString + ".",
+                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
         }
 
         transferAttributes(mFileHeader, parsedHeaderLine.mKeyValuePairs);
     }
 
-    private void reportErrorParsingLine(String reason, final SAMValidationError.Type type,
-                                        final Throwable nestedException) {
+    private void reportErrorParsingLine(String reason, final SAMValidationError.Type type, final Throwable nestedException) {
         reason = "Error parsing SAM header. " + reason + ". Line:\n" + mCurrentLine;
         if (validationStringency != ValidationStringency.STRICT) {
             final SAMValidationError error = new SAMValidationError(type, reason, null, mReader.getLineNumber());
@@ -272,7 +265,7 @@ public class SAMTextHeaderCodec {
                 fileMessage = "File " + mSource;
             }
             throw new SAMFormatException(reason + "; " + fileMessage +
-                                                 "; Line number " + mReader.getLineNumber(), nestedException);
+                    "; Line number " + mReader.getLineNumber(), nestedException);
         }
     }
 
@@ -291,7 +284,7 @@ public class SAMTextHeaderCodec {
         private boolean lineValid = false;
 
         ParsedHeaderLine(final String line) {
-            assert (line.startsWith(HEADER_LINE_START));
+            assert(line.startsWith(HEADER_LINE_START));
 
             // Tab-separate
             String[] fields = new String[1024];
@@ -304,14 +297,17 @@ public class SAMTextHeaderCodec {
 
             // Parse the HeaderRecordType
             try {
-                if (!fields[0].substring(1).matches("[A-Z]+")) {
-                    mHeaderRecordType = HeaderRecordType.valueOf(fields[0].substring(1).toUpperCase());
-                    System.out.printf("Warning! Your tag has improper case(%s), reformatted to uppercase. "
-                                              + "NOTE: Your input file WASN'T modified.\n", fields[0].substring(1));
-                } else mHeaderRecordType = HeaderRecordType.valueOf(fields[0].substring(1));
+                String value = fields[0].substring(1);
+                if (!value.matches("[A-Z]+")) {
+                    log.warn("Warning! Your tag has improper case("
+                                     + fields[0].substring(1)
+                                     + "), reformatted to uppercase. "
+                                     + "NOTE: Your input file WASN'T modified.");
+                    value = value.toUpperCase();
+                }
+                mHeaderRecordType = HeaderRecordType.valueOf(value);
             } catch (IllegalArgumentException e) {
-                reportErrorParsingLine("Unrecognized header record type",
-                                       SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE, null);
+                reportErrorParsingLine("Unrecognized header record type", SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE, null);
                 mHeaderRecordType = null;
                 return;
             }
@@ -325,20 +321,17 @@ public class SAMTextHeaderCodec {
             final String[] keyAndValue = new String[2];
             // Parse they key:value pairs
             for (int i = 1; i < numFields; ++i) {
-                if (StringUtil
-                        .splitConcatenateExcessTokens(fields[i], keyAndValue, TAG_KEY_VALUE_SEPARATOR_CHAR) != 2) {
+                if (StringUtil.splitConcatenateExcessTokens(fields[i], keyAndValue, TAG_KEY_VALUE_SEPARATOR_CHAR) != 2) {
                     reportErrorParsingLine("Problem parsing " + HEADER_LINE_START + mHeaderRecordType +
-                                                   " key:value pair",
-                                           SAMValidationError.Type.POORLY_FORMATTED_HEADER_TAG, null);
+                            " key:value pair", SAMValidationError.Type.POORLY_FORMATTED_HEADER_TAG, null);
                     continue;
                 }
                 if (mKeyValuePairs.containsKey(keyAndValue[0]) &&
-                        !mKeyValuePairs.get(keyAndValue[0]).equals(keyAndValue[1])) {
+                        ! mKeyValuePairs.get(keyAndValue[0]).equals(keyAndValue[1])) {
                     reportErrorParsingLine("Problem parsing " + HEADER_LINE_START + mHeaderRecordType +
-                                                   " key:value pair " + keyAndValue[0] + ":" + keyAndValue[1] +
-                                                   " clashes with " + keyAndValue[0] + ":" + mKeyValuePairs
-                                                   .get(keyAndValue[0]),
-                                           SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED, null);
+                            " key:value pair " + keyAndValue[0] + ":" + keyAndValue[1] +
+                            " clashes with " + keyAndValue[0] + ":" + mKeyValuePairs.get(keyAndValue[0]),
+                            SAMValidationError.Type.HEADER_TAG_MULTIPLY_DEFINED, null);
                     continue;
                 }
                 mKeyValuePairs.put(keyAndValue[0], keyAndValue[1]);
@@ -356,14 +349,13 @@ public class SAMTextHeaderCodec {
         /**
          * Handling depends on the validation stringency.  If the tag is not present, and stringency is strict,
          * an exception is thrown.  If stringency is not strict, false is returned.
-         *
          * @param tag Must be present for the line to be considered value.
          * @return True if tag is present.
          */
         boolean requireTag(final String tag) {
             if (!mKeyValuePairs.containsKey(tag)) {
                 reportErrorParsingLine(HEADER_LINE_START + mHeaderRecordType + " line missing " + tag + " tag",
-                                       SAMValidationError.Type.HEADER_RECORD_MISSING_REQUIRED_TAG, null);
+                        SAMValidationError.Type.HEADER_RECORD_MISSING_REQUIRED_TAG, null);
                 return false;
             }
             return true;
@@ -395,7 +387,6 @@ public class SAMTextHeaderCodec {
     /**
      * Convert SAMFileHeader from in-memory representation to text representation. Always writes
      * SAMFileHeader.CURRENT_VERSION as the version in the header.
-     *
      * @param writer where to write the header text.
      * @param header object to be converted to text.
      */
@@ -405,9 +396,8 @@ public class SAMTextHeaderCodec {
 
     /**
      * Convert SAMFileHeader from in-memory representation to text representation.
-     *
-     * @param writer                    where to write the header text.
-     * @param header                    object to be converted to text.
+     * @param writer where to write the header text.
+     * @param header object to be converted to text.
      * @param keepExistingVersionNumber If true, writes whatever version # was in the header.  If false, writes
      *                                  SAMFileHeader.CURRENT_VERSION.
      */
@@ -415,7 +405,7 @@ public class SAMTextHeaderCodec {
         mFileHeader = header;
         this.writer = new BufferedWriter(writer);
         writeHDLine(keepExistingVersionNumber);
-        for (final SAMSequenceRecord sequenceRecord : header.getSequenceDictionary().getSequences()) {
+        for (final SAMSequenceRecord sequenceRecord: header.getSequenceDictionary().getSequences()) {
             writeSQLine(sequenceRecord);
         }
 
@@ -438,7 +428,6 @@ public class SAMTextHeaderCodec {
     /**
      * Encode {@link SAMSequenceRecord}.
      * Designed for using in {@link SAMSequenceDictionaryCodec}, allows to implement recording on the fly.
-     *
      * @throws IllegalStateException, if writer is null.
      */
     void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
@@ -451,7 +440,6 @@ public class SAMTextHeaderCodec {
     /**
      * Encode HD line.
      * Designed for using in {@link SAMSequenceDictionaryCodec}, allows to implement recording on the fly.
-     *
      * @throws IllegalStateException, if writer is null.
      */
     void encodeHeaderLine(final boolean keepExistingVersionNumber) {
@@ -487,11 +475,11 @@ public class SAMTextHeaderCodec {
     }
 
     protected String getRGLine(final SAMReadGroupRecord readGroup) {
-        final String[] fields = new String[2 + readGroup.getAttributes().size()];
-        fields[0] = HEADER_LINE_START + HeaderRecordType.RG;
-        fields[1] = SAMReadGroupRecord.READ_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + readGroup.getReadGroupId();
-        encodeTags(readGroup, fields, 2);
-        return StringUtil.join(FIELD_SEPARATOR, fields);
+      final String[] fields = new String[2 + readGroup.getAttributes().size()];
+      fields[0] = HEADER_LINE_START + HeaderRecordType.RG;
+      fields[1] = SAMReadGroupRecord.READ_GROUP_ID_TAG + TAG_KEY_VALUE_SEPARATOR + readGroup.getReadGroupId();
+      encodeTags(readGroup, fields, 2);
+      return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
     private void writeHDLine(final boolean keepExistingVersionNumber) {
@@ -525,21 +513,19 @@ public class SAMTextHeaderCodec {
         final String[] fields = new String[3 + numAttributes];
         fields[0] = HEADER_LINE_START + HeaderRecordType.SQ;
         fields[1] = SAMSequenceRecord.SEQUENCE_NAME_TAG + TAG_KEY_VALUE_SEPARATOR + sequenceRecord.getSequenceName();
-        fields[2] = SAMSequenceRecord.SEQUENCE_LENGTH_TAG + TAG_KEY_VALUE_SEPARATOR + Integer
-                .toString(sequenceRecord.getSequenceLength());
+        fields[2] = SAMSequenceRecord.SEQUENCE_LENGTH_TAG + TAG_KEY_VALUE_SEPARATOR + Integer.toString(sequenceRecord.getSequenceLength());
         encodeTags(sequenceRecord, fields, 3);
         return StringUtil.join(FIELD_SEPARATOR, fields);
     }
 
     /**
      * Encode all the attributes in the given object as text
-     *
-     * @param rec    object containing attributes, and knowledge of which are standard tags
+     * @param rec object containing attributes, and knowledge of which are standard tags
      * @param fields where to put the text representation of the tags.  Must be big enough to hold all tags.
      * @param offset where to start putting text tag representations.
      */
     private void encodeTags(final AbstractSAMHeaderRecord rec, final String[] fields, int offset) {
-        for (final Map.Entry<String, String> entry : rec.getAttributes()) {
+        for (final Map.Entry<String, String> entry: rec.getAttributes()) {
             fields[offset++] = mTagCodec.encodeUntypedTag(entry.getKey(), entry.getValue());
         }
     }
