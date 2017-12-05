@@ -37,14 +37,8 @@ import htsjdk.variant.variantcontext.GenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.VariantContextTestProvider;
-import htsjdk.variant.variantcontext.writer.Options;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFormatHeaderLine;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLine;
-import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.variantcontext.writer.*;
+import htsjdk.variant.vcf.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -200,6 +194,50 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
                 counter++;
             }
             Assert.assertEquals(counter, 2);
+        }
+
+    }
+
+    /**
+     * test, using the writer and reader, that phased information is preserved in a round trip
+     */
+    @Test
+    public void testReadAndWritePhasedBCF() throws IOException {
+        final File vcfInputFile = new File("src/test/resources/htsjdk/variant/phased.vcf");
+        final File bcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
+        final File vcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".vcf", tempDir);
+        bcfOutputFile.deleteOnExit();
+        vcfOutputFile.deleteOnExit();
+
+        VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
+        VariantContextWriter bcfWriter = new VariantContextWriterBuilder().setOutputFile(bcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
+        VariantContextWriter vcfWriter = new VariantContextWriterBuilder().setOutputFile(vcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
+        bcfWriter.writeHeader(vcfFile.getFileHeader());
+        vcfWriter.writeHeader(vcfFile.getFileHeader());
+
+        for (VariantContext vc : vcfFile.iterator().toList()) {
+            Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
+            bcfWriter.add(vc);
+        }
+        bcfWriter.close();
+
+        try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile))) {
+
+            BCF2Codec codec = new BCF2Codec();
+            codec.readHeader(headerPbs);
+            // we use the header information read from identical file with header+body to read just the body of second file
+
+            while (!headerPbs.isDone()) {
+                VariantContext vc = codec.decode(headerPbs);
+                Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
+                vcfWriter.add(vc);
+            }
+            bcfWriter.close();
+        }
+
+        VCFFileReader vcfOutput = new VCFFileReader(vcfInputFile);
+        for (VariantContext vc : vcfOutput.iterator().toList()) {
+            Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
         }
 
     }

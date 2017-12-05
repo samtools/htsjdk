@@ -273,7 +273,7 @@ public abstract class BCF2FieldWriter {
                     // we encode the actual allele
                     final Allele a = g.getAllele(i);
                     final int offset = getAlleleOffset(a);
-                    final int encoded = ((offset+1) << 1) | (g.isPhased() ? 0x01 : 0x00);
+                    final int encoded = ((offset+1) << 1) | ((g.isPhased() && i!=0) ? 0x01 : 0x00);
                     encoder.encodeRawBytes(encoded, encodingType);
                 } else {
                     // we need to pad with missing as we have ploidy < max for this sample
