@@ -209,37 +209,41 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
         bcfOutputFile.deleteOnExit();
         vcfOutputFile.deleteOnExit();
 
-        VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
+        try ( VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
+
         VariantContextWriter bcfWriter = new VariantContextWriterBuilder().setOutputFile(bcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
+
         VariantContextWriter vcfWriter = new VariantContextWriterBuilder().setOutputFile(vcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
-        bcfWriter.writeHeader(vcfFile.getFileHeader());
-        vcfWriter.writeHeader(vcfFile.getFileHeader());
+        ) {
+            bcfWriter.writeHeader(vcfFile.getFileHeader());
+            vcfWriter.writeHeader(vcfFile.getFileHeader());
 
-        for (VariantContext vc : vcfFile.iterator().toList()) {
-            Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
-            bcfWriter.add(vc);
-        }
-        bcfWriter.close();
-
-        try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile))) {
-
-            BCF2Codec codec = new BCF2Codec();
-            codec.readHeader(headerPbs);
-            // we use the header information read from identical file with header+body to read just the body of second file
-
-            while (!headerPbs.isDone()) {
-                VariantContext vc = codec.decode(headerPbs);
-                Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
-                vcfWriter.add(vc);
+            for (VariantContext vc : vcfFile.iterator().toList()) {
+                Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                bcfWriter.add(vc);
             }
             bcfWriter.close();
-        }
 
-        VCFFileReader vcfOutput = new VCFFileReader(vcfInputFile);
-        for (VariantContext vc : vcfOutput.iterator().toList()) {
-            Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(),2);
-        }
+            try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile))) {
 
+                BCF2Codec codec = new BCF2Codec();
+                codec.readHeader(headerPbs);
+                // we use the header information read from identical file with header+body to read just the body of second file
+
+                while (!headerPbs.isDone()) {
+                    VariantContext vc = codec.decode(headerPbs);
+                    Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                    vcfWriter.add(vc);
+                }
+                vcfWriter.close();
+            }
+
+            try (VCFFileReader vcfOutput = new VCFFileReader(vcfInputFile);) {
+                for (VariantContext vc : vcfOutput.iterator().toList()) {
+                    Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
+                }
+            }
+        }
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
