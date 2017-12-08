@@ -110,7 +110,7 @@ public class Defaults {
         }
         REFERENCE_FASTA = getFileProperty("reference_fasta", null);
         USE_CRAM_REF_DOWNLOAD = getBooleanProperty("use_cram_ref_download", false);
-        EBI_REFERENCE_SERVICE_URL_MASK = "http://www.ebi.ac.uk/ena/cram/md5/%s";
+        EBI_REFERENCE_SERVICE_URL_MASK = "https://www.ebi.ac.uk/ena/cram/md5/%s";
         CUSTOM_READER_FACTORY = getStringProperty("custom_reader", "");
         SAM_FLAG_FIELD_FORMAT = SamFlagField.valueOf(getStringProperty("sam_flag_field_format", SamFlagField.DECIMAL.name()));
         SRA_LIBRARIES_DOWNLOAD = getBooleanProperty("sra_libraries_download", false);
