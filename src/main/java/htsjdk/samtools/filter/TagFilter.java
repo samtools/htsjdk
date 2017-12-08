@@ -37,13 +37,36 @@ public class TagFilter implements SamRecordFilter {
 
     private final String tag;           // The key of the tag to match
     private final List<Object> values;  // The list of matching values
-    private boolean includeReads;
+    private boolean includeReads = false;
 
     /**
      * Constructor for a single value
      *
      * @param tag       the key of the tag to match
      * @param value     the value to match
+     */
+    public TagFilter(String tag, Object value) {
+        this.tag = tag;
+        this.values = Arrays.asList(value);
+    }
+
+    /**
+     * Constructor for multiple values
+     *
+     * @param tag       the key of the tag to match
+     * @param values    the matching values
+     */
+    public TagFilter(String tag, List<Object> values) {
+        this.tag = tag;
+        this.values = values;
+    }
+
+    /**
+     * Constructor for a single value
+     *
+     * @param tag           the key of the tag to match
+     * @param value         the value to match
+     * @param includeReads  whether to include or not include reads that match filter
      */
     public TagFilter(String tag, Object value, final boolean includeReads) {
         this.tag = tag;
@@ -54,8 +77,9 @@ public class TagFilter implements SamRecordFilter {
     /**
      * Constructor for multiple values
      *
-     * @param tag       the key of the tag to match
-     * @param values    the matching values
+     * @param tag           the key of the tag to match
+     * @param values        the matching values
+     * @param includeReads  whether to include or not include reads that match filter
      */
     public TagFilter(String tag, List<Object> values, final boolean includeReads) {
         this.tag = tag;
@@ -71,16 +95,7 @@ public class TagFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(SAMRecord record) {
-        if (includeReads) {
-            if (values.contains(record.getAttribute(tag))) {
-                return false;
-            }
-        } else {
-            if (!values.contains(record.getAttribute(tag))) {
-                return false;
-            }
-        }
-        return true;
+        return values.contains(record.getAttribute(tag)) != includeReads;
     }
 
     /**
@@ -93,16 +108,6 @@ public class TagFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        // both first and second must have the tag in order for it to be filtered out
-        if (includeReads) {
-            if (values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) {
-                return false;
-            }
-        } else {
-            if (!values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) {
-                return false;
-            }
-        }
-        return true;
+        return (values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) != includeReads;
     }
 }
