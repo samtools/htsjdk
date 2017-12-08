@@ -51,8 +51,8 @@ public class TagFilterTest extends HtsjdkTest {
      */
     @Test(dataProvider="data")
     public void testTagFilter(final String testName, final String tag, final List<Object> validValues,
-                              final Object testValue, final boolean expectedResult) {
-        final TagFilter filter = new TagFilter(tag, validValues);
+                              final Object testValue, final boolean expectedResult, final boolean includeReads) {
+        final TagFilter filter = new TagFilter(tag, validValues, includeReads);
         builder.addUnmappedFragment("testfrag");
         final SAMRecord record = builder.iterator().next();
         if (testValue != null) {
@@ -69,10 +69,10 @@ public class TagFilterTest extends HtsjdkTest {
     private Object[][] getTagFilterTestData()
     {
         return new Object[][]{
-            {"Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, true},
-            {"Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true},
-            {"Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, false},
-            {"Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, false} 
+                {"Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, true, false},
+                {"Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true},
+                {"Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false},
+                {"Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, true, true}
         };
     }
 }

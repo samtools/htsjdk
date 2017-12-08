@@ -37,6 +37,7 @@ public class TagFilter implements SamRecordFilter {
 
     private final String tag;           // The key of the tag to match
     private final List<Object> values;  // The list of matching values
+    private boolean includeReads = false;
 
     /**
      * Constructor for a single value
@@ -44,9 +45,10 @@ public class TagFilter implements SamRecordFilter {
      * @param tag       the key of the tag to match
      * @param value     the value to match
      */
-    public TagFilter(String tag, Object value) {
+    public TagFilter(String tag, Object value, final boolean includeReads) {
         this.tag = tag;
         this.values = Arrays.asList(value);
+        this.includeReads = includeReads;
     }
 
     /**
@@ -55,9 +57,10 @@ public class TagFilter implements SamRecordFilter {
      * @param tag       the key of the tag to match
      * @param values    the matching values
      */
-    public TagFilter(String tag, List<Object> values) {
+    public TagFilter(String tag, List<Object> values, final boolean includeReads) {
         this.tag = tag;
         this.values = values;
+        this.includeReads = includeReads;
     }
 
     /**
@@ -68,7 +71,16 @@ public class TagFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(SAMRecord record) {
-        return values.contains(record.getAttribute(tag));
+        if (includeReads) {
+            if (values.contains(record.getAttribute(tag))) {
+                return false;
+            }
+        } else {
+            if (!values.contains(record.getAttribute(tag))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -82,6 +94,15 @@ public class TagFilter implements SamRecordFilter {
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
         // both first and second must have the tag in order for it to be filtered out
-         return values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag));
+        if (includeReads) {
+            if (values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) {
+                return false;
+            }
+        } else {
+            if (!values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) {
+                return false;
+            }
+        }
+        return true;
     }
 }
