@@ -39,8 +39,7 @@ import java.util.List;
  */
 public class TagFilterTest extends HtsjdkTest {
     private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-
-
+    
     /**
      * Basic positive and negative tests for the TagFilter
      *
@@ -49,8 +48,8 @@ public class TagFilterTest extends HtsjdkTest {
      * @param testValue         The value to test for in the record
      * @param expectedResult    The expected result (true is the sequence should match the filter, otherwise false)
      */
-    @Test(dataProvider="data")
-    public void testTagFilter(final String testName, final String tag, final List<Object> validValues,
+    @Test(dataProvider="dataInclude")
+    public void testIncludeTagFilter(final String testName, final String tag, final List<Object> validValues,
                               final Object testValue, final boolean expectedResult, final boolean includeReads) {
         final TagFilter filter = new TagFilter(tag, validValues, includeReads);
         builder.addUnmappedFragment("testfrag");
@@ -61,18 +60,43 @@ public class TagFilterTest extends HtsjdkTest {
         Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
     }
 
+    /**
+     * Data for various sequences which may or may not match the filter.
+     */
+    @DataProvider(name = "dataInclude")
+    private Object[][] getTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, false, true},
+                {"Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true},
+                {"Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true},
+                {"Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, true, true}
+        };
+    }
+
+    @Test(dataProvider="dataExclude")
+    public void testExcludeTagFilter(final String testName, final String tag, final List<Object> validValues,
+                              final Object testValue, final boolean expectedResult) {
+        final TagFilter filter = new TagFilter(tag, validValues);
+        builder.addUnmappedFragment("testfrag");
+        final SAMRecord record = builder.iterator().next();
+        if (testValue != null) {
+            record.setAttribute(tag, testValue);
+        }
+        Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
+    }
 
     /**
      * Data for various sequences which may or may not match the filter.
      */
-    @DataProvider(name = "data")
-    private Object[][] getTagFilterTestData()
+    @DataProvider(name = "dataExclude")
+    private Object[][] getExcludeTagFilterTestData()
     {
         return new Object[][]{
-                {"Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, true, false},
-                {"Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true},
-                {"Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false},
-                {"Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, true, true}
+                {"Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, true},
+                {"Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true},
+                {"Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, false},
+                {"Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, false}
         };
     }
 }
