@@ -37,7 +37,7 @@ public class TagFilter implements SamRecordFilter {
 
     private final String tag;           // The key of the tag to match
     private final List<Object> values;  // The list of matching values
-    private boolean includeReads = false;
+    private boolean includeReads;
 
     /**
      * Constructor for a single value
