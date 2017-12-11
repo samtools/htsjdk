@@ -104,7 +104,8 @@ public class TagFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-
+        // With includeReads==true, allow any pairs through that contain the tag value
+        // With includeReads==false, exclude pairs where both reads contain the tag value
         if (includeReads) {
             return !(values.contains(first.getAttribute(tag)) || values.contains(second.getAttribute(tag)));
         } else {
