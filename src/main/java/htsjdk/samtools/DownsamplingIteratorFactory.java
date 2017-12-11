@@ -53,7 +53,7 @@ public class DownsamplingIteratorFactory {
             "strategy to finish. Works in a single pass, and will provide accuracy close to (but often not as good as) HighAccuracy while requiring " +
             "memory proportional to the set of reads emitted from the ConstantMemory strategy to the HighAccuracy strategy. Works well when downsampling " +
             "large inputs to small proportions (e.g. downsampling hundreds of millions of reads and retaining only 2%. Should be accurate 99.9% of the time " +
-            "when the input contains >= 50,000 templates (read names). For smaller inputs, HighAccuracy is recommended instead.";
+            "when the input contains more than 50,000 templates (read names). For smaller inputs, HighAccuracy is recommended instead.";
 
     /** Describes the available downsampling strategies. */
     public enum Strategy {
