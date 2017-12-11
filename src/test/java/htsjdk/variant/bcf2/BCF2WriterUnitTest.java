@@ -205,18 +205,14 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
     public void testReadAndWritePhasedBCF() throws IOException {
         final File vcfInputFile = new File("src/test/resources/htsjdk/variant/phased.vcf");
         final File bcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".bcf", tempDir);
-        final File vcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".vcf", tempDir);
         bcfOutputFile.deleteOnExit();
-        vcfOutputFile.deleteOnExit();
 
         try ( VCFFileReader vcfFile = new VCFFileReader(vcfInputFile);
 
         VariantContextWriter bcfWriter = new VariantContextWriterBuilder().setOutputFile(bcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
 
-        VariantContextWriter vcfWriter = new VariantContextWriterBuilder().setOutputFile(vcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
         ) {
             bcfWriter.writeHeader(vcfFile.getFileHeader());
-            vcfWriter.writeHeader(vcfFile.getFileHeader());
 
             for (VariantContext vc : vcfFile.iterator().toList()) {
                 Assert.assertEquals(vc.getGenotypes().stream().filter(Genotype::isPhased).count(), 2);
@@ -224,7 +220,14 @@ public class BCF2WriterUnitTest extends VariantBaseTest {
             }
             bcfWriter.close();
 
-            try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile))) {
+            // Reading the VCF and writing it to a BCF
+            final File vcfOutputFile = File.createTempFile("testWriteAndReadBCFHeaderless.", ".vcf", tempDir);
+            vcfOutputFile.deleteOnExit();
+
+            try (final PositionalBufferedStream headerPbs = new PositionalBufferedStream(new FileInputStream(bcfOutputFile));
+                 VariantContextWriter vcfWriter = new VariantContextWriterBuilder().setOutputFile(vcfOutputFile).setReferenceDictionary(vcfFile.getFileHeader().getSequenceDictionary()).build();
+                 ) {
+                vcfWriter.writeHeader(vcfFile.getFileHeader());
 
                 BCF2Codec codec = new BCF2Codec();
                 codec.readHeader(headerPbs);

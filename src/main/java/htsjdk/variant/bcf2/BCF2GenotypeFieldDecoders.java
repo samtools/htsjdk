@@ -196,7 +196,7 @@ public class BCF2GenotypeFieldDecoders {
                         gt.add(getAlleleFromEncoded(siteAlleles, encode));
 
                     gb.alleles(gt);
-                    final boolean phased = ((encoded.length>1?encoded[1]:encoded[0]) & 0x01) == 1;
+                    final boolean phased = ((encoded.length > 1 ? encoded[1] : encoded[0]) & 0x01) == 1;
                     gb.phased(phased);
                 }
             }
