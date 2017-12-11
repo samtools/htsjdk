@@ -81,17 +81,7 @@ public class ReadNameFilter implements SamRecordFilter {
      */
     @Override
     public boolean filterOut(final SAMRecord record) {
-        if (includeReads) {
-            if (readNameFilterSet.contains(record.getReadName())) {
-                return false;
-            }
-        } else {
-            if (!readNameFilterSet.contains(record.getReadName())) {
-                return false;
-            }
-        }
-
-        return true;
+        return readNameFilterSet.contains(record.getReadName()) != includeReads;
     }
 
     /**

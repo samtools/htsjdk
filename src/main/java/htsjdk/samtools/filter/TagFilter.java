@@ -25,7 +25,7 @@ package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMRecord;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +37,7 @@ public class TagFilter implements SamRecordFilter {
 
     private final String tag;           // The key of the tag to match
     private final List<Object> values;  // The list of matching values
-    private boolean includeReads = false;
+    private Boolean includeReads;
 
     /**
      * Constructor for a single value
@@ -46,8 +46,7 @@ public class TagFilter implements SamRecordFilter {
      * @param value     the value to match
      */
     public TagFilter(String tag, Object value) {
-        this.tag = tag;
-        this.values = Arrays.asList(value);
+        this(tag, Collections.singletonList(value), null);
     }
 
     /**
@@ -57,8 +56,7 @@ public class TagFilter implements SamRecordFilter {
      * @param values    the matching values
      */
     public TagFilter(String tag, List<Object> values) {
-        this.tag = tag;
-        this.values = values;
+        this(tag, values, null);
     }
 
     /**
@@ -68,10 +66,8 @@ public class TagFilter implements SamRecordFilter {
      * @param value         the value to match
      * @param includeReads  whether to include or not include reads that match filter
      */
-    public TagFilter(String tag, Object value, final boolean includeReads) {
-        this.tag = tag;
-        this.values = Arrays.asList(value);
-        this.includeReads = includeReads;
+    public TagFilter(String tag, Object value, final Boolean includeReads) {
+        this(tag, Collections.singletonList(value), includeReads);
     }
 
     /**
@@ -81,17 +77,17 @@ public class TagFilter implements SamRecordFilter {
      * @param values        the matching values
      * @param includeReads  whether to include or not include reads that match filter
      */
-    public TagFilter(String tag, List<Object> values, final boolean includeReads) {
+    public TagFilter(String tag, List<Object> values, final Boolean includeReads) {
         this.tag = tag;
         this.values = values;
-        this.includeReads = includeReads;
+        this.includeReads = includeReads == null ? false : includeReads;
     }
 
     /**
      * Determines whether a SAMRecord matches this filter
      *
      * @param record    the SAMRecord to evaluate
-     * @return  true if the SAMRecord matches the filter, otherwise false
+     * @return  the XOR of SAMRecord matches the filter and includeReads.
      */
     @Override
     public boolean filterOut(SAMRecord record) {
@@ -104,10 +100,16 @@ public class TagFilter implements SamRecordFilter {
      * @param first  the first SAMRecord to evaluate
      * @param second the second SAMRecord to evaluate
      *
-     * @return true if the SAMRecords matches the filter, otherwise false
+     * @return the XOR of paired SAMRecord matches the filter and includeReads
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        return (values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag))) != includeReads;
+
+        if (includeReads) {
+            return !(values.contains(first.getAttribute(tag)) || values.contains(second.getAttribute(tag)));
+        } else {
+            return values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag));
+        }
+
     }
 }
