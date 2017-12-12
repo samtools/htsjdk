@@ -286,7 +286,7 @@ public class VCFWriterUnitTest extends VariantBaseTest {
     }
 
     @Test(dataProvider = "vcfExtensionsDataProvider")
-    public void TestWritingLargeVCF(final String extension) throws FileNotFoundException, InterruptedException {
+    public void TestWritingLargeVCF(final String extension) throws FileNotFoundException, InterruptedException{
 
         final Set<VCFHeaderLine> metaData = new HashSet<VCFHeaderLine>();
         final Set<String> Columns = new HashSet<String>();
@@ -362,6 +362,26 @@ public class VCFWriterUnitTest extends VariantBaseTest {
 
         Assert.assertNotNull(roundtripHeader.getOtherHeaderLine("FOOBAR"), "Could not find FOOBAR header line after a write/read cycle");
         Assert.assertEquals(roundtripHeader.getOtherHeaderLine("FOOBAR").getValue(), "foovalue", "Wrong value for FOOBAR header line after a write/read cycle");
+    }
+
+
+    /**
+     *
+     * A test to check that we can't write VCF with missing header.
+     */
+    @Test(dataProvider = "vcfExtensionsDataProvider", expectedExceptions = IllegalStateException.class)
+    public void testWriteWithEmptyHeader(final String extension) throws IOException {
+        final File fakeVCFFile = File.createTempFile("testWriteAndReadVCFHeaderless.", extension, tempDir);
+        metaData = new HashSet<>();
+        additionalColumns = new HashSet<>();
+        final SAMSequenceDictionary sequenceDict = createArtificialSequenceDictionary();
+        final VCFHeader header = createFakeHeader(metaData, additionalColumns, sequenceDict);
+        try (final VariantContextWriter writer = new VariantContextWriterBuilder()
+                .setOutputFile(fakeVCFFile).setReferenceDictionary(sequenceDict)
+                .setOptions(EnumSet.of(Options.ALLOW_MISSING_FIELDS_IN_HEADER, Options.INDEX_ON_THE_FLY))
+                .build()) {
+            writer.add(createVC(header));
+        }
     }
 }
 
