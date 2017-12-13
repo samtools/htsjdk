@@ -132,9 +132,11 @@ public class MergingIterator<T> implements CloseableIterator<T> {
 	 */
 	@Override
 	public void close() {
-		for (final ComparableIterator iterator : this.queue) {
-			iterator.close();
-			this.queue.remove(iterator);
+		final Iterator<ComparableIterator> iterator = this.queue.iterator();
+		while (iterator.hasNext()) {
+			final ComparableIterator subIterator = iterator.next();
+			subIterator.close();
+			iterator.remove();
 		}
 	}
 
