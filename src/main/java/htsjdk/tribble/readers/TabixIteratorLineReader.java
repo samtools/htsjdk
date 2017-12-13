@@ -53,4 +53,9 @@ public class TabixIteratorLineReader implements LineReader {
     public void close() {
         // Ignore -
     }
+    
+    @Override
+    public String toString() {
+        return "TabixIteratorLineReader";
+    }
 }
