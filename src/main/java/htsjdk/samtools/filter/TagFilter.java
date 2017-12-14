@@ -100,7 +100,9 @@ public class TagFilter implements SamRecordFilter {
      * @param first  the first SAMRecord to evaluate
      * @param second the second SAMRecord to evaluate
      *
-     * @return the XOR of paired SAMRecord matches the filter and includeReads
+     * @return  true if includeReads is true and neither SAMRecord matches filter
+     *          true if includeReads is false and both SAMRecords match filter
+     *          otherwise false
      */
     @Override
     public boolean filterOut(final SAMRecord first, final SAMRecord second) {
@@ -111,6 +113,5 @@ public class TagFilter implements SamRecordFilter {
         } else {
             return values.contains(first.getAttribute(tag)) && values.contains(second.getAttribute(tag));
         }
-
     }
 }

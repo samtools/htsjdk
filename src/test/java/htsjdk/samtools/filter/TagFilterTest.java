@@ -41,175 +41,71 @@ import java.util.List;
 public class TagFilterTest extends HtsjdkTest {
 
     /**
-     * Basic positive and negative tests for the TagFilter
-     *
-     * @param tag               The tag to be tested
-     * @param validValues       The values the filter should test for
-     * @param testValue         The value to test for in the record
-     * @param expectedResult    The expected result (true is the sequence should match the filter, otherwise false)
-     */
-    @Test(dataProvider="dataIncludeFilter")
-    public void testIncludeTagFilter(final String testName, final String tag, final List<Object> validValues,
-                              final Object testValue, final boolean expectedResult, final Boolean includeReads) {
-        testTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads);
-    }
-
-    @Test(dataProvider="dataExcludeFilter")
-    public void testExcludeTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                     final Object testValue, final boolean expectedResult, Boolean includeReads) {
-        testTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads);
-    }
-
-    @Test(dataProvider="dataDefaultFilter")
-    public void testDefaultTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                     final Object testValue, final boolean expectedResult, Boolean includeReads) {
-        testTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads);
-    }
-
-    /**
-     * Data for various sequences which may or may not match the explicit includeReads=true filter.
-     */
-    @DataProvider(name = "dataIncludeFilter")
-    private Object[][] getInclueTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Basic positive test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 1, false, true},
-                {"Multi-value positive test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true},
-                {"Incorrect value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true},
-                {"Null value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), null, true, true}
-        };
-    }
-
-    /**
-     * Data for various sequences which may or may not match the explicit includeReads=false filter.
-     */
-    @DataProvider(name = "dataExcludeFilter")
-    private Object[][] getExcludeTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Basic positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 1, true, false},
-                {"Multi-value positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, false},
-                {"Incorrect value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false},
-                {"Null value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), null, false, false}
-        };
-    }
-
-    /**
-     * Data for various sequences which may or may not match the default filter.
-     */
-    @DataProvider(name = "dataDefaultFilter")
-    private Object[][] getDefaultTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Basic positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 1, true, null},
-                {"Multi-value positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, null},
-                {"Incorrect value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 2, false, null},
-                {"Null value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), null, false, null}
-        };
-    }
-
-    // Base single record test
-    private void testTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                     final Object testValue, final boolean expectedResult, final Boolean includeReads) {
-        final TagFilter filter = new TagFilter(tag, validValues, includeReads);
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-        builder.addUnmappedFragment("testfrag");
-        final SAMRecord record = builder.iterator().next();
-        if (testValue != null) {
-            record.setAttribute(tag, testValue);
-        }
-        Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
-    }
-
-    /**
-
-        Start Paired Tests
-
+        Tests
      */
     @Test(dataProvider="dataDefaultMatchingPairedFilter")
     public void testDefaultPairedEndMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                                          final Object testValue, final boolean expectedResult, Boolean includeReads,
-                                                          final boolean matchPairs) {
-        testPairedReadTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads, matchPairs);
+                                                      final Object testValue, final boolean firstReadExpectedResult,
+                                                      final boolean pairedExpectedResult, final Boolean includeReads,
+                                                      final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
     }
 
     @Test(dataProvider="dataDefaultNonMatchingPairedFilter")
     public void testDefaultPairedEndNonMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                                          final Object testValue, final boolean expectedResult, Boolean includeReads,
-                                                          final boolean matchPairs) {
-        testPairedReadTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads, matchPairs);
+                                                         final Object testValue, final boolean firstReadExpectedResult,
+                                                         final boolean pairedExpectedResult, final Boolean includeReads,
+                                                         final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
+    }
+    @Test(dataProvider="dataExcludeMatchingPairedFilter")
+    public void testExludePairedEndMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
+                                                      final Object testValue, final boolean firstReadExpectedResult,
+                                                      final boolean pairedExpectedResult, final Boolean includeReads,
+                                                      final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
+    }
+
+    @Test(dataProvider="dataExcludeNonMatchingPairedFilter")
+    public void testExcludePairedEndNonMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
+                                                         final Object testValue, final boolean firstReadExpectedResult,
+                                                         final boolean pairedExpectedResult, final Boolean includeReads,
+                                                         final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
     }
 
     @Test(dataProvider="dataIncludeNonMatchingPairedFilter")
     public void testIncludePairedEndNonMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                                             final Object testValue, final boolean expectedResult, Boolean includeReads,
-                                                             final boolean matchPairs) {
-        testPairedReadTagFilter(testName, tag, validValues, testValue, expectedResult, includeReads, matchPairs);
+                                                         final Object testValue, final boolean firstReadExpectedResult,
+                                                         final boolean pairedExpectedResult, final Boolean includeReads,
+                                                         final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
+    }
+
+    @Test(dataProvider="dataIncludeMatchingPairedFilter")
+    public void testIncludePairedEndMatchingTagFilter(final String testName, final String tag, final List<Object> validValues,
+                                                         final Object testValue, final boolean firstReadExpectedResult,
+                                                         final boolean pairedExpectedResult, final Boolean includeReads,
+                                                         final boolean matchPairs) {
+        testTagFilter(testName, tag, validValues, testValue, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
     }
 
     /**
-     * Data for various sequences which may or may not match the default filter with paired reads.
+     *
+     * @param tag                       The tag to be tested
+     * @param validValues               The values the filter should test for
+     * @param testValue                 The value to test for in the record
+     * @param firstReadExpectedResult   The expected result of the first read (true is the sequence should match the filter, otherwise false)
+     * @param pairedExpectedResult      The expected result of the paired reads (true is the sequence should match the filter, otherwise false)
+     * @param includeReads              The value of includeReads for the filter
+     * @param matchPairs                Whether or not to have matching values for tag the test is testing for
+     *
      */
-    @DataProvider(name = "dataDefaultMatchingPairedFilter")
-    private Object[][] getDefaultMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Paired Read Matching Basic positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 1, true, null, true},
-                {"Paired Read Matching Multi-value positive test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, null, true},
-                {"Paired Read Matching Incorrect value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 2, false, null, true},
-                {"Paired Read Matching Null value negative test - includeReads false", ReservedTagConstants.XN, Arrays.asList(1), null, false, null, true}
-        };
-    }
 
-    /**
-     * Data for various sequences which may or may not match the default filter with paired reads.
-     */
-    @DataProvider(name = "dataDefaultNonMatchingPairedFilter")
-    private Object[][] getDefaultNonMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Paired Read Non Matching Basic positive test- includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 1, false, null, false},
-                {"Paired Read Non Matching Multi-value positive test- includeReads false", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, null, false},
-                {"Paired Read Non Matching Incorrect value negative test- includeReads false", ReservedTagConstants.XN, Arrays.asList(1), 2, false, null, false},
-                // this is looking for value `null` which in our test cases
-                {"Paired Read Non Matching Null value negative test- includeReads false", ReservedTagConstants.XN, Arrays.asList(1), null, false, null, false},
-        };
-    }
-
-    /**
-     * Data for various sequences which may or may not match the includeReads=true filter with paired reads.
-     */
-    @DataProvider(name = "dataIncludeNonMatchingPairedFilter")
-    private Object[][] getIncludeNonMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Paired Read Non Matching Basic positive test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 1, false, true, false},
-                {"Paired Read Non Matching Multi-value positive tes - includeReads truet", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true, false},
-                {"Paired Read Non Matching Incorrect value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true, false},
-                // this is looking for value `null` which in our test cases
-                {"Paired Read Non Matching Null value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), null, true, true, false},
-        };
-    }
-
-    /**
-     * Data for various sequences which may or may not match the includeReads=true default filter with paired reads.
-     */
-    @DataProvider(name = "dataIncludeMatchingPairedFilter")
-    private Object[][] getIncludeMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {"Paired Read Matching Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, false, true, true},
-                {"Paired Read Matching Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, true, true},
-                {"Paired Read Matching Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true, true},
-                // this is looking for value `null` which in our test cases
-                {"Paired Read Matching Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, true, true, true},
-        };
-    }
-
-    // Base paired read test
-    private void testPairedReadTagFilter(final String testName, final String tag, final List<Object> validValues,
-                                         final Object testValue, final boolean expectedResult, final Boolean includeReads,
-                                         final boolean matchPairs) {
+    private void testTagFilter(final String testName, final String tag, final List<Object> validValues,
+                               final Object testValue, final boolean firstReadExpectedResult,
+                               final boolean pairedExpectedResult, final Boolean includeReads,
+                               final boolean matchPairs) {
         final TagFilter filter = new TagFilter(tag, validValues, includeReads);
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
         builder.addPair("Paired", 1, 100, 200);
@@ -218,12 +114,87 @@ public class TagFilterTest extends HtsjdkTest {
         if (testValue != null) {
             record1.setAttribute(tag, testValue);
         }
+        // Test first read in pair
+        Assert.assertEquals(filter.filterOut(record1), firstReadExpectedResult, testName);
+
         final SAMRecord record2 = iterator.next();
         if (matchPairs && testValue != null) {
             record2.setAttribute(tag, testValue);
         } else if (!matchPairs){
             record2.setAttribute(tag, 0);
         }
-        Assert.assertEquals(filter.filterOut(record1, record2), expectedResult, testName);
+        // Test paired reads
+        Assert.assertEquals(filter.filterOut(record1, record2), pairedExpectedResult, testName);
     }
+
+    /**
+     * Data for various sequences for test
+     */
+
+    @DataProvider(name = "dataDefaultMatchingPairedFilter")
+    private Object[][] getDefaultMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Matching Basic positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 1, true, true, null, true},
+                {"Paired Read Matching Multi-value positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, true, null, true},
+                {"Paired Read Matching Incorrect value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false,  null, true},
+                {"Paired Read Matching Null value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), null, false, false, null, true}
+        };
+    }
+
+    @DataProvider(name = "dataDefaultNonMatchingPairedFilter")
+    private Object[][] getDefaultNonMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Non Matching Basic positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 1, true, false, null, false},
+                {"Paired Read Non Matching Multi-value positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, false, null, false},
+                {"Paired Read Non Matching Incorrect value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false, null, false},
+                {"Paired Read Non Matching Null value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), null, false, false, null, false},
+        };
+    }
+
+    @DataProvider(name = "dataExcludeMatchingPairedFilter")
+    private Object[][] getExcludeMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Matching Basic positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 1, true, true, false, true},
+                {"Paired Read Matching Multi-value positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, true, false, true},
+                {"Paired Read Matching Incorrect value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false,  false, true},
+                {"Paired Read Matching Null value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), null, false, false, false, true}
+        };
+    }
+
+    @DataProvider(name = "dataExcludeNonMatchingPairedFilter")
+    private Object[][] getExcludeNonMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Non Matching Basic positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 1, true, false, false, false},
+                {"Paired Read Non Matching Multi-value positive test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, true, false, false, false},
+                {"Paired Read Non Matching Incorrect value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), 2, false, false, false, false},
+                {"Paired Read Non Matching Null value negative test - default includeReads", ReservedTagConstants.XN, Arrays.asList(1), null, false, false, false, false},
+        };
+    }
+
+    @DataProvider(name = "dataIncludeNonMatchingPairedFilter")
+    private Object[][] getIncludeNonMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Non Matching Basic positive test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 1, false, false, true, false},
+                {"Paired Read Non Matching Multi-value positive tes - includeReads truet", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, false, true, false},
+                {"Paired Read Non Matching Incorrect value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true, true, false},
+                {"Paired Read Non Matching Null value negative test - includeReads true", ReservedTagConstants.XN, Arrays.asList(1), null, true, true, true, false},
+        };
+    }
+
+    @DataProvider(name = "dataIncludeMatchingPairedFilter")
+    private Object[][] getIncludeMatchingPairedTagFilterTestData()
+    {
+        return new Object[][]{
+                {"Paired Read Matching Basic positive test", ReservedTagConstants.XN, Arrays.asList(1), 1, false, false, true, true},
+                {"Paired Read Matching Multi-value positive test", ReservedTagConstants.XN, Arrays.asList(1,2,3), 1, false, false, true, true},
+                {"Paired Read Matching Incorrect value negative test", ReservedTagConstants.XN, Arrays.asList(1), 2, true, true, true, true},
+                {"Paired Read Matching Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null, true, true, true, true},
+        };
+    }
+
 }
