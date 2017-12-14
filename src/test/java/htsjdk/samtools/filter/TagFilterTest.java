@@ -42,8 +42,45 @@ import java.util.List;
 public class TagFilterTest extends HtsjdkTest {
 
     /**
-        Tests
+     *
+     * @param commonValuesIndex         The index of the common values to grab from commonTestValues
+     * @param firstReadExpectedResult   The expected result of the first read (true is the sequence should match the filter, otherwise false)
+     * @param pairedExpectedResult      The expected result of the paired reads (true is the sequence should match the filter, otherwise false)
+     * @param includeReads              The value of includeReads for the filter
+     * @param matchPairs                Whether or not to have matching values for tag the test is testing for
+     *
      */
+
+    private void testTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
+                               final boolean pairedExpectedResult, final Boolean includeReads,
+                               final boolean matchPairs) {
+
+        final String testName = (String) commonTestValues[commonValuesIndex][0];
+        final String tag = (String) commonTestValues[commonValuesIndex][1];
+        final List<Object> validValues = (List<Object>) commonTestValues[commonValuesIndex][2];
+        final Object testValue = commonTestValues[commonValuesIndex][3];
+
+        final TagFilter filter = new TagFilter(tag, validValues, includeReads);
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        builder.addPair("Paired", 1, 100, 200);
+        CloseableIterator<SAMRecord> iterator = builder.iterator();
+        final SAMRecord record1 = iterator.next();
+        if (testValue != null) {
+            record1.setAttribute(tag, testValue);
+        }
+        // Test first read in pair
+        Assert.assertEquals(filter.filterOut(record1), firstReadExpectedResult, testName);
+
+        final SAMRecord record2 = iterator.next();
+        if (matchPairs && testValue != null) {
+            record2.setAttribute(tag, testValue);
+        } else if (!matchPairs){
+            record2.setAttribute(tag, 0);
+        }
+        // Test paired reads
+        Assert.assertEquals(filter.filterOut(record1, record2), pairedExpectedResult, testName);
+    }
+
     @Test(dataProvider="dataDefaultMatchingPairedFilter")
     public void testDefaultPairedEndMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
                                                       final boolean pairedExpectedResult, final Boolean includeReads,
@@ -86,47 +123,7 @@ public class TagFilterTest extends HtsjdkTest {
     }
 
     /**
-     *
-     * @param commonValuesIndex         The index of the common values to grab from commonTestValues
-     * @param firstReadExpectedResult   The expected result of the first read (true is the sequence should match the filter, otherwise false)
-     * @param pairedExpectedResult      The expected result of the paired reads (true is the sequence should match the filter, otherwise false)
-     * @param includeReads              The value of includeReads for the filter
-     * @param matchPairs                Whether or not to have matching values for tag the test is testing for
-     *
-     */
-
-    private void testTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                               final boolean pairedExpectedResult, final Boolean includeReads,
-                               final boolean matchPairs) {
-
-        final String testName = (String) commonTestValues[commonValuesIndex][0];
-        final String tag = (String) commonTestValues[commonValuesIndex][1];
-        final List<Object> validValues = (List<Object>) commonTestValues[commonValuesIndex][2];
-        final Object testValue = commonTestValues[commonValuesIndex][3];
-
-        final TagFilter filter = new TagFilter(tag, validValues, includeReads);
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-        builder.addPair("Paired", 1, 100, 200);
-        CloseableIterator<SAMRecord> iterator = builder.iterator();
-        final SAMRecord record1 = iterator.next();
-        if (testValue != null) {
-            record1.setAttribute(tag, testValue);
-        }
-        // Test first read in pair
-        Assert.assertEquals(filter.filterOut(record1), firstReadExpectedResult, testName);
-
-        final SAMRecord record2 = iterator.next();
-        if (matchPairs && testValue != null) {
-            record2.setAttribute(tag, testValue);
-        } else if (!matchPairs){
-            record2.setAttribute(tag, 0);
-        }
-        // Test paired reads
-        Assert.assertEquals(filter.filterOut(record1, record2), pairedExpectedResult, testName);
-    }
-
-    /**
-     * Data for various sequences for test
+     * Data for various sequences which may or may not match the filter.
      */
 
     private final Object[][] commonTestValues =
@@ -202,5 +199,4 @@ public class TagFilterTest extends HtsjdkTest {
                 {3, true, true, true, true},
         };
     }
-
 }
