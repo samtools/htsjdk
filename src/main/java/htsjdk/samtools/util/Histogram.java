@@ -324,17 +324,17 @@ public final class Histogram<K extends Comparable> implements Serializable {
                 .filter(b -> b.getValue() < 0)
                 .findFirst()
                 .ifPresent(b -> {
-            throw new IllegalArgumentException("Cannot calculate Percentile when negative counts are present " +
+            throw new IllegalStateException("Cannot calculate Percentile when negative counts are present " +
                     "in histogram. Bin " + b.getId() + "=" + b.getValue());
         });
 
         final double total = getCount();
-        if (total == 0) throw new IllegalArgumentException("Cannot calculate percentiles when total is zero.");
+        if (total == 0) throw new IllegalStateException("Cannot calculate percentiles when total is zero.");
 
-        double sofar = 0;
+        double soFar = 0;
         for (Bin<K> bin : values()) {
-            sofar += bin.getValue();
-            if (sofar / total >= percentile) return bin.getIdValue();
+            soFar += bin.getValue();
+            if (soFar / total >= percentile) return bin.getIdValue();
         }
 
         throw new IllegalStateException("UNPOSSIBLE! Could not find percentile: " + percentile);
