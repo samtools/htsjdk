@@ -325,7 +325,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Randomly fills in the bases for the given record.
      */
     private void fillInBases(final SAMRecord rec) {
-        final int length = this.readLength;
+        final int length = rec.getCigar() != null ? rec.getCigar().getReadLength() : readLength;
         final byte[] bases = new byte[length];
 
         for (int i = 0; i < length; ++i) {
@@ -521,7 +521,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Relies on the alignment start and end having been set to get read length.
      */
     private void fillInBasesAndQualities(final SAMRecord rec, final int defaultQuality) {
-        final int length = this.readLength;
+        final int length = rec.getCigar() != null ? rec.getCigar().getReadLength() : readLength;
         final byte[] quals = new byte[length];
 
         if (-1 != defaultQuality) {

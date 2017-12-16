@@ -23,7 +23,6 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.StringUtil;
 
 import java.nio.ByteBuffer;
