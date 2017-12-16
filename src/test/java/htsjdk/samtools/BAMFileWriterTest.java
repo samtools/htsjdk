@@ -64,16 +64,14 @@ public class BAMFileWriterTest extends HtsjdkTest {
         final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
         bamFile.deleteOnExit();
 
-        try(
-        final SamReader samReader = samRecordSetBuilder.getSamReader();
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(samReader.getFileHeader(), presorted, bamFile))
-        {
+        try (final SamReader samReader = samRecordSetBuilder.getSamReader()) {
             samReader.getFileHeader().setSortOrder(sortOrder);
-            CloseableIterator<SAMRecord> it = samReader.iterator();
-            while (it.hasNext()) {
-                bamWriter.addAlignment(it.next());
+            try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(samReader.getFileHeader(), presorted, bamFile);
+                CloseableIterator<SAMRecord> it = samReader.iterator()){
+                while (it.hasNext()) {
+                    bamWriter.addAlignment(it.next());
+                }
             }
-            it.close();
         }
         if (presorted) { // If SAM text input was presorted, then we can compare SAM object to BAM object
             verifyBAMFile(samRecordSetBuilder, bamFile);
@@ -83,33 +81,40 @@ public class BAMFileWriterTest extends HtsjdkTest {
     private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) throws IOException {
         try (
                 final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
-                final SamReader samReader = samRecordSetBuilder.getSamReader();
-                final CloseableIterator<SAMRecord> it = samReader.iterator();
-                final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
+                final SamReader samReader = samRecordSetBuilder.getSamReader()
         ) {
+
+
             samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
             Assert.assertEquals(bamReader.getFileHeader(), samReader.getFileHeader());
-            while (it.hasNext()) {
-                Assert.assertTrue(bamIt.hasNext());
-                final SAMRecord samRecord = it.next();
-                final SAMRecord bamRecord = bamIt.next();
 
-                // SAMRecords don't have this set, so stuff it in there
-                samRecord.setIndexingBin(bamRecord.getIndexingBin());
+            try (
+                    final CloseableIterator<SAMRecord> it = samReader.iterator();
+                    final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
+            ) {
+                while (it.hasNext()) {
+                    Assert.assertTrue(bamIt.hasNext());
+                    final SAMRecord samRecord = it.next();
+                    final SAMRecord bamRecord = bamIt.next();
 
-                // Force reference index attributes to be populated
-                samRecord.getReferenceIndex();
-                bamRecord.getReferenceIndex();
-                samRecord.getMateReferenceIndex();
-                bamRecord.getMateReferenceIndex();
+                    // SAMRecords don't have this set, so stuff it in there
+                    samRecord.setIndexingBin(bamRecord.getIndexingBin());
 
-                Assert.assertEquals(bamRecord, samRecord);
+                    // Force reference index attributes to be populated
+                    samRecord.getReferenceIndex();
+                    bamRecord.getReferenceIndex();
+                    samRecord.getMateReferenceIndex();
+                    bamRecord.getMateReferenceIndex();
+
+                    Assert.assertEquals(bamRecord, samRecord);
+                }
+                Assert.assertFalse(bamIt.hasNext());
             }
-            Assert.assertFalse(bamIt.hasNext());
-        }
 
+        }
     }
-        @DataProvider(name = "test1")
+
+    @DataProvider(name = "test1")
     public Object[][] createTestData() {
         return new Object[][]{
                 {"coordinate sorted", getRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted), SAMFileHeader.SortOrder.coordinate, false},
