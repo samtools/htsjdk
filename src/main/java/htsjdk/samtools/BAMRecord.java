@@ -97,7 +97,7 @@ public class BAMRecord extends SAMRecord {
 
         // Test if the real CIGAR is kept in the CG:B,I tag. If so, get its length and the offset in restOfData.
         int tagCigarLen = -1, tagCigarOffset = -1, newIndexingBin;
-        if (cigarLen >= 1 && referenceID >= 0 && restOfData.length - readNameLength >= 8 + cigarLen * 4) { // "CGBI"(4) + realCigarLen(4) + fakeCigar
+        if (restOfData != null && cigarLen >= 1 && referenceID >= 0 && restOfData.length - readNameLength >= 8 + cigarLen * 4) { // "CGBI"(4) + realCigarLen(4) + fakeCigar
             final ByteBuffer cigarReader = ByteBuffer.wrap(restOfData, readNameLength, 4);
             cigarReader.order(ByteOrder.LITTLE_ENDIAN);
             int cigar1 = cigarReader.getInt();
