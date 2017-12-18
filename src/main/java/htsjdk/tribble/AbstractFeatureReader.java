@@ -167,11 +167,28 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return
      */
     public static boolean hasBlockCompressedExtension (final String fileName) {
+        String cleanedPath = stripQueryStringIfPathIsAnHttpUrl(fileName);
         for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
-            if (fileName.toLowerCase().endsWith(extension))
+            if (cleanedPath.toLowerCase().endsWith(extension))
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Remove http query before checking extension
+     * Path might be a local file, in which case a '?' is a legal part of the filename.
+     * @param path a string representing some sort of path, potentially an http url
+     * @return path with no trailing queryString (ex: http://something.com/path.vcf?stuff=something => http://something.com/path.vcf)
+     */
+    private static String stripQueryStringIfPathIsAnHttpUrl(String path) {
+        if(path.startsWith("http://") || path.startsWith("https://")) {
+            int qIdx = path.indexOf('?');
+            if (qIdx > 0) {
+                return path.substring(0, qIdx);
+            }
+        }
+        return path;
     }
 
     /**
@@ -189,7 +206,8 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      * @return
      */
     public static boolean hasBlockCompressedExtension (final URI uri) {
-        return hasBlockCompressedExtension(uri.getPath());
+        String path = uri.getPath();
+        return hasBlockCompressedExtension(path);
     }
 
     /**

@@ -127,10 +127,16 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
-    public void testBlockCompressionExtension(final String testURIString, final boolean expected) throws URISyntaxException {
+    public void testBlockCompressionExtension(final String testURIString, final boolean expected) {
         URI testURI = URI.create(testURIString);
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURI), expected);
     }
+
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
+        Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURIString), expected);
+    }
+
 
     @DataProvider(name = "vcfFileAndWrapperCombinations")
     private static Object[][] vcfFileAndWrapperCombinations(){
