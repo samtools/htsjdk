@@ -1041,38 +1041,8 @@ public class IOUtil {
      * otherwise assume that file is a list of filenames and unfold it into the output.
      */
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
-        if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
-
-        final Stack<File> stack = new Stack<>();
-        final List<File> output = new ArrayList<>();
-        stack.addAll(inputs);
-
-        while (!stack.empty()) {
-            final File f = stack.pop();
-            final String name = f.getName();
-            boolean matched = false;
-
-            for (final String ext : extensions) {
-                if (!matched && name.endsWith(ext)) {
-                    output.add(f);
-                    matched = true;
-                }
-            }
-
-            // If the file didn't match a given extension, treat it as a list of files
-            if (!matched) {
-                IOUtil.assertFileIsReadable(f);
-
-                for (final String s : IOUtil.readLines(f)) {
-                    if (!s.trim().isEmpty()) stack.push(new File(s.trim()));
-                }
-            }
-        }
-
-        // Preserve input order (since we're using a stack above) for things that care
-        Collections.reverse(output);
-
-        return output;
+        Collection<Path> paths = unrollPaths(filesToPaths(inputs), extensions);
+        return paths.stream().map(p->p.toFile()).collect(Collectors.toList());
     }
 
     /**
@@ -1146,19 +1116,6 @@ public class IOUtil {
     }
 
     /**
-     * Get URI's scheme or empty string.
-     *
-     */
-    public static String getScheme(String uriString) {
-        try {
-            // illegal characters in the uri will screw up
-            return new URI(uriString).getScheme();
-        } catch (URISyntaxException e) {
-            return "";
-        }
-    }
-
-    /**
      * Converts the given URI to a {@link Path} object. If the filesystem cannot be found in the usual way, then attempt
      * to load the filesystem provider using the thread context classloader. This is needed when the filesystem
      * provider is loaded using a URL classloader (e.g. in spark-submit).
@@ -1197,7 +1154,7 @@ public class IOUtil {
      * @param files a {@link List} of {@link File}s to convert to {@link Path}s
      * @return a new List containing the results of running toPath on the elements of the input
      */
-    public static List<Path> filesToPaths(List<File> files){
+    public static List<Path> filesToPaths(Collection<File> files){
         return files.stream().map(File::toPath).collect(Collectors.toList());
     }
 

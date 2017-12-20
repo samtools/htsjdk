@@ -44,7 +44,7 @@ import java.util.function.Function;
  */
 public class ParsingUtils {
 
-    public static Map<Object, Color> colorCache = new WeakHashMap<Object, Color>(100);
+    public static Map<Object, Color> colorCache = new WeakHashMap<>(100);
 
     // HTML 4.1 color table,  + orange and magenta
     static Map<String, String> colorSymbols = new HashMap();
@@ -97,13 +97,11 @@ public class ParsingUtils {
     public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)
             throws IOException {
 
-        // will be empty string if there's no scheme
-        final String scheme = Optional.ofNullable(IOUtil.getScheme(uri)).orElse("");
         final InputStream inputStream;
 
         if (URL_SCHEMES.stream().anyMatch(uri::startsWith)) {
             inputStream = getURLHelper(new URL(uri)).openInputStream();
-        } else if (scheme.isEmpty()) {
+        } else if (!IOUtil.hasScheme(uri)) {
             File file = new File(uri);
             inputStream = Files.newInputStream(file.toPath());
         } else {
@@ -134,17 +132,17 @@ public class ParsingUtils {
      * @return
      */
     public static <T extends Comparable> List<T> sortList(Collection<T> list) {
-        ArrayList<T> ret = new ArrayList<T>();
+        ArrayList<T> ret = new ArrayList<>();
         ret.addAll(list);
         Collections.sort(ret);
         return ret;
     }
 
     public static <T extends Comparable<T>, V> String sortedString(Map<T, V> c) {
-        List<T> t = new ArrayList<T>(c.keySet());
+        List<T> t = new ArrayList<>(c.keySet());
         Collections.sort(t);
 
-        List<String> pairs = new ArrayList<String>();
+        List<String> pairs = new ArrayList<>();
         for (T k : t) {
             pairs.add(k + "=" + c.get(k));
         }
@@ -199,7 +197,7 @@ public class ParsingUtils {
      */
     public static List<String> split(String input, char delim) {
         if (input.isEmpty()) return Arrays.asList("");
-        final ArrayList<String> output = new ArrayList<String>(1+input.length()/2);
+        final ArrayList<String> output = new ArrayList<>(1 + input.length() / 2);
         int from = -1, to;
         for (to = input.indexOf(delim);
              to >= 0;
