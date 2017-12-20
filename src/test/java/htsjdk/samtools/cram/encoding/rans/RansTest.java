@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.encoding.rans;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -199,7 +200,7 @@ public class RansTest extends HtsjdkTest {
         roundTrip(ByteBuffer.wrap(data), order);
     }
 
-    private Random random = new Random();
+    private Random random = new Random(TestUtil.RANDOM_SEED);
 
     private byte[] randomBytes_GD(int size, double p) {
         byte[] data = new byte[size];

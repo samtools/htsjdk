@@ -8,6 +8,7 @@ import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -29,6 +30,8 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
     private InMemoryReferenceSequenceFile rsf;
     private ReferenceSource source;
     private SAMFileHeader header;
+
+    static private Random random = new Random(TestUtil.RANDOM_SEED);
 
     @Test
     public void test() throws IOException {
@@ -200,7 +203,6 @@ public class CRAMFileWriterWithIndexTest extends HtsjdkTest {
         String name = String.valueOf(header.getSequenceDictionary().size() + 1);
         header.addSequence(new SAMSequenceRecord(name, length));
         byte[] refBases = new byte[length];
-        Random random = new Random();
         byte[] alphabet = "ACGTN".getBytes();
         for (int i = 0; i < refBases.length; i++)
             refBases[i] = alphabet[random.nextInt(alphabet.length)];

@@ -27,6 +27,7 @@ import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +58,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     private static final byte[] BASES = {'A', 'C', 'G', 'T'};
     private static final String READ_GROUP_ID = "1";
     private static final String SAMPLE = "FREE_SAMPLE";
-    private final Random random = new Random();
+    private final Random random = new Random(TestUtil.RANDOM_SEED);
 
     private SAMFileHeader header;
     private final Collection<SAMRecord> records;

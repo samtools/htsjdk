@@ -120,7 +120,7 @@ public class SortingCollectionTest extends HtsjdkTest {
      * Generate pseudo-random Strings for testing
      */
     static class RandomStringGenerator implements Iterable<String>, Iterator<String> {
-        Random random = new Random(0);
+        Random random = new Random(TestUtil.RANDOM_SEED);
         int numElementsToGenerate;
         int numElementsGenerated = 0;
 

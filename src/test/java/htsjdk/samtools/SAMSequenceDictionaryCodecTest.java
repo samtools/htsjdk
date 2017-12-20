@@ -27,6 +27,7 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -43,7 +44,7 @@ import static org.testng.Assert.assertTrue;
  */
 public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
 
-    private static final Random random = new Random();
+    private static final Random random = new Random(TestUtil.RANDOM_SEED);
     private SAMSequenceDictionary dictionary;
     private StringWriter writer;
     private SAMSequenceDictionaryCodec codec;

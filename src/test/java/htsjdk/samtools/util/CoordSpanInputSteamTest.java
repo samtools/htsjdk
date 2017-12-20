@@ -3,6 +3,7 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.ByteArraySeekableStream;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -18,10 +19,12 @@ import java.util.Random;
  */
 public class CoordSpanInputSteamTest extends HtsjdkTest {
 
+    private final Random random = new Random(TestUtil.RANDOM_SEED);
+
     @Test
     public void test_first_3_bytes() throws IOException {
         byte[] data = new byte[1024 * 1024];
-        new Random().nextBytes(data);
+        random.nextBytes(data);
 
         long[] coords = new long[]{0, 1, 1, 2, 2, 3};
 
@@ -37,7 +40,7 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
     @Test
     public void test_3_ranges_byte_single_read() throws IOException {
         byte[] data = new byte[1024 * 1024];
-        new Random().nextBytes(data);
+        random.nextBytes(data);
 
         long[] coords = new long[]{0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
 
@@ -58,7 +61,7 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
     @Test
     public void test_range_read() throws IOException {
         byte[] data = new byte[1024 * 1024];
-        new Random().nextBytes(data);
+        random.nextBytes(data);
 
         long[] coords = new long[]{0, 100, 10, 20, 100, 200, data.length - 1, Long.MAX_VALUE};
 
@@ -105,5 +108,4 @@ public class CoordSpanInputSteamTest extends HtsjdkTest {
         Assert.assertEquals(dis1.read(), -1);
         Assert.assertEquals(dis2.read(), -1);
     }
-
 }

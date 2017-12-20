@@ -25,6 +25,7 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -41,7 +42,7 @@ import java.util.Random;
  */
 public class ReferenceSequenceTests extends HtsjdkTest {
     private static final byte[] BASES = "acgtACGTN".getBytes();
-    private final Random random = new Random();
+    private final Random random = new Random(TestUtil.RANDOM_SEED);
 
     @Test(dataProvider="fastaTestParameters")
     public void testSingleShortSequence(int chroms, int basesPerChrom) throws Exception {
