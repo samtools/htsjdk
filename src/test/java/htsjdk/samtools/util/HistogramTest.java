@@ -230,7 +230,7 @@ public class HistogramTest extends HtsjdkTest {
         };
     }
 
-    @Test(dataProvider = "percentileFailData",expectedExceptions = IllegalArgumentException.class)
+    @Test(dataProvider = "percentileFailData",expectedExceptions = IllegalStateException.class)
     public void testPercentileFail1(final Histogram<Integer> histo) {
         histo.getPercentile(0.01);
     }
