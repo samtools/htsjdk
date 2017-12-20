@@ -42,6 +42,7 @@ public class TagFilterTest extends HtsjdkTest {
 
     /**
      *
+     * @param testModule                Used with testName to uniquely identify tests
      * @param commonValuesIndex         The index of the common values to grab from commonTestValues
      * @param firstReadExpectedResult   The expected result of the first read (true is the sequence should match the filter, otherwise false)
      * @param pairedExpectedResult      The expected result of the paired reads (true is the sequence should match the filter, otherwise false)
@@ -50,7 +51,8 @@ public class TagFilterTest extends HtsjdkTest {
      *
      */
 
-    private void testTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
+    @Test(dataProvider="testData")
+    public void testTagFilter(final String testModule, final int commonValuesIndex, final boolean firstReadExpectedResult,
                                final boolean pairedExpectedResult, final Boolean includeReads,
                                final boolean matchPairs) {
 
@@ -68,7 +70,7 @@ public class TagFilterTest extends HtsjdkTest {
             record1.setAttribute(tag, testValue);
         }
         // Test first read in pair
-        Assert.assertEquals(filter.filterOut(record1), firstReadExpectedResult, testName);
+        Assert.assertEquals(filter.filterOut(record1), firstReadExpectedResult, testModule + " - " + testName);
 
         final SAMRecord record2 = iterator.next();
         if (matchPairs && testValue != null) {
@@ -77,48 +79,7 @@ public class TagFilterTest extends HtsjdkTest {
             record2.setAttribute(tag, 0);
         }
         // Test paired reads
-        Assert.assertEquals(filter.filterOut(record1, record2), pairedExpectedResult, testName);
-    }
-
-    @Test(dataProvider="dataDefaultMatchingPairedFilter")
-    public void testDefaultPairedEndMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                      final boolean pairedExpectedResult, final Boolean includeReads,
-                                                      final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
-    }
-
-    @Test(dataProvider="dataDefaultNonMatchingPairedFilter")
-    public void testDefaultPairedEndNonMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                         final boolean pairedExpectedResult, final Boolean includeReads,
-                                                         final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
-    }
-    @Test(dataProvider="dataExcludeMatchingPairedFilter")
-    public void testExludePairedEndMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                     final boolean pairedExpectedResult, final Boolean includeReads,
-                                                     final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
-    }
-
-    @Test(dataProvider="dataExcludeNonMatchingPairedFilter")
-    public void testExcludePairedEndNonMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                         final boolean pairedExpectedResult, final Boolean includeReads,
-                                                         final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
-    }
-
-    @Test(dataProvider="dataIncludeNonMatchingPairedFilter")
-    public void testIncludePairedEndNonMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                         final boolean pairedExpectedResult, final Boolean includeReads,
-                                                         final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
-    }
-
-    @Test(dataProvider="dataIncludeMatchingPairedFilter")
-    public void testIncludePairedEndMatchingTagFilter(final int commonValuesIndex, final boolean firstReadExpectedResult,
-                                                      final boolean pairedExpectedResult, final Boolean includeReads,
-                                                      final boolean matchPairs) {
-        testTagFilter(commonValuesIndex, firstReadExpectedResult, pairedExpectedResult, includeReads, matchPairs);
+        Assert.assertEquals(filter.filterOut(record1, record2), pairedExpectedResult, testModule + " - " + testName);
     }
 
     /**
@@ -133,69 +94,34 @@ public class TagFilterTest extends HtsjdkTest {
                     {"Paired Read Matching Null value negative test", ReservedTagConstants.XN, Arrays.asList(1), null}
             };
 
-    @DataProvider(name = "dataDefaultMatchingPairedFilter")
-    private Object[][] getDefaultMatchingPairedTagFilterTestData()
+    @DataProvider(name = "testData")
+    private Object[][] getTestData()
     {
         return new Object[][]{
-                {0, true, true, null, true},
-                {1, true, true, null, true},
-                {2, false, false,  null, true},
-                {3, false, false, null, true}
-        };
-    }
-
-    @DataProvider(name = "dataDefaultNonMatchingPairedFilter")
-    private Object[][] getDefaultNonMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {0, true, false, null, false},
-                {1, true, false, null, false},
-                {2, false, false, null, false},
-                {3, false, false, null, false},
-        };
-    }
-
-    @DataProvider(name = "dataExcludeMatchingPairedFilter")
-    private Object[][] getExcludeMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {0, true, true, false, true},
-                {1, true, true, false, true},
-                {2, false, false,  false, true},
-                {3, false, false, false, true}
-        };
-    }
-
-    @DataProvider(name = "dataExcludeNonMatchingPairedFilter")
-    private Object[][] getExcludeNonMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {0, true, false, false, false},
-                {1, true, false, false, false},
-                {2, false, false, false, false},
-                {3, false, false, false, false},
-        };
-    }
-
-    @DataProvider(name = "dataIncludeNonMatchingPairedFilter")
-    private Object[][] getIncludeNonMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {0, false, false, true, false},
-                {1, false, false, true, false},
-                {2, true, true, true, false},
-                {3, true, true, true, false},
-        };
-    }
-
-    @DataProvider(name = "dataIncludeMatchingPairedFilter")
-    private Object[][] getIncludeMatchingPairedTagFilterTestData()
-    {
-        return new Object[][]{
-                {0, false, false, true, true},
-                {1, false, false, true, true},
-                {2, true, true, true, true},
-                {3, true, true, true, true},
+                {"dataDefaultMatchingPairedFilter", 0, true, true, null, true},
+                {"dataDefaultMatchingPairedFilter", 1, true, true, null, true},
+                {"dataDefaultMatchingPairedFilter", 2, false, false,  null, true},
+                {"dataDefaultMatchingPairedFilter",3, false, false, null, true},
+                {"dataDefaultNonMatchingPairedFilter", 0, true, false, null, false},
+                {"dataDefaultNonMatchingPairedFilter", 1, true, false, null, false},
+                {"dataDefaultNonMatchingPairedFilter", 2, false, false, null, false},
+                {"dataDefaultNonMatchingPairedFilter", 3, false, false, null, false},
+                {"dataExcludeMatchingPairedFilter", 0, true, true, false, true},
+                {"dataExcludeMatchingPairedFilter", 1, true, true, false, true},
+                {"dataExcludeMatchingPairedFilter", 2, false, false,  false, true},
+                {"dataExcludeMatchingPairedFilter", 3, false, false, false, true},
+                {"dataExcludeNonMatchingPairedFilter", 0, true, false, false, false},
+                {"dataExcludeNonMatchingPairedFilter", 1, true, false, false, false},
+                {"dataExcludeNonMatchingPairedFilter", 2, false, false, false, false},
+                {"dataExcludeNonMatchingPairedFilter", 3, false, false, false, false},
+                {"dataIncludeNonMatchingPairedFilter", 0, false, false, true, false},
+                {"dataIncludeNonMatchingPairedFilter", 1, false, false, true, false},
+                {"dataIncludeNonMatchingPairedFilter", 2, true, true, true, false},
+                {"dataIncludeNonMatchingPairedFilter", 3, true, true, true, false},
+                {"dataIncludeMatchingPairedFilter", 0, false, false, true, true},
+                {"dataIncludeMatchingPairedFilter", 1, false, false, true, true},
+                {"dataIncludeMatchingPairedFilter", 2, true, true, true, true},
+                {"dataIncludeMatchingPairedFilter", 3, true, true, true, true}
         };
     }
 }
