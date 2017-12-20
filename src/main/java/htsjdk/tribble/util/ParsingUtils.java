@@ -91,7 +91,7 @@ public class ParsingUtils {
      * using a custom filesystem plugin
      * @param uri a uri like string
      * @param wrapper to wrap the input stream in, may be used to implement caching or prefetching, etc
-     * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases
+     * @return An inputStream appropriately created from uri and conditionally wrapped with wrapper (only in certain cases)
      * @throws IOException when stream cannot be opened against uri
      */
     public static InputStream openInputStream(final String uri, final Function<SeekableByteChannel, SeekableByteChannel> wrapper)

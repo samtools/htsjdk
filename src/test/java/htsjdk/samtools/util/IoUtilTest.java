@@ -221,6 +221,27 @@ public class IoUtilTest extends HtsjdkTest {
         }
     }
 
+    @Test
+    public void testAddExtensionOnList() throws IOException {
+        Path p = IOUtil.getPath("/folder/file");
+        List<FileSystemProvider> fileSystemProviders = FileSystemProvider.installedProviders();
+
+        List<Path> paths = new ArrayList<>();
+        List<String> strings = new ArrayList<>();
+
+        paths.add(IOUtil.addExtension(p, ".ext"));
+        strings.add("/folder/file.ext");
+
+        p = IOUtil.getPath("folder/file");
+        paths.add(IOUtil.addExtension(p, ".ext"));
+        strings.add("folder/file.ext");
+
+        List<Path> expectedPaths = IOUtil.getPaths(strings);
+
+        Assert.assertEquals(paths, expectedPaths);
+    }
+
+
     @DataProvider(name = "fileTypeTestCases")
     private Object[][] fileTypeTestCases() {
         return new Object[][]{

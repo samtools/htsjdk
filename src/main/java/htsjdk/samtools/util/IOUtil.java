@@ -1181,17 +1181,23 @@ public class IOUtil {
         }
     }
 
-    public static List<Path> getPaths(List<String> uriStrings) throws RuntimeException {
+    public static List<Path> getPaths(List<String> uriStrings) throws RuntimeIOException {
         return uriStrings.stream().map(s -> {
             try {
                 return IOUtil.getPath(s);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeIOException(e);
             }
         }).collect(Collectors.toList());
     }
 
-    public static List<Path> promoteFiles(List<File> files){
+    /** Takes a list of Files and converts them to a list of Paths
+     * Runs .toPath() on the contents of the input.
+     *
+     * @param files a {@link List} of {@link File}s to convert to {@link Path}s
+     * @return a new List containing the results of running toPath on the elements of the input
+     */
+    public static List<Path> filesToPaths(List<File> files){
         return files.stream().map(File::toPath).collect(Collectors.toList());
     }
 

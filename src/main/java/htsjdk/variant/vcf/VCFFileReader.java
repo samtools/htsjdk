@@ -30,9 +30,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Returns true if the given file appears to be a BCF file.
      *
-     * @deprecated in favor of {@link VCFFileReader#isBCF(Path)}
      */
-    @Deprecated
     public static boolean isBCF(final File file) {
         return isBCF(file.toPath());
     }
@@ -47,9 +45,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
      *
-     * @deprecated in favor of {@link VCFFileReader##getSequenceDictionary(Path)}
      */
-    @Deprecated
     public static SAMSequenceDictionary getSequenceDictionary(final File file) {
         try (final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
             return vcfFileReader.getFileHeader().getSequenceDictionary();
@@ -59,9 +55,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Constructs a VCFFileReader that requires the index to be present.
      *
-     * @deprecated in favor of {@link VCFFileReader#VCFFileReader(Path, boolean)}
      */
-    @Deprecated
     public VCFFileReader(final File file) {
         this(file, true);
     }
@@ -69,9 +63,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Constructs a VCFFileReader with a specified index.
      *
-     * @deprecated in favor of {@link VCFFileReader#VCFFileReader(Path, Path)}
      */
-    @Deprecated
     public VCFFileReader(final File file, final File indexFile) {
         this(file, indexFile, true);
     }
@@ -79,9 +71,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
      *
-     * @deprecated in favor of {@link VCFFileReader##VCFFileReader(Path, boolean)}
      */
-    @Deprecated
     public VCFFileReader(final File file, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
         // in the call to getFeatureReader is not enough for Java 8.
@@ -91,9 +81,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Allows construction of a VCFFileReader with a specified index file.
      *
-     * @deprecated in favor of {@link VCFFileReader##VCFFileReader(Path, Path, boolean)}
      */
-    @Deprecated
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
         // in the call to getFeatureReader is not enough for Java 8.
@@ -179,9 +167,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param file
      * @return
      *
-     * @deprecated in favor of {@link VCFFileReader#toIntervalList(Path)}
      */
-    @Deprecated
     public static IntervalList fromVcf(final File file) {
         return toIntervalList(file.toPath());
     }
@@ -193,9 +179,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param file
      * @return
      *
-     * @deprecated in favor of {@link VCFFileReader#toIntervalList(Path,boolean)}
      */
-    @Deprecated
     public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
         return toIntervalList(file.toPath(),includeFiltered);
     }
@@ -243,9 +227,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
      *
-     * @deprecated in favor of {@link VCFFileReader##toIntervalList()}
      */
-    @Deprecated
     public static IntervalList fromVcf(final VCFFileReader vcf) {
         return fromVcf(vcf, false);
     }
@@ -259,9 +241,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
      *
-     * @deprecated in favor of {@link VCFFileReader##toIntervalList(boolean)}
      */
-    @Deprecated
     public static IntervalList fromVcf(final VCFFileReader vcf, final boolean includeFiltered) {
 
         //grab the dictionary from the VCF and use it in the IntervalList
