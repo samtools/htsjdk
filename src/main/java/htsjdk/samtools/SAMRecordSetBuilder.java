@@ -324,6 +324,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     /**
      * Randomly fills in the bases for the given record.
+     *
+     * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBases(final SAMRecord rec) {
         final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
@@ -519,7 +521,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     /**
      * Fills in bases and qualities with a set default quality. If the defaultQuality is set to -1 quality scores will
      * be randomly generated.
-     * Relies on the alignment start and end having been set to get read length.
+     * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBasesAndQualities(final SAMRecord rec, final int defaultQuality) {
         final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
