@@ -325,7 +325,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Randomly fills in the bases for the given record.
      */
     private void fillInBases(final SAMRecord rec) {
-        final int length = rec.getCigar() != null ? rec.getCigar().getReadLength() : readLength;
+        final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
         final byte[] bases = new byte[length];
 
         for (int i = 0; i < length; ++i) {
