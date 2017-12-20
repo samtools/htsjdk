@@ -27,6 +27,7 @@ import htsjdk.samtools.DuplicateScoringStrategy.ScoringStrategy;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.TestUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -521,7 +522,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * Relies on the alignment start and end having been set to get read length.
      */
     private void fillInBasesAndQualities(final SAMRecord rec, final int defaultQuality) {
-        final int length = rec.getCigar() != null ? rec.getCigar().getReadLength() : readLength;
+        final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
         final byte[] quals = new byte[length];
 
         if (-1 != defaultQuality) {
