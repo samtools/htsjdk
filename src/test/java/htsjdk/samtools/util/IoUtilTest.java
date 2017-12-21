@@ -23,12 +23,15 @@
  */
 package htsjdk.samtools.util;
 
+import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import htsjdk.HtsjdkTest;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
+
 import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -46,7 +49,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,9 +56,11 @@ import java.util.List;
 
 public class IoUtilTest extends HtsjdkTest {
 
-    private static final File SLURP_TEST_FILE = new File("src/test/resources/htsjdk/samtools/io/slurptest.txt");
-    private static final File EMPTY_FILE = new File("src/test/resources/htsjdk/samtools/io/empty.txt");
-    private static final File FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = new File("src/test/resources/htsjdk/samtools/io/5newline5.txt");
+
+    private static final Path TEST_DATA_DIR = Paths.get ("src/test/resources/htsjdk/samtools/io/");
+    private static final Path SLURP_TEST_FILE = TEST_DATA_DIR.resolve("slurptest.txt");
+    private static final Path EMPTY_FILE = TEST_DATA_DIR.resolve("empty.txt");
+    private static final Path FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE = TEST_DATA_DIR.resolve("5newline5.txt");
     private static final List<String> SLURP_TEST_LINES = Arrays.asList("bacon   and rice   ", "for breakfast  ", "wont you join me");
     private static final String SLURP_TEST_LINE_SEPARATOR = "\n";
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
@@ -164,22 +168,22 @@ public class IoUtilTest extends HtsjdkTest {
 
     @Test
     public void slurpLinesTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE), SLURP_TEST_LINES);
+        Assert.assertEquals(IOUtil.slurpLines(SLURP_TEST_FILE.toFile()), SLURP_TEST_LINES);
     }
 
     @Test
     public void slurpWhitespaceOnlyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE), "     \n     ");
+        Assert.assertEquals(IOUtil.slurp(FIVE_SPACES_THEN_A_NEWLINE_THEN_FIVE_SPACES_FILE.toFile()), "     \n     ");
     }
 
     @Test
     public void slurpEmptyFileTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE), "");
+        Assert.assertEquals(IOUtil.slurp(EMPTY_FILE.toFile()), "");
     }
 
     @Test
     public void slurpTest() throws FileNotFoundException {
-        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
+        Assert.assertEquals(IOUtil.slurp(SLURP_TEST_FILE.toFile()), CollectionUtil.join(SLURP_TEST_LINES, SLURP_TEST_LINE_SEPARATOR));
     }
 
     @Test(dataProvider = "fileTypeTestCases")
@@ -216,6 +220,27 @@ public class IoUtilTest extends HtsjdkTest {
             Assert.assertEquals(IOUtil.addExtension(p, ".ext"), jimfs.getPath("file.ext"));
         }
     }
+
+    @Test
+    public void testAddExtensionOnList() throws IOException {
+        Path p = IOUtil.getPath("/folder/file");
+        List<FileSystemProvider> fileSystemProviders = FileSystemProvider.installedProviders();
+
+        List<Path> paths = new ArrayList<>();
+        List<String> strings = new ArrayList<>();
+
+        paths.add(IOUtil.addExtension(p, ".ext"));
+        strings.add("/folder/file.ext");
+
+        p = IOUtil.getPath("folder/file");
+        paths.add(IOUtil.addExtension(p, ".ext"));
+        strings.add("folder/file.ext");
+
+        List<Path> expectedPaths = IOUtil.getPaths(strings);
+
+        Assert.assertEquals(paths, expectedPaths);
+    }
+
 
     @DataProvider(name = "fileTypeTestCases")
     private Object[][] fileTypeTestCases() {
@@ -393,5 +418,33 @@ public class IoUtilTest extends HtsjdkTest {
                 Assert.fail(e.getMessage());
             }
         }
+    }
+
+    static final String level1 = "Level1.fofn";
+    static final String level2 = "Level2.fofn";
+
+    @DataProvider
+    public Object[][] fofnData() throws IOException {
+
+        Path fofnPath1 = inMemoryfileSystem.getPath(level1);
+        Files.copy(TEST_DATA_DIR.resolve(level1), fofnPath1);
+
+        Path fofnPath2 = inMemoryfileSystem.getPath(level2);
+        Files.copy(TEST_DATA_DIR.resolve(level2), fofnPath2);
+
+        return new Object[][]{
+                {TEST_DATA_DIR + "/" + level1, new String[]{".vcf", ".vcf.gz"}, 2},
+                {TEST_DATA_DIR + "/" + level2, new String[]{".vcf", ".vcf.gz"}, 4},
+                {fofnPath1.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 2},
+                {fofnPath2.toUri().toString(), new String[]{".vcf", ".vcf.gz"}, 4}
+        };
+    }
+
+    @Test(dataProvider = "fofnData")
+    public void testUnrollPaths(final String pathUri, final String[] extensions, final int expectedNumberOfUnrolledPaths) throws IOException {
+        Path p = IOUtil.getPath(pathUri);
+        List<Path> paths = IOUtil.unrollPaths(Collections.singleton(p), extensions);
+
+        Assert.assertEquals(paths.size(), expectedNumberOfUnrolledPaths);
     }
 }

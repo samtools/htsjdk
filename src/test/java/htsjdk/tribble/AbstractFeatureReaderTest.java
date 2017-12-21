@@ -194,7 +194,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
                                                                                     Function<SeekableByteChannel, SeekableByteChannel> indexWrapper,
                                                                                     FeatureCodec<T, ?> codec,
                                                                                     FileSystem fileSystem) throws IOException, URISyntaxException {
-        final Path vcfInJimfs = getTribbleFileInJimfs(vcf, index, fileSystem);
+        final Path vcfInJimfs = TestUtils.getTribbleFileInJimfs(vcf, index, fileSystem);
         return AbstractFeatureReader.getFeatureReader(
                 vcfInJimfs.toUri().toString(),
                 null,
@@ -263,15 +263,6 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         public SeekableByteChannel truncate(long size) throws IOException {
             return input.truncate(size + toSkip);
         }
-    };
-
-    private static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
-        final FileSystem fs = fileSystem;
-        final Path root = fs.getPath("/");
-        final Path vcfPath = Paths.get(vcf);
-        final Path idxPath = Paths.get(index);
-        final Path idxDestination = Paths.get(AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexFile(vcf) : Tribble.indexFile(vcf));
-        Files.copy(idxPath, root.resolve(idxDestination.getFileName().toString()));
-        return Files.copy(vcfPath, root.resolve(vcfPath.getFileName().toString()));
     }
+
 }

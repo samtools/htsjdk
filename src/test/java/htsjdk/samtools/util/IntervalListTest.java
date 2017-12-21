@@ -505,6 +505,38 @@ public class IntervalListTest extends HtsjdkTest {
         Assert.assertEquals(intervalNames, compIntervalNames);
     }
 
+
+    @Test(dataProvider = "VCFCompData")
+    public void testFromVCFWithPath(final String vcf, final String compInterval, final boolean invertVCF) {
+
+        final File vcfFile = new File(vcf);
+        final File compIntervalFile = new File(compInterval);
+
+        final IntervalList compList = IntervalList.fromFile(compIntervalFile);
+        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.fromVcf(vcfFile)) : VCFFileReader.fromVcf(vcfFile);
+
+        compList.getHeader().getSequenceDictionary().assertSameDictionary(list.getHeader().getSequenceDictionary());
+
+        final Collection<Interval> intervals = CollectionUtil.makeCollection(list.iterator());
+        final Collection<Interval> compIntervals = CollectionUtil.makeCollection(compList.iterator());
+
+        //assert that the intervals correspond
+        Assert.assertEquals(intervals, compIntervals);
+
+        final List<String> intervalNames = new LinkedList<String>();
+        final List<String> compIntervalNames = new LinkedList<String>();
+
+        for (final Interval interval : intervals) {
+            intervalNames.add(interval.getName());
+        }
+        for (final Interval interval : compIntervals) {
+            compIntervalNames.add(interval.getName());
+        }
+        //assert that the names match
+        Assert.assertEquals(intervalNames, compIntervalNames);
+    }
+
+
     @DataProvider
     public Object[][] testFromSequenceData() {
         return new Object[][]{

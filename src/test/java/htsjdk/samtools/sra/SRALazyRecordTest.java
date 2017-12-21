@@ -32,9 +32,9 @@ public class SRALazyRecordTest extends AbstractSRATest {
         Assert.assertEquals(deserializedSAMRecord, initialSAMRecord, "Deserialized SAMRecord not equal to original SAMRecord");
     }
 
-    @Test
-    public void testCloneAndEquals() throws Exception {
-        final SRAFileReader reader = new SRAFileReader(DEFAULT_ACCESSION);
+    @Test(dataProvider = "serializationTestData")
+    public void testCloneAndEquals(final SRAAccession accession) throws Exception {
+        final SRAFileReader reader = new SRAFileReader(accession);
         final SAMRecord record = reader.getIterator().next();
         reader.close();
 

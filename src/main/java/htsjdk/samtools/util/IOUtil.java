@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPInputStream;
 
@@ -437,13 +438,13 @@ public class IOUtil {
         if (path == null) {
             throw new IllegalArgumentException("Cannot check readability of null file.");
         } else if (!Files.exists(path)) {
-            throw new SAMException("Cannot read non-existent file: " + path.toAbsolutePath());
+            throw new SAMException("Cannot read non-existent file: " + path.toUri().toString());
         }
         else if (Files.isDirectory(path)) {
-            throw new SAMException("Cannot read file because it is a directory: " + path.toAbsolutePath());
+            throw new SAMException("Cannot read file because it is a directory: " + path.toUri().toString());
         }
         else if (!Files.isReadable(path)) {
-            throw new SAMException("File exists but is not readable: " + path.toAbsolutePath());
+            throw new SAMException("File exists but is not readable: " + path.toUri().toString());
         }
     }
 
@@ -456,7 +457,18 @@ public class IOUtil {
     public static void assertFilesAreReadable(final List<File> files) {
         for (final File file : files) assertFileIsReadable(file);
     }
-    
+
+    /**
+     * Checks that each path is non-null, exists, is not a directory and is readable.  If any
+     * condition is false then a runtime exception is thrown.
+     *
+     * @param paths the list of paths to check for readability
+     */
+    public static void assertPathsAreReadable(final List<Path> paths) {
+        for (final Path path: paths) assertFileIsReadable(path);
+    }
+
+
     /**
      * Checks that each string is non-null, exists or is a URL, 
      * and if it is a file then not a directory and is readable.  If any
@@ -477,8 +489,8 @@ public class IOUtil {
      */
     public static void assertFileIsWritable(final File file) {
         if (file == null) {
-			throw new IllegalArgumentException("Cannot check readability of null file.");
-		} else if (!file.exists()) {
+            throw new IllegalArgumentException("Cannot check readability of null file.");
+        } else if (!file.exists()) {
             // If the file doesn't exist, check that it's parent directory does and is writable
             final File parent = file.getAbsoluteFile().getParentFile();
             if (!parent.exists()) {
@@ -886,7 +898,7 @@ public class IOUtil {
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
         return openFileForBufferedReading(file.toPath());
-	}
+    }
 
     /** Checks that a path exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final Path path) {
@@ -1014,7 +1026,7 @@ public class IOUtil {
     private static List<String> tokenSlurp(final InputStream is, final Charset charSet, final String delimiterPattern) {
         try {
             final Scanner s = new Scanner(is, charSet.toString()).useDelimiter(delimiterPattern);
-            final LinkedList<String> tokens = new LinkedList<String>();
+            final LinkedList<String> tokens = new LinkedList<>();
             while (s.hasNext()) {
                 tokens.add(s.next());
             }
@@ -1029,39 +1041,64 @@ public class IOUtil {
      * otherwise assume that file is a list of filenames and unfold it into the output.
      */
     public static List<File> unrollFiles(final Collection<File> inputs, final String... extensions) {
+        Collection<Path> paths = unrollPaths(filesToPaths(inputs), extensions);
+        return paths.stream().map(p->p.toFile()).collect(Collectors.toList());
+    }
+
+    /**
+     * Go through the files provided and if they have one of the provided file extensions pass the file to the output
+     * otherwise assume that file is a list of filenames and unfold it into the output (recursively).
+     */
+    public static List<Path> unrollPaths(final Collection<Path> inputs, final String... extensions) {
         if (extensions.length < 1) throw new IllegalArgumentException("Must provide at least one extension.");
 
-        final Stack<File> stack = new Stack<File>();
-        final List<File> output = new ArrayList<File>();
+        final Stack<Path> stack = new Stack<>();
+        final List<Path> output = new ArrayList<>();
         stack.addAll(inputs);
 
         while (!stack.empty()) {
-            final File f = stack.pop();
-            final String name = f.getName();
+            final Path p = stack.pop();
+            final String name = p.toString();
             boolean matched = false;
 
             for (final String ext : extensions) {
                 if (!matched && name.endsWith(ext)) {
-                    output.add(f);
+                    output.add(p);
                     matched = true;
                 }
             }
 
             // If the file didn't match a given extension, treat it as a list of files
             if (!matched) {
-                IOUtil.assertFileIsReadable(f);
+                IOUtil.assertFileIsReadable(p);
 
-                for (final String s : IOUtil.readLines(f)) {
-                    if (!s.trim().isEmpty()) stack.push(new File(s.trim()));
+                try {
+                    Files.lines(p)
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .forEach(s -> {
+                                        final Path innerPath;
+                                        try {
+                                            innerPath = getPath(s);
+                                            stack.push(innerPath);
+                                        } catch (IOException e) {
+                                            throw new IllegalArgumentException("cannot convert " + s + " to a Path.");
+                                        }
+                                    }
+                            );
+
+                } catch (IOException e) {
+                    throw new IllegalArgumentException("had trouble reading from " + p.toUri().toString());
                 }
             }
-        }
+    }
 
         // Preserve input order (since we're using a stack above) for things that care
         Collections.reverse(output);
 
         return output;
     }
+
 
     /**
      * Check if the given URI has a scheme.
@@ -1099,6 +1136,26 @@ public class IOUtil {
             }
             return FileSystems.newFileSystem(uri, new HashMap<>(), cl).provider().getPath(uri);
         }
+    }
+
+    public static List<Path> getPaths(List<String> uriStrings) throws RuntimeIOException {
+        return uriStrings.stream().map(s -> {
+            try {
+                return IOUtil.getPath(s);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }).collect(Collectors.toList());
+    }
+
+    /** Takes a list of Files and converts them to a list of Paths
+     * Runs .toPath() on the contents of the input.
+     *
+     * @param files a {@link List} of {@link File}s to convert to {@link Path}s
+     * @return a new List containing the results of running toPath on the elements of the input
+     */
+    public static List<Path> filesToPaths(Collection<File> files){
+        return files.stream().map(File::toPath).collect(Collectors.toList());
     }
 
     /**
