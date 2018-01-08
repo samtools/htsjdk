@@ -137,7 +137,7 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     /** default implementation -- override if index is supported */
     @Override
     public ReferenceSequence getSequence( String contig ) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getAbsolutePath() + ".  samtools faidx can be used to create an index");
     }
 
     /** default implementation -- override if index is supported */
