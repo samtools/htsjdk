@@ -23,10 +23,10 @@
  */
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.readers.*;
-import htsjdk.tribble.util.ParsingUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -95,7 +95,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     private void readHeader() throws IOException {
         SOURCE source = null;
         try {
-            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper))));
+            source = codec.makeSourceFromStream(new PositionalBufferedStream(new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper))));
             header = codec.readHeader(source);
         } catch (Exception e) {
             throw new TribbleException.MalformedFeatureFile("Unable to parse header with error: " + e.getMessage(), path, e);
@@ -140,7 +140,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
 
     @Override
     public CloseableTribbleIterator<T> iterator() throws IOException {
-        final InputStream is = new BlockCompressedInputStream(ParsingUtils.openInputStream(path, wrapper));
+        final InputStream is = new BlockCompressedInputStream(SeekableStreamFactory.getInstance().getStreamFor(path, wrapper));
         final PositionalBufferedStream stream = new PositionalBufferedStream(is);
         final LineReader reader = new SynchronousLineReader(stream);
         return new FeatureIterator<T>(reader, 0, Integer.MAX_VALUE);
