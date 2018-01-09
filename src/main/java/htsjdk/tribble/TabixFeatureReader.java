@@ -197,8 +197,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                     String error = "Error parsing line: " + nextLine;
                     throw new TribbleException.MalformedFeatureFile(error, path, e);
                 }
-
-
             }
         }
 
@@ -218,7 +216,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                         ret.getContig() + ":" + ret.getStart() + "-" + ret.getEnd(), e);
             }
             return ret;
-
         }
 
         @Override
@@ -236,6 +233,4 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             return this;
         }
     }
-
-
 }
