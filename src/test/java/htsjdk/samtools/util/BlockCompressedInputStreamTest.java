@@ -1,6 +1,8 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.FileTruncatedException;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
@@ -21,7 +23,17 @@ public class BlockCompressedInputStreamTest extends HtsjdkTest {
 	private static final File BLOCK_COMPRESSED = new File("src/test/resources/htsjdk/samtools/util/random.bin.gz");
 	private static final long[] BLOCK_COMPRESSED_OFFSETS = new long[] { 0, 0xfc2e, 0x1004d, 0x1fc7b, 0x2009a, };
 	private static final long[] BLOCK_UNCOMPRESSED_END_POSITIONS = new long[] { 64512, 65536, 130048 };
-	@Test
+
+    @Test
+    public void testTruncatedStream() throws Exception {
+        byte[] compressed = Files.readAllBytes(BLOCK_COMPRESSED.toPath());
+        byte[] truncated = Arrays.copyOf(compressed, compressed.length * 2 / 3);
+        try (BlockCompressedInputStream stream = new BlockCompressedInputStream(new ByteArrayInputStream(truncated))) {
+            Assert.expectThrows(FileTruncatedException.class, () -> InputStreamUtils.readFully(stream));
+        }
+    }
+
+    @Test
     public void stream_should_match_uncompressed_stream() throws Exception {
 		byte[] uncompressed = Files.readAllBytes(BLOCK_UNCOMPRESSED.toPath());
 		try (BlockCompressedInputStream stream = new BlockCompressedInputStream(new FileInputStream(BLOCK_COMPRESSED))) {

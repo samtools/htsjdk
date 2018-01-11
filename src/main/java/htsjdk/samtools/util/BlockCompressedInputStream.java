@@ -382,7 +382,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             available = available();
         }
         if (uncompressedOffset > available || (uncompressedOffset == available && !eof())) {
-            throw new IOException(INVALID_FILE_PTR_MSG + pos + " for " + mFile.getSource());
+            throw new IOException(INVALID_FILE_PTR_MSG + pos + " for " + getSource());
         }
         mCurrentOffset = uncompressedOffset;
     }
@@ -514,12 +514,12 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
                 return new DecompressedBlock(blockAddress, new byte[0], 0);
             }
             if (headerByteCount != BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH) {
-                return new DecompressedBlock(blockAddress, headerByteCount, new IOException(INCORRECT_HEADER_SIZE_MSG + mFile.getSource()));
+                return new DecompressedBlock(blockAddress, headerByteCount, new IOException(INCORRECT_HEADER_SIZE_MSG + getSource()));
             }
             final int blockLength = unpackInt16(mFileBuffer, BlockCompressedStreamConstants.BLOCK_LENGTH_OFFSET) + 1;
             if (blockLength < BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH || blockLength > mFileBuffer.length) {
                 return new DecompressedBlock(blockAddress, blockLength,
-                		new IOException(UNEXPECTED_BLOCK_LENGTH_MSG + blockLength + " for " + mFile.getSource()));
+                        new IOException(UNEXPECTED_BLOCK_LENGTH_MSG + blockLength + " for " + getSource()));
             }
             final int remaining = blockLength - BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH;
             final int dataByteCount = readBytes(mFileBuffer, BlockCompressedStreamConstants.BLOCK_HEADER_LENGTH,
@@ -527,7 +527,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             mStreamOffset += dataByteCount;
             if (dataByteCount != remaining) {
                 return new DecompressedBlock(blockAddress, blockLength,
-                		new FileTruncatedException(PREMATURE_END_MSG + mFile.getSource()));
+                        new FileTruncatedException(PREMATURE_END_MSG + getSource()));
             }
             final byte[] decompressed = inflateBlock(mFileBuffer, blockLength, bufferAvailableForReuse);
             return new DecompressedBlock(blockAddress, decompressed, blockLength);
@@ -540,7 +540,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             final byte[] bufferAvailableForReuse) throws IOException {
         final int uncompressedLength = unpackInt32(compressedBlock, compressedLength - 4);
         if (uncompressedLength < 0) {
-        	throw new RuntimeIOException(mFile.getSource() + " has invalid uncompressedLength: " + uncompressedLength);
+            throw new RuntimeIOException(getSource() + " has invalid uncompressedLength: " + uncompressedLength);
         }
         byte[] buffer = bufferAvailableForReuse;
         if (buffer == null || uncompressedLength != buffer.length) {
@@ -549,6 +549,10 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
         }
         blockGunzipper.unzipBlock(buffer, compressedBlock, compressedLength);
         return buffer;
+    }
+
+    private String getSource() {
+        return mFile == null ? "data stream" : mFile.getSource();
     }
 
     private int readBytes(final byte[] buffer, final int offset, final int length) throws IOException {
