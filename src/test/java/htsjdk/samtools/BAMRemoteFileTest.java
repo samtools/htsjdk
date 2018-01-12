@@ -67,7 +67,7 @@ public class BAMRemoteFileTest extends HtsjdkTest {
 
     @Test
     public void testRandomQueries() throws Exception {
-        runRandomTest(bamURL, 20, new Random());
+        runRandomTest(bamURL, 20, new Random(TestUtil.RANDOM_SEED));
     }
 
     @Test
