@@ -168,7 +168,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMRecordIterator iterator();
 
     /**
-     * Iterate over records that match the given interval.  Only valid to call this if hasIndex() == true.
+     * Iterate over records that match the given interval.  Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.  You can use a second SamReader to iterate
@@ -190,7 +190,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMRecordIterator query(final String sequence, final int start, final int end, final boolean contained);
 
     /**
-     * Iterate over records that overlap the given interval.  Only valid to call this if hasIndex() == true.
+     * Iterate over records that overlap the given interval.  Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
@@ -209,7 +209,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMRecordIterator queryOverlapping(final String sequence, final int start, final int end);
 
     /**
-     * Iterate over records that are contained in the given interval.  Only valid to call this if hasIndex() == true.
+     * Iterate over records that are contained in the given interval.  Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
@@ -231,7 +231,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * Iterate over records that match one of the given intervals.  This may be more efficient than querying
      * each interval separately, because multiple reads of the same SAMRecords is avoided.
      * <p/>
-     * Only valid to call this if hasIndex() == true.
+     * Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.  You can use a second SamReader to iterate
@@ -256,7 +256,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * Iterate over records that overlap any of the given intervals.  This may be more efficient than querying
      * each interval separately, because multiple reads of the same SAMRecords is avoided.
      * <p/>
-     * Only valid to call this if hasIndex() == true.
+     * Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
@@ -276,7 +276,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
      * Iterate over records that are contained in the given interval.  This may be more efficient than querying
      * each interval separately, because multiple reads of the same SAMRecords is avoided.
      * <p/>
-     * Only valid to call this if hasIndex() == true.
+     * Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
@@ -297,7 +297,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMRecordIterator queryUnmapped();
 
     /**
-     * Iterate over records that map to the given sequence and start at the given position.  Only valid to call this if hasIndex() == true.
+     * Iterate over records that map to the given sequence and start at the given position.  Only valid to call this if isQueryable() == true.
      * <p/>
      * Only a single open iterator on a given SamReader may be extant at any one time.  If you want to start
      * a second iteration, the first one must be closed first.
@@ -315,7 +315,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     public SAMRecordIterator queryAlignmentStart(final String sequence, final int start);
 
     /**
-     * Fetch the mate for the given read.  Only valid to call this if hasIndex() == true.
+     * Fetch the mate for the given read.  Only valid to call this if isQueryable() == true.
      * This will work whether the mate has a coordinate or not, so long as the given read has correct
      * mate information.  This method iterates over the SAM file, so there may not be an unclosed
      * iterator on the SAM file when this method is called.

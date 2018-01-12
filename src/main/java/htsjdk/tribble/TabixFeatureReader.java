@@ -46,7 +46,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     List<String> sequenceNames;
 
     /**
-     *
      * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
      * @param codec
      * @throws IOException
@@ -56,9 +55,8 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     /**
-     *
      * @param featureFile - path to a feature file. Can be a local file, http url, or ftp url
-     * @param indexFile - path to the index file.
+     * @param indexFile   - path to the index file.
      * @param codec
      * @throws IOException
      */
@@ -67,14 +65,13 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     /**
-     *
-     * @param featureFile     path to a feature file. Can be a local file, http url, or ftp url
-     * @param indexFile       path to the index file.
-     * @param wrapper         a wrapper to apply to the byte stream from the featureResource allowing injecting features
-     *                        like caching and prefetching of the stream, may be null, will only be applied if featureFile
-     *                        is a uri representing a {@link java.nio.file.Path}
-     * @param indexWrapper    a wrapper to apply to the byte stream from the indexResource, may be null, will only be
-     *                        applied if indexFile is a uri representing a {@link java.nio.file.Path}
+     * @param featureFile  path to a feature file. Can be a local file, http url, or ftp url
+     * @param indexFile    path to the index file.
+     * @param wrapper      a wrapper to apply to the byte stream from the featureResource allowing injecting features
+     *                     like caching and prefetching of the stream, may be null, will only be applied if featureFile
+     *                     is a uri representing a {@link java.nio.file.Path}
+     * @param indexWrapper a wrapper to apply to the byte stream from the indexResource, may be null, will only be
+     *                     applied if indexFile is a uri representing a {@link java.nio.file.Path}
      */
     public TabixFeatureReader(final String featureFile, final String indexFile, final AsciiFeatureCodec codec,
                               final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
@@ -84,7 +81,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }
-
 
     /**
      * read the header
@@ -107,10 +103,9 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
     }
 
     @Override
-    public boolean hasIndex(){
+    public boolean hasIndex() {
         return true;
     }
-
 
     @Override
     public List<String> getSequenceNames() {
@@ -151,7 +146,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
         tabixReader.close();
     }
 
-
     class FeatureIterator<T extends Feature> implements CloseableTribbleIterator<T> {
         private T currentRecord;
         private LineReader lineReader;
@@ -165,7 +159,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             readNextRecord();
         }
 
-
         /**
          * Advance to the next record in the query interval.
          *
@@ -177,7 +170,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
             while (currentRecord == null && (nextLine = lineReader.readLine()) != null) {
                 final Feature f;
                 try {
-                    f = ((AsciiFeatureCodec)codec).decode(nextLine);
+                    f = ((AsciiFeatureCodec) codec).decode(nextLine);
                     if (f == null) {
                         continue;   // Skip
                     }
@@ -199,7 +192,6 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                 }
             }
         }
-
 
         @Override
         public boolean hasNext() {

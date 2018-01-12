@@ -22,7 +22,7 @@ import java.util.List;
 public class VCFFileReaderTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/variant/");
 
-    @DataProvider(name="queryableData")
+    @DataProvider(name = "queryableData")
     public Iterator<Object[]> queryableData() throws IOException {
         List<Object[]> tests = new ArrayList<>();
         tests.add(new Object[]{new File(TEST_DATA_DIR, "NA12891.fp.vcf"), false});
@@ -35,7 +35,7 @@ public class VCFFileReaderTest extends HtsjdkTest {
 
     @Test(dataProvider = "queryableData")
     public void testIsQueriable(final File vcf, final boolean expectedQueryable) throws Exception {
-        Assert.assertEquals(new VCFFileReader(vcf,false ).isQueriable(), expectedQueryable);
+        Assert.assertEquals(new VCFFileReader(vcf, false).isQueryable(), expectedQueryable);
     }
 
     @DataProvider(name = "pathsData")

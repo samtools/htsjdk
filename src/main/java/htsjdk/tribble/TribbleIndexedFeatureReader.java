@@ -90,7 +90,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
         if (requireIndex) {
             this.loadIndex();
-            if(!this.hasIndex()){
+            if (!this.hasIndex()) {
                 throw new TribbleException("An index is required, but none found.");
             }
         }
@@ -112,14 +112,14 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         this(featureFile, indexFile, codec, requireIndex, null, null);
     }
 
-        /**
-         * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url, or any other
-         *                     uri supported by a {@link java.nio.file.Path} plugin
-         * @param indexFile    - path to the index file
-         * @param codec        - codec to decode the features
-         * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
-         * @throws IOException
-         */
+    /**
+     * @param featureFile  - path to the feature file, can be a local file path, http url, or ftp url, or any other
+     *                     uri supported by a {@link java.nio.file.Path} plugin
+     * @param indexFile    - path to the index file
+     * @param codec        - codec to decode the features
+     * @param requireIndex - true if the reader will be queries for specific ranges.  An index (idx) file must exist
+     * @throws IOException
+     */
     public TribbleIndexedFeatureReader(final String featureFile, final String indexFile, final FeatureCodec<T, SOURCE> codec, final boolean requireIndex,
                                        Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                        Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
@@ -130,13 +130,12 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         } else {
             if (requireIndex) {
                 this.loadIndex();
-                if(!this.hasIndex()){
+                if (!this.hasIndex()) {
                     throw new TribbleException("An index is required, but none found.");
                 }
             }
         }
     }
-
 
     /**
      * @param featureFile - path to the feature file, can be a local file path, http url, or ftp url
@@ -154,9 +153,10 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
      * Attempt to load the index for the specified {@link #path}.
      * If the {@link #path} has no available index file,
      * does nothing
+     *
      * @throws IOException
      */
-    private void loadIndex() throws IOException{
+    private void loadIndex() throws IOException {
         String indexFile = Tribble.indexFile(this.path);
         if (ParsingUtils.resourceExists(indexFile)) {
             index = IndexFactory.loadIndex(indexFile, indexWrapper);
@@ -184,7 +184,8 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         final SeekableStream result;
         if (reuseStreamInQuery()) {
             // if the stream points to an underlying file, only create the underlying seekable stream once
-            if (seekableStream == null) seekableStream = SeekableStreamFactory.getInstance().getStreamFor(path, wrapper);
+            if (seekableStream == null)
+                seekableStream = SeekableStreamFactory.getInstance().getStreamFor(path, wrapper);
             result = seekableStream;
         } else {
             // we are not reusing the stream, so make a fresh copy each time we request it
@@ -221,7 +222,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
 
     @Override
     public boolean hasIndex() {
-        if(index == null && this.needCheckForIndex){
+        if (index == null && this.needCheckForIndex) {
             try {
                 this.loadIndex();
             } catch (IOException e) {
@@ -229,6 +230,14 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
         return index != null;
+    }
+
+    /**
+     * @return true if the reader has an index, which means that it can be queried.
+     */
+    @Override
+    public boolean isQueryable() {
+        return hasIndex();
     }
 
     /**
@@ -289,7 +298,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             return new EmptyIterator<>();
         }
     }
-
 
     /**
      * @return Return an iterator to iterate over the entire file
@@ -408,7 +416,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
         private SeekableStream mySeekableStream;
         private Iterator<Block> blockIterator;
 
-
         public QueryIterator(final String chr, final int start, final int end, final List<Block> blocks) throws IOException {
             this.start = start;
             this.end = end;
@@ -439,7 +446,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
             return ret;
         }
-
 
         private void advanceBlock() throws IOException {
             while (blockIterator != null && blockIterator.hasNext()) {
@@ -511,12 +517,10 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             }
         }
 
-
         @Override
         public void remove() {
             throw new UnsupportedOperationException("Remove is not supported.");
         }
-
 
         @Override
         public void close() {
@@ -537,7 +541,6 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             return this;
         }
     }
-
 
     /**
      * Wrapper around a SeekableStream that limits reading to the specified "block" of bytes.  Attempts to

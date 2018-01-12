@@ -69,18 +69,18 @@ public final class PrintVariantsExample {
         log.info("Start with args:" + Arrays.toString(args));
         printConfigurationInfo();
 
-        try(final VariantContextWriter writer = outputFile == null ? null : new VariantContextWriterBuilder().setOutputFile(outputFile).setOutputFileType(VariantContextWriterBuilder.OutputType.VCF).unsetOption(Options.INDEX_ON_THE_FLY).build();
-            final AbstractFeatureReader<VariantContext, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)){
+        try (final VariantContextWriter writer = outputFile == null ? null : new VariantContextWriterBuilder().setOutputFile(outputFile).setOutputFileType(VariantContextWriterBuilder.OutputType.VCF).unsetOption(Options.INDEX_ON_THE_FLY).build();
+             final AbstractFeatureReader<VariantContext, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)) {
 
-            log.info(reader.getClass().getSimpleName() + " hasIndex " + reader.hasIndex());
-            if (writer != null){
+            log.info(reader.getClass().getSimpleName() + " isQueryable " + reader.hasIndex());
+            if (writer != null) {
                 log.info(writer.getClass().getSimpleName());
                 writer.writeHeader((VCFHeader) reader.getHeader());
             }
 
             final ProgressLogger pl = new ProgressLogger(log, 1000000);
             for (final VariantContext vc : reader.iterator()) {
-                if (writer != null){
+                if (writer != null) {
                     writer.add(vc);
                 }
                 pl.record(vc.getContig(), vc.getStart());

@@ -26,6 +26,7 @@ import java.util.List;
 
 /**
  * the basic interface that feature sources need to match
+ *
  * @param <T> a feature type
  */
 public interface FeatureReader<T extends Feature> extends Closeable {
@@ -33,14 +34,13 @@ public interface FeatureReader<T extends Feature> extends Closeable {
     /**
      * Query the reader for a particular interval corresponding to a contig and a 1-based closed
      *
-     * @param chr the contig to be queried
+     * @param chr   the contig to be queried
      * @param start the start of the interval (1-based) to be queried
-     * @param end the last base in the interval to be queried
+     * @param end   the last base in the interval to be queried
      * @return an iterator containing the features that at in the interval.
      * @throws IOException If there's a problem reading or if the reader is not queryable, e.g. if it doesn't have an index.
      */
     CloseableTribbleIterator<T> query(final String chr, final int start, final int end) throws IOException;
-
 
     /**
      * Query the reader for a particular interval corresponding to a contig and a 1-based closed
@@ -55,6 +55,7 @@ public interface FeatureReader<T extends Feature> extends Closeable {
 
     /**
      * Provides access to all the features in the reader
+     *
      * @return an iterator to all the features in the reader
      * @throws IOException If there's a problem reading.
      */
@@ -62,6 +63,7 @@ public interface FeatureReader<T extends Feature> extends Closeable {
 
     /**
      * Closes the reader
+     *
      * @throws IOException
      */
     @Override
@@ -69,20 +71,23 @@ public interface FeatureReader<T extends Feature> extends Closeable {
 
     /**
      * Provides the list of sequenceNames if known. Otherwise will return an empty list.
-     * @return  the list of sequenceNames if known. Otherwise will return an empty list.
+     *
+     * @return the list of sequenceNames if known. Otherwise will return an empty list.
      */
     List<String> getSequenceNames();
 
     /**
      * Provide access to the header of the reader
+     *
      * @return the header of the reader. May be null.
      */
     Object getHeader();
 
     /**
      * @return true if the reader has an index, which means that it can be queried.
+     * Must be implemented to return true if the implementation supports {@link #query(Locatable)}
      */
-    default boolean hasIndex() {
+    default boolean isQueryable() {
         return false;
     }
 }
