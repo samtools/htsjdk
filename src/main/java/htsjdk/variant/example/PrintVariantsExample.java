@@ -72,7 +72,7 @@ public final class PrintVariantsExample {
         try (final VariantContextWriter writer = outputFile == null ? null : new VariantContextWriterBuilder().setOutputFile(outputFile).setOutputFileType(VariantContextWriterBuilder.OutputType.VCF).unsetOption(Options.INDEX_ON_THE_FLY).build();
              final AbstractFeatureReader<VariantContext, LineIterator> reader = AbstractFeatureReader.getFeatureReader(inputFile.getAbsolutePath(), new VCFCodec(), false)) {
 
-            log.info(reader.getClass().getSimpleName() + " isQueryable " + reader.hasIndex());
+            log.info(reader.getClass().getSimpleName() + " hasIndex " + reader.hasIndex());
             if (writer != null) {
                 log.info(writer.getClass().getSimpleName());
                 writer.writeHeader((VCFHeader) reader.getHeader());
