@@ -85,10 +85,15 @@ public class SeekableMemoryStreamTest extends HtsjdkTest {
         Assert.assertEquals(copy, data);
     }
 
-    @Test(expectedExceptions = IOException.class)
+    @Test
     public void test_reset() throws IOException {
         SeekableMemoryStream stream = new SeekableMemoryStream("qwe".getBytes(), null);
         stream.mark(3);
+        // read fully
+        final int l = (int) stream.length();
+        Assert.assertEquals(stream.read(new byte[l]), l);
+        Assert.assertEquals(stream.read(), -1);
         stream.reset();
+        Assert.assertEquals(stream.read(new byte[l]), l);
     }
 }
