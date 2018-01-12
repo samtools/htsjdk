@@ -26,6 +26,7 @@
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.AsciiLineReader;
@@ -394,7 +395,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         Assert.assertEquals(originalEscapingNonQuoteOrBackslashInfoLine.getDescription(), "This other value has a \\n newline in it");
 
         // write the file out into a new copy
-        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", ".vcf");
+        final File firstCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes1.", IOUtil.VCF_FILE_EXTENSION);
         firstCopyVCFFile.deleteOnExit();
 
         final VariantContextWriter firstCopyWriter = new VariantContextWriterBuilder()
@@ -438,7 +439,7 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
 
 
         // write one more copy to make sure things don't get double escaped
-        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", ".vcf");
+        final File secondCopyVCFFile = File.createTempFile("testEscapeHeaderQuotes2.", IOUtil.VCF_FILE_EXTENSION);
         secondCopyVCFFile.deleteOnExit();
         final VariantContextWriter secondCopyWriter = new VariantContextWriterBuilder()
                 .setOutputFile(secondCopyVCFFile)

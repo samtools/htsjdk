@@ -151,10 +151,18 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     /**
      * Whether the reader has an index or not
      * Default implementation returns false
-     * @return
+     * @return false
      */
-    public boolean hasIndex(){
+    public boolean hasIndex() {
         return false;
+    }
+
+    /**
+     * @return true if the reader has an index, which means that it can be queried.
+     */
+    @Override
+    public boolean isQueryable(){
+        return hasIndex();
     }
 
     public static void setComponentMethods(ComponentMethods methods){

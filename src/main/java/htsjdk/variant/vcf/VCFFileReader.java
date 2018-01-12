@@ -2,10 +2,7 @@ package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Interval;
-import htsjdk.samtools.util.IntervalList;
+import htsjdk.samtools.util.*;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureReader;
@@ -20,16 +17,13 @@ import java.nio.file.Path;
 
 /**
  * Simplified interface for reading from VCF/BCF files.
- *
  */
-
 public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     private final FeatureReader<VariantContext> reader;
 
     /**
      * Returns true if the given file appears to be a BCF file.
-     *
      */
     public static boolean isBCF(final File file) {
         return isBCF(file.toPath());
@@ -39,12 +33,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Returns true if the given path appears to be a BCF file.
      */
     public static boolean isBCF(final Path path) {
-        return path.toUri().getRawPath().endsWith(".bcf");
+        return path.toUri().getRawPath().endsWith(IOUtil.BCF_FILE_EXTENSION);
     }
 
     /**
      * Returns the SAMSequenceDictionary from the provided VCF file.
-     *
      */
     public static SAMSequenceDictionary getSequenceDictionary(final File file) {
         try (final VCFFileReader vcfFileReader = new VCFFileReader(file, false)) {
@@ -54,7 +47,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     /**
      * Constructs a VCFFileReader that requires the index to be present.
-     *
      */
     public VCFFileReader(final File file) {
         this(file, true);
@@ -62,7 +54,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     /**
      * Constructs a VCFFileReader with a specified index.
-     *
      */
     public VCFFileReader(final File file, final File indexFile) {
         this(file, indexFile, true);
@@ -70,7 +61,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     /**
      * Allows construction of a VCFFileReader that will or will not assert the presence of an index as desired.
-     *
      */
     public VCFFileReader(final File file, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
@@ -80,7 +70,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
 
     /**
      * Allows construction of a VCFFileReader with a specified index file.
-     *
      */
     public VCFFileReader(final File file, final File indexFile, final boolean requireIndex) {
         // Note how we deal with type safety here, just casting to (FeatureCodec)
@@ -142,7 +131,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
                 requireIndex);
     }
 
-
     /**
      * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
@@ -155,7 +143,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     public static IntervalList toIntervalList(final Path path, final boolean includeFiltered) {
-        try(final VCFFileReader vcfReader = new VCFFileReader(path, false)) {
+        try (final VCFFileReader vcfReader = new VCFFileReader(path, false)) {
             return vcfReader.toIntervalList(includeFiltered);
         }
     }
@@ -166,7 +154,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param file
      * @return
-     *
      */
     public static IntervalList fromVcf(final File file) {
         return toIntervalList(file.toPath());
@@ -178,10 +165,9 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param file
      * @return
-     *
      */
     public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
-        return toIntervalList(file.toPath(),includeFiltered);
+        return toIntervalList(file.toPath(), includeFiltered);
     }
 
     /**
@@ -190,7 +176,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Will use a "END" tag in the info field as the end of the interval (if exists).
      *
      * @return an IntervalList constructed from input vcf
-     *
      */
     public IntervalList toIntervalList() {
         return toIntervalList(false);
@@ -218,7 +203,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         return list;
     }
 
-
     /**
      * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
@@ -226,13 +210,11 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
-     *
      */
     public static IntervalList fromVcf(final VCFFileReader vcf) {
         return fromVcf(vcf, false);
     }
 
-
     /**
      * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
@@ -240,7 +222,6 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
-     *
      */
     public static IntervalList fromVcf(final VCFFileReader vcf, final boolean includeFiltered) {
 
@@ -307,5 +288,15 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         } catch (final IOException ioe) {
             throw new TribbleException("Could not close a variant context feature reader.", ioe);
         }
+    }
+
+    /**
+     * A method to check if the reader is query-able, i.e. if a call to {@link VCFFileReader#query(String, int, int)}
+     * can be successful
+     *
+     * @return true if the reader can be queried, i.e. if the underlying Tribble reader is queryable.
+     */
+    public boolean isQueryable() {
+        return reader.isQueryable();
     }
 }

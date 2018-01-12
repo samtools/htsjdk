@@ -24,6 +24,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.CloseableTribbleIterator;
 import htsjdk.tribble.FeatureReader;
@@ -44,7 +45,7 @@ public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
         final VCF3Codec codec = new VCF3Codec();
         final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(SMALL_VCF.getAbsolutePath(), codec, false);
         final VCFHeader headerFromFile = (VCFHeader)reader.getHeader();
-        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", ".vcf.gz");
+        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
         final File tabix = new File(vcf.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
         vcf.deleteOnExit();
         tabix.deleteOnExit();

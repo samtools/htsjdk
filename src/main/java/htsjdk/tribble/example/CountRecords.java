@@ -188,9 +188,7 @@ public class CountRecords {
      */
     public static FeatureCodec getFeatureCodec(File featureFile) {
         // quickly determine the codec type
-        //if (featureFile.getName().endsWith(".vcf") || featureFile.getName().endsWith(".VCF") )
-        //    return new VCFCodec();
-        if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
+              if (featureFile.getName().endsWith(".bed") || featureFile.getName().endsWith(".BED") )
             return new BEDCodec();
         throw new IllegalArgumentException("Unable to determine correct file type based on the file name, for file -> " + featureFile);
     }
