@@ -58,4 +58,9 @@ public final class SynchronousLineReader implements LineReader{
     public void close() {
         CloserUtil.close(longLineBufferedReader);
     }
+    
+    @Override
+    public String toString() {
+        return "SynchronousLineReader";
+    }
 }

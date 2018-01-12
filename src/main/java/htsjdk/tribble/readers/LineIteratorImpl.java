@@ -31,4 +31,9 @@ public class LineIteratorImpl extends AbstractIterator<String> implements LineIt
     public void close() throws IOException {
         CloserUtil.close(lineReader);
     }
+    
+    @Override
+    public String toString() {
+        return "LineIteratorImpl(" + this.lineReader+")";
+    }
 }
