@@ -52,4 +52,32 @@ public interface ISeekableStreamFactory {
             return this.getStreamFor(path);
         }
     }
+
+    /**
+     * Open a stream from the input path, with support for {@link java.io.InputStream#mark(int)}.
+     *
+     * <p>Default implementation wraps the result of {@link #getStreamFor(String)} into a {@link MarkSeekableStream}.
+     *
+     * @param path a uri like String representing a resource to open.
+     * @return a stream opened path with mark support.
+     */
+    default SeekableStream getMarkSupportedStreamFor(String path) throws IOException {
+        return new MarkSeekableStream(this.getStreamFor(path));
+    }
+
+    /**
+     * Open a stream from the input path, with support for {@link java.io.InputStream#mark(int)} and applying the wrapper to the stream.
+     *
+     * <p>The wrapper allows applying operations directly to the byte stream so that things like caching, prefetching, or decryption
+     * can be done at the raw byte level.
+     *
+     * <p>Default implementation wraps the result of {@link #getStreamFor(String, Function)} into a {@link MarkSeekableStream}.
+     *
+     * @param path a uri like String representing a resource to open.
+     * @param wrapper a wrapper to apply to the stream
+     * @return a stream opened path with mark support.
+     */
+    default SeekableStream getMarkSupportedStreamFor(String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
+        return new MarkSeekableStream(this.getStreamFor(path, wrapper));
+    }
 }
