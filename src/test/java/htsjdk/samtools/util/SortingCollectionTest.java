@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2018 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -99,6 +99,27 @@ public class SortingCollectionTest extends HtsjdkTest {
         assertIteratorEqualsList(strings, sortingCollection.iterator());
         assertIteratorEqualsList(strings, sortingCollection.iterator());
         
+        sortingCollection.cleanup();
+        Assert.assertEquals(tmpDir().list().length, 0);
+    }
+
+    @Test
+    public void spillToDiskTest() {
+        final SortingCollection<String> sortingCollection = makeSortingCollection(10);
+        final String[] strings = new String[] {
+                "1", "2", "3"
+        };
+
+        for (String str : strings) {
+            sortingCollection.add(str);
+        }
+
+        Assert.assertEquals(tmpDir().list().length, 0);
+        sortingCollection.spillToDisk();
+        Assert.assertEquals(tmpDir().list().length, 1);
+
+        assertIteratorEqualsList(strings, sortingCollection.iterator());
+
         sortingCollection.cleanup();
         Assert.assertEquals(tmpDir().list().length, 0);
     }
