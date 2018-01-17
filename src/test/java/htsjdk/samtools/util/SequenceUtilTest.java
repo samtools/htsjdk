@@ -530,6 +530,30 @@ public class SequenceUtilTest extends HtsjdkTest {
         Assert.assertEquals(SequenceUtil.calculateSamNmTagFromCigar(rec),expectedNmValue);
     }
 
+    @Test(dataProvider="complementTestData")
+    public void testComplement(final String basesStr, final String expectedStr) {
+        final byte[] bases = basesStr.getBytes();
+        final byte[] expected = expectedStr.getBytes();
+        SequenceUtil.complement(bases);
+        Assert.assertEquals(bases, expected);
+    }
+    @Test(dataProvider="complementTestData")
+    public void testComplementRange(final String basesStr, final String expectedStr) {
+        final byte[] bases = basesStr.getBytes();
+        final byte[] expected = expectedStr.getBytes();
+        SequenceUtil.complement(bases);
+        Assert.assertEquals(bases, expected);
+        for (int i = 0; i < bases.length; i++) { // we try all valid ranges.
+            for (int len = 0; i + len < bases.length; len++) {
+                final byte[] input = bases.clone(); // need to make a copy as changes are in-situ.
+                final byte[] expectedOutput = bases.clone();
+                System.arraycopy(expected, i, expectedOutput, i, len);
+                SequenceUtil.complement(input, i, len);
+                Assert.assertEquals(input, expectedOutput);
+            }
+        }
+    }
+
     @Test
     public void testReverseComplement() {
         Assert.assertEquals(SequenceUtil.reverseComplement("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),"ZYXWVUASRQPONMLKJIHCFEDGBT");
@@ -618,5 +642,16 @@ public class SequenceUtilTest extends HtsjdkTest {
         final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
 
         Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
+    }
+
+    @DataProvider(name="complementTestData")
+    public Object[][] complementTestData() {
+        final List<Object[]> result = new ArrayList<>();
+        result.add(new Object[] { "ACTGCATAATACTAGCCCAT", "TGACGTATTATGATCGGGTA" });
+        result.add(new Object[] { "ACTGCATAATACTAGCCCA", "TGACGTATTATGATCGGGT" });
+        result.add(new Object[] { "", "" });
+        result.add(new Object[] { "ACTGCAXAANABT???CA---T", "TGACGTXTTNTBA???GT---A" });
+        result.add(new Object[] { "acTGCATaatacTAgccTA", "tgACGTAttatgATcggAT" });
+        return result.toArray(new Object[result.size()][]);
     }
 }
