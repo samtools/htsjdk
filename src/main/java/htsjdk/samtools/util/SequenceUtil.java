@@ -898,6 +898,33 @@ public class SequenceUtil {
         }
     }
 
+    /**
+     * Changes bases in a byte-array range into their complement base.
+     * <p>
+     *     Bases that are none of the standard nucleotides (a, t, c or g) will remain unchanged.
+     * </p>
+     * @param bases the target byte-array.
+     * @param offset position of the first bases to complement.
+     * @param len number of bases to complement.
+     * @throws NullPointerException if {@code bases} is {@code null} as long as {@code len} is greater than {@code 0}.
+     * @throws IndexOutOfBoundsException if the input values for {@code offset} and {@code len} lead
+     *    to range outside the valid {@code [0, bases.length)} index interval.
+     */
+    public static void complement(final byte[] bases, final int offset, final int len) {
+        final int lastIndex = offset + len - 1;
+        for (int i = offset; i <= lastIndex; ++i) {
+            bases[i] = complement(bases[i]);
+        }
+    }
+
+    /**
+     * Changes the bases in a byte-array into their complement.
+     * @param bases the target byte array.
+     */
+    public static void complement(final byte[] bases) {
+        complement(bases, 0, bases.length);
+    }
+
     public static String calculateMD5String(final byte[] data)
             throws NoSuchAlgorithmException {
         return SequenceUtil.calculateMD5String(data, 0, data.length);
