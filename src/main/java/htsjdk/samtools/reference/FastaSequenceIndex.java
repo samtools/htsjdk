@@ -225,7 +225,7 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
 /**
  * Hold an individual entry in a fasta sequence index file.
  */
-class FastaSequenceIndexEntry {
+public class FastaSequenceIndexEntry {
     private String contig;
     private long location;
     private long size;
