@@ -1448,32 +1448,35 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public String toStringDecodeGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                this.getGenotypes());
+                this.getGenotypes(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     private String toStringUnparsedGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData());
+                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     public String toStringWithoutGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()));
+                ParsingUtils.sortedString(this.getAttributes()),
+                String.join(",", commonInfo.getFilters()));
     }
 
     // protected basic manipulation routines
