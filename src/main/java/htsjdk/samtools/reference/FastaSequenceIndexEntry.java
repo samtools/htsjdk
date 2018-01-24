@@ -24,23 +24,6 @@
 
 package htsjdk.samtools.reference;
 
-// import htsjdk.samtools.SAMException;
-// import htsjdk.samtools.SAMSequenceRecord;
-// import htsjdk.samtools.util.IOUtil;
-
-// import java.io.File;
-// import java.io.FileNotFoundException;
-// import java.io.IOException;
-// import java.io.OutputStream;
-// import java.io.PrintStream;
-// import java.nio.file.Files;
-// import java.nio.file.Path;
-// import java.util.Iterator;
-// import java.util.LinkedHashMap;
-// import java.util.Map;
-// import java.util.Scanner;
-// import java.util.regex.MatchResult;
-
 /**
  * Hold an individual entry in a fasta sequence index file.
  */
