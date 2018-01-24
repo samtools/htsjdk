@@ -25,6 +25,7 @@ package htsjdk.tribble;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.Block;
 import htsjdk.tribble.index.Index;
@@ -327,7 +328,7 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
             if (hasBlockCompressedExtension(path)) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
-                final InputStream is = new GZIPInputStream(new BufferedInputStream(inputStream, 512000));
+                final InputStream is = new BlockCompressedInputStream(new BufferedInputStream(inputStream, 512000));
                 pbs = new PositionalBufferedStream(is, 1000);  // Small buffer as this is buffered already.
             } else {
                 pbs = new PositionalBufferedStream(inputStream, 512000);
