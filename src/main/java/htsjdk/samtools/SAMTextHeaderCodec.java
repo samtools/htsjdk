@@ -27,7 +27,6 @@ import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.samtools.util.Log;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -70,8 +69,6 @@ public class SAMTextHeaderCodec {
     private static final Pattern FIELD_SEPARATOR_RE = Pattern.compile(FIELD_SEPARATOR);
 
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
-
-    private static final Log log = Log.getInstance(AbstractSAMHeaderRecord.class);
 
     void setWriter(final BufferedWriter writer) {
         this.writer = writer;
@@ -236,9 +233,11 @@ public class SAMTextHeaderCodec {
         try {
             if (soString != null) SAMFileHeader.SortOrder.valueOf(soString);
         } catch (IllegalArgumentException e) {
-            reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
-                            " line has non-conforming SO tag value: "+ soString + ".",
-                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+//            if (!validationStringency.equals(ValidationStringency.STRICT)) {
+                reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
+                                               " line has non-conforming SO tag value: " + soString + ".",
+                                       SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
+//            }
         }
 
         final String goString = parsedHeaderLine.getValue(SAMFileHeader.GROUP_ORDER_TAG);
@@ -297,15 +296,7 @@ public class SAMTextHeaderCodec {
 
             // Parse the HeaderRecordType
             try {
-                String value = fields[0].substring(1);
-                if (!value.matches("[A-Z]+")) {
-                    log.warn("Warning! Your tag has improper case("
-                                     + fields[0].substring(1)
-                                     + "), reformatted to uppercase. "
-                                     + "NOTE: Your input file WASN'T modified.");
-                    value = value.toUpperCase();
-                }
-                mHeaderRecordType = HeaderRecordType.valueOf(value);
+                mHeaderRecordType = HeaderRecordType.valueOf(fields[0].substring(1));
             } catch (IllegalArgumentException e) {
                 reportErrorParsingLine("Unrecognized header record type", SAMValidationError.Type.UNRECOGNIZED_HEADER_TYPE, null);
                 mHeaderRecordType = null;

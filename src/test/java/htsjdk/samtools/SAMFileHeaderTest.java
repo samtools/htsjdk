@@ -58,9 +58,9 @@ public class SAMFileHeaderTest extends HtsjdkTest {
                             SAMFileHeader.SortOrder.unknown.name());
 
         header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, "cOoRdinate");
-        Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
+        Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.unknown);
         Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
-                            SAMFileHeader.SortOrder.coordinate.name());
+                            SAMFileHeader.SortOrder.unknown.name());
     }
 
     @Test
@@ -105,14 +105,22 @@ public class SAMFileHeaderTest extends HtsjdkTest {
                 "@sq\tSN:chrM\tLN:16571\n",
                 "@rg\tID:1\tSM:sample1\n",
                 "@pg\tID:1\tPN:A\n",
-                "@co\tVN:1.0\tSO:unsorted\n"
+                "@co\tVN:1.0\tSO:unsorted\n",
+                "@HD\tVN:1.0\tSO:UNSORTED\n",
+                "@HD\tVN:1.0\tSO:FALSE\n",
+                "@HD\tVN:1.0\tSO:COORDINATE\n",
+                "@HD\tVN:1.0\tSO:uNknOWn\n",
+                "@HD\tVN:1.0\tSO:cOoRdinate\n"
         };
         for (String s : testData) {
-            Assert.assertEquals(
-                    new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null)
-                                            .getValidationErrors()
-                                            .toString()
-                                            .contains("Unrecognized header record type"), false);
+            SAMFileHeader hd = new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null);
+            String validationErrors = hd.getValidationErrors().toString();
+            Assert.assertEquals(validationErrors.contains("Unrecognized header record type") ||
+                                       validationErrors.contains("@HD line has non-conforming SO tag value"),
+                                true);
+            Assert.assertEquals(hd.getSortOrder().toString().equals("unsorted") ||
+                                       hd.getSortOrder().toString().equals("unknown"),
+                                true);
         }
     }
 }

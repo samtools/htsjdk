@@ -259,20 +259,20 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
             if (so == null) {
                 sortOrder = SortOrder.unsorted;
             } else {
-                try {
-                    String modified = so;
-                    if (!SortOrder.valueOf(modified).toString().matches("[a-z]+")) {
-                        log.warn("Warning! Your sort order value has improper case("
-                                         + SortOrder.valueOf(so) + "), "
-                                         + "reformatted input data to lowercase. "
-                                         + "NOTE: Your input file WASN'T modified.");
-                        modified = modified.toLowerCase();
-                    }
-                    return SortOrder.valueOf(modified);
-                } catch (IllegalArgumentException e) {
+//                try {
+//                    return SortOrder.valueOf(so);
+//                } catch (IllegalArgumentException e) {
+//                    log.warn("Found non conforming header SO tag: " + so + ". Treating as 'unknown'.");
+//                    sortOrder = SortOrder.unknown;
+//                }
+//**********************
+                String modified = so;
+                if(Arrays.stream(SortOrder.values())
+                         .noneMatch((t)->t.name().equals(so))) {
+                    modified = "unknown";
                     log.warn("Found non conforming header SO tag: " + so + ". Treating as 'unknown'.");
-                    sortOrder = SortOrder.unknown;
                 }
+                return SortOrder.valueOf(modified);
             }
         }
         return sortOrder;

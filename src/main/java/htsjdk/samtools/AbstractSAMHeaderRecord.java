@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -70,13 +71,13 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
             mAttributes.remove(key);
         } else {
             String modified = value;
-            if ((key.equals("SO") || key.equals("GO")) && !modified.matches("[a-z]+")) {
-                log.warn("Warning! "
-                                 + key + " must be assigned with a value in lowercase instead of "
-                                 + value + ", reformatted input data to lowercase.");
-                modified = modified.toLowerCase();
+            if (key.equals("SO") && Arrays.stream(SAMFileHeader.SortOrder.values())
+                                          .noneMatch((t) -> t.name().equals(value))) {
+                modified = "unknown";
+                log.warn("Warning! Found non-conforming header " + key + " tag: " + value + ". Treating as 'unknown'.");
             }
             mAttributes.put(key, modified);
+//            mAttributes.put(key, value);
         }
     }
 
