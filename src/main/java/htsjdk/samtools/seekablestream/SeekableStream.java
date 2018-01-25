@@ -90,6 +90,28 @@ public abstract class SeekableStream extends InputStream {
     }
 
     /**
+     * Computes how many bytes are available in the stream.
+     *
+     * <p>If {@code eof() == true}, 0 bytes are available. Otherwise, available bytes are the
+     * difference between the length of the stream ({@link #length()}) and the current position
+     * ({@link #position()}.
+     *
+     * <p>Note: implementations might override to provide more reliable results.
+     *
+     * @return {@code 0} if the end of the file has been reached or the length cannot be determine;
+     * number of bytes remaining in the stream otherwise.
+     */
+    @Override
+    public int available() throws IOException {
+        if (eof()) {
+            return 0;
+        }
+        final long remaining = length() - position();
+        // the remaining might be negative if the length is not available (0)
+        return (remaining < 0) ? 0 : (int) remaining;
+    }
+
+    /**
      * Mark the current position of the stream.
      *
      * <p>Note: there is no limit for reading.

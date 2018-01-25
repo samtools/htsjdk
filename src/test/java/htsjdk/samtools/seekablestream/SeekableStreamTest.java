@@ -25,7 +25,7 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
-import org.junit.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Random;
@@ -63,6 +63,22 @@ public class SeekableStreamTest extends HtsjdkTest {
         Assert.assertEquals(stream.read(), -1);
         stream.reset();
         Assert.assertEquals(stream.read(), current);
+    }
+
+    @Test
+    public void testAvailable() throws Exception {
+        // initiate random stream
+        final int length = 100;
+        final SeekableStream stream = getRandomSeekableStream(length);
+        // check that available returns the length
+        Assert.assertEquals(stream.available(), length);
+        // consume the stream
+        for(int i = 1; i < length + 1; i++) {
+            Assert.assertNotEquals(stream.read(), -1);
+            Assert.assertEquals(stream.available(), length - i);
+        }
+        // once consumed, no stream available
+        Assert.assertEquals(stream.available(), 0);
     }
 
     private static SeekableStream getRandomSeekableStream(final int size) {
