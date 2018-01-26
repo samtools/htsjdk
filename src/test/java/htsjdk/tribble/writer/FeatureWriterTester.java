@@ -58,6 +58,26 @@ public abstract class FeatureWriterTester extends HtsjdkTest {
         };
     }
 
+    @DataProvider
+    public static Object[][] indexedBedFiles() {
+        final File testDirectory = new File("src/test/resources/htsjdk/tribble/bed");
+        return new Object[][] {
+                {new File(testDirectory,
+                        "NA12878.deletions.10kbp.het.gq99.hand_curated.hg19_fixed.bed")},
+                {new File(testDirectory, "Unigene.sample.bed")}
+        };
+    }
+
+    @DataProvider
+    public static Object[][] bgzipIndexedBedFiles() {
+        final File testDirectory = new File("src/test/resources/htsjdk/tribble/bed");
+        return new Object[][] {
+                {new File(testDirectory, "2featuresNoHeader.bed.gz")},
+                {new File(testDirectory, "2featuresWithHeader.bed.gz")},
+                {new File(testDirectory, "3featuresNoHeader.bed.gz")}
+        };
+    }
+
     /** NoOp OutputStream. */
     protected final static OutputStream NULL_OUTPUT_STREAM = new OutputStream() {
         @Override
