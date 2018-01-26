@@ -24,6 +24,8 @@
 
 package htsjdk.tribble.writer;
 
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.SimpleFeature;
@@ -32,9 +34,14 @@ import htsjdk.tribble.bed.BEDSimpleEncoder;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -46,13 +53,31 @@ public class FeatureWriterImplUnitTest extends FeatureWriterTester {
 
     @Test(dataProvider = "bedFiles")
     public void readWriteSimpleBed(final File bedFile) throws Exception {
-        testReadWrite(bedFile, (FeatureCodec) new BEDCodec(), (f) -> {
+        testReadWrite(bedFile, ".bed", (FeatureCodec) new BEDCodec(), (f) -> {
             try {
                 return new FeatureWriterImpl<>(new BEDSimpleEncoder(), new FileOutputStream(f));
             } catch (final FileNotFoundException e) {
                 throw new AssertionError(e.getMessage());
             }
         });
+    }
+
+    @Test(dataProvider = "bedFiles")
+    public void readWriteSimpleBedBgzip(final File bedFile) throws Exception {
+        // test the read-write
+        final File output = testReadWrite(bedFile, ".bed.gz", (FeatureCodec) new BEDCodec(), (f) -> {
+            try {
+                return new FeatureWriterImpl<>(new BEDSimpleEncoder(), new BlockCompressedOutputStream(new FileOutputStream(f), null));
+            } catch (final FileNotFoundException e) {
+                throw new AssertionError(e.getMessage());
+            }
+        });
+        // check that it is a valid bgzip
+        try (final InputStream fis = new BufferedInputStream(new FileInputStream(output))) {
+            BlockCompressedInputStream.isValidFile(fis);
+        }
+        // check that the output file is not defective
+        BlockCompressedInputStream.assertNonDefectiveFile(output);
     }
 
     @DataProvider

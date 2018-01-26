@@ -87,11 +87,13 @@ public abstract class FeatureWriterTester extends HtsjdkTest {
     /**
      * Tests that reading a file with FeatureReader and writing to a FeatureWriter provides the same
      * result.
+     * @return temporary path where the file was written.
      */
-    protected final static <T extends Feature> void testReadWrite(final File featureFile,
+    protected final static <T extends Feature> File testReadWrite(final File featureFile,
+            final String ext,
             final FeatureCodec<T, ?> featureCodec,
             final Function<File, FeatureWriter<T>> writerProvider) throws Exception {
-        final File tmpFile = File.createTempFile(featureFile.getName(), ".bed");
+        final File tmpFile = File.createTempFile(featureFile.getName(), ext);
 
         // read the original file and write it down
         final List<T> featureList = new ArrayList<>();
@@ -118,6 +120,8 @@ public abstract class FeatureWriterTester extends HtsjdkTest {
                 Assert.assertEquals(actual.getEnd(), feature.getEnd());
             }
         }
+
+        return tmpFile;
     }
 
     public final static <T extends Feature> void testWriteHeaderAndFeatures(

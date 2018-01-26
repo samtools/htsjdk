@@ -46,7 +46,7 @@ public class AsyncFeatureWriterTest extends FeatureWriterTester {
 
     @Test(dataProvider = "bedFiles")
     public void readWriteSimpleBed(final File bedFile) throws Exception {
-        testReadWrite(bedFile, (FeatureCodec) new BEDCodec(), (f) -> {
+        testReadWrite(bedFile, ".bed", (FeatureCodec) new BEDCodec(), (f) -> {
             try {
                 return new AsyncFeatureWriter<>(new FeatureWriterImpl<>(new BEDSimpleEncoder(), new FileOutputStream(f)));
             } catch (final FileNotFoundException e) {
