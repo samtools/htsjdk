@@ -90,15 +90,15 @@ public abstract class SeekableStream extends InputStream {
     }
 
     /**
-     * Computes how many bytes are available in the stream.
+     * The return value of this method is unusable for any purpose, and we are only implementing it
+     * because certain Java classes like {@link java.util.zip.GZIPInputStream} incorrectly rely on
+     * it to detect EOF
      *
      * <p>If {@code eof() == true}, 0 bytes are available. Otherwise, available bytes are the
      * difference between the length of the stream ({@link #length()}) and the current position
      * ({@link #position()}.
      *
-     * <p>Note: implementations might override to provide more reliable results.
-     *
-     * @return {@code 0} if the end of the file has been reached or the length cannot be determine;
+     * @return {@code 0} if the end of the file has been reached or the length cannot be determined;
      * number of bytes remaining in the stream otherwise.
      */
     @Override
