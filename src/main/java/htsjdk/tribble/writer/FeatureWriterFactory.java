@@ -66,6 +66,7 @@ public final class FeatureWriterFactory {
     // creates an MD5 for the output
     private boolean createMd5 = Defaults.CREATE_MD5;
     // if true, use BlockCompressedOutputStream; otherwise use CustomGzipOutputStream
+    // TODO - this should have a new Defaults (I believe)
     private boolean useBlockCompression = false;
 
     /**
@@ -176,6 +177,7 @@ public final class FeatureWriterFactory {
             final boolean blockCompressed = AbstractFeatureReader.hasBlockCompressedExtension(outputFileName);
             if (blockCompressed) {
                 outputStream = (useBlockCompression)
+                        // TODO - BGZIP should allow to set the location from a Path or String
                         ? BlockCompressedOutputStream.maybeBgzfWrapOutputStream(null, outputStream)
                         : new CustomGzipOutputStream(outputStream, Defaults.COMPRESSION_LEVEL);
             }
