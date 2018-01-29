@@ -25,11 +25,9 @@ package htsjdk.samtools;
 
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import htsjdk.samtools.util.Log;
 
 /**
  * Base class for the various concrete records in a SAM header, providing uniform
@@ -40,8 +38,6 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     public static final long serialVersionUID = 1L;
 
     private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
-    private static final Log log = Log.getInstance(AbstractSAMHeaderRecord.class);
-
 
     public String getAttribute(final String key) {
         return mAttributes.get(key);
@@ -70,14 +66,7 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
         if (value == null) {
             mAttributes.remove(key);
         } else {
-            String modified = value;
-            if (key.equals("SO") && Arrays.stream(SAMFileHeader.SortOrder.values())
-                                          .noneMatch((t) -> t.name().equals(value))) {
-                modified = "unknown";
-                log.warn("Warning! Found non-conforming header " + key + " tag: " + value + ". Treating as 'unknown'.");
-            }
-            mAttributes.put(key, modified);
-//            mAttributes.put(key, value);
+            mAttributes.put(key, value);
         }
     }
 

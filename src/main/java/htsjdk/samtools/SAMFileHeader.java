@@ -259,20 +259,12 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
             if (so == null) {
                 sortOrder = SortOrder.unsorted;
             } else {
-//                try {
-//                    return SortOrder.valueOf(so);
-//                } catch (IllegalArgumentException e) {
-//                    log.warn("Found non conforming header SO tag: " + so + ". Treating as 'unknown'.");
-//                    sortOrder = SortOrder.unknown;
-//                }
-//**********************
-                String modified = so;
-                if(Arrays.stream(SortOrder.values())
-                         .noneMatch((t)->t.name().equals(so))) {
-                    modified = "unknown";
-                    log.warn("Found non conforming header SO tag: " + so + ". Treating as 'unknown'.");
+                try {
+                    return SortOrder.valueOf(so);
+                } catch (IllegalArgumentException e) {
+                    log.warn("Found non-conforming header SO tag: " + so + ". Treating as 'unknown'.");
+                    sortOrder = SortOrder.unknown;
                 }
-                return SortOrder.valueOf(modified);
             }
         }
         return sortOrder;
@@ -332,12 +324,18 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
      */
     @Override
     public void setAttribute(final String key, final String value) {
+        String tempVal = value;
         if (key.equals(SORT_ORDER_TAG)) {
-            this.sortOrder = null;
+            try {
+                this.sortOrder = null;
+                tempVal = SortOrder.valueOf(value).toString();
+            } catch (IllegalArgumentException e) {
+                tempVal = "unknown";
+            }
         } else if (key.equals(GROUP_ORDER_TAG)) {
             this.groupOrder = null;
         }
-        super.setAttribute(key, value);
+        super.setAttribute(key, tempVal);
     }
 
     /**
