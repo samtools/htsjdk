@@ -2101,7 +2101,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (getCigar().getReadLength() != 0 && getCigar().getReadLength() != getReadLength()) {
+        if (getReadLength() != 0 && getCigar().getReadLength() != 0 && getCigar().getReadLength() != getReadLength()) {
             if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH,
                     "CIGAR covers " + getCigar().getReadLength() + " bases but the sequence is " + getReadLength() + " read bases ",
