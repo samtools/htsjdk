@@ -25,8 +25,8 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.BufferedLineReader;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.variant.variantcontext.Allele;
@@ -42,6 +42,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +53,15 @@ import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Tests for the integration between SeekableStream and GZIPInputStream.
+ * Tests for the integration between {@link SeekableStream} and {@link GZIPInputStream}.
+ *
+ * <p>{@link GZIPInputStream} has a confirmed bug, that it relies on the {@link InputStream#available()}
+ * method to detect end-of-file, which is unsafe given its contract (see the Oracle's bug tracker
+ * issue https://bugs.java.com/bugdatabase/view_bug.do?bug_id=7036144#).
+ *
+ * <p>Previous implementations of {@link SeekableStream} didn't implement {@link InputStream#available()},
+ * returning always 0 (see https://github.com/samtools/htsjdk/issues/898). This test confirm that if
+ * the method is not implemented, a premature end-of-file can be detected prematurely.
  *
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
@@ -69,7 +78,9 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
         final File tempFile = Files.createTempFile("test" + firstRecordAttributeLength + "_" + nSmallRecords, ".vcf.gz").toFile();
         try (final VariantContextWriter writer = new VariantContextWriterBuilder()
                 .setOptions(VariantContextWriterBuilder.NO_OPTIONS)
-                .setOutputFile(tempFile).build()) {
+                .setOutputFile(tempFile)
+                .setOutputFileType(VariantContextWriterBuilder.OutputType.BLOCK_COMPRESSED_VCF)
+                .build()) {
             writer.setHeader(createTestHeader()); // do not write the header
             writer.add(longRecord);
             for (int i = 2; i <= nSmallRecords + 1; i++) {
@@ -116,5 +127,19 @@ public class SeekableStreamGZIPinputStreamIntegrationTest extends HtsjdkTest {
             Assert.assertNull(reader.readLine());
             Assert.assertEquals(reader.getLineNumber(), nLines);
         }
+    }
+
+    @Test(dataProvider = "compressedVcfsToTest")
+    public void testConsistencyWithBgzip(final File input, final long nLines) throws Exception {
+        try (final InputStream gzIs = new GZIPInputStream(new SeekableFileStream(input));
+             final InputStream bgzIs = new BlockCompressedInputStream(input)) {
+            int bgz = bgzIs.read();
+            while (bgz != -1) {
+                Assert.assertEquals(gzIs.read(), bgz);
+                bgz = bgzIs.read();
+            }
+            Assert.assertEquals(gzIs.read(), bgz);
+        }
+
     }
 }
