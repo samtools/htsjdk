@@ -2,6 +2,7 @@ package htsjdk.samtools.cram.ref;
 
 import htsjdk.HtsjdkTest;
 import org.testng.Assert;
+import org.testng.SkipException;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -16,7 +17,11 @@ public class EnaRefServiceTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "testEnaRefServiceData")
-    public void testEnaRefServiceData(final String md5) throws IOException, EnaRefService.GaveUpException {
-        Assert.assertNotNull(new EnaRefService().getSequence(md5));
+    public void testEnaRefServiceData(final String md5) {
+        try {
+            Assert.assertNotNull(new EnaRefService().getSequence(md5));
+        } catch (final EnaRefService.GaveUpException e){
+            throw new SkipException("Skipping ENA reference service tests because of: ", e);
+        }
     }
 }
