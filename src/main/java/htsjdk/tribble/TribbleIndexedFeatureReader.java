@@ -322,13 +322,15 @@ public class TribbleIndexedFeatureReader<T extends Feature, SOURCE> extends Abst
          * @throws IOException
          */
         public WFIterator() throws IOException {
-            final InputStream inputStream = ParsingUtils.openInputStream(path, wrapper);
+            final InputStream inputStream = new BufferedInputStream(ParsingUtils.openInputStream(path, wrapper), 512000);
 
             final PositionalBufferedStream pbs;
             if (hasBlockCompressedExtension(path)) {
                 // Gzipped -- we need to buffer the GZIPInputStream methods as this class makes read() calls,
                 // and seekableStream does not support single byte reads
-                final InputStream is = new BlockCompressedInputStream(new BufferedInputStream(inputStream, 512000));
+                final InputStream is = BlockCompressedInputStream.isValidFile(inputStream) ?
+                        new BlockCompressedInputStream(inputStream) :
+                        new GZIPInputStream(inputStream);
                 pbs = new PositionalBufferedStream(is, 1000);  // Small buffer as this is buffered already.
             } else {
                 pbs = new PositionalBufferedStream(inputStream, 512000);
