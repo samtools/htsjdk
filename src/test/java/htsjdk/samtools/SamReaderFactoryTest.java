@@ -7,20 +7,18 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
-import java.net.URI;
+
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Paths;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -50,9 +48,10 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         final String inputFile = "compressed.bam";
         final int[] inflateCalls = {0}; //Note: using an array is a HACK to fool the compiler
         class MyInflater extends Inflater {
-            MyInflater(boolean gzipCompatible){
+            MyInflater(boolean gzipCompatible) {
                 super(gzipCompatible);
             }
+
             @Override
             public int inflate(byte[] b, int off, int len) throws java.util.zip.DataFormatException {
                 inflateCalls[0]++;
@@ -68,13 +67,14 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
         final File input = new File(TEST_DATA_DIR, inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault().inflaterFactory(myInflaterFactory).open(input)) {
-            for (final SAMRecord ignored : reader) { }
+            for (final SAMRecord ignored : reader) {
+            }
         }
         Assert.assertNotEquals(inflateCalls[0], 0, "Not using Inflater from InflateFactory on file : " + inputFile);
     }
 
     private int countRecordsInQueryInterval(final SamReader reader, final QueryInterval query) {
-        final SAMRecordIterator iter = reader.queryOverlapping(new QueryInterval[] { query });
+        final SAMRecordIterator iter = reader.queryOverlapping(new QueryInterval[]{query});
         int count = 0;
         while (iter.hasNext()) {
             iter.next();
@@ -97,22 +97,22 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     private static SeekableByteChannel addHeader(SeekableByteChannel input) {
         try {
-        int total = (int)input.size();
-        final String comment = "@HD\tVN:1.0  SO:unsorted\n" +
-            "@SQ\tSN:chr1\tLN:101\n" +
-            "@SQ\tSN:chr2\tLN:101\n" +
-            "@SQ\tSN:chr3\tLN:101\n" +
-            "@RG\tID:0\tSM:JP was here\n";
+            int total = (int) input.size();
+            final String comment = "@HD\tVN:1.0  SO:unsorted\n" +
+                    "@SQ\tSN:chr1\tLN:101\n" +
+                    "@SQ\tSN:chr2\tLN:101\n" +
+                    "@SQ\tSN:chr3\tLN:101\n" +
+                    "@RG\tID:0\tSM:JP was here\n";
 
             byte[] commentBuf = comment.getBytes();
-        ByteBuffer buf = ByteBuffer.allocate(total + commentBuf.length);
-        buf.put(commentBuf);
-        input.position(0);
-        while (input.read(buf)>0) {
-            // read until EOF
-        }
-        buf.flip();
-        return new SeekableByteChannelFromBuffer(buf);
+            ByteBuffer buf = ByteBuffer.allocate(total + commentBuf.length);
+            buf.put(commentBuf);
+            input.position(0);
+            while (input.read(buf) > 0) {
+                // read until EOF
+            }
+            buf.flip();
+            return new SeekableByteChannelFromBuffer(buf);
         } catch (IOException x) {
             throw new RuntimeException(x);
         }
@@ -122,9 +122,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testWrap() throws IOException {
         final Path input = Paths.get(TEST_DATA_DIR.getPath(), "noheader.sam");
         final SamReader wrappedReader =
-            SamReaderFactory
-                .makeDefault()
-                .open(input, SamReaderFactoryTest::addHeader, null);
+                SamReaderFactory
+                        .makeDefault()
+                        .open(input, SamReaderFactoryTest::addHeader, null);
         int records = countRecords(wrappedReader);
         Assert.assertEquals(10, records);
     }
@@ -134,7 +134,8 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void queryIntervalIssue76(final String sequenceName, final int start, final int end, final int expectedCount) throws IOException {
         final File input = new File(TEST_DATA_DIR, "issue76.bam");
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
-        final QueryInterval interval = new QueryInterval(reader.getFileHeader().getSequence(sequenceName).getSequenceIndex(), start, end);
+        final QueryInterval interval = new QueryInterval(
+                reader.getFileHeader().getSequence(sequenceName).getSequenceIndex(), start, end);
         Assert.assertEquals(countRecordsInQueryInterval(reader, interval), expectedCount);
         reader.close();
     }
@@ -173,7 +174,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         @Override
         public BAMRecord createBAMRecord(final SAMFileHeader header, final int referenceSequenceIndex, final int alignmentStart, final short readNameLength, final short mappingQuality, final int indexingBin, final int cigarLen, final int flags, final int readLen, final int mateReferenceSequenceIndex, final int mateAlignmentStart, final int insertSize, final byte[] variableLengthBlock) {
             ++bamRecordsCreated;
-            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality, indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex, mateAlignmentStart, insertSize, variableLengthBlock);
+            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality,
+                                         indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex,
+                                         mateAlignmentStart, insertSize, variableLengthBlock);
         }
     }
 
@@ -192,11 +195,12 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         reader.close();
 
         Assert.assertTrue(i > 0);
-        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz")) Assert.assertEquals(recordFactory.samRecordsCreated, i);
+        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz"))
+            Assert.assertEquals(recordFactory.samRecordsCreated, i);
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(recordFactory.bamRecordsCreated, i);
     }
 
-    @Test(expectedExceptions=IllegalStateException.class)
+    @Test(expectedExceptions = IllegalStateException.class)
     public void samRecordFactoryNullHeaderBAMTest() {
         final SAMRecordFactory recordFactory = new DefaultSAMRecordFactory();
         recordFactory.createBAMRecord(
@@ -294,7 +298,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         reader.hasIndex();
         reader.indexing().hasBrowseableIndex();
         reader.close();
-        
+
         /* Ensure all tests have read the same records in the same order or, if this is the first test, set it as the template. */
         observedHeaders.add(fileHeader);
         observedRecordOrdering.add(slurped);
@@ -395,50 +399,52 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     @Test
     public void customReaderFactoryTest() throws IOException {
         try {
-          CustomReaderFactory.setInstance(new CustomReaderFactory(
-              "https://www.googleapis.com/genomics/v1beta/reads/," +
-              "htsjdk.samtools.SamReaderFactoryTest$TestReaderFactory"));
-          final SamReader reader = SamReaderFactory.makeDefault().open(
-              SamInputResource.of(
-              "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam"));
-          int i = 0;
-          for (@SuppressWarnings("unused") final SAMRecord ignored : reader) {
-              ++i;
-          }
-          reader.close();
-  
-          Assert.assertTrue(i > 0);
+            CustomReaderFactory.setInstance(new CustomReaderFactory(
+                    "https://www.googleapis.com/genomics/v1beta/reads/," +
+                            "htsjdk.samtools.SamReaderFactoryTest$TestReaderFactory"));
+            final SamReader reader = SamReaderFactory.makeDefault().open(
+                    SamInputResource.of(
+                            "https://www.googleapis.com/genomics/v1beta/reads/?uncompressed.sam"));
+            int i = 0;
+            for (@SuppressWarnings("unused") final SAMRecord ignored : reader) {
+                ++i;
+            }
+            reader.close();
+
+            Assert.assertTrue(i > 0);
         } finally {
-          CustomReaderFactory.resetToDefaultInstance();
+            CustomReaderFactory.resetToDefaultInstance();
         }
     }
-    
+
     public static class TestReaderFactory implements CustomReaderFactory.ICustomReaderFactory {
-      @Override
-      public SamReader open(URL url) {
-        final File file = new File(TEST_DATA_DIR, url.getQuery());
-        LOG.info("Opening customr reader for " + file.toString());
-        return SamReaderFactory.makeDefault().open(file);
-      }
+        @Override
+        public SamReader open(URL url) {
+            final File file = new File(TEST_DATA_DIR, url.getQuery());
+            LOG.info("Opening customr reader for " + file.toString());
+            return SamReaderFactory.makeDefault().open(file);
+        }
     }
-    
+
     @Test
     public void inputResourceFromStringTest() throws IOException {
-      Assert.assertEquals(SamInputResource.of("http://test.url").data().type(),
-          InputResource.Type.URL);
-      Assert.assertEquals(SamInputResource.of("https://test.url").data().type(),
-          InputResource.Type.URL);
-      Assert.assertEquals(SamInputResource.of("ftp://test.url").data().type(),
-          InputResource.Type.URL);
-      Assert.assertEquals(SamInputResource.of("/a/b/c").data().type(),
-          InputResource.Type.FILE);
+        Assert.assertEquals(SamInputResource.of("http://test.url").data().type(),
+                            InputResource.Type.URL);
+        Assert.assertEquals(SamInputResource.of("https://test.url").data().type(),
+                            InputResource.Type.URL);
+        Assert.assertEquals(SamInputResource.of("ftp://test.url").data().type(),
+                            InputResource.Type.URL);
+        Assert.assertEquals(SamInputResource.of("/a/b/c").data().type(),
+                            InputResource.Type.FILE);
     }
 
     @Test
     public void testCRAMReaderFromURL() throws IOException {
         // get a CRAM reader with an index from a URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(indexURL);},
+                (cramURL, indexURL) -> {
+                    return SamInputResource.of(cramURL).index(indexURL);
+                },
                 true,
                 3);
     }
@@ -453,8 +459,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                         return SamInputResource
                                 .of(streamFactory.getStreamFor(cramURL))
                                 .index(streamFactory.getStreamFor(indexURL));
-                    }
-                    catch (IOException e) {
+                    } catch (IOException e) {
                         throw new RuntimeIOException(e);
                     }
                 },
@@ -466,18 +471,22 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testCRAMReaderFromURLNoIndexFile() throws IOException {
         // get just a CRAM reader (no index) from an URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL); },
-            false,
-            11);
+                (cramURL, indexURL) -> {
+                    return SamInputResource.of(cramURL);
+                },
+                false,
+                11);
     }
 
-    @Test(expectedExceptions=RuntimeIOException.class)
+    @Test(expectedExceptions = RuntimeIOException.class)
     public void testCRAMReaderFromURLBadIndexFile() throws IOException {
         // deliberately specify a bad index file to ensure we get an IOException
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> { return SamInputResource.of(cramURL).index(new File("nonexistent.bai")); },
-            true,
-            3);
+                (cramURL, indexURL) -> {
+                    return SamInputResource.of(cramURL).index(new File("nonexistent.bai"));
+                },
+                true,
+                3);
     }
 
     private void getCRAMReaderFromInputResource(
@@ -495,8 +504,8 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         final SamReader reader = factory.open(getInputResource.apply(cramURL, indexURL));
 
         int count = hasIndex ?
-            countRecordsInQueryInterval(reader, new QueryInterval(1, 10, 1000)) :
-            countRecords(reader);
+                countRecordsInQueryInterval(reader, new QueryInterval(1, 10, 1000)) :
+                countRecords(reader);
         Assert.assertEquals(count, expectedCount);
     }
 
@@ -523,7 +532,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         Assert.assertEquals(countRecords(reader), 10);
     }
 
-    @Test(expectedExceptions=SAMFormatException.class)
+    @Test(expectedExceptions = SAMFormatException.class)
     public void testSamReaderFromMalformedSeekableStream() throws IOException {
         // use a bogus (.bai file) to force SamReaderFactory to fall through to the
         // fallback code that assumes a SAM File when it can't determine the
@@ -536,4 +545,57 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         countRecords(reader);
     }
 
+    @Test(singleThreaded = true, groups="unix")
+    public void testWriteAndReadFromPipe() throws IOException, NoSuchFieldException, InterruptedException, ExecutionException, TimeoutException {
+        final File fifo = File.createTempFile("fifo", "");
+        Assert.assertTrue(fifo.delete());
+        fifo.deleteOnExit();
+        final Process exec = Runtime.getRuntime().exec(new String[]{"mkfifo", fifo.getAbsolutePath()});
+        exec.waitFor(1, TimeUnit.MINUTES);
+        Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
+
+        ExecutorService executor = null;
+        try {
+            executor = Executors.newFixedThreadPool(2);
+            final File input = new File(TEST_DATA_DIR, "example.bam");
+            final Future<Integer> writing = executor.submit(writeToPipe(fifo, input));
+            final Future<Integer> reading = executor.submit(readFromPipe(fifo));
+            Assert.assertEquals(writing.get(1, TimeUnit.MINUTES), reading.get(1, TimeUnit.MINUTES));
+        } finally {
+            if (executor != null) {
+                executor.shutdownNow();
+            }
+        }
+    }
+
+    private static Callable<Integer> readFromPipe(File fifo) {
+        return () -> {
+            try (final SamReader reader = SamReaderFactory.makeDefault().open(fifo)) {
+                return (int)reader.iterator().stream().count();
+            } catch (Exception e) {
+                Assert.fail("failed during reading from pipe", e);
+            }
+            throw new RuntimeException("Shouldn't actually reach here but the compiler was confused");
+        };
+    }
+
+    private static Callable<Integer> writeToPipe(File fifo, File input) {
+        return () -> {
+            int written = 0;
+            try {
+                try (final SamReader reader = SamReaderFactory.makeDefault().open(input);
+                     final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(false)
+                             .setCreateMd5File(false)
+                             .makeBAMWriter(reader.getFileHeader(), true, fifo)) {
+                    for (SAMRecord read : reader) {
+                        writer.addAlignment(read);
+                        written++;
+                    }
+                }
+            } catch (final Exception e) {
+                Assert.fail("Failed during writing to pipe", e);
+            }
+            return written;
+        };
+    }
 }

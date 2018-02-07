@@ -33,17 +33,12 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -90,7 +85,17 @@ public class SamInputResource {
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final File file) { return new SamInputResource(new FileInputResource(file)); }
+    public static SamInputResource of(final File file) {
+        if(file.isFile()) {
+            return new SamInputResource(new FileInputResource(file));
+        } else {
+            try {
+                return new SamInputResource(new InputStreamInputResource(new FileInputStream(file)));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+    }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
