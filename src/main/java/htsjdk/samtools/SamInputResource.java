@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -86,15 +87,7 @@ public class SamInputResource {
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final File file) {
-        if(file.isFile()) {
-            return new SamInputResource(new FileInputResource(file));
-        } else {
-            try {
-                return new SamInputResource(new InputStreamInputResource(new FileInputStream(file)));
-            } catch (FileNotFoundException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
+        return new SamInputResource(new FileInputResource(file));
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
@@ -274,12 +267,27 @@ class FileInputResource extends InputResource {
 
     @Override
     public SeekableStream asUnbufferedSeekableStream() {
-        return lazySeekableStream.get();
+        //if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
+        //if it not a regular file than we won't be able to seek on it, so return null
+        if(!fileResource.exists() || fileResource.isFile()) {
+            return lazySeekableStream.get();
+        } else {
+            return null;
+        }
     }
 
     @Override
     public InputStream asUnbufferedInputStream() {
-        return asUnbufferedSeekableStream();
+        final SeekableStream seekableStream = asUnbufferedSeekableStream();
+        if( seekableStream != null) {
+            return seekableStream;
+        } else {
+            try {
+                return new FileInputStream(fileResource);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
     }
 
     @Override
@@ -340,12 +348,25 @@ class PathInputResource extends InputResource {
 
     @Override
     public SeekableStream asUnbufferedSeekableStream() {
-        return lazySeekableStream.get();
+        if( !Files.exists(pathResource) || Files.isRegularFile(pathResource)) {
+            return lazySeekableStream.get();
+        } else {
+            return null;
+        }
     }
 
     @Override
     public InputStream asUnbufferedInputStream() {
-        return asUnbufferedSeekableStream();
+        final SeekableStream seekableStream = asUnbufferedSeekableStream();
+        if( seekableStream != null){
+           return seekableStream;
+        } else {
+            try {
+                return Files.newInputStream(pathResource);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
     }
 
     @Override

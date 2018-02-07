@@ -67,8 +67,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
         final File input = new File(TEST_DATA_DIR, inputFile);
         try (final SamReader reader = SamReaderFactory.makeDefault().inflaterFactory(myInflaterFactory).open(input)) {
-            for (final SAMRecord ignored : reader) {
-            }
+            for (final SAMRecord ignored : reader) { }
         }
         Assert.assertNotEquals(inflateCalls[0], 0, "Not using Inflater from InflateFactory on file : " + inputFile);
     }
@@ -174,9 +173,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         @Override
         public BAMRecord createBAMRecord(final SAMFileHeader header, final int referenceSequenceIndex, final int alignmentStart, final short readNameLength, final short mappingQuality, final int indexingBin, final int cigarLen, final int flags, final int readLen, final int mateReferenceSequenceIndex, final int mateAlignmentStart, final int insertSize, final byte[] variableLengthBlock) {
             ++bamRecordsCreated;
-            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality,
-                                         indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex,
-                                         mateAlignmentStart, insertSize, variableLengthBlock);
+            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality, indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex, mateAlignmentStart, insertSize, variableLengthBlock);
         }
     }
 
@@ -195,9 +192,11 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         reader.close();
 
         Assert.assertTrue(i > 0);
-        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz"))
+        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz")) {
             Assert.assertEquals(recordFactory.samRecordsCreated, i);
-        else if (inputFile.endsWith(".bam")) Assert.assertEquals(recordFactory.bamRecordsCreated, i);
+        } else if (inputFile.endsWith(".bam")) {
+            Assert.assertEquals(recordFactory.bamRecordsCreated, i);
+        }
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
@@ -442,9 +441,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testCRAMReaderFromURL() throws IOException {
         // get a CRAM reader with an index from a URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> {
-                    return SamInputResource.of(cramURL).index(indexURL);
-                },
+                (cramURL, indexURL) -> SamInputResource.of(cramURL).index(indexURL),
                 true,
                 3);
     }
@@ -471,9 +468,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testCRAMReaderFromURLNoIndexFile() throws IOException {
         // get just a CRAM reader (no index) from an URL-backed resource
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> {
-                    return SamInputResource.of(cramURL);
-                },
+                (cramURL, indexURL) -> SamInputResource.of(cramURL),
                 false,
                 11);
     }
@@ -482,9 +477,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     public void testCRAMReaderFromURLBadIndexFile() throws IOException {
         // deliberately specify a bad index file to ensure we get an IOException
         getCRAMReaderFromInputResource(
-                (cramURL, indexURL) -> {
-                    return SamInputResource.of(cramURL).index(new File("nonexistent.bai"));
-                },
+                (cramURL, indexURL) -> SamInputResource.of(cramURL).index(new File("nonexistent.bai")),
                 true,
                 3);
     }
@@ -546,7 +539,11 @@ public class SamReaderFactoryTest extends HtsjdkTest {
     }
 
     @Test(singleThreaded = true, groups="unix")
-    public void testWriteAndReadFromPipe() throws IOException, NoSuchFieldException, InterruptedException, ExecutionException, TimeoutException {
+    public void testWriteAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        writeAndReadFromPipe();
+    }
+
+    private static void writeAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final File fifo = File.createTempFile("fifo", "");
         Assert.assertTrue(fifo.delete());
         fifo.deleteOnExit();
