@@ -7,11 +7,6 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStreamFactory;
 import htsjdk.samtools.util.*;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Paths;
-import java.util.function.Function;
 import htsjdk.samtools.util.zip.InflaterFactory;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -23,12 +18,17 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.zip.Inflater;
 
 public class SamReaderFactoryTest extends HtsjdkTest {
@@ -536,4 +536,57 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         countRecords(reader);
     }
 
+    @Test(singleThreaded = true, groups="unix")
+    public void testWriteAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final File fifo = File.createTempFile("fifo", "");
+        Assert.assertTrue(fifo.delete());
+        fifo.deleteOnExit();
+        final Process exec = Runtime.getRuntime().exec(new String[]{"mkfifo", fifo.getAbsolutePath()});
+        exec.waitFor(1, TimeUnit.MINUTES);
+        Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
+
+        ExecutorService executor = null;
+        try {
+            executor = Executors.newFixedThreadPool(2);
+            final File input = new File(TEST_DATA_DIR, "example.bam");
+            final Future<Integer> writing = executor.submit(writeToPipe(fifo, input));
+            final Future<Integer> reading = executor.submit(readFromPipe(fifo));
+            Assert.assertEquals(writing.get(1, TimeUnit.MINUTES), reading.get(1, TimeUnit.MINUTES));
+        } finally {
+            if (executor != null) {
+                executor.shutdownNow();
+            }
+        }
+    }
+
+    private static Callable<Integer> readFromPipe(File fifo) {
+        return () -> {
+            try (final SamReader reader = SamReaderFactory.makeDefault().open(fifo)) {
+                return (int)reader.iterator().stream().count();
+            } catch (Exception e) {
+                Assert.fail("failed during reading from pipe", e);
+            }
+            throw new RuntimeException("Shouldn't actually reach here but the compiler was confused");
+        };
+    }
+
+    private static Callable<Integer> writeToPipe(File fifo, File input) {
+        return () -> {
+            int written = 0;
+            try {
+                try (final SamReader reader = SamReaderFactory.makeDefault().open(input);
+                     final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(false)
+                             .setCreateMd5File(false)
+                             .makeBAMWriter(reader.getFileHeader(), true, fifo)) {
+                    for (SAMRecord read : reader) {
+                        writer.addAlignment(read);
+                        written++;
+                    }
+                }
+            } catch (final Exception e) {
+                Assert.fail("Failed during writing to pipe", e);
+            }
+            return written;
+        };
+    }
 }
