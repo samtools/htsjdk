@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.zip.Inflater;
 
 public class SamReaderFactoryTest extends HtsjdkTest {
@@ -538,12 +539,26 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         countRecords(reader);
     }
 
-    @Test(singleThreaded = true, groups="unix")
-    public void testWriteAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        writeAndReadFromPipe();
+
+
+    @DataProvider
+    public static Object[][] getPipeOpeners() {
+        final SamReaderFactory readerFactory = SamReaderFactory.makeDefault();
+        final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory().setCreateIndex(
+                false)
+                .setCreateMd5File(false);
+        return new Object[][]{
+                {(Function<String, SamReader>) (String path) -> readerFactory.open(new File(path)),
+                        (BiFunction<String, SAMFileHeader, SAMFileWriter>) (String path, SAMFileHeader header) -> writerFactory.makeBAMWriter(header, true, new File(path) )
+                },
+                {(Function<String, SamReader>) (String path) -> readerFactory.open(Paths.get(path)),
+                        (BiFunction<String, SAMFileHeader, SAMFileWriter>) (String path, SAMFileHeader header) -> writerFactory.makeBAMWriter(header, true, Paths.get(path) )
+                }
+        };
     }
 
-    private static void writeAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+    @Test(singleThreaded = true, groups="unix", dataProvider = "getPipeOpeners")
+    public void testWriteAndReadFromPipe(Function<String,SamReader> readerOpener, BiFunction<String, SAMFileHeader, SAMFileWriter> writerOpener) throws IOException, InterruptedException, ExecutionException, TimeoutException {
         final File fifo = File.createTempFile("fifo", "");
         Assert.assertTrue(fifo.delete());
         fifo.deleteOnExit();
@@ -552,11 +567,12 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
 
         ExecutorService executor = null;
+        String fifoPath = fifo.toString();
         try {
             executor = Executors.newFixedThreadPool(2);
             final File input = new File(TEST_DATA_DIR, "example.bam");
-            final Future<Integer> writing = executor.submit(writeToPipe(fifo, input));
-            final Future<Integer> reading = executor.submit(readFromPipe(fifo));
+            final Future<Integer> writing = executor.submit(writeToPipe(fifoPath, writerOpener, input));
+            final Future<Integer> reading = executor.submit(readFromPipe(fifoPath, readerOpener));
             Assert.assertEquals(writing.get(1, TimeUnit.MINUTES), reading.get(1, TimeUnit.MINUTES));
         } finally {
             if (executor != null) {
@@ -565,9 +581,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
-    private static Callable<Integer> readFromPipe(File fifo) {
+    private static Callable<Integer> readFromPipe(String fifoPath, Function<String,SamReader> opener) {
         return () -> {
-            try (final SamReader reader = SamReaderFactory.makeDefault().open(fifo)) {
+            try (final SamReader reader = opener.apply(fifoPath)) {
                 return (int)reader.iterator().stream().count();
             } catch (Exception e) {
                 Assert.fail("failed during reading from pipe", e);
@@ -576,14 +592,12 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         };
     }
 
-    private static Callable<Integer> writeToPipe(File fifo, File input) {
+    private static Callable<Integer> writeToPipe(String fifoPath, BiFunction<String, SAMFileHeader, SAMFileWriter> opener, File input) {
         return () -> {
             int written = 0;
             try {
                 try (final SamReader reader = SamReaderFactory.makeDefault().open(input);
-                     final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(false)
-                             .setCreateMd5File(false)
-                             .makeBAMWriter(reader.getFileHeader(), true, fifo)) {
+                     final SAMFileWriter writer = opener.apply(fifoPath, reader.getFileHeader())) {
                     for (SAMRecord read : reader) {
                         writer.addAlignment(read);
                         written++;
