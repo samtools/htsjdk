@@ -268,7 +268,7 @@ class FileInputResource extends InputResource {
     public SeekableStream asUnbufferedSeekableStream() {
         //if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
         //if it not a regular file than we won't be able to seek on it, so return null
-        if(!fileResource.exists() || fileResource.isFile()) {
+        if (!fileResource.exists() || fileResource.isFile()) {
             return lazySeekableStream.get();
         } else {
             return null;
@@ -278,7 +278,7 @@ class FileInputResource extends InputResource {
     @Override
     public InputStream asUnbufferedInputStream() {
         final SeekableStream seekableStream = asUnbufferedSeekableStream();
-        if( seekableStream != null) {
+        if (seekableStream != null) {
             return seekableStream;
         } else {
             try {
@@ -347,7 +347,7 @@ class PathInputResource extends InputResource {
 
     @Override
     public SeekableStream asUnbufferedSeekableStream() {
-            return lazySeekableStream.get();
+        return lazySeekableStream.get();
     }
 
     @Override
