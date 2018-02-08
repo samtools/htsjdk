@@ -33,17 +33,12 @@ import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Lazy;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -90,7 +85,9 @@ public class SamInputResource {
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
-    public static SamInputResource of(final File file) { return new SamInputResource(new FileInputResource(file)); }
+    public static SamInputResource of(final File file) {
+        return new SamInputResource(new FileInputResource(file));
+    }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
@@ -269,12 +266,27 @@ class FileInputResource extends InputResource {
 
     @Override
     public SeekableStream asUnbufferedSeekableStream() {
-        return lazySeekableStream.get();
+        //if the file doesn't exist, the try to open the stream anyway because users might be expecting the exception
+        //if it not a regular file than we won't be able to seek on it, so return null
+        if (!fileResource.exists() || fileResource.isFile()) {
+            return lazySeekableStream.get();
+        } else {
+            return null;
+        }
     }
 
     @Override
     public InputStream asUnbufferedInputStream() {
-        return asUnbufferedSeekableStream();
+        final SeekableStream seekableStream = asUnbufferedSeekableStream();
+        if (seekableStream != null) {
+            return seekableStream;
+        } else {
+            try {
+                return new FileInputStream(fileResource);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
     }
 
     @Override
