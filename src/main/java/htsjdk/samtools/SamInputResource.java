@@ -296,7 +296,84 @@ class FileInputResource extends InputResource {
     }
 }
 
+
+
 class PathInputResource extends InputResource {
+    static class AvailableFixingWrapperStream extends InputStream {
+
+        private Integer nextByte = null;
+        private final InputStream inputStream;
+
+        AvailableFixingWrapperStream(InputStream inputStream){
+            this.inputStream = inputStream;
+        }
+
+        @Override
+        public int read() throws IOException {
+            if(nextByte != null){
+                final int tmp = nextByte;
+                nextByte = null;
+                return tmp;
+            } else {
+                return inputStream.read();
+            }
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            if(nextByte != null){
+                b[0] = (byte)(int)nextByte;
+                nextByte = null;
+                return 1 + read(b, 1, b.length -1);
+            } else {
+                return inputStream.read(b);
+            }
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            if( nextByte != null){
+                b[0] = (byte)(int)nextByte;
+                nextByte = null;
+                return 1 + inputStream.read(b, off+1, len -1);
+            } else {
+                return inputStream.read(b, off, len);
+            }
+        }
+
+        @Override
+        public long skip(long n) throws IOException {
+            if( nextByte != null){
+
+            }
+            return inputStream.skip(n);
+        }
+
+        @Override
+        public int available() {
+            read();
+        }
+
+        @Override
+        public void close() throws IOException {
+            inputStream.close();
+        }
+
+        @Override
+        public void mark(int readlimit) {
+            inputStream.mark(readlimit);
+        }
+
+        @Override
+        public void reset() throws IOException {
+            inputStream.reset();
+        }
+
+        @Override
+        public boolean markSupported() {
+            return inputStream.markSupported();
+        }
+    }
 
     final Path pathResource;
     final Function<SeekableByteChannel, SeekableByteChannel> wrapper;
@@ -362,7 +439,7 @@ class PathInputResource extends InputResource {
            return seekableStream;
         } else {
             try {
-                return Files.newInputStream(pathResource);
+                return new AvailableFixingWrapperStream(Files.newInputStream(pathResource));
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
