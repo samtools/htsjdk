@@ -377,6 +377,17 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
+    public void unsafeSetReferenceNameAssumingAlreadyInterned(final String referenceName) {
+        if (NO_ALIGNMENT_REFERENCE_NAME.equals(referenceName)) {
+            mReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
+            mReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
+        }
+        else {
+            mReferenceName = referenceName;
+            mReferenceIndex = null;
+        }
+    }
+
     /**
      * Returns the reference index for this record.
      *
@@ -462,6 +473,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
     }
 
+    public void unsafeSetMateReferenceNameAssumingAlreadyInterned(final String mateReferenceName){
+        if (NO_ALIGNMENT_REFERENCE_NAME.equals(mateReferenceName)) {
+            mMateReferenceName = NO_ALIGNMENT_REFERENCE_NAME;
+            mMateReferenceIndex = NO_ALIGNMENT_REFERENCE_INDEX;
+        }
+        else {
+            mMateReferenceName = mateReferenceName;
+            mMateReferenceIndex = null;
+        }
+    }
     /**
      * Returns the mate reference index for this record.
      *
