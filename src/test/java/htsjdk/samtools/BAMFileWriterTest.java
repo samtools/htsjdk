@@ -25,7 +25,6 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -35,6 +34,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Test that BAM writing doesn't blow up.  For presorted writing, the resulting BAM file is read and contents are
@@ -60,50 +61,57 @@ public class BAMFileWriterTest extends HtsjdkTest {
      * @param presorted           If true, samText is in the order specified by sortOrder
      */
     private void testHelper(final SAMRecordSetBuilder samRecordSetBuilder, final SAMFileHeader.SortOrder sortOrder, final boolean presorted) throws Exception {
-        final SamReader samReader = samRecordSetBuilder.getSamReader();
         final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
         bamFile.deleteOnExit();
-        samReader.getFileHeader().setSortOrder(sortOrder);
-        final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(samReader.getFileHeader(), presorted, bamFile);
-        CloseableIterator<SAMRecord> it = samReader.iterator();
-        while (it.hasNext()) {
-            bamWriter.addAlignment(it.next());
-        }
-        bamWriter.close();
-        it.close();
-        samReader.close();
 
+        try (final SamReader samReader = samRecordSetBuilder.getSamReader()) {
+            samReader.getFileHeader().setSortOrder(sortOrder);
+            try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(samReader.getFileHeader(), presorted, bamFile);
+                CloseableIterator<SAMRecord> it = samReader.iterator()){
+                while (it.hasNext()) {
+                    bamWriter.addAlignment(it.next());
+                }
+            }
+        }
         if (presorted) { // If SAM text input was presorted, then we can compare SAM object to BAM object
             verifyBAMFile(samRecordSetBuilder, bamFile);
         }
     }
 
-    private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) {
+    private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) throws IOException {
+        try (
+                final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
+                final SamReader samReader = samRecordSetBuilder.getSamReader()
+        ) {
 
-        final SamReader bamReader = SamReaderFactory.makeDefault().open(bamFile);
-        final SamReader samReader = samRecordSetBuilder.getSamReader();
-        samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
-        Assert.assertEquals(bamReader.getFileHeader(), samReader.getFileHeader());
-        final CloseableIterator<SAMRecord> it = samReader.iterator();
-        final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
-        while (it.hasNext()) {
-            Assert.assertTrue(bamIt.hasNext());
-            final SAMRecord samRecord = it.next();
-            final SAMRecord bamRecord = bamIt.next();
 
-            // SAMRecords don't have this set, so stuff it in there
-            samRecord.setIndexingBin(bamRecord.getIndexingBin());
+            samReader.getFileHeader().setSortOrder(bamReader.getFileHeader().getSortOrder());
+            Assert.assertEquals(bamReader.getFileHeader(), samReader.getFileHeader());
 
-            // Force reference index attributes to be populated
-            samRecord.getReferenceIndex();
-            bamRecord.getReferenceIndex();
-            samRecord.getMateReferenceIndex();
-            bamRecord.getMateReferenceIndex();
+            try (
+                    final CloseableIterator<SAMRecord> it = samReader.iterator();
+                    final CloseableIterator<SAMRecord> bamIt = bamReader.iterator();
+            ) {
+                while (it.hasNext()) {
+                    Assert.assertTrue(bamIt.hasNext());
+                    final SAMRecord samRecord = it.next();
+                    final SAMRecord bamRecord = bamIt.next();
 
-            Assert.assertEquals(bamRecord, samRecord);
+                    // SAMRecords don't have this set, so stuff it in there
+                    samRecord.setIndexingBin(bamRecord.getIndexingBin());
+
+                    // Force reference index attributes to be populated
+                    samRecord.getReferenceIndex();
+                    bamRecord.getReferenceIndex();
+                    samRecord.getMateReferenceIndex();
+                    bamRecord.getMateReferenceIndex();
+
+                    Assert.assertEquals(bamRecord, samRecord);
+                }
+                Assert.assertFalse(bamIt.hasNext());
+            }
+
         }
-        Assert.assertFalse(bamIt.hasNext());
-        CloserUtil.close(samReader);
     }
 
     @DataProvider(name = "test1")
@@ -174,7 +182,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
 
         final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
 
-        // create a fake header to make sure the records cannot  be written using an invalid
+        // create a fake header to make sure the records cannot be written using an invalid
         // sequence dictionary and unresolvable references
         final SAMFileHeader fakeHeader = new SAMFileHeader();
         fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
@@ -229,4 +237,61 @@ public class BAMFileWriterTest extends HtsjdkTest {
         Assert.assertEquals(recordFromBAM.getReadBases(), SequenceUtil.toBamReadBasesInPlace(originalSAMRecord.getReadBases()));
     }
 
+
+    @DataProvider
+    public Object[][] longCigarsData(){
+        return new Object[][]{
+                {1},
+                {10},
+                {100},
+                {1_000},
+                {10_000},
+                {100_000},
+                {1_000_000}};
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testLongCigars(int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+
+        final List<CigarOperator> operators = new ArrayList<>(numOps);
+        final CigarOperator operatorstoUse[] = new CigarOperator[]{CigarOperator.M, CigarOperator.D, CigarOperator.M, CigarOperator.I};
+        for (int i = 0; i < numOps; i++) {
+            operators.add(operatorstoUse[i % operatorstoUse.length]);
+        }
+        operators.add(CigarOperator.M);
+
+        final Cigar cigar = Cigar.fromCigarOperators(operators);
+
+        builder.addFrag("frag1",0,1,false,false,cigar.toString(),null,30);
+        builder.addPair("pair1",0,1,100_000,false,false,cigar.toString(),cigar.toString(),true,false,30);
+
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate,true);
+    }
+
+
+    //why is this not breaking?
+    @Test(dataProvider = "longCigarsData")
+    public void testMisplacedCGTag(int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+
+        final List<CigarOperator> operators = new ArrayList<>(numOps);
+        final CigarOperator operatorstoUse[] = new CigarOperator[]{CigarOperator.M, CigarOperator.D, CigarOperator.M, CigarOperator.I};
+        for (int i = 0; i < numOps; i++) {
+            operators.add(operatorstoUse[i % operatorstoUse.length]);
+        }
+        operators.add(CigarOperator.M);
+
+        final Cigar cigar = Cigar.fromCigarOperators(operators);
+
+        final SAMRecord record = builder.addFrag("frag1",0,1,false,false,cigar.toString(),null,30);
+        record.setAttribute("CG","Ceci n'est pas une pipe!");
+
+        final List<SAMRecord> pairOfReads = builder.addPair("pair1",0,1,100_000,false,false,cigar.toString(),cigar.toString(),true,false,30);
+        for(final SAMRecord rec :pairOfReads){
+            rec.setAttribute("CG","Ceci n'est pas une pipe!");
+        }
+
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate,true);
+    }
 }
