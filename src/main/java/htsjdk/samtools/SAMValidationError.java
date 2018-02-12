@@ -226,7 +226,10 @@ public class SAMValidationError implements Serializable {
         MISMATCH_FILE_SEQ_DICT,
 
         /** Base quality is not stored for the read. */
-        QUALITY_NOT_STORED(Severity.WARNING);
+        QUALITY_NOT_STORED(Severity.WARNING),
+
+        /** A duplicate Sam tag was found in a record. */
+        DUPLICATE_SAM_TAG;
 
         public final Severity severity;
 

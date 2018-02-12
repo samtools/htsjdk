@@ -63,6 +63,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static htsjdk.samtools.SAMValidationError.Type.DUPLICATE_SAM_TAG;
+
 /**
  * Validates SAM files as follows:
  * <ul>
@@ -392,11 +394,19 @@ public class SamFileValidator {
      * Report error if a tag value is a Long.
      */
     private void validateTags(final SAMRecord record, final long recordNumber) {
-        for (final SAMRecord.SAMTagAndValue tagAndValue : record.getAttributes()) {
+        final List<SAMRecord.SAMTagAndValue> attributes = record.getAttributes();
+
+        final Set<String> tags = new HashSet<>(attributes.size());
+
+        for (final SAMRecord.SAMTagAndValue tagAndValue : attributes) {
             if (tagAndValue.value instanceof Long) {
                 addError(new SAMValidationError(Type.TAG_VALUE_TOO_LARGE,
                         "Numeric value too large for tag " + tagAndValue.tag,
                         record.getReadName(), recordNumber));
+            }
+            if (!tags.add(tagAndValue.tag)) {
+                addError(new SAMValidationError(DUPLICATE_SAM_TAG,
+                        "Duplicate SAM tag (" + tagAndValue.tag + ") found.", record.getReadName(), recordNumber));
             }
         }
     }
