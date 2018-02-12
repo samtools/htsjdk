@@ -70,7 +70,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     private boolean useNmFlag = false;
 
     private boolean unmappedHasBasesAndQualities = true;
-    
+
     public static final int DEFAULT_CHROMOSOME_LENGTH = 200000000;
 
     public static final ScoringStrategy DEFAULT_DUPLICATE_SCORING_STRATEGY = ScoringStrategy.TOTAL_MAPPED_REFERENCE_LENGTH;
@@ -175,15 +175,20 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
-    /** Returns the accumulated list of sam records. */
-    public Collection<SAMRecord> getRecords() { return this.records; }
+    /**
+     * Returns the accumulated list of sam records.
+     */
+    public Collection<SAMRecord> getRecords() {
+        return this.records;
+    }
 
     public void setHeader(final SAMFileHeader header) {
         this.header = header.clone();
     }
 
-
-    /** The record should already have the DS and MC tags computed */
+    /**
+     * The record should already have the DS and MC tags computed
+     */
     public void addRecord(final SAMRecord record) {
         if (record.getReadPairedFlag() && !record.getMateUnmappedFlag() &&
                 null == record.getAttribute(SAMTagUtil.getSingleton().MC)) {
@@ -192,7 +197,9 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         this.records.add(record);
     }
 
-    /** Returns a CloseableIterator over the collection of SAMRecords. */
+    /**
+     * Returns a CloseableIterator over the collection of SAMRecords.
+     */
     @Override
     public CloseableIterator<SAMRecord> iterator() {
         return new CloseableIterator<SAMRecord>() {
@@ -202,13 +209,19 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             public void close() { /** Do nothing. */}
 
             @Override
-            public boolean hasNext() { return this.iterator.hasNext(); }
+            public boolean hasNext() {
+                return this.iterator.hasNext();
+            }
 
             @Override
-            public SAMRecord next() { return this.iterator.next(); }
+            public SAMRecord next() {
+                return this.iterator.next();
+            }
 
             @Override
-            public void remove() { this.iterator.remove(); }
+            public void remove() {
+                this.iterator.remove();
+            }
         };
     }
 
@@ -242,7 +255,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
         rec.setAttribute(SAMTag.RG.name(), READ_GROUP_ID);
 
-        if(useNmFlag){
+        if (useNmFlag) {
             rec.setAttribute(SAMTag.NM.name(), SequenceUtil.calculateSamNmTagFromCigar(rec));
         }
 
@@ -255,7 +268,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
 
         if (!recordUnmapped || this.unmappedHasBasesAndQualities) {
-        fillInBasesAndQualities(rec, qualityString, defaultQuality);
+            fillInBasesAndQualities(rec, qualityString, defaultQuality);
         }
 
         return rec;
@@ -306,7 +319,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         return rec;
     }
 
-
     /**
      * Fills in the bases and qualities for the given record. Quality data is randomly generated if the defaultQuality
      * is set to -1. Otherwise all qualities will be set to defaultQuality. If a quality string is provided that string
@@ -343,7 +355,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         addFrag(name, -1, -1, false, true, null, null, -1, false);
     }
 
-
     /**
      * Adds a skeletal pair of records to the set using the provided
      * contig starts.  The pair is assumed to be a well
@@ -359,7 +370,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end1.setAlignmentStart(start1);
         end1.setReadNegativeStrandFlag(false);
         end1.setCigarString(readLength + "M");
-        if(useNmFlag) end1.setAttribute(ReservedTagConstants.NM, 0);
+        if (useNmFlag) end1.setAttribute(ReservedTagConstants.NM, 0);
         end1.setMappingQuality(255);
         end1.setReadPairedFlag(true);
         end1.setProperPairFlag(true);
@@ -379,7 +390,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         end2.setAlignmentStart(start2);
         end2.setReadNegativeStrandFlag(true);
         end2.setCigarString(readLength + "M");
-        if(useNmFlag) end2.setAttribute(ReservedTagConstants.NM,0);
+        if (useNmFlag) end2.setAttribute(ReservedTagConstants.NM, 0);
         end2.setMappingQuality(255);
         end2.setReadPairedFlag(true);
         end2.setProperPairFlag(true);
@@ -569,6 +580,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         return header;
     }
 
-    public void setReadLength(final int readLength) { this.readLength = readLength; }
+    public void setReadLength(final int readLength) {
+        this.readLength = readLength;
+    }
 
 }

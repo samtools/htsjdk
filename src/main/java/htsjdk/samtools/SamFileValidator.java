@@ -244,8 +244,7 @@ public class SamFileValidator {
                 try {
                     if (indexValidationStringency == IndexValidationStringency.LESS_EXHAUSTIVE) {
                         BamIndexValidator.lessExhaustivelyTestIndex(samReader);
-                    }
-                    else {
+                    } else {
                         BamIndexValidator.exhaustivelyTestIndex(samReader);
                     }
                 } catch (Exception e) {
@@ -344,7 +343,7 @@ public class SamFileValidator {
 
                 }
 
-                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")){
+                if ((qualityNotStoredErrorCount++ < MAX_QUALITY_NOT_STORED_ERRORS) && record.getBaseQualityString().equals("*")) {
                     addError(new SAMValidationError(Type.QUALITY_NOT_STORED,
                             "QUAL field is set to * (unspecified quality scores), this is allowed by the SAM" +
                                     " specification but many tools expect reads to include qualities ",
@@ -456,7 +455,6 @@ public class SamFileValidator {
         }
         return valid;
     }
-
 
     private boolean validateSortOrder(final SAMRecord record, final long recordNumber) {
         final SAMRecord prev = orderChecker.getPreviousRecord();
@@ -593,8 +591,7 @@ public class SamFileValidator {
                 addError(new SAMValidationError(Type.MISSING_PLATFORM_VALUE,
                         "A platform (PL) attribute was not found for read group ",
                         readGroupID));
-            }
-            else {
+            } else {
                 // NB: cannot be null, so not catching a NPE
                 try {
                     SAMReadGroupRecord.PlatformValue.valueOf(platformValue.toUpperCase());
@@ -631,7 +628,7 @@ public class SamFileValidator {
 
         switch (error.getType().severity) {
             case WARNING:
-                if ( this.ignoreWarnings ) {
+                if (this.ignoreWarnings) {
                     return;
                 }
                 this.numWarnings++;

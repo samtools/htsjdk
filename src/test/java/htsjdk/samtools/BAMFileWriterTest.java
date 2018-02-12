@@ -174,7 +174,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
 
         final SAMRecordSetBuilder samRecordSetBuilder = getRecordSetBuilder(true, SAMFileHeader.SortOrder.queryname);
 
-        // create a fake header to make sure the records cannot  be written using an invalid
+        // create a fake header to make sure the records cannot be written using an invalid
         // sequence dictionary and unresolvable references
         final SAMFileHeader fakeHeader = new SAMFileHeader();
         fakeHeader.setSortOrder(SAMFileHeader.SortOrder.queryname);
@@ -194,7 +194,6 @@ public class BAMFileWriterTest extends HtsjdkTest {
         testHelper(getRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate), SAMFileHeader.SortOrder.queryname, true);
         Assert.fail("Exception should be thrown");
     }
-
 
     /**
      * A test to check that BAM changes read bases according with {@link SequenceUtil#toBamReadBasesInPlace}.
@@ -218,7 +217,6 @@ public class BAMFileWriterTest extends HtsjdkTest {
             writer.setHeader(header);
             writer.addAlignment(originalSAMRecord);
         }
-
 
         final BAMFileReader reader = new BAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, true, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
         final CloseableIterator<SAMRecord> iterator = reader.getIterator();
