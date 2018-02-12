@@ -28,6 +28,7 @@ import htsjdk.samtools.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import static htsjdk.samtools.SAMTag.CG;
 
 /**
  * Wrapper class for binary BAM records.
@@ -38,6 +39,27 @@ public class BAMRecord extends SAMRecord {
      * Offset of the read name in the variable length section of the disk representation of BAMRecord
      */
     private static final int READ_NAME_OFFSET = 0;
+
+    /**
+     * Constant for converting between the number of operators in a Cigar and the length
+     * of the int[] array needed to represent it in the BAM format
+     */
+    static public final short CIGAR_SIZE_MULTIPLIER = 4;
+
+    /**
+     * Maximal number of cigar operators that can be represented normally in the cigar part of the bam record.
+     * Records that have larger cigars will have their Cigars encoded to int[] and placed in the CG tag in the attributes (BAM only)
+     * This should happen upon encoding. In place of the Cigar a sentinel value will be placed <READLENGTH>S<REFERENCELENGTH>N
+     * <p>
+     * When a BAM record is decoded, the sentinel cigar informs of the existance of the CG tag, which is decoded and removed.
+     * The sentinel value is then replaced with the actual cigar (in memory).
+     */
+    public final static int MAX_CIGAR_OPERATORS = 0xffff;
+
+    /**
+     * Number of operators in "Sentinel" cigar xSyN
+     */
+    private final static int SENTINEL_CIGAR_LENGTH = 2;
 
     /**
      * Variable-length part of BAMRecord.  Lazily decoded.
@@ -248,12 +270,66 @@ public class BAMRecord extends SAMRecord {
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             super.initializeCigar(BinaryCigarCodec.decode(byteBuffer));
             mCigarDecoded = true;
+
+            if (getCigarLength() == SENTINEL_CIGAR_LENGTH && isSentinelCigar(super.getCigar(), getReadLength())) {
+                extractCigarFromCGAttribute(super.getCigar());
+            }
+
             if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
                 // Don't know line number, and don't want to force read name to be decoded.
                 SAMUtils.processValidationErrors(validateCigar(-1L), -1, getValidationStringency());
             }
         }
         return super.getCigar();
+    }
+
+    private static boolean isSentinelCigar(final Cigar cigar, final int readLength) {
+        return cigar.getCigarElement(0).getOperator() == CigarOperator.S &&
+                cigar.getCigarElement(0).getLength() == readLength &&
+                cigar.getCigarElement(1).getOperator() == CigarOperator.N;
+    }
+
+    private void extractCigarFromCGAttribute(final Cigar sentinelCigar) {
+        int[] cigarFromCG = (int[]) getAttribute(CG.name());
+
+        if (cigarFromCG == null) return;
+
+        // place the integer array into a buffer so we can decode it
+        final ByteBuffer byteBuffer = ByteBuffer.allocate(cigarFromCG.length * CIGAR_SIZE_MULTIPLIER)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        byteBuffer.asIntBuffer().put(cigarFromCG);
+
+        // decode cigar
+        final Cigar decodedCigar = BinaryCigarCodec.decode(byteBuffer);
+
+        // Sanity check
+        if (decodedCigar.getCigarElements().size() <= MAX_CIGAR_OPERATORS) {
+            throw new IllegalStateException(String.format(
+                    "Only Cigar with > 65535 operators should be placed in CG tag. Found %d operators.",
+                    decodedCigar.getCigarElements().size()));
+        }
+
+        if (decodedCigar.getReferenceLength() != sentinelCigar.getReferenceLength()) {
+            throw new IllegalStateException(String.format(
+                    "Sentinel cigar and CG cigar should have the same reference length. Found %d and %d.",
+                    sentinelCigar.getReferenceLength(),
+                    decodedCigar.getReferenceLength()));
+        }
+
+        if (decodedCigar.getReadLength() != sentinelCigar.getReadLength()) {
+            throw new IllegalStateException(String.format(
+                    "Sentinel cigar and CG cigar should have the same read length. Found %d and %d.",
+                    sentinelCigar.getReadLength(),
+                    decodedCigar.getReadLength()));
+        }
+
+        setCigar(decodedCigar);
+
+        // remove CG attribute.
+        setAttribute(CG.name(), null);
+
+        // There's no need to re-set the indexing bin since the reference length of the Sentinel
+        // is the same as that of the full cigar
     }
 
     /**
@@ -308,11 +384,17 @@ public class BAMRecord extends SAMRecord {
         if (mAttributesDecoded) {
             return;
         }
+
         mAttributesDecoded = true;
         final int tagsOffset = readNameSize() + cigarSize() + basesSize() + qualsSize();
         final int tagsSize = mRestOfBinaryData.length - tagsOffset;
         final SAMBinaryTagAndValue attributes = BinaryTagCodec.readTags(mRestOfBinaryData, tagsOffset, tagsSize, getValidationStringency());
         setAttributes(attributes);
+
+        // if there's a CG tag, we should getCigar() so that the CG tag has a chance of turning into the CIGAR
+        if (hasAttribute(CG.name())) {
+            getCigar();
+        }
     }
 
     private byte[] decodeBaseQualities() {
@@ -358,7 +440,7 @@ public class BAMRecord extends SAMRecord {
     }
 
     private int cigarSize() {
-        return mCigarLength * 4;
+        return mCigarLength * CIGAR_SIZE_MULTIPLIER;
     }
 
     private int basesSize() {

@@ -32,6 +32,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
+import static htsjdk.samtools.SAMTag.CG;
+
 /**
  * Class for translating between in-memory and disk representation of BAMRecord.
  */
@@ -105,12 +107,24 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         // Compute block size, as it is the first element of the file representation of SAMRecord
         final int readLength = alignment.getReadLength();
 
+        // if cigar is too long, put into CG tag and replace with sentinel value
+        // has to be after computing the indexbin
+        if ( alignment.getCigarLength() > BAMRecord.MAX_CIGAR_OPERATORS) {
+            final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
+            alignment.setCigar(makeSentinelCigar(alignment.getCigar()));
+            alignment.setAttribute(CG.name(), cigarEncoding);
+        } else {
+            // just to be sure.
+            // TODO: how to override this for testing purposes only?
+            // alignment.setAttribute(CG.name(), null);
+        }
+        // do not combine with previous call to alignment.getCigarLength() as cigar may change in-between
         final int cigarLength = alignment.getCigarLength();
 
-        int blockSize = BAMFileConstants.FIXED_BLOCK_SIZE + alignment.getReadNameLength() + 1  + // null terminated
-                        cigarLength * 4 +
-                        (readLength + 1) / 2 + // 2 bases per byte, round up
-                        readLength;
+        int blockSize = BAMFileConstants.FIXED_BLOCK_SIZE + alignment.getReadNameLength() + 1 + // null terminated
+                cigarLength * BAMRecord.CIGAR_SIZE_MULTIPLIER +
+                (readLength + 1) / 2 + // 2 bases per byte, round up
+                readLength;
 
         final int attributesSize = alignment.getAttributesBinarySize();
         if (attributesSize != -1) {
@@ -183,6 +197,12 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         }
     }
 
+    public static Cigar makeSentinelCigar(final Cigar cigar) {
+        return new Cigar(Arrays.asList(
+                new CigarElement(cigar.getReadLength(), CigarOperator.S),
+                new CigarElement(cigar.getReferenceLength(), CigarOperator.N)));
+    }
+
     private void warnIfReferenceIsTooLargeForBinField(final SAMRecord rec) {
         final SAMSequenceRecord sequence = rec.getHeader() != null ? rec.getHeader().getSequence(rec.getReferenceName()) : null;
         if (!isReferenceSizeWarningShowed
@@ -202,7 +222,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
      */
     @Override
     public SAMRecord decode() {
-        int recordLength = 0;
+        final int recordLength;
         try {
             recordLength = this.binaryCodec.readInt();
         } catch (RuntimeEOFException e) {

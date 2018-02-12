@@ -32,6 +32,7 @@ public enum SAMTag {
     BC,
     BQ,
     CC,
+    CG,
     CM,
     CO,
     CP,
