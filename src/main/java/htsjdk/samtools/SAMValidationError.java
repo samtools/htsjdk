@@ -229,7 +229,11 @@ public class SAMValidationError implements Serializable {
         QUALITY_NOT_STORED(Severity.WARNING),
 
         /** A duplicate Sam tag was found in a record. */
-        DUPLICATE_SAM_TAG;
+        DUPLICATE_SAM_TAG,
+
+        /** The CG Tag should only be used in BAM format to hold a large cigar
+         */
+        CG_TAG_FOUND_IN_ATTRIBUTES;
 
         public final Severity severity;
 

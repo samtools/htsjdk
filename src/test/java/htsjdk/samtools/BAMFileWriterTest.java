@@ -24,16 +24,14 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,6 +76,18 @@ public class BAMFileWriterTest extends HtsjdkTest {
         if (presorted) { // If SAM text input was presorted, then we can compare SAM object to BAM object
             verifyBAMFile(samRecordSetBuilder, bamFile);
         }
+
+        File tempMetrics = File.createTempFile("CGTagTest", ".validation_metrics");
+        try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile)) {
+
+            new SamFileValidator(new PrintWriter(new FileOutputStream(tempMetrics)),
+                    100).validateSamFileSummary(samReader, null);
+        }
+
+        final MetricsFile<SamFileValidator.ValidationMetrics, String> validationMetrics = new MetricsFile<>();
+        validationMetrics.read(new FileReader(tempMetrics));
+
+        Assert.assertTrue(validationMetrics.getHistogram().get("ERROR:CG_TAG_FOUND_IN_ATTRIBUTES") == null);
     }
 
     private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) throws IOException {
@@ -299,9 +309,9 @@ public class BAMFileWriterTest extends HtsjdkTest {
     @DataProvider
     public Object[][] sentinelCigarData() {
         return new Object[][]{
-                {1,0,1},
-                {0,1,1},
-                {0,0,0},
+                {1, 0, 1},
+                {0, 1, 1},
+                {0, 0, 0},
         };
     }
 
@@ -319,11 +329,11 @@ public class BAMFileWriterTest extends HtsjdkTest {
         final List<CigarElement> sentinelCigarElements = new ArrayList<>(2);
 
         sentinelCigarElements.add(new CigarElement(
-                        sentinelCigar.getCigarElement(0).getLength() + readOffset,
-                        sentinelCigar.getCigarElement(0).getOperator()));
+                sentinelCigar.getCigarElement(0).getLength() + readOffset,
+                sentinelCigar.getCigarElement(0).getOperator()));
         sentinelCigarElements.add(new CigarElement(
-                        sentinelCigar.getCigarElement(1).getLength() + refOffset,
-                        sentinelCigar.getCigarElement(1).getOperator()));
+                sentinelCigar.getCigarElement(1).getLength() + refOffset,
+                sentinelCigar.getCigarElement(1).getOperator()));
 
         final String sentinelCigarString = new Cigar(sentinelCigarElements).toString();
 
