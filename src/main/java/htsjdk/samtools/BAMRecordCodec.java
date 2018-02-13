@@ -165,8 +165,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
             this.binaryCodec.writeBytes(variableLengthBinaryBlock);
         } else {
             if (alignment.getReadLength() != alignment.getBaseQualities().length &&
-                    alignment.getBaseQualities().length != 0 &&
-                    alignment.getBaseQualities()[0]!=(byte)'*') {
+                    alignment.getBaseQualities().length != 0) {
                 throw new RuntimeException("Mismatch between read length and quals length writing read " +
                         alignment.getReadName() + "; read length: " + alignment.getReadLength() +
                         "; quals length: " + alignment.getBaseQualities().length);
