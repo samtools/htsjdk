@@ -55,26 +55,33 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         return new BAMRecordCodec(this.header, this.samRecordFactory);
     }
 
-
-    /** Sets the output stream that records will be written to. */
+    /**
+     * Sets the output stream that records will be written to.
+     */
     @Override
     public void setOutputStream(final OutputStream os) {
         this.binaryCodec.setOutputStream(os);
     }
 
-    /** Sets the output stream that records will be written to. */
+    /**
+     * Sets the output stream that records will be written to.
+     */
     public void setOutputStream(final OutputStream os, final String filename) {
         this.binaryCodec.setOutputStream(os);
         this.binaryCodec.setOutputFileName(filename);
     }
 
-    /** Sets the input stream that records will be read from. */
+    /**
+     * Sets the input stream that records will be read from.
+     */
     @Override
     public void setInputStream(final InputStream is) {
         this.binaryCodec.setInputStream(is);
     }
 
-    /** Sets the input stream that records will be read from. */
+    /**
+     * Sets the input stream that records will be read from.
+     */
     public void setInputStream(final InputStream is, final String filename) {
         this.binaryCodec.setInputStream(is);
         this.binaryCodec.setInputFileName(filename);
@@ -126,8 +133,8 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         this.binaryCodec.writeInt(alignment.getReferenceIndex());
         // 0-based!!
         this.binaryCodec.writeInt(alignment.getAlignmentStart() - 1);
-        this.binaryCodec.writeUByte((short)(alignment.getReadNameLength() + 1));
-        this.binaryCodec.writeUByte((short)alignment.getMappingQuality());
+        this.binaryCodec.writeUByte((short) (alignment.getReadNameLength() + 1));
+        this.binaryCodec.writeUByte((short) alignment.getMappingQuality());
         this.binaryCodec.writeUShort(indexBin);
         this.binaryCodec.writeUShort(cigarLength);
         this.binaryCodec.writeUShort(alignment.getFlags());
@@ -144,20 +151,20 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
             if (alignment.getReadLength() != alignment.getBaseQualities().length &&
                 alignment.getBaseQualities().length != 0) {
                 throw new RuntimeException("Mismatch between read length and quals length writing read " +
-                alignment.getReadName() + "; read length: " + alignment.getReadLength() +
-                "; quals length: " + alignment.getBaseQualities().length);
+                        alignment.getReadName() + "; read length: " + alignment.getReadLength() +
+                        "; quals length: " + alignment.getBaseQualities().length);
             }
             this.binaryCodec.writeString(alignment.getReadName(), false, true);
             final int[] binaryCigar = BinaryCigarCodec.encode(alignment.getCigar());
             for (final int cigarElement : binaryCigar) {
                 // Assumption that this will fit into an integer, despite the fact
-                // that it is specced as a uint.
+                // that it is spec'ed as a uint.
                 this.binaryCodec.writeInt(cigarElement);
             }
             try {
                 this.binaryCodec.writeBytes(SAMUtils.bytesToCompressedBases(alignment.getReadBases()));
-            } catch ( final IllegalArgumentException ex ) {
-                final String msg = ex.getMessage() + " in read: " +  alignment.getReadName();
+            } catch (final IllegalArgumentException ex) {
+                final String msg = ex.getMessage() + " in read: " + alignment.getReadName();
                 throw new IllegalStateException(msg, ex);
             }
             byte[] qualities = alignment.getBaseQualities();
@@ -178,22 +185,21 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
      * Read the next record from the input stream and convert into a java object.
      *
      * @return null if no more records.  Should throw exception if EOF is encountered in the middle of
-     *         a record.
+     * a record.
      */
     @Override
     public SAMRecord decode() {
         int recordLength = 0;
         try {
             recordLength = this.binaryCodec.readInt();
-        }
-        catch (RuntimeEOFException e) {
+        } catch (RuntimeEOFException e) {
             return null;
         }
 
         if (recordLength < BAMFileConstants.FIXED_BLOCK_SIZE) {
             throw new SAMFormatException("Invalid record length: " + recordLength);
         }
-        
+
         final int referenceID = this.binaryCodec.readInt();
         final int coordinate = this.binaryCodec.readInt() + 1;
         final short readNameLength = this.binaryCodec.readUByte();

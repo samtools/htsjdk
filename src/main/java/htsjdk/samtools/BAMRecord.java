@@ -244,7 +244,7 @@ public class BAMRecord extends SAMRecord {
     public Cigar getCigar() {
         if (mRestOfBinaryData != null && !mCigarDecoded) {
             final int cigarOffset = readNameSize();
-            final ByteBuffer byteBuffer  = ByteBuffer.wrap(mRestOfBinaryData, cigarOffset, cigarSize());
+            final ByteBuffer byteBuffer = ByteBuffer.wrap(mRestOfBinaryData, cigarOffset, cigarSize());
             byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
             super.initializeCigar(BinaryCigarCodec.decode(byteBuffer));
             mCigarDecoded = true;
@@ -334,7 +334,7 @@ public class BAMRecord extends SAMRecord {
 
     private String decodeReadName() {
         // Don't include terminating null
-        return StringUtil.bytesToString(mRestOfBinaryData, READ_NAME_OFFSET, mReadNameLength-1);
+        return StringUtil.bytesToString(mRestOfBinaryData, READ_NAME_OFFSET, mReadNameLength - 1);
     }
 
     private byte[] decodeReadBases() {
@@ -344,7 +344,7 @@ public class BAMRecord extends SAMRecord {
         final int basesOffset = readNameSize() + cigarSize();
         try {
             return SAMUtils.compressedBasesToBytes(mReadLength, mRestOfBinaryData, basesOffset);
-        } catch ( final IllegalArgumentException ex ) {
+        } catch (final IllegalArgumentException ex) {
             final String msg = ex.getMessage() + " in read: " + getReadName();
             throw new IllegalStateException(msg, ex);
         }
@@ -362,7 +362,7 @@ public class BAMRecord extends SAMRecord {
     }
 
     private int basesSize() {
-        return (mReadLength + 1)/2;
+        return (mReadLength + 1) / 2;
     }
 
     private int qualsSize() {

@@ -26,5 +26,4 @@ public class BAMCigarOverflowTest extends HtsjdkTest {
         //Cast to int to avoid an ambiguity in the assertEquals() call between assertEquals(int,int) and assertEquals(Object,Object).
         assertEquals(testBAMRecord.computeIndexingBin(), (int) testBAMRecord.getIndexingBin());
     }
-
 }
