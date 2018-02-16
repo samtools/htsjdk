@@ -65,16 +65,6 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     private int readLength = 36;
 
-    /**
-     * Determine whether the class will use a bam (default) or a sam file to hold the
-     * records when providing a reader to them.
-     *
-     * @param useBamFile if true will use a BAM file, otherwise it will use a SAM file to hold the records.
-     */
-    public void setUseBamFile(boolean useBamFile) {
-        this.useBamFile = useBamFile;
-    }
-
     private boolean useBamFile = true;
 
     private SAMProgramRecord programRecord = null;
@@ -144,6 +134,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             readGroups.add(readGroupRecord);
             this.header.setReadGroups(readGroups);
         }
+    }
+
+    /**
+     * Determine whether the class will use a bam (default) or a sam file to hold the
+     * records when providing a reader to them.
+     *
+     * @param useBamFile if true will use a BAM file, otherwise it will use a SAM file to hold the records.
+     */
+    public void setUseBamFile(final boolean useBamFile) {
+        this.useBamFile = useBamFile;
     }
 
     public void setUnmappedHasBasesAndQualities(final boolean value) {

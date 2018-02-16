@@ -108,16 +108,12 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         final int readLength = alignment.getReadLength();
 
         // if cigar is too long, put into CG tag and replace with sentinel value
-        // has to be after computing the indexbin
-        if ( alignment.getCigarLength() > BAMRecord.MAX_CIGAR_OPERATORS) {
+        if (alignment.getCigarLength() > BAMRecord.MAX_CIGAR_OPERATORS) {
             final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
             alignment.setCigar(makeSentinelCigar(alignment.getCigar()));
             alignment.setAttribute(CG.name(), cigarEncoding);
-        } else {
-            // just to be sure.
-            // TODO: how to override this for testing purposes only?
-            // alignment.setAttribute(CG.name(), null);
         }
+
         // do not combine with previous call to alignment.getCigarLength() as cigar may change in-between
         final int cigarLength = alignment.getCigarLength();
 
@@ -138,6 +134,8 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
             }
         }
 
+        // shouldn't interact with the long-cigar above since the Sentinel Cigar has the same referenceLength as
+        // the actual cigar.
         int indexBin = 0;
         if (alignment.getAlignmentStart() != SAMRecord.NO_ALIGNMENT_START) {
             warnIfReferenceIsTooLargeForBinField(alignment);
@@ -197,6 +195,12 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
         }
     }
 
+    /**
+     * Create a "Sentinel" cigar that will be placed in BAM file when the actual cigar has more than 0xffff operator,
+     * which are not supported by the bam format. The actual cigar will be encoded and placed in the CG attribute.
+     * @param cigar actual cigar to create sentinel cigar for
+     * @return sentinel cigar xSyN with readLength (x) and referenceLength (y) matching the input cigar.
+     */
     public static Cigar makeSentinelCigar(final Cigar cigar) {
         return new Cigar(Arrays.asList(
                 new CigarElement(cigar.getReadLength(), CigarOperator.S),

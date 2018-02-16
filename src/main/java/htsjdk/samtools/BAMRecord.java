@@ -290,7 +290,7 @@ public class BAMRecord extends SAMRecord {
     }
 
     private void extractCigarFromCGAttribute(final Cigar sentinelCigar) {
-        int[] cigarFromCG = (int[]) getAttribute(CG.name());
+        final int[] cigarFromCG = (int[]) getAttribute(CG.name());
 
         if (cigarFromCG == null) return;
 
