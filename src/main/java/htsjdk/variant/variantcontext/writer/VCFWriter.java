@@ -219,9 +219,11 @@ class VCFWriter extends IndexingVariantContextWriter {
     public void add(final VariantContext context) {
         try {
             super.add(context);
-
-            if (this.doNotWriteGenotypes) write(this.vcfEncoder.encode(new VariantContextBuilder(context).noGenotypes().make()));
-            else write(this.vcfEncoder.encode(context));
+            if (this.mHeader == null) {
+                throw new IllegalStateException("Unable to write the VCF: header is missing, " +
+                                                   "try to call writeHeader or setHeader first.");
+            }
+            write(this.vcfEncoder.encode(this.doNotWriteGenotypes ? new VariantContextBuilder(context).noGenotypes().make() : context));
             write("\n");
 
             writeAndResetBuffer();
