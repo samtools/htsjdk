@@ -43,6 +43,7 @@ import htsjdk.samtools.cram.CRAMException;
 
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
+    private static final int DEFAULT_CONTAINER_CAPACITY = 10000;
     private final CountingInputStream countingInputStream;
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
@@ -87,7 +88,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(DEFAULT_CONTAINER_CAPACITY);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -106,7 +107,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(10000);
+        records = new ArrayList<SAMRecord>(DEFAULT_CONTAINER_CAPACITY);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -131,6 +132,7 @@ public class CRAMIterator implements SAMRecordIterator {
                 nextRecord = null;
                 return;
             }
+
             container = containerIterator.next();
             if (container.isEOF()) {
                 records.clear();
@@ -146,10 +148,7 @@ public class CRAMIterator implements SAMRecordIterator {
             }
         }
 
-        if (records == null)
-            records = new ArrayList<SAMRecord>(container.nofRecords);
-        else
-            records.clear();
+        records.clear();
         if (cramRecords == null)
             cramRecords = new ArrayList<CramCompressionRecord>(container.nofRecords);
         else
@@ -175,8 +174,10 @@ public class CRAMIterator implements SAMRecordIterator {
 
         for (int i = 0; i < container.slices.length; i++) {
             final Slice slice = container.slices[i];
+
             if (slice.sequenceId < 0)
                 continue;
+
             if (!slice.validateRefMD5(refs)) {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
@@ -203,12 +204,6 @@ public class CRAMIterator implements SAMRecordIterator {
             }
 
             samRecord.setValidationStringency(validationStringency);
-
-            if (validationStringency != ValidationStringency.SILENT) {
-                final List<SAMValidationError> validationErrors = samRecord.isValid();
-                SAMUtils.processValidationErrors(validationErrors,
-                        samRecordIndex, validationStringency);
-            }
 
             if (mReader != null) {
                 final long chunkStart = (container.offset << 16) | cramRecord.sliceIndex;
@@ -271,7 +266,22 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public SAMRecord next() {
-        return iterator.next();
+        SAMRecord samRecord = iterator.next();
+        if (validationStringency != ValidationStringency.SILENT) {
+            validateRecord(samRecord);
+        }
+        return samRecord;
+    }
+
+    /**
+     * Perform various validations of SAMRecord and handle
+     * found errors according to the validation stringency.
+     *
+     * @param samRecord - validated record
+     */
+    public void validateRecord(SAMRecord samRecord){
+        final List<SAMValidationError> validationErrors = samRecord.isValid();
+        SAMUtils.processValidationErrors(validationErrors, samRecordIndex, validationStringency);
     }
 
     @Override
