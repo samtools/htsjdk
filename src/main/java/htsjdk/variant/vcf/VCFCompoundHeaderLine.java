@@ -202,12 +202,12 @@ public abstract class VCFCompoundHeaderLine extends VCFHeaderLine implements VCF
     }
 
     private void validate() {
-        if (countType == VCFHeaderLineCount.INTEGER && count <= 0)
+        if (type != VCFHeaderLineType.Flag && countType == VCFHeaderLineCount.INTEGER && count <= 0)
             throw new IllegalArgumentException(String.format("Invalid count number, with fixed count the number should be 1 or higher: key=%s name=%s type=%s desc=%s lineType=%s count=%s",
-                    super.getKey(), name, type, description, lineType, count));
+                    getKey(), name, type, description, lineType, count));
         if (name == null || type == null || description == null || lineType == null)
             throw new IllegalArgumentException(String.format("Invalid VCFCompoundHeaderLine: key=%s name=%s type=%s desc=%s lineType=%s",
-                    super.getKey(), name, type, description, lineType));
+                    getKey(), name, type, description, lineType));
         if (name.contains("<") || name.contains(">"))
             throw new IllegalArgumentException("VCFHeaderLine: ID cannot contain angle brackets");
         if (name.contains("="))
