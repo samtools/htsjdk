@@ -37,13 +37,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 import htsjdk.samtools.cram.CRAMException;
 
 public class CRAMIterator implements SAMRecordIterator {
     private static final Log log = Log.getInstance(CRAMIterator.class);
-    private static final int DEFAULT_CONTAINER_CAPACITY = 10000;
     private final CountingInputStream countingInputStream;
     private CramHeader cramHeader;
     private ArrayList<SAMRecord> records;
@@ -88,7 +86,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = this.countingInputStream.getCount();
-        records = new ArrayList<SAMRecord>(DEFAULT_CONTAINER_CAPACITY);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -107,7 +105,7 @@ public class CRAMIterator implements SAMRecordIterator {
         this.containerIterator = containerIterator;
 
         firstContainerOffset = containerIterator.getFirstContainerOffset();
-        records = new ArrayList<SAMRecord>(DEFAULT_CONTAINER_CAPACITY);
+        records = new ArrayList<SAMRecord>(CRAMContainerStreamWriter.DEFAULT_RECORDS_PER_SLICE);
         normalizer = new CramNormalizer(cramHeader.getSamFileHeader(),
                 referenceSource);
         parser = new ContainerParser(cramHeader.getSamFileHeader());
@@ -181,10 +179,10 @@ public class CRAMIterator implements SAMRecordIterator {
             if (!slice.validateRefMD5(refs)) {
                 final String msg = String.format(
                         "Reference sequence MD5 mismatch for slice: sequence id %d, start %d, span %d, expected MD5 %s",
-                            slice.sequenceId,
-                            slice.alignmentStart,
-                            slice.alignmentSpan,
-                            String.format("%032x", new BigInteger(1, slice.refMD5)));
+                        slice.sequenceId,
+                        slice.alignmentStart,
+                        slice.alignmentSpan,
+                        String.format("%032x", new BigInteger(1, slice.refMD5)));
                 throw new CRAMException(msg);
             }
         }
@@ -213,7 +211,6 @@ public class CRAMIterator implements SAMRecordIterator {
             }
 
             records.add(samRecord);
-            samRecordIndex++;
         }
         cramRecords.clear();
         iterator = records.iterator();
@@ -268,20 +265,10 @@ public class CRAMIterator implements SAMRecordIterator {
     public SAMRecord next() {
         SAMRecord samRecord = iterator.next();
         if (validationStringency != ValidationStringency.SILENT) {
-            validateRecord(samRecord);
+            SAMUtils.processValidationErrors(samRecord.isValid(), samRecordIndex++, validationStringency);
         }
-        return samRecord;
-    }
 
-    /**
-     * Perform various validations of SAMRecord and handle
-     * found errors according to the validation stringency.
-     *
-     * @param samRecord - validated record
-     */
-    public void validateRecord(SAMRecord samRecord){
-        final List<SAMValidationError> validationErrors = samRecord.isValid();
-        SAMUtils.processValidationErrors(validationErrors, samRecordIndex, validationStringency);
+        return samRecord;
     }
 
     @Override
@@ -296,8 +283,7 @@ public class CRAMIterator implements SAMRecordIterator {
         try {
             if (countingInputStream != null)
                 countingInputStream.close();
-        } catch (final IOException e) {
-        }
+        } catch (final IOException e) { }
     }
 
     @Override
@@ -316,5 +302,4 @@ public class CRAMIterator implements SAMRecordIterator {
     public SAMFileHeader getSAMFileHeader() {
         return cramHeader.getSamFileHeader();
     }
-
 }

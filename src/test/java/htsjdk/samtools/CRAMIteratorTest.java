@@ -10,41 +10,47 @@ import java.io.File;
 
 
 /**
- * @author Anton_Mazur@epam.com, EPAM Systems, Inc.
- *
  * This test serve for verifying CRAMIterator records validation using strict validation strategy
+ *
+ * @author Anton_Mazur@epam.com, EPAM Systems, Inc.
  **/
 
 public class CRAMIteratorTest extends HtsjdkTest {
-    private static final File refFile = new File("src/test/resources/htsjdk/samtools/cram/ce.fa");
-    private static final File cramFile = new File("src/test/resources/htsjdk/samtools/cram/ce#supp.3.0.cram");
-    ReferenceSource source = new ReferenceSource(refFile);
 
-    @Test
-    public void shouldNotThrowsExceptionIfCRAMfileContainsInvalidRecords() {
-        SAMRecordIterator cramIter =
-                getCramFileIterator(cramFile, source, ValidationStringency.STRICT);
+    @Test(description = "This test checks that records validation is deferred until they are retrieved")
+    public void notThrowOnOpeningContainerWithInvalidRecords() {
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/ce.fa");
+        final File cramFileWithInvalidRecs = new File("src/test/resources/htsjdk/samtools/cram/ce#containsInvalidRecords.3.0.cram");
+        final ReferenceSource source = new ReferenceSource(refFile);
+        final SAMRecordIterator cramIteratorOverInvalidRecords =
+                getCramFileIterator(cramFileWithInvalidRecs, source, ValidationStringency.STRICT);
 
-        Assert.assertTrue(cramIter.hasNext());
+        Assert.assertTrue(cramIteratorOverInvalidRecords.hasNext());
+        cramIteratorOverInvalidRecords.close();
     }
 
     @Test(expectedExceptions = SAMException.class)
-    public void shouldThrowExceptionIfCRAMFileContainsInvalidRecods() {
-        SAMRecordIterator cramIter =
-                getCramFileIterator(cramFile, source, ValidationStringency.STRICT);
-
-        while (cramIter.hasNext())
-        {
-            cramIter.next();
+    public void throwOnRecordValidationFailure() {
+        final File refFile = new File("src/test/resources/htsjdk/samtools/cram/ce.fa");
+        final File cramFileWithInvalidRecs = new File("src/test/resources/htsjdk/samtools/cram/ce#containsInvalidRecords.3.0.cram");
+        final ReferenceSource source = new ReferenceSource(refFile);
+        final SAMRecordIterator cramIteratorOverInvalidRecords =
+                getCramFileIterator(cramFileWithInvalidRecs, source, ValidationStringency.STRICT);
+        try{
+            while (cramIteratorOverInvalidRecords.hasNext()) {
+                cramIteratorOverInvalidRecords.next();
+            }
+        } finally {
+            cramIteratorOverInvalidRecords.close();
         }
     }
 
     private SAMRecordIterator getCramFileIterator(File cramFile,
                                                   ReferenceSource source,
-                                                  ValidationStringency valStrigency) {
+                                                  ValidationStringency valStringency) {
 
-        CRAMFileReader cramFileReader = new CRAMFileReader(cramFile, (SeekableStream) null, source);
-        cramFileReader.setValidationStringency(valStrigency);
+        final CRAMFileReader cramFileReader = new CRAMFileReader(cramFile, (SeekableStream) null, source);
+        cramFileReader.setValidationStringency(valStringency);
         return cramFileReader.getIterator();
     }
 }
