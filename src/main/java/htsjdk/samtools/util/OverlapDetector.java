@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import java.lang.ref.SoftReference;
 import java.util.*;
 
 /**
@@ -42,7 +43,7 @@ public class OverlapDetector<T> {
     private final int lhsBuffer;
     private final int rhsBuffer;
 
-    private Set<T> allObjectsCache = null;
+    private transient SoftReference<Set<T>> allObjectsCache = new SoftReference<>(null);
 
     /**
      * Constructs an overlap detector.
@@ -122,10 +123,12 @@ public class OverlapDetector<T> {
      * Gets all the objects that could be returned by the overlap detector.
      */
     public Set<T> getAll() {
-        if (allObjectsCache == null) {
-            allObjectsCache = getAllNoCache();
+        Set<T> ret = allObjectsCache.get();
+        if (allObjectsCache.get() == null) {
+            ret = getAllNoCache();
+            allObjectsCache = new SoftReference<>(ret);
         }
-        return allObjectsCache;
+        return ret;
     }
 
     private void invalidateAllObjectsCache() {
