@@ -103,7 +103,6 @@ public class OverlapDetector<T> {
      * and the corresponding objects.
      */
     public void addAll(final List<T> objects, final List<? extends Locatable> intervals) {
-        invalidateAllObjectsCache();
         if (objects == null) {
             throw new IllegalArgumentException("null objects");
         }
