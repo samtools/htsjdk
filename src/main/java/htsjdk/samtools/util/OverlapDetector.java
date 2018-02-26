@@ -42,6 +42,8 @@ public class OverlapDetector<T> {
     private final int lhsBuffer;
     private final int rhsBuffer;
 
+    private Set<T> allObjectsCache = null;
+
     /**
      * Constructs an overlap detector.
      * @param lhsBuffer the amount by which to "trim" coordinates of mappings on the left
@@ -65,6 +67,7 @@ public class OverlapDetector<T> {
 
     /** Adds a Locatable to the set of Locatables against which to match candidates. */
     public void addLhs(final T object, final Locatable interval) {
+        invalidateAllObjectsCache();
         if (object == null) {
             throw new IllegalArgumentException("null object");
         }
@@ -100,6 +103,7 @@ public class OverlapDetector<T> {
      * and the corresponding objects.
      */
     public void addAll(final List<T> objects, final List<? extends Locatable> intervals) {
+        invalidateAllObjectsCache();
         if (objects == null) {
             throw new IllegalArgumentException("null objects");
         }
@@ -119,6 +123,17 @@ public class OverlapDetector<T> {
      * Gets all the objects that could be returned by the overlap detector.
      */
     public Set<T> getAll() {
+        if (allObjectsCache == null) {
+            allObjectsCache = getAllNoCache();
+        }
+        return allObjectsCache;
+    }
+
+    private void invalidateAllObjectsCache() {
+        allObjectsCache = null;
+    }
+
+    private Set<T> getAllNoCache() {
         final Set<T> all = new HashSet<>();
         for (final IntervalTree<Set<T>> tree : this.cache.values()) {
             for (IntervalTree.Node<Set<T>> node : tree) {
