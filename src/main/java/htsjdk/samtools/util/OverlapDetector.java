@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools.util;
 
+import java.lang.ref.SoftReference;
 import java.util.*;
 
 /**
@@ -41,6 +42,8 @@ public class OverlapDetector<T> {
     private final Map<Object, IntervalTree<Set<T>>> cache = new HashMap<>();
     private final int lhsBuffer;
     private final int rhsBuffer;
+
+    private transient SoftReference<Set<T>> allObjectsCache = new SoftReference<>(null);
 
     /**
      * Constructs an overlap detector.
@@ -65,6 +68,7 @@ public class OverlapDetector<T> {
 
     /** Adds a Locatable to the set of Locatables against which to match candidates. */
     public void addLhs(final T object, final Locatable interval) {
+        invalidateAllObjectsCache();
         if (object == null) {
             throw new IllegalArgumentException("null object");
         }
@@ -119,6 +123,19 @@ public class OverlapDetector<T> {
      * Gets all the objects that could be returned by the overlap detector.
      */
     public Set<T> getAll() {
+        Set<T> ret = allObjectsCache.get();
+        if (allObjectsCache.get() == null) {
+            ret = getAllNoCache();
+            allObjectsCache = new SoftReference<>(ret);
+        }
+        return ret;
+    }
+
+    private void invalidateAllObjectsCache() {
+        allObjectsCache = null;
+    }
+
+    private Set<T> getAllNoCache() {
         final Set<T> all = new HashSet<>();
         for (final IntervalTree<Set<T>> tree : this.cache.values()) {
             for (IntervalTree.Node<Set<T>> node : tree) {
