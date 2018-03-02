@@ -69,9 +69,12 @@ public final class VCFConstants {
     public static final String SVTYPE = "SVTYPE";    
 
     // separators
+    public static final String ALLELE_SEPARATOR = ",";
     public static final String FORMAT_FIELD_SEPARATOR = ":";
     public static final String GENOTYPE_FIELD_SEPARATOR = ":";
     public static final char   GENOTYPE_FIELD_SEPARATOR_CHAR = ':';
+    public final static String GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR = ",";
+    public final static char   GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR_CHAR = ',';
     public static final String FIELD_SEPARATOR = "\t";
     public static final char   FIELD_SEPARATOR_CHAR = '\t';
     public static final String FILTER_CODE_SEPARATOR = ";";
