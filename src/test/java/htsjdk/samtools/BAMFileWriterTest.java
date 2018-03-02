@@ -387,7 +387,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
 
     @Test
     public void testRealDataLongCigar() throws Exception {
-        final File samFile = new File("src/test/resources/htsjdk/tribble/cigar-64k.sam");
+        final File samFile = new File("src/test/resources/htsjdk/samtools/BAMCigarOverflowTest/cigar-64k.sam.gz");
         final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
         bamFile.deleteOnExit();
 

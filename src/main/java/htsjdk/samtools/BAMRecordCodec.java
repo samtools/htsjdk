@@ -109,6 +109,7 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
 
         // if cigar is too long, put into CG tag and replace with sentinel value
         if (alignment.getCigarLength() > BAMRecord.MAX_CIGAR_OPERATORS) {
+
             final int[] cigarEncoding = BinaryCigarCodec.encode(alignment.getCigar());
             alignment.setCigar(makeSentinelCigar(alignment.getCigar()));
             alignment.setAttribute(CG.name(), cigarEncoding);
@@ -202,6 +203,21 @@ public class BAMRecordCodec implements SortingCollection.Codec<SAMRecord> {
      * @return sentinel cigar xSyN with readLength (x) and referenceLength (y) matching the input cigar.
      */
     public static Cigar makeSentinelCigar(final Cigar cigar) {
+        // in BAM there are only 28 bits for a cigar operator, so this a protection against overflow.
+        if (cigar.getReadLength() > BAMRecord.MAX_CIGAR_ELEMENT_LENGTH) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Cannot encode (to BAM) a record with more than %d cigar operations and a read-length greater than %d.",
+                            BAMRecord.MAX_CIGAR_OPERATORS, BAMRecord.MAX_CIGAR_ELEMENT_LENGTH));
+        }
+
+        if (cigar.getReferenceLength() > BAMRecord.MAX_CIGAR_ELEMENT_LENGTH) {
+            throw new IllegalArgumentException(
+                    String.format(
+                            "Cannot encode (to BAM) a record that has than %d cigar operations and spans more than %d bases on the reference.",
+                            BAMRecord.MAX_CIGAR_OPERATORS, BAMRecord.MAX_CIGAR_ELEMENT_LENGTH));
+        }
+
         return new Cigar(Arrays.asList(
                 new CigarElement(cigar.getReadLength(), CigarOperator.S),
                 new CigarElement(cigar.getReferenceLength(), CigarOperator.N)));

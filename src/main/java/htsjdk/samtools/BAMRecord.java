@@ -56,6 +56,7 @@ public class BAMRecord extends SAMRecord {
      */
     public final static int MAX_CIGAR_OPERATORS = 0xffff;
 
+    public final static int MAX_CIGAR_ELEMENT_LENGTH = (1 << 28) - 1;
     /**
      * Number of operators in "Sentinel" cigar xSyN
      */
