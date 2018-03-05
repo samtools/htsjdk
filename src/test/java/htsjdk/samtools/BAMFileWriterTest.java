@@ -264,15 +264,29 @@ public class BAMFileWriterTest extends HtsjdkTest {
     @Test(dataProvider = "longCigarsData")
     public void testLongCigarsOneRead(int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        final List<CigarOperator> operators = getCigarOperatorsForTest(numOps);
-        final Cigar cigar = Cigar.fromCigarOperators(operators);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
 
         builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
 
         testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
     }
 
-    private List<CigarOperator> getCigarOperatorsForTest(int numOps) {
+
+    @Test(dataProvider = "longCigarsData")
+    public void testLongCigarsZerolengthRead(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+
+        final SAMRecord sam = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+        sam.setReadBases(new byte[]{});
+        sam.setBaseQualityString("");
+        // in htsjdk only secondary alignments are allowed to have read-length zero (doens't validate otherwise)
+        sam.setSecondaryAlignment(true);
+
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    private List<CigarOperator> getCigarOperatorsForTest(final int numOps) {
         final List<CigarOperator> operators = new ArrayList<>(numOps);
         for (int i = 0; i < numOps; i++) {
             operators.add(operatorsToUse[i % operatorsToUse.length]);
@@ -282,10 +296,9 @@ public class BAMFileWriterTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "longCigarsData")
-    public void testLongCigars(int numOps) throws Exception {
+    public void testLongCigars(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        final List<CigarOperator> operators = getCigarOperatorsForTest(numOps);
-        final Cigar cigar = Cigar.fromCigarOperators(operators);
+        final Cigar cigar = Cigar.fromCigarOperators( getCigarOperatorsForTest(numOps));
 
         builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
         builder.addPair("pair1", 0, 1, 100_000, false, false, cigar.toString(), cigar.toString(), true, false, 30);
@@ -345,7 +358,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "longCigarsData")
-    public void testNoCGTagCigars(int numOps) throws Exception {
+    public void testNoCGTagCigars(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
         final List<CigarOperator> operators = getCigarOperatorsForTest(numOps);
         final Cigar cigar = Cigar.fromCigarOperators(operators);
@@ -367,7 +380,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "longCigarsData", expectedExceptions = AssertionError.class)
-    public void testMisplacedCGTag(int numOps) throws Exception {
+    public void testMisplacedCGTag(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
         builder.setUseBamFile(false);
 

@@ -285,8 +285,9 @@ public class BAMRecord extends SAMRecord {
     }
 
     private static boolean isSentinelCigar(final Cigar cigar, final int readLength) {
+        // There's an implicit assumption here there readLength == length of read in cigar, unless readLength==0
         return cigar.getCigarElement(0).getOperator() == CigarOperator.S &&
-                cigar.getCigarElement(0).getLength() == readLength &&
+                (cigar.getCigarElement(0).getLength() == readLength || readLength == 0) &&
                 cigar.getCigarElement(1).getOperator() == CigarOperator.N;
     }
 

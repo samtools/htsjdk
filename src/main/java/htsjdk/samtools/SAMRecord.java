@@ -2070,7 +2070,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
         // TODO(mccowan): Is this asking "is this the primary alignment"?
-        if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
+        if (this.getReadLength() == 0 && !this.isSecondaryOrSupplementary()) {
             final Object fz = getAttribute(SAMTagUtil.getSingleton().FZ);
             if (fz == null) {
                 final String cq = (String)getAttribute(SAMTagUtil.getSingleton().CQ);
