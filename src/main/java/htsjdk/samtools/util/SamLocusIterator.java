@@ -137,7 +137,6 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             final CigarElement e = cigar.get(elementIndex);
             final CigarOperator operator = e.getOperator();
             if (operator.equals(CigarOperator.I)) {
-                System.err.println("");
                 // insertions are included in the previous base
                 accumulator.get(refBase - 1).addInserted(rec, readBase);
                 readBase += e.getLength();
