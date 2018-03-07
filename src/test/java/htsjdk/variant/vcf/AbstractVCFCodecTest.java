@@ -56,19 +56,12 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         Assert.assertEquals(new VCF3Codec().getTabixFormat(), TabixFormat.VCF);
     }
 
-    private void assertIntArraysAreEqual(int[] v1, int[] v2) {
-        Assert.assertEquals(v1.length, v2.length);
-        for ( int i = 0; i < v1.length; i++ ) {
-            Assert.assertEquals(v1[i], v2[i]);
-        }
-    }
-
     @Test
     public void testGLnotOverridePL() {
         VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false);
         VariantContext variant = reader.iterator().next();
         reader.close();
 
-        assertIntArraysAreEqual(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
+        Assert.assertEquals(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
     }
 }
