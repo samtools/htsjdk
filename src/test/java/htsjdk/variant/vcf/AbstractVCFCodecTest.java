@@ -63,14 +63,12 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
         }
     }
 
-
     @Test
-    public void testGLnotOverridePL(){
+    public void testGLnotOverridePL() {
         VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false);
         VariantContext variant = reader.iterator().next();
         reader.close();
 
-        assertIntArraysAreEqual(variant.getGenotype(0).getPL(), new int[]{45,0,50});
-
+        assertIntArraysAreEqual(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
     }
 }
