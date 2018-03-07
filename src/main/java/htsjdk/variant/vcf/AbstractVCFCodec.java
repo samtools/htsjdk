@@ -719,7 +719,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
                             gb.PL(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
-                            gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
+                            // Do not overwrite PL with data from GL
+                            if (!gb.make().hasPL()) {
+                                gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
+                            }
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
                             gb.DP(Integer.valueOf(genotypeValues.get(i)));
                         } else {
