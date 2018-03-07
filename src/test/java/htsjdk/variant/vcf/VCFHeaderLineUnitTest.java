@@ -25,7 +25,6 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         assertEquals(encodedAttributes, expectedEncoding);
     }
 
-
     @Test
     public void testEncodeVCFHeaderLineWithEscapedQuotes() {
 
@@ -40,4 +39,28 @@ public class VCFHeaderLineUnitTest extends VariantBaseTest {
         assertEquals(encodedAttributes, expectedEncoding);
     }
 
+    @Test(expectedExceptions = { IllegalArgumentException.class }, expectedExceptionsMessageRegExp = "Invalid count number, with fixed count the number should be 1 or higher: .*")
+    public void testFormatNumberExeptions() {
+        new VCFFormatHeaderLine("test",
+                0,
+                VCFHeaderLineType.Integer,
+                "");
+    }
+
+    @Test(expectedExceptions = { IllegalArgumentException.class }, expectedExceptionsMessageRegExp = "Invalid count number, with fixed count the number should be 1 or higher: .*")
+    public void testInfoNumberExeptions() {
+        new VCFInfoHeaderLine("test",
+                0,
+                VCFHeaderLineType.Integer,
+                "");
+    }
+
+    @Test
+    public void testNumberExceptionFlag() {
+        // Should not raise an exception
+        new VCFInfoHeaderLine("test",
+                0,
+                VCFHeaderLineType.Flag,
+                "");
+    }
 }
