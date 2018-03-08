@@ -1,7 +1,7 @@
 package htsjdk.utils;
 
 import htsjdk.HtsjdkTest;
-import org.junit.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
