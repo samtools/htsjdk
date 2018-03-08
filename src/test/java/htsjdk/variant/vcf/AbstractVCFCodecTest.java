@@ -16,10 +16,11 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test
     public void shouldPreserveSymbolicAlleleCase() {
-        VCFFileReader reader = new VCFFileReader(new File(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"), false);
-        VariantContext variant = reader.iterator().next();
-        reader.close();
+        final VariantContext variant;
+        try (final VCFFileReader reader = new VCFFileReader(new File(VariantBaseTest.variantTestDataRoot + "breakpoint.vcf"), false)) {
+            variant = reader.iterator().next();
 
+        }
         // VCF v4.1 s1.4.5
         // Tools processing VCF files are not required to preserve case in the allele String, except for IDs, which are case sensitive.
         Assert.assertTrue(variant.getAlternateAllele(0).getDisplayString().contains("chr12"));
@@ -27,12 +28,12 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test
     public void TestSpanDelParseAlleles() {
-        List<Allele> list = VCF3Codec.parseAlleles("A", Allele.SPAN_DEL_STRING, 0);
+        final List<Allele> list = VCF3Codec.parseAlleles("A", Allele.SPAN_DEL_STRING, 0);
     }
 
     @Test(expectedExceptions = TribbleException.class)
     public void TestSpanDelParseAllelesException() {
-        List<Allele> list1 = VCF3Codec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
+        final List<Allele> list1 = VCF3Codec.parseAlleles(Allele.SPAN_DEL_STRING, "A", 0);
     }
 
     @DataProvider(name = "thingsToTryToDecode")
@@ -58,10 +59,11 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
 
     @Test
     public void testGLnotOverridePL() {
-        VCFFileReader reader = new VCFFileReader(new File("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false);
-        VariantContext variant = reader.iterator().next();
-        reader.close();
-
+        final VariantContext variant;
+        try (final VCFFileReader reader = new VCFFileReader(
+                new File("src/test/resources/htsjdk/variant/test_withGLandPL.vcf"), false)) {
+            variant = reader.iterator().next();
+        }
         Assert.assertEquals(variant.getGenotype(0).getPL(), new int[]{45, 0, 50});
     }
 }
