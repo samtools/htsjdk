@@ -18,6 +18,9 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
@@ -26,11 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -99,8 +98,8 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {
         try {
-            // Test for tabix index
-            if (methods.isTabix(featureResource, indexResource)) {
+            // Test for BGZF formatted file
+            if (methods.isTabix(featureResource, SeekableStreamFactory.getInstance().getBufferedStream(SeekableStreamFactory.getInstance().getStreamFor(featureResource, wrapper)), indexResource)) {
                 if ( ! (codec instanceof AsciiFeatureCodec) )
                     throw new TribbleException("Tabix indexed files only work with ASCII codecs, but received non-Ascii codec " + codec.getClass().getSimpleName());
                 return new TabixFeatureReader<>(featureResource, indexResource, (AsciiFeatureCodec) codec, wrapper, indexWrapper);
@@ -237,16 +236,42 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     }
 
     public static boolean isTabix(String resourcePath, String indexPath) throws IOException {
-        if(indexPath == null){
+        try (SeekableStream inputStream = SeekableStreamFactory.getInstance().getStreamFor(resourcePath)) {
+            return isTabix(resourcePath, inputStream,indexPath);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public static boolean isTabix(String resourcePath, SeekableStream inputStream, String indexPath) throws IOException {
+        if (indexPath == null) {
             indexPath = ParsingUtils.appendToPath(resourcePath, TabixUtils.STANDARD_INDEX_EXTENSION);
         }
-        return hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
+        boolean isBGZF = isBGZFFile(inputStream);
+        boolean hasIndex = ParsingUtils.resourceExists(indexPath);
+        if (hasIndex && !isBGZF && indexPath.endsWith(TabixUtils.STANDARD_INDEX_EXTENSION)) {
+            throw new TribbleException(String.format("Detected Tabix index for file %s, but the file does not appear to be compressed in BGZF format", resourcePath));
+        }
+
+        return hasBlockCompressedExtension(resourcePath) && hasIndex;
+    }
+
+    public static boolean isBGZFFile(SeekableStream inputStream) {
+        try {
+            return BlockCompressedInputStream.isValidFile(inputStream);
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     public static class ComponentMethods{
 
         public boolean isTabix(String resourcePath, String indexPath) throws IOException{
             return AbstractFeatureReader.isTabix(resourcePath, indexPath);
+        }
+
+        public boolean isTabix(String resourcePath, SeekableStream inputStream, String indexPath) throws IOException{
+            return AbstractFeatureReader.isTabix(resourcePath, inputStream, indexPath);
         }
     }
 }

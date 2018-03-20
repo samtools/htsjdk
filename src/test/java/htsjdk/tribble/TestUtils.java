@@ -18,12 +18,18 @@
 
 package htsjdk.tribble;
 
+import htsjdk.samtools.seekablestream.SeekableStreamFactory;
+import htsjdk.tribble.util.ParsingUtils;
+import htsjdk.tribble.util.TabixUtils;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.function.Function;
 
 /**
  * User: jacob
@@ -44,7 +50,7 @@ public class TestUtils {
      * @throws URISyntaxException if the provided strings cannot be understoos as Uris.
      */
 
-    public static Path getTribbleFileInJimfs(String vcf, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
+    public static Path getTribbleFileInJimfs(String vcf, Function<SeekableByteChannel, SeekableByteChannel> wrapper, String index, FileSystem fileSystem) throws IOException, URISyntaxException {
         final FileSystem fs = fileSystem;
         final Path root = fs.getPath("/");
         final Path vcfPath = Paths.get(vcf);
@@ -52,9 +58,16 @@ public class TestUtils {
         final Path vcfDestination = root.resolve(vcfPath.getFileName().toString());
         if (index != null) {
             final Path idxPath = Paths.get(index);
-            final Path idxDestination = AbstractFeatureReader.isTabix(vcf, index) ? Tribble.tabixIndexPath(vcfDestination) : Tribble.indexPath(vcfDestination);
+            final Path idxDestination = isTabix(vcf, index) ? Tribble.tabixIndexPath(vcfDestination) : Tribble.indexPath(vcfDestination);
             Files.copy(idxPath, idxDestination);
         }
         return Files.copy(vcfPath, vcfDestination);
+    }
+
+    private static boolean isTabix(String resourcePath, String indexPath) throws IOException {
+        if (indexPath == null) {
+            indexPath = ParsingUtils.appendToPath(resourcePath, TabixUtils.STANDARD_INDEX_EXTENSION);
+        }
+        return AbstractFeatureReader.hasBlockCompressedExtension(resourcePath) && ParsingUtils.resourceExists(indexPath);
     }
 }
