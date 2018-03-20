@@ -680,6 +680,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         alleleMap.clear();
 
         // cycle through the genotype strings
+        boolean PlIsSet = false;
         for (int genotypeOffset = 1; genotypeOffset < nParts; genotypeOffset++) {
             List<String> genotypeValues = ParsingUtils.split(genotypeParts[genotypeOffset], VCFConstants.GENOTYPE_FIELD_SEPARATOR_CHAR);
 
@@ -718,9 +719,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                             gb.AD(decodeInts(genotypeValues.get(i)));
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_PL_KEY)) {
                             gb.PL(decodeInts(genotypeValues.get(i)));
+                            PlIsSet = true;
                         } else if (gtKey.equals(VCFConstants.GENOTYPE_LIKELIHOODS_KEY)) {
                             // Do not overwrite PL with data from GL
-                            if (!gb.make().hasPL()) {
+                            if (!PlIsSet) {
                                 gb.PL(GenotypeLikelihoods.fromGLField(genotypeValues.get(i)).getAsPLs());
                             }
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
