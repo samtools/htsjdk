@@ -42,7 +42,7 @@ public class BEDSimpleEncoder implements FeatureEncoder<Feature> {
 
     /**
      * Writes as a BED feature. Note: BED coordinates are 0-based, so the start position returned by
-     * {@link Feature#getStart()} may be different thant the output start position.
+     * {@link Feature#getStart()} may be different than the output start position.
      */
     @Override
     public void write(final Appendable out, final Feature feature) throws IOException {
