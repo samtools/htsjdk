@@ -38,8 +38,6 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.List;
-
 
 public class GenotypeUnitTest extends VariantBaseTest {
     Allele A, Aref, T;
@@ -78,20 +76,17 @@ public class GenotypeUnitTest extends VariantBaseTest {
 
     @Test
     public void getAnyAttributeTest() {
-        List<Object> expectedInts = Arrays.asList(1, 2);
-        List<Object> expectedFloats = Arrays.asList(1.1, 1.2);
-        List<Object> expectedStrs = Arrays.asList("a", "b");
-        List<Object> expectedChars = Arrays.asList('a', 'b');
         VCFFileReader reader = new VCFFileReader(new File(variantTestDataRoot + "analyzeHeaderFormatLines.vcf.gz"), true);
         VariantContext ctx = reader.query("chr1", 1, 100).next();
         Genotype gt = ctx.getGenotype(0);
 
-        Assert.assertEquals((List) gt.getAnyAttribute("XP"), expectedInts);
-        Assert.assertEquals((List) gt.getAnyAttribute("XE"), expectedFloats);
-        Assert.assertEquals((List) gt.getAnyAttribute("XR"), expectedStrs);
-        Assert.assertEquals((List) gt.getAnyAttribute("XT"), expectedChars);
-        Assert.assertEquals((List) gt.getAnyAttribute("XU"), expectedInts);
-        Assert.assertEquals(gt.getAnyAttribute("XY"), ".,.");
+        Assert.assertEquals(gt.getAnyAttribute("XP"), Arrays.asList(1, 2));
+        Assert.assertEquals(gt.getAnyAttribute("XE"), Arrays.asList(1.1, 1.2));
+        Assert.assertEquals(gt.getAnyAttribute("XR"), Arrays.asList("a", "b"));
+        Assert.assertEquals(gt.getAnyAttribute("XT"), Arrays.<Object>asList('a', 'b'));
+        Assert.assertEquals(gt.getAnyAttribute("XU"), Arrays.<Object>asList(1, 2, null));
+        Assert.assertEquals(gt.getAnyAttribute("XY"), Arrays.asList(null, null));
+        Assert.assertEquals(gt.getAnyAttribute("XJ"), Arrays.asList("", "", "", ""));
         Assert.assertEquals(gt.getAnyAttribute("XI"), 1);
         Assert.assertEquals(gt.getAnyAttribute("XO"), 1.1);
         Assert.assertEquals(gt.getAnyAttribute("XQ"), 'a');

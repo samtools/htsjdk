@@ -757,47 +757,36 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
 
         final VCFFormatHeaderLine formLine = header.getFormatHeaderLine(key);
         final VCFHeaderLineType valType = formLine.getType();
-        final boolean isSingleVal = formLine.isFixedCount()
-                ? formLine.getCount() == 1
-                : !vals.contains(VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR);
+        final boolean isSingleVal = !vals.contains(VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR);
 
-        if (isSingleVal) {
-            return valType == VCFHeaderLineType.String
-                    ? vals
-                    : getMapperFunction(valType).apply(vals);
-        } else {
-            final List<?> targetTypeVals = mapToFormatLineType(
-                    ParsingUtils.split(vals, VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR_CHAR),
-                    valType);
-            return targetTypeVals.isEmpty() ? vals : targetTypeVals;
-        }
+
+        return isSingleVal
+                ? getMapperFunction(valType).apply(vals)
+                : mapToFormatLineType(
+                        ParsingUtils.split(vals, VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR_CHAR),
+                        valType);
     }
 
     private List<?> mapToFormatLineType(final List<String> genVals, final VCFHeaderLineType genValType) {
-        if (genValType == VCFHeaderLineType.String) {
-            return genVals;
-        }
-
         final List<Object> genRealTypeVals = new ArrayList<>(genVals.size());
         final Function<String, Object> mapperFunc = getMapperFunction(genValType);
 
-        genVals.forEach(genVal -> {
-            if (!genVal.equals(VCFConstants.MISSING_VALUE_v4)) {
-                genRealTypeVals.add(mapperFunc.apply(genVal));
-            }
-        });
+        genVals.forEach(genVal -> genRealTypeVals.add(
+                !genVal.equals(VCFConstants.MISSING_VALUE_v4)
+                        ? mapperFunc.apply(genVal)
+                        : null));
 
         return genRealTypeVals;
     }
 
     private Function<String, Object> getMapperFunction(final VCFHeaderLineType genValType) {
-        if (genValType == VCFHeaderLineType.Integer) {
-            return Integer::parseInt;
+        switch(genValType){
+            case String: return x -> x;
+            case Integer: return Integer::parseInt;
+            case Float: return Double::parseDouble;
+            case Character: return x -> x.charAt(0);
+            default: throw new IllegalArgumentException("Unknown type of genotype field's value(s)");
         }
-        if (genValType == VCFHeaderLineType.Float) {
-            return Double::parseDouble;
-        }
-        return x -> x.charAt(0);
     }
 
     private static final int[] decodeInts(final String string) {
