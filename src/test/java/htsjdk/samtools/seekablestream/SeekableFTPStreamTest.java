@@ -55,7 +55,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
         stream.close();
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testLength() throws Exception {
         long length = stream.length();
         Assert.assertEquals(fileSize, length);
@@ -67,7 +67,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test(groups = "ftp")
     public void testBufferedRead() throws Exception {
 
         byte[] buffer = new byte[64000];
@@ -80,7 +80,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      * Test requesting a range that extends beyond the end of the file
      */
 
-    @Test
+    @Test(groups = "ftp")
     public void testRange() throws Exception {
         stream.seek(20);
         byte[] buffer = new byte[64000];
@@ -93,7 +93,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      * Test requesting a range that begins beyond the end of the file
      */
 
-    @Test
+    @Test(groups = "ftp")
     public void testBadRange() throws Exception {
         stream.seek(30);
         byte[] buffer = new byte[64000];

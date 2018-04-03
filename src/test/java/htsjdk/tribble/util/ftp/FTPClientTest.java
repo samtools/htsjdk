@@ -37,12 +37,12 @@ public class FTPClientTest extends HtsjdkTest {
         client.disconnect();
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testLogin() throws Exception {
 
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testPasv() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -55,7 +55,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testSize() throws Exception {
 
         FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -70,7 +70,7 @@ public class FTPClientTest extends HtsjdkTest {
         Assert.assertEquals(fileSize, size, "size");
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testDownload() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -101,7 +101,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testRest() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -138,7 +138,7 @@ public class FTPClientTest extends HtsjdkTest {
     /**
      * Test accessing a non-existent file
      */
-    @Test
+    @Test(groups = "ftp")
     public void testNonExistentFile() throws Exception {
 
         String host = "ftp.broadinstitute.org";
@@ -163,7 +163,7 @@ public class FTPClientTest extends HtsjdkTest {
     /**
      * Test accessing a non-existent server
      */
-    @Test
+    @Test(groups = "ftp")
     public void testNonExistentServer() throws Exception {
 
         String host = "ftp.noSuchServer.org";
@@ -180,7 +180,7 @@ public class FTPClientTest extends HtsjdkTest {
         client.disconnect();
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testMultiplePasv() throws Exception {
 
         try {
@@ -200,7 +200,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testMultipleRest() throws Exception {
         FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
         Assert.assertTrue(reply.isSuccess(), "login");
