@@ -48,7 +48,7 @@ public class FTPClientTest extends HtsjdkTest {
 
     }
 
-    @Test(groups={"yossis_test"})
+    @Test(groups={"yossis_test"},   invocationCount = 50, successPercentage = 80)
     public void testPasv() throws Exception {
         try {
             System.out.println("IN function testPasv()");
