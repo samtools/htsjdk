@@ -98,6 +98,7 @@ test {
     }
 
     tags {
+        include "yossis_test"
         exclude "slow"
         exclude "broken"
         if (System.env.CI == "false") exclude "sra"

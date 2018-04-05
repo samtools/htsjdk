@@ -18,40 +18,52 @@ import java.net.UnknownHostException;
 */
 public class FTPClientTest extends HtsjdkTest {
 
-    static String host = "ftp.broadinstitute.org";
-    static String file = "/pub/igv/TEST/test.txt";
-    static int fileSize = 27;
-    static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
+    final static String host = "ftp.broadinstitute.org";
+    final static String file = "/pub/igv/TEST/test.txt";
+    final static int fileSize = 27;
+    final static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
+
     FTPClient client;
 
-    @BeforeMethod
+    @BeforeMethod(alwaysRun = true)
     public void setUp() throws IOException {
+        System.out.println("SETUP-in");
+
         client = new FTPClient();
+        System.out.println("SETUP-new");
         FTPReply reply = client.connect(host);
+        System.out.println("SETUP-conenct");
         Assert.assertTrue(reply.isSuccess(), "connect");
+        System.out.println("SETUP-success");
     }
 
-    @AfterMethod
+    @AfterMethod(alwaysRun = true)
     public void tearDown() {
         System.out.println("Disconnecting");
         client.disconnect();
     }
 
-    @Test
+    @Test(groups = {"yossis_test"})
     public void testLogin() throws Exception {
 
     }
 
-    @Test
+    @Test(groups={"yossis_test"})
     public void testPasv() throws Exception {
         try {
+            System.out.println("IN function");
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
+            System.out.println("Logged-in");
             Assert.assertTrue(reply.isSuccess(), "login");
-
+            System.out.println("Successfully");
             reply = client.pasv();
+            System.out.println("Passive mode");
             Assert.assertTrue(reply.isSuccess(), "pasv");
+            System.out.println("Successfully");
         } finally {
+            System.out.println("IN FINALLY");
             client.closeDataStream();
+            System.out.println("Closed DS");
         }
     }
 
@@ -70,34 +82,61 @@ public class FTPClientTest extends HtsjdkTest {
         Assert.assertEquals(fileSize, size, "size");
     }
 
-    @Test
+    @Test(groups={"yossis_test"})
     public void testDownload() throws Exception {
         try {
+            System.out.println("IN function");
+
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
+            System.out.println("Logged-in");
+
             Assert.assertTrue(reply.isSuccess(), "login");
+            System.out.println("Successfully");
 
             reply = client.binary();
+            System.out.println("binary");
+
             Assert.assertTrue(reply.isSuccess(), "binary");
+            System.out.println("Successfully");
 
             reply = client.pasv();
+            System.out.println("pasv");
+
             Assert.assertTrue(reply.isSuccess(), "pasv");
+            System.out.println("Successfully");
 
             reply = client.retr(file);
+            System.out.println("retrieve");
+
             Assert.assertEquals(reply.getCode(), 150, "retr");
+            System.out.println("Successfully");
 
             InputStream is = client.getDataStream();
+            System.out.println("got DS");
+
             int idx = 0;
             int b;
             while ((b = is.read()) >= 0) {
+                System.out.println("reading");
                 Assert.assertEquals(expectedBytes[idx], (byte) b,"reading from stream");
+                System.out.println("expected amount");
                 idx++;
             }
 
         } finally {
+            System.out.println("in FINALLY");
+
             client.closeDataStream();
+            System.out.println("closed DS");
+
             FTPReply reply = client.retr(file);
+            System.out.println("got file");
+
             System.out.println(reply.getCode());
+            System.out.println("Successfully");
             Assert.assertTrue(reply.isSuccess(), "close");
+            System.out.println("is Success");
+
         }
     }
 
