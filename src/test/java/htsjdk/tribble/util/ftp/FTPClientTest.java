@@ -52,16 +52,22 @@ public class FTPClientTest extends HtsjdkTest {
     public void testPasv() throws Exception {
         try {
             System.out.println("IN function testPasv()");
+
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
             System.out.println("Logged-in");
+
             Assert.assertTrue(reply.isSuccess(), "login");
             System.out.println("Successfully");
+
             reply = client.pasv();
             System.out.println("Passive mode");
+
             Assert.assertTrue(reply.isSuccess(), "pasv");
             System.out.println("Successfully");
+
         } finally {
             System.out.println("IN FINALLY");
+
             client.closeDataStream();
             System.out.println("Closed DS");
         }

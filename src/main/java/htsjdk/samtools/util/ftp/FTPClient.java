@@ -38,7 +38,7 @@ public class FTPClient {
 
     private Socket commandSocket = null;
 
-    public static int READ_TIMEOUT = 5 * 60 * 1000;
+    public static int READ_TIMEOUT = 1 * 60 * 1000;
 
     /**
      * Stream to write commands.
@@ -87,10 +87,31 @@ public class FTPClient {
      * Wrapper for the commands <code>user [username]</code> and <code>pass
      * [password]</code>.
      */
+    @Deprecated
     public FTPReply login(String username, String password) throws IOException {
+        return loginAndSetMode(username, password, false);
+    }
+
+    /**
+     * Wrapper for the commands <code>user [username]</code> and <code>pass
+     * [password]</code>.
+     */
+    public FTPReply passiveLogin(String username, String password) throws IOException {
+        return loginAndSetMode(username, password, true);
+    }
+
+    /**
+     * Wrapper for the commands <code>user [username]</code> and <code>pass
+     * [password]</code>.
+     */
+    private FTPReply loginAndSetMode(String username, String password, final boolean passive) throws IOException {
         FTPReply response = executeCommand("user " + username);
         if (!response.isPositiveIntermediate()) return response;
         response = executeCommand("pass " + password);
+        if (!response.isSuccess()) return response;
+        if (passive) {
+            response = pasv();
+        }
         return response;
     }
 
@@ -102,16 +123,25 @@ public class FTPClient {
         return executeCommand("TYPE I");
     }
 
-
     public FTPReply pasv() throws IOException {
+        System.out.println("in function-pasv()");
 
         FTPReply reply = executeCommand("PASV");
+        System.out.println("execute");
 
+        System.out.println("getCode = " + reply.getCode());
         if (reply.getCode() == 226 || reply.getCode() == 426) {
+            System.out.println("getCode if TRUE");
+
             reply = getReply();
+            System.out.println("reply= " + reply);
+
+        } else {
+            System.out.println("getCode if FALSE");
         }
 
         String response = reply.getReplyString();
+        System.out.println("reply string= " + response);
 
 
         int code = reply.getCode();
@@ -132,13 +162,29 @@ public class FTPClient {
                 throw new IOException("SimpleFTP received bad data link information: " + response);
             }
         }
+        System.out.println("host= " + passiveHost + " port= " + passivePort);
+
 
         if (reply.isPositiveCompletion()) {
+            System.out.println("reply is PositiveCompletion");
+
             if (dataStream == null) {
                 Socket dataSocket = new Socket(passiveHost, passivePort);
+                System.out.println("new socket");
+
                 dataSocket.setSoTimeout(READ_TIMEOUT);
+                System.out.println("timeout set: " + READ_TIMEOUT);
+
                 dataStream = new SocketInputStream(dataSocket, dataSocket.getInputStream());
+                System.out.println("got datastream");
+
+            } else {
+                System.out.println("datastream already non-null");
+
             }
+        } else {
+            System.out.println("reply not positiveCompletion");
+
         }
         return reply;
     }
