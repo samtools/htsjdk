@@ -51,7 +51,7 @@ public class FTPClientTest extends HtsjdkTest {
     @Test(groups={"yossis_test"})
     public void testPasv() throws Exception {
         try {
-            System.out.println("IN function");
+            System.out.println("IN function testPasv()");
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
             System.out.println("Logged-in");
             Assert.assertTrue(reply.isSuccess(), "login");
@@ -85,7 +85,7 @@ public class FTPClientTest extends HtsjdkTest {
     @Test(groups={"yossis_test"})
     public void testDownload() throws Exception {
         try {
-            System.out.println("IN function");
+            System.out.println("IN function testDownload()");
 
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
             System.out.println("Logged-in");
