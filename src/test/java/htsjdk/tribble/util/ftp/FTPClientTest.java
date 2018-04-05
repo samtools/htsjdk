@@ -48,7 +48,7 @@ public class FTPClientTest extends HtsjdkTest {
 
     }
 
-    @Test(groups={"yossis_test"},   invocationCount = 50, successPercentage = 80)
+    @Test(groups={"yossis_test"},   invocationCount = 5)
     public void testPasv() throws Exception {
         try {
             System.out.println("IN function testPasv()");
@@ -88,7 +88,7 @@ public class FTPClientTest extends HtsjdkTest {
         Assert.assertEquals(fileSize, size, "size");
     }
 
-    @Test(groups={"yossis_test"})
+    @Test(groups={"yossis_test"},   invocationCount = 5)
     public void testDownload() throws Exception {
         try {
             System.out.println("IN function testDownload()");
@@ -99,11 +99,11 @@ public class FTPClientTest extends HtsjdkTest {
             Assert.assertTrue(reply.isSuccess(), "login");
             System.out.println("Successfully");
 
-            reply = client.binary();
-            System.out.println("binary");
-
             Assert.assertTrue(reply.isSuccess(), "binary");
             System.out.println("Successfully");
+
+            reply = client.binary();
+            System.out.println("binary");
 
             reply = client.pasv();
             System.out.println("pasv");
