@@ -169,6 +169,8 @@ public class FTPClient {
             System.out.println("reply is PositiveCompletion");
 
             if (dataStream == null) {
+                System.out.println("data stream is null");
+
                 Socket dataSocket = new Socket(passiveHost, passivePort);
                 System.out.println("new socket");
 
@@ -236,9 +238,11 @@ public class FTPClient {
         //    } catch (InterruptedException e) {
         //
         //    }
-        dataStream.close();
+        if (dataStream!=null) {
+            dataStream.close();
+            dataStream = null;
+        }
         //}
-        dataStream = null;
     }
 
 
