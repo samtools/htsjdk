@@ -36,6 +36,7 @@ import java.net.URL;
  * @author Jim Robinson
  * @since 10/3/11
  */
+@Test(groups = "ftp")
 public class SeekableFTPStreamTest extends HtsjdkTest {
 
 
@@ -44,18 +45,18 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
     static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
     SeekableFTPStream stream;
 
-    @BeforeMethod
+    @BeforeMethod()
     public void setUp() throws IOException {
         stream = new SeekableFTPStream(new URL(urlString));
 
     }
 
-    @AfterMethod
+    @AfterMethod()
     public void tearDown() throws IOException {
         stream.close();
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testLength() throws Exception {
         long length = stream.length();
         Assert.assertEquals(fileSize, length);
@@ -67,7 +68,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      *
      * @throws Exception
      */
-    @Test(groups = "ftp")
+    @Test
     public void testBufferedRead() throws Exception {
 
         byte[] buffer = new byte[64000];
@@ -80,7 +81,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      * Test requesting a range that extends beyond the end of the file
      */
 
-    @Test(groups = "ftp")
+    @Test
     public void testRange() throws Exception {
         stream.seek(20);
         byte[] buffer = new byte[64000];
@@ -93,7 +94,7 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
      * Test requesting a range that begins beyond the end of the file
      */
 
-    @Test(groups = "ftp")
+    @Test
     public void testBadRange() throws Exception {
         stream.seek(30);
         byte[] buffer = new byte[64000];

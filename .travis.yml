@@ -11,7 +11,19 @@ cache:
 jdk:
   - oraclejdk8
   - openjdk8
-script: ./gradlew test jacocoTestReport;
+matrix:
+  fast_finish: true
+  allow_failures: evn: TEST_TYPE=FTP
+  include:
+     - jdk: oraclejdk8
+       env: TEST_TYPE=FTP
+script:
+  - if [ $TEST_TYPE == "FTP" ]; then
+        ./gradlew testFTP jacocoTestReport;
+    else
+        script: ./gradlew test jacocoTestReport;
+    fi
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
   - echo "TRAVIS_BRANCH='$TRAVIS_BRANCH'";

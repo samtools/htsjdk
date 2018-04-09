@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 * @author Jim Robinson
 * @since 10/3/11
 */
+@Test(groups="ftp")
 public class FTPClientTest extends HtsjdkTest {
 
     static String host = "ftp.broadinstitute.org";
@@ -37,12 +38,12 @@ public class FTPClientTest extends HtsjdkTest {
         client.disconnect();
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testLogin() throws Exception {
 
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testPasv() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -55,7 +56,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testSize() throws Exception {
 
         FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -70,7 +71,7 @@ public class FTPClientTest extends HtsjdkTest {
         Assert.assertEquals(fileSize, size, "size");
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testDownload() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -101,7 +102,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testRest() throws Exception {
         try {
             FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
@@ -138,7 +139,7 @@ public class FTPClientTest extends HtsjdkTest {
     /**
      * Test accessing a non-existent file
      */
-    @Test(groups = "ftp")
+    @Test
     public void testNonExistentFile() throws Exception {
 
         String host = "ftp.broadinstitute.org";
@@ -163,7 +164,7 @@ public class FTPClientTest extends HtsjdkTest {
     /**
      * Test accessing a non-existent server
      */
-    @Test(groups = "ftp")
+    @Test
     public void testNonExistentServer() throws Exception {
 
         String host = "ftp.noSuchServer.org";
@@ -180,7 +181,7 @@ public class FTPClientTest extends HtsjdkTest {
         client.disconnect();
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testMultiplePasv() throws Exception {
 
         try {
@@ -200,7 +201,7 @@ public class FTPClientTest extends HtsjdkTest {
         }
     }
 
-    @Test(groups = "ftp")
+    @Test
     public void testMultipleRest() throws Exception {
         FTPReply reply = client.login("anonymous", "igv@broadinstitute.org");
         Assert.assertTrue(reply.isSuccess(), "login");
