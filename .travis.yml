@@ -13,15 +13,16 @@ jdk:
   - openjdk8
 matrix:
   fast_finish: true
-  allow_failures: evn: TEST_TYPE=FTP
+  allow_failures: 
+     -  evn: TEST_TYPE=FTP
   include:
      - jdk: oraclejdk8
        env: TEST_TYPE=FTP
 script:
-  - if [ $TEST_TYPE == "FTP" ]; then
+  - if [[ $TEST_TYPE == "FTP" ]]; then
         ./gradlew testFTP jacocoTestReport;
     else
-        script: ./gradlew test jacocoTestReport;
+        ./gradlew test jacocoTestReport;
     fi
 
 after_success:
