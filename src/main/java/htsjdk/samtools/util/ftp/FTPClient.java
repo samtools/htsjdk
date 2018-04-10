@@ -190,9 +190,10 @@ public class FTPClient {
         //    } catch (InterruptedException e) {
         //
         //    }
-        dataStream.close();
-        //}
-        dataStream = null;
+        if( dataStream != null) {
+            dataStream.close();
+            dataStream = null;
+        }
     }
 
 
