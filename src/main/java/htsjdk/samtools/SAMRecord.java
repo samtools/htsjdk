@@ -978,7 +978,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return whether the alignment is secondary (an alternative alignment of the read).
      */
     public boolean isSecondaryAlignment() {
-        return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) t!= 0;
+        return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) != 0;
     }
 
     /**
