@@ -975,14 +975,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (an alternative alignment of the read).
+     * @return the alignment is secondary (an alternative alignment of the read).
      */
     public boolean isSecondaryAlignment() {
         return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) t!= 0;
     }
 
     /**
-     * the alignment is supplementary (a split alignment like in a chimeric read).
+     * @return the alignment is supplementary (a split alignment such as a chimeric read).
      */
     public boolean getSupplementaryAlignmentFlag() {
         return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
@@ -1080,14 +1080,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (an alternative alignment of the read).
+     * set whether this record is secondary (an alternative alignment of the read).
      */
     public void setSecondaryAlignment(final boolean flag) {
         setFlag(flag, SAMFlag.SECONDARY_ALIGNMENT.flag);
     }
 
     /**
-     * the alignment is supplementary (a split alignment like in a chimeric read).
+     * set whether this record is supplementary (a split alignment such as a chimeric read).
      */
     public void setSupplementaryAlignmentFlag(final boolean flag) {
         setFlag(flag, SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag);
