@@ -15,7 +15,7 @@ import static org.testng.Assert.assertTrue;
 */
 public class FTPUtilsTest extends HtsjdkTest {
 
-    @Test
+    @Test(groups ="ftp")
     public void testResourceAvailable() throws Exception {
 
         URL goodUrl = new URL("ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt");

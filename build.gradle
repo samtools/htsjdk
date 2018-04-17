@@ -100,10 +100,21 @@ test {
     tags {
         exclude "slow"
         exclude "broken"
+        exclude "ftp"
         if (System.env.CI == "false") exclude "sra"
         if (!OperatingSystem.current().isUnix()) exclude "unix"
     }
 } dependsOn findScalaAndJavaTypes
+
+
+task testFTP(type: Test) {
+    description = "Runs the tests that require connection to a remote ftp server"
+    tags {
+        include "ftp"
+        exclude "slow"
+        exclude "broken"
+    }
+}
 
 task testSRA(type: Test) {
     description = "Run the SRA tests"

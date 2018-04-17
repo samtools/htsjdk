@@ -153,12 +153,12 @@ public class ParsingUtilsTest extends HtsjdkTest {
         tstExists(file.toUri().toString(), false);
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testFTPDoesExist() throws IOException{
         tstExists(AVAILABLE_FTP_URL, true);
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testFTPNotExist() throws IOException{
         tstExists(UNAVAILABLE_FTP_URL, false);
     }
@@ -198,7 +198,7 @@ public class ParsingUtilsTest extends HtsjdkTest {
         tstStream(file.toUri().toString());
     }
 
-    @Test
+    @Test(groups = "ftp")
     public void testFTPOpenInputStream() throws IOException{
         tstStream(AVAILABLE_FTP_URL);
     }
