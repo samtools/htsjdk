@@ -982,7 +982,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * @return whether the alignment is supplementary (a split alignment such as a chimeric read).
+     * @return whether the alignment is supplementary (a split alignment such as a chimeric alignment).
      */
     public boolean getSupplementaryAlignmentFlag() {
         return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
@@ -1087,7 +1087,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * set whether this alignment is supplementary (a split alignment such as a chimeric read).
+     * set whether this alignment is supplementary (a split alignment such as a chimeric alignment).
      */
     public void setSupplementaryAlignmentFlag(final boolean flag) {
         setFlag(flag, SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag);
