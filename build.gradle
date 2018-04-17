@@ -19,6 +19,11 @@ repositories {
     mavenCentral()
 }
 
+// JaCoCo version
+jacoco {
+    toolVersion = "0.8.0"
+}
+
 jacocoTestReport {
     group = "Reporting"
     description = "Generate Jacoco coverage reports after running tests."
