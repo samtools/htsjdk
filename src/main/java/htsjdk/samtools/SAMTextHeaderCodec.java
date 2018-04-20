@@ -23,18 +23,12 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.DateParser;
-import htsjdk.samtools.util.LineReader;
-import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.*;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -46,6 +40,8 @@ public class SAMTextHeaderCodec {
     // These attributes are populated when parsing or generating
     private SAMFileHeader mFileHeader;
     private final TextTagCodec mTagCodec = new TextTagCodec();
+
+    public static List<String> ALLOWED_PL_VALUES;
 
     // These attributes are populated when parsing text
     private String mCurrentLine;
@@ -67,7 +63,11 @@ public class SAMTextHeaderCodec {
     private static final String FIELD_SEPARATOR = "\t";
     private static final char FIELD_SEPARATOR_CHAR = '\t';
     private static final Pattern FIELD_SEPARATOR_RE = Pattern.compile(FIELD_SEPARATOR);
+    static {
+        ALLOWED_PL_VALUES = Collections.unmodifiableList(CollectionUtil.makeList(
+                "CAPILLARY", "LS454", "ILLUMINA", "SOLID", "HELICOS", "IONTORRENT", "ONT", "PACBIO"));
 
+    }
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
 
     void setWriter(final BufferedWriter writer) {
@@ -159,6 +159,9 @@ public class SAMTextHeaderCodec {
         if (!parsedHeaderLine.requireTag(SAMProgramRecord.PROGRAM_GROUP_ID_TAG)) {
             return;
         }
+
+
+
         final SAMProgramRecord programRecord = new SAMProgramRecord(parsedHeaderLine.removeValue(SAMProgramRecord.PROGRAM_GROUP_ID_TAG));
 
         transferAttributes(programRecord, parsedHeaderLine.mKeyValuePairs);
@@ -204,6 +207,14 @@ public class SAMTextHeaderCodec {
                         e);
             }
             samReadGroupRecord.setAttribute(SAMReadGroupRecord.DATE_RUN_PRODUCED_TAG, date.toString());
+        }
+
+        final String platform = parsedHeaderLine.getValue(SamHeaderTags.PL.name());
+        if (platform != null &&
+                ! ALLOWED_PL_VALUES.contains(platform.toUpperCase())){
+            reportErrorParsingLine(SAMReadGroupRecord.PLATFORM_TAG + " tag value '" + platform +
+            "' is not an allowed value (must be one of " + String.join(", ", ALLOWED_PL_VALUES),
+                    SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, new IllegalStateException("Bad PL value"));
         }
 
         readGroups.add(samReadGroupRecord);
