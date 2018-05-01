@@ -26,8 +26,10 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.BinaryCodec;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -104,6 +106,8 @@ import java.util.*;
  * @author mishali.naik@intel.com
  */
 public class SAMRecord implements Cloneable, Locatable, Serializable {
+    private final static Log LOG = Log.getInstance(SAMRecord.class);
+
     public static final long serialVersionUID = 1L;
 
     /**
@@ -1581,6 +1585,24 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
     }
 
+
+    /**
+     * Gets indexing bin if it is present otherwise compute it.
+     * @param alignment to compute indexing bin for.
+     * @return indexing bin.
+     */
+    public int computeIndexingBinIfAbsent(final SAMRecord alignment) {
+        if (alignment.getIndexingBin() != null) {
+            return alignment.getIndexingBin();
+        } else {
+            return getUshort(alignment.computeIndexingBin());
+        }
+    }
+
+    private int getUshort(int value) {
+        return value & (int) BinaryCodec.MAX_USHORT;
+    }
+
     /**
      * @return the SAMFileHeader for this record. If the header is null, the following SAMRecord methods may throw
      * exceptions:
@@ -2083,13 +2105,25 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (this.getAlignmentStart() != NO_ALIGNMENT_START && this.getIndexingBin() != null &&
-                this.computeIndexingBin() != this.getIndexingBin()) {
-            if (ret == null) ret = new ArrayList<>();
-            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
-                    "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
-                    getReadName()));
-            if (firstOnly) return ret;
+        if (this.getAlignmentStart() != NO_ALIGNMENT_START) {
+            final SAMSequenceRecord sequence = getHeader() != null ? getHeader().getSequence(getReferenceName()) : null;
+            if (sequence != null && SAMUtils.isReferenceSequenceCompatibleWithBAI(sequence)) {
+                if (getValidationStringency() != ValidationStringency.SILENT) {
+                    if (getReferenceName() != null) {
+                        LOG.warn(String.format("%s reference length is too large for BAM bin field. %s record bin field value is incorrect.",
+                                getReferenceName(), getReadName()));
+                    } else {
+                        LOG.warn(String.format("Reference length is too large for BAM bin field. %s record bin field value is incorrect.",
+                                getReadName()));
+                    }
+                }
+            } else if (isIndexingBinNotEqualsComputedBin()) {
+                if (ret == null) ret = new ArrayList<>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
+                        "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
+                        getReadName()));
+                if (firstOnly) return ret;
+            }
         }
 
         if (getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME) &&
@@ -2122,6 +2156,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return null;
         }
         return ret;
+    }
+
+    private boolean isIndexingBinNotEqualsComputedBin() {
+        return this.getIndexingBin() != null && this.computeIndexingBin() != this.getIndexingBin();
     }
 
     /**
