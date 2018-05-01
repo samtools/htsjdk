@@ -150,7 +150,6 @@ public class SortingCollection<T> implements Iterable<T> {
         this.codec = codec;
         this.comparator = comparator;
         this.maxRecordsInRam = maxRecordsInRam;
-
         this.ramRecords = (T[])Array.newInstance(componentType, maxRecordsInRam);
     }
 
@@ -480,7 +479,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
         // Since we need to open and buffer all temp files in the sorting collection at once it is important
         // to have enough memory left to do this. This method checks to make sure that, given the number of files and
-        // the size of the buffer, we can reasonable open all files. If we can't it will return a buffer size that
+        // the size of the buffer, we can reasonably open all files. If we can't it will return a buffer size that
         // is appropriate given the number of temp files and the amount of memory left on the heap. If there isn't
         // enough memory for buffering it will return zero and all reading will be unbuffered.
         private int checkMemoryAndAdjustBuffer(int numFiles, int bufferSize) {
