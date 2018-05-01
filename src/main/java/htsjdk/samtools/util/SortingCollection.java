@@ -66,15 +66,11 @@ public class SortingCollection<T> implements Iterable<T> {
     public interface Codec<T> extends Cloneable {
         /**
          * Where to write encoded output
-         *
-         * @param os
          */
         void setOutputStream(OutputStream os);
 
         /**
          * Where to read encoded input from
-         *
-         * @param is
          */
         void setInputStream(InputStream is);
 
@@ -133,7 +129,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
     private boolean destructiveIteration = true;
 
-    private TempStreamFactory tempStreamFactory = new TempStreamFactory();
+    private final TempStreamFactory tempStreamFactory = new TempStreamFactory();
 
     /**
      * Prepare to accumulate records to be sorted
@@ -324,7 +320,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final File... tmpDir) {
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
+        return new SortingCollection<>(componentType, codec, comparator, maxRecordsInRAM, Arrays.stream(tmpDir).map(File::toPath).toArray(Path[]::new));
 
     }
 
@@ -344,7 +340,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final Collection<File> tmpDirs) {
-        return new SortingCollection<T>(componentType,
+        return new SortingCollection<>(componentType,
                 codec,
                 comparator,
                 maxRecordsInRAM,
@@ -367,7 +363,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final int maxRecordsInRAM) {
 
         final Path tmpDir = Paths.get(System.getProperty("java.io.tmpdir"));
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+        return new SortingCollection<>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
     }
 
     /**
@@ -384,7 +380,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final Comparator<T> comparator,
                                                        final int maxRecordsInRAM,
                                                        final Path... tmpDir) {
-        return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
+        return new SortingCollection<>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
 
     }
 
@@ -402,7 +398,7 @@ public class SortingCollection<T> implements Iterable<T> {
                                                                 final Comparator<T> comparator,
                                                                 final int maxRecordsInRAM,
                                                                 final Collection<Path> tmpDirs) {
-        return new SortingCollection<T>(componentType,
+        return new SortingCollection<>(componentType,
                 codec,
                 comparator,
                 maxRecordsInRAM,
@@ -472,7 +468,7 @@ public class SortingCollection<T> implements Iterable<T> {
             this.queue = new TreeSet<>(new PeekFileRecordIteratorComparator());
             int n = 0;
             log.info(String.format("Creating merging iterator from %d files", files.size()));
-            int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size(), Defaults.BUFFER_SIZE);
+            int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size());
             for (final Path f : files) {
                 final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize);
                 if (it.hasNext()) {
@@ -488,7 +484,8 @@ public class SortingCollection<T> implements Iterable<T> {
         // the size of the buffer, we can reasonably open all files. If we can't it will return a buffer size that
         // is appropriate given the number of temp files and the amount of memory left on the heap. If there isn't
         // enough memory for buffering it will return zero and all reading will be unbuffered.
-        private int checkMemoryAndAdjustBuffer(int numFiles, int bufferSize) {
+        private int checkMemoryAndAdjustBuffer(int numFiles) {
+            int bufferSize = Defaults.BUFFER_SIZE;
             // garbage collect so that our calculation is accurate.
             Runtime.getRuntime().gc();
 
@@ -501,7 +498,7 @@ public class SortingCollection<T> implements Iterable<T> {
                 log.warn(String.format("Default io buffer size of %s is larger than available memory per file of %s.",
                         StringUtil.humanReadableByteCount(bufferSize),
                         StringUtil.humanReadableByteCount(memoryPerFile)));
-                return memoryPerFile;
+                bufferSize = memoryPerFile;
             }
             return bufferSize;
         }
