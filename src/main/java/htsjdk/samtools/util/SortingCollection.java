@@ -49,15 +49,16 @@ import java.util.TreeSet;
  * to a temporary directory if there are more records added than will fit in memory.  As a result of this,
  * the objects returned may not be identical to the objects added to the collection, but they should be
  * equal as determined by the codec used to write them to disk and read them back.
- *
+ * <p>
  * When iterating over the collection, the number of file handles required is numRecordsInCollection/maxRecordsInRam.
  * If this becomes a limiting factor, a file handle cache could be added.
- *
+ * <p>
  * If Snappy DLL is available and snappy.disable system property is not set to true, then Snappy is used
  * to compress temporary files.
  */
 public class SortingCollection<T> implements Iterable<T> {
-    public static final Log log = Log.getInstance(SortingCollection.class);
+    private static final Log log = Log.getInstance(SortingCollection.class);
+
     /**
      * Client must implement this class, which defines the way in which records are written to and
      * read from file.
@@ -65,23 +66,28 @@ public class SortingCollection<T> implements Iterable<T> {
     public interface Codec<T> extends Cloneable {
         /**
          * Where to write encoded output
+         *
          * @param os
          */
         void setOutputStream(OutputStream os);
 
         /**
          * Where to read encoded input from
+         *
          * @param is
          */
         void setInputStream(InputStream is);
+
         /**
          * Write object to output stream
+         *
          * @param val what to write
          */
         void encode(T val);
 
         /**
          * Read the next record from the input stream and convert into a java object.
+         *
          * @return null if no more records.  Should throw exception if EOF is encountered in the middle of
          * a record.
          */
@@ -95,7 +101,9 @@ public class SortingCollection<T> implements Iterable<T> {
         Codec<T> clone();
     }
 
-    /** Directories where files of sorted records go. */
+    /**
+     * Directories where files of sorted records go.
+     */
     private final Path[] tmpDirs;
 
     /**
@@ -129,15 +137,15 @@ public class SortingCollection<T> implements Iterable<T> {
 
     /**
      * Prepare to accumulate records to be sorted
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     *
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRam how many records to accumulate before spilling to disk
-     * @param tmpDir Where to write files of records that will not fit in RAM
+     * @param tmpDir          Where to write files of records that will not fit in RAM
      */
-    @SuppressWarnings("unchecked")
     private SortingCollection(final Class<T> componentType, final SortingCollection.Codec<T> codec,
-                             final Comparator<T> comparator, final int maxRecordsInRam, final Path... tmpDir) {
+                              final Comparator<T> comparator, final int maxRecordsInRam, final Path... tmpDir) {
         if (maxRecordsInRam <= 0) {
             throw new IllegalArgumentException("maxRecordsInRam must be > 0");
         }
@@ -150,7 +158,9 @@ public class SortingCollection<T> implements Iterable<T> {
         this.codec = codec;
         this.comparator = comparator;
         this.maxRecordsInRam = maxRecordsInRam;
-        this.ramRecords = (T[])Array.newInstance(componentType, maxRecordsInRam);
+        @SuppressWarnings("unchecked")
+        T[] ramRecords = (T[]) Array.newInstance(componentType, maxRecordsInRam);
+        this.ramRecords = ramRecords;
     }
 
     public void add(final T rec) {
@@ -233,14 +243,13 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Sort the records in memory, write them to a file, and clear the buffer of records in memory.
      */
-    @SuppressWarnings("unchecked")
     public void spillToDisk() {
         try {
             Arrays.parallelSort(this.ramRecords, 0, this.numRecordsInRam, this.comparator);
 
             final Path f = newTempFile();
             try (OutputStream os
-                         = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(f), Defaults.BUFFER_SIZE)){
+                         = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(f), Defaults.BUFFER_SIZE)) {
                 this.codec.setOutputStream(os);
                 for (int i = 0; i < this.numRecordsInRam; ++i) {
                     this.codec.encode(ramRecords[i]);
@@ -255,8 +264,7 @@ public class SortingCollection<T> implements Iterable<T> {
 
             this.numRecordsInRam = 0;
             this.files.add(f);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
     }
@@ -303,12 +311,11 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Syntactic sugar around the ctor, to save some typing of type parameters
      *
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDir Where to write files of records that will not fit in RAM
-     *
+     * @param tmpDir          Where to write files of records that will not fit in RAM
      * @deprecated since 2017-09. Use {@link #newInstance(Class, Codec, Comparator, int, Path...)} instead
      */
     @Deprecated
@@ -324,12 +331,11 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Syntactic sugar around the ctor, to save some typing of type parameters
      *
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDirs Where to write files of records that will not fit in RAM
-     *
+     * @param tmpDirs         Where to write files of records that will not fit in RAM
      * @deprecated since 2017-09. Use {@link #newInstanceFromPaths(Class, Codec, Comparator, int, Collection)} instead
      */
     @Deprecated
@@ -339,10 +345,10 @@ public class SortingCollection<T> implements Iterable<T> {
                                                        final int maxRecordsInRAM,
                                                        final Collection<File> tmpDirs) {
         return new SortingCollection<T>(componentType,
-                                        codec,
-                                        comparator,
-                                        maxRecordsInRAM,
-                                        tmpDirs.stream().map(File::toPath).toArray(Path[]::new));
+                codec,
+                comparator,
+                maxRecordsInRAM,
+                tmpDirs.stream().map(File::toPath).toArray(Path[]::new));
 
     }
 
@@ -350,9 +356,9 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Syntactic sugar around the ctor, to save some typing of type parameters.  Writes files to java.io.tmpdir
      *
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
      */
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
@@ -367,17 +373,17 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Syntactic sugar around the ctor, to save some typing of type parameters
      *
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDir Where to write files of records that will not fit in RAM
+     * @param tmpDir          Where to write files of records that will not fit in RAM
      */
     public static <T> SortingCollection<T> newInstance(final Class<T> componentType,
-            final SortingCollection.Codec<T> codec,
-            final Comparator<T> comparator,
-            final int maxRecordsInRAM,
-            final Path... tmpDir) {
+                                                       final SortingCollection.Codec<T> codec,
+                                                       final Comparator<T> comparator,
+                                                       final int maxRecordsInRAM,
+                                                       final Path... tmpDir) {
         return new SortingCollection<T>(componentType, codec, comparator, maxRecordsInRAM, tmpDir);
 
     }
@@ -385,17 +391,17 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Syntactic sugar around the ctor, to save some typing of type parameters
      *
-     * @param componentType Class of the record to be sorted.  Necessary because of Java generic lameness.
-     * @param codec For writing records to file and reading them back into RAM
-     * @param comparator Defines output sort order
+     * @param componentType   Class of the record to be sorted.  Necessary because of Java generic lameness.
+     * @param codec           For writing records to file and reading them back into RAM
+     * @param comparator      Defines output sort order
      * @param maxRecordsInRAM how many records to accumulate in memory before spilling to disk
-     * @param tmpDirs Where to write files of records that will not fit in RAM
+     * @param tmpDirs         Where to write files of records that will not fit in RAM
      */
     public static <T> SortingCollection<T> newInstanceFromPaths(final Class<T> componentType,
-            final SortingCollection.Codec<T> codec,
-            final Comparator<T> comparator,
-            final int maxRecordsInRAM,
-            final Collection<Path> tmpDirs) {
+                                                                final SortingCollection.Codec<T> codec,
+                                                                final Comparator<T> comparator,
+                                                                final int maxRecordsInRAM,
+                                                                final Collection<Path> tmpDirs) {
         return new SortingCollection<T>(componentType,
                 codec,
                 comparator,
@@ -412,9 +418,9 @@ public class SortingCollection<T> implements Iterable<T> {
 
         InMemoryIterator() {
             Arrays.parallelSort(SortingCollection.this.ramRecords,
-                        0,
-                        SortingCollection.this.numRecordsInRam,
-                        SortingCollection.this.comparator);
+                    0,
+                    SortingCollection.this.numRecordsInRam,
+                    SortingCollection.this.comparator);
         }
 
         @Override
@@ -449,7 +455,7 @@ public class SortingCollection<T> implements Iterable<T> {
      * Each file is has records in sort order within the file.
      * This iterator automatically closes when it iterates to the end, but if not iterating
      * to the end it is a good idea to call close().
-     *
+     * <p>
      * Algorithm: MergingIterator maintains a PriorityQueue of PeekFileRecordIterators.
      * Each PeekFileRecordIterator iterates through a file in which the records are sorted.
      * The comparator for PeekFileRecordIterator used by the PriorityQueue peeks at the next record from
@@ -468,11 +474,10 @@ public class SortingCollection<T> implements Iterable<T> {
             log.info(String.format("Creating merging iterator from %d files", files.size()));
             int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size(), Defaults.BUFFER_SIZE);
             for (final Path f : files) {
-                final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize);
-                if (it.hasNext()) {
-                    this.queue.add(new PeekFileRecordIterator(it, n++));
-                } else {
-                    it.close();
+                try (final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize)) {
+                    if (it.hasNext()) {
+                        this.queue.add(new PeekFileRecordIterator(it, n++));
+                    }
                 }
             }
         }
@@ -515,9 +520,8 @@ public class SortingCollection<T> implements Iterable<T> {
             final T ret = fileIterator.next();
             if (fileIterator.hasNext()) {
                 this.queue.add(fileIterator);
-            }
-            else {
-                ((CloseableIterator<T>)fileIterator.getUnderlyingIterator()).close();
+            } else {
+                ((CloseableIterator<T>) fileIterator.getUnderlyingIterator()).close();
             }
 
             return ret;
@@ -532,7 +536,7 @@ public class SortingCollection<T> implements Iterable<T> {
         public void close() {
             while (!this.queue.isEmpty()) {
                 final PeekFileRecordIterator it = this.queue.pollFirst();
-                ((CloseableIterator<T>)it.getUnderlyingIterator()).close();
+                ((CloseableIterator<T>) it.getUnderlyingIterator()).close();
             }
         }
     }
@@ -553,8 +557,7 @@ public class SortingCollection<T> implements Iterable<T> {
                 this.codec = SortingCollection.this.codec.clone();
                 this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(this.is, bufferSize));
                 advance();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
         }
@@ -595,6 +598,7 @@ public class SortingCollection<T> implements Iterable<T> {
      */
     class PeekFileRecordIterator extends PeekIterator<T> {
         final int n; // A serial number used for tie-breaking in the sort
+
         PeekFileRecordIterator(final Iterator<T> underlyingIterator, final int n) {
             super(underlyingIterator);
             this.n = n;
