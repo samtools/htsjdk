@@ -26,7 +26,6 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.Defaults;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -58,7 +57,7 @@ import java.util.TreeSet;
  * to compress temporary files.
  */
 public class SortingCollection<T> implements Iterable<T> {
-
+    public static final Log log = Log.getInstance(SortingCollection.class);
     /**
      * Client must implement this class, which defines the way in which records are written to and
      * read from file.
@@ -99,9 +98,6 @@ public class SortingCollection<T> implements Iterable<T> {
     /** Directories where files of sorted records go. */
     private final Path[] tmpDirs;
 
-    /** The minimum amount of space free on a temp filesystem to write a file there. */
-    private final long TMP_SPACE_FREE = IOUtil.FIVE_GBS;
-
     /**
      * Used to write records to file, and used as a prototype to create codecs for reading.
      */
@@ -139,6 +135,7 @@ public class SortingCollection<T> implements Iterable<T> {
      * @param maxRecordsInRam how many records to accumulate before spilling to disk
      * @param tmpDir Where to write files of records that will not fit in RAM
      */
+    @SuppressWarnings("unchecked")
     private SortingCollection(final Class<T> componentType, final SortingCollection.Codec<T> codec,
                              final Comparator<T> comparator, final int maxRecordsInRam, final Path... tmpDir) {
         if (maxRecordsInRam <= 0) {
@@ -153,6 +150,7 @@ public class SortingCollection<T> implements Iterable<T> {
         this.codec = codec;
         this.comparator = comparator;
         this.maxRecordsInRam = maxRecordsInRam;
+
         this.ramRecords = (T[])Array.newInstance(componentType, maxRecordsInRam);
     }
 
@@ -164,7 +162,28 @@ public class SortingCollection<T> implements Iterable<T> {
             throw new IllegalStateException("Cannot add after calling iterator()");
         }
         if (numRecordsInRam == maxRecordsInRam) {
+            // sample every 100 files written.
+            long startMem = 0;
+            boolean printRecordSizeSampling = files.size() % 100 == 0 && Log.getGlobalLogLevel() == Log.LogLevel.DEBUG;
+            if (printRecordSizeSampling) {
+                // Garbage collect and get free memory
+                Runtime.getRuntime().gc();
+                startMem = Runtime.getRuntime().freeMemory();
+            }
+
             spillToDisk();
+
+            if (printRecordSizeSampling) {
+                //Garbage collect again and get free memory
+                Runtime.getRuntime().gc();
+                long endMem = Runtime.getRuntime().freeMemory();
+
+                long usedBytes = endMem - startMem;
+                log.debug(String.format("%d records in ram required approximately %s memory or %s per record. ", maxRecordsInRam,
+                        StringUtil.humanReadableByteCount(usedBytes),
+                        StringUtil.humanReadableByteCount(usedBytes / maxRecordsInRam)));
+
+            }
         }
         ramRecords[numRecordsInRam++] = rec;
     }
@@ -215,45 +234,42 @@ public class SortingCollection<T> implements Iterable<T> {
     /**
      * Sort the records in memory, write them to a file, and clear the buffer of records in memory.
      */
+    @SuppressWarnings("unchecked")
     public void spillToDisk() {
         try {
-            Arrays.sort(this.ramRecords, 0, this.numRecordsInRam, this.comparator);
+            Arrays.parallelSort(this.ramRecords, 0, this.numRecordsInRam, this.comparator);
+
             final Path f = newTempFile();
-            OutputStream os = null;
-            try {
-                os = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(f), Defaults.BUFFER_SIZE);
+            try (OutputStream os
+                         = tempStreamFactory.wrapTempOutputStream(Files.newOutputStream(f), Defaults.BUFFER_SIZE)){
                 this.codec.setOutputStream(os);
                 for (int i = 0; i < this.numRecordsInRam; ++i) {
                     this.codec.encode(ramRecords[i]);
                     // Facilitate GC
                     this.ramRecords[i] = null;
                 }
-
                 os.flush();
             } catch (RuntimeIOException ex) {
                 throw new RuntimeIOException("Problem writing temporary file " + f.toUri() +
                         ".  Try setting TMP_DIR to a file system with lots of space.", ex);
-            } finally {
-                if (os != null) {
-                    os.close();
-                }
             }
 
             this.numRecordsInRam = 0;
             this.files.add(f);
-
         }
         catch (IOException e) {
             throw new RuntimeIOException(e);
         }
     }
 
+
     /**
      * Creates a new tmp file on one of the available temp filesystems, registers it for deletion
      * on JVM exit and then returns it.
      */
     private Path newTempFile() throws IOException {
-        return IOUtil.newTempPath("sortingcollection.", ".tmp", this.tmpDirs, TMP_SPACE_FREE);
+        /* The minimum amount of space free on a temp filesystem to write a file there. */
+        return IOUtil.newTempPath("sortingcollection.", ".tmp", this.tmpDirs, IOUtil.FIVE_GBS);
     }
 
     /**
@@ -396,7 +412,7 @@ public class SortingCollection<T> implements Iterable<T> {
         private int iterationIndex = 0;
 
         InMemoryIterator() {
-            Arrays.sort(SortingCollection.this.ramRecords,
+            Arrays.parallelSort(SortingCollection.this.ramRecords,
                         0,
                         SortingCollection.this.numRecordsInRam,
                         SortingCollection.this.comparator);
@@ -448,17 +464,41 @@ public class SortingCollection<T> implements Iterable<T> {
         private final TreeSet<PeekFileRecordIterator> queue;
 
         MergingIterator() {
-            this.queue = new TreeSet<PeekFileRecordIterator>(new PeekFileRecordIteratorComparator());
+            this.queue = new TreeSet<>(new PeekFileRecordIteratorComparator());
             int n = 0;
-            for (final Path f : SortingCollection.this.files) {
-                final FileRecordIterator it = new FileRecordIterator(f);
+            log.info(String.format("Creating merging iterator from %d files", files.size()));
+            int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size(), Defaults.BUFFER_SIZE);
+            for (final Path f : files) {
+                final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize);
                 if (it.hasNext()) {
                     this.queue.add(new PeekFileRecordIterator(it, n++));
-                }
-                else {
+                } else {
                     it.close();
                 }
             }
+        }
+
+        // Since we need to open and buffer all temp files in the sorting collection at once it is important
+        // to have enough memory left to do this. This method checks to make sure that, given the number of files and
+        // the size of the buffer, we can reasonable open all files. If we can't it will return a buffer size that
+        // is appropriate given the number of temp files and the amount of memory left on the heap. If there isn't
+        // enough memory for buffering it will return zero and all reading will be unbuffered.
+        private int checkMemoryAndAdjustBuffer(int numFiles, int bufferSize) {
+            // garbage collect so that our calculation is accurate.
+            Runtime.getRuntime().gc();
+
+            // 90% of free memory to allow for some overhead.
+            final long freeMemory = (long) (Runtime.getRuntime().freeMemory() * 0.90);
+            // use the floor value from the divide
+            final int memoryPerFile = (int) (freeMemory / numFiles);
+
+            if (bufferSize > memoryPerFile) {
+                log.warn(String.format("Default io buffer size of %s is larger than available memory per file of %s.",
+                        StringUtil.humanReadableByteCount(bufferSize),
+                        StringUtil.humanReadableByteCount(memoryPerFile)));
+                return memoryPerFile;
+            }
+            return bufferSize;
         }
 
         @Override
@@ -507,12 +547,12 @@ public class SortingCollection<T> implements Iterable<T> {
         private final Codec<T> codec;
         private T currentRecord = null;
 
-        FileRecordIterator(final Path file) {
+        FileRecordIterator(final Path file, final int bufferSize) {
             this.file = file;
             try {
                 this.is = Files.newInputStream(file);
                 this.codec = SortingCollection.this.codec.clone();
-                this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(this.is, Defaults.BUFFER_SIZE));
+                this.codec.setInputStream(tempStreamFactory.wrapTempInputStream(this.is, bufferSize));
                 advance();
             }
             catch (IOException e) {
