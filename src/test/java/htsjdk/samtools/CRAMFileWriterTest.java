@@ -136,7 +136,8 @@ public class CRAMFileWriterTest extends HtsjdkTest {
     }
 
     private void validateRecords(final List<SAMRecord> expectedRecords, ByteArrayInputStream is, ReferenceSource referenceSource) {
-        CRAMFileReader cReader = new CRAMFileReader(null, is, referenceSource);
+        CRAMFileReader cReader = new CRAMFileReader(null, is, referenceSource );
+        cReader.setValidationStringency(ValidationStringency.SILENT);
 
         SAMRecordIterator iterator2 = cReader.getIterator();
         int index = 0;
@@ -165,6 +166,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
 
         CRAMFileWriter writer = new CRAMFileWriter(os, refSource, header, null);
+
         writeRecordsToCRAM(writer, samRecords);
 
         validateRecords(samRecords, new ByteArrayInputStream(os.toByteArray()), refSource);
@@ -229,7 +231,7 @@ public class CRAMFileWriterTest extends HtsjdkTest {
 
     @Test
     public void test_roundtrip_tlen_preserved() throws IOException {
-        SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
+        SamReader reader = SamReaderFactory.make().validationStringency(ValidationStringency.SILENT).open(new File("src/test/resources/htsjdk/samtools/cram_tlen_reads.sorted.sam"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         final ReferenceSource source = new ReferenceSource(new File("src/test/resources/htsjdk/samtools/cram_tlen.fasta"));
         CRAMFileWriter writer = new CRAMFileWriter(baos, source, reader.getFileHeader(), "test.cram");
