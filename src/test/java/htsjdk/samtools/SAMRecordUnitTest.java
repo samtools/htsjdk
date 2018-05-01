@@ -1029,6 +1029,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void testReadMappingLongerThanInsert() {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+        builder.setReadLength(150);
         final List<SAMRecord> recs = builder.addPair("q1", 0, 100, 100, false, false, "100M50S", "50S100M", false, true, 30);
         final SAMRecord r1 = recs.stream().filter(SAMRecord::getFirstOfPairFlag).findFirst().get();
 
