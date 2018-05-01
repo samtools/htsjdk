@@ -474,10 +474,11 @@ public class SortingCollection<T> implements Iterable<T> {
             log.info(String.format("Creating merging iterator from %d files", files.size()));
             int suggestedBufferSize = checkMemoryAndAdjustBuffer(files.size(), Defaults.BUFFER_SIZE);
             for (final Path f : files) {
-                try (final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize)) {
-                    if (it.hasNext()) {
-                        this.queue.add(new PeekFileRecordIterator(it, n++));
-                    }
+                final FileRecordIterator it = new FileRecordIterator(f, suggestedBufferSize);
+                if (it.hasNext()) {
+                    this.queue.add(new PeekFileRecordIterator(it, n++));
+                } else {
+                    it.close();
                 }
             }
         }
