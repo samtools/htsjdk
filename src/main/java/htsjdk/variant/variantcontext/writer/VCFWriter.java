@@ -223,7 +223,11 @@ class VCFWriter extends IndexingVariantContextWriter {
                 throw new IllegalStateException("Unable to write the VCF: header is missing, " +
                                                    "try to call writeHeader or setHeader first.");
             }
-            write(this.vcfEncoder.encode(this.doNotWriteGenotypes ? new VariantContextBuilder(context).noGenotypes().make() : context));
+            if (this.doNotWriteGenotypes) {
+                this.vcfEncoder.write(this.writer, new VariantContextBuilder(context).noGenotypes().make());
+            } else {
+                this.vcfEncoder.write(this.writer, context);
+            }
             write("\n");
 
             writeAndResetBuffer();
