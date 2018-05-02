@@ -606,4 +606,18 @@ public class StringUtil {
         }
         return true;
     }
+
+    /**
+     * Takes a long value representing the number of bytes and produces a human readable byte count.
+     * @param bytes The number of bytes to create a human readable string for.
+     * @return A human readable string of the number of bytes given.
+     */
+    public static String humanReadableByteCount(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), "kMGTPE".charAt(exp - 1));
+    }
 }
