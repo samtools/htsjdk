@@ -25,6 +25,7 @@ package htsjdk.samtools;
 
 
 import htsjdk.samtools.util.Iso8601Date;
+import htsjdk.samtools.util.StringUtil;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -37,6 +38,16 @@ import java.util.Set;
  */
 public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 {
+    final private static char[] illegalCharacters ;
+    final private static char firstAllowedCharacter = ' ';
+
+    static {
+        illegalCharacters = new char[firstAllowedCharacter];
+        for (char i = 0; i < firstAllowedCharacter; i++) {
+            illegalCharacters[i] = i;
+        }
+    }
+
     private String mReadGroupId = null;
     public static final String READ_GROUP_ID_TAG = "ID";
     public static final String SEQUENCING_CENTER_TAG = "CN";
@@ -51,6 +62,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String PLATFORM_MODEL_TAG = "PM";
     public static final String PLATFORM_UNIT_TAG = "PU";
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
+    public static final String SAMPLE_BARCODE_TAG = "BC";
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
@@ -63,7 +75,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
             new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
                     DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
-                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));
+                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG, SAMPLE_BARCODE_TAG));
 
     public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
 
@@ -72,6 +84,14 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
         for (final Map.Entry<String, String> entry : srcProgramRecord.getAttributes()) {
             setAttribute(entry.getKey(), entry.getValue());
         }
+    }
+
+    @Override
+    public void setAttribute(String key, String value) {
+
+        StringUtil.assertCharactersNotInString(key, illegalCharacters);
+        StringUtil.assertCharactersNotInString(value, illegalCharacters);
+        super.setAttribute(key, value);
     }
 
     @Override

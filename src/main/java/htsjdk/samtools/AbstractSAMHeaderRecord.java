@@ -63,6 +63,11 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
      * @param value attribute value
      */
     public void setAttribute(final String key, final String value) {
+        if (key.length() != 2) {
+            throw new IllegalArgumentException(
+                    "Keys to header lines must of of length 2. Found key of length " +
+                            key.length() + ": [" + key + "].");
+        }
         if (value == null) {
             mAttributes.remove(key);
         } else {
@@ -73,7 +78,7 @@ public abstract class AbstractSAMHeaderRecord implements Serializable {
     /**
      * Returns the Set of attributes.
      */
-    public Set<Map.Entry<String,String>> getAttributes() {
+    public Set<Map.Entry<String, String>> getAttributes() {
         return mAttributes.entrySet();
     }
 
