@@ -346,12 +346,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
-    /** if the record contains a cigar with non-zero read length, return that length, otherwise, give the
-     * default length
-     * @param rec
-     * @return
+    /** If the record contains a cigar with non-zero read length, return that length, otherwise, return readLength
      */
-
     private int getReadLengthFromCigar(final SAMRecord rec) {
         return ( rec.getCigar() != null &&
                  rec.getCigar().getReadLength() != 0 ) ? rec.getCigar().getReadLength() : readLength;

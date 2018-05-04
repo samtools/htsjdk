@@ -303,7 +303,7 @@ public class BAMRecord extends SAMRecord {
      * extracts the CIGAR from the CG tag and places is into the (in memory) cigar.
      */
 
-    private void extractCigarFromCGAttribute(final Cigar sentinelCigar) {
+    private void extractCigarFromCGAttribute(final Cigar sentinelCigar) throws IllegalStateException {
         final int[] cigarFromCG = (int[]) getAttribute(SAMTagUtil.getSingleton().CG);
 
         if (cigarFromCG == null) return;
@@ -319,28 +319,31 @@ public class BAMRecord extends SAMRecord {
         // Sanity check
         if (decodedCigar.numCigarElements() <= MAX_CIGAR_OPERATORS) {
             throw new IllegalStateException(String.format(
-                    "Only Cigar with > %d operators should be placed in CG tag. Found %d operators.",
+                    "Only Cigar with > %d operators should be placed in CG tag. Found %d operators. \n Here's the Cigar:\n%s",
                     MAX_CIGAR_OPERATORS,
-                    decodedCigar.getCigarElements().size()));
+                    decodedCigar.getCigarElements().size(),
+                    decodedCigar.toString()));
         }
 
         if (decodedCigar.getReferenceLength() != sentinelCigar.getReferenceLength()) {
             throw new IllegalStateException(String.format(
-                    "Sentinel cigar and %s cigar should have the same reference length. Found %d and %d.",
+                    "Sentinel cigar and %s cigar should have the same reference length. Found %d and %d.\n Here's the Cigar:\n%s",
                     CG.name(),
                     sentinelCigar.getReferenceLength(),
-                    decodedCigar.getReferenceLength()));
+                    decodedCigar.getReferenceLength(),
+                    decodedCigar.toString()));
         }
 
         if (decodedCigar.getReadLength() != sentinelCigar.getReadLength() ) {
             throw new IllegalStateException(String.format(
-                    "Sentinel cigar and %s cigar should have the same read length. Found %d and %d.",
+                    "Sentinel cigar and %s cigar should have the same read length. Found %d and %d.\n Here's the Cigar:\n%s",
                     CG.name(),
                     sentinelCigar.getReadLength(),
-                    decodedCigar.getReadLength()));
+                    decodedCigar.getReadLength(),
+                    decodedCigar.toString()));
         }
 
-        //used instead of setCigar so as to not clobber the bin.
+        //used initializeCigar instead of setCigar so as to not clobber the indexingBin.
         initializeCigar(decodedCigar);
 
         // remove CG attribute.
