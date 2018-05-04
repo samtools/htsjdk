@@ -415,7 +415,7 @@ public class SamFileValidator {
             addError(new SAMValidationError(Type.CG_TAG_FOUND_IN_ATTRIBUTES,
                     "The CG Tag should only be used in BAM format to hold a large cigar. " +
                             "It was found containing the value: " +
-                            record.getAttribute(SAMTag.CG.name()), record.getReadName(), recordNumber));
+                            record.getAttribute(SAMTagUtil.getSingleton().CG), record.getReadName(), recordNumber));
         }
     }
 

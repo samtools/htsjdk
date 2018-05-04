@@ -346,13 +346,24 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
+    /** if the record contains a cigar with non-zero read length, return that length, otherwise, give the
+     * default length
+     * @param rec
+     * @return
+     */
+
+    private int getReadLengthFromCigar(final SAMRecord rec) {
+        return ( rec.getCigar() != null &&
+                 rec.getCigar().getReadLength() != 0 ) ? rec.getCigar().getReadLength() : readLength;
+    }
+
     /**
      * Randomly fills in the bases for the given record.
      * <p>
      * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBases(final SAMRecord rec) {
-        final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
+        final int length = getReadLengthFromCigar(rec);
         final byte[] bases = new byte[length];
 
         for (int i = 0; i < length; ++i) {
@@ -547,7 +558,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBasesAndQualities(final SAMRecord rec, final int defaultQuality) {
-        final int length = rec.getCigar() != null && rec.getCigar().getReadLength() != 0 ? rec.getCigar().getReadLength() : readLength;
+        final int length = getReadLengthFromCigar(rec);
         final byte[] quals = new byte[length];
 
         if (-1 != defaultQuality) {

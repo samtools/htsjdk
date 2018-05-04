@@ -75,17 +75,19 @@ public class BAMFileWriterTest extends HtsjdkTest {
             verifyBAMFile(samRecordSetBuilder, bamFile);
         }
 
-        File tempMetrics = File.createTempFile("CGTagTest", ".validation_metrics");
-        try (final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile)) {
+        final File tempMetrics = File.createTempFile("CGTagTest", ".validation_metrics");
+        try (
+                final SamReader samReader = SamReaderFactory.makeDefault().open(bamFile);
+                final OutputStream outputStream = new FileOutputStream(tempMetrics);
+                final PrintWriter printWriter = new PrintWriter(outputStream)) {
 
-            new SamFileValidator(new PrintWriter(new FileOutputStream(tempMetrics)),
-                    100).validateSamFileSummary(samReader, null);
+            new SamFileValidator(printWriter, 100).validateSamFileSummary(samReader, null);
         }
 
         final MetricsFile<SamFileValidator.ValidationMetrics, String> validationMetrics = new MetricsFile<>();
         validationMetrics.read(new FileReader(tempMetrics));
 
-        Assert.assertTrue(validationMetrics.getHistogram().get("ERROR:CG_TAG_FOUND_IN_ATTRIBUTES") == null);
+        Assert.assertNull(validationMetrics.getHistogram().get("ERROR:CG_TAG_FOUND_IN_ATTRIBUTES"));
     }
 
     private void verifyBAMFile(final SAMRecordSetBuilder samRecordSetBuilder, final File bamFile) throws IOException {
@@ -120,7 +122,6 @@ public class BAMFileWriterTest extends HtsjdkTest {
             }
             Assert.assertFalse(samIt1.hasNext());
         }
-
     }
 
     @DataProvider(name = "test1")
@@ -243,6 +244,89 @@ public class BAMFileWriterTest extends HtsjdkTest {
         Assert.assertEquals(recordFromBAM.getReadBases(), SequenceUtil.toBamReadBasesInPlace(originalSAMRecord.getReadBases()));
     }
 
+    @Test(dataProvider = "longCigarsData")
+    public void testClearAttributesDoesntVoidLongCigar(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        frag1.clearAttributes();
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testSetCigarRemovesCgTagWhenNoLongerLong(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        frag1.setCigarString(String.format("%dM", cigar.getReadLength()));
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testSetCigarRemovesCgTagWhenStillLong(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+        final List<CigarOperator> cigarOperatorsForTest = getCigarOperatorsForTest(numOps);
+
+        cigarOperatorsForTest.add(CigarOperator.H);
+        final Cigar cigar2 = Cigar.fromCigarOperators(cigarOperatorsForTest);
+
+        frag1.setCigar(cigar2);
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testSetCigarStringRemovesCgTagWhenNoLongerLong(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+
+        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        frag1.setCigarString(String.format("%dM", cigar.getReadLength()));
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testSetCigarStringRemovesCgTagWhenStillLong(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+
+        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        final List<CigarOperator> cigarOperatorsForTest = getCigarOperatorsForTest(numOps);
+        cigarOperatorsForTest.add(CigarOperator.H);
+        final Cigar cigar2 = Cigar.fromCigarOperators(cigarOperatorsForTest);
+
+        frag1.setCigarString(cigar2.toString());
+        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+    }
+
+    @Test(dataProvider = "longCigarsData")
+    public void testBinNotNullWhenLargeCigarIsLoaded(final int numOps) throws Exception {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
+
+        builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        final File bamFile = File.createTempFile("test.", BamFileIoUtils.BAM_FILE_EXTENSION);
+        bamFile.deleteOnExit();
+
+        try (final SAMFileWriter bamWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(builder.getHeader(), false, bamFile)) {
+            for (final SAMRecord record : builder.getRecords())
+                bamWriter.addAlignment(record);
+        }
+
+        try (final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(bamFile)) {
+            reader.iterator().forEachRemaining(samRecord -> {
+                samRecord.getCigar();
+                Assert.assertNotNull(samRecord.getIndexingBin());
+            });
+        }
+    }
+
     @DataProvider
     public Object[][] longCigarsData() {
         return new Object[][]{
@@ -259,18 +343,16 @@ public class BAMFileWriterTest extends HtsjdkTest {
         };
     }
 
-    final static CigarOperator operatorsToUse[] = new CigarOperator[]{CigarOperator.M, CigarOperator.D, CigarOperator.M, CigarOperator.I};
+    private final static CigarOperator[] operatorsToUse = new CigarOperator[]{CigarOperator.M, CigarOperator.D, CigarOperator.M, CigarOperator.I};
 
     @Test(dataProvider = "longCigarsData")
-    public void testLongCigarsOneRead(int numOps) throws Exception {
+    public void testLongCigarsOneRead(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
         final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
 
         builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
-
         testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
     }
-
 
     @Test(dataProvider = "longCigarsData")
     public void testLongCigarsZerolengthRead(final int numOps) throws Exception {
@@ -280,7 +362,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
         final SAMRecord sam = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
         sam.setReadBases(new byte[]{});
         sam.setBaseQualityString("");
-        // in htsjdk only secondary alignments are allowed to have read-length zero (doens't validate otherwise)
+        // in htsjdk only secondary alignments are allowed to have read-length zero (doesn't validate otherwise)
         sam.setSecondaryAlignment(true);
 
         testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
@@ -298,7 +380,7 @@ public class BAMFileWriterTest extends HtsjdkTest {
     @Test(dataProvider = "longCigarsData")
     public void testLongCigars(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
-        final Cigar cigar = Cigar.fromCigarOperators( getCigarOperatorsForTest(numOps));
+        final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
 
         builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
         builder.addPair("pair1", 0, 1, 100_000, false, false, cigar.toString(), cigar.toString(), true, false, 30);
