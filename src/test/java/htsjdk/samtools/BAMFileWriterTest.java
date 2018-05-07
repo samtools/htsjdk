@@ -348,14 +348,14 @@ public class BAMFileWriterTest extends HtsjdkTest {
     @DataProvider
     public Object[][] longCigarsData() {
         return new Object[][]{
-//                {1},
-//                {10},
-//                {100},
-//                {1_000},
-//                {10_000},
-//                {BAMRecord.MAX_CIGAR_OPERATORS - 1},
-//                {BAMRecord.MAX_CIGAR_OPERATORS},
-//                {BAMRecord.MAX_CIGAR_OPERATORS + 1},
+                {1},
+                {10},
+                {100},
+                {1_000},
+                {10_000},
+                {BAMRecord.MAX_CIGAR_OPERATORS - 1},
+                {BAMRecord.MAX_CIGAR_OPERATORS},
+                {BAMRecord.MAX_CIGAR_OPERATORS + 1},
                 {100_000},
                 {1_000_000}
         };
