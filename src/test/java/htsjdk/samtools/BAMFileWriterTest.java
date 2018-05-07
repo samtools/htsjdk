@@ -248,10 +248,28 @@ public class BAMFileWriterTest extends HtsjdkTest {
     public void testClearAttributesDoesntVoidLongCigar(final int numOps) throws Exception {
         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
         final Cigar cigar = Cigar.fromCigarOperators(getCigarOperatorsForTest(numOps));
-        final SAMRecord frag1 = builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
 
-        frag1.clearAttributes();
-        testHelper(builder, SAMFileHeader.SortOrder.coordinate, true);
+        builder.addFrag("frag1", 0, 1, false, false, cigar.toString(), null, 30);
+
+        //encode as BAM into ByteArray
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final BAMFileWriter writer = new BAMFileWriter(baos, null)) {
+            writer.setHeader(builder.getHeader());
+            builder.getRecords().forEach(writer::addAlignment);
+        }
+
+        //read from ByteArray
+        final BAMFileReader reader = new BAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+        final CloseableIterator<SAMRecord> iterator = reader.getIterator();
+        iterator.hasNext();
+        final SAMRecord recordFromBAM = iterator.next();
+
+        //clear attributes before explicitly accessing cigar or attributes
+        recordFromBAM.clearAttributes();
+
+        // see that cigar is unscathed
+        Assert.assertNotNull(recordFromBAM.getCigar());
+        Assert.assertFalse(BAMRecord.isSentinelCigar(recordFromBAM.getCigar(), recordFromBAM.getReadLength()));
     }
 
     @Test(dataProvider = "longCigarsData")
@@ -330,14 +348,14 @@ public class BAMFileWriterTest extends HtsjdkTest {
     @DataProvider
     public Object[][] longCigarsData() {
         return new Object[][]{
-                {1},
-                {10},
-                {100},
-                {1_000},
-                {10_000},
-                {BAMRecord.MAX_CIGAR_OPERATORS - 1},
-                {BAMRecord.MAX_CIGAR_OPERATORS},
-                {BAMRecord.MAX_CIGAR_OPERATORS + 1},
+//                {1},
+//                {10},
+//                {100},
+//                {1_000},
+//                {10_000},
+//                {BAMRecord.MAX_CIGAR_OPERATORS - 1},
+//                {BAMRecord.MAX_CIGAR_OPERATORS},
+//                {BAMRecord.MAX_CIGAR_OPERATORS + 1},
                 {100_000},
                 {1_000_000}
         };
@@ -499,5 +517,31 @@ public class BAMFileWriterTest extends HtsjdkTest {
             verifySamReadersEqual(samReader, bamReader);
         }
     }
+
+    @Test
+    public void setAttributeOnBamRecord() throws IOException {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+
+        builder.addPair("test", 0, 100, 150, false, false, null, null, true, false, 30);
+
+        //encode as BAM into ByteArray
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (final BAMFileWriter writer = new BAMFileWriter(baos, null)) {
+            writer.setHeader(builder.getHeader());
+            builder.forEach(r -> r.setAttribute("xx", "Testing123"));
+            builder.forEach(writer::addAlignment);
+        }
+
+        //read from ByteArray
+        final BAMFileReader reader = new BAMFileReader(new ByteArrayInputStream(baos.toByteArray()), null, false, false, ValidationStringency.SILENT, new DefaultSAMRecordFactory());
+
+        for (final SAMRecord rec : (Iterable<SAMRecord>) reader::getIterator) {
+
+            //clear attribute before explicitly accessing cigar or attributes
+            rec.setAttribute("xx", null);
+            Assert.assertNull(rec.getAttribute("xx"));
+        }
+    }
 }
+
 

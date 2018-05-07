@@ -1495,6 +1495,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * Replace any existing attributes with the given linked item.
+     *
+     * NOTE: this method is intended to only be called from subclasses.
      */
     protected void setAttributes(final SAMBinaryTagAndValue attributes) {
         mAttributes = attributes;
@@ -1512,7 +1514,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     @Override
     public String getContig() {
-        if( getReadUnmappedFlag()) {
+        if (getReadUnmappedFlag()) {
             return null;
         } else {
             return getReferenceName();

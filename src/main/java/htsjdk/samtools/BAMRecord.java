@@ -226,6 +226,12 @@ public class BAMRecord extends SAMRecord {
      */
     @Override
     public void clearAttributes() {
+        // If there's a long cigar, the CG might be "hiding" in the attributes, and
+        // if the original attributes haven't been parsed yet, we will lose the long cigar.
+        // by "getting" the cigar prior to clearing the attributes, we protect against that.
+        if (!mAttributesDecoded) {
+            getCigar();
+        }
         mAttributesDecoded = true;
         mBinaryDataStale = true;
         super.clearAttributes();
@@ -289,9 +295,10 @@ public class BAMRecord extends SAMRecord {
      * that the actual cigar is too long for the BAM spec and should be taken from the CG tag. This
      * was introduced in SAM v1.6.
      */
-    private static boolean isSentinelCigar(final Cigar cigar, final int readLength) {
+    static boolean isSentinelCigar(final Cigar cigar, final int readLength) {
         // There's an implicit assumption here there readLength == length of read in cigar, unless readLength==0
-        return  cigar.getCigarElement(1).getOperator() == CigarOperator.N &&
+        return cigar.numCigarElements() == 2 &&
+                cigar.getCigarElement(1).getOperator() == CigarOperator.N &&
                 cigar.getCigarElement(0).getOperator() == CigarOperator.S &&
                 (cigar.getCigarElement(0).getLength() == readLength || readLength == 0) ;
     }
@@ -300,9 +307,8 @@ public class BAMRecord extends SAMRecord {
     /**
      * Long cigars (with more than 64K operators) cannot be encoded into BAM. Instead a sentinel cigar is
      * placed as a placeholder, and the actual cigar is placed in the CG tag. This method
-     * extracts the CIGAR from the CG tag and places is into the (in memory) cigar.
+     * extracts the CIGAR from the CG tag and places it into the (in memory) cigar.
      */
-
     private void extractCigarFromCGAttribute(final Cigar sentinelCigar) throws IllegalStateException {
         final int[] cigarFromCG = (int[]) getAttribute(SAMTagUtil.getSingleton().CG);
 
