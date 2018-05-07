@@ -389,15 +389,33 @@ public class SamFileValidator {
     }
 
     /**
-     * Report error if a tag value is a Long.
+     * Report error if a tag value is a Long, or if there's a duplicate dag,
+     * or if there's a CG tag is obvered (CG tags are converted to cigars in
+     * the bam code, and should not appear in other formats)
      */
     private void validateTags(final SAMRecord record, final long recordNumber) {
-        for (final SAMRecord.SAMTagAndValue tagAndValue : record.getAttributes()) {
+        final List<SAMRecord.SAMTagAndValue> attributes = record.getAttributes();
+
+        final Set<String> tags = new HashSet<>(attributes.size());
+
+        for (final SAMRecord.SAMTagAndValue tagAndValue : attributes) {
             if (tagAndValue.value instanceof Long) {
                 addError(new SAMValidationError(Type.TAG_VALUE_TOO_LARGE,
                         "Numeric value too large for tag " + tagAndValue.tag,
                         record.getReadName(), recordNumber));
             }
+
+            if (!tags.add(tagAndValue.tag)) {
+                addError(new SAMValidationError(Type.DUPLICATE_SAM_TAG,
+                        "Duplicate SAM tag (" + tagAndValue.tag + ") found.", record.getReadName(), recordNumber));
+            }
+        }
+
+        if (tags.contains(SAMTag.CG.name())){
+            addError(new SAMValidationError(Type.CG_TAG_FOUND_IN_ATTRIBUTES,
+                    "The CG Tag should only be used in BAM format to hold a large cigar. " +
+                            "It was found containing the value: " +
+                            record.getAttribute(SAMTagUtil.getSingleton().CG), record.getReadName(), recordNumber));
         }
     }
 

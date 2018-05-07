@@ -65,6 +65,8 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
 
     private int readLength = 36;
 
+    private boolean useBamFile = true;
+
     private SAMProgramRecord programRecord = null;
     private SAMReadGroupRecord readGroup = null;
     private boolean useNmFlag = false;
@@ -132,6 +134,16 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
             readGroups.add(readGroupRecord);
             this.header.setReadGroups(readGroups);
         }
+    }
+
+    /**
+     * Determine whether the class will use a bam (default) or a sam file to hold the
+     * records when providing a reader to them.
+     *
+     * @param useBamFile if true will use a BAM file, otherwise it will use a SAM file to hold the records.
+     */
+    public void setUseBamFile(final boolean useBamFile) {
+        this.useBamFile = useBamFile;
     }
 
     public void setUnmappedHasBasesAndQualities(final boolean value) {
@@ -334,11 +346,20 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         }
     }
 
+    /** If the record contains a cigar with non-zero read length, return that length, otherwise, return readLength
+     */
+    private int getReadLengthFromCigar(final SAMRecord rec) {
+        return ( rec.getCigar() != null &&
+                 rec.getCigar().getReadLength() != 0 ) ? rec.getCigar().getReadLength() : readLength;
+    }
+
     /**
      * Randomly fills in the bases for the given record.
+     * <p>
+     * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBases(final SAMRecord rec) {
-        final int length = this.readLength;
+        final int length = getReadLengthFromCigar(rec);
         final byte[] bases = new byte[length];
 
         for (int i = 0; i < length; ++i) {
@@ -530,10 +551,10 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
     /**
      * Fills in bases and qualities with a set default quality. If the defaultQuality is set to -1 quality scores will
      * be randomly generated.
-     * Relies on the alignment start and end having been set to get read length.
+     * If there's a cigar with read-length >0, will use that length for reads. Otherwise will use length = 36
      */
     private void fillInBasesAndQualities(final SAMRecord rec, final int defaultQuality) {
-        final int length = this.readLength;
+        final int length = getReadLengthFromCigar(rec);
         final byte[] quals = new byte[length];
 
         if (-1 != defaultQuality) {
@@ -557,23 +578,22 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
         final File tempFile;
 
         try {
-            tempFile = File.createTempFile("temp", ".sam");
+            tempFile = File.createTempFile("temp", this.useBamFile ? ".bam" : ".sam");
+            tempFile.deleteOnExit();
         } catch (final IOException e) {
             throw new RuntimeIOException("problems creating tempfile", e);
         }
 
         this.header.setAttribute("VN", "1.0");
-        final SAMFileWriter w = new SAMFileWriterFactory().makeBAMWriter(this.header, true, tempFile);
-        for (final SAMRecord r : this.getRecords()) {
-            w.addAlignment(r);
+        try(final SAMFileWriter w = this.useBamFile ?
+                new SAMFileWriterFactory().makeBAMWriter(this.header, true, tempFile) :
+                new SAMFileWriterFactory().makeSAMWriter(this.header, true, tempFile)) {
+            for (final SAMRecord r : this.getRecords()) {
+                w.addAlignment(r);
+            }
         }
 
-        w.close();
-
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(tempFile);
-        tempFile.deleteOnExit();
-
-        return reader;
+        return SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(tempFile);
     }
 
     public SAMFileHeader getHeader() {

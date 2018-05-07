@@ -835,6 +835,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return getCigar().numCigarElements();
     }
 
+    /**
+     * For setting the Cigar string when changed. Note that this nulls the
+     * indexing bin, which would need to be recomputed on write (if needed).
+     * To avoid clobbering the indexing bin, use {@link #initializeCigar}
+     *
+     */
     public void setCigar(final Cigar cigar) {
         initializeCigar(cigar);
         // Change to cigar could change alignmentEnd, and thus indexing bin
@@ -842,7 +848,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * For setting the Cigar string when BAMRecord has decoded it.  Use this rather than setCigar()
+     * For setting the Cigar string when BAMRecord has decoded it.
+     * Use this rather than {@link #setCigar}
      * so that indexing bin doesn't get clobbered.
      */
     protected void initializeCigar(final Cigar cigar) {
@@ -1488,6 +1495,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * Replace any existing attributes with the given linked item.
+     *
+     * NOTE: this method is intended to only be called from subclasses.
      */
     protected void setAttributes(final SAMBinaryTagAndValue attributes) {
         mAttributes = attributes;
@@ -1505,7 +1514,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     @Override
     public String getContig() {
-        if( getReadUnmappedFlag()) {
+        if (getReadUnmappedFlag()) {
             return null;
         } else {
             return getReferenceName();
