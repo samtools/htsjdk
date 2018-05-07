@@ -54,7 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class IoUtilTest extends HtsjdkTest {
+public class IOUtilTest extends HtsjdkTest {
 
 
     private static final Path TEST_DATA_DIR = Paths.get ("src/test/resources/htsjdk/samtools/io/");
@@ -66,11 +66,11 @@ public class IoUtilTest extends HtsjdkTest {
     private static final String TEST_FILE_PREFIX = "htsjdk-IOUtilTest";
     private static final String TEST_FILE_EXTENSIONS[] = {".txt", ".txt.gz"};
     private static final String TEST_STRING = "bar!";
+
     private File existingTempFile;
     private String systemUser;
     private String systemTempDir;
-
-    private FileSystem inMemoryfileSystem;
+    private FileSystem inMemoryFileSystem;
 
     @BeforeClass
     public void setUp() throws IOException {
@@ -78,7 +78,7 @@ public class IoUtilTest extends HtsjdkTest {
         existingTempFile.deleteOnExit();
         systemTempDir = System.getProperty("java.io.tmpdir");
         final File tmpDir = new File(systemTempDir);
-        inMemoryfileSystem = Jimfs.newFileSystem(Configuration.unix());;
+        inMemoryFileSystem = Jimfs.newFileSystem(Configuration.unix());;
         if (!tmpDir.isDirectory()) tmpDir.mkdir();
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
@@ -90,7 +90,7 @@ public class IoUtilTest extends HtsjdkTest {
         // reset java properties to original
         System.setProperty("java.io.tmpdir", systemTempDir);
         System.setProperty("user.name", systemUser);
-        inMemoryfileSystem.close();
+        inMemoryFileSystem.close();
     }
 
     @Test
@@ -123,27 +123,25 @@ public class IoUtilTest extends HtsjdkTest {
 
         File tmpDir = new File(tmpPath, userName);
         tmpDir.mkdir();
+        tmpDir.deleteOnExit();
         File actual = new File(tmpDir, "actual.txt");
+        actual.deleteOnExit();
         ProcessExecutor.execute(new String[]{"touch", actual.getAbsolutePath()});
         File symlink = new File(tmpDir, "symlink.txt");
+        symlink.deleteOnExit();
         ProcessExecutor.execute(new String[]{"ln", "-s", actual.getAbsolutePath(), symlink.getAbsolutePath()});
         File lnDir = new File(tmpDir, "symLinkDir");
+        lnDir.deleteOnExit();
         ProcessExecutor.execute(new String[]{"ln", "-s", tmpDir.getAbsolutePath(), lnDir.getAbsolutePath()});
         File lnToActual = new File(lnDir, "actual.txt");
+        lnToActual.deleteOnExit();
         File lnToSymlink = new File(lnDir, "symlink.txt");
-
+        lnToSymlink.deleteOnExit();
 
         File files[] = {actual, symlink, lnToActual, lnToSymlink};
         for (File f : files) {
             Assert.assertEquals(IOUtil.getFullCanonicalPath(f), actual.getCanonicalPath());
         }
-
-        actual.delete();
-        symlink.delete();
-        lnToActual.delete();
-        lnToSymlink.delete();
-        lnDir.delete();
-        tmpDir.delete();
     }
 
     @Test
@@ -190,24 +188,19 @@ public class IoUtilTest extends HtsjdkTest {
     public void testFileType(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
-        if (null != file) {
-            Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
-        }
+        Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
     }
 
     @Test(dataProvider = "unixFileTypeTestCases", groups = {"unix"})
     public void testFileTypeUnix(final String path, boolean expectedIsRegularFile) {
         final File file = new File(path);
         Assert.assertEquals(IOUtil.isRegularPath(file), expectedIsRegularFile);
-        if (null != file) {
-            Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
-        }
+        Assert.assertEquals(IOUtil.isRegularPath(file.toPath()), expectedIsRegularFile);
     }
 
     @Test
     public void testAddExtension() throws IOException {
         Path p = IOUtil.getPath("/folder/file");
-        List<FileSystemProvider> fileSystemProviders = FileSystemProvider.installedProviders();
         Assert.assertEquals(IOUtil.addExtension(p, ".ext"), IOUtil.getPath("/folder/file.ext"));
         p = IOUtil.getPath("folder/file");
         Assert.assertEquals(IOUtil.addExtension(p, ".ext"), IOUtil.getPath("folder/file.ext"));
@@ -299,7 +292,7 @@ public class IoUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeletePathJims(final List<String> fileNames) throws Exception {
-        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        final List<Path> paths = createJimfsFiles("testDeletePath", fileNames);
         testDeletePath(paths);
     }
 
@@ -312,7 +305,7 @@ public class IoUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileNamesForDelete")
     public void testDeleteArrayPathJims(final List<String> fileNames) throws Exception {
-        final List<Path> paths = createJimsFiles("testDeletePath", fileNames);
+        final List<Path> paths = createJimfsFiles("testDeletePath", fileNames);
         testDeletePathArray(paths);
     }
 
@@ -332,19 +325,19 @@ public class IoUtilTest extends HtsjdkTest {
         final List<Path> paths = new ArrayList<>(fileNames.size());
         for (final String f: fileNames) {
             final File file = new File(tmpDir, f);
-            file.createNewFile();
+            Assert.assertTrue(file.createNewFile(), "failed to create test file" +file);
             paths.add(file.toPath());
         }
         return paths;
     }
 
-    private List<Path> createJimsFiles(final String folderName, final List<String> fileNames) throws Exception {
+    private List<Path> createJimfsFiles(final String folderName, final List<String> fileNames) throws Exception {
         final List<Path> paths = new ArrayList<>(fileNames.size());
-        final Path folder = inMemoryfileSystem.getPath(folderName);
+        final Path folder = inMemoryFileSystem.getPath(folderName);
         if (Files.notExists(folder)) Files.createDirectory(folder);
 
         for (final String f: fileNames) {
-            final Path p = inMemoryfileSystem.getPath(folderName, f);
+            final Path p = inMemoryFileSystem.getPath(folderName, f);
             Files.createFile(p);
             paths.add(p);
         }
@@ -356,12 +349,12 @@ public class IoUtilTest extends HtsjdkTest {
     public Object[][] pathsForWritableDirectory() throws Exception {
         return new Object[][] {
                 // non existent
-                {inMemoryfileSystem.getPath("no_exists"), false},
+                {inMemoryFileSystem.getPath("no_exists"), false},
                 // non directory
-                {Files.createFile(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
-                // TODO - how to do in inMemmoryFileSystem a non-writable directory?
+                {Files.createFile(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_file")), false},
+                // TODO - how to do in inMemoryFileSystem a non-writable directory?
                 // writable directory
-                {Files.createDirectory(inMemoryfileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
+                {Files.createDirectory(inMemoryFileSystem.getPath("testAssertDirectoryIsWritable_directory")), true}
         };
     }
 
@@ -411,10 +404,10 @@ public class IoUtilTest extends HtsjdkTest {
     @DataProvider
     public Object[][] fofnData() throws IOException {
 
-        Path fofnPath1 = inMemoryfileSystem.getPath(level1);
+        Path fofnPath1 = inMemoryFileSystem.getPath(level1);
         Files.copy(TEST_DATA_DIR.resolve(level1), fofnPath1);
 
-        Path fofnPath2 = inMemoryfileSystem.getPath(level2);
+        Path fofnPath2 = inMemoryFileSystem.getPath(level2);
         Files.copy(TEST_DATA_DIR.resolve(level2), fofnPath2);
 
         return new Object[][]{
