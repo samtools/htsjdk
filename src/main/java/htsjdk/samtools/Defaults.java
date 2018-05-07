@@ -37,24 +37,24 @@ public class Defaults {
      */
     public static final boolean USE_ASYNC_IO_WRITE_FOR_TRIBBLE;
 
-    /** Compresion level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
+    /** Compression level to be used for writing BAM and other block-compressed outputs.  Default = 5. */
     public static final int COMPRESSION_LEVEL;
 
     /** Buffer size, in bytes, used whenever reading/writing files or streams.  Default = 128k. */
     public static final int BUFFER_SIZE;
 
-    /** The output format of the flag field when writing SAM text.  Ignored for reading SAM text. */
+    /** The output format of the flag field when writing SAM text.  Ignored for reading SAM text.  Default = DECIMAL */
     public static final SamFlagField SAM_FLAG_FIELD_FORMAT;
 
     /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
-     * this == BUFFER_SIZE
+     * this == BUFFER_SIZE (Default = 128k).
      */
     public static final int NON_ZERO_BUFFER_SIZE;
 
     /**
      * The reference FASTA file.  If this is not set, the file is null.  This file may be required for reading
-     * writing SAM files (ex. CRAM).
+     * writing SAM files (ex. CRAM).  Default = null.
      */
     public static final File REFERENCE_FASTA;
 
@@ -62,36 +62,38 @@ public class Defaults {
      *  Expected format: <url prefix>,<fully qualified factory class name>[,<jar file name>]
      *  E.g. https://www.googleapis.com/genomics/v1beta/reads/,com.google.genomics.ReaderFactory
      *  OR https://www.googleapis.com/genomics/v1beta/reads/,com.google.genomics.ReaderFactory,/tmp/genomics.jar
+     *  Default = "".
      */
     public static final String CUSTOM_READER_FACTORY;
 
     /**
      * Boolean describing whether downloading a reference file is allowed (for CRAM files),
      * in case the reference file is not specified by the user
-     * Enabling this is not necessarily a good idea, since this process often fails
+     * Enabling this is not necessarily a good idea, since this process often fails.  Default = false.
      */
     public static final boolean USE_CRAM_REF_DOWNLOAD;
 
     /**
      * A mask (pattern) to use when building EBI reference service URL for a
      * given MD5 checksum. Must contain one and only one string placeholder.
+     * Default = "https://www.ebi.ac.uk/ena/cram/md5/%s".
      */
     public static final String EBI_REFERENCE_SERVICE_URL_MASK;
 
     /**
      * Boolean describing whether downloading of SRA native libraries is allowed,
-     * in case such native libraries are not found locally
+     * in case such native libraries are not found locally.  Default = false.
      */
     public static final boolean SRA_LIBRARIES_DOWNLOAD;
 
 
     /**
-     * the name of the system property that disables snappy
+     * The name of the system property that disables snappy.  Default = "snappy.disable".
      */
     public static final String DISABLE_SNAPPY_PROPERTY_NAME = "snappy.disable";
 
     /**
-     * Disable use of the Snappy compressor
+     * Disable use of the Snappy compressor.  Default = false.
      */
     public static final boolean DISABLE_SNAPPY_COMPRESSOR;
 
