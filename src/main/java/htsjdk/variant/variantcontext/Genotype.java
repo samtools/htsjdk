@@ -575,7 +575,7 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
             return hasDP();
         } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
-            return true;  //always available
+            return isFiltered() ? true : false;
         } else {
             return hasExtendedAttribute(key);
         }
