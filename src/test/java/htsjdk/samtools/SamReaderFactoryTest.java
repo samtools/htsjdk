@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.ref.ReferenceSource;
 import htsjdk.samtools.seekablestream.ISeekableStreamFactory;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
@@ -22,10 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -538,55 +536,48 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @Test(singleThreaded = true, groups="unix")
     public void testWriteAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SortOrder.unsorted);
+        for (int i=1; i<= 5000; ++i) {
+            builder.addPair("q" + i, 0, i, i);
+        }
+
         final File fifo = File.createTempFile("fifo", "");
         Assert.assertTrue(fifo.delete());
         fifo.deleteOnExit();
-        final Process exec = Runtime.getRuntime().exec(new String[]{"mkfifo", fifo.getAbsolutePath()});
+        final Process exec = new ProcessBuilder("mkfifo", fifo.getAbsolutePath()).start();
         exec.waitFor(1, TimeUnit.MINUTES);
         Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
 
-        ExecutorService executor = null;
-        try {
-            executor = Executors.newFixedThreadPool(2);
-            final File input = new File(TEST_DATA_DIR, "example.bam");
-            final Future<Integer> writing = executor.submit(writeToPipe(fifo, input));
-            final Future<Integer> reading = executor.submit(readFromPipe(fifo));
-            Assert.assertEquals(writing.get(1, TimeUnit.MINUTES), reading.get(1, TimeUnit.MINUTES));
-        } finally {
-            if (executor != null) {
-                executor.shutdownNow();
+        for (final SamInputResource res : Arrays.asList(SamInputResource.of(fifo), SamInputResource.of(fifo.toPath()))) {
+            ExecutorService executor = null;
+            try {
+                executor = Executors.newSingleThreadExecutor();
+                final Future<Integer> future = executor.submit(() -> {
+                    final SAMFileWriter writer = new SAMFileWriterFactory()
+                            .setCreateIndex(false).setCreateMd5File(false).makeBAMWriter(builder.getHeader(), true, fifo);
+
+                    int written = 0;
+                    for (SAMRecord read : builder) {
+                        writer.addAlignment(read);
+                        written += 1;
+                    }
+                    writer.close();
+                    return written;
+                });
+
+                final SamReader in = SamReaderFactory.make().open(res);
+                int count = 0;
+                for (SAMRecord rec : in) {
+                    Assert.assertEquals(rec.getReadName(), "q" + rec.getAlignmentStart());
+                    count += 1;
+                }
+                in.close();
+
+                Assert.assertEquals(count, builder.size());
+                Assert.assertEquals(count, future.get().intValue());
+            } finally {
+                if (executor != null) executor.shutdownNow();
             }
         }
-    }
-
-    private static Callable<Integer> readFromPipe(File fifo) {
-        return () -> {
-            try (final SamReader reader = SamReaderFactory.makeDefault().open(fifo)) {
-                return (int)reader.iterator().stream().count();
-            } catch (Exception e) {
-                Assert.fail("failed during reading from pipe", e);
-            }
-            throw new RuntimeException("Shouldn't actually reach here but the compiler was confused");
-        };
-    }
-
-    private static Callable<Integer> writeToPipe(File fifo, File input) {
-        return () -> {
-            int written = 0;
-            try {
-                try (final SamReader reader = SamReaderFactory.makeDefault().open(input);
-                     final SAMFileWriter writer = new SAMFileWriterFactory().setCreateIndex(false)
-                             .setCreateMd5File(false)
-                             .makeBAMWriter(reader.getFileHeader(), true, fifo)) {
-                    for (SAMRecord read : reader) {
-                        writer.addAlignment(read);
-                        written++;
-                    }
-                }
-            } catch (final Exception e) {
-                Assert.fail("Failed during writing to pipe", e);
-            }
-            return written;
-        };
     }
 }
