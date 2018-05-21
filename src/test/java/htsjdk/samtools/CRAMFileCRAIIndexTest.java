@@ -304,6 +304,29 @@ public class CRAMFileCRAIIndexTest extends HtsjdkTest {
         reader.close();
     }
 
+    @Test
+    public void testQueryIntervalWithFilePointers() throws IOException {
+        CRAMFileReader reader = new CRAMFileReader(
+                new ByteArraySeekableStream(cramBytes),
+                new ByteArraySeekableStream(craiBytes),
+                source,
+                ValidationStringency.STRICT);
+        QueryInterval[] query = new QueryInterval[]{new QueryInterval(0, 1519, 1520), new QueryInterval(1, 470535, 470536)};
+        BAMFileSpan fileSpan = BAMFileReader.getFileSpan(query, reader.getIndex());
+        final CloseableIterator<SAMRecord> iterator = reader.createIndexIterator(query, false, fileSpan.toCoordinateArray());
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord r1 = iterator.next();
+        Assert.assertEquals(r1.getReadName(), "3968040");
+
+        Assert.assertTrue(iterator.hasNext());
+        SAMRecord r2 = iterator.next();
+        Assert.assertEquals(r2.getReadName(), "140419");
+
+        Assert.assertFalse(iterator.hasNext());
+        iterator.close();
+        reader.close();
+    }
+
     @BeforeTest
     public void prepare() throws IOException {
         Log.setGlobalLogLevel(Log.LogLevel.ERROR);
