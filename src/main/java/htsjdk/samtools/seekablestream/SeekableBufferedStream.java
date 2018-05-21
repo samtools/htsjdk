@@ -46,6 +46,16 @@ public class SeekableBufferedStream extends SeekableStream {
             if (this.count == this.pos) return 0; // documented test for "is buffer empty"
             else return this.buf.length - this.pos;
         }
+
+        /** Returns the position in the buffer. */
+        int getPositionInBuffer() {
+            return pos;
+        }
+
+        /** Changes the position in the buffer by a given delta. */
+        void changePos(int delta) {
+            this.pos += delta;
+        }
     }
 
 
@@ -87,9 +97,17 @@ public class SeekableBufferedStream extends SeekableStream {
 
     @Override
     public void seek(final long position) throws IOException {
+        if (this.position == position) {
+            return;
+        }
+        if ((position > this.position && (position - this.position < this.bufferedStream.getBytesInBufferAvailable()))
+                || (position < this.position && (this.position - position < this.bufferedStream.getPositionInBuffer()))) {
+            this.bufferedStream.changePos((int) (position - this.position));
+        } else {
+            wrappedStream.seek(position);
+            bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
+        }
         this.position = position;
-        wrappedStream.seek(position);
-        bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
     }
 
     @Override

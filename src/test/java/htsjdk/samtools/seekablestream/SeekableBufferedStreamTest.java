@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
+import static htsjdk.samtools.seekablestream.SeekableBufferedStream.DEFAULT_BUFFER_SIZE;
 import static org.testng.Assert.assertEquals;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
@@ -121,6 +122,43 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
             Assert.assertEquals(bytes1, bytes2, "Error at buffer size " + bufferSize);
         }
+    }
+
+    @Test
+    public void testSeek() throws IOException {
+        int bufferSize = 20000;
+        int startPosition = 250000;
+        int length = 5000;
+
+        final int[] RELATIVE_SEEK_OFFSET = new int[]{-bufferSize*2, -bufferSize, -bufferSize/2, -length, -length/2, 0,
+                length/2, length, bufferSize/2, bufferSize, bufferSize*2};
+
+        for (final int seekOffset : RELATIVE_SEEK_OFFSET) {
+            byte[] buffer1 = new byte[length];
+            SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
+            unBufferedStream.seek(startPosition);
+            int bytesRead = unBufferedStream.read(buffer1, 0, length);
+            Assert.assertEquals(length, bytesRead);
+
+            byte[] buffer2 = new byte[length];
+            SeekableStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)), bufferSize);
+            bufferedStream.seek(startPosition);
+            bytesRead = bufferedStream.read(buffer2, 0, length);
+            Assert.assertEquals(length, bytesRead);
+
+            Assert.assertEquals(buffer1, buffer2);
+
+            unBufferedStream.seek(startPosition + seekOffset);
+            bytesRead = unBufferedStream.read(buffer1, 0, length);
+            Assert.assertEquals(length, bytesRead);
+
+            bufferedStream.seek(startPosition + seekOffset);
+            bytesRead = bufferedStream.read(buffer2, 0, length);
+            Assert.assertEquals(length, bytesRead);
+
+            Assert.assertEquals(buffer1, buffer2, "Error at relative seek offset " + seekOffset);
+        }
+
     }
 
     private int reallyRead(final byte[] bytes, final SeekableBufferedStream in) throws IOException {
