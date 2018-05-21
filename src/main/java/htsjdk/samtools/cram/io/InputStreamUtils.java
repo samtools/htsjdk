@@ -77,4 +77,29 @@ public class InputStreamUtils {
             n += count;
         }
     }
+
+    /**
+     * Skip the specified number of bytes from the {@link InputStream}.
+     * @param in the input stream to skip bytes from
+     * @param length the number of bytes to skip
+     * @throws IOException  as per java IO contract
+     * @throws EOFException if there is less than length bytes in the stream
+     */
+    public static void skipFully(final InputStream in, final long length) throws IOException {
+        long amt = length;
+        while (amt > 0) {
+            long ret = in.skip(amt);
+            if (ret == 0) {
+                // skip may return 0 even if we're not at EOF.  Luckily, we can
+                // use the read() method to figure out if we're at the end.
+                int b = in.read();
+                if (b == -1) {
+                    throw new EOFException( "Premature EOF from inputStream after " +
+                            "skipping " + (length - amt) + " byte(s).");
+                }
+                ret = 1;
+            }
+            amt -= ret;
+        }
+    }
 }
