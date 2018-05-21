@@ -41,6 +41,7 @@ import java.io.FileNotFoundException;
 public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
+    private static File SEQUENCE_FILE_GZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
@@ -54,6 +55,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
     public Object[][] provideSequenceFile() throws FileNotFoundException {
         return new Object[][] { new Object[]
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE) },
+                { new IndexedFastaSequenceFile(SEQUENCE_FILE_GZ) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) }};
