@@ -406,7 +406,17 @@ public abstract class SamReaderFactory {
                             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
                         }
                         if (sourceFile == null || !sourceFile.isFile()) {
-                            primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                            final SeekableStream indexSeekableStream =
+                                    indexMaybe == null ?
+                                            null :
+                                            indexMaybe.asUnbufferedSeekableStream();
+                            final SeekableStream sourceSeekableStream = data.asUnbufferedSeekableStream();
+                            if (null == sourceSeekableStream || null == indexSeekableStream) {
+                                primitiveSamReader = new CRAMFileReader(bufferedStream, indexFile, referenceSource, validationStringency);
+                            } else {
+                                sourceSeekableStream.seek(0);
+                                primitiveSamReader = new CRAMFileReader(sourceSeekableStream, indexSeekableStream, referenceSource, validationStringency);
+                            }
                         } else {
                             bufferedStream.close();
                             primitiveSamReader = new CRAMFileReader(sourceFile, indexFile, referenceSource, validationStringency);
