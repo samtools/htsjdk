@@ -192,9 +192,11 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         reader.close();
 
         Assert.assertTrue(i > 0);
-        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz"))
+        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz")) {
             Assert.assertEquals(recordFactory.samRecordsCreated, i);
-        else if (inputFile.endsWith(".bam")) Assert.assertEquals(recordFactory.bamRecordsCreated, i);
+        } else if (inputFile.endsWith(".bam")) {
+            Assert.assertEquals(recordFactory.bamRecordsCreated, i);
+        }
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
@@ -235,7 +237,7 @@ public class SamReaderFactoryTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] composeAllPermutationsOfSamInputResource() {
-        final List<SamInputResource> sources = new ArrayList<SamInputResource>();
+        final List<SamInputResource> sources = new ArrayList<>();
         for (final InputResource.Type dataType : InputResource.Type.values()) {
             if (dataType.equals(InputResource.Type.SRA_ACCESSION))
                 continue;
@@ -282,22 +284,23 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
-    final Set<SAMFileHeader> observedHeaders = new HashSet<SAMFileHeader>();
-    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<List<SAMRecord>>();
+    final Set<SAMFileHeader> observedHeaders = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void exhaustInputResourcePermutation(final SamInputResource resource) throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().open(resource);
-        LOG.info(String.format("Reading from %s ...", resource));
-        final List<SAMRecord> slurped = Iterables.slurp(reader);
-        final SAMFileHeader fileHeader = reader.getFileHeader();
-        reader.hasIndex();
-        reader.indexing().hasBrowseableIndex();
-        reader.close();
-        
-        /* Ensure all tests have read the same records in the same order or, if this is the first test, set it as the template. */
-        observedHeaders.add(fileHeader);
-        observedRecordOrdering.add(slurped);
+        try(final SamReader reader = SamReaderFactory.makeDefault().open(resource)) {
+            LOG.info(String.format("Reading from %s ...", resource));
+            final List<SAMRecord> slurped = Iterables.slurp(reader);
+            final SAMFileHeader fileHeader = reader.getFileHeader();
+            reader.hasIndex();
+            reader.indexing().hasBrowseableIndex();
+
+            /* Ensure all tests have read the same records in the same order or, if this is the first test, set it as the template. */
+            observedHeaders.add(fileHeader);
+            observedRecordOrdering.add(slurped);
+        }
+
         Assert.assertEquals(observedHeaders.size(), 1, "read different headers than other testcases");
         Assert.assertEquals(observedRecordOrdering.size(), 1, "read different records than other testcases");
     }
@@ -311,7 +314,6 @@ public class SamReaderFactoryTest extends HtsjdkTest {
             LOG.info(String.format("Reading from %s ...", path));
             records = Iterables.slurp(reader);
             fileHeader = reader.getFileHeader();
-            reader.close();
         }
 
         try (final SamReader fileReader = SamReaderFactory.makeDefault().open(localBam)) {
@@ -322,38 +324,38 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
-    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<List<SAMRecord>>();
-    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<List<SAMRecord>>();
+    final Set<List<SAMRecord>> observedRecordOrdering1 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering3 = new HashSet<>();
+    final Set<List<SAMRecord>> observedRecordOrdering20 = new HashSet<>();
 
     @Test(dataProvider = "composeAllPermutationsOfSamInputResource")
     public void queryInputResourcePermutation(final SamInputResource resource) throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().open(resource);
-        LOG.info(String.format("Query from %s ...", resource));
-        if (reader.hasIndex()) {
-            final StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            final SAMRecordIterator q1 = reader.query("chr1", 500000, 100000000, true);
-            observedRecordOrdering1.add(Iterables.slurp(q1));
-            q1.close();
-            final SAMRecordIterator q20 = reader.query("chr20", 1, 1000000, true);
-            observedRecordOrdering20.add(Iterables.slurp(q20));
-            q20.close();
-            final SAMRecordIterator q3 = reader.query("chr3", 1, 10000000, true);
-            observedRecordOrdering3.add(Iterables.slurp(q3));
-            q3.close();
-            stopWatch.stop();
-            LOG.info(String.format("Finished queries in %sms", stopWatch.getElapsedTime()));
+        try(final SamReader reader = SamReaderFactory.makeDefault().open(resource)) {
+            LOG.info(String.format("Query from %s ...", resource));
+            if (reader.hasIndex()) {
+                final StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                final SAMRecordIterator q1 = reader.query("chr1", 500000, 100000000, true);
+                observedRecordOrdering1.add(Iterables.slurp(q1));
+                q1.close();
+                final SAMRecordIterator q20 = reader.query("chr20", 1, 1000000, true);
+                observedRecordOrdering20.add(Iterables.slurp(q20));
+                q20.close();
+                final SAMRecordIterator q3 = reader.query("chr3", 1, 10000000, true);
+                observedRecordOrdering3.add(Iterables.slurp(q3));
+                q3.close();
+                stopWatch.stop();
+                LOG.info(String.format("Finished queries in %sms", stopWatch.getElapsedTime()));
 
-            Assert.assertEquals(observedRecordOrdering1.size(), 1, "read different records for chromosome 1");
-            Assert.assertEquals(observedRecordOrdering20.size(), 1, "read different records for chromosome 20");
-            Assert.assertEquals(observedRecordOrdering3.size(), 1, "read different records for chromosome 3");
-        } else if (resource.indexMaybe() != null) {
-            LOG.warn("Resource has an index source, but is not indexed: " + resource);
-        } else {
-            LOG.info("Skipping query operation: no index.");
+                Assert.assertEquals(observedRecordOrdering1.size(), 1, "read different records for chromosome 1");
+                Assert.assertEquals(observedRecordOrdering20.size(), 1, "read different records for chromosome 20");
+                Assert.assertEquals(observedRecordOrdering3.size(), 1, "read different records for chromosome 3");
+            } else if (resource.indexMaybe() != null) {
+                LOG.warn("Resource has an index source, but is not indexed: " + resource);
+            } else {
+                LOG.info("Skipping query operation: no index.");
+            }
         }
-        reader.close();
     }
 
     /**
@@ -522,8 +524,9 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         final URL samURL = new URL("file://" + samFilePath);
         final SamReaderFactory factory = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT);
-        final SamReader reader = factory.open(SamInputResource.of(samURL));
-        Assert.assertEquals(countRecords(reader), 10);
+        try (final SamReader reader = factory.open(SamInputResource.of(samURL))) {
+            Assert.assertEquals(countRecords(reader), 10);
+        }
     }
 
     @Test(expectedExceptions = SAMFormatException.class)
@@ -534,9 +537,10 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         final File samFile = new File(TEST_DATA_DIR, "cram_with_bai_index.cram.bai");
         final SamReaderFactory factory = SamReaderFactory.makeDefault()
                 .validationStringency(ValidationStringency.SILENT);
-        final SamReader reader = factory.open(
-                SamInputResource.of(new SeekableFileStream(samFile)));
-        countRecords(reader);
+        try (final SamReader reader = factory.open(
+                SamInputResource.of(new SeekableFileStream(samFile)))) {
+            countRecords(reader);
+        }
     }
 
     @DataProvider()
