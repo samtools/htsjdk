@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
@@ -680,6 +681,18 @@ public final class SAMUtils {
     public static long findVirtualOffsetOfFirstRecordInBam(final File bamFile) {
         try {
             return BAMFileReader.findVirtualOffsetOfFirstRecord(bamFile);
+        } catch (final IOException ioe) {
+            throw new RuntimeEOFException(ioe);
+        }
+    }
+
+    /**
+     * Returns the virtual file offset of the first record in a BAM file - i.e. the virtual file
+     * offset after skipping over the text header and the sequence records.
+     */
+    public static long findVirtualOffsetOfFirstRecordInBam(final SeekableStream seekableStream) {
+        try {
+            return BAMFileReader.findVirtualOffsetOfFirstRecord(seekableStream);
         } catch (final IOException ioe) {
             throw new RuntimeEOFException(ioe);
         }
