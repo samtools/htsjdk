@@ -26,12 +26,15 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.FastLineReader;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.StringUtil;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -42,6 +45,7 @@ import java.nio.file.Path;
 public class FastaSequenceFile extends AbstractFastaSequenceFile {
 
     private final boolean truncateNamesAtWhitespace;
+    private final SeekableStream seekableStream;
     private FastLineReader in;
     private int sequenceIndex = -1;
     private final byte[] basesBuffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
@@ -56,7 +60,19 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     public FastaSequenceFile(final Path path, final boolean truncateNamesAtWhitespace) {
         super(path);
         this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
+        this.seekableStream = null;
         this.in = new FastLineReader(IOUtil.openFileForReading(path));
+    }
+
+    /**
+     * Constructs a FastaSequenceFile that reads from the specified stream (which must not be compressed, i.e.
+     * the caller is responsible for decompressing the stream).
+     */
+    public FastaSequenceFile(String source, final SeekableStream seekableStream, SAMSequenceDictionary dictionary, final boolean truncateNamesAtWhitespace) {
+        super(null, source, dictionary);
+        this.truncateNamesAtWhitespace = truncateNamesAtWhitespace;
+        this.seekableStream = seekableStream;
+        this.in = new FastLineReader(seekableStream);
     }
 
     /**
@@ -88,9 +104,17 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
     @Override
     public void reset() {
         this.sequenceIndex = -1;
-        this.in.close();
-        this.in = new FastLineReader(IOUtil.openFileForReading(getPath()));
-
+        if (getPath() != null) {
+            this.in.close();
+            this.in = new FastLineReader(IOUtil.openFileForReading(getPath()));
+        } else {
+            try {
+                this.seekableStream.seek(0);
+            } catch (IOException e) {
+                throw new SAMException("Problem seeking to start of stream during reset", e);
+            }
+            this.in = new FastLineReader(this.seekableStream);
+        }
     }
 
     private String readSequenceName() {
@@ -100,7 +124,7 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
         }
         final byte b = in.getByte();
         if (b != '>') {
-            throw new SAMException("Format exception reading FASTA " + getAbsolutePath() + ".  Expected > but saw chr(" +
+            throw new SAMException("Format exception reading FASTA " + getSource() + ".  Expected > but saw chr(" +
             b + ") at start of sequence with index " + this.sequenceIndex);
         }
         final byte[] nameBuffer = new byte[4096];
@@ -111,11 +135,11 @@ public class FastaSequenceFile extends AbstractFastaSequenceFile {
             }
             nameLength += in.readToEndOfOutputBufferOrEoln(nameBuffer, nameLength);
             if (nameLength == nameBuffer.length && !in.atEoln()) {
-                throw new SAMException("Sequence name too long in FASTA " + getAbsolutePath());
+                throw new SAMException("Sequence name too long in FASTA " + getSource());
             }
         } while (!in.atEoln());
         if (nameLength == 0) {
-            throw new SAMException("Missing sequence name in FASTA " + getAbsolutePath());
+            throw new SAMException("Missing sequence name in FASTA " + getSource());
         }
         String name = StringUtil.bytesToString(nameBuffer, 0, nameLength).trim();
         if (truncateNamesAtWhitespace) {

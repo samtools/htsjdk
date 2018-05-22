@@ -32,6 +32,7 @@ import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -41,6 +42,7 @@ import java.nio.file.Path;
  */
 abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     private final Path path;
+    private final String source;
     protected SAMSequenceDictionary sequenceDictionary;
 
     /**
@@ -57,25 +59,30 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
      */
     AbstractFastaSequenceFile(final Path path) {
         this.path = path;
+        this.source = path == null ? "unknown" : path.toAbsolutePath().toString();
         final Path dictionary = findSequenceDictionary(path);
 
         if (dictionary != null) {
             IOUtil.assertFileIsReadable(dictionary);
-
-            try {
-                final SAMTextHeaderCodec codec = new SAMTextHeaderCodec();
-                final BufferedLineReader reader = new BufferedLineReader(Files.newInputStream(dictionary));
-                final SAMFileHeader header = codec.decode(reader,
-                        dictionary.toString());
-                if (header.getSequenceDictionary() != null && !header.getSequenceDictionary().isEmpty()) {
-                    this.sequenceDictionary = header.getSequenceDictionary();
-                }
-                reader.close();
+            try (InputStream dictionaryIn = Files.newInputStream(dictionary)) {
+                this.sequenceDictionary = ReferenceSequenceFileFactory.loadDictionary(dictionaryIn);
             }
             catch (Exception e) {
                 throw new SAMException("Could not open sequence dictionary file: " + dictionary, e);
             }
         }
+    }
+
+    /**
+     * Constructs an {@link AbstractFastaSequenceFile} with an optional sequence dictionary.
+     * @param path Fasta file to read.  Also acts as a prefix for supporting files.
+     * @param source Named source used for error messages.
+     * @param sequenceDictionary The sequence dictionary, or null if there isn't one.
+     */
+    AbstractFastaSequenceFile(final Path path, final String source, final SAMSequenceDictionary sequenceDictionary) {
+        this.path = path;
+        this.source = source;
+        this.sequenceDictionary = sequenceDictionary;
     }
 
     protected static File findSequenceDictionary(final File file) {
@@ -111,6 +118,11 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
         return path;
     }
 
+    /** Returns the named source of the reference file. */
+    protected String getSource() {
+        return source;
+    }
+
     /**
      * Returns the list of sequence records associated with the reference sequence if found
      * otherwise null.
@@ -122,12 +134,15 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
 
     /** Returns the full path to the reference file. */
     protected String getAbsolutePath() {
+        if (path == null) {
+            return null;
+        }
         return path.toAbsolutePath().toString();
     }
 
-    /** Returns the full path to the reference file. */
+    /** Returns the full path to the reference file, or the source if no path was specified. */
     public String toString() {
-        return getAbsolutePath();
+        return source;
     }
 
     /** default implementation -- override if index is supported */
@@ -137,13 +152,13 @@ abstract class AbstractFastaSequenceFile implements ReferenceSequenceFile {
     /** default implementation -- override if index is supported */
     @Override
     public ReferenceSequence getSequence( String contig ) {
-        throw new UnsupportedOperationException("Index does not appear to exist for " + getAbsolutePath() + ".  samtools faidx can be used to create an index");
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource() + ".  samtools faidx can be used to create an index");
     }
 
     /** default implementation -- override if index is supported */
     @Override
     public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
-        throw new UnsupportedOperationException("Index does not appear to exist for " + getAbsolutePath() + ".  samtools faidx can be used to create an index");
+        throw new UnsupportedOperationException("Index does not appear to exist for " + getSource() + ".  samtools faidx can be used to create an index");
     }
 
 }

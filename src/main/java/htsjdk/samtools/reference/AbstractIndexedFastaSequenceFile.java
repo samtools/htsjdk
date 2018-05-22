@@ -69,6 +69,18 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
         }
     }
 
+    /**
+     * Initialise the given indexed fasta sequence file stream.
+     * @param source The named source of the reference file (used in error messages).
+     * @param index The fasta index.
+     * @param dictionary The sequence dictionary, or null if there isn't one.
+     */
+    protected AbstractIndexedFastaSequenceFile(String source, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
+        super(null, source, dictionary);
+        this.index = index;
+        reset();
+    }
+
     protected static Path findRequiredFastaIndexFile(Path fastaFile) throws FileNotFoundException {
         Path ret = findFastaIndex(fastaFile);
         if (ret == null) throw new FileNotFoundException(ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) + " not found.");
@@ -192,7 +204,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
                 startOffset += readFromPosition(channelBuffer, indexEntry.getLocation()+startOffset);
             }
             catch(IOException ex) {
-                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + getAbsolutePath(), ex);
+                throw new SAMException("Unable to load " + contig + "(" + start + ", " + stop + ") from " + getSource(), ex);
             }
 
             // Reset the buffer for outbound transfers.

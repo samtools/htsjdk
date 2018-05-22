@@ -26,6 +26,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.StringUtil;
 import org.testng.Assert;
@@ -33,16 +34,18 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 /**
  * Test the indexed fasta sequence file reader.
  */
 public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
-    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
-    private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
-    private static File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
-    private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
+    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
+    private static final File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
+    private static final File SEQUENCE_FILE_INDEX = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.fai");
+    private static final File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
+    private static final File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
     private final String extendedBasesOfChrM = "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCAT" +
@@ -75,11 +78,19 @@ public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(
                         SEQUENCE_FILE_BGZ),
                                                new BlockCompressedIndexedFastaSequenceFile(
-                                                       SEQUENCE_FILE_BGZ.toPath())},
+                                                       SEQUENCE_FILE_BGZ.toPath()) },
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(
                         SEQUENCE_FILE_BGZ, true),
                                                new BlockCompressedIndexedFastaSequenceFile(
-                                                       SEQUENCE_FILE_BGZ.toPath())}
+                                                       SEQUENCE_FILE_BGZ.toPath()) },
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.getAbsolutePath(),
+                                                       new SeekableFileStream(SEQUENCE_FILE), new FastaSequenceIndex(new FileInputStream(SEQUENCE_FILE_INDEX))),
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.getAbsolutePath(), new SeekableFileStream(SEQUENCE_FILE),
+                                                       new FastaSequenceIndex(new FileInputStream(SEQUENCE_FILE_INDEX)), null) },
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.getAbsolutePath(),
+                                                       new SeekableFileStream(SEQUENCE_FILE), new FastaSequenceIndex(new FileInputStream(SEQUENCE_FILE_INDEX)), null, true),
+                                               new IndexedFastaSequenceFile(SEQUENCE_FILE.getAbsolutePath(), new SeekableFileStream(SEQUENCE_FILE),
+                                                       new FastaSequenceIndex(new FileInputStream(SEQUENCE_FILE_INDEX)), null) },
         };
     }
 
