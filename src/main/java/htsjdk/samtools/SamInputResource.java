@@ -96,7 +96,14 @@ public class SamInputResource {
         if (Files.isRegularFile(path) &&  Files.exists(path)) {
             return new SamInputResource(new PathInputResource(path));
         } else {
-                return of(path.toFile());
+            // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
+            // java's GZIPInputStream which inappropriately uses .available() and then gets confused with the result
+            // of 0. For reference see:
+            // https://bugs.java.com/view_bug.do?bug_id=7036144
+            // https://github.com/samtools/htsjdk/pull/1077
+            // https://github.com/samtools/htsjdk/issues/898
+
+            return of(path.toFile());
         }
     }
 
