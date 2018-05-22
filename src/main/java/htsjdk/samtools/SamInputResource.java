@@ -96,13 +96,7 @@ public class SamInputResource {
         if (Files.isRegularFile(path) &&  Files.exists(path)) {
             return new SamInputResource(new PathInputResource(path));
         } else {
-            try {
-                return of(new FileInputStream(path.toFile()));
-            } catch (FileNotFoundException e) {
-                // we just checked for existence...so I'm not sure how this could happen!
-                e.printStackTrace();
-                return null;
-            }
+                return of(path.toFile());
         }
     }
 
