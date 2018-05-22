@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -91,7 +92,19 @@ public class SamInputResource {
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
-        return new SamInputResource(new PathInputResource(path));
+
+        if (Files.isRegularFile(path) &&  Files.exists(path)) {
+            return new SamInputResource(new PathInputResource(path));
+        } else {
+            // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
+            // java's GZIPInputStream which inappropriately uses .available() and then gets confused with the result
+            // of 0. For reference see:
+            // https://bugs.java.com/view_bug.do?bug_id=7036144
+            // https://github.com/samtools/htsjdk/pull/1077
+            // https://github.com/samtools/htsjdk/issues/898
+
+            return of(path.toFile());
+        }
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index,
