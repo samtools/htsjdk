@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -91,7 +92,18 @@ public class SamInputResource {
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
-        return new SamInputResource(new PathInputResource(path));
+
+        if (Files.isRegularFile(path) &&  Files.exists(path)) {
+            return new SamInputResource(new PathInputResource(path));
+        } else {
+            try {
+                return of(new FileInputStream(path.toFile()));
+            } catch (FileNotFoundException e) {
+                // we just checked for existence...so I'm not sure how this could happen!
+                e.printStackTrace();
+                return null;
+            }
+        }
     }
 
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index,
