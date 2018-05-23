@@ -543,56 +543,56 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         }
     }
 
-    @DataProvider()
-    Object[][] trueFalse() {
-        return new Object[][]{{true}, {false}};
-    }
+     @Test(singleThreaded = true, groups = "unix")
+    public void testWriteAndReadFromPipe() throws IOException, InterruptedException, ExecutionException, TimeoutException {
+         final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SortOrder.unsorted);
+         for (int i = 1; i <= 5000; ++i) {
+             builder.addPair("q" + i, 0, i, i);
+         }
 
-    @Test(dataProvider = "trueFalse", singleThreaded = true, groups = "unix")
-    public void testWriteAndReadFromPipe(final boolean usePath) throws IOException, InterruptedException, ExecutionException, TimeoutException {
-        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SortOrder.unsorted);
-        for (int i = 1; i <= 5000; ++i) {
-            builder.addPair("q" + i, 0, i, i);
-        }
+         for (final boolean usePath : CollectionUtil.makeList(true, false)) {
 
-        final File fifo = File.createTempFile("fifo", "");
-        Assert.assertTrue(fifo.delete());
-        fifo.deleteOnExit();
-        final Process exec = new ProcessBuilder("mkfifo", fifo.getAbsolutePath()).start();
-        exec.waitFor(1, TimeUnit.MINUTES);
-        Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
+             final File fifo = File.createTempFile("fifo", "");
+             Assert.assertTrue(fifo.delete());
+             fifo.deleteOnExit();
+             final Process exec = new ProcessBuilder("mkfifo", fifo.getAbsolutePath()).start();
+             exec.waitFor(1, TimeUnit.MINUTES);
+             Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
 
-        ExecutorService executor = null;
-        try {
-            executor = Executors.newSingleThreadExecutor();
-            final Future<Integer> future = executor.submit(() -> {
-                try (final SAMFileWriter writer = new SAMFileWriterFactory()
-                        .setCreateIndex(false).setCreateMd5File(false).makeBAMWriter(builder.getHeader(), true, fifo)) {
+             ExecutorService executor = null;
+             try {
+                 executor = Executors.newSingleThreadExecutor();
+                 final Future<Integer> future = executor.submit(() -> {
+                     try (final SAMFileWriter writer = new SAMFileWriterFactory()
+                             .setCreateIndex(false)
+                             .setCreateMd5File(false)
+                             .makeBAMWriter(builder.getHeader(), true, fifo)) {
 
-                    int written = 0;
-                    for (SAMRecord read : builder) {
-                        writer.addAlignment(read);
-                        written += 1;
-                    }
-                    return written;
-                }
-            });
-            final SamInputResource res = usePath ?
-                    SamInputResource.of(fifo.toPath()) :
-                    SamInputResource.of(fifo);
+                         int written = 0;
+                         for (final SAMRecord read : builder) {
+                             writer.addAlignment(read);
+                             written += 1;
+                         }
+                         return written;
+                     }
+                 });
+                 final SamInputResource res = usePath ?
+                         SamInputResource.of(fifo.toPath()) :
+                         SamInputResource.of(fifo);
 
-            int count = 0;
-            try (final SamReader in = SamReaderFactory.make().open(res)) {
-                for (SAMRecord rec : in) {
-                    Assert.assertEquals(rec.getReadName(), "q" + rec.getAlignmentStart());
-                    count += 1;
-                }
-            }
+                 int count = 0;
+                 try (final SamReader in = SamReaderFactory.make().open(res)) {
+                     for (final SAMRecord rec : in) {
+                         Assert.assertEquals(rec.getReadName(), "q" + rec.getAlignmentStart());
+                         count += 1;
+                     }
+                 }
 
-            Assert.assertEquals(count, builder.size());
-            Assert.assertEquals(count, future.get().intValue());
-        } finally {
-            if (executor != null) executor.shutdownNow();
-        }
+                 Assert.assertEquals(count, builder.size());
+                 Assert.assertEquals(count, future.get().intValue());
+             } finally {
+                 if (executor != null) executor.shutdownNow();
+             }
+         }
     }
 }
