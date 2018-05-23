@@ -47,14 +47,18 @@ public class SeekableBufferedStream extends SeekableStream {
             else return this.buf.length - this.pos;
         }
 
-        /** Returns the position in the buffer. */
-        int getPositionInBuffer() {
-            return pos;
+        /** Return true if the position can be changed by the given delta and remain in the buffer. */
+        boolean canChangePos(long delta) {
+            return this.pos + delta >= 0 && delta < getBytesInBufferAvailable();
         }
 
         /** Changes the position in the buffer by a given delta. */
         void changePos(int delta) {
-            this.pos += delta;
+            int newPos = this.pos + delta;
+            if (newPos < 0 || newPos > this.buf.length) {
+                throw new IllegalArgumentException("New position not in buffer pos=" + this.pos + ", delta=" + delta);
+            }
+            this.pos = newPos;
         }
     }
 
@@ -90,7 +94,7 @@ public class SeekableBufferedStream extends SeekableStream {
             return retval;
         } else {
             final long position = this.position + skipLength;
-            seek(position);
+            seekInternal(position);
             return skipLength;
         }
     }
@@ -100,13 +104,20 @@ public class SeekableBufferedStream extends SeekableStream {
         if (this.position == position) {
             return;
         }
-        if ((position > this.position && (position - this.position < this.bufferedStream.getBytesInBufferAvailable()))
-                || (position < this.position && (this.position - position < this.bufferedStream.getPositionInBuffer()))) {
-            this.bufferedStream.changePos((int) (position - this.position));
+        // check if the seek is within the buffer
+        long delta = position - this.position;
+        if (this.bufferedStream.canChangePos(delta)) {
+            // casting to an int is safe since the buffer is less than the size of an int
+            this.bufferedStream.changePos((int) delta);
+            this.position = position;
         } else {
-            wrappedStream.seek(position);
-            bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
+            seekInternal(position);
         }
+    }
+
+    private void seekInternal(final long position) throws IOException {
+        wrappedStream.seek(position);
+        bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
         this.position = position;
     }
 
