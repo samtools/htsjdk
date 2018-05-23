@@ -93,7 +93,7 @@ public class SamInputResource {
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
 
-        if (Files.isRegularFile(path) &&  Files.exists(path)) {
+        if (Files.isRegularFile(path)) {
             return new SamInputResource(new PathInputResource(path));
         } else {
             // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
