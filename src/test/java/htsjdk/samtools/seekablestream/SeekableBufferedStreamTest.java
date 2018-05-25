@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
+import static htsjdk.samtools.seekablestream.SeekableBufferedStream.DEFAULT_BUFFER_SIZE;
 import static org.testng.Assert.assertEquals;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
@@ -120,6 +121,52 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
             in2.close();
 
             Assert.assertEquals(bytes1, bytes2, "Error at buffer size " + bufferSize);
+        }
+    }
+
+    @Test
+    public void testSeek() throws IOException {
+        final int bufferSize = 20000;
+        final int startPosition = 250000;
+        final int length = 5000;
+
+        final int[] RELATIVE_SEEK_OFFSET = new int[]{-bufferSize*2, -bufferSize, -bufferSize/2, -length, -length/2, -1,
+                0, 1, length/2, length, bufferSize/2, bufferSize-1, bufferSize, bufferSize*2};
+
+        for (final int seekOffset : RELATIVE_SEEK_OFFSET) {
+            try (SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
+                 SeekableBufferedStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)), bufferSize)) {
+                byte[] buffer1 = new byte[length];
+                unBufferedStream.seek(startPosition);
+                int bytesRead = unBufferedStream.read(buffer1, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                byte[] buffer2 = new byte[length];
+                bufferedStream.seek(startPosition);
+                bytesRead = bufferedStream.read(buffer2, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                Assert.assertEquals(buffer1, buffer2);
+
+                unBufferedStream.seek(startPosition + seekOffset);
+                bytesRead = unBufferedStream.read(buffer1, 0, length);
+                Assert.assertEquals(length, bytesRead);
+
+                Object internalBuffer = bufferedStream.bufferedStream;
+                bufferedStream.seek(startPosition + seekOffset);
+                bytesRead = bufferedStream.read(buffer2, 0, length);
+                Assert.assertEquals(length, bytesRead);
+                Object newInternalBuffer = bufferedStream.bufferedStream;
+                if (seekOffset >=0 && seekOffset < bufferSize) {
+                    Assert.assertSame(internalBuffer, newInternalBuffer,
+                            "Internal buffer should have been reused for seek offset " + seekOffset);
+                } else {
+                    Assert.assertNotSame(internalBuffer, newInternalBuffer,
+                            "Internal buffer should not have been reused for seek offset " + seekOffset);
+                }
+
+                Assert.assertEquals(buffer1, buffer2, "Error at relative seek offset " + seekOffset);
+            }
         }
     }
 
