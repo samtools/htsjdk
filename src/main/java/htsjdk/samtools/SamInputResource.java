@@ -38,6 +38,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Function;
@@ -93,17 +94,19 @@ public class SamInputResource {
     /** Creates a {@link SamInputResource} reading from the provided resource, with no index. */
     public static SamInputResource of(final Path path) {
 
-        if (Files.isRegularFile(path)) {
-            return new SamInputResource(new PathInputResource(path));
-        } else {
-            // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
-            // java's GZIPInputStream which inappropriately uses .available() and then gets confused with the result
-            // of 0. For reference see:
-            // https://bugs.java.com/view_bug.do?bug_id=7036144
-            // https://github.com/samtools/htsjdk/pull/1077
-            // https://github.com/samtools/htsjdk/issues/898
+        // in the case of named pipes and other non-seekable paths there's a bug in the implementation of
+        // java's GZIPInputStream which inappropriately uses .available() and then gets confused with the result
+        // of 0. For reference see:
+        // https://bugs.java.com/view_bug.do?bug_id=7036144
+        // https://github.com/samtools/htsjdk/pull/1077
+        // https://github.com/samtools/htsjdk/issues/898
 
+        // This still doesn't support the case where someone is creating a named pipe in a non-default
+        // file system and then using it as input and passing a GZIPed into the other end of the pipe.
+        if (path.getFileSystem() == FileSystems.getDefault() && !Files.isRegularFile(path)) {
             return of(path.toFile());
+        } else {
+            return new SamInputResource(new PathInputResource(path));
         }
     }
 
