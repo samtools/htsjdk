@@ -24,10 +24,17 @@
 
 package htsjdk.samtools.reference;
 
+import htsjdk.samtools.SAMException;
+import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -118,16 +125,47 @@ public class ReferenceSequenceFileFactory {
         // this should thrown an exception if the fasta file is not supported
         getFastaExtension(path);
         // Using faidx requires truncateNamesAtWhitespace
-        if (truncateNamesAtWhitespace && preferIndexed && IndexedFastaSequenceFile.canCreateIndexedFastaReader(path)) {
-            try {
-                return new IndexedFastaSequenceFile(path);
-            }
-            catch (final FileNotFoundException e) {
-                throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
+        if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
+            // TODO: change for IOUtils.isBlockCompressed (https://github.com/samtools/htsjdk/issues/1130)
+            try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
+                return (BlockCompressedInputStream.isValidFile(stream)) ?
+                        new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+            } catch (final IOException e) {
+                throw new SAMException("Error opening FASTA: " + path, e);
             }
         } else {
             return new FastaSequenceFile(path, truncateNamesAtWhitespace);
         }
+    }
+
+    /**
+     * Checks if the provided FASTA file can be open as indexed.
+     *
+     * <p>For a FASTA file to be indexed, it requires to have:
+     * <ul>
+     *     <li>Associated .fai index ({@link FastaSequenceIndex}).</li>
+     *     <li>Associated .gzi index if it is block-compressed ({@link GZIIndex}).</li>
+     * </ul>
+     *
+     * @param fastaFile the reference sequence file path.
+     * @return {@code true} if the file can be open as indexed; {@code false} otherwise.
+     */
+    public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
+        // this should thrown an exception if the fasta file is not supported
+        getFastaExtension(fastaFile);
+
+        // both the FASTA file should exists and the .fai index should exist
+        if (Files.exists(fastaFile) && Files.exists(getFastaIndexFileName(fastaFile))) {
+            // open the file for checking for block-compressed input
+            try (final InputStream stream = new BufferedInputStream(Files.newInputStream(fastaFile))) {
+                // if it is bgzip, it requires the .gzi index
+                return !BlockCompressedInputStream.isValidFile(stream) ||
+                        Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
+            } catch (IOException e) {
+                return false;
+            }
+        }
+        return false;
     }
 
     /**
