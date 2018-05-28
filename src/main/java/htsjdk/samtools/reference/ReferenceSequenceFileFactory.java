@@ -126,12 +126,10 @@ public class ReferenceSequenceFileFactory {
         getFastaExtension(path);
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
+            // TODO: change for IOUtils.isBlockCompressed (https://github.com/samtools/htsjdk/issues/1130)
             try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
                 return (BlockCompressedInputStream.isValidFile(stream)) ?
                         new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
-            }
-            catch (final FileNotFoundException e) {
-                throw new IllegalStateException("Should never happen, because existence of files has been checked.", e);
             } catch (final IOException e) {
                 throw new SAMException("Error opening FASTA: " + path, e);
             }

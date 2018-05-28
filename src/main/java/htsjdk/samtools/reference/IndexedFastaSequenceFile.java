@@ -78,7 +78,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
         try (final InputStream stream = IOUtil.maybeBufferInputStream(Files.newInputStream(path))) {
             // check if the it is a valid block-compressed file
             if (BlockCompressedInputStream.isValidFile(stream)) {
-                throw new SAMException("Indexed block-compressed FASTA file cannot be handle: " + path);
+                throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
             this.channel = Files.newByteChannel(path);
         } catch (IOException e) {
@@ -95,10 +95,18 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
         this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
     }
 
+    /**
+     * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
+     */
+    @Deprecated
     public static boolean canCreateIndexedFastaReader(final File fastaFile) {
         return canCreateIndexedFastaReader(fastaFile.toPath());
     }
 
+    /**
+     * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
+     */
+    @Deprecated
     public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
         try (final InputStream stream = new BufferedInputStream(Files.newInputStream(fastaFile))) {
             if (BlockCompressedInputStream.isValidFile(stream)) {
@@ -119,6 +127,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * @return the number of bytes read
      * @throws IOException if an I/O error occurs while reading
      */
+    @Override
     protected int readFromPosition(final ByteBuffer buffer, long position) throws IOException {
         if (channel instanceof FileChannel) { // special case to take advantage of native code path
             return ((FileChannel) channel).read(buffer,position);

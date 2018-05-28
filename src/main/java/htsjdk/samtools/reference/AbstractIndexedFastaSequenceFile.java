@@ -53,17 +53,20 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
     private Iterator<FastaSequenceIndexEntry> indexIterator;
 
     protected AbstractIndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
-        this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+        this(path, new FastaSequenceIndex(findRequiredFastaIndexFile(path)));
     }
 
     protected AbstractIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
         super(path);
-        if (index == null) throw new IllegalArgumentException("Null index for fasta " + path);
+        if (index == null) {
+            throw new IllegalArgumentException("Null index for fasta " + path);
+        }
         this.index = index;
         IOUtil.assertFileIsReadable(path);
         reset();
-        if(getSequenceDictionary() != null)
+        if(getSequenceDictionary() != null) {
             sanityCheckDictionaryAgainstIndex(path.toAbsolutePath().toString(),sequenceDictionary,index);
+        }
     }
 
     protected static Path findRequiredFastaIndexFile(Path fastaFile) throws FileNotFoundException {

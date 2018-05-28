@@ -38,7 +38,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A block-compressed FASTA file driven by an index for fast, concurrent lookups.
+ * A block-compressed FASTA file driven by an index for fast lookups.
  *
  * <p>Supports two interfaces: the ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
  *
@@ -49,25 +49,40 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     private final BlockCompressedInputStream stream;
     private final GZIIndex gzindex;
 
-    public BlockCompressedIndexedFastaSequenceFile(Path path)
+    public BlockCompressedIndexedFastaSequenceFile(final Path path)
             throws FileNotFoundException {
         this(path,new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
     }
 
     public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
+        this(path, index, loadFastaGziIndex(path));
+    }
+
+    public BlockCompressedIndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index, final GZIIndex gziIndex) {
         super(path, index);
+        if (gziIndex == null) {
+            throw new IllegalArgumentException("null gzi index");
+        }
         if (!canCreateBlockCompresedIndexedFastaSequence(path)) {
             throw new SAMException("Invalid block-compressed Fasta file");
         }
         try {
             stream = new BlockCompressedInputStream(new SeekablePathStream(path));
-            gzindex = GZIIndex.loadIndex(GZIIndex.resolveIndexNameForBgzipFile(path));
+            gzindex = gziIndex;
         } catch (IOException e) {
             throw new SAMException("Fasta file should be readable but is not: " + path, e);
         }
     }
 
-    private boolean canCreateBlockCompresedIndexedFastaSequence(final Path path) {
+    private static GZIIndex loadFastaGziIndex(final Path path) {
+        try {
+            return GZIIndex.loadIndex(GZIIndex.resolveIndexNameForBgzipFile(path));
+        } catch (final IOException e) {
+            throw new SAMException("Error loading GZI index for " + path, e);
+        }
+    }
+
+    private static boolean canCreateBlockCompresedIndexedFastaSequence(final Path path) {
         try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
             // check if the it is a valid block-compressed file
             if(BlockCompressedInputStream.isValidFile(stream)) {

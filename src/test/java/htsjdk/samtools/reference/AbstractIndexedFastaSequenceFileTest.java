@@ -38,10 +38,10 @@ import java.io.FileNotFoundException;
 /**
  * Test the indexed fasta sequence file reader.
  */
-public class IndexedFastaSequenceFileTest extends HtsjdkTest {
+public class AbstractIndexedFastaSequenceFileTest extends HtsjdkTest {
     private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
     private static File SEQUENCE_FILE = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta");
-    private static File SEQUENCE_FILE_GZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
+    private static File SEQUENCE_FILE_BGZ = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.fasta.gz");
     private static File SEQUENCE_FILE_NODICT = new File(TEST_DATA_DIR,"Homo_sapiens_assembly18.trimmed.nodict.fasta");
 
     private final String firstBasesOfChrM = "GATCACAGGTCTATCACCCT";
@@ -58,7 +58,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
                 { new IndexedFastaSequenceFile(SEQUENCE_FILE_NODICT.toPath()) },
-                { new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())}};
+                { new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_BGZ.toPath())}};
     }
 
     @DataProvider(name="comparative")
@@ -72,10 +72,14 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
                                                new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
                 new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE.toPath(), true),
                                                new IndexedFastaSequenceFile(SEQUENCE_FILE.toPath()) },
-                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE_GZ),
-                                               new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())},
-                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(SEQUENCE_FILE_GZ, true),
-                                               new BlockCompressedIndexedFastaSequenceFile(SEQUENCE_FILE_GZ.toPath())}
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(
+                        SEQUENCE_FILE_BGZ),
+                                               new BlockCompressedIndexedFastaSequenceFile(
+                                                       SEQUENCE_FILE_BGZ.toPath())},
+                new Object[] { ReferenceSequenceFileFactory.getReferenceSequenceFile(
+                        SEQUENCE_FILE_BGZ, true),
+                                               new BlockCompressedIndexedFastaSequenceFile(
+                                                       SEQUENCE_FILE_BGZ.toPath())}
         };
     }
 
@@ -316,7 +320,7 @@ public class IndexedFastaSequenceFileTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class)
     public void testBadInputForIndexedFastaSequenceFile() throws Exception {
-        new IndexedFastaSequenceFile(SEQUENCE_FILE_GZ);
+        new IndexedFastaSequenceFile(SEQUENCE_FILE_BGZ);
     }
 
     @Test(expectedExceptions = SAMException.class)
