@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.StringUtil;
 
 
 import java.math.BigInteger;
