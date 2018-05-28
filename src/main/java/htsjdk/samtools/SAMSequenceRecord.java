@@ -85,7 +85,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     private static char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
     // alternative sequence name regexp
-    private static final Pattern ALTERNATIVE_SEQUENCE_NAME_REGEXP = Pattern.compile("[0-9A-Za-z][0-9A-Za-z*+.@-]*");
+    private static final Pattern ALTERNATIVE_SEQUENCE_NAME_REGEXP = Pattern.compile("[0-9A-Za-z][0-9A-Za-z*+.@_|-]*");
     private static final String ALTERNATIVE_SEQUENCE_NAME_SEPARATOR = ",";
 
     /** a (private) empty constructor is required for JAXB.XML-serialisation */

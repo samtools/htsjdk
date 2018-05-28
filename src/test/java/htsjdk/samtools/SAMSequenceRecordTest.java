@@ -110,6 +110,32 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
     }
 
     @DataProvider
+    public Object[][] validAlternativeSequences() {
+        return new Object[][] {
+                // only characters
+                {"a"},
+                {"alias"},
+                // valid symbols after first character ('*', '+', '.', '@', '_', '|', '-')
+                {"my*contig"},
+                {"my+contig"},
+                {"my.contig"},
+                {"my@contig"},
+                {"my_contig"},
+                {"my|contig"},
+                {"my-contig"}
+        };
+    }
+
+    @Test(dataProvider = "validAlternativeSequences")
+    public void testValidAlternativeSequences(final String altName) {
+        final SAMSequenceRecord contig = new SAMSequenceRecord("contig", 100);
+        // should not throw
+        contig.setAlternativeSequenceName(Collections.singleton(altName));
+        Assert.assertTrue(contig.hasAlternativeSequenceNames());
+        Assert.assertEquals(contig.getAlternativeSequenceNames(), Collections.singleton(altName));
+    }
+
+    @DataProvider
     public Object[][] invalidAlternativeSequences() {
         return new Object[][] {
                 // invalid start
