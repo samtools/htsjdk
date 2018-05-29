@@ -103,6 +103,9 @@ public class SamInputResource {
 
         // This still doesn't support the case where someone is creating a named pipe in a non-default
         // file system and then using it as input and passing a GZIPed into the other end of the pipe.
+
+        // To work around this bug, we fall back to using a FileInputResource rather than a PathInputResource
+        // when we encounter a non-regular file using the default NIO filesystem (file://)
         if (path.getFileSystem() == FileSystems.getDefault() && !Files.isRegularFile(path)) {
             return of(path.toFile());
         } else {
