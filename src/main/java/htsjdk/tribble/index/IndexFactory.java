@@ -429,7 +429,7 @@ public class IndexFactory {
             this.codec = codec;
             this.inputFile = inputFile;
             try {
-                if (AbstractFeatureReader.hasBlockCompressedExtension(inputFile)) {
+                if (IOUtil.hasBlockCompressedExtension(inputFile)) {
                     final BlockCompressedInputStream bcs = initIndexableBlockCompressedStream(inputFile);
                     source = (SOURCE) codec.makeIndexableSourceFromStream(bcs);
                 } else {

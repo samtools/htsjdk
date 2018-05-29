@@ -78,7 +78,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
 
         blockCompressedVCFs = new ArrayList<File>();
         blockCompressedIndices = new ArrayList<File>();
-        for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
+        for (final String extension : IOUtil.BLOCK_COMPRESSED_EXTENSIONS) {
             final File blockCompressed = File.createTempFile(TEST_BASENAME, IOUtil.VCF_FILE_EXTENSION + extension);
             blockCompressed.deleteOnExit();
             blockCompressedVCFs.add(blockCompressed);
@@ -102,7 +102,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertTrue(writer instanceof VCFWriter, "testSetOutputFile VCF File");
         Assert.assertFalse(((VCFWriter)writer).getOutputStream() instanceof BlockCompressedOutputStream, "testSetOutputFile VCF File was compressed");
 
-        for (final String extension : AbstractFeatureReader.BLOCK_COMPRESSED_EXTENSIONS) {
+        for (final String extension : IOUtil.BLOCK_COMPRESSED_EXTENSIONS) {
             final File file = File.createTempFile(TEST_BASENAME + ".setoutput", extension);
             file.deleteOnExit();
             final String filename = file.getAbsolutePath();
