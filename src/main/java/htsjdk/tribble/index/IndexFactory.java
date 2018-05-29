@@ -453,12 +453,9 @@ public class IndexFactory {
         }
 
         private static BlockCompressedInputStream initIndexableBlockCompressedStream(final File inputFile) {
-            final int bufferSize = Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-
-            // make a buffered stream to test that this is in fact a valid block compressed file
-            try (final BufferedInputStream bufferedStream = new BufferedInputStream(new FileInputStream(inputFile), bufferSize)){
-
-                if (!BlockCompressedInputStream.isValidFile(bufferedStream)) {
+            // test that this is in fact a valid block compressed file
+            try {
+                if (!IOUtil.isBlockCompressed(inputFile.toPath())) {
                     throw new TribbleException.MalformedFeatureFile("Input file is not in valid block compressed format.",
                             inputFile.getAbsolutePath());
                 }

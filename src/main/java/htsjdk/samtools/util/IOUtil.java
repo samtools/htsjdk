@@ -1159,6 +1159,42 @@ public class IOUtil {
     }
 
     /**
+     * Checks if the provided path is block-compressed.
+     *
+     * <p>Note that using {@code checkExtension=true} would avoid the cost of opening the file, but
+     * if {@link #hasBlockCompressedExtension(String)} returns {@code false} this would not detect
+     * block-compressed files such BAM.
+     *
+     * @param path file to check if it is block-compressed.
+     * @param checkExtension if {@code true}, checks the extension before opening the file.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path, final boolean checkExtension) throws IOException {
+        if (checkExtension && !hasBlockCompressedExtension(path.toString())) {
+            return false;
+        }
+        try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path), Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE))) {
+            return BlockCompressedInputStream.isValidFile(stream);
+        }
+    }
+
+    /**
+     * Checks if the provided path is block-compressed (including extension).
+     *
+     * <p>Note that block-compressed files with extensions not in {@link #BLOCK_COMPRESSED_EXTENSIONS}
+     * would return {@code false} with this method (e.g., BAM files) even if they are block-compressed.
+     * Use {@link #isBlockCompressed(Path, boolean)} if this is not expected.
+     *
+     * @param path file to check if it is block-compressed.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path) throws IOException {
+        return isBlockCompressed(path, true);
+    }
+
+    /**
      * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
      *
      * @param fileName string name for the file. May be an HTTP/S url.
