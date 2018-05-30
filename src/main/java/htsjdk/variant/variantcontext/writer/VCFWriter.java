@@ -26,6 +26,7 @@
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.file.Path;
 
 /**
  * this class writes VCF files
@@ -86,6 +88,14 @@ class VCFWriter extends IndexingVariantContextWriter {
                      final boolean enableOnTheFlyIndexing,
                      final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
                      final boolean writeFullFormatField) {
+        this(IOUtil.toPath(location), output, refDict, enableOnTheFlyIndexing, doNotWriteGenotypes,
+            allowMissingFieldsInHeader,writeFullFormatField);
+    }
+
+    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final boolean enableOnTheFlyIndexing,
+        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+        final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
@@ -96,11 +106,20 @@ class VCFWriter extends IndexingVariantContextWriter {
                      final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
                      final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
                      final boolean writeFullFormatField) {
+        this(IOUtil.toPath(location), output, refDict, indexCreator, enableOnTheFlyIndexing,
+            doNotWriteGenotypes, allowMissingFieldsInHeader, writeFullFormatField);
+    }
+
+    public VCFWriter(final Path location, final OutputStream output, final SAMSequenceDictionary refDict,
+        final IndexCreator indexCreator, final boolean enableOnTheFlyIndexing,
+        final boolean doNotWriteGenotypes, final boolean allowMissingFieldsInHeader,
+        final boolean writeFullFormatField) {
         super(writerName(location, output), location, output, refDict, enableOnTheFlyIndexing, indexCreator);
         this.doNotWriteGenotypes = doNotWriteGenotypes;
         this.allowMissingFieldsInHeader = allowMissingFieldsInHeader;
         this.writeFullFormatField = writeFullFormatField;
     }
+
     // --------------------------------------------------------------------------------
     //
     // VCFWriter interface functions

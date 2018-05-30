@@ -78,7 +78,7 @@ public class BAMFileWriter extends SAMFileWriterImpl {
     }
 
     protected BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
-      blockCompressedOutputStream = new BlockCompressedOutputStream(os, null, compressionLevel, deflaterFactory);
+      blockCompressedOutputStream = new BlockCompressedOutputStream(os, (Path)null, compressionLevel, deflaterFactory);
       outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
       outputBinaryCodec.setOutputFileName(absoluteFilename);
     }
@@ -206,7 +206,7 @@ public class BAMFileWriter extends SAMFileWriterImpl {
      * @param samFileHeader the header to write
      */
     public static void writeHeader(final OutputStream outputStream, final SAMFileHeader samFileHeader) {
-        final BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, null);
+        final BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, (Path)null);
         final BinaryCodec outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         writeHeader(outputBinaryCodec, samFileHeader);
         try {

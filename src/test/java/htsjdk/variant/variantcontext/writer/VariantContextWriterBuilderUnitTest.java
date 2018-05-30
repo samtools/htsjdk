@@ -25,6 +25,8 @@
 
 package htsjdk.variant.variantcontext.writer;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
@@ -36,6 +38,7 @@ import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
 import htsjdk.variant.vcf.VCFUtils;
+import java.nio.file.FileSystem;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -125,11 +128,11 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
 
     @Test
     public void testDetermineOutputType() {
-        Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.vcf));
-        Assert.assertEquals(OutputType.BCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.bcf));
-        Assert.assertEquals(OutputType.VCF_STREAM, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("/dev/stdout")));
+        Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.vcf.toPath()));
+        Assert.assertEquals(OutputType.BCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.bcf.toPath()));
+        Assert.assertEquals(OutputType.VCF_STREAM, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("/dev/stdout").toPath()));
         for (final File f: this.blockCompressedVCFs) {
-            Assert.assertEquals(OutputType.BLOCK_COMPRESSED_VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(f));
+            Assert.assertEquals(OutputType.BLOCK_COMPRESSED_VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(f.toPath()));
         }
 
         // Test symlinking
@@ -138,7 +141,7 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
             Files.deleteIfExists(link);
             Files.createSymbolicLink(link, this.vcf.toPath());
             link.toFile().deleteOnExit();
-            Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(link.toFile()));
+            Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(link));
             link.toFile().delete();
         }
         catch (final IOException ioe) {
@@ -315,6 +318,49 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
             Assert.assertTrue(index.exists(), String.format("Block-compressed index not created for %s / %s", blockCompressed, index));
         }
     }
+
+  @Test
+  public void testIndexingOnTheFlyForPath() throws IOException {
+    final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+        .setReferenceDictionary(dictionary)
+        .setOption(Options.INDEX_ON_THE_FLY);
+
+    try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+      Path vcfPath = fs.getPath("testIndexingOnTheFlyForPath" + IOUtil.VCF_FILE_EXTENSION);
+      Path vcfIdxPath = Tribble.indexPath(vcfPath);
+      VariantContextWriter writer = builder.setOutputPath(vcfPath).build();
+      writer.close();
+      Assert.assertTrue(Files.exists(vcfIdxPath),
+          String.format("VCF index not created for %s / %s", vcfPath, vcfIdxPath));
+
+      if (bcfIdx.exists())
+        bcfIdx.delete();
+      writer = builder.setOutputFile(bcf).build();
+      writer.close();
+      Assert.assertTrue(bcfIdx.exists(),
+          String.format("BCF index not created for %s / %s", bcf, bcfIdx));
+
+      for (int i = 0; i < blockCompressedVCFs.size(); i++) {
+        final File blockCompressed = blockCompressedVCFs.get(i);
+        final File index = blockCompressedIndices.get(i);
+        if (index.exists())
+          index.delete();
+        writer = builder.setOutputFile(blockCompressed).setReferenceDictionary(dictionary).build();
+        writer.close();
+        Assert.assertTrue(index.exists(), String
+            .format("Block-compressed index not created for %s / %s", blockCompressed, index));
+
+        // Tabix does not require a reference dictionary.
+        // Tribble does: see tests testRefDictRequiredForVCFIndexOnTheFly / testRefDictRequiredForBCFIndexOnTheFly
+
+        index.delete();
+        writer = builder.setReferenceDictionary(null).build();
+        writer.close();
+        Assert.assertTrue(index.exists(), String
+            .format("Block-compressed index not created for %s / %s", blockCompressed, index));
+      }
+    }
+  }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidImplicitFileType() {
