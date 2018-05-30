@@ -146,11 +146,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
         }
         header.setSortOrder(sortOrder);
 
-        writeHeader(() -> {
-            final StringWriter headerTextBuffer = new StringWriter();
-            new SAMTextHeaderCodec().encode(headerTextBuffer, header);
-            return headerTextBuffer.toString();
-        });
+        writeHeader(header);
 
         if (presorted) {
             if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
@@ -245,7 +241,7 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Write the header to disk.  Header object is available via getHeader().
      * @param textHeader for convenience if the implementation needs it.
-     * @deprecated since 06/2017. {@link #writeHeader(Supplier)} is preferred for avoid String construction if not need it.
+     * @deprecated since 06/2018. {@link #writeHeader(SAMFileHeader)} is preferred for avoid String construction if not need it.
      */
     @Deprecated
     abstract protected void writeHeader(String textHeader);
@@ -253,12 +249,17 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
     /**
      * Write the header to disk. Header object is available via getHeader().
      *
-     * <p>Note: default implementation uses {@link #writeHeader(String)}.
+     * <p>IMPORTANT: this method will be abstract once {@link #writeHeader(String)} is removed.
      *
-     * @param textHeaderSupplier for convenience if the implementation needs it.
+     * <p>Note: default implementation uses {@link SAMTextHeaderCodec#encode} and calls
+     * {@link #writeHeader(String)}.
+     *
+     * @param header object to write.
      */
-    protected void writeHeader(Supplier<String> textHeaderSupplier) {
-        writeHeader(textHeaderSupplier.get());
+    protected void writeHeader(final SAMFileHeader header) {
+        final StringWriter headerTextBuffer = new StringWriter();
+        new SAMTextHeaderCodec().encode(headerTextBuffer, header);
+        writeHeader(headerTextBuffer.toString());
     }
 
     /**

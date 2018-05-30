@@ -116,8 +116,12 @@ public class CRAMFileWriter extends SAMFileWriterImpl {
 
     @Override
     protected void writeHeader(final String textHeader) {
-        cramContainerStream.writeHeader(
-                new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(textHeader),fileName != null ? fileName : null));
+        writeHeader(new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(textHeader),fileName != null ? fileName : null));
+    }
+
+    @Override
+    protected void writeHeader(final SAMFileHeader header) {
+        cramContainerStream.writeHeader(header);
     }
 
     @Override
