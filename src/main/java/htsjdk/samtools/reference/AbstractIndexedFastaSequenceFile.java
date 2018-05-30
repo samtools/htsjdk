@@ -121,7 +121,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return next sequence if available, or null if not present.
      */
     @Override
-    public final ReferenceSequence nextSequence() {
+    public  ReferenceSequence nextSequence() {
         if( !indexIterator.hasNext() )
             return null;
         return getSequence( indexIterator.next().getContig() );
@@ -131,7 +131,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * Reset the iterator over the index.
      */
     @Override
-    public final void reset() {
+    public void reset() {
         indexIterator = index.iterator();
     }
 
@@ -146,7 +146,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return The full sequence associated with this contig.
      */
     @Override
-    public final ReferenceSequence getSequence( String contig ) {
+    public ReferenceSequence getSequence( String contig ) {
         return getSubsequenceAt( contig, 1, (int)index.getIndexEntry(contig).getSize() );
     }
 
@@ -158,7 +158,7 @@ abstract class AbstractIndexedFastaSequenceFile extends AbstractFastaSequenceFil
      * @return The partial reference sequence associated with this range.
      */
     @Override
-    public final ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
+    public ReferenceSequence getSubsequenceAt( String contig, long start, long stop ) {
         if(start > stop + 1)
             throw new SAMException(String.format("Malformed query; start point %d lies after end point %d",start,stop));
 
