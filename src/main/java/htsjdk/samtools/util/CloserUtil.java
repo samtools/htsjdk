@@ -25,8 +25,9 @@ package htsjdk.samtools.util;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Utility to close things that implement Closeable
@@ -39,13 +40,13 @@ import java.util.List;
 public class CloserUtil {
 
     /**
-     * Calls close() on <code>obj</code> if it implements Closeable
+     * Calls close() on <code>obj</code> if it implements Closeable or has a public close() method.
      *
      * @param obj   The potentially closeable object
      */
     public static void close(Object obj) {
         if (obj != null) {
-            close(Arrays.asList(obj));
+            close(Collections.singletonList(obj));
         }
     }
 
@@ -53,28 +54,22 @@ public class CloserUtil {
      * Calls close() on all elements of <code>objs</code> that implement Closeable
      *
      * @param objs   A list of potentially closeable objects
-     *
-     * NOTE: This method must take a List<? extends Object>, not List<Object>, otherwise the overload above will be selected
-     * if the argument is not exactly List<Object>.
      */
-    public static void close(List<? extends Object> objs) {
+    public static <T> void close(Collection<T> objs) {
         for (Object o : objs) {
             if (o instanceof Closeable) {
                 try {
                     ((Closeable)o).close();
+                } catch (IOException ioe) {
+                    // Do nothing
                 }
-                catch (IOException ioe) {
-                    // Do nothing 
-                }
-            } else if (o instanceof CloseableIterator) {
-                ((CloseableIterator)o).close();
-            }
-            else {
+            } else {
                 try {
-                    java.lang.reflect.Method m = o.getClass().getMethod("close");
-                    m.invoke(o);
+                    Method close = o.getClass().getMethod("close");
+                    close.invoke(o);
+                } catch (Exception e) {
+                    // Do nothing
                 }
-                catch (Exception e) { /** Ignore */ }
             }
         }
     }
