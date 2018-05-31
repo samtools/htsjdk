@@ -60,7 +60,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
     /** @deprecated use {@link IOUtil#BLOCK_COMPRESSED_EXTENSIONS} instead. */
     @Deprecated
-    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = IOUtil.BLOCK_COMPRESSED_EXTENSIONS;
 
     /**
      * Calls {@link #getFeatureReader(String, FeatureCodec, boolean)} with {@code requireIndex} = true

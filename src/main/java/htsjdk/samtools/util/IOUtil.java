@@ -1171,7 +1171,7 @@ public class IOUtil {
      * @throws IOException if there is an I/O error.
      */
     public static boolean isBlockCompressed(final Path path, final boolean checkExtension) throws IOException {
-        if (checkExtension && !hasBlockCompressedExtension(path.toString())) {
+        if (checkExtension && !hasBlockCompressedExtension(path)) {
             return false;
         }
         try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path), Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE))) {
@@ -1182,16 +1182,15 @@ public class IOUtil {
     /**
      * Checks if the provided path is block-compressed (including extension).
      *
-     * <p>Note that block-compressed files with extensions not in {@link #BLOCK_COMPRESSED_EXTENSIONS}
-     * would return {@code false} with this method (e.g., BAM files) even if they are block-compressed.
-     * Use {@link #isBlockCompressed(Path, boolean)} if this is not expected.
+     * <p>Note that block-compressed file extensions {@link #BLOCK_COMPRESSED_EXTENSIONS} are not
+     * checked by this method.
      *
      * @param path file to check if it is block-compressed.
      * @return {@code true} if the file is block-compressed; {@code false} otherwise.
      * @throws IOException if there is an I/O error.
      */
     public static boolean isBlockCompressed(final Path path) throws IOException {
-        return isBlockCompressed(path, true);
+        return isBlockCompressed(path, false);
     }
 
     /**
@@ -1208,6 +1207,17 @@ public class IOUtil {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Checks if a path ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param path object to extract the name from.
+     *
+     * @return {@code true} if the path has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension(final Path path) {
+        return hasBlockCompressedExtension(path.getName().toString());
     }
 
     /**
@@ -1248,5 +1258,4 @@ public class IOUtil {
         }
         return path;
     }
-
 }
