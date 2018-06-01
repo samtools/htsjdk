@@ -86,7 +86,7 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     private static boolean canCreateBlockCompresedIndexedFastaSequence(final Path path) {
         try {
             // check if the it is a valid block-compressed file and if the .gzi index exits
-            return IOUtil.isBlockCompressed(path) && Files.exists(GZIIndex.resolveIndexNameForBgzipFile(path));
+            return IOUtil.isBlockCompressed(path, true) && Files.exists(GZIIndex.resolveIndexNameForBgzipFile(path));
         } catch (IOException e) {
             return false;
         }

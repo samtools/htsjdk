@@ -127,7 +127,7 @@ public class ReferenceSequenceFileFactory {
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
             try {
-                return IOUtil.isBlockCompressed(path) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
             } catch (final IOException e) {
                 throw new SAMException("Error opening FASTA: " + path, e);
             }
@@ -157,7 +157,7 @@ public class ReferenceSequenceFileFactory {
             // open the file for checking for block-compressed input
             try {
                 // if it is bgzip, it requires the .gzi index
-                return !IOUtil.isBlockCompressed(fastaFile) ||
+                return !IOUtil.isBlockCompressed(fastaFile, true) ||
                         Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
             } catch (IOException e) {
                 return false;

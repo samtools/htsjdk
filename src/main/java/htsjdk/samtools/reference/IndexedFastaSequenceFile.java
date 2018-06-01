@@ -77,7 +77,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
         super(path, index);
         try {
             // check if the it is a valid block-compressed file
-            if (IOUtil.isBlockCompressed(path)) {
+            if (IOUtil.isBlockCompressed(path, true)) {
                 throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
             }
             this.channel = Files.newByteChannel(path);
@@ -109,7 +109,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
     @Deprecated
     public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
         try {
-            if (IOUtil.isBlockCompressed(fastaFile)) {
+            if (IOUtil.isBlockCompressed(fastaFile, true)) {
                 return false;
             }
             return (Files.exists(fastaFile) &&

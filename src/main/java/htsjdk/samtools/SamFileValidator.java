@@ -209,7 +209,7 @@ public class SamFileValidator {
 
     public void validateBamFileTermination(final File inputFile) {
         try {
-            if (!IOUtil.isBlockCompressed(inputFile.toPath(), false)) {
+            if (!IOUtil.isBlockCompressed(inputFile.toPath())) {
                 return;
             }
             final BlockCompressedInputStream.FileTermination terminationState =

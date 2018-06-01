@@ -1217,7 +1217,7 @@ public class IOUtil {
      * @return {@code true} if the path has a block-compressed extension; {@code false} otherwise.
      */
     public static boolean hasBlockCompressedExtension(final Path path) {
-        return hasBlockCompressedExtension(path.getName().toString());
+        return hasBlockCompressedExtension(path.getFileName().toString());
     }
 
     /**
