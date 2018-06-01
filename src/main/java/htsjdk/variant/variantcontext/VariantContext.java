@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -217,7 +218,7 @@ import java.util.stream.Collectors;
  *
  * @author depristo
  */
-public class VariantContext implements Feature, Serializable {
+public class VariantContext implements Feature, Serializable, Locatable {
     public static final long serialVersionUID = 1L;
 
     private final static boolean WARN_ABOUT_BAD_END = true;

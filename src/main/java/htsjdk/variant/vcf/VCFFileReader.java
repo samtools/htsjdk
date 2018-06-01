@@ -281,6 +281,17 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         }
     }
 
+    /**
+     * Queries for records overlapping the {@link Locatable} specified.
+     * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
+
+     * @return non-null iterator over VariantContexts
+     */
+    public CloseableIterator<VariantContext> query(final Locatable locatable) {
+        return query(locatable.getContig(), locatable.getStart(), locatable.getEnd());
+    }
+
+
     @Override
     public void close() {
         try {

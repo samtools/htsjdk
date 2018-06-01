@@ -52,6 +52,13 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
     }
 
     /**
+     * Constructs an interval with the supplied {@link Locatable}.
+     */
+    public Interval(final Locatable locatable) {
+        this(locatable.getContig(),locatable.getStart(),locatable.getEnd());
+    }
+
+    /**
      * Constructs an interval with the supplied sequence and start, end, strand and name.
      * If the end position is less than the start position an exception is thrown.
      *
