@@ -467,6 +467,9 @@ public class VariantContextWriterBuilder {
      * written to. Will attempt to determine using the logical filename; if that fails it will
      * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
      * but is neither a file or directory then VCF_STREAM is returned.
+     *
+     * @param f A file whose {@link OutputType} we want to infer
+     * @return The file's {@link OutputType}. Never {@code null}.
      */
     public static OutputType determineOutputTypeFromFile(final File f) {
         if (isBCF(f)) {
