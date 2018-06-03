@@ -1,5 +1,6 @@
 package htsjdk.samtools.reference;
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.*;
@@ -11,7 +12,7 @@ import java.io.File;
 /**
  * Created by farjoun on 6/1/18.
  */
-public class SamLocusAndReferenceIteratorTest {
+public class SamLocusAndReferenceIteratorTest extends HtsjdkTest{
     static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
 
     @Test
