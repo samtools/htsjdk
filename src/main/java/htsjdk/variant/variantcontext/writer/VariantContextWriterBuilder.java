@@ -500,15 +500,12 @@ public class VariantContextWriterBuilder {
         else {
             // See if we have a special file (device, named pipe, etc.)
             try {
-                // Try to resolve symlinks etc.
-                File file = path.toFile();
-                final File canonical = new File(IOUtil.getFullCanonicalPath(file));
-                if (!canonical.equals(file)) {
-                    return determineOutputTypeFromFile(IOUtil.toPath(canonical));
+                final Path canonicalPath = path.toRealPath();
+                if (!canonicalPath.equals(path)) {
+                    return determineOutputTypeFromFile(canonicalPath);
                 }
-            } catch (UnsupportedOperationException x) {
-                // Thrown for paths that are not from the default provider
-                // those are not going to have symlinks anyways
+            } catch (IOException x) {
+                throw new RuntimeIOException(x);
             }
             if (Files.exists(path) && !Files.isRegularFile(path) && !Files.isDirectory(path)) {
                 return OutputType.VCF_STREAM;
