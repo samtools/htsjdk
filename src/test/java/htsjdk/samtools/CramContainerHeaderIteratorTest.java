@@ -17,7 +17,7 @@ import java.util.List;
 public class CramContainerHeaderIteratorTest extends HtsjdkTest {
     @Test
     public void test() throws IOException {
-        final File cramFile = new File("src/test/resources/htsjdk/samtools/cram/SM-74NEG-v1-chr20-downsampled.deduplicated.cram");
+        final File cramFile = new File("src/test/resources/htsjdk/samtools/cram/NA12878.20.21.1-100.100-SeqsPerSlice.0-unMapped.cram");
         CramHeader expectedHeader;
         List<Container> fullContainers;
         try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
@@ -47,6 +47,7 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertEquals(headerOnlyContainer.blockCount, fullContainer.blockCount);
             Assert.assertEquals(headerOnlyContainer.landmarks, fullContainer.landmarks);
             Assert.assertEquals(headerOnlyContainer.checksum, fullContainer.checksum);
+            Assert.assertEquals(headerOnlyContainer.offset, fullContainer.offset);
             // unpopulated fields
             Assert.assertNull(headerOnlyContainer.blocks);
             Assert.assertNull(headerOnlyContainer.header);
