@@ -487,4 +487,25 @@ public class IOUtilTest extends HtsjdkTest {
     public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
         Assert.assertEquals(IOUtil.hasBlockCompressedExtension(testURIString), expected);
     }
+
+    @DataProvider
+    public static Object[][] blockCompressedFiles() {
+        return new Object[][]{
+                {TEST_DATA_DIR.resolve("ipsum.txt"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt"), false, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), false, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), true, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), false, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), false, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), true, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), false, true}
+        };
+    }
+
+    @Test(dataProvider = "blockCompressedFiles")
+    public void testIsBlockCompressed(Path file, boolean checkExtension, boolean expected) throws IOException {
+        Assert.assertEquals(IOUtil.isBlockCompressed(file, checkExtension), expected);
+    }
 }
