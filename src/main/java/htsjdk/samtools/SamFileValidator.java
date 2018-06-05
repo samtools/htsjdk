@@ -208,10 +208,8 @@ public class SamFileValidator {
     }
 
     public void validateBamFileTermination(final File inputFile) {
-        BufferedInputStream inputStream = null;
         try {
-            inputStream = IOUtil.toBufferedStream(new FileInputStream(inputFile));
-            if (!BlockCompressedInputStream.isValidFile(inputStream)) {
+            if (!IOUtil.isBlockCompressed(inputFile.toPath())) {
                 return;
             }
             final BlockCompressedInputStream.FileTermination terminationState =
@@ -227,10 +225,6 @@ public class SamFileValidator {
             }
         } catch (IOException e) {
             throw new SAMException("IOException", e);
-        } finally {
-            if (inputStream != null) {
-                CloserUtil.close(inputStream);
-            }
         }
     }
 

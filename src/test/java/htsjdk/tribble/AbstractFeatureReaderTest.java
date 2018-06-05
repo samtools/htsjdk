@@ -4,6 +4,8 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.IOUtilTest;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -77,62 +79,23 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         }
     }
 
-    @DataProvider(name = "blockCompressedExtensionExtensionStrings")
-    public Object[][] createBlockCompressedExtensionStrings() {
-        return new Object[][] {
-                { "testzip.gz", true },
-                { "test.gzip", true },
-                { "test.bgz", true },
-                { "test.bgzf", true },
-                { "test.bzip2", false }
-        };
-    }
-
-    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings", dataProviderClass = IOUtilTest.class)
     public void testBlockCompressionExtensionString(final String testString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testString), expected);
     }
 
-    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings", dataProviderClass = IOUtilTest.class)
     public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(new File(testString)), expected);
     }
 
-    @DataProvider(name = "blockCompressedExtensionExtensionURIStrings")
-    public Object[][] createBlockCompressedExtensionURIs() {
-        return new Object[][]{
-                {"testzip.gz", true},
-                {"test.gzip", true},
-                {"test.bgz", true},
-                {"test.bgzf", true},
-                {"test", false},
-                {"test.bzip2", false},
-
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2", false},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877", false},
-
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf?alt=media", true},
-                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2?alt=media", false},
-
-                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.gz", true},
-                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.bed", false}
-        };
-    }
-
-    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings", dataProviderClass = IOUtilTest.class)
     public void testBlockCompressionExtension(final String testURIString, final boolean expected) {
         URI testURI = URI.create(testURIString);
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURI), expected);
     }
 
-    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings", dataProviderClass = IOUtilTest.class)
     public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
         Assert.assertEquals(AbstractFeatureReader.hasBlockCompressedExtension(testURIString), expected);
     }

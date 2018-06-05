@@ -28,6 +28,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
+import htsjdk.samtools.util.IOUtil;
 
 import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
@@ -83,16 +84,12 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
     }
 
     private static boolean canCreateBlockCompresedIndexedFastaSequence(final Path path) {
-        try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
-            // check if the it is a valid block-compressed file
-            if(BlockCompressedInputStream.isValidFile(stream)) {
-                // check if the .gzi index exits
-                return Files.exists(GZIIndex.resolveIndexNameForBgzipFile(path));
-            }
+        try {
+            // check if the it is a valid block-compressed file and if the .gzi index exits
+            return IOUtil.isBlockCompressed(path, true) && Files.exists(GZIIndex.resolveIndexNameForBgzipFile(path));
         } catch (IOException e) {
             return false;
         }
-        return false;
     }
 
     @Override

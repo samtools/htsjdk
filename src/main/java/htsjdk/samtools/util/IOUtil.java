@@ -64,9 +64,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -104,6 +106,8 @@ public class IOUtil {
     public static final String SAM_FILE_EXTENSION = ".sam";
 
     public static final String DICT_FILE_EXTENSION = ".dict";
+
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
 
@@ -1152,5 +1156,106 @@ public class IOUtil {
      */
     public static Path addExtension(Path path, String extension) {
         return path.resolveSibling(path.getFileName() + extension);
+    }
+
+    /**
+     * Checks if the provided path is block-compressed.
+     *
+     * <p>Note that using {@code checkExtension=true} would avoid the cost of opening the file, but
+     * if {@link #hasBlockCompressedExtension(String)} returns {@code false} this would not detect
+     * block-compressed files such BAM.
+     *
+     * @param path file to check if it is block-compressed.
+     * @param checkExtension if {@code true}, checks the extension before opening the file.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path, final boolean checkExtension) throws IOException {
+        if (checkExtension && !hasBlockCompressedExtension(path)) {
+            return false;
+        }
+        try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path), Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE))) {
+            return BlockCompressedInputStream.isValidFile(stream);
+        }
+    }
+
+    /**
+     * Checks if the provided path is block-compressed (including extension).
+     *
+     * <p>Note that block-compressed file extensions {@link #BLOCK_COMPRESSED_EXTENSIONS} are not
+     * checked by this method.
+     *
+     * @param path file to check if it is block-compressed.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path) throws IOException {
+        return isBlockCompressed(path, false);
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param fileName string name for the file. May be an HTTP/S url.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final String fileName) {
+        String cleanedPath = stripQueryStringIfPathIsAnHttpUrl(fileName);
+        for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
+            if (cleanedPath.toLowerCase().endsWith(extension))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a path ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param path object to extract the name from.
+     *
+     * @return {@code true} if the path has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension(final Path path) {
+        return hasBlockCompressedExtension(path.getFileName().toString());
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param file object to extract the name from.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final File file) {
+        return hasBlockCompressedExtension(file.getName());
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param uri file as an URI.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final URI uri) {
+        String path = uri.getPath();
+        return hasBlockCompressedExtension(path);
+    }
+
+    /**
+     * Remove http query before checking extension
+     * Path might be a local file, in which case a '?' is a legal part of the filename.
+     * @param path a string representing some sort of path, potentially an http url
+     * @return path with no trailing queryString (ex: http://something.com/path.vcf?stuff=something => http://something.com/path.vcf)
+     */
+    private static String stripQueryStringIfPathIsAnHttpUrl(String path) {
+        if(path.startsWith("http://") || path.startsWith("https://")) {
+            int qIdx = path.indexOf('?');
+            if (qIdx > 0) {
+                return path.substring(0, qIdx);
+            }
+        }
+        return path;
     }
 }

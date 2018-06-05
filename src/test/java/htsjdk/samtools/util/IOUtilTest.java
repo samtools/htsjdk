@@ -26,6 +26,8 @@ package htsjdk.samtools.util;
 import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
+
+import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -424,5 +426,65 @@ public class IOUtilTest extends HtsjdkTest {
         List<Path> paths = IOUtil.unrollPaths(Collections.singleton(p), extensions);
 
         Assert.assertEquals(paths.size(), expectedNumberOfUnrolledPaths);
+    }
+
+    @DataProvider(name = "blockCompressedExtensionExtensionStrings")
+    public static Object[][] createBlockCompressedExtensionStrings() {
+        return new Object[][] {
+                { "testzip.gz", true },
+                { "test.gzip", true },
+                { "test.bgz", true },
+                { "test.bgzf", true },
+                { "test.bzip2", false }
+        };
+    }
+
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
+    public void testBlockCompressionExtensionString(final String testString, final boolean expected) {
+        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(testString), expected);
+    }
+
+    @Test(dataProvider = "blockCompressedExtensionExtensionStrings")
+    public void testBlockCompressionExtensionFile(final String testString, final boolean expected) {
+        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(new File(testString)), expected);
+    }
+
+    @DataProvider(name = "blockCompressedExtensionExtensionURIStrings")
+    public static Object[][] createBlockCompressedExtensionURIs() {
+        return new Object[][]{
+                {"testzip.gz", true},
+                {"test.gzip", true},
+                {"test.bgz", true},
+                {"test.bgzf", true},
+                {"test", false},
+                {"test.bzip2", false},
+
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2", false},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877", false},
+
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gz?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.gzip?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgz?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bgzf?alt=media", true},
+                {"https://www.googleapis.com/download/storage/v1/b/deflaux-public-test/o/NA12877.vcf.bzip2?alt=media", false},
+
+                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.gz", true},
+                {"ftp://ftp.broadinstitute.org/distribution/igv/TEST/cpgIslands.hg18.bed", false}
+        };
+    }
+
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    public void testBlockCompressionExtension(final String testURIString, final boolean expected) {
+        URI testURI = URI.create(testURIString);
+        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(testURI), expected);
+    }
+
+    @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
+    public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
+        Assert.assertEquals(IOUtil.hasBlockCompressedExtension(testURIString), expected);
     }
 }

@@ -126,10 +126,8 @@ public class ReferenceSequenceFileFactory {
         getFastaExtension(path);
         // Using faidx requires truncateNamesAtWhitespace
         if (truncateNamesAtWhitespace && preferIndexed && canCreateIndexedFastaReader(path)) {
-            // TODO: change for IOUtils.isBlockCompressed (https://github.com/samtools/htsjdk/issues/1130)
-            try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path))) {
-                return (BlockCompressedInputStream.isValidFile(stream)) ?
-                        new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
+            try {
+                return IOUtil.isBlockCompressed(path, true) ? new BlockCompressedIndexedFastaSequenceFile(path) : new IndexedFastaSequenceFile(path);
             } catch (final IOException e) {
                 throw new SAMException("Error opening FASTA: " + path, e);
             }
@@ -157,9 +155,9 @@ public class ReferenceSequenceFileFactory {
         // both the FASTA file should exists and the .fai index should exist
         if (Files.exists(fastaFile) && Files.exists(getFastaIndexFileName(fastaFile))) {
             // open the file for checking for block-compressed input
-            try (final InputStream stream = new BufferedInputStream(Files.newInputStream(fastaFile))) {
+            try {
                 // if it is bgzip, it requires the .gzi index
-                return !BlockCompressedInputStream.isValidFile(stream) ||
+                return !IOUtil.isBlockCompressed(fastaFile, true) ||
                         Files.exists(GZIIndex.resolveIndexNameForBgzipFile(fastaFile));
             } catch (IOException e) {
                 return false;

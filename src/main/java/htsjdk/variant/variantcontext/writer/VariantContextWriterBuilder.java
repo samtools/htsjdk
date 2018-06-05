@@ -505,7 +505,7 @@ public class VariantContextWriterBuilder {
         if (outFile == null)
             return false;
 
-        return AbstractFeatureReader.hasBlockCompressedExtension(outFile);
+        return IOUtil.hasBlockCompressedExtension(outFile);
     }
 
     private VariantContextWriter createVCFWriter(final File writerFile, final OutputStream writerStream) {
