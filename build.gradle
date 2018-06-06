@@ -41,7 +41,7 @@ dependencies {
     compile "org.xerial.snappy:snappy-java:1.1.4"
     compile "org.apache.commons:commons-compress:1.4.1"
     compile "org.tukaani:xz:1.5"
-    compile "gov.nih.nlm.ncbi:ngs-java:1.2.4"
+    compile "gov.nih.nlm.ncbi:ngs-java:2.9.0"
 
     testCompile "org.scala-lang:scala-library:2.12.1"
     testCompile "org.scalatest:scalatest_2.12:3.0.1"
