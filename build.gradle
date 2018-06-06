@@ -46,7 +46,7 @@ dependencies {
     testCompile "org.scala-lang:scala-library:2.12.1"
     testCompile "org.scalatest:scalatest_2.12:3.0.1"
     testRuntime 'org.pegdown:pegdown:1.4.2' // Necessary for generating HTML reports with ScalaTest
-    testCompile "org.testng:testng:6.9.9"
+    testCompile "org.testng:testng:6.13.1"
     testCompile "com.google.jimfs:jimfs:1.1"
  }
 
