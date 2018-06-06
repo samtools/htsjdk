@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.spi.FileSystemProvider;
 
+import htsjdk.samtools.BamFileIoUtils;
 import htsjdk.samtools.SAMException;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -486,5 +487,37 @@ public class IOUtilTest extends HtsjdkTest {
     @Test(dataProvider = "blockCompressedExtensionExtensionURIStrings")
     public void testBlockCompressionExtensionStringVersion(final String testURIString, final boolean expected) {
         Assert.assertEquals(IOUtil.hasBlockCompressedExtension(testURIString), expected);
+    }
+
+    @DataProvider
+    public static Object[][] blockCompressedFiles() {
+        return new Object[][]{
+                {TEST_DATA_DIR.resolve("ipsum.txt"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt"), false, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.gz"), false, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), true, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), false, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), true, false},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), false, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), true, true},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), false, true},
+                {TEST_DATA_DIR.resolve("example.bam"), true, false},
+                {TEST_DATA_DIR.resolve("example.bam"), false, true}
+        };
+    }
+
+    @Test(dataProvider = "blockCompressedFiles")
+    public void testIsBlockCompressed(Path file, boolean checkExtension, boolean expected) throws IOException {
+        Assert.assertEquals(IOUtil.isBlockCompressed(file, checkExtension), expected);
+    }
+
+    @Test(dataProvider = "blockCompressedFiles")
+    public void testIsBlockCompressedOnJimfs(Path file, boolean checkExtension, boolean expected) throws IOException {
+         try (FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+             final Path jimfsRoot = jimfs.getRootDirectories().iterator().next();
+             final Path jimfsFile = Files.copy(file, jimfsRoot.resolve(file.getFileName().toString()));
+             Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
+         }
     }
 }
