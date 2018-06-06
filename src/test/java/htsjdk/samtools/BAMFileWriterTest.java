@@ -25,6 +25,8 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SequenceUtil;
 import org.testng.Assert;
@@ -540,6 +542,20 @@ public class BAMFileWriterTest extends HtsjdkTest {
             //clear attribute before explicitly accessing cigar or attributes
             rec.setAttribute("xx", null);
             Assert.assertNull(rec.getAttribute("xx"));
+        }
+    }
+
+    @Test
+    public void testWriteHeader() throws IOException {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(true, SAMFileHeader.SortOrder.coordinate);
+
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        BAMFileWriter.writeHeader(baos, builder.getHeader());
+        baos.close();
+
+        try (BinaryCodec binaryCodec = new BinaryCodec(new DataInputStream(new BlockCompressedInputStream(new ByteArrayInputStream(baos.toByteArray()))))) {
+            SAMFileHeader samFileHeader = BAMFileReader.readHeader(binaryCodec, ValidationStringency.STRICT, null);
+            Assert.assertEquals(samFileHeader, builder.getHeader());
         }
     }
 }

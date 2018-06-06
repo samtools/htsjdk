@@ -40,7 +40,7 @@ import java.nio.file.Path;
 /**
  * Concrete implementation of SAMFileWriter for writing gzipped BAM files.
  */
-class BAMFileWriter extends SAMFileWriterImpl {
+public class BAMFileWriter extends SAMFileWriterImpl {
 
     private final BinaryCodec outputBinaryCodec;
     private BAMRecordCodec bamRecordCodec = null;
@@ -200,7 +200,12 @@ class BAMFileWriter extends SAMFileWriterImpl {
         writeHeader(outputBinaryCodec, samFileHeader, headerString);
     }
 
-    protected static void writeHeader(final OutputStream outputStream, final SAMFileHeader samFileHeader) {
+    /**
+     * Write a BAM file header to an output stream in block compressed BAM format.
+     * @param outputStream the stream to write the BAM header to
+     * @param samFileHeader the header to write
+     */
+    public static void writeHeader(final OutputStream outputStream, final SAMFileHeader samFileHeader) {
         final BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, null);
         final BinaryCodec outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
         writeHeader(outputBinaryCodec, samFileHeader);
