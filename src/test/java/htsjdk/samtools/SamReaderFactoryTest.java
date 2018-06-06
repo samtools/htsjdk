@@ -1,5 +1,8 @@
 package htsjdk.samtools;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.cram.ref.ReferenceSource;
@@ -21,6 +24,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -484,6 +489,31 @@ public class SamReaderFactoryTest extends HtsjdkTest {
                 },
                 true,
                 3);
+    }
+
+    @Test
+    public void testCRAMReaderWithCRAIFromNonFilePath() throws IOException {
+        final File cramFile = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram");
+        final File cramIndex = new File(TEST_DATA_DIR, "cram/cramQueryWithCRAI.cram.crai");
+        final File referenceFile = new File(TEST_DATA_DIR, "cram/human_g1k_v37.20.21.10M-10M200k.fasta");
+
+        try (final FileSystem jimfs = Jimfs.newFileSystem(Configuration.unix())) {
+            final Path jimfsCRAM = jimfs.getPath("acram.cram");
+            final Path jimfsCRAI = jimfs.getPath("acram.crai");
+
+            Files.copy(cramFile.toPath(), jimfsCRAM);
+            Files.copy(cramIndex.toPath(), jimfsCRAI);
+
+            final SamReaderFactory factory = SamReaderFactory.makeDefault()
+                    .referenceSource(new ReferenceSource(referenceFile))
+                    .validationStringency(ValidationStringency.SILENT);
+
+            // force SamReaderFactory through the CRAM code path for a CRAM with an index that can't be rendered as a file
+            try (final SamReader cramReader = factory.open(jimfsCRAM)) {
+                final SAMRecordIterator samIt = cramReader.query("20", 1, 1, false);
+                Assert.assertNotNull(samIt);
+            };
+        }
     }
 
     private void getCRAMReaderFromInputResource(
