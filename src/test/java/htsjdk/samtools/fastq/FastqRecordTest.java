@@ -1,6 +1,7 @@
 package htsjdk.samtools.fastq;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -160,6 +161,22 @@ public final class FastqRecordTest extends HtsjdkTest {
         final String qualLine = "GATTACA";
         new FastqRecord(seqHeaderPrefix, "", "qualHeaderPrefix", qualLine);
         //Note: this does not blow up now but it will once we enforce non empty seqLine
+    }
+
+    @Test
+    public void testEmptyRecord() {
+        //Note: this does not blow up now but it will once we enforce non empty fields
+        final FastqRecord record = new FastqRecord(null, (String) null, null, null);
+        // assert how null is handled
+        Assert.assertNull(record.getReadName());
+        Assert.assertNull(record.getReadString());
+        Assert.assertNull(record.getBaseQualityString());
+        Assert.assertEquals(record.getReadBases(), SAMRecord.NULL_SEQUENCE);
+        Assert.assertEquals(record.getBaseQualities(), SAMRecord.NULL_QUALS);
+        // copy the FastqRecord to check that equals and hashCode is working for the null read without blow up
+        final FastqRecord copy = new FastqRecord(record);
+        Assert.assertEquals(record, copy);
+        Assert.assertEquals(record.hashCode(), copy.hashCode());
     }
 
     @Test
