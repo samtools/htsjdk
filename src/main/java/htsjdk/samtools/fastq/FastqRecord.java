@@ -230,11 +230,10 @@ public class FastqRecord implements Serializable {
     /**
      * Returns {@link #toFastQString()}.
      *
-     * @deprecated since 07/2017. This method will be deprecated until it is changed in the future
-     * for a simpler representation of the object. For code relying on the formatting as a FASTQ
-     * String, please refactor your code to use {@link #toFastQString()}.
+     * WARNING: This method will be changed in the future for a simpler representation of the object.
+     * For code relying on the formatting as a FASTQ String, please refactor your code to use
+     * {@link #toFastQString()}.
      */
-    @Deprecated
     @Override
     public String toString() {
         // TODO: this should be change in the future for a simpler and more informative form such as
