@@ -147,6 +147,13 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      */
     private int lastInterval = 0;
 
+
+
+    public SAMFileHeader getHeader() {
+        return this.samReader.getFileHeader();
+    }
+
+
     /**
      * Prepare to iterate through the given SAM records, skipping non-primary alignments
      *
@@ -157,7 +164,6 @@ public abstract class AbstractLocusIterator<T extends AbstractRecordAndOffset, K
      *                     It is no longer the case the useIndex==true can make performance worse.  It should always perform at least
      *                     as well as useIndex==false, and generally will be much faster.
      */
-
     public AbstractLocusIterator(final SamReader samReader, final IntervalList intervalList, final boolean useIndex) {
         final String className = this.getClass().getSimpleName();
         if (samReader.getFileHeader().getSortOrder() == null || samReader.getFileHeader().getSortOrder() == SAMFileHeader.SortOrder.unsorted) {

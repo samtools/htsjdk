@@ -9,11 +9,8 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
-/**
- * Created by farjoun on 6/1/18.
- */
-public class SamLocusAndReferenceIteratorTest extends HtsjdkTest{
-    static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
+public class SamLocusAndReferenceIteratorTest extends HtsjdkTest {
+    static private final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools/reference");
 
     @Test
     public void testSamLocusAndReferenceIterator() {
@@ -35,10 +32,25 @@ public class SamLocusAndReferenceIteratorTest extends HtsjdkTest{
         overlapDetector.addAll(intervalList.getIntervals(), intervalList.getIntervals());
 
         for (final SamLocusAndReferenceIterator.SAMLocusAndReference samLocusAndReference : samLocusAndReferences) {
-            Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), overlapDetector.overlapsAny(samLocusAndReference.locus) ? 2 : 0, "Position:" + samLocusAndReference.locus.toString());
+        // The sam file only has coverage in the intervals that are within 'intervalList', and there the coverage should
+        // be exactly 2 since there are two overlapping, paired reads. This is what this test is testing:
+            Assert.assertEquals(samLocusAndReference.getRecordAndOffsets().size(), overlapDetector.overlapsAny(samLocusAndReference.getLocus()) ? 2 : 0, "Position:" + samLocusAndReference.getLocus().toString());
 
+            // all the reads are equal to the reference...this is what this test is testing.
             for (final SamLocusIterator.RecordAndOffset recordAndOffset : samLocusAndReference.getRecordAndOffsets())
-                Assert.assertTrue(SequenceUtil.basesEqual(samLocusAndReference.referenceBase, recordAndOffset.getReadBase()), "Record: " + recordAndOffset.getRecord() + " Position:" + samLocusAndReference.locus.toString());
+                Assert.assertTrue(SequenceUtil.basesEqual(samLocusAndReference.getReferenceBase(), recordAndOffset.getReadBase()), "Record: " + recordAndOffset.getRecord() + " Position:" + samLocusAndReference.getLocus().toString());
         }
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testSamLocusAndReferenceIteratorMismatch() {
+        final File reference = new File(TEST_DATA_DIR, "reference_with_trailing_whitespace.fasta");
+        final File samFile = new File(TEST_DATA_DIR, "simpleSmallFile.sam");
+        final ReferenceSequenceFile referenceSequenceFile = new FastaSequenceFile(reference, false);
+        final ReferenceSequenceFileWalker referenceSequenceFileWalker = new ReferenceSequenceFileWalker(referenceSequenceFile);
+
+        final SamReader samReader = SamReaderFactory.makeDefault().open(samFile);
+        final SamLocusIterator samLocusIterator = new SamLocusIterator(samReader);
+        final SamLocusAndReferenceIterator shouldThrow = new SamLocusAndReferenceIterator(referenceSequenceFileWalker, samLocusIterator);
     }
 }

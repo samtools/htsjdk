@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009-2016 The Broad Institute
+ * Copyright (c) 2009-2018 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,7 @@ package htsjdk.samtools.reference;
 
 import htsjdk.samtools.util.IterableOnceIterator;
 import htsjdk.samtools.util.SamLocusIterator;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
@@ -32,7 +33,7 @@ import static htsjdk.samtools.util.SamLocusIterator.*;
 
 /**
  * Iterator that traverses a SAM File and a ReferenceFile, accumulating information on a per-locus basis.
- * Only, whatever loci are covered by the input reads are returned.
+ * Only loci that are covered by the input reads are returned.
  * Duplicate reads and non-primary alignments are filtered out.
  * Iterator element holds both pileup (in the form of a LocusInfo object) and the reference base
  *
@@ -43,7 +44,25 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
     private final ReferenceSequenceFileWalker referenceSequenceFileWalker;
     private final SamLocusIterator locusIterator;
 
-    public SamLocusAndReferenceIterator(final ReferenceSequenceFileWalker referenceFile, final SamLocusIterator locusIterator) {
+    /**
+     * Constructor that takes a {@link ReferenceSequenceFile} and a {@link SamLocusIterator}.
+     * The inputs must have equal {@link htsjdk.samtools.SAMSequenceDictionary SAMSequenceDictionary}s and an {@link IllegalArgumentException}
+     * will be thrown otherwise.
+     *
+     * @param referenceFile
+     * @param locusIterator
+     *
+     * @throws IllegalArgumentException if arguments have non-equal {@link htsjdk.samtools.SAMSequenceDictionary SAMSequenceDictionary}s
+     */
+    public SamLocusAndReferenceIterator(final ReferenceSequenceFileWalker referenceFile, final SamLocusIterator locusIterator)
+            throws IllegalArgumentException {
+        if(!SequenceUtil.areSequenceDictionariesEqual(
+                locusIterator.getHeader().getSequenceDictionary(),
+                referenceFile.getSequenceDictionary())) {
+            throw new IllegalArgumentException("reference and locus iterator have difference dictionaries." +
+                    locusIterator.getHeader().getSequenceDictionary().toString() +
+                    referenceFile.getSequenceDictionary().toString());
+        }
         this.referenceSequenceFileWalker = referenceFile;
         this.locusIterator = locusIterator;
     }
@@ -63,15 +82,32 @@ public class SamLocusAndReferenceIterator extends IterableOnceIterator<SamLocusA
         return new SAMLocusAndReference(locus, referenceSequence.getBases()[locus.getPosition() - 1]);
     }
 
+    /** Small class to hold together
+     * a {@link LocusInfo} and the reference base over that locus.
+     */
     public static class SAMLocusAndReference {
-        public final LocusInfo locus;
-        public final byte referenceBase;
+        public LocusInfo getLocus() {
+            return locus;
+        }
+
+        private final LocusInfo locus;
+
+        public byte getReferenceBase() {
+            return referenceBase;
+        }
+
+        private final byte referenceBase;
 
         public SAMLocusAndReference(final LocusInfo locus, final byte referenceBase) {
             this.locus = locus;
             this.referenceBase = referenceBase;
         }
 
+        /**
+         * Getter
+         * @return The {@link RecordAndOffset} that overlap this locus. Extracted
+         * from the {@link LocusInfo}.
+         */
         public List<RecordAndOffset> getRecordAndOffsets() {
             return locus.getRecordAndOffsets();
         }
