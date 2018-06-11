@@ -1,0 +1,13 @@
+##fileformat=VCFv4.2
+##FORMAT=<ID=XP,Number=A,Type=Integer,Description="test">
+##FORMAT=<ID=XE,Number=G,Type=Float,Description="test">
+##FORMAT=<ID=XR,Number=R,Type=String,Description="test">
+##FORMAT=<ID=XT,Number=2,Type=Character,Description="test">
+##FORMAT=<ID=XY,Number=2,Type=Integer,Description="test">
+##FORMAT=<ID=XU,Number=3,Type=Integer,Description="test">
+##FORMAT=<ID=XI,Number=1,Type=Integer,Description="test">
+##FORMAT=<ID=XO,Number=1,Type=Float,Description="test">
+##FORMAT=<ID=XQ,Number=1,Type=Character,Description="test">
+##FORMAT=<ID=XJ,Number=2,Type=String,Description="test">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1
+chr1	10	.	C	T	.	.	.	XP:XE:XR:XT:XY:XU:XI:XO:XQ:XJ	1,2:1.1,1.2:a,b:a,b:.,.:1,2,.:1:1.1:a:,,,

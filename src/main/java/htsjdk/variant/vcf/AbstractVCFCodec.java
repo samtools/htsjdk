@@ -42,7 +42,6 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 
 
@@ -539,10 +539,10 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         Allele refAllele = Allele.create(ref, true);
         alleles.add(refAllele);
 
-        if ( alts.indexOf(',') == -1 ) // only 1 alternatives, don't call string split
+        if ( alts.indexOf(VCFConstants.ALLELE_SEPARATOR) == -1 ) // only 1 alternatives, don't call string split
             parseSingleAltAllele(alleles, alts, lineNo);
         else
-            for ( String alt : alts.split(",") )
+            for ( String alt : alts.split(VCFConstants.ALLELE_SEPARATOR) )
                 parseSingleAltAllele(alleles, alt, lineNo);
 
         return alleles;
@@ -728,7 +728,7 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
                         } else if (gtKey.equals(VCFConstants.DEPTH_KEY)) {
                             gb.DP(Integer.valueOf(genotypeValues.get(i)));
                         } else {
-                            gb.attribute(gtKey, genotypeValues.get(i));
+                            gb.attribute(gtKey, genotypeValsToTargetType(gtKey, genotypeValues.get(i)));
                         }
                     }
                 }
@@ -753,6 +753,45 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         }
 
         return new LazyGenotypesContext.LazyData(genotypes, header.getSampleNamesInOrder(), header.getSampleNameToOffset());
+    }
+
+    private Object genotypeValsToTargetType(final String key, final String vals) {
+        if (!header.hasFormatLine(key)) {
+            return vals;
+        }
+
+        final VCFFormatHeaderLine formLine = header.getFormatHeaderLine(key);
+        final VCFHeaderLineType valType = formLine.getType();
+        final boolean isSingleVal = !vals.contains(VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR);
+
+
+        return isSingleVal
+                ? getMapperFunction(valType).apply(vals)
+                : mapToFormatLineType(
+                        ParsingUtils.split(vals, VCFConstants.GENOTYPE_ATTRIBUTE_VALUE_SEPARATOR_CHAR),
+                        valType);
+    }
+
+    private List<?> mapToFormatLineType(final List<String> genVals, final VCFHeaderLineType genValType) {
+        final List<Object> genRealTypeVals = new ArrayList<>(genVals.size());
+        final Function<String, Object> mapperFunc = getMapperFunction(genValType);
+
+        genVals.forEach(genVal -> genRealTypeVals.add(
+                !genVal.equals(VCFConstants.MISSING_VALUE_v4)
+                        ? mapperFunc.apply(genVal)
+                        : null));
+
+        return genRealTypeVals;
+    }
+
+    private Function<String, Object> getMapperFunction(final VCFHeaderLineType genValType) {
+        switch(genValType){
+            case String: return x -> x;
+            case Integer: return Integer::parseInt;
+            case Float: return Double::parseDouble;
+            case Character: return x -> x.charAt(0);
+            default: throw new IllegalArgumentException("Unknown type of genotype field's value(s)");
+        }
     }
 
     private static final int[] decodeInts(final String string) {

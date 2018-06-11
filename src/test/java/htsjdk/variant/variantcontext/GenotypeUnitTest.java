@@ -31,10 +31,13 @@ package htsjdk.variant.variantcontext;
 
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.util.Arrays;
 
 public class GenotypeUnitTest extends VariantBaseTest {
     Allele A, Aref, T;
@@ -69,6 +72,24 @@ public class GenotypeUnitTest extends VariantBaseTest {
         Assert.assertTrue(makeGB().make().hasAnyAttribute(VCFConstants.GENOTYPE_FILTER_KEY), "hasAnyAttribute(GENOTYPE_FILTER_KEY) should return true");
         Assert.assertFalse(makeGB().filter("").make().isFiltered(), "empty filters should count as unfiltered");
         Assert.assertEquals(makeGB().filter("").make().getFilters(), null, "empty filter string should result in null filters");
+    }
+
+    @Test
+    public void getAnyAttributeTest() {
+        VCFFileReader reader = new VCFFileReader(new File(variantTestDataRoot + "analyzeHeaderFormatLines.vcf.gz"), true);
+        VariantContext ctx = reader.query("chr1", 1, 100).next();
+        Genotype gt = ctx.getGenotype(0);
+
+        Assert.assertEquals(gt.getAnyAttribute("XP"), Arrays.asList(1, 2));
+        Assert.assertEquals(gt.getAnyAttribute("XE"), Arrays.asList(1.1, 1.2));
+        Assert.assertEquals(gt.getAnyAttribute("XR"), Arrays.asList("a", "b"));
+        Assert.assertEquals(gt.getAnyAttribute("XT"), Arrays.<Object>asList('a', 'b'));
+        Assert.assertEquals(gt.getAnyAttribute("XU"), Arrays.<Object>asList(1, 2, null));
+        Assert.assertEquals(gt.getAnyAttribute("XY"), Arrays.asList(null, null));
+        Assert.assertEquals(gt.getAnyAttribute("XJ"), Arrays.asList("", "", "", ""));
+        Assert.assertEquals(gt.getAnyAttribute("XI"), 1);
+        Assert.assertEquals(gt.getAnyAttribute("XO"), 1.1);
+        Assert.assertEquals(gt.getAnyAttribute("XQ"), 'a');
     }
 
 //    public Genotype(String sampleName, List<Allele> alleles, double negLog10PError, Set<String> filters, Map<String, ?> attributes, boolean isPhased) {
