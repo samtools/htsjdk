@@ -1,20 +1,20 @@
 package htsjdk.variant.utils;
 
 import htsjdk.samtools.SamStreams;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
+import htsjdk.tribble.Feature;
+import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
-import htsjdk.tribble.TribbleException;
-import htsjdk.tribble.readers.AsciiLineReader;
-import htsjdk.tribble.readers.AsciiLineReaderIterator;
-import htsjdk.tribble.readers.PositionalBufferedStream;
 import htsjdk.variant.bcf2.BCF2Codec;
+import htsjdk.variant.bcf2.BCFVersion;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -22,35 +22,35 @@ import java.util.zip.GZIPInputStream;
  */
 public final class VCFHeaderReader {
     /**
-     * Read a VCF header from a stream assuming first that it is a VCF file (possibly gzip or block compressed),
-     * and falling back to trying BCF if reading VCF fails. After successfully reading a header the stream is
-     * positioned immediately after the header, otherwise, if an exception is thrown, the state of the stream is
-     * undefined.
+     * Read a VCF header from a stream that may be a VCF file (possibly gzip or block compressed) or a BCF file.
+     * After successfully reading a header the stream is positioned immediately after the header, otherwise, if an
+     * exception is thrown, the state of the stream is undefined.
      *
      * @param in the stream to read the header from
      * @return the VCF header read from the stream
      * @throws IOException if no VCF header is found
      */
     public static VCFHeader readHeaderFrom(final SeekableStream in) throws IOException {
-        FeatureCodecHeader headerCodec;
         final long initialPos = in.position();
-        try {
-            BufferedInputStream bis = new BufferedInputStream(in);
-            // despite the name, SamStreams.isGzippedSAMFile looks for any gzipped stream (including block compressed)
-            InputStream is = SamStreams.isGzippedSAMFile(bis) ? new GZIPInputStream(bis) : bis;
-            headerCodec = new VCFCodec().readHeader(new AsciiLineReaderIterator(AsciiLineReader.from(is)));
-        } catch (TribbleException e) {
-            in.seek(initialPos);
-            InputStream bin = new BufferedInputStream(in);
-            if (BlockCompressedInputStream.isValidFile(bin)) {
-                bin = new BlockCompressedInputStream(bin);
-            }
-            try {
-                headerCodec = new BCF2Codec().readHeader(new PositionalBufferedStream(bin));
-            } catch (TribbleException e2) {
-                throw new IOException("No VCF header found", e2);
-            }
+        byte[] magicBytes = InputStreamUtils.readFully(bufferAndDecompressIfNecessary(in), BCFVersion.MAGIC_HEADER_START.length);
+        in.seek(initialPos);
+        if (magicBytes[0] == '#') { // VCF
+            return readHeaderFrom(in, new VCFCodec());
+        } else if (Arrays.equals(magicBytes, BCFVersion.MAGIC_HEADER_START)) {
+            return readHeaderFrom(in, new BCF2Codec());
         }
+        throw new IOException("No VCF header found");
+    }
+
+    private static InputStream bufferAndDecompressIfNecessary(final InputStream in) throws IOException {
+        BufferedInputStream bis = new BufferedInputStream(in);
+        // despite the name, SamStreams.isGzippedSAMFile looks for any gzipped stream (including block compressed)
+        return SamStreams.isGzippedSAMFile(bis) ? new GZIPInputStream(bis) : bis;
+    }
+
+    private static <FEATURE_TYPE extends Feature, SOURCE> VCFHeader readHeaderFrom(final InputStream in, final FeatureCodec<FEATURE_TYPE, SOURCE> featureCodec) throws IOException {
+        InputStream is = bufferAndDecompressIfNecessary(in);
+        FeatureCodecHeader headerCodec = featureCodec.readHeader(featureCodec.makeSourceFromStream(is));
         return (VCFHeader) headerCodec.getHeaderValue();
     }
 }
