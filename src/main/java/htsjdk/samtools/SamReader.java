@@ -43,13 +43,13 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
     /** Describes a type of SAM file. */
     public abstract class Type {
         /** A string representation of this type. */
-        abstract String name();
+        public abstract String name();
 
         /** The recommended file extension for SAMs of this type, without a period. */
         public abstract String fileExtension();
 
         /** The recommended file extension for SAM indexes of this type, without a period, or null if this type is not associated with indexes. */
-        abstract String indexExtension();
+        public abstract String indexExtension();
 
         static class TypeImpl extends Type {
             final String name, fileExtension, indexExtension;
@@ -61,7 +61,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
 
             @Override
-            String name() {
+            public String name() {
                 return name;
             }
 
@@ -71,7 +71,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
             }
 
             @Override
-            String indexExtension() {
+            public String indexExtension() {
                 return indexExtension;
             }
 
