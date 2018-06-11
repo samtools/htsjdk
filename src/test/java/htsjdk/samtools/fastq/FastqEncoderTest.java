@@ -67,9 +67,12 @@ public class FastqEncoderTest extends HtsjdkTest {
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
         fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "", samRecord.getBaseQualities());
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
-        samRecord.setAttribute("CO", "Quality header comment");
-        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), samRecord.getStringAttribute("CO"), samRecord.getBaseQualities());
+        fastqRecord = new FastqRecord(samRecord.getReadName() + FastqConstants.SECOND_OF_PAIR, samRecord.getReadBases(), "Quality header comment", samRecord.getBaseQualities());
+        // default method does not include the comment header
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader()), samRecord);
+        // test with qualityHeaderToComment=true populates the CO tag
+        samRecord.setAttribute("CO", fastqRecord.getBaseQualityHeader());
+        testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader(), true), samRecord);
     }
 
     private void testConvertedSAMRecord(final SAMRecord converted, final SAMRecord original) {

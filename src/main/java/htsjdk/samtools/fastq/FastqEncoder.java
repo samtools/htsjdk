@@ -99,6 +99,18 @@ public final class FastqEncoder {
      * Converts a {@link FastqRecord} into a simple unmapped {@link SAMRecord}.
      */
     public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header) {
+        return asSAMRecord(record, header, false);
+    }
+
+    /**
+     * Converts a {@link FastqRecord} into a simple unmapped {@link SAMRecord}.
+     *
+     * @param record                 object to encode.
+     * @param header                 header for the returned object.
+     * @param qualityHeaderToComment if {@code true}, encode the quality header into the {@link SAMTag#CO} tag;
+     *                               otherwise, do not encode the quality header.
+     */
+    public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header, final boolean qualityHeaderToComment) {
         // construct the SAMRecord and set the unmapped flag
         final SAMRecord samRecord = new SAMRecord(header);
         samRecord.setReadUnmappedFlag(true);
@@ -107,7 +119,9 @@ public final class FastqEncoder {
         // set the basic information from the FastqRecord
         samRecord.setReadName(readName);
         samRecord.setReadBases(record.getReadBases());
-        samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader());
+        if (qualityHeaderToComment) {
+            samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader());
+        }
         samRecord.setBaseQualities(record.getBaseQualities());
         return samRecord;
     }
