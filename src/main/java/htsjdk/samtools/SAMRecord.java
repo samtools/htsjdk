@@ -521,7 +521,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @param header SAMFileHeader to use when resolving {@code referenceName} to an index. Must be non null if the
      *                {@code referenceName} is not NO_ALIGNMENT_REFERENCE_NAME.
      * @param strict if true, throws if {@code referenceName}  does not appear in the header's sequence dictionary
-     * @returns the reference index corresponding to the {@code referenceName}, or null if strict is false and {@code referenceName}
+     * @return the reference index corresponding to the {@code referenceName}, or null if strict is false and {@code referenceName}
      * does not appear in the header's sequence dictionary.
      * @throws IllegalStateException if {@code referenceName} is not equal to NO_ALIGNMENT_REFERENCE_NAME and the header is null
      * @throws IllegalArgumentException if strict is true and the name does not appear in header's sequence dictionary.
@@ -555,7 +555,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *                      dictionary.
      * @param header SAMFileHeader to use when resolving {@code referenceIndex} to a name. Must be non null unless the
      *               the {@code referenceIndex} is NO_ALIGNMENT_REFERENCE_INDEX.
-     * @returns the reference name corresponding to  {@code referenceIndex}
+     * @return the reference name corresponding to  {@code referenceIndex}
      * @throws IllegalStateException if {@code referenceIndex} is not equal to NO_ALIGNMENT_REFERENCE_NAME and the header
      * is null
      * @throws IllegalArgumentException if {@code referenceIndex} does not appear in header's sequence dictionary.
@@ -1193,7 +1193,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @param tag Two-character tag name.
      * @return valid unsigned integer associated with the tag, as a Long
-     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     * @throws SAMException if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
         return getUnsignedIntegerAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag));
@@ -1205,7 +1205,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      *
      * @param tag Binary representation of a 2-char String tag as created by SAMTagUtil.
      * @return valid unsigned integer associated with the tag, as a Long
-     * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
+     * @throws SAMException if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final short tag) throws SAMException {
         final Object value = getAttribute(tag);
@@ -1419,9 +1419,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * String values are not validated to ensure that they conform to SAM spec.
      */
     public void setAttribute(final String tag, final Object value) {
-        if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty value passed for tag " + tag);
-        }
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
     }
 
@@ -1432,12 +1429,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @param value must be one of byte[], short[], int[]
      */
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
-        if (!value.getClass().isArray()) {
-            throw new IllegalArgumentException("Non-array passed to setUnsignedArrayAttribute for tag " + tag);
-        }
-        if (Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
-        }
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
     }
 
@@ -1825,22 +1816,22 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Run all validations of CIGAR.  These include validation that the CIGAR makes sense independent of
      * placement, plus validation that CIGAR + placement yields all bases with M operator within the range of the reference.
+     *
      * @param recordNumber For error reporting, the record number in the SAM/BAM file.  -1 if not known.
      * @return List of errors, or null if no errors.
      */
     public List<SAMValidationError> validateCigar(final long recordNumber) {
-        List<SAMValidationError> ret = null;
 
         if (null != getHeader() && getValidationStringency() != ValidationStringency.SILENT && !this.getReadUnmappedFlag()) {
             try {
                 //make sure that the cashed version is good
                 //wrapped in a try to catch an un-parsable string
                 return SAMUtils.validateCigar(this, getCigar(), getReferenceIndex(), getAlignmentBlocks(), recordNumber, "Read CIGAR");
-            } catch( final IllegalArgumentException e){
-                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR,e.getMessage(),getReadName(),recordNumber));
+            } catch (final IllegalArgumentException e) {
+                return Collections.singletonList(new SAMValidationError(SAMValidationError.Type.INVALID_CIGAR, e.getMessage(), getReadName(), recordNumber));
             }
         }
-        return ret;
+        return null;
     }
 
     @Override
@@ -2340,7 +2331,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     
     /** 
      * shortcut to <pre>SAMFlag.getFlags( this.getFlags() );</pre>
-     * @returns a set of SAMFlag associated to this sam record */
+     * @return a set of SAMFlag associated to this sam record */
     public final Set<SAMFlag> getSAMFlags() {
         return SAMFlag.getFlags(this.getFlags());
     }
