@@ -527,48 +527,52 @@ public class IOUtilTest extends HtsjdkTest {
              Assert.assertEquals(IOUtil.isBlockCompressed(jimfsFile, checkExtension), expected);
          }
     }
+
     @DataProvider
-    public static Object [][] filesToCompress(){
+    public static Object[][] filesToCompress() {
         return new Object[][]{
-                {TEST_VARIANT_DIR.resolve("test1.vcf"),".gz",7},
-                {TEST_VARIANT_DIR.resolve("test1.vcf"),".bfq",7},
-                {TEST_DATA_DIR.resolve("words_longs.txt"),".gz",8},
-                {TEST_DATA_DIR.resolve("words_longs.txt"),".bfq",8}
+                {TEST_DATA_DIR.resolve("words_longs.txt"), ".gz", 8},
+                {TEST_DATA_DIR.resolve("words_longs.txt"), ".bfq", 8},
+                {TEST_VARIANT_DIR.resolve("test1.vcf"), ".gz", 7},
+                {TEST_VARIANT_DIR.resolve("test1.vcf"), ".bfq", 7}
 
 
         };
 
     }
+
     @Test(dataProvider = "filesToCompress")
-    public void testCompressionLevel(Path file,String extension,int lastDifference) throws IOException{
-        long origSize=file.toFile().length();
-        long previousSize=origSize;
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName=System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        for(int cl=1;cl<=9;cl++)
-        {
-            Path outFile=Paths.get(tmpDir.getAbsolutePath(),"tmp"+extension);
-            IOUtil.setCompressionLevel(cl);
-            Assert.assertEquals(IOUtil.getCompressionLevel(),cl);
-            InputStream inStream=IOUtil.openFileForReading(file);
-            OutputStream outStream=IOUtil.openFileForWriting(outFile.toFile());
-            IOUtil.transferByStream(inStream,outStream,origSize);
-            outStream.close();
+    public void testCompressionLevel(final Path file, final String extension, final int lastDifference) throws IOException {
+        final long origSize = Files.size(file);
+        long previousSize = origSize;
+        for (int compressionLevel = 1; compressionLevel <= 9; compressionLevel++) {
+            final Path outFile = Files.createTempFile("tmp", extension);
             outFile.toFile().deleteOnExit();
-            long newSize=outFile.toFile().length();
-            if(cl<=lastDifference)Assert.assertTrue(previousSize>newSize);
-            else Assert.assertTrue(previousSize>=newSize);
-            previousSize=newSize;
+            IOUtil.setCompressionLevel(compressionLevel);
+            Assert.assertEquals(IOUtil.getCompressionLevel(), compressionLevel);
+            final InputStream inStream = IOUtil.openFileForReading(file);
+
+            try (final OutputStream outStream = IOUtil.openFileForWriting(outFile.toFile())) {
+
+
+                IOUtil.transferByStream(inStream, outStream, origSize);
+            }
+
+
+            final long newSize = Files.size(outFile);
+            if (compressionLevel <= lastDifference) {
+                Assert.assertTrue(previousSize > newSize);
+            } else {
+                Assert.assertTrue(previousSize >= newSize);
+            }
+            previousSize = newSize;
 
         }
 
     }
 
     @DataProvider
-    public static Object [][] badCompressionLevels(){
+    public static Object[][] badCompressionLevels() {
         return new Object[][]{
                 {-1},
                 {10}
@@ -576,13 +580,13 @@ public class IOUtilTest extends HtsjdkTest {
 
     }
 
-    @Test(dataProvider = "badCompressionLevels")
-    public void testCompressionLevelExceptions(int cl){
-        Assert.assertThrows(IllegalArgumentException.class,()->IOUtil.setCompressionLevel(cl));
+    @Test(dataProvider = "badCompressionLevels", expectedExceptions = {IllegalArgumentException.class})
+    public void testCompressionLevelExceptions(final int compressionLevel) {
+        IOUtil.setCompressionLevel(compressionLevel);
     }
 
     @DataProvider
-    public static Object [][] filesToCopy() {
+    public static Object[][] filesToCopy() {
         return new Object[][]{
                 {TEST_VARIANT_DIR.resolve("test1.vcf")},
                 {TEST_DATA_DIR.resolve("ipsum.txt")}
@@ -591,130 +595,119 @@ public class IOUtilTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "filesToCopy")
-    public void testCopyFile(Path file) throws IOException{
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName=System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        Path outFile=Paths.get(tmpDir.getAbsolutePath(),"tmp"+file.getFileName());
-        IOUtil.copyFile(file.toFile(),outFile.toFile());
-
+    public void testCopyFile(final Path file) throws IOException {
+        final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
-        Stream<String> stream=Files.lines(file);
-        Stream<String> outStream=Files.lines(outFile);
+        IOUtil.copyFile(file.toFile(), outFile.toFile());
 
-        Iterator<String> itStream=stream.iterator();
-        Iterator<String> itOutStream=outStream.iterator();
 
-        while(itStream.hasNext() && itOutStream.hasNext()){
-            Assert.assertEquals(itStream.next(),itOutStream.next());
+        final Stream<String> stream = Files.lines(file);
+        final Stream<String> outStream = Files.lines(outFile);
+
+        final Iterator<String> itStream = stream.iterator();
+        final Iterator<String> itOutStream = outStream.iterator();
+
+        while (itStream.hasNext() && itOutStream.hasNext()) {
+            Assert.assertEquals(itStream.next(), itOutStream.next());
         }
         Assert.assertFalse(itStream.hasNext());
         Assert.assertFalse(itOutStream.hasNext());
     }
 
-    @Test(dataProvider="filesToCopy")
-    public void testCopyFileException(Path file){
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName=System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        Path outFile=Paths.get(tmpPath,userName,"tmp"+file.getFileName());
-        ProcessExecutor.execute(new String[]{"touch", outFile.toAbsolutePath().toString()});
+    @Test(dataProvider = "filesToCopy", expectedExceptions = {SAMException.class})
+    public void testCopyFileReadException(final Path file) throws IOException {
+        final Path outFile = Files.createTempFile("tmp", ".tmp");
+        outFile.toFile().deleteOnExit();
         file.toFile().setReadable(false);
-        Assert.assertThrows(SAMException.class,()->IOUtil.copyFile(file.toFile(),outFile.toFile()));
-        file.toFile().setReadable(true);
-        outFile.toFile().setWritable(false);
-        Assert.assertThrows(SAMException.class,()->IOUtil.copyFile(file.toFile(),outFile.toFile()));
-        outFile.toFile().setWritable(true);
+        try {
+            IOUtil.copyFile(file.toFile(), outFile.toFile());
+        } catch (SAMException e) {
+            file.toFile().setReadable(true);
+            throw e;
+        }
+    }
 
+    @Test(dataProvider = "filesToCopy", expectedExceptions = {SAMException.class})
+    public void testCopyFileWriteException(final Path file) throws IOException {
+        final Path outFile = Files.createTempFile("tmp", ".tmp");
+        outFile.toFile().deleteOnExit();
+        outFile.toFile().setWritable(false);
+        IOUtil.copyFile(file.toFile(), outFile.toFile());
     }
 
 
     @DataProvider
-    public static Object [][] baseNameTests() {
+    public static Object[][] baseNameTests() {
         return new Object[][]{
-                {TEST_DATA_DIR.resolve("ipsum.txt"),"ipsum"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"),"ipsum.txt.bgz"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"),"ipsum.txt.bgzipped_with_gzextension"},
-                {TEST_VARIANT_DIR.resolve("utils"),"utils"},
-                {TEST_VARIANT_DIR.resolve("not_real_file.txt"),"not_real_file"}
+                {TEST_DATA_DIR.resolve("ipsum.txt"), "ipsum"},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz.wrongextension"), "ipsum.txt.bgz"},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), "ipsum.txt.bgzipped_with_gzextension"},
+                {TEST_VARIANT_DIR.resolve("utils"), "utils"},
+                {TEST_VARIANT_DIR.resolve("not_real_file.txt"), "not_real_file"}
 
         };
     }
 
-    @Test(dataProvider="baseNameTests")
-    public void testBasename(Path file, String expected){
-        String result=IOUtil.basename(file.toFile());
-        Assert.assertEquals(result,expected);
+    @Test(dataProvider = "baseNameTests")
+    public void testBasename(final Path file, final String expected) {
+        final String result = IOUtil.basename(file.toFile());
+        Assert.assertEquals(result, expected);
 
     }
 
     @DataProvider
-    public static Object [][] regExpTests() {
+    public static Object[][] regExpTests() {
         return new Object[][]{
-                {"\\w+\\.txt",new String[]{"5newline5.txt","empty.txt","ipsum.txt","slurptest.txt","words_longs.txt"}},
-                {"^((?!txt).)*$",new String[]{"Level1.fofn","Level2.fofn","example.bam"}},
-                {"^\\d+.*",new String[]{"5newline5.txt"}}
+                {"\\w+\\.txt", new String[]{"5newline5.txt", "empty.txt", "ipsum.txt", "slurptest.txt", "words_longs.txt"}},
+                {"^((?!txt).)*$", new String[]{"Level1.fofn", "Level2.fofn", "example.bam"}},
+                {"^\\d+.*", new String[]{"5newline5.txt"}}
         };
 
     }
 
     @Test(dataProvider = "regExpTests")
-    public void testRegExp(String regexp, String[] expected){
-        String [] allNames={"5newline5.txt","Level2.fofn","example.bam","ipsum.txt.bgz","ipsum.txt.bgzipped_with_gzextension.gz","slurptest.txt","Level1.fofn","empty.txt","ipsum.txt","ipsum.txt.bgz.wrongextension","ipsum.txt.gz","words_longs.txt"};
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName=System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        File regExpDir=new File(tmpDir.getAbsolutePath(),"regExpDir");
-        regExpDir.mkdir();
-        regExpDir.deleteOnExit();
-        List<String> listExpected=Arrays.asList(expected);
-        List<File> expectedFiles=new ArrayList<File>();
-        for(String name:allNames) {
-            Path file = Paths.get(regExpDir.getAbsolutePath(), name);
-            ProcessExecutor.execute(new String[]{"touch", file.toAbsolutePath().toString()});
-            if(listExpected.contains(name)){
-               expectedFiles.add(file.toFile());
+    public void testRegExp(final String regexp, final String[] expected) throws IOException {
+        final String[] allNames = {"5newline5.txt", "Level2.fofn", "example.bam", "ipsum.txt.bgz", "ipsum.txt.bgzipped_with_gzextension.gz", "slurptest.txt", "Level1.fofn", "empty.txt", "ipsum.txt", "ipsum.txt.bgz.wrongextension", "ipsum.txt.gz", "words_longs.txt"};
+        final Path regExpDir = Files.createTempDirectory("regExpDir");
+        regExpDir.toFile().deleteOnExit();
+        final List<String> listExpected = Arrays.asList(expected);
+        final List<File> expectedFiles = new ArrayList<File>();
+        for (String name : allNames) {
+            final Path file = regExpDir.resolve(name);
+            file.toFile().createNewFile();
+            if (listExpected.contains(name)) {
+                expectedFiles.add(file.toFile());
             }
             file.toFile().deleteOnExit();
 
         }
-        File[] result=IOUtil.getFilesMatchingRegexp(regExpDir,regexp);
+        final File[] result = IOUtil.getFilesMatchingRegexp(regExpDir.toFile(), regexp);
 
-        Assert.assertEqualsNoOrder(result,expectedFiles.toArray());
+        Assert.assertEqualsNoOrder(result, expectedFiles.toArray());
 
     }
 
 
     @Test()
     public void testReadLines() throws IOException {
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName = System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        Path file = Paths.get(tmpDir.getAbsolutePath(), "tmp.txt");
-        Random rand = new Random(System.currentTimeMillis());
-        BufferedWriter writer = Files.newBufferedWriter(file);
-        final int nLines = 5;
-        String[] lines = new String[nLines];
-
-        for (int i = 0; i < nLines; i++) {
-            String line = TEST_STRING + Integer.toString(rand.nextInt(100000000));
-            lines[i] = line;
-            writer.write(line);
-            writer.newLine();
-        }
-        writer.close();
+        final Path file = Files.createTempFile("tmp", ".txt");
         file.toFile().deleteOnExit();
-        IterableOnceIterator<String> retLines = IOUtil.readLines(file.toFile());
-        Stream<String> expectedLines = Stream.of(lines);
-        Iterator<String> itExpected = expectedLines.iterator();
+        final int seed = 12394738;
+        final Random rand = new Random(seed);
+
+        final int nLines = 5;
+        final String[] lines = new String[nLines];
+        try (final BufferedWriter writer = Files.newBufferedWriter(file)) {
+            for (int i = 0; i < nLines; i++) {
+                final String line = TEST_STRING + Integer.toString(rand.nextInt(100000000));
+                lines[i] = line;
+                writer.write(line);
+                writer.newLine();
+            }
+        }
+        final IterableOnceIterator<String> retLines = IOUtil.readLines(file.toFile());
+        final Stream<String> expectedLines = Stream.of(lines);
+        final Iterator<String> itExpected = expectedLines.iterator();
         while (retLines.hasNext() && itExpected.hasNext()) {
             Assert.assertEquals(retLines.next(), itExpected.next());
         }
@@ -722,57 +715,51 @@ public class IOUtilTest extends HtsjdkTest {
         Assert.assertFalse(itExpected.hasNext());
 
 
-
     }
 
     @DataProvider
-    public static Object [][] fileSuffixTests(){
+    public static Object[][] fileSuffixTests() {
         return new Object[][]{
-                {TEST_DATA_DIR.resolve("ipsum.txt"),".txt"},
-                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"),".bgz"},
-                {TEST_DATA_DIR,null}
+                {TEST_DATA_DIR.resolve("ipsum.txt"), ".txt"},
+                {TEST_DATA_DIR.resolve("ipsum.txt.bgz"), ".bgz"},
+                {TEST_DATA_DIR, null}
         };
     }
 
-    @Test(dataProvider="fileSuffixTests")
-    public void testSuffixTest(Path file,String expected){
-        String ret=IOUtil.fileSuffix(file.toFile());
-        Assert.assertEquals(ret,expected);
+    @Test(dataProvider = "fileSuffixTests")
+    public void testSuffixTest(final Path file, final String expected) {
+        String ret = IOUtil.fileSuffix(file.toFile());
+        Assert.assertEquals(ret, expected);
 
     }
 
     @Test
-    public void testCopyDirectoryTree() throws IOException{
-        String tmpPath = System.getProperty("java.io.tmpdir");
-        String userName = System.getProperty("user.name");
-        File tmpDir = new File(tmpPath, userName);
-        tmpDir.mkdir();
-        tmpDir.deleteOnExit();
-        File copyToDir=new File(tmpDir.getAbsolutePath(),"copyToDir");
-        copyToDir.deleteOnExit();
-        IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(),copyToDir);
-        Stream<Path> fileStream=Files.walk(TEST_VARIANT_DIR);
-        Stream<Path> copyFileStream=Files.walk(Paths.get(copyToDir.getAbsolutePath()));
+    public void testCopyDirectoryTree() throws IOException {
+        final Path copyToDir = Files.createTempDirectory("copyToDir");
+        copyToDir.toFile().deleteOnExit();
+        IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(), copyToDir.toFile());
+        final Stream<Path> fileStream = Files.walk(TEST_VARIANT_DIR);
+        final Stream<Path> copyFileStream = Files.walk(copyToDir);
 
-        Iterator<Path> itFileStream=fileStream.iterator();
-        Iterator<Path> itCopyFileStream=copyFileStream.iterator();
+        final Iterator<Path> itFileStream = fileStream.iterator();
+        final Iterator<Path> itCopyFileStream = copyFileStream.iterator();
 
-        List<String> listFiles=new ArrayList<String>();
-        List<String> listCopyFiles=new ArrayList<String>();
-        while(itFileStream.hasNext()){
-            Path thisPath=itFileStream.next();
-            if(!thisPath.equals(TEST_VARIANT_DIR)){
+        final List<String> listFiles = new ArrayList<String>();
+        final List<String> listCopyFiles = new ArrayList<String>();
+        while (itFileStream.hasNext()) {
+            final Path thisPath = itFileStream.next();
+            if (!thisPath.equals(TEST_VARIANT_DIR)) {
                 listFiles.add(thisPath.getFileName().toString());
             }
         }
-        while(itCopyFileStream.hasNext()){
-            Path thisPath=itCopyFileStream.next();
+        while (itCopyFileStream.hasNext()) {
+            final Path thisPath = itCopyFileStream.next();
             thisPath.toFile().deleteOnExit();
-            if(!thisPath.equals(Paths.get(copyToDir.getAbsolutePath()))){
+            if (!thisPath.equals(copyToDir)) {
                 listCopyFiles.add(thisPath.getFileName().toString());
             }
         }
-        Assert.assertEqualsNoOrder(listFiles.toArray(new String[listFiles.size()]),listCopyFiles.toArray(new String[listCopyFiles.size()]));
+        Assert.assertEqualsNoOrder(listFiles.toArray(new String[listFiles.size()]), listCopyFiles.toArray(new String[listCopyFiles.size()]));
     }
 
 }
