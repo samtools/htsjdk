@@ -10,6 +10,7 @@ public class BAMCSIFileIndexTest extends HtsjdkTest {
 
     private static DiskBasedBAMFileIndex bai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
     private static BAMCSIFileIndex csi = new BAMCSIFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), null);
+    private static BAMCSIFileIndex cst = new BAMCSIFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), null, 14, 6);
     private static Bin bin1 = new Bin(0, 0);
     private static Bin bin2 = new Bin(0, 1);
     private static Bin bin3 = new Bin(1, 0);
@@ -153,5 +154,13 @@ public class BAMCSIFileIndexTest extends HtsjdkTest {
         Assert.assertEquals(csi.getLastLocusInBin(bin6), (1<<17)*2);
         Assert.assertEquals(csi.getLastLocusInBin(bin7), (1<<20)*8);
         Assert.assertEquals(csi.getLastLocusInBin(bin8), (1<<14)*9);
+    }
+
+    @Test
+    public static void testBAMCSIFileIndex() {
+        Assert.assertEquals(cst.getBinDepth(), csi.getBinDepth());
+        Assert.assertEquals(cst.getMinShift(), csi.getMinShift());
+        Assert.assertEquals(cst.getMaxBins(), csi.getMaxBins());
+        Assert.assertEquals(cst.getMaxSpan(), csi.getMaxSpan());
     }
 }

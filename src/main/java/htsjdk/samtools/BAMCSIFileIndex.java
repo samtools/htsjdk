@@ -54,7 +54,6 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         readMinShiftAndBinDepth();
         readAuxDataAndNRef();
 
-
         sequenceIndexes = new int[getNumberOfReferences() + 1];
         Arrays.fill(sequenceIndexes, -1);
     }
@@ -67,7 +66,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         this(file, dictionary, true);
         setMinShift(minShift);
         setBinDepth(binDepth);
-        setMaxBins(1<<3*(binDepth - 1) + 1);
+        setMaxBins(((1<<3*binDepth) - 1)/7);
         setMaxSpan(1<<(minShift + 3*(binDepth - 1)));
     }
 
@@ -252,7 +251,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         if (BAMFileConstants.CSI_MAGIC_OFFSET != position()) {
             seek(BAMFileConstants.CSI_MAGIC_OFFSET);
         }
-        final byte[] buffer = new byte[BAMFileConstants.CSI_MISHIFT_OFFSET];
+        final byte[] buffer = new byte[BAMFileConstants.CSI_MINSHIFT_OFFSET];
         readBytes(buffer); // magic
         if (!Arrays.equals(buffer, BAMFileConstants.CSI_INDEX_MAGIC)) {
             throw new RuntimeIOException("Invalid file header in BAM CSI index " + sourceName +
@@ -261,8 +260,8 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
     }
 
     private void readMinShiftAndBinDepth() {
-        if (BAMFileConstants.CSI_MISHIFT_OFFSET != position()) {
-            seek(BAMFileConstants.CSI_MISHIFT_OFFSET);
+        if (BAMFileConstants.CSI_MINSHIFT_OFFSET != position()) {
+            seek(BAMFileConstants.CSI_MINSHIFT_OFFSET);
         }
         setMinShift(readInteger()); // min_shift
         setBinDepth(readInteger() + 1); // depth - HTSlib doesn't count the first level (bin 0)
@@ -759,6 +758,4 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
             } catch (final IOException e) { throw new RuntimeIOException(e); }
         }
     }
-
-
 }

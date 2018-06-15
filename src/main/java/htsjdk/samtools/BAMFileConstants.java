@@ -48,6 +48,6 @@ class BAMFileConstants {
      * CSI index related constants
      */
     static final int CSI_MAGIC_OFFSET = 0;
-    static final int CSI_MISHIFT_OFFSET = 4;
+    static final int CSI_MINSHIFT_OFFSET = 4;
     static final int CSI_AUXDATA_OFFSET = 12;
 }
