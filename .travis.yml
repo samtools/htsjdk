@@ -11,13 +11,6 @@ cache:
 jdk:
   - oraclejdk8
   - openjdk8
-matrix:
-  fast_finish: true
-  allow_failures: 
-     - env: TEST_TYPE=FTP
-  include:
-     - jdk: oraclejdk8
-       env: TEST_TYPE=FTP
 script:
   - if [[ $TEST_TYPE == "FTP" ]]; then
         ./gradlew testFTP jacocoTestReport;
