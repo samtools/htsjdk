@@ -392,7 +392,7 @@ public class CRAMComplianceTest extends HtsjdkTest {
         // tests to fail since it can change the order of some unmapped reads - this is allowed
         // by the spec since the order is arbitrary for unmapped.
         try (final SAMFileWriter writer = new SAMFileWriterFactory()
-            .makeWriter(samHeader, true, targetPath, referenceFile)) {
+            .makeWriter(samHeader, true, targetPath, referenceFile.toPath())) {
             for (SAMRecord rec : recs) {
                 writer.addAlignment(rec);
             }
