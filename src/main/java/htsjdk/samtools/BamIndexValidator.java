@@ -88,7 +88,7 @@ public class BamIndexValidator {
                 // " linearIndex positions = " + indexCount);
             } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
-                final BAMCSIFileIndex existingIndex = (BAMCSIFileIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
+                final CSIIndex existingIndex = (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;
@@ -171,7 +171,7 @@ public class BamIndexValidator {
                 return chunkCount;
             } else if (SamIndexes.CSI.fileNameSuffix.endsWith(reader.type().indexExtension())) {
 
-                final BAMCSIFileIndex existingIndex = (BAMCSIFileIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
+                final CSIIndex existingIndex = (CSIIndex) reader.indexing().getBrowseableIndex(); // new CachingBAMFileIndex(inputBai, null);
                 final int numRefs = existingIndex.getNumberOfReferences();
 
                 int chunkCount = 0;

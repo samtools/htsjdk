@@ -287,7 +287,7 @@ public class BAMIndexMetaData {
      */
     static public BAMIndexMetaData[] getCSIIndexStats(final BAMFileReader bam) {
 
-        BAMCSIFileIndex index = (BAMCSIFileIndex) bam.getIndex();
+        CSIIndex index = (CSIIndex) bam.getIndex();
         // read through all the bins of every reference.
         int nRefs = index.getNumberOfReferences();
         BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];

@@ -406,7 +406,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                     mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
                 } else if (getIndexType().equals(SamIndexes.CSI)) {
-                    mIndex = new BAMCSIFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
+                    mIndex = new CSIIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
 
                 }
             } else {
@@ -419,9 +419,9 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
     public SamIndexes getIndexType() {
         if (mIndexFile != null) {
-            if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix)) {
+            if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAI_INDEX_SUFFIX)) {
                 return SamIndexes.BAI;
-            } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.BAMIndexSuffix2)) {
+            } else if (mIndexFile.getName().toLowerCase().endsWith(BAMIndex.CSI_INDEX_SUFFIX)) {
                 return SamIndexes.CSI;
             }
         }

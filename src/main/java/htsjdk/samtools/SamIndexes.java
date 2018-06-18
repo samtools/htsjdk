@@ -16,10 +16,10 @@ import java.net.URL;
  * Created by vadim on 14/08/2015.
  */
 public enum SamIndexes {
-    BAI(BAMIndex.BAMIndexSuffix, "BAI\1".getBytes()),
+    BAI(BAMIndex.BAI_INDEX_SUFFIX, "BAI\1".getBytes()),
     // CRAI is gzipped text, so it's magic is same as {@link java.util.zip.GZIPInputStream.GZIP_MAGIC}
     CRAI(CRAIIndex.CRAI_INDEX_SUFFIX, new byte[]{(byte) 0x1f, (byte) 0x8b}),
-    CSI(BAMIndex.BAMIndexSuffix2, "CSI\1".getBytes());
+    CSI(BAMIndex.CSI_INDEX_SUFFIX, "CSI\1".getBytes());
 
     public final String fileNameSuffix;
     public final byte[] magic;

@@ -13,7 +13,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.*;
 
-public class BAMCSIFileIndex implements BrowseableBAMIndex {
+
+public class CSIIndex implements BrowseableBAMIndex {
 
     private int binDepth;
     private int minShift;
@@ -33,12 +34,12 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
      * Constructors
      */
 
-    private BAMCSIFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary)
+    private CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary)
     {
         mBamDictionary = dictionary;
         mIndexBuffer = new IndexStreamBuffer(stream);
 
-        verifyBAMMagicNumber(stream.getSource());
+        verifyCSIMagicNumber(stream.getSource());
         readMinShiftAndBinDepth();
         readAuxDataAndNRef();
 
@@ -46,11 +47,11 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         Arrays.fill(sequenceIndexes, -1);
     }
 
-    public BAMCSIFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+    public CSIIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
         mBamDictionary = dictionary;
         mIndexBuffer = (useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
 
-        verifyBAMMagicNumber(file.getName());
+        verifyCSIMagicNumber(file.getName());
         readMinShiftAndBinDepth();
         readAuxDataAndNRef();
 
@@ -58,16 +59,8 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         Arrays.fill(sequenceIndexes, -1);
     }
 
-    public BAMCSIFileIndex(final File file, final SAMSequenceDictionary dictionary) {
+    public CSIIndex(final File file, final SAMSequenceDictionary dictionary) {
         this(file, dictionary, true);
-    }
-
-    public BAMCSIFileIndex(final File file, final SAMSequenceDictionary dictionary, int minShift, int binDepth) {
-        this(file, dictionary, true);
-        setMinShift(minShift);
-        setBinDepth(binDepth);
-        setMaxBins(((1<<3*binDepth) - 1)/7);
-        setMaxSpan(1<<(minShift + 3*(binDepth - 1)));
     }
 
     /**
@@ -78,15 +71,13 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         return binDepth;
     }
 
-    public void setBinDepth(int binDepth) {
-        this.binDepth = binDepth;
-    }
+    private void setBinDepth(int binDepth) { this.binDepth = binDepth; }
 
     public int getMinShift() {
         return minShift;
     }
 
-    public void setMinShift(int minShift) {
+    private void setMinShift(int minShift) {
         this.minShift = minShift;
     }
 
@@ -94,26 +85,23 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         return maxBins;
     }
 
-    public void setMaxBins(int maxBins) {
-        this.maxBins = maxBins;
-    }
+    private void setMaxBins(int binDepth) { this.maxBins = ((1<<3*binDepth) - 1)/7; }
 
     public int getMaxSpan() {
         return maxSpan;
     }
 
-    public void setMaxSpan(int maxSpan) {
-        this.maxSpan = maxSpan;
+    private void setMaxSpan(int binDepth, int minShift) {
+        this.maxSpan = 1<<(minShift + 3*(binDepth - 1));
     }
 
     public byte[] getAuxData() { return auxData; }
 
-    public void setAuxData(byte[] auxData) { this.auxData = auxData; }
+    private void setAuxData(byte[] auxData) { this.auxData = auxData; }
 
     public int getNumberOfReferences() { return nReferences; }
 
-    public void setNumberOfReferences(int nReferences) { this.nReferences = nReferences; }
-
+    private void setNumberOfReferences(int nReferences) { this.nReferences = nReferences; }
 
     /**
      * Computes the number of bins on the given level.
@@ -143,20 +131,20 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
     @Override
     public int getLevelForBin(Bin bin) {
         if(bin == null || bin.getBinNumber() > getMaxBins()) {
-            throw new SAMException("Tried to get level for invalid bin.");
+            throw new SAMException("Tried to get level for invalid bin: " +  bin);
         }
         for (int i = getBinDepth()-1; i > -1 ; i--) {
               if (bin.getBinNumber() >= getFirstBinOnLevel(i)) {
                   return i;
               }
         }
-        throw new SAMException("Unable to find correct bin for bin " + bin);
+        throw new SAMException("Unable to find correct level for bin " + bin);
     }
 
     @Override
     public int getFirstLocusInBin(Bin bin) {
         if(bin == null || bin.getBinNumber() > getMaxBins()) {
-            throw new SAMException("Tried to get first locus for invalid bin.");
+            throw new SAMException("Tried to get first locus for invalid bin: " + bin);
         }
         int level = getLevelForBin(bin);
         int firstBinOnLevel = getFirstBinOnLevel(level);
@@ -168,7 +156,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
     @Override
     public int getLastLocusInBin(Bin bin) {
         if(bin == null || bin.getBinNumber() > getMaxBins()) {
-            throw new SAMException("Tried to get last locus for invalid bin.");
+            throw new SAMException("Tried to get last locus for invalid bin: " + bin);
         }
         int level = getLevelForBin(bin);
         int firstBinOnLevel = getFirstBinOnLevel(level);
@@ -242,11 +230,10 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         return -1;
     }
 
-
     @Override
-    public void close() {}
+    public void close() { mIndexBuffer.close(); }
 
-    private void verifyBAMMagicNumber(final String sourceName) {
+    private void verifyCSIMagicNumber(final String sourceName) {
         // Verify the magic number.
         if (BAMFileConstants.CSI_MAGIC_OFFSET != position()) {
             seek(BAMFileConstants.CSI_MAGIC_OFFSET);
@@ -265,8 +252,8 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         }
         setMinShift(readInteger()); // min_shift
         setBinDepth(readInteger() + 1); // depth - HTSlib doesn't count the first level (bin 0)
-        setMaxBins(((1<<3*binDepth) - 1)/7);
-        setMaxSpan(1<<(minShift + 3*(binDepth - 1)));
+        setMaxBins(binDepth);
+        setMaxSpan(binDepth, minShift);
     }
 
     private void readAuxDataAndNRef() {
@@ -318,7 +305,6 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
      */
     private int getMaxBinNumberForSequenceLength(final int sequenceLength) {
         return getFirstBinOnLevel(getBinDepth() - 1) + (sequenceLength >> getMinShift());
-        // return 4680 + (sequenceLength >> 14); // note 4680 = getFirstBinInLevel(getNumIndexLevels() - 1)
     }
 
     protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
@@ -349,7 +335,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
             final long lOffset = readLong(); // l_offset
             final int nChunks = readInteger();  // n_chunk
             List<Chunk> chunks;
-            // System.out.println("# bin[" + binNumber + "] = " + indexBin + ", nChunks = " + nChunks + ", lOffset = " + lOffset);
+
             Chunk lastChunk = null;
             if (regionBins.get(indexBin)) {
                 chunks = new ArrayList<Chunk>(nChunks);
@@ -371,7 +357,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
                 metaDataSeen = true;
                 continue; // don't create a Bin
             } else {
-                skipBytes(16 * nChunks);
+                skipBytes(BAMFileConstants.CSI_CHUNK_SIZE * nChunks);
                 chunks = Collections.emptyList();
             }
             final BinWithOffset bin = new BinWithOffset(referenceSequence, indexBin, lOffset);
@@ -417,7 +403,7 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
                     metaDataChunks.add(new Chunk(chunkBegin, chunkEnd));
                 }
             } else {
-                skipBytes(16 * nChunks);
+                skipBytes(BAMFileConstants.CSI_CHUNK_SIZE * nChunks);
             }
         }
         return new BAMIndexMetaData(metaDataChunks);
@@ -455,15 +441,14 @@ public class BAMCSIFileIndex implements BrowseableBAMIndex {
         }
 
         for (int i = 0; i < sequenceIndex; i++) {
-            // System.out.println("# Sequence TID: " + i);
+
             final int nBins = readInteger(); // n_bin
-            // System.out.println("# nBins: " + nBins);
+
             for (int j = 0; j < nBins; j++) {
                 readInteger(); // bin
                 readLong(); // loffset
                 final int nChunks = readInteger(); // n_chunk
-                // System.out.println("# bin[" + j + "] = " + bin + ", lOffset = " + lOffset + ", nChunks = " + nChunks);
-                skipBytes(16 * nChunks);
+                skipBytes(BAMFileConstants.CSI_CHUNK_SIZE * nChunks);
             }
         }
 

@@ -67,8 +67,8 @@ public class SamFiles {
         Path indexPath;
         final String fileName = samPath.getFileName().toString(); // works for all path types (e.g. HDFS)
         if (fileName.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION)) {
-            final String bai = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAMIndexSuffix;
-            final String csi = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAMIndexSuffix2;
+            final String bai = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.BAI_INDEX_SUFFIX;
+            final String csi = fileName.substring(0, fileName.length() - BamFileIoUtils.BAM_FILE_EXTENSION.length()) + BAMIndex.CSI_INDEX_SUFFIX;
             indexPath = samPath.resolveSibling(bai);
             if (Files.isRegularFile(indexPath)) { // works for all path types (e.g. HDFS)
                 return indexPath;
@@ -94,11 +94,11 @@ public class SamFiles {
         }
 
         // If foo.bai doesn't exist look for foo.bam.bai or foo.cram.bai
-        indexPath = samPath.resolveSibling(fileName + BAMIndex.BAMIndexSuffix);
+        indexPath = samPath.resolveSibling(fileName + BAMIndex.BAI_INDEX_SUFFIX);
         if (Files.isRegularFile(indexPath)) {
             return indexPath;
         } else {
-            indexPath = samPath.resolveSibling(fileName + BAMIndex.BAMIndexSuffix2);
+            indexPath = samPath.resolveSibling(fileName + BAMIndex.CSI_INDEX_SUFFIX);
             if (Files.isRegularFile(indexPath)) {
                 return indexPath;
             }

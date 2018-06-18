@@ -111,7 +111,7 @@ public class BAMFileWriter extends SAMFileWriterImpl {
         try {
             final String indexFileBase = pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
                     pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
-            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAMIndexSuffix);
+            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAI_INDEX_SUFFIX);
             if (Files.exists(indexPath)) {
                 if (!Files.isWritable(indexPath)) {
                     throw new SAMException("Not creating BAM index since unable to write index file " + indexPath.toUri());
