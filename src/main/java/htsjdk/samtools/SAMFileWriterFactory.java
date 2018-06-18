@@ -452,7 +452,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeWriter(header, presorted, null == outputFile ? null : outputFile.toPath(), null == outputFile ? null : referenceFasta.toPath());
+        return makeWriter(header, presorted, null == outputFile ? null : outputFile.toPath(), null == referenceFasta ? null : referenceFasta.toPath());
     }
 
     /**
