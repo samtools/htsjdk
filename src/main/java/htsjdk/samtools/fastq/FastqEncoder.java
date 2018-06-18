@@ -27,9 +27,11 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.TextTagCodec;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.BiConsumer;
 
 /**
@@ -134,4 +136,14 @@ public final class FastqEncoder {
      */
     public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_TO_COMMENT_TAG = (record, samRecord) ->
         samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader().replaceAll("\t", " "));
+
+
+    public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_PARSE_SAM_TAGS = (record, samRecord) -> {
+        final String[] tokens = record.getBaseQualityHeader().split("\t");
+        final TextTagCodec codec = new TextTagCodec();
+        for (final String token: tokens) {
+            final Map.Entry<String, Object> tagValue = codec.decode(token);
+            samRecord.setAttribute(tagValue.getKey(), tagValue.getValue());
+        }
+    };
 }

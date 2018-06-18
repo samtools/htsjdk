@@ -75,6 +75,17 @@ public class FastqEncoderTest extends HtsjdkTest {
         testConvertedSAMRecord(FastqEncoder.asSAMRecord(fastqRecord, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_TO_COMMENT_TAG), samRecord);
     }
 
+    @Test
+    public void testAsSAMRecordParsedTags() throws Exception {
+        final String tags = "BC:Z:ACTG\tRG:Z:sample1";
+        final SAMRecord samRecord = new SAMRecordSetBuilder().addFrag("test", 0, 1, false, false, "10M", null, 2);
+        final FastqRecord record = new FastqRecord(samRecord.getReadName(), samRecord.getReadBases(), tags, samRecord.getBaseQualities());
+        final SAMRecord converted = FastqEncoder.asSAMRecord(record, samRecord.getHeader(), FastqEncoder.QUALITY_HEADER_PARSE_SAM_TAGS);
+        testConvertedSAMRecord(converted, samRecord);
+        Assert.assertEquals(converted.getAttribute("BC"), "ACTG");
+        Assert.assertEquals(converted.getAttribute("RG"), "sample1");
+    }
+
     private void testConvertedSAMRecord(final SAMRecord converted, final SAMRecord original) {
         Assert.assertEquals(converted.getReadName(), original.getReadName());
         Assert.assertEquals(converted.getBaseQualities(), original.getBaseQualities());
