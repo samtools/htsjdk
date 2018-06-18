@@ -57,9 +57,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
-import java.util.Iterator;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.Random;
 
 
@@ -535,10 +533,7 @@ public class IOUtilTest extends HtsjdkTest {
                 {TEST_DATA_DIR.resolve("words_longs.txt"), ".bfq", 8},
                 {TEST_VARIANT_DIR.resolve("test1.vcf"), ".gz", 7},
                 {TEST_VARIANT_DIR.resolve("test1.vcf"), ".bfq", 7}
-
-
         };
-
     }
 
     @Test(dataProvider = "filesToCompress")
@@ -551,14 +546,9 @@ public class IOUtilTest extends HtsjdkTest {
             IOUtil.setCompressionLevel(compressionLevel);
             Assert.assertEquals(IOUtil.getCompressionLevel(), compressionLevel);
             final InputStream inStream = IOUtil.openFileForReading(file);
-
             try (final OutputStream outStream = IOUtil.openFileForWriting(outFile.toFile())) {
-
-
                 IOUtil.transferByStream(inStream, outStream, origSize);
             }
-
-
             final long newSize = Files.size(outFile);
             if (compressionLevel <= lastDifference) {
                 Assert.assertTrue(previousSize > newSize);
@@ -566,9 +556,7 @@ public class IOUtilTest extends HtsjdkTest {
                 Assert.assertTrue(previousSize >= newSize);
             }
             previousSize = newSize;
-
         }
-
     }
 
     @DataProvider
@@ -590,7 +578,6 @@ public class IOUtilTest extends HtsjdkTest {
         return new Object[][]{
                 {TEST_VARIANT_DIR.resolve("test1.vcf")},
                 {TEST_DATA_DIR.resolve("ipsum.txt")}
-
         };
     }
 
@@ -599,19 +586,7 @@ public class IOUtilTest extends HtsjdkTest {
         final Path outFile = Files.createTempFile("tmp", ".tmp");
         outFile.toFile().deleteOnExit();
         IOUtil.copyFile(file.toFile(), outFile.toFile());
-
-
-        final Stream<String> stream = Files.lines(file);
-        final Stream<String> outStream = Files.lines(outFile);
-
-        final Iterator<String> itStream = stream.iterator();
-        final Iterator<String> itOutStream = outStream.iterator();
-
-        while (itStream.hasNext() && itOutStream.hasNext()) {
-            Assert.assertEquals(itStream.next(), itOutStream.next());
-        }
-        Assert.assertFalse(itStream.hasNext());
-        Assert.assertFalse(itOutStream.hasNext());
+        Assert.assertEquals(Files.lines(file).collect(Collectors.toList()), Files.lines(outFile).collect(Collectors.toList()));
     }
 
     @Test(dataProvider = "filesToCopy", expectedExceptions = {SAMException.class})
@@ -621,9 +596,8 @@ public class IOUtilTest extends HtsjdkTest {
         file.toFile().setReadable(false);
         try {
             IOUtil.copyFile(file.toFile(), outFile.toFile());
-        } catch (SAMException e) {
+        } finally { //need to set input file permission back to readable so other unit tests can access it
             file.toFile().setReadable(true);
-            throw e;
         }
     }
 
@@ -635,7 +609,6 @@ public class IOUtilTest extends HtsjdkTest {
         IOUtil.copyFile(file.toFile(), outFile.toFile());
     }
 
-
     @DataProvider
     public static Object[][] baseNameTests() {
         return new Object[][]{
@@ -644,7 +617,6 @@ public class IOUtilTest extends HtsjdkTest {
                 {TEST_DATA_DIR.resolve("ipsum.txt.bgzipped_with_gzextension.gz"), "ipsum.txt.bgzipped_with_gzextension"},
                 {TEST_VARIANT_DIR.resolve("utils"), "utils"},
                 {TEST_VARIANT_DIR.resolve("not_real_file.txt"), "not_real_file"}
-
         };
     }
 
@@ -652,7 +624,6 @@ public class IOUtilTest extends HtsjdkTest {
     public void testBasename(final Path file, final String expected) {
         final String result = IOUtil.basename(file.toFile());
         Assert.assertEquals(result, expected);
-
     }
 
     @DataProvider
@@ -662,7 +633,6 @@ public class IOUtilTest extends HtsjdkTest {
                 {"^((?!txt).)*$", new String[]{"Level1.fofn", "Level2.fofn", "example.bam"}},
                 {"^\\d+.*", new String[]{"5newline5.txt"}}
         };
-
     }
 
     @Test(dataProvider = "regExpTests")
@@ -674,19 +644,15 @@ public class IOUtilTest extends HtsjdkTest {
         final List<File> expectedFiles = new ArrayList<File>();
         for (String name : allNames) {
             final Path file = regExpDir.resolve(name);
+            file.toFile().deleteOnExit();
             file.toFile().createNewFile();
             if (listExpected.contains(name)) {
                 expectedFiles.add(file.toFile());
             }
-            file.toFile().deleteOnExit();
-
         }
         final File[] result = IOUtil.getFilesMatchingRegexp(regExpDir.toFile(), regexp);
-
         Assert.assertEqualsNoOrder(result, expectedFiles.toArray());
-
     }
-
 
     @Test()
     public void testReadLines() throws IOException {
@@ -694,27 +660,19 @@ public class IOUtilTest extends HtsjdkTest {
         file.toFile().deleteOnExit();
         final int seed = 12394738;
         final Random rand = new Random(seed);
-
         final int nLines = 5;
-        final String[] lines = new String[nLines];
+        final List<String> lines = new ArrayList<String>();
         try (final BufferedWriter writer = Files.newBufferedWriter(file)) {
             for (int i = 0; i < nLines; i++) {
                 final String line = TEST_STRING + Integer.toString(rand.nextInt(100000000));
-                lines[i] = line;
+                lines.add(line);
                 writer.write(line);
                 writer.newLine();
             }
         }
-        final IterableOnceIterator<String> retLines = IOUtil.readLines(file.toFile());
-        final Stream<String> expectedLines = Stream.of(lines);
-        final Iterator<String> itExpected = expectedLines.iterator();
-        while (retLines.hasNext() && itExpected.hasNext()) {
-            Assert.assertEquals(retLines.next(), itExpected.next());
-        }
-        Assert.assertFalse(retLines.hasNext());
-        Assert.assertFalse(itExpected.hasNext());
-
-
+        final List<String> retLines = new ArrayList<String>();
+        IOUtil.readLines(file.toFile()).forEachRemaining(retLines::add);
+        Assert.assertEquals(retLines, lines);
     }
 
     @DataProvider
@@ -728,9 +686,8 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "fileSuffixTests")
     public void testSuffixTest(final Path file, final String expected) {
-        String ret = IOUtil.fileSuffix(file.toFile());
+        final String ret = IOUtil.fileSuffix(file.toFile());
         Assert.assertEquals(ret, expected);
-
     }
 
     @Test
@@ -738,29 +695,9 @@ public class IOUtilTest extends HtsjdkTest {
         final Path copyToDir = Files.createTempDirectory("copyToDir");
         copyToDir.toFile().deleteOnExit();
         IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(), copyToDir.toFile());
-        final Stream<Path> fileStream = Files.walk(TEST_VARIANT_DIR);
-        final Stream<Path> copyFileStream = Files.walk(copyToDir);
-
-        final Iterator<Path> itFileStream = fileStream.iterator();
-        final Iterator<Path> itCopyFileStream = copyFileStream.iterator();
-
-        final List<String> listFiles = new ArrayList<String>();
-        final List<String> listCopyFiles = new ArrayList<String>();
-        while (itFileStream.hasNext()) {
-            final Path thisPath = itFileStream.next();
-            if (!thisPath.equals(TEST_VARIANT_DIR)) {
-                listFiles.add(thisPath.getFileName().toString());
-            }
-        }
-        while (itCopyFileStream.hasNext()) {
-            final Path thisPath = itCopyFileStream.next();
-            thisPath.toFile().deleteOnExit();
-            if (!thisPath.equals(copyToDir)) {
-                listCopyFiles.add(thisPath.getFileName().toString());
-            }
-        }
-        Assert.assertEqualsNoOrder(listFiles.toArray(new String[listFiles.size()]), listCopyFiles.toArray(new String[listCopyFiles.size()]));
+        final List<String> collect = Files.walk(TEST_VARIANT_DIR).filter(f -> !f.equals(TEST_VARIANT_DIR)).map(p -> p.getFileName().toString()).collect(Collectors.toList());
+        final List<String> collectCopy = Files.walk(copyToDir).filter(f -> !f.equals(copyToDir)).map(p -> p.getFileName().toString()).collect(Collectors.toList());
+        Assert.assertEqualsNoOrder(collect.toArray(), collectCopy.toArray());
     }
-
 }
 
