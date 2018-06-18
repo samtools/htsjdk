@@ -25,6 +25,9 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
 
@@ -93,6 +96,18 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      */
     public IndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
         this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+    }
+
+    /**
+     * Initialise the given indexed fasta sequence file stream.
+     * @param source The named source of the reference file (used in error messages).
+     * @param in The input stream to read the fasta file from.
+     * @param index The fasta index.
+     * @param dictionary The sequence dictionary, or null if there isn't one.
+     */
+    public IndexedFastaSequenceFile(String source, final SeekableStream in, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
+        super(source, index, dictionary);
+        this.channel = new ReadableSeekableStreamByteChannel(in);
     }
 
     /**

@@ -31,6 +31,7 @@ import htsjdk.samtools.util.IOUtil;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -66,7 +67,19 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
      */
     public FastaSequenceIndex( Path indexFile ) {
         IOUtil.assertFileIsReadable(indexFile);
-        parseIndexFile(indexFile);
+        try (InputStream in = Files.newInputStream(indexFile)) {
+            parseIndexFile(in);
+        } catch (IOException e) {
+            throw new SAMException("Fasta index file could not be opened: " + indexFile, e);
+        }
+    }
+
+    /**
+     * Build a sequence index from the specified input stream.
+     * @param in InputStream to read from.
+     */
+    public FastaSequenceIndex(InputStream in) {
+        parseIndexFile(in);
     }
 
     /**
@@ -124,12 +137,10 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
 
     /**
      * Parse the contents of an index file, caching the results internally.
-     * @param indexFile File to parse.
-     * @throws IOException Thrown if file could not be opened.
+     * @param in InputStream to parse.
      */
-    private void parseIndexFile(Path indexFile) {
-        try {
-            Scanner scanner = new Scanner(indexFile);
+    private void parseIndexFile(InputStream in) {
+        try (Scanner scanner = new Scanner(in)) {
             int sequenceIndex = 0;
             while( scanner.hasNext() ) {
                 // Tokenize and validate the index line.
@@ -154,10 +165,6 @@ public class FastaSequenceIndex implements Iterable<FastaSequenceIndexEntry> {
                 // Build sequence structure
                 add(new FastaSequenceIndexEntry(contig,location,size,basesPerLine,bytesPerLine, sequenceIndex++) );
             }
-            scanner.close();
-        } catch (IOException e) {
-            throw new SAMException("Fasta index file could not be opened: " + indexFile, e);
-
         }
     }
 
