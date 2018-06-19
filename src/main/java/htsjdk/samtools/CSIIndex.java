@@ -4,6 +4,7 @@ import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 
 
@@ -27,33 +28,28 @@ public class CSIIndex implements BrowseableBAMIndex {
      * Constructors
      */
 
-    private CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary)
-    {
-        mBamDictionary = dictionary;
-        mIndexBuffer = new IndexStreamBuffer(stream);
-
-        verifyCSIMagicNumber(stream.getSource());
-        readMinShiftAndBinDepth();
-        readAuxDataAndNRef();
-
-        sequenceIndexes = new int[getNumberOfReferences() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+    private CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+        this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
-    public CSIIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        mBamDictionary = dictionary;
-        mIndexBuffer = (useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
-
-        verifyCSIMagicNumber(file.getName());
-        readMinShiftAndBinDepth();
-        readAuxDataAndNRef();
-
-        sequenceIndexes = new int[getNumberOfReferences() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+    public CSIIndex(final Path path, final SAMSequenceDictionary dictionary) {
+        this(new MemoryMappedFileBuffer(path.toFile()), path.toString(), dictionary);
     }
 
     public CSIIndex(final File file, final SAMSequenceDictionary dictionary) {
-        this(file, dictionary, true);
+        this(new RandomAccessFileBuffer(file), file.getName(), dictionary);
+    }
+
+    private CSIIndex(final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {
+        mIndexBuffer = indexFileBuffer;
+        mBamDictionary = dictionary;
+
+        verifyCSIMagicNumber(source);
+        readMinShiftAndBinDepth();
+        readAuxDataAndNRef();
+
+        sequenceIndexes = new int[getNumberOfReferences() + 1];
+        Arrays.fill(sequenceIndexes, -1);
     }
 
     /**
