@@ -59,6 +59,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Random;
+import java.util.stream.Stream;
 
 
 public class IOUtilTest extends HtsjdkTest {
@@ -79,6 +80,7 @@ public class IOUtilTest extends HtsjdkTest {
     private String systemUser;
     private String systemTempDir;
     private FileSystem inMemoryFileSystem;
+    private static Path WORDS_LONG;
 
     @BeforeClass
     public void setUp() throws IOException {
@@ -91,6 +93,21 @@ public class IOUtilTest extends HtsjdkTest {
         if (!tmpDir.isDirectory())
             throw new RuntimeException("java.io.tmpdir (" + systemTempDir + ") is not a directory");
         systemUser = System.getProperty("user.name");
+        //build long file of random words for compression testing
+        WORDS_LONG = Files.createTempFile("words_long", ".txt");
+        WORDS_LONG.toFile().deleteOnExit();
+        List<String> wordsList = new ArrayList<String>();
+        try (Stream<String> dictStream = Files.lines(TEST_DATA_DIR.resolve("dictionary_english_short.dic"))) {
+            wordsList = dictStream.collect(Collectors.toList());
+        }
+        final int numberOfWords = 300000;
+        final int seed = 345987345;
+        final Random rand = new Random(seed);
+        try (final BufferedWriter writer = Files.newBufferedWriter(WORDS_LONG)) {
+            for (int i = 0; i < numberOfWords; i++) {
+                writer.write(wordsList.get(rand.nextInt(wordsList.size())));
+            }
+        }
     }
 
     @AfterClass
@@ -529,8 +546,8 @@ public class IOUtilTest extends HtsjdkTest {
     @DataProvider
     public static Object[][] filesToCompress() {
         return new Object[][]{
-                {TEST_DATA_DIR.resolve("words_longs.txt"), ".gz", 8},
-                {TEST_DATA_DIR.resolve("words_longs.txt"), ".bfq", 8},
+                {WORDS_LONG, ".gz", 8},
+                {WORDS_LONG, ".bfq", 8},
                 {TEST_VARIANT_DIR.resolve("test1.vcf"), ".gz", 7},
                 {TEST_VARIANT_DIR.resolve("test1.vcf"), ".bfq", 7}
         };
@@ -629,7 +646,7 @@ public class IOUtilTest extends HtsjdkTest {
     @DataProvider
     public static Object[][] regExpTests() {
         return new Object[][]{
-                {"\\w+\\.txt", new String[]{"5newline5.txt", "empty.txt", "ipsum.txt", "slurptest.txt", "words_longs.txt"}},
+                {"\\w+\\.txt", new String[]{"5newline5.txt", "empty.txt", "ipsum.txt", "slurptest.txt"}},
                 {"^((?!txt).)*$", new String[]{"Level1.fofn", "Level2.fofn", "example.bam"}},
                 {"^\\d+.*", new String[]{"5newline5.txt"}}
         };
@@ -637,7 +654,7 @@ public class IOUtilTest extends HtsjdkTest {
 
     @Test(dataProvider = "regExpTests")
     public void testRegExp(final String regexp, final String[] expected) throws IOException {
-        final String[] allNames = {"5newline5.txt", "Level2.fofn", "example.bam", "ipsum.txt.bgz", "ipsum.txt.bgzipped_with_gzextension.gz", "slurptest.txt", "Level1.fofn", "empty.txt", "ipsum.txt", "ipsum.txt.bgz.wrongextension", "ipsum.txt.gz", "words_longs.txt"};
+        final String[] allNames = {"5newline5.txt", "Level2.fofn", "example.bam", "ipsum.txt.bgz", "ipsum.txt.bgzipped_with_gzextension.gz", "slurptest.txt", "Level1.fofn", "empty.txt", "ipsum.txt", "ipsum.txt.bgz.wrongextension", "ipsum.txt.gz"};
         final Path regExpDir = Files.createTempDirectory("regExpDir");
         regExpDir.toFile().deleteOnExit();
         final List<String> listExpected = Arrays.asList(expected);
