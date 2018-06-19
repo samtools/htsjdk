@@ -452,7 +452,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeWriter(header, presorted, null == outputFile ? null : outputFile.toPath(), referenceFasta);
+        return makeWriter(header, presorted, null == outputFile ? null : outputFile.toPath(), null == referenceFasta ? null : referenceFasta.toPath());
     }
 
     /**
@@ -464,8 +464,9 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param outputPath where to write the output.  Must end with .sam, .bam or .cram.
      * @param referenceFasta reference sequence file
      * @return SAMFileWriter appropriate for the file type specified in outputPath
-     *
+     * @deprecated since 6/18, use {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} instead
      */
+    @Deprecated
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final Path outputPath, final File referenceFasta) {
         return makeWriter(header, presorted, outputPath, null == referenceFasta ? null : referenceFasta.toPath());
     }
@@ -550,9 +551,12 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param referenceFasta reference sequence file
      * @return CRAMFileWriter
      *
+     * @deprecated since 6/18, prefer {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} for creating bam/cram writers
+     * however {@link #makeCRAMWriter(SAMFileHeader, boolean, Path, Path)} is the direct replacement for this method
      */
+    @Deprecated
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final Path outputPath, final File referenceFasta) {
-        return createCRAMWriterWithSettings(header, true, outputPath, null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, true, outputPath, null == referenceFasta ? null : referenceFasta.toPath());
     }
 
     /**
@@ -568,7 +572,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeCRAMWriter(header, presorted, outputFile.toPath(), referenceFasta);
+        return makeCRAMWriter(header, presorted, outputFile.toPath(),  null == referenceFasta ? null : referenceFasta.toPath());
     }
 
 
@@ -583,25 +587,13 @@ public class SAMFileWriterFactory implements Cloneable {
      * @param referenceFasta reference sequence file
      * @return CRAMFileWriter
      *
+     * @deprecated since 6/18, prefer {@link #makeWriter(SAMFileHeader, boolean, Path, Path)} for creating bam/cram writers
+     * however {@link #makeCRAMWriter(SAMFileHeader, boolean, Path, Path)} is the direct replacement for this method
+     *
      */
+    @Deprecated
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final boolean presorted, final Path output, final File referenceFasta) {
-        return createCRAMWriterWithSettings(header, presorted, output, null == referenceFasta ? null : referenceFasta.toPath());
-    }
-
-    /**
-     * Create a CRAMFileWriter on an output file. Requires input record to be presorted to match the
-     * sort order defined by the input header.
-     *
-     * Note: does not honor factory settings for USE_ASYNC_IO.
-     *
-     * @param header entire header. Sort order is determined by the sortOrder property of this arg.
-     * @param outputPath where to write the output.  Must end with .sam, .bam or .cram.
-     * @param referenceFasta reference sequence file
-     * @return CRAMFileWriter
-     *
-     */
-    public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final Path outputPath, final Path referenceFasta) {
-        return createCRAMWriterWithSettings(header, true, outputPath, referenceFasta);
+        return makeCRAMWriter(header, presorted, output, null == referenceFasta ? null : referenceFasta.toPath());
     }
 
     /**

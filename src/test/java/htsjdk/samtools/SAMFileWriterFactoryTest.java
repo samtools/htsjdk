@@ -337,7 +337,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Files.deleteIfExists(outputPath);
             final SAMFileHeader header = new SAMFileHeader();
             final SAMFileWriterFactory factory = createWriterFactoryWithOptions(header);
-            final File referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta");
+            final Path referenceFile = new File(TEST_DATA_DIR, "hg19mini.fasta").toPath();
 
             int nRecs;
             try (final SAMFileWriter samWriter = factory.makeWriter(header, false, outputPath, referenceFile)) {
