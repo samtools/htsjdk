@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.seekablestream.SeekableStream;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
@@ -282,12 +283,8 @@ public class CRAMIterator implements SAMRecordIterator {
     @Override
     public void close() {
         records.clear();
-        //noinspection EmptyCatchBlock
-        try {
-            if (countingInputStream != null)
-                countingInputStream.close();
-        } catch (final IOException e) {
-        }
+        CloserUtil.close(countingInputStream);
+        CloserUtil.close(referenceSource);
     }
 
     @Override

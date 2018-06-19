@@ -30,5 +30,9 @@ public class ReferenceSourceTest extends HtsjdkTest{
 
         Assert.assertNotEquals(refBasesFromSource, originalRefBases);
         Assert.assertEquals(refBasesFromSource, SequenceUtil.upperCase(originalRefBases));
+
+        Assert.assertFalse(memoryReferenceSequenceFile.isClosed());
+        referenceSource.close();
+        Assert.assertTrue(memoryReferenceSequenceFile.isClosed());
     }
 }

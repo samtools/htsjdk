@@ -12,6 +12,7 @@ public class InMemoryReferenceSequenceFile implements
     Map<String, ReferenceSequence> map = new HashMap<String, ReferenceSequence>();
     List<String> index;
     int current = 0;
+    boolean closed = false;
 
     public void add(final String name, final byte[] bases) {
         final ReferenceSequence sequence = new ReferenceSequence(name,
@@ -60,7 +61,14 @@ public class InMemoryReferenceSequenceFile implements
     @Override
     public void close() throws IOException {
         map.clear();
-        index.clear();
+        if (index != null) {
+            index.clear();
+        }
         current = 0;
+        closed = true;
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 }

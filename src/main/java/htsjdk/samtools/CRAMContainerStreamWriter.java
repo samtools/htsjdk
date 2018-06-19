@@ -135,6 +135,7 @@ public class CRAMContainerStreamWriter {
                 indexer.finish();
             }
             outputStream.close();
+            source.close();
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         } catch (final IllegalAccessException e) {

@@ -26,6 +26,7 @@ import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
@@ -278,5 +279,10 @@ public class ReferenceSource implements CRAMReferenceSource {
 
     public void setDownloadTriesBeforeFailing(final int downloadTriesBeforeFailing) {
         this.downloadTriesBeforeFailing = downloadTriesBeforeFailing;
+    }
+
+    @Override
+    public void close() {
+        CloserUtil.close(rsFile);
     }
 }
