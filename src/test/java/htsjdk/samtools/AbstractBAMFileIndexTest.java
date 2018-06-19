@@ -17,7 +17,7 @@ public class AbstractBAMFileIndexTest extends HtsjdkTest {
      */
     @Test
     public static void avoidDataExhaustionTest() {
-        final AbstractBAMFileIndex.IndexStreamBuffer buffer = new AbstractBAMFileIndex.IndexStreamBuffer(new SeekableStream() {
+        final IndexStreamBuffer buffer = new IndexStreamBuffer(new SeekableStream() {
             @Override
             public long length() {
                 return 0;
