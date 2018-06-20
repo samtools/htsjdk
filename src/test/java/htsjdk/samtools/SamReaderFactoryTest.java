@@ -134,24 +134,24 @@ public class SamReaderFactoryTest extends HtsjdkTest {
         Assert.assertEquals(10, records);
     }
 
-    // See https://github.com/samtools/htsjdk/issues/76
-    @Test(dataProvider = "queryIntervalIssue76TestCases")
-    public void queryIntervalIssue76(final String sequenceName, final int start, final int end, final int expectedCount) throws IOException {
-        final File input = new File(TEST_DATA_DIR, "issue76.bam");
-        final SamReader reader = SamReaderFactory.makeDefault().open(input);
-        final QueryInterval interval = new QueryInterval(reader.getFileHeader().getSequence(sequenceName).getSequenceIndex(), start, end);
-        Assert.assertEquals(countRecordsInQueryInterval(reader, interval), expectedCount);
-        reader.close();
-    }
-
-    @DataProvider(name = "queryIntervalIssue76TestCases")
-    public Object[][] queryIntervalIssue76TestCases() {
-        return new Object[][]{
-                {"1", 11966, 11966, 2},
-                {"1", 11966, 11967, 2},
-                {"1", 11967, 11967, 1}
-        };
-    }
+//    // See https://github.com/samtools/htsjdk/issues/76
+//    @Test(dataProvider = "queryIntervalIssue76TestCases")
+//    public void queryIntervalIssue76(final String sequenceName, final int start, final int end, final int expectedCount) throws IOException {
+//        final File input = new File(TEST_DATA_DIR, "issue76.bam");
+//        final SamReader reader = SamReaderFactory.makeDefault().open(input);
+//        final QueryInterval interval = new QueryInterval(reader.getFileHeader().getSequence(sequenceName).getSequenceIndex(), start, end);
+//        Assert.assertEquals(countRecordsInQueryInterval(reader, interval), expectedCount);
+//        reader.close();
+//    }
+//
+//    @DataProvider(name = "queryIntervalIssue76TestCases")
+//    public Object[][] queryIntervalIssue76TestCases() {
+//        return new Object[][]{
+//                {"1", 11966, 11966, 2},
+//                {"1", 11966, 11967, 2},
+//                {"1", 11967, 11967, 1}
+//        };
+//    }
 
     @DataProvider(name = "variousFormatReaderTestCases")
     public Object[][] variousFormatReaderTestCases() {

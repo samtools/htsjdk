@@ -982,10 +982,14 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
         }
     }
 
+    private enum MatePairState { HAVE_NONE, HAVE_MAPPED_MATE, HAVE_LOOK_AHEAD_READ }
+
     /**
      * Pull SAMRecords from a coordinate-sorted iterator, and filter out any that do not match the filter.
      */
     public class BAMQueryFilteringIterator extends AbstractBamIterator {
+        protected MatePairState matePairState = MatePairState.HAVE_NONE;
+        protected SAMRecord mNextRecordMate;
         /**
          * The wrapped iterator.
          */
@@ -1014,11 +1018,12 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         /**
          * Gets the next record from the given iterator.
+         *
          * @return The next SAM record in the iterator.
          */
         @Override
         public SAMRecord next() {
-            if(!hasNext())
+            if (!hasNext())
                 throw new NoSuchElementException("BAMQueryFilteringIterator: no next element available");
             final SAMRecord currentRead = mNextRecord;
             mNextRecord = advance();
@@ -1027,17 +1032,79 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
 
         SAMRecord advance() {
             while (true) {
-                // Pull next record from stream
-                if(!wrappedIterator.hasNext())
+                Tuple<SAMRecord, SAMRecord> recPair = getRecordPairToCompare();
+                if (recPair == null) {
                     return null;
-
-                final SAMRecord record = wrappedIterator.next();
-                switch (iteratorFilter.compareToFilter(record)) {
-                    case MATCHES_FILTER: return record;
-                    case STOP_ITERATION: return null;
-                    case CONTINUE_ITERATION: break; // keep looping
-                    default: throw new SAMException("Unexpected return from compareToFilter");
                 }
+                switch (iteratorFilter.compareToFilter(recPair.a)) {
+                    case MATCHES_FILTER:
+                        return recPair.b;
+                    case STOP_ITERATION:
+                        return null;
+                    case CONTINUE_ITERATION:
+                        break; // keep looping
+                    default:
+                        throw new SAMException("Unexpected return from compareToFilter");
+                }
+            }
+        }
+
+        // a for compare, b to return
+        private Tuple<SAMRecord, SAMRecord> getRecordPairToCompare() {
+            if (matePairState == MatePairState.HAVE_LOOK_AHEAD_READ) {
+                // we have a look ahead read, just return it
+                final Tuple<SAMRecord, SAMRecord> recPair = new Tuple<>(mNextRecordMate, mNextRecordMate);
+                mNextRecordMate = null;
+                matePairState = MatePairState.HAVE_NONE;
+                return recPair;
+            }
+
+            // Pull next record from stream
+            if (!wrappedIterator.hasNext()) {
+                return null;
+            }
+            final SAMRecord record = wrappedIterator.next();
+
+            if (matePairState == MatePairState.HAVE_MAPPED_MATE) {
+                if (record.getReadUnmappedFlag() && !record.getMateUnmappedFlag() && record.getReadName().equals(mNextRecordMate.getReadName())) {
+                    // the record is our mapped record's unmapped mate, return it since we have already returned it's mate,
+                    // but use the mapped record as the comparison record
+                    final Tuple<SAMRecord, SAMRecord> recPair = new Tuple<>(mNextRecordMate, record);
+                    matePairState = MatePairState.HAVE_NONE;
+                    mNextRecordMate = null;
+                    return recPair;
+                }
+                // fall through to return record
+            }
+            // we're either in state HAVE_NONE, or else failed to find an adjacent mate, either way reset our state and return
+            if (!record.getReadUnmappedFlag() && record.getMateUnmappedFlag()) {
+                // we have a mapped read with an as yet-unseen unmapped mate; preserve to use as the comparison record
+                // if we find it's unmapped mate
+                matePairState = MatePairState.HAVE_MAPPED_MATE;
+                mNextRecordMate = record;
+                final Tuple<SAMRecord, SAMRecord> recPair = new Tuple<>(record, record);
+                return recPair;
+            } else if (record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
+                // we have an unmapped read with an as yet-unseen mapped mate; look ahead to try to get it's mate,
+                // to use for comparison purposes
+                // Pull next record from stream
+                if (!wrappedIterator.hasNext()) {
+                    return new Tuple(record, record);
+                }
+                final SAMRecord lookaheadRecord = wrappedIterator.next();
+                matePairState = MatePairState.HAVE_LOOK_AHEAD_READ;
+                mNextRecordMate = lookaheadRecord;
+                if (!lookaheadRecord.getReadUnmappedFlag() &&
+                        lookaheadRecord.getMateUnmappedFlag() &&
+                        lookaheadRecord.getReadName().equals(record.getReadName())) {
+                    return new Tuple<>(lookaheadRecord, record);
+                } else {
+                    return new Tuple<>(record, record);
+                }
+            } else {
+                matePairState = MatePairState.HAVE_NONE;
+                mNextRecordMate = null;
+                return new Tuple<>(record, record);
             }
         }
     }
