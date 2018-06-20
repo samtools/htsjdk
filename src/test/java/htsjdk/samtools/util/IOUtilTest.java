@@ -27,6 +27,7 @@ import htsjdk.HtsjdkTest;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
+import java.io.*;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -42,17 +43,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.lang.IllegalArgumentException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,10 +87,7 @@ public class IOUtilTest extends HtsjdkTest {
         //build long file of random words for compression testing
         WORDS_LONG = Files.createTempFile("words_long", ".txt");
         WORDS_LONG.toFile().deleteOnExit();
-        List<String> wordsList = new ArrayList<String>();
-        try (Stream<String> dictStream = Files.lines(TEST_DATA_DIR.resolve("dictionary_english_short.dic"))) {
-            wordsList = dictStream.collect(Collectors.toList());
-        }
+        final List<String> wordsList = Files.lines(TEST_DATA_DIR.resolve("dictionary_english_short.dic")).collect(Collectors.toList());
         final int numberOfWords = 300000;
         final int seed = 345987345;
         final Random rand = new Random(seed);
@@ -582,7 +570,6 @@ public class IOUtilTest extends HtsjdkTest {
                 {-1},
                 {10}
         };
-
     }
 
     @Test(dataProvider = "badCompressionLevels", expectedExceptions = {IllegalArgumentException.class})
@@ -679,12 +666,11 @@ public class IOUtilTest extends HtsjdkTest {
         final Random rand = new Random(seed);
         final int nLines = 5;
         final List<String> lines = new ArrayList<String>();
-        try (final BufferedWriter writer = Files.newBufferedWriter(file)) {
+        try (final PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             for (int i = 0; i < nLines; i++) {
                 final String line = TEST_STRING + Integer.toString(rand.nextInt(100000000));
                 lines.add(line);
-                writer.write(line);
-                writer.newLine();
+                writer.println(line);
             }
         }
         final List<String> retLines = new ArrayList<String>();
@@ -712,8 +698,8 @@ public class IOUtilTest extends HtsjdkTest {
         final Path copyToDir = Files.createTempDirectory("copyToDir");
         copyToDir.toFile().deleteOnExit();
         IOUtil.copyDirectoryTree(TEST_VARIANT_DIR.toFile(), copyToDir.toFile());
-        final List<String> collect = Files.walk(TEST_VARIANT_DIR).filter(f -> !f.equals(TEST_VARIANT_DIR)).map(p -> p.getFileName().toString()).collect(Collectors.toList());
-        final List<String> collectCopy = Files.walk(copyToDir).filter(f -> !f.equals(copyToDir)).map(p -> p.getFileName().toString()).collect(Collectors.toList());
+        final List<Path> collect = Files.walk(TEST_VARIANT_DIR).filter(f -> !f.equals(TEST_VARIANT_DIR)).map(p -> p.getFileName()).collect(Collectors.toList());
+        final List<Path> collectCopy = Files.walk(copyToDir).filter(f -> !f.equals(copyToDir)).map(p -> p.getFileName()).collect(Collectors.toList());
         Assert.assertEqualsNoOrder(collect.toArray(), collectCopy.toArray());
     }
 }
