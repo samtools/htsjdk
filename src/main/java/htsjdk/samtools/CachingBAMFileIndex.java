@@ -29,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
-import java.util.WeakHashMap;
 
 /**
  * Class for reading BAM file indices, caching each contig as it's loaded and
@@ -37,8 +36,10 @@ import java.util.WeakHashMap;
  */
 class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
 {
-    private Integer mLastReferenceRetrieved = null;
-    private final WeakHashMap<Integer,BAMIndexContent> mQueriesByReference = new WeakHashMap<Integer,BAMIndexContent>();
+    private Integer lastReferenceIndex = null;
+    private BAMIndexContent lastReference = null;
+    private long cacheHits = 0;
+    private long cacheMisses = 0;
 
     public CachingBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
         super(file, dictionary);
@@ -110,7 +111,7 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
         final int firstLocusInBin = getFirstLocusInBin(bin);
 
         // Add the specified bin to the tree if it exists.
-        final List<Bin> binTree = new ArrayList<Bin>();
+        final List<Bin> binTree = new ArrayList<>();
         if(indexQuery.containsBin(bin))
             binTree.add(indexQuery.getBins().getBin(bin.getBinNumber()));
 
@@ -143,31 +144,35 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      */
     @Override
     protected BAMIndexContent getQueryResults(final int referenceIndex) {
-        // WeakHashMap is a bit weird in that its lookups are done via equals() equality, but expirations must be
-        // handled via == equality.  This implementation jumps through a few hoops to make sure that == equality still
-        // holds even in the context of boxing/unboxing.
 
         // If this query is for the same reference index as the last query, return it.
-        if(mLastReferenceRetrieved!=null && mLastReferenceRetrieved == referenceIndex)
-            return mQueriesByReference.get(referenceIndex);
-
-        // If not, check to see whether it's available in the cache.
-        BAMIndexContent queryResults = mQueriesByReference.get(referenceIndex);
-        if(queryResults != null) {
-            mLastReferenceRetrieved = referenceIndex;
-            mQueriesByReference.put(referenceIndex,queryResults);
-            return queryResults;
+        if(lastReferenceIndex!=null && lastReferenceIndex == referenceIndex){
+            if(lastReference != null) {
+                cacheHits++;
+                return lastReference;
+            } else {
+                throw new RuntimeException("Expected to find a cached reference but we found null.  This is a bug.");
+            }
         }
 
-        // If not in the cache, attempt to load it from disk.
-        queryResults = query(referenceIndex,1,-1);
+        // If not attempt to load it from disk.
+        BAMIndexContent queryResults = query(referenceIndex,1,-1);
         if(queryResults != null) {
-            mLastReferenceRetrieved = referenceIndex;
-            mQueriesByReference.put(referenceIndex,queryResults);
-            return queryResults;
+            cacheMisses++;
+            lastReferenceIndex = referenceIndex;
+            lastReference = queryResults;
+            return lastReference;
         }
 
         // Not even available on disk.
         return null;
+    }
+
+    public long getCacheHits() {
+        return cacheHits;
+    }
+
+    public long getCacheMisses() {
+        return cacheMisses;
     }
 }
