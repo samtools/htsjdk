@@ -128,14 +128,14 @@ public class GenomicIndexUtil {
      * @param binDepth number of levels in the binning scheme (including bin 0).
      */
     public static BitSet regionToBins(final int startPos, final int endPos, final int minShift, final int binDepth) {
-        final int maxPos = 0x1FFFFFFF;
+        final int maxPos = (1<<(minShift + 3*(binDepth - 1)))-1;
         final int start = (startPos <= 0) ? 0 : (startPos-1) & maxPos;
         final int end = (endPos <= 0) ? maxPos : (endPos-1) & maxPos;
         if (start > end) {
             return null;
         }
         int k, firstBinOnLevel = 1, level = 1, binWidth = minShift + 3*(binDepth - 2);
-        final BitSet bitSet = new BitSet((1<<3*binDepth - 1)/7);
+        final BitSet bitSet = new BitSet(((1<<3*binDepth) - 1)/7);
 
         bitSet.set(0);
         while (level < binDepth) {

@@ -39,9 +39,11 @@ class BAMFileConstants {
 
     static final byte[] BAM_MAGIC = "BAM\1".getBytes();
     /**
-     * BAM index file magic number.
+     * BAM index file magic numbers.
      */
+    @Deprecated
     static final byte[] BAM_INDEX_MAGIC = "BAI\1".getBytes();
+    static final byte[] BAI_INDEX_MAGIC = "BAI\1".getBytes();
     static final byte[] CSI_INDEX_MAGIC = "CSI\1".getBytes();
 
     /**

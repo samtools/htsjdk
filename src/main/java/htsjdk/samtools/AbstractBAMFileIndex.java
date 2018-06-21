@@ -49,19 +49,11 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     private final IndexFileBuffer mIndexBuffer;
 
     private SAMSequenceDictionary mBamDictionary = null;
-    
-    final int [] sequenceIndexes;
 
-    protected AbstractBAMFileIndex(
-        final SeekableStream stream, final SAMSequenceDictionary dictionary)
-    {
-        mBamDictionary = dictionary;
-        mIndexBuffer = new IndexStreamBuffer(stream);
+    int [] sequenceIndexes;
 
-        verifyBAMMagicNumber(stream.getSource());
-
-        sequenceIndexes = new int[readInteger() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+    protected AbstractBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+        this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
     protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
@@ -69,13 +61,19 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
     }
 
     protected AbstractBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+        this((useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file)), file.getName(), dictionary);
+    }
+
+    private AbstractBAMFileIndex(final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {
+        this(indexFileBuffer, dictionary);
+
+        verifyBAMMagicNumber(source);
+        setSequenceIndexes(readInteger());
+    }
+
+    protected AbstractBAMFileIndex(final IndexFileBuffer indexFileBuffer, final SAMSequenceDictionary dictionary) {
+        mIndexBuffer = indexFileBuffer;
         mBamDictionary = dictionary;
-        mIndexBuffer = (useMemoryMapping ? new MemoryMappedFileBuffer(file) : new RandomAccessFileBuffer(file));
-
-        verifyBAMMagicNumber(file.getName());
-
-        sequenceIndexes = new int[readInteger() + 1];
-        Arrays.fill(sequenceIndexes, -1);
     }
 
     /**
@@ -392,7 +390,7 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         seek(0);
         final byte[] buffer = new byte[4];
         readBytes(buffer);
-        if (!Arrays.equals(buffer, BAMFileConstants.BAM_INDEX_MAGIC)) {
+        if (!Arrays.equals(buffer, BAMFileConstants.BAI_INDEX_MAGIC)) {
             throw new RuntimeIOException("Invalid file header in BAM index " + sourceName +
                     ": " + new String(buffer));
         }
@@ -424,27 +422,36 @@ public abstract class AbstractBAMFileIndex implements BAMIndex {
         sequenceIndexes[sequenceIndex] = position();
     }
 
-    private void readBytes(final byte[] bytes) {
+    protected void readBytes(final byte[] bytes) {
         mIndexBuffer.readBytes(bytes);
     }
 
-    private int readInteger() {
+    protected int readInteger() {
         return mIndexBuffer.readInteger();
     }
 
-    private long readLong() {
+    protected long readLong() {
         return mIndexBuffer.readLong();
     }
 
-    private void skipBytes(final int count) {
+    protected void skipBytes(final int count) {
         mIndexBuffer.skipBytes(count);
     }
 
-    private void seek(final int position) {
+    protected void seek(final int position) {
         mIndexBuffer.seek(position);
     }
     
-    private int position(){
+    protected int position(){
     	return mIndexBuffer.position();
+    }
+
+    protected SAMSequenceDictionary getmBamDictionary() {
+        return mBamDictionary;
+    }
+
+    protected void setSequenceIndexes (int nReferences) {
+        sequenceIndexes = new int[nReferences + 1];
+        Arrays.fill(sequenceIndexes, -1);
     }
 }

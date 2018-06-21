@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 
-public class CSIIndex implements BrowseableBAMIndex {
+public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex {
 
     private int binDepth;
     private int minShift;
@@ -16,19 +16,13 @@ public class CSIIndex implements BrowseableBAMIndex {
     private int maxSpan;
     private byte[] auxData;
     private int nReferences;
-
     private int metaDataPos = -1;
-
-    private final IndexFileBuffer mIndexBuffer;
-    private SAMSequenceDictionary mBamDictionary = null;
-
-    private final int [] sequenceIndexes;
 
     /**
      * Constructors
      */
 
-    private CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+    public CSIIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
         this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
@@ -41,15 +35,12 @@ public class CSIIndex implements BrowseableBAMIndex {
     }
 
     private CSIIndex(final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {
-        mIndexBuffer = indexFileBuffer;
-        mBamDictionary = dictionary;
+        super(indexFileBuffer, dictionary);
 
         verifyCSIMagicNumber(source);
         readMinShiftAndBinDepth();
         readAuxDataAndNRef();
-
-        sequenceIndexes = new int[getNumberOfReferences() + 1];
-        Arrays.fill(sequenceIndexes, -1);
+        setSequenceIndexes(getNumberOfReferences());
     }
 
     /**
@@ -99,7 +90,7 @@ public class CSIIndex implements BrowseableBAMIndex {
      */
 
     @Override
-    public int getLevelSize(int levelNumber) {
+    public int getLevelSize(final int levelNumber) {
         if (levelNumber >= getBinDepth()) {
             throw new SAMException("Level number is too big (" + levelNumber + ").");
         }
@@ -107,7 +98,8 @@ public class CSIIndex implements BrowseableBAMIndex {
     }
 
     /**
-     * Extends the functionality of @see AbstractBAMFileIndex.getFirstBinInLevel
+     * Extends the functionality of {@link AbstractBAMFileIndex#getFirstBinInLevel(int)} ,
+     * which cannot be overridden due to its static nature.
      */
 
     public int getFirstBinOnLevel (final int levelNumber) {
@@ -127,7 +119,7 @@ public class CSIIndex implements BrowseableBAMIndex {
                   return i;
               }
         }
-        throw new SAMException("Unable to find correct level for bin " + bin);
+        throw new SAMException("Unable to find correct level for bin: " + bin);
     }
 
     @Override
@@ -162,10 +154,6 @@ public class CSIIndex implements BrowseableBAMIndex {
         }
         return new BinList(referenceIndex,regionBins);
     }
-
-    @Override
-    public BAMFileSpan getSpanOverlapping(Bin bin) { return null;}
-
 
     @Override
     public BAMFileSpan getSpanOverlapping(int referenceIndex, int startPos, int endPos) {
@@ -215,12 +203,49 @@ public class CSIIndex implements BrowseableBAMIndex {
     }
 
     @Override
-    public long getStartOfLastLinearBin() {
-        return -1;
+    public BAMFileSpan getSpanOverlapping(final Bin bin) {
+        if(bin == null)
+            return null;
+
+        final int referenceSequence = bin.getReferenceSequence();
+        final BAMIndexContent queryResults = getQueryResults(referenceSequence);
+
+        if(queryResults == null)
+            return null;
+
+        final int binLevel = getLevelForBin(bin);
+        final int firstLocusInBin = getFirstLocusInBin(bin);
+        long minimumOffset = bin instanceof BinWithOffset ? ((BinWithOffset)bin).getlOffset() : 0L;
+
+        // Add the specified bin to the tree if it exists.
+        final List<Bin> binTree = new ArrayList<Bin>();
+        if(queryResults.containsBin(bin))
+            binTree.add(queryResults.getBins().getBin(bin.getBinNumber()));
+
+        int currentBinLevel = binLevel;
+        while(--currentBinLevel >= 0) {
+            final int binStart = getFirstBinOnLevel(currentBinLevel);
+            final int binWidth = getMaxSpan()/getLevelSize(currentBinLevel);
+            final int parentBinNumber = firstLocusInBin/binWidth + binStart;
+            final Bin parentBin = queryResults.getBins().getBin(parentBinNumber);
+            if(parentBin != null && queryResults.containsBin(parentBin))
+                binTree.add(parentBin);
+        }
+
+        List<Chunk> chunkList = new ArrayList<Chunk>();
+        for(final Bin coveringBin: binTree) {
+            for(final Chunk chunk: coveringBin.getChunkList())
+                chunkList.add(chunk.clone());
+        }
+
+        chunkList = Chunk.optimizeChunkList(chunkList, minimumOffset);
+        return new BAMFileSpan(chunkList);
     }
 
     @Override
-    public void close() { mIndexBuffer.close(); }
+    public long getStartOfLastLinearBin() {
+        return -1;
+    }
 
     private void verifyCSIMagicNumber(final String sourceName) {
         // Verify the magic number.
@@ -274,7 +299,6 @@ public class CSIIndex implements BrowseableBAMIndex {
         return getParentBinNumber(bin.getBinNumber());
     }
 
-
     /**
      * The maximum possible bin number for this reference sequence.
      * This is based on the maximum coordinate position of the reference
@@ -282,20 +306,14 @@ public class CSIIndex implements BrowseableBAMIndex {
      */
     private int getMaxBinNumberForReference(final int reference) {
         try {
-            final int sequenceLength = mBamDictionary.getSequence(reference).getSequenceLength();
-            return getMaxBinNumberForSequenceLength(sequenceLength);
+            final int sequenceLength = getmBamDictionary().getSequence(reference).getSequenceLength();
+            return getFirstBinOnLevel(getBinDepth() - 1) + (sequenceLength >> getMinShift());
         } catch (final Exception e) {
             return getMaxBins();
         }
     }
 
-    /**
-     * The maximum bin number for a reference sequence of a given length
-     */
-    private int getMaxBinNumberForSequenceLength(final int sequenceLength) {
-        return getFirstBinOnLevel(getBinDepth() - 1) + (sequenceLength >> getMinShift());
-    }
-
+    @Override
     protected BAMIndexContent query(final int referenceSequence, final int startPos, final int endPos) {
         if (metaDataPos > 0 && position() != metaDataPos) {
             seek(metaDataPos);
@@ -305,7 +323,7 @@ public class CSIIndex implements BrowseableBAMIndex {
 
         final int sequenceCount = getNumberOfReferences();
 
-        if (referenceSequence >= sequenceCount || endPos < startPos) {
+        if (referenceSequence >= sequenceCount) {
             return null;
         }
 
@@ -364,7 +382,7 @@ public class CSIIndex implements BrowseableBAMIndex {
      * @param reference the reference of interest
      * @return meta data for the reference
      */
-
+    @Override
     public BAMIndexMetaData getMetaData(final int reference) {
         if (metaDataPos > 0 && position() != metaDataPos) {
             seek(metaDataPos);
@@ -404,6 +422,7 @@ public class CSIIndex implements BrowseableBAMIndex {
      * @return meta data at the end of the bam index that indicates count of records holding no coordinates
      * or null if no meta data (old index format)
      */
+    @Override
     public Long getNoCoordinateCount() {
         if (metaDataPos > 0 && position() != metaDataPos) {
             seek(metaDataPos);
@@ -417,10 +436,10 @@ public class CSIIndex implements BrowseableBAMIndex {
         }
     }
 
+    @Override
     public BAMIndexContent getQueryResults(final int referenceSequence) {
-        return query(referenceSequence, 0, Integer.MAX_VALUE);
+        return query(referenceSequence, 1, -1);
     }
-
 
     private void skipToSequence(final int sequenceIndex) {
         //Use sequence position cache if available
@@ -443,29 +462,5 @@ public class CSIIndex implements BrowseableBAMIndex {
 
         //Update sequence position cache
         sequenceIndexes[sequenceIndex] = position();
-    }
-
-    private void readBytes(final byte[] bytes) {
-        mIndexBuffer.readBytes(bytes);
-    }
-
-    private int readInteger() {
-        return mIndexBuffer.readInteger();
-    }
-
-    private long readLong() {
-        return mIndexBuffer.readLong();
-    }
-
-    private void skipBytes(final int count) {
-        mIndexBuffer.skipBytes(count);
-    }
-
-    private void seek(final int position) {
-        mIndexBuffer.seek(position);
-    }
-
-    private int position(){
-        return mIndexBuffer.position();
     }
 }

@@ -224,10 +224,8 @@ public class BAMIndexMetaData {
             }
 
             BAMIndexMetaData[] data = null;
-            if (bam.getIndexType().equals(SamIndexes.BAI)) {
+            if (bam.getIndexType().equals(SamIndexes.BAI) || bam.getIndexType().equals(SamIndexes.CSI)) {
                 data = getIndexStats(bam);
-            } else if (bam.getIndexType().equals(SamIndexes.CSI)) {
-                data = getCSIIndexStats(bam);
             }
 
             if (data == null) {
@@ -256,38 +254,13 @@ public class BAMIndexMetaData {
     }
 
     /**
-     * Prints meta-data statistics from BAM index (.bai) file
+     * Prints meta-data statistics from BAM index (.bai or .csi) file
      * Statistics include count of aligned and unaligned reads for each reference sequence
      * and a count of all records with no start coordinate
      */
     static public BAMIndexMetaData[] getIndexStats(final BAMFileReader bam) {
 
         AbstractBAMFileIndex index = (AbstractBAMFileIndex) bam.getIndex();
-        // read through all the bins of every reference.
-        int nRefs = index.getNumberOfReferences();
-        BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];
-        for (int i = 0; i < nRefs; i++) {
-            result[i] = index.getMetaData(i);
-        }
-
-        if (result[0] == null) {
-            result[0] = new BAMIndexMetaData();
-        }
-        final Long noCoordCount = index.getNoCoordinateCount();
-        if (noCoordCount != null)  // null in old index files without metadata
-            result[0].setNoCoordinateRecordCount(noCoordCount);
-
-        return result;
-    }
-
-    /**
-     * Prints meta-data statistics from BAM index (.csi) file
-     * Statistics include count of aligned and unaligned reads for each reference sequence
-     * and a count of all records with no start coordinate
-     */
-    static public BAMIndexMetaData[] getCSIIndexStats(final BAMFileReader bam) {
-
-        CSIIndex index = (CSIIndex) bam.getIndex();
         // read through all the bins of every reference.
         int nRefs = index.getNumberOfReferences();
         BAMIndexMetaData[] result = new BAMIndexMetaData[nRefs == 0 ? 1 : nRefs];
