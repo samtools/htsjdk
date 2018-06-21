@@ -1,6 +1,7 @@
 package htsjdk.samtools;
 
 
+import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.IOUtil;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class CachingBAMFileIndexTest {
+public class CachingBAMFileIndexTest extends HtsjdkTest {
 
     /**
      * test case to reproduce https://github.com/samtools/htsjdk/issues/1127
