@@ -36,8 +36,11 @@ import java.util.List;
  */
 class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
 {
+    // Since null is a valid return value for this index, it's possible to have lastReferenceIndex != null and
+    // lastReference == null, this is effectively caching the return value null
     private Integer lastReferenceIndex = null;
     private BAMIndexContent lastReference = null;
+
     private long cacheHits = 0;
     private long cacheMisses = 0;
 
@@ -140,32 +143,24 @@ class CachingBAMFileIndex extends AbstractBAMFileIndex implements BrowseableBAMI
      * Looks up the cached BAM query results if they're still in the cache and not expired.  Otherwise,
      * retrieves the cache results from disk.
      * @param referenceIndex The reference to load.  CachingBAMFileIndex only stores index data for entire references. 
-     * @return The index information for this reference.
+     * @return The index information for this reference or null if no index information is available for the given index.
      */
     @Override
     protected BAMIndexContent getQueryResults(final int referenceIndex) {
 
         // If this query is for the same reference index as the last query, return it.
+        // This compares a boxed Integer to an int with == which is ok because the Integer will be unboxed to the primitive value
         if(lastReferenceIndex!=null && lastReferenceIndex == referenceIndex){
-            if(lastReference != null) {
-                cacheHits++;
-                return lastReference;
-            } else {
-                throw new RuntimeException("Expected to find a cached reference but we found null.  This is a bug.");
-            }
-        }
-
-        // If not attempt to load it from disk.
-        BAMIndexContent queryResults = query(referenceIndex,1,-1);
-        if(queryResults != null) {
-            cacheMisses++;
-            lastReferenceIndex = referenceIndex;
-            lastReference = queryResults;
+            cacheHits++;
             return lastReference;
         }
 
-        // Not even available on disk.
-        return null;
+        // If not attempt to load it from disk.
+        final BAMIndexContent queryResults = query(referenceIndex,1,-1);
+        cacheMisses++;
+        lastReferenceIndex = referenceIndex;
+        lastReference = queryResults;
+        return lastReference;
     }
 
     public long getCacheHits() {

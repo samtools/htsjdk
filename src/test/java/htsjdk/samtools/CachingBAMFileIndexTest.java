@@ -82,6 +82,36 @@ public class CachingBAMFileIndexTest extends HtsjdkTest {
             index.getQueryResults(1);
             assertCacheStats(index, 3, 3);
 
+            index.getQueryResults(1);
+            assertCacheStats(index, 4, 3);
+
+            index.getQueryResults(1000);
+            assertCacheStats(index,4,4);
+        }
+    }
+
+    @Test
+    public void testNullResultIsCached() throws IOException {
+        try(final CachingBAMFileIndex index = getIndexWith200Contigs()) {
+            BAMIndexContent queryResults = index.getQueryResults(1000);
+            Assert.assertNull(queryResults);
+            assertCacheStats(index, 0, 1);
+
+            queryResults = index.getQueryResults(1000);
+            Assert.assertNull(queryResults);
+            assertCacheStats(index, 1, 1);
+
+            queryResults = index.getQueryResults(1);
+            Assert.assertNotNull(queryResults);
+            assertCacheStats(index, 1, 2);
+
+            queryResults = index.getQueryResults(1000);
+            Assert.assertNull(queryResults);
+            assertCacheStats(index, 1, 3);
+
+            queryResults = index.getQueryResults(1000);
+            Assert.assertNull(queryResults);
+            assertCacheStats(index, 2, 3);
         }
     }
 
