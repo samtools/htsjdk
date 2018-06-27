@@ -10,18 +10,13 @@ plugins {
     id 'maven'
     id 'signing'
     id 'jacoco'
-    id 'com.palantir.git-version' version '0.5.1'
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
-    id 'com.github.maiflai.scalatest' version '0.15'
+    id 'com.palantir.git-version' version '0.11.0'
+    id 'com.github.johnrengelman.shadow' version '2.0.4'
+    id 'com.github.maiflai.scalatest' version '0.22'
 }
 
 repositories {
     mavenCentral()
-}
-
-// JaCoCo version
-jacoco {
-    toolVersion = "0.8.0"
 }
 
 jacocoTestReport {
@@ -43,10 +38,10 @@ dependencies {
     compile "org.tukaani:xz:1.5"
     compile "gov.nih.nlm.ncbi:ngs-java:2.9.0"
 
-    testCompile "org.scala-lang:scala-library:2.12.1"
-    testCompile "org.scalatest:scalatest_2.12:3.0.1"
-    testRuntime 'org.pegdown:pegdown:1.4.2' // Necessary for generating HTML reports with ScalaTest
-    testCompile "org.testng:testng:6.13.1"
+    testCompile "org.scala-lang:scala-library:2.12.6"
+    testCompile "org.scalatest:scalatest_2.12:3.0.5"
+    testRuntime 'org.pegdown:pegdown:1.6.0' // Necessary for generating HTML reports with ScalaTest
+    testCompile "org.testng:testng:6.14.3"
     testCompile "com.google.jimfs:jimfs:1.1"
  }
 
@@ -131,9 +126,8 @@ task testSRA(type: Test) {
     }
 }
 
-task wrapper(type: Wrapper) {
-    description = "Regenerate the gradle wrapper"
-    gradleVersion = '3.2.1'
+wrapper {
+    gradleVersion = '4.8.1'
 }
 
 // This is a hack to disable the java 8 default javadoc lint until we fix the html formatting
