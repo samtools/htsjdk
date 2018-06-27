@@ -142,7 +142,7 @@ public abstract class AbstractIndex implements MutableIndex {
         }
 
         if (!chrIndices.equals(other.chrIndices)) {
-            System.err.printf("equals chrIndeces: this %s != other %s%n", chrIndices, other.chrIndices);
+            System.err.printf("equals chrIndices: this %s != other %s%n", chrIndices, other.chrIndices);
             return false;
         }
 

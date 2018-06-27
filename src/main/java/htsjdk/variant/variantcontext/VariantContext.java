@@ -1722,12 +1722,20 @@ public class VariantContext implements Feature, Serializable {
                 .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
     }
 
+    /**
+     * @deprecated 7/18 use {@link #getGLIndicesOfAlternateAllele(Allele)} instead
+     */
+    @Deprecated
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
+       return getGLIndicesOfAlternateAllele(targetAllele);
+    }
+
+    public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
         final int index = getAlleleIndex(targetAllele);
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
-        return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
+        return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
-    
+
     /** 
      * Search for the INFO=SVTYPE and return the type of Structural Variant 
      * @return the StructuralVariantType of null if there is no property SVTYPE 
