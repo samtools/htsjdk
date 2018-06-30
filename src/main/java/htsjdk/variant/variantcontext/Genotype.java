@@ -529,33 +529,37 @@ public abstract class Genotype implements Comparable<Genotype>, Serializable {
 
     /**
      * A totally generic getter, that allows you to get specific keys that correspond
-     * to even inline values (GQ, for example).  Can be very expensive.  Additionally,
-     * all <code>int[]</code> are converted inline into <code>List&lt;Integer&gt;</code> for convenience.
+     * to even inline values (GQ, for example). Can be very expensive.
+     *
+     * <p>Note: all {@code int[]} values are converted inline into {@code List<Integer>} for convenience.
+     *
+     * <p>Warning: values associated with missing fields returns always {@code null}. For example,
+     * {@code GQ == -1} may return {@code null}.
      *
      * @param key
-     * @return
+     * @return the value associated to the key; if not present, {@code null}.
      */
     public Object getAnyAttribute(final String key) {
         if (key.equals(VCFConstants.GENOTYPE_KEY)) {
-            return getAlleles();
+            return isAvailable() ? getAlleles() : null;
         } else if (key.equals(VCFConstants.GENOTYPE_QUALITY_KEY)) {
-            return getGQ();
+            return hasGQ() ? getGQ() : null;
         } else if (key.equals(VCFConstants.GENOTYPE_ALLELE_DEPTHS)) {
             if (hasAD()) {
                 final List<Integer> intList = new ArrayList<Integer>(getAD().length);
                 for(int i : getAD()) intList.add(i);
                 return intList;
             }
-            return Collections.EMPTY_LIST;
+            return null;
         } else if (key.equals(VCFConstants.GENOTYPE_PL_KEY)) {
             if (hasPL()) {
                 final List<Integer> intList = new ArrayList<Integer>(getPL().length);
                 for(int i : getPL()) intList.add(i);
                 return intList;
             }
-            return Collections.EMPTY_LIST;
+            return null;
         } else if (key.equals(VCFConstants.DEPTH_KEY)) {
-            return getDP();
+            return hasDP() ? getDP() : null;
         } else if (key.equals(VCFConstants.GENOTYPE_FILTER_KEY)) {
             return getFilters();
         } else {
