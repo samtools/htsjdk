@@ -40,7 +40,7 @@ import java.util.List;
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  *
  */
-public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus , Locatable {
+public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus, Locatable {
     /**
      * Reference sequence, to which the reads are aligned.
      **/
