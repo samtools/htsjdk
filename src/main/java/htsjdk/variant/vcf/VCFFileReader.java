@@ -1,3 +1,27 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2013 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 package htsjdk.variant.vcf;
 
 import htsjdk.samtools.SAMFileHeader;
@@ -92,8 +116,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Returns the SAMSequenceDictionary from the provided VCF file.
      */
     public static SAMSequenceDictionary getSequenceDictionary(final Path path) {
-        final SAMSequenceDictionary dict = new VCFFileReader(path, false).getFileHeader().getSequenceDictionary();
-        return dict;
+        return new VCFFileReader(path, false).getFileHeader().getSequenceDictionary();
     }
 
     /**
@@ -154,7 +177,10 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param file
      * @return
+     *
+     * @deprecated use {@link #toIntervalList} instead
      */
+    @Deprecated
     public static IntervalList fromVcf(final File file) {
         return toIntervalList(file.toPath());
     }
@@ -165,7 +191,9 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param file
      * @return
+     * @deprecated use {@link #toIntervalList} instead
      */
+    @Deprecated
     public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
         return toIntervalList(file.toPath(), includeFiltered);
     }
@@ -182,25 +210,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     public IntervalList toIntervalList(final boolean includeFiltered) {
-
-        //grab the dictionary from the VCF and use it in the IntervalList
-        final SAMSequenceDictionary dict = getFileHeader().getSequenceDictionary();
-        final SAMFileHeader samFileHeader = new SAMFileHeader();
-        samFileHeader.setSequenceDictionary(dict);
-        final IntervalList list = new IntervalList(samFileHeader);
-
-        int intervals = 0;
-        for (final VariantContext vc : this) {
-            if (includeFiltered || !vc.isFiltered()) {
-                String name = vc.getID();
-                final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt("END", vc.getEnd());
-                if (".".equals(name) || name == null)
-                    name = "interval-" + (++intervals);
-                list.add(new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name));
-            }
-        }
-
-        return list;
+        return fromVcf(this, includeFiltered);
     }
 
     /**
@@ -235,8 +245,8 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
         for (final VariantContext vc : vcf) {
             if (includeFiltered || !vc.isFiltered()) {
                 String name = vc.getID();
-                final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt("END", vc.getEnd());
-                if (".".equals(name) || name == null)
+                final Integer intervalEnd = vc.getCommonInfo().getAttributeAsInt(VCFConstants.END_KEY, vc.getEnd());
+                if (VCFConstants.EMPTY_ID_FIELD.equals(name) || name == null)
                     name = "interval-" + (++intervals);
                 list.add(new Interval(vc.getContig(), vc.getStart(), intervalEnd, false, name));
             }
@@ -284,13 +294,12 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Queries for records overlapping the {@link Locatable} specified.
      * Note that this method requires VCF files with an associated index.  If no index exists a TribbleException will be thrown.
-
+     *
      * @return non-null iterator over VariantContexts
      */
     public CloseableIterator<VariantContext> query(final Locatable locatable) {
         return query(locatable.getContig(), locatable.getStart(), locatable.getEnd());
     }
-
 
     @Override
     public void close() {

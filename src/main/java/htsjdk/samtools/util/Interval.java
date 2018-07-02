@@ -44,8 +44,8 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      * position is less than the start position an exception is thrown.
      *
      * @param sequence the name of the sequence
-     * @param start the start position of the interval on the sequence
-     * @param end the end position of the interval on the sequence
+     * @param start    the start position of the interval on the sequence
+     * @param end      the end position of the interval on the sequence
      */
     public Interval(final String sequence, final int start, final int end) {
         this(sequence, start, end, false, null);
@@ -55,7 +55,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      * Constructs an interval with the supplied {@link Locatable}.
      */
     public Interval(final Locatable locatable) {
-        this(locatable.getContig(),locatable.getStart(),locatable.getEnd());
+        this(locatable.getContig(), locatable.getStart(), locatable.getEnd());
     }
 
     /**
@@ -63,11 +63,10 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
      * If the end position is less than the start position an exception is thrown.
      *
      * @param sequence the name of the sequence
-     * @param start the start position of the interval on the sequence
-     * @param end the end position of the interval on the sequence
+     * @param start    the start position of the interval on the sequence
+     * @param end      the end position of the interval on the sequence
      * @param negative true to indicate negative strand, false otherwise
-     * @param name the name (possibly null) of the interval
-     *
+     * @param name     the name (possibly null) of the interval
      */
     public Interval(final String sequence, final int start, final int end, final boolean negative, final String name) {
         this.contig = sequence;
@@ -77,63 +76,90 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
         this.name = name;
     }
 
-    /** Gets the name of the sequence on which the interval resides.
+    /**
+     * Gets the name of the sequence on which the interval resides.
      * This is a simple alias of getContig()
+     *
      * @deprecated use getContig() instead
      */
     @Deprecated
-    public String getSequence() { return getContig(); }
+    public String getSequence() {
+        return getContig();
+    }
 
+    /**
+     * Returns true if the interval is on the negative strand, otherwise false.
+     */
+    public boolean isNegativeStrand() {
+        return this.negativeStrand;
+    }
 
-    /** Returns true if the interval is on the negative strand, otherwise false. */
-    public boolean isNegativeStrand() { return this.negativeStrand; }
+    /**
+     * Returns true if the interval is on the positive strand, otherwise false.
+     */
+    public boolean isPositiveStrand() {
+        return !this.negativeStrand;
+    }
 
-    /** Returns true if the interval is on the positive strand, otherwise false. */
-    public boolean isPositiveStrand() { return !this.negativeStrand; }
+    /**
+     * Returns the name of the interval, possibly null.
+     */
+    public String getName() {
+        return this.name;
+    }
 
-    /** Returns the name of the interval, possibly null. */
-    public String getName() { return this.name; }
-
-    /** Returns true if this interval overlaps the other interval, otherwise false. */
+    /**
+     * Returns true if this interval overlaps the other interval, otherwise false.
+     */
     public boolean intersects(final Interval other) {
-        return  (this.getContig().equals(other.getContig()) &&
-                 CoordMath.overlaps(this.getStart(), this.getEnd(), other.getStart(), other.getEnd()));
+        return (this.getContig().equals(other.getContig()) &&
+                CoordMath.overlaps(this.getStart(), this.getEnd(), other.getStart(), other.getEnd()));
     }
 
     public int getIntersectionLength(final Interval other) {
         if (this.intersects(other)) {
-            return (int)CoordMath.getOverlap(this.getStart(), this.getEnd(), other.getStart(), other.getEnd());
+            return (int) CoordMath.getOverlap(this.getStart(), this.getEnd(), other.getStart(), other.getEnd());
         }
         return 0;
     }
 
-
-    /** Returns a new Interval that represents the intersection between the two intervals. */
+    /**
+     * Returns a new Interval that represents the intersection between the two intervals.
+     */
     public Interval intersect(final Interval that) {
         if (!intersects(that)) throw new IllegalArgumentException(that + " does not intersect " + this);
         return new Interval(this.getContig(),
-                            Math.max(this.getStart(), that.getStart()),
-                            Math.min(this.getEnd(), that.getEnd()),
-                            this.negativeStrand,
-                            this.name + " intersection " + that.name);
+                Math.max(this.getStart(), that.getStart()),
+                Math.min(this.getEnd(), that.getEnd()),
+                this.negativeStrand,
+                this.name + " intersection " + that.name);
     }
 
-
-    /** Returns true if this interval overlaps the other interval, otherwise false. */
+    /**
+     * Returns true if this interval overlaps the other interval, otherwise false.
+     */
     public boolean abuts(final Interval other) {
         return this.getContig().equals(other.getContig()) &&
-               (this.getStart() == other.getEnd() + 1 || other.getStart() == this.getEnd() + 1);
+                (this.getStart() == other.getEnd() + 1 || other.getStart() == this.getEnd() + 1);
     }
 
-    /** Gets the length of this interval. */
-    public int length() { return this.getEnd() - this.getStart() + 1; }
+    /**
+     * Gets the length of this interval.
+     */
+    public int length() {
+        return this.getEnd() - this.getStart() + 1;
+    }
 
-    /** Returns a new interval that is padded by the amount of bases specified on either side. */
+    /**
+     * Returns a new interval that is padded by the amount of bases specified on either side.
+     */
     public Interval pad(final int left, final int right) {
-        return new Interval(this.getContig(), this.getStart()-left, this.getEnd()+right, this.negativeStrand, this.name);
+        return new Interval(this.getContig(), this.getStart() - left, this.getEnd() + right, this.negativeStrand, this.name);
     }
 
-    /** Counts the total number of bases a collection of intervals. */
+    /**
+     * Counts the total number of bases a collection of intervals.
+     */
     public static long countBases(final Collection<Interval> intervals) {
         long total = 0;
         for (final Interval i : intervals) {
@@ -142,7 +168,6 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
 
         return total;
     }
-
 
     /**
      * Sort based on sequence.compareTo, then start pos, then end pos
@@ -156,8 +181,7 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
         if (result == 0) {
             if (this.getStart() == that.getStart()) {
                 result = this.getEnd() - that.getEnd();
-            }
-            else {
+            } else {
                 result = this.getStart() - that.getStart();
             }
         }
@@ -165,12 +189,14 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
         return result;
     }
 
-    /** Equals method that agrees with {@link #compareTo(Interval)}. */
+    /**
+     * Equals method that agrees with {@link #compareTo(Interval)}.
+     */
     public boolean equals(final Object other) {
         if (!(other instanceof Interval)) return false;
         else if (this == other) return true;
         else {
-            Interval that = (Interval)other;
+            Interval that = (Interval) other;
             return (this.compareTo(that) == 0);
         }
     }
@@ -189,8 +215,11 @@ public class Interval implements Comparable<Interval>, Cloneable, Locatable {
 
     @Override
     public Interval clone() {
-        try { return (Interval) super.clone(); }
-        catch (CloneNotSupportedException cnse) { throw new SAMException("That's unpossible", cnse); }
+        try {
+            return (Interval) super.clone();
+        } catch (CloneNotSupportedException cnse) {
+            throw new SAMException("That's unpossible", cnse);
+        }
     }
 
     @Override
