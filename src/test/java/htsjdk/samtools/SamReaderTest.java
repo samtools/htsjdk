@@ -44,6 +44,7 @@ public class SamReaderTest extends HtsjdkTest {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
         for (final SAMRecord rec : reader) {
+            //just scan through the lines
         }
         CloserUtil.close(reader);
     }
@@ -117,7 +118,9 @@ public class SamReaderTest extends HtsjdkTest {
         @Override
         public BAMRecord createBAMRecord(final SAMFileHeader header, final int referenceSequenceIndex, final int alignmentStart, final short readNameLength, final short mappingQuality, final int indexingBin, final int cigarLen, final int flags, final int readLen, final int mateReferenceSequenceIndex, final int mateAlignmentStart, final int insertSize, final byte[] variableLengthBlock) {
             ++bamRecordsCreated;
-            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality, indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex, mateAlignmentStart, insertSize, variableLengthBlock);
+            return super.createBAMRecord(header, referenceSequenceIndex, alignmentStart, readNameLength, mappingQuality,
+                                         indexingBin, cigarLen, flags, readLen, mateReferenceSequenceIndex,
+                                         mateAlignmentStart, insertSize, variableLengthBlock);
         }
     }
 
@@ -134,11 +137,12 @@ public class SamReaderTest extends HtsjdkTest {
         CloserUtil.close(reader);
 
         Assert.assertTrue(i > 0);
-        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz")) Assert.assertEquals(factory.samRecordsCreated, i);
+        if (inputFile.endsWith(".sam") || inputFile.endsWith(".sam.gz"))
+            Assert.assertEquals(factory.samRecordsCreated, i);
         else if (inputFile.endsWith(".bam")) Assert.assertEquals(factory.bamRecordsCreated, i);
     }
 
-    @Test(dataProvider = "cramTestCases", expectedExceptions=IllegalStateException.class)
+    @Test(dataProvider = "cramTestCases", expectedExceptions = IllegalStateException.class)
     public void testReferenceRequiredForCRAM(final String inputFile, final String ignoredReferenceFile) {
         final File input = new File(TEST_DATA_DIR, inputFile);
         final SamReader reader = SamReaderFactory.makeDefault().open(input);
@@ -174,13 +178,13 @@ public class SamReaderTest extends HtsjdkTest {
     }
 
     @Test
-    public void testAssertingIteratorUsesLenientOrdering(){
+    public void testAssertingIteratorUsesLenientOrdering() {
         //the coordinate comparator's strict sort sorts lower mapping qualities first
         //so this list is not sorted with respect to that comparator, but it is sorted with respect to the more lenient
         // file order comparator which only checks the position
         final List<SAMRecord> looselySorted = Arrays.asList(createRecord(1, 10),
-                                                         createRecord( 1, 1),
-                                                         createRecord(2, 1));
+                                                            createRecord(1, 1),
+                                                            createRecord(2, 1));
 
         final SAMRecordCoordinateComparator coordinateComparator = new SAMRecordCoordinateComparator();
 
@@ -195,14 +199,14 @@ public class SamReaderTest extends HtsjdkTest {
                 .sorted(coordinateComparator)
                 .collect(Collectors.toList());
 
-        Assert.assertFalse(sortedWithFullOrderComparator.equals(looselySorted));
+        Assert.assertNotEquals(sortedWithFullOrderComparator, looselySorted);
 
-
-        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapInCloseableIterator(looselySorted));
+        final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(
+                wrapInCloseableIterator(looselySorted));
         iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
         int count = 0;
 
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             iter.next();
             count++;
         }
@@ -210,15 +214,14 @@ public class SamReaderTest extends HtsjdkTest {
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
-    public void testAssertingIteratorCorrectlyFailsWhenOutOfOrder(){
-        final List<SAMRecord> unsorted = Arrays.asList(createRecord(10, 1), createRecord( 1, 1));
+    public void testAssertingIteratorCorrectlyFailsWhenOutOfOrder() {
+        final List<SAMRecord> unsorted = Arrays.asList(createRecord(10, 1), createRecord(1, 1));
         final SamReader.AssertingIterator iter = new SamReader.AssertingIterator(wrapInCloseableIterator(unsorted));
         iter.assertSorted(SAMFileHeader.SortOrder.coordinate);
 
-        while(iter.hasNext()) {
+        while (iter.hasNext()) {
             iter.next();
         }
-
     }
 
     private static CloseableIterator<SAMRecord> wrapInCloseableIterator(final List<SAMRecord> looselySorted) {
@@ -229,13 +232,19 @@ public class SamReaderTest extends HtsjdkTest {
             public void close() { /** Do nothing. */}
 
             @Override
-            public boolean hasNext() { return this.iterator.hasNext(); }
+            public boolean hasNext() {
+                return this.iterator.hasNext();
+            }
 
             @Override
-            public SAMRecord next() { return this.iterator.next(); }
+            public SAMRecord next() {
+                return this.iterator.next();
+            }
 
             @Override
-            public void remove() { this.iterator.remove(); }
+            public void remove() {
+                this.iterator.remove();
+            }
         };
     }
 
