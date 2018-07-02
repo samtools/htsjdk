@@ -1,0 +1,20 @@
+# This is the official list of HTSJDK-Next authors for copyright purposes.
+#
+# The AUTHORS file lists the copyright holders.
+# For example, Broad Institute employees are not listed here, 
+# because Broad Institute holds the copyright.
+
+# This file should be updated whenever a new contributor merges their first commit.
+
+# Names should be added to this file as
+# Organization <webpage> - Contact Person <email>
+# Individual Name <email address or website>
+
+# Please keep the list sorted alphabetically, companies/organizations first, individuals second.
+
+Organizations:
+Broad Institute, Inc. <www.broadinstitute.org> - Louis Bergelson <louisb@broadinstitute.org>
+Fulcrum Genomics <www.fulcrumgenomics.com> - Tim Fennell <tfenne@tfenne.com>
+
+Individuals:
+Daniel Gómez Sánchez <daniel.gomez.sanchez@hotmail.es>
