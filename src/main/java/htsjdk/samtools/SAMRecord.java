@@ -2311,7 +2311,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             builder.append(" unmapped read.");
         }
         else {
-            builder.append(" aligned read.");
+            builder.append(String.format(" aligned to %s:%d-%d.", getContig(), getAlignmentStart(), getAlignmentEnd()));
         }
 
         return builder.toString();
