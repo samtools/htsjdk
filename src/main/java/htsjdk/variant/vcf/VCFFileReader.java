@@ -158,7 +158,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
      *
-     * @param path
+     * @param path a VCF
      * @return
      */
     public static IntervalList toIntervalList(final Path path) {
@@ -175,10 +175,10 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * Parse a VCF file and convert to an IntervalList The name field of the IntervalList is taken from the ID field of the variant, if it exists. if not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
      *
-     * @param file
-     * @return
+     * @param file a VCF
+     * @return an {@link IntervalList}
      *
-     * @deprecated use {@link #toIntervalList} instead
+     * @deprecated use {@link #toIntervalList(Path)} instead
      */
     @Deprecated
     public static IntervalList fromVcf(final File file) {
@@ -191,7 +191,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      *
      * @param file
      * @return
-     * @deprecated use {@link #toIntervalList} instead
+     * @deprecated use {@link #toIntervalList(Path, boolean)} instead
      */
     @Deprecated
     public static IntervalList fromVcf(final File file, final boolean includeFiltered) {
@@ -199,9 +199,10 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     /**
-     * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
-     * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     * Will use a "END" tag in the info field as the end of the interval (if exists).
+     * Converts the underlying VCFFileReader to an IntervalList. The name field of the IntervalList is taken from the
+     * ID field of the variant, if it exists. If not, creates a name of the format 'interval-n' where n is a running
+     * number that increments on un-named intervals. Will use the "END" tag in the INFO field as the end of the interval
+     * (if exists).
      *
      * @return an IntervalList constructed from input vcf
      */
@@ -216,7 +217,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     * Will use a "END" tag in the info field as the end of the interval (if exists).
+     * Will use a "END" tag in the INFO field as the end of the interval (if exists).
      *
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
@@ -228,7 +229,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     /**
      * Converts a vcf to an IntervalList. The name field of the IntervalList is taken from the ID field of the variant, if it exists. If not,
      * creates a name of the format interval-n where n is a running number that increments only on un-named intervals
-     * Will use a "END" tag in the info field as the end of the interval (if exists).
+     * Will use a "END" tag in the INFO field as the end of the interval (if exists).
      *
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
