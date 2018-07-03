@@ -218,7 +218,7 @@ import java.util.stream.Collectors;
  *
  * @author depristo
  */
-public class VariantContext implements Feature, Serializable, Locatable {
+public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
 
     private final static boolean WARN_ABOUT_BAD_END = true;
