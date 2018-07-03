@@ -58,8 +58,7 @@ public final class BAMSBIIndexer {
                     break;
                 }
             }
-            indexWriter.writeVirtualOffset(recordStart);
-            indexWriter.finish(in.length());
+            indexWriter.finish(recordStart, in.length());
         }
     }
 }

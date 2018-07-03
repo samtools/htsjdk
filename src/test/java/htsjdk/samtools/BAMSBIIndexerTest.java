@@ -13,9 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.NavigableSet;
 
 public class BAMSBIIndexerTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
@@ -32,21 +30,21 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         Assert.assertEquals(index1.dataFileLength(), bamFileSize);
         Assert.assertEquals(index2.dataFileLength(), bamFileSize);
         // the splitting index for a BAM with no records has a single entry that is just the length of the BAM file
-        Assert.assertEquals(index1.getVirtualOffsets(), Collections.singletonList(BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize)));
-        Assert.assertEquals(index1.getVirtualOffsets(), Collections.singletonList(BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize)));
+        Assert.assertEquals(index1.getVirtualOffsets(), new long[] { BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize) });
+        Assert.assertEquals(index1.getVirtualOffsets(), new long[] { BlockCompressedFilePointerUtil.makeFilePointer(bamFileSize) });
     }
 
     @Test
     public void testReadFromIndexPositions() throws Exception {
         SBIIndex index = fromBAMFile(BAM_FILE, 2);
-        NavigableSet<Long> virtualOffsets = index.getVirtualOffsets();
-        Long firstVirtualOffset = virtualOffsets.first();
+        long[] virtualOffsets = index.getVirtualOffsets();
+        Long firstVirtualOffset = virtualOffsets[0];
         Long expectedFirstAlignment = SAMUtils.findVirtualOffsetOfFirstRecordInBam(new SeekableFileStream(BAM_FILE));
         Assert.assertEquals(firstVirtualOffset, expectedFirstAlignment);
         Assert.assertNotNull(getReadAtOffset(BAM_FILE, firstVirtualOffset));
 
-        for (Long virtualOffset : virtualOffsets.headSet(virtualOffsets.last())) { // for all but the last offset
-            Assert.assertNotNull(getReadAtOffset(BAM_FILE, virtualOffset));
+        for (int i = 0; i < virtualOffsets.length - 1; i++) { // for all but the last offset
+            Assert.assertNotNull(getReadAtOffset(BAM_FILE, virtualOffsets[i]));
         }
     }
 
@@ -100,8 +98,7 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         while (iterator.hasNext()) {
             processAlignment(indexWriter, iterator.next());
         }
-        indexWriter.writeVirtualOffset(bamFileReader.getVirtualFilePointer());
-        indexWriter.finish(bamFile.length());
+        indexWriter.finish(bamFileReader.getVirtualFilePointer(), bamFile.length());
         return SBIIndex.load(new ByteArrayInputStream(out.toByteArray()));
     }
 

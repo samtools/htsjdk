@@ -1,18 +1,25 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.RuntimeIOException;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 
 /**
  * Writes SBI files as understood by {@link SBIIndex}.
  * <p>
- * To use this class, first construct an instance from an output stream, and a desired granualrity. Then for each
+ * To use this class, first construct an instance from an output stream, and a desired granularity. Then for each
  * record in the file being indexed, pass the virtual file offset of the record to the {@link #processRecord} method.
  * The indexer will keep a count of the records passed in an index every <i>n</i>th record. When there are no records
- * left call {@link #finish(long)} to complete writing the index.
+ * left call {@link #finish} to complete writing the index.
  */
 public final class SBIIndexWriter {
 
@@ -24,10 +31,13 @@ public final class SBIIndexWriter {
     private static final byte[] EMPTY_MD5 = new byte[16];
     private static final byte[] EMPTY_UUID = new byte[16];
 
-    private final BinaryCodec binaryCodec;
+    private final OutputStream out;
     private final long granularity;
-    private final NavigableSet<Long> virtualOffsets = new TreeSet<>();
-    private long count;
+    private final File tempOffsetsFile;
+    private final BinaryCodec tempOffsetsCodec;
+    private long prev = -1;
+    private long recordCount;
+    private long virtualOffsetCount;
 
     /**
      * Prepare to write an SBI index with the default granularity.
@@ -45,8 +55,18 @@ public final class SBIIndexWriter {
      * @param granularity write the offset of every <i>n</i>th record to the index
      */
     public SBIIndexWriter(final OutputStream out, final long granularity) {
-        this.binaryCodec = new BinaryCodec(out);
+        this.out = out;
         this.granularity = granularity;
+        try {
+            // Write the offsets to a temporary file, then write the entire file contents to the output stream at
+            // the end, once we know the number of offsets. This is more efficient than using a List<Long> for very
+            // large numbers of offsets (e.g. 10^8, which is possible for low granularity), since the list resizing
+            // operation is slow.
+            this.tempOffsetsFile = File.createTempFile("offsets-", ".headerless.sbi");
+            this.tempOffsetsCodec = new BinaryCodec(new BufferedOutputStream(new FileOutputStream(tempOffsetsFile)));
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -55,38 +75,46 @@ public final class SBIIndexWriter {
      * @param virtualOffset virtual file pointer of the record
      */
     public void processRecord(final long virtualOffset) {
-        if (count++ % granularity == 0) {
+        if (recordCount++ % granularity == 0) {
             writeVirtualOffset(virtualOffset);
         }
     }
 
-    /**
-     * Write the given virtual offset to the index. The offset is always written to the index, no account is taken
-     * of the granularity.
-     *
-     * @param virtualOffset virtual file pointer of the record
-     */
-    public void writeVirtualOffset(long virtualOffset) {
-        virtualOffsets.add(virtualOffset);
+    private void writeVirtualOffset(long virtualOffset) {
+        if (prev > virtualOffset) {
+            throw new IllegalArgumentException(String.format(
+                    "Offsets not in order: %#x > %#x",
+                    prev, virtualOffset));
+        }
+        tempOffsetsCodec.writeLong(virtualOffset);
+        virtualOffsetCount++;
+        prev = virtualOffset;
     }
 
     /**
      * Complete the index, and close the output stream.
      *
+     * @param finalVirtualOffset the virtual offset at which the next record would start if it were added to the file
      * @param dataFileLength the length of the data file in bytes
      */
-    public void finish(long dataFileLength) {
-        finish(dataFileLength, null, null);
+    public void finish(long finalVirtualOffset, long dataFileLength) {
+        finish(finalVirtualOffset, dataFileLength, null, null);
     }
 
     /**
      * Complete the index, and close the output stream.
      *
+     * @param finalVirtualOffset the virtual offset at which the next record would start if it were added to the file
      * @param dataFileLength the length of the data file in bytes
      * @param md5 the MD5 hash of the data file, or null if not specified
      * @param uuid the UUID for the data file, or null if not specified
      */
-    public void finish(long dataFileLength, byte[] md5, byte[] uuid) {
+    public void finish(long finalVirtualOffset, long dataFileLength, byte[] md5, byte[] uuid) {
+
+        // complete writing the temp offsets file
+        writeVirtualOffset(finalVirtualOffset);
+        tempOffsetsCodec.close();
+
         if (md5 != null && md5.length != 16) {
             throw new IllegalArgumentException("Invalid MD5 length: " + md5.length);
         }
@@ -94,20 +122,24 @@ public final class SBIIndexWriter {
             throw new IllegalArgumentException("Invalid UUID length: " + uuid.length);
         }
 
-        // header
-        binaryCodec.writeBytes(SBIIndex.SBI_MAGIC);
-        binaryCodec.writeLong(dataFileLength);
-        binaryCodec.writeBytes(md5 == null ? EMPTY_MD5 : md5);
-        binaryCodec.writeBytes(uuid == null ? EMPTY_UUID : uuid);
-        binaryCodec.writeLong(count);
-        binaryCodec.writeLong(granularity);
-        binaryCodec.writeLong(virtualOffsets.size());
+        try (BinaryCodec binaryCodec = new BinaryCodec(out);
+             InputStream tempOffsets = new BufferedInputStream(new FileInputStream(tempOffsetsFile))) {
+            // header
+            binaryCodec.writeBytes(SBIIndex.SBI_MAGIC);
+            binaryCodec.writeLong(dataFileLength);
+            binaryCodec.writeBytes(md5 == null ? EMPTY_MD5 : md5);
+            binaryCodec.writeBytes(uuid == null ? EMPTY_UUID : uuid);
+            binaryCodec.writeLong(recordCount);
+            binaryCodec.writeLong(granularity);
+            binaryCodec.writeLong(virtualOffsetCount);
 
-        // offsets
-        for (long virtualOffset : virtualOffsets) {
-            binaryCodec.writeLong(virtualOffset);
+            // offsets
+            IOUtil.copyStream(tempOffsets, out);
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        } finally {
+            tempOffsetsFile.delete();
         }
-        binaryCodec.close();
     }
 
 }

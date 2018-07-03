@@ -6,21 +6,24 @@ import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * SBI is an index into BGZF-compressed data files, which has an entry for the file position of the start of every
  * <i>n</i>th record. Reads files that were created by {@link BAMSBIIndexer}.
  */
-public final class SBIIndex {
+public final class SBIIndex implements Serializable {
 
-    public static class Header {
+    public static class Header implements Serializable {
         private final long fileLength;
         private final byte[] md5;
         private final byte[] uuid;
@@ -54,6 +57,26 @@ public final class SBIIndex {
         public long getGranularity() {
             return granularity;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Header header = (Header) o;
+            return fileLength == header.fileLength &&
+                    totalNumberOfRecords == header.totalNumberOfRecords &&
+                    granularity == header.granularity &&
+                    Arrays.equals(md5, header.md5) &&
+                    Arrays.equals(uuid, header.uuid);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(fileLength, totalNumberOfRecords, granularity);
+            result = 31 * result + Arrays.hashCode(md5);
+            result = 31 * result + Arrays.hashCode(uuid);
+            return result;
+        }
     }
 
     public static final String FILE_EXTENSION = ".sbi";
@@ -64,16 +87,16 @@ public final class SBIIndex {
     static final byte[] SBI_MAGIC = "SBI\1".getBytes();
 
     private final Header header;
-    private final NavigableSet<Long> virtualOffsets;
+    private final long[] virtualOffsets;
 
     /**
      * Create an in-memory SBI with the given virtual offsets.
      * @param virtualOffsets the offsets in the index
      */
-    public SBIIndex(final Header header, final NavigableSet<Long> virtualOffsets) {
+    public SBIIndex(final Header header, final long[] virtualOffsets) {
         this.header = header;
-        this.virtualOffsets = new TreeSet<>(virtualOffsets);
-        if (this.virtualOffsets.isEmpty()) {
+        this.virtualOffsets = virtualOffsets;
+        if (this.virtualOffsets.length == 0) {
             throw new RuntimeException("Invalid SBI format: should contain at least one offset");
         }
     }
@@ -100,17 +123,22 @@ public final class SBIIndex {
     private static SBIIndex readIndex(final InputStream in) {
         BinaryCodec binaryCodec = new BinaryCodec(in);
         Header header = readHeader(binaryCodec);
-        long numOffsets = binaryCodec.readLong();
-        NavigableSet<Long> virtualOffsets = new TreeSet<>();
+        long numOffsetsLong = binaryCodec.readLong();
+        if (numOffsetsLong > Integer.MAX_VALUE) {
+            throw new RuntimeException(String.format("Cannot read SBI with more than %s offsets.", Integer.MAX_VALUE));
+        }
+        int numOffsets = (int) numOffsetsLong;
+        long[] virtualOffsets = new long[numOffsets];
         long prev = -1;
-        for (long i = 0; i < numOffsets; i++) {
+        for (int i = 0; i < numOffsets; i++) {
             long cur = binaryCodec.readLong();
             if (prev > cur) {
                 throw new RuntimeException(String.format(
                         "Invalid SBI; offsets not in order: %#x > %#x",
                         prev, cur));
             }
-            virtualOffsets.add(prev = cur);
+            virtualOffsets[i] = cur;
+            prev = cur;
         }
         return new SBIIndex(header, virtualOffsets);
     }
@@ -143,11 +171,11 @@ public final class SBIIndex {
     /**
      * Returns the entries in the index.
      *
-     * @return a set of file pointers for all the alignment offsets in the index, in ascending order. The last
+     * @return an array of file pointers for all the alignment offsets in the index, in ascending order. The last
      *      virtual file pointer is the position at which the next record would start if it were added to the file.
      */
-    public NavigableSet<Long> getVirtualOffsets() {
-        return new TreeSet<>(virtualOffsets);
+    public long[] getVirtualOffsets() {
+        return virtualOffsets;
     }
 
     /**
@@ -156,7 +184,7 @@ public final class SBIIndex {
      * @return the number of virtual offsets in the index
      */
     public long size() {
-        return virtualOffsets.size();
+        return virtualOffsets.length;
     }
 
     /**
@@ -207,45 +235,54 @@ public final class SBIIndex {
         if (splitStart >= splitEnd) {
             throw new IllegalArgumentException(String.format("Split start (%s) must be less than end (%s)", splitStart, splitEnd));
         }
-        long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(virtualOffsets.last());
+        long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
+        long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(lastVirtualOffset);
         splitStart = Math.min(splitStart, maxEnd);
         splitEnd = Math.min(splitEnd, maxEnd);
         long virtualSplitStart = BlockCompressedFilePointerUtil.makeFilePointer(splitStart);
         long virtualSplitEnd = BlockCompressedFilePointerUtil.makeFilePointer(splitEnd);
-        Long virtualSplitStartAlignment = virtualOffsets.ceiling(virtualSplitStart);
-        Long virtualSplitEndAlignment = virtualOffsets.ceiling(virtualSplitEnd);
-        // neither virtualSplitStartAlignment nor virtualSplitEndAlignment should ever be null, but check anyway
-        if (virtualSplitStartAlignment == null) {
-            throw new IllegalArgumentException(String.format("No virtual offset found for virtual file pointer %s, last virtual offset %s",
-                    BlockCompressedFilePointerUtil.asString(virtualSplitStart), BlockCompressedFilePointerUtil.asString(virtualOffsets.last())));
-        }
-        if (virtualSplitEndAlignment == null) {
-            throw new IllegalArgumentException(String.format("No virtual offset found for virtual file pointer %s, last virtual offset %s",
-                    BlockCompressedFilePointerUtil.asString(virtualSplitEnd), BlockCompressedFilePointerUtil.asString(virtualOffsets.last())));
-        }
-        if (virtualSplitStartAlignment.longValue() == virtualSplitEndAlignment.longValue()) {
+        long virtualSplitStartAlignment = ceiling(virtualSplitStart);
+        long virtualSplitEndAlignment = ceiling(virtualSplitEnd);
+        if (virtualSplitStartAlignment == virtualSplitEndAlignment) {
             return null;
         }
         return new Chunk(virtualSplitStartAlignment, virtualSplitEndAlignment);
+    }
+
+    private long ceiling(long virtualOffset) {
+        int index = Arrays.binarySearch(virtualOffsets, virtualOffset);
+        if (index < 0) {
+            index = -index - 1;
+            if (index == virtualOffsets.length) {
+                long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
+                throw new IllegalArgumentException(String.format("No virtual offset found for virtual file pointer %s, last virtual offset %s",
+                        BlockCompressedFilePointerUtil.asString(virtualOffset), BlockCompressedFilePointerUtil.asString(lastVirtualOffset)));
+            }
+        }
+        return virtualOffsets[index];
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        SBIIndex that = (SBIIndex) o;
-
-        return virtualOffsets.equals(that.virtualOffsets);
+        SBIIndex sbiIndex = (SBIIndex) o;
+        return Objects.equals(header, sbiIndex.header) &&
+                Arrays.equals(virtualOffsets, sbiIndex.virtualOffsets);
     }
 
     @Override
     public int hashCode() {
-        return virtualOffsets.hashCode();
+        int result = Objects.hash(header);
+        result = 31 * result + Arrays.hashCode(virtualOffsets);
+        return result;
     }
 
     @Override
     public String toString() {
-        return virtualOffsets.toString();
+        if (virtualOffsets.length > 30) {
+            return Arrays.toString(Arrays.copyOfRange(virtualOffsets, 0, 30)).replace("]", ", ...]");
+        }
+        return Arrays.toString(virtualOffsets);
     }
 }
