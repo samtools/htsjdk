@@ -246,16 +246,16 @@ public class VCFHeader implements Serializable {
     }
 
     /**
-     * @return all of the VCF FILTER lines in their original file order, or an empty list if none were present
+     * @return all of the VCF ID-based header lines in their original file order, or an empty list if none were present
      */
     public List<VCFIDHeaderLine> getIDHeaderLines() {
-        final List<VCFIDHeaderLine> filters = new ArrayList<VCFIDHeaderLine>();
+        final List<VCFIDHeaderLine> lines = new ArrayList<VCFIDHeaderLine>();
         for (final VCFHeaderLine line : mMetaData) {
             if (line instanceof VCFIDHeaderLine)  {
-                filters.add((VCFIDHeaderLine)line);
+                lines.add((VCFIDHeaderLine)line);
             }
         }
-        return filters;
+        return lines;
     }
 
     /**
