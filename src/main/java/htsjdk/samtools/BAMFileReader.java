@@ -406,8 +406,7 @@ public class BAMFileReader extends SamReader.ReaderImplementation {
                     mIndex = mEnableIndexCaching ? new CachingBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping)
                             : new DiskBasedBAMFileIndex(mIndexFile, getFileHeader().getSequenceDictionary(), mEnableIndexMemoryMapping);
                 } else if (getIndexType().equals(SamIndexes.CSI)) {
-                    mIndex = mEnableIndexMemoryMapping ? new CSIIndex(mIndexFile.toPath(), getFileHeader().getSequenceDictionary()) :
-                            new CSIIndex(mIndexFile, getFileHeader().getSequenceDictionary());
+                    mIndex = new CSIIndex(mIndexFile, mEnableIndexMemoryMapping, getFileHeader().getSequenceDictionary());
 
                 }
             } else {

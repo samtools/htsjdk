@@ -26,12 +26,12 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
         this(new IndexStreamBuffer(stream), stream.getSource(), dictionary);
     }
 
-    public CSIIndex(final Path path, final SAMSequenceDictionary dictionary) {
-        this(new MemoryMappedFileBuffer(path.toFile()), path.toString(), dictionary);
+    public CSIIndex(final Path path, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
+        this(IndexFileBufferFactory.getBuffer(path.toFile(), enableMemoryMapping), path.toString(), dictionary);
     }
 
-    public CSIIndex(final File file, final SAMSequenceDictionary dictionary) {
-        this(new RandomAccessFileBuffer(file), file.getName(), dictionary);
+    public CSIIndex(final File file, boolean enableMemoryMapping, final SAMSequenceDictionary dictionary) {
+        this(IndexFileBufferFactory.getBuffer(file, enableMemoryMapping), file.getName(), dictionary);
     }
 
     private CSIIndex(final IndexFileBuffer indexFileBuffer, final String source, final SAMSequenceDictionary dictionary) {

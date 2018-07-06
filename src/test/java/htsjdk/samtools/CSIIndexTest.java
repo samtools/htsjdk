@@ -9,7 +9,7 @@ import java.io.File;
 public class CSIIndexTest extends HtsjdkTest {
 
     private static DiskBasedBAMFileIndex bai = new DiskBasedBAMFileIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.bai"), null);
-    private static CSIIndex csi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), null);
+    private static CSIIndex csi = new CSIIndex(new File("src/test/resources/htsjdk/samtools/BAMFileIndexTest/index_test.bam.csi"), false, null);
 
     private static Bin bin1 = new Bin(0, 0);
     private static Bin bin2 = new Bin(0, 1);
