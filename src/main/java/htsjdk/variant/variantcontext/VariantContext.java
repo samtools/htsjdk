@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -215,7 +216,6 @@ import java.util.stream.Collectors;
  *     asking for a fully decoded version of the VC.
  * <!-- </s3> -->
  *
- * @author depristo
  */
 public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
