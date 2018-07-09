@@ -552,7 +552,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         }
 
         private final CloseableIterator<SAMRecord> wrappedIterator;
-        private SAMSortOrderChecker checker = null;
+        private SAMSortOrderChecker checker;
 
         public AssertingIterator(final CloseableIterator<SAMRecord> iterator) {
             wrappedIterator = iterator;
