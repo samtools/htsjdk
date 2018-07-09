@@ -87,10 +87,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
          * @return Comparator to sort in the specified order, or null if unsorted.
          */
         public SAMRecordComparator getComparatorInstance() {
-            if (comparatorSupplier != null) {
-                return comparatorSupplier.get();
-            }
-            return null;
+            return comparatorSupplier.get();
         }
     }
 
