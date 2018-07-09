@@ -211,7 +211,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
     }
 
     public IntervalList toIntervalList(final boolean includeFiltered) {
-        return fromVcf(this, includeFiltered);
+        return toIntervalList(this, includeFiltered);
     }
 
     /**
@@ -222,7 +222,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
      *
-     * @deprecated since July 2018 since use {@link toIntervalList(VCFFileReader} instead
+     * @deprecated since July 2018 since use {@link #toIntervalList(VCFFileReader)} instead
      */
     @Deprecated
     public static IntervalList fromVcf(final VCFFileReader vcf) {
@@ -250,7 +250,7 @@ public class VCFFileReader implements Closeable, Iterable<VariantContext> {
      * @param vcf the vcfReader to be used for the conversion
      * @return an IntervalList constructed from input vcf
      *
-     * @deprecated since July 2018 since use {@link toIntervalList(VCFFileReader, boolean)} instead
+     * @deprecated since July 2018 since use {@link #toIntervalList(VCFFileReader, boolean)} instead
      */
     @Deprecated
     public static IntervalList fromVcf(final VCFFileReader vcf, final boolean includeFiltered) {
