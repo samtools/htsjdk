@@ -504,6 +504,9 @@ public class VariantContextWriterBuilder {
                 if (!canonicalPath.equals(path)) {
                     return determineOutputTypeFromFile(canonicalPath);
                 }
+            } catch (java.nio.file.NoSuchFileException nsf) {
+                // toRealPath failed because the "real" file couldn't be found.
+                // We do nothing, just continue with the original path.
             } catch (IOException x) {
                 throw new RuntimeIOException(x);
             }
@@ -516,11 +519,11 @@ public class VariantContextWriterBuilder {
     }
 
     private static boolean isVCF(final Path outPath) {
-        return outPath != null && outPath.toString().endsWith(IOUtil.VCF_FILE_EXTENSION);
+        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.VCF_FILE_EXTENSION);
     }
 
     private static boolean isBCF(final Path outPath) {
-        return outPath != null && outPath.toString().endsWith(IOUtil.BCF_FILE_EXTENSION);
+        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.BCF_FILE_EXTENSION);
     }
 
     private static boolean isCompressedVCF(final Path outPath) {

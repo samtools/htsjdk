@@ -37,8 +37,16 @@ import htsjdk.tribble.Tribble;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder.OutputType;
-import htsjdk.variant.vcf.VCFUtils;
+import htsjdk.variant.vcf.VCFHeader;
 import java.nio.file.FileSystem;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
@@ -50,7 +58,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
-	private static final String TEST_BASENAME = "htsjdk-test.VariantContextWriterBuilderUnitTest";
+	private static final String TEST_BASENAME = "htsjdk-test VariantContextWriterBuilderUnitTest";
     private SAMSequenceDictionary dictionary;
 
     private File vcf;
@@ -319,48 +327,69 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         }
     }
 
-  @Test
-  public void testIndexingOnTheFlyForPath() throws IOException {
-    final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
-        .setReferenceDictionary(dictionary)
-        .setOption(Options.INDEX_ON_THE_FLY);
+    @Test
+    public void testIndexingOnTheFlyForPath() throws IOException {
+      final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+          .setReferenceDictionary(dictionary)
+          .setOption(Options.INDEX_ON_THE_FLY);
 
-    try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
-      Path vcfPath = fs.getPath("testIndexingOnTheFlyForPath" + IOUtil.VCF_FILE_EXTENSION);
-      Path vcfIdxPath = Tribble.indexPath(vcfPath);
-      VariantContextWriter writer = builder.setOutputPath(vcfPath).build();
-      writer.close();
-      Assert.assertTrue(Files.exists(vcfIdxPath),
-          String.format("VCF index not created for %s / %s", vcfPath, vcfIdxPath));
+      try (FileSystem fs = Jimfs.newFileSystem("test", Configuration.unix())) {
+        Path vcfPath = fs.getPath("testIndexingOnTheFlyForPath" + IOUtil.VCF_FILE_EXTENSION);
+        Path vcfIdxPath = Tribble.indexPath(vcfPath);
+        VariantContextWriter writer = builder.setOutputPath(vcfPath).build();
+        writer.close();
+        Assert.assertTrue(Files.exists(vcfIdxPath),
+            String.format("VCF index not created for %s / %s", vcfPath, vcfIdxPath));
 
-      if (bcfIdx.exists())
-        bcfIdx.delete();
-      writer = builder.setOutputFile(bcf).build();
-      writer.close();
-      Assert.assertTrue(bcfIdx.exists(),
-          String.format("BCF index not created for %s / %s", bcf, bcfIdx));
+        if (bcfIdx.exists()) {
+          bcfIdx.delete();
+        }
+        writer = builder.setOutputPath(bcf.toPath()).build();
+        writer.close();
+        Assert.assertTrue(bcfIdx.exists(),
+            String.format("BCF index not created for %s / %s", bcf, bcfIdx));
 
-      for (int i = 0; i < blockCompressedVCFs.size(); i++) {
-        final File blockCompressed = blockCompressedVCFs.get(i);
-        final File index = blockCompressedIndices.get(i);
-        if (index.exists())
+        for (int i = 0; i < blockCompressedVCFs.size(); i++) {
+          final File blockCompressed = blockCompressedVCFs.get(i);
+          final File index = blockCompressedIndices.get(i);
+          if (index.exists())
+            index.delete();
+          writer = builder.setOutputPath(blockCompressed.toPath()).setReferenceDictionary(dictionary).build();
+          writer.close();
+          Assert.assertTrue(index.exists(), String
+              .format("Block-compressed index not created for %s / %s", blockCompressed, index));
+
+          // Tabix does not require a reference dictionary.
+          // Tribble does: see tests testRefDictRequiredForVCFIndexOnTheFly / testRefDictRequiredForBCFIndexOnTheFly
+
           index.delete();
-        writer = builder.setOutputFile(blockCompressed).setReferenceDictionary(dictionary).build();
-        writer.close();
-        Assert.assertTrue(index.exists(), String
-            .format("Block-compressed index not created for %s / %s", blockCompressed, index));
-
-        // Tabix does not require a reference dictionary.
-        // Tribble does: see tests testRefDictRequiredForVCFIndexOnTheFly / testRefDictRequiredForBCFIndexOnTheFly
-
-        index.delete();
-        writer = builder.setReferenceDictionary(null).build();
-        writer.close();
-        Assert.assertTrue(index.exists(), String
-            .format("Block-compressed index not created for %s / %s", blockCompressed, index));
+          writer = builder.setReferenceDictionary(null).build();
+          writer.close();
+          Assert.assertTrue(index.exists(), String
+              .format("Block-compressed index not created for %s / %s", blockCompressed, index));
+        }
       }
     }
-  }
+
+    @Test(singleThreaded = true, groups = "unix")
+    public void testWriteToFifo() throws IOException, InterruptedException, ExecutionException {
+      long length = testWriteToPipe(this::innerWriteToFifo);
+      // length>0 means we wrote to the named pipe, so all is well.
+      Assert.assertTrue(length>0,
+          "VariantContextWriterBuilder did not write to the named pipe as it should.");
+    }
+
+    private void innerWriteToFifo(String pathToFifo) {
+      // Do not enable INDEX_OF_THE_FLY because that is not compatible with writing to a pipe.
+      final VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+          .clearOptions()
+          .setReferenceDictionary(dictionary);
+
+      Path vcfPath = Paths.get(pathToFifo);
+      VariantContextWriter writer = builder.setOutputPath(vcfPath).build();
+      writer.writeHeader(new VCFHeader());
+      writer.close();
+    }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testInvalidImplicitFileType() {
@@ -452,4 +481,50 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
         Assert.assertNotNull(((VCFWriter) writer).getOutputStream());
         Assert.assertNotEquals(((VCFWriter) writer).getStreamName(), IndexingVariantContextWriter.DEFAULT_READER_NAME);
     }
+
+  /**
+   * Create a named pipe, call "codeThatWritesToAFilename" with the name as argument,
+   * consumes the output as it's being run and returns the number of bytes that were output.
+   *
+   * This only works on Unix. Use this decoration for the tests that use it:
+   * @Test(singleThreaded = true, groups = "unix")
+   */
+    private long testWriteToPipe(final Consumer<String> codeThatWritesToAFilename) throws IOException, InterruptedException, ExecutionException {
+      // make the fifo
+      final File fifo = File.createTempFile("fifo.for.testWriteToPipe", "");
+      Assert.assertTrue(fifo.delete());
+      fifo.deleteOnExit();
+      final Process exec = new ProcessBuilder("mkfifo", fifo.getAbsolutePath()).start();
+      exec.waitFor(1, TimeUnit.MINUTES);
+      Assert.assertEquals(exec.exitValue(), 0, "mkfifo failed with exit code " + 0);
+
+      // run the code in a separate thread
+      ExecutorService executor = null;
+      try {
+        executor = Executors.newSingleThreadExecutor();
+        Future result = executor.submit(() -> {
+          try {
+            codeThatWritesToAFilename.accept(fifo.getAbsolutePath());
+          } catch (Exception x) {
+            // since the main thread is blocked reading the pipe, we may not notice the exception.
+            // Better to print it to the console to aid debugging.
+            x.printStackTrace();
+            throw(x);
+          }
+        });
+
+        // drain the pipe with the output.
+        InputStream inputStream = Files.newInputStream(fifo.toPath(), StandardOpenOption.READ);
+        int count = 0;
+        while (inputStream.read() >= 0) {
+          count++;
+        }
+        // done. If it was in error, the line below will throw the exception.
+        result.get();
+        return count;
+      } finally {
+        if (executor != null) executor.shutdownNow();
+      }
+    }
+
 }
