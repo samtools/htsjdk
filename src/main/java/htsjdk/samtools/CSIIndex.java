@@ -158,7 +158,7 @@ public class CSIIndex extends AbstractBAMFileIndex implements BrowseableBAMIndex
     @Override
     public BAMFileSpan getSpanOverlapping(int referenceIndex, int startPos, int endPos) {
         final BAMIndexContent queryResults = query(referenceIndex, startPos, endPos);
-        int initialBinNumber = getFirstBinOnLevel(getBinDepth() - 1) + (startPos >> getMinShift());
+        int initialBinNumber = getFirstBinOnLevel(getBinDepth() - 1) + (startPos - 1 >> getMinShift());
         long minimumOffset = 0L;
         Bin targetBin;
 
