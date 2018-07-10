@@ -1127,17 +1127,6 @@ public class IOUtil {
         }
     }
 
-    /*
-     * Converts the File to a Path, preserving nullness.
-     *
-     * @param fileOrNull a File, or null
-     * @return           the corresponding Path (or null)
-     */
-    public static Path toPath(File fileOrNull) {
-        return (null == fileOrNull ? null : fileOrNull.toPath());
-    }
-
-
     public static List<Path> getPaths(List<String> uriStrings) throws RuntimeIOException {
         return uriStrings.stream().map(s -> {
             try {
@@ -1146,6 +1135,16 @@ public class IOUtil {
                 throw new RuntimeIOException(e);
             }
         }).collect(Collectors.toList());
+    }
+
+    /*
+     * Converts the File to a Path, preserving nullness.
+     *
+     * @param fileOrNull a File, or null
+     * @return           the corresponding Path (or null)
+     */
+    public static Path toPath(File fileOrNull) {
+        return (null == fileOrNull ? null : fileOrNull.toPath());
     }
 
     /** Takes a list of Files and converts them to a list of Paths
