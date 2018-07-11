@@ -42,7 +42,9 @@ public class AbstractVCFCodecTest extends VariantBaseTest {
                 {"src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf", true},
                 {"src/test/resources/htsjdk/tribble/tabix/testTabixIndex.vcf.gz", true},
                 {"src/test/resources/htsjdk/tribble/nonexistant.garbage", false},
-                {"src/test/resources/htsjdk/tribble/testIntervalList.list", false}
+                {"src/test/resources/htsjdk/tribble/testIntervalList.list", false},
+                {"src/test/resources/htsjdk/tribble/empty.file", false},
+                {"src/test/resources/htsjdk/tribble/tinyTextFile.txt.gz", false}
         };
     }
 

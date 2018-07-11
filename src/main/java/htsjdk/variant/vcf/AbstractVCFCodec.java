@@ -42,10 +42,7 @@ import htsjdk.variant.variantcontext.LazyGenotypesContext;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -621,23 +618,40 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
     }
 
     public static boolean canDecodeFile(final String potentialInput, final String MAGIC_HEADER_LINE) {
+        InputStream fileInputStream = null;
         try {
-            Path path = IOUtil.getPath(potentialInput);
-            //isVCFStream closes the stream that's passed in
-            return isVCFStream(Files.newInputStream(path), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new GZIPInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE) ||
-                    isVCFStream(new BlockCompressedInputStream(Files.newInputStream(path)), MAGIC_HEADER_LINE);
+            final Path path = IOUtil.getPath(potentialInput);
+            fileInputStream = Files.newInputStream(path);
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+            bufferedInputStream.mark(0);
+
+            return isVCFStream(bufferedInputStream, bufferedInputStream, MAGIC_HEADER_LINE) ||
+                    isVCFStream(new GZIPInputStream(bufferedInputStream), bufferedInputStream, MAGIC_HEADER_LINE) ||
+                    isVCFStream(new BlockCompressedInputStream(bufferedInputStream), bufferedInputStream, MAGIC_HEADER_LINE);
         } catch ( FileNotFoundException e ) {
             return false;
         } catch ( IOException e ) {
             return false;
+        } finally {
+            try {
+                if (fileInputStream != null) {
+                    fileInputStream.close();
+                }
+            } catch (IOException e) { }
         }
     }
 
-    private static boolean isVCFStream(final InputStream stream, final String MAGIC_HEADER_LINE) {
+    /**
+     * This method should read enough bytes from streamToRead to determine if streamToRead is a VCF stream and then call
+     * reset on the underlying bufferedInputStream so that other streamToRead's can be created
+     */
+    private static boolean isVCFStream(final InputStream streamToRead, final BufferedInputStream bufferedInputStream, final String MAGIC_HEADER_LINE) {
         try {
             byte[] buff = new byte[MAGIC_HEADER_LINE.length()];
-            int nread = stream.read(buff, 0, MAGIC_HEADER_LINE.length());
+            int nread = streamToRead.read(buff, 0, MAGIC_HEADER_LINE.length());
+            if (nread < MAGIC_HEADER_LINE.getBytes().length) {
+                return false;
+            }
             boolean eq = Arrays.equals(buff, MAGIC_HEADER_LINE.getBytes());
             return eq;
         } catch ( IOException e ) {
@@ -645,7 +659,9 @@ public abstract class AbstractVCFCodec extends AsciiFeatureCodec<VariantContext>
         } catch ( RuntimeException e ) {
             return false;
         } finally {
-            try { stream.close(); } catch ( IOException e ) {}
+            try {
+                bufferedInputStream.reset();
+            } catch ( IOException e ) { }
         }
     }
 
