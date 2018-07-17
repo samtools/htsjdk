@@ -4,6 +4,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.build.CramContainerHeaderIterator;
 import htsjdk.samtools.cram.build.CramContainerIterator;
 import htsjdk.samtools.cram.structure.Container;
+import htsjdk.samtools.cram.structure.ContainerIO;
 import htsjdk.samtools.cram.structure.CramHeader;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.util.Iterables;
@@ -52,6 +53,15 @@ public class CramContainerHeaderIteratorTest extends HtsjdkTest {
             Assert.assertNull(headerOnlyContainer.blocks);
             Assert.assertNull(headerOnlyContainer.header);
             Assert.assertNull(headerOnlyContainer.slices);
+            // try to read a container from the offset to check it's correct
+            try (SeekableFileStream seekableFileStream = new SeekableFileStream(cramFile)) {
+                seekableFileStream.seek(headerOnlyContainer.offset);
+                Container container = ContainerIO.readContainer(actualHeader.getVersion(), seekableFileStream);
+                Assert.assertEquals(container.alignmentStart, fullContainer.alignmentStart);
+                Assert.assertEquals(container.alignmentSpan, fullContainer.alignmentSpan);
+                Assert.assertEquals(container.nofRecords, fullContainer.nofRecords);
+                Assert.assertEquals(container.checksum, fullContainer.checksum);
+            }
         }
     }
 }
