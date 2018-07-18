@@ -326,11 +326,11 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public void setAttribute(final String key, final String value) {
         String tempVal = value;
         if (key.equals(SORT_ORDER_TAG)) {
+            this.sortOrder = null;
             try {
-                this.sortOrder = null;
                 tempVal = SortOrder.valueOf(value).toString();
             } catch (IllegalArgumentException e) {
-                tempVal = "unknown";
+                tempVal = SortOrder.unknown.toString();
             }
         } else if (key.equals(GROUP_ORDER_TAG)) {
             this.groupOrder = null;

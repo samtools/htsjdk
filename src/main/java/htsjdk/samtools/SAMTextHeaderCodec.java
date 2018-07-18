@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.util.DateParser;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.RuntimeIOException;
@@ -71,7 +72,6 @@ public class SAMTextHeaderCodec {
 
     public static final String COMMENT_PREFIX = HEADER_LINE_START + HeaderRecordType.CO.name() + FIELD_SEPARATOR;
     private static final Log log = Log.getInstance(SAMTextHeaderCodec.class);
-
 
     void setWriter(final BufferedWriter writer) {
         this.writer = writer;
@@ -234,9 +234,9 @@ public class SAMTextHeaderCodec {
 
         final String soString = parsedHeaderLine.getValue(SAMFileHeader.SORT_ORDER_TAG);
         try {
-            if (soString != null) SAMFileHeader.SortOrder.valueOf(soString);
+            if (soString != null) SortOrder.valueOf(soString);
         } catch (IllegalArgumentException e) {
-                reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
+            reportErrorParsingLine(HEADER_LINE_START + parsedHeaderLine.getHeaderRecordType() +
                             " line has non-conforming SO tag value: " + soString + ".",
                     SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE, null);
         }
@@ -333,19 +333,19 @@ public class SAMTextHeaderCodec {
         }
 
         private void validateSortOrderValue(String[] value) {
-            if ("SO".equals(value[0])) {
+            if (SAMFileHeader.SORT_ORDER_TAG.equals(value[0])) {
                 try {
-                    SAMFileHeader.SortOrder.valueOf(value[1]);
+                    SortOrder.valueOf(value[1]);
                 } catch (IllegalArgumentException e) {
                     if (validationStringency == ValidationStringency.STRICT) {
-                        throw new SAMFormatException("Found non conforming header SO tag: "
+                        throw new SAMFormatException("Found non-conforming header SO tag: "
                                                      + value[1]
                                                      + ", exiting because VALIDATION_STRINGENCY=STRICT");
                     } else if (validationStringency == ValidationStringency.LENIENT) {
-                        log.warn("Found non conforming header SO tag: "
+                        log.warn("Found non-conforming header SO tag: "
                                  + value[1] + ". Treating as 'unknown'.");
                     }
-                    value[1] = "unknown";
+                    value[1] = SortOrder.unknown.toString();
                 }
             }
         }
