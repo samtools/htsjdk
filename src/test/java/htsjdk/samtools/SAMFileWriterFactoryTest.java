@@ -210,11 +210,11 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
         			factory.makeBAMWriter(header, false, outputStream):
         			factory.makeSAMWriter(header, false, outputStream)
         			)) {
-            fillSmallBam(writer);
+        fillSmallBam(writer);
         }
     }
 
-    @Test(description="check that factory settings are propagated to writer")
+    @Test(description="check that factory settings are propagated towriter")
     public void testFactorySettings()  throws Exception {
         final SAMFileWriterFactory factory = new SAMFileWriterFactory();
         factory.setCreateIndex(false);
@@ -235,7 +235,7 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
             Assert.assertEquals(wontBeUsed, ((SAMFileWriterImpl) writer).getTempDirectory());
         }
     }
-
+   
    private int fillSmallBam(SAMFileWriter writer) {
        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
        builder.addUnmappedFragment("HiMom!");
@@ -484,6 +484,21 @@ public class SAMFileWriterFactoryTest extends HtsjdkTest {
 
         Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
     }
+
+
+    @Test(groups="defaultReference")
+    public void testMakeWriterForCramExtensionNoReference() throws IOException {
+
+        final File cramTmpFile = File.createTempFile("testMakeWriterForCramExtension", "." + CRAM_TYPE.fileExtension());
+        cramTmpFile.deleteOnExit();
+        final SAMFileWriter samFileWriter = new SAMFileWriterFactory().makeWriter(new SAMFileHeader(), true, cramTmpFile, null);
+
+        fillSmallBam(samFileWriter);
+        samFileWriter.close();
+
+        Assert.assertTrue(SamStreams.isCRAMFile(new BufferedInputStream(new SeekableFileStream(cramTmpFile))));
+    }
+
 
     @Test
     public void testMakeWriterForNoExtension() throws IOException {

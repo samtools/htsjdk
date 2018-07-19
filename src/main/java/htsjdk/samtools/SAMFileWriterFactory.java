@@ -437,7 +437,7 @@ public class SAMFileWriterFactory implements Cloneable {
             return makeSAMWriter(header, presorted, outputPath);
         } else {
             if (!BAM_TYPE.hasValidFileExtension(filename)) {
-                log.warn("Unknown file extension, assuming BAM format when writing file: " + outputFile.getAbsolutePath());
+                log.info("Unknown file extension, assuming BAM format when writing file: " + outputFile.getAbsolutePath());
             }
             return makeBAMWriter(header, presorted, outputPath);
         }
@@ -633,24 +633,24 @@ public class SAMFileWriterFactory implements Cloneable {
             final Path outputFile,
             final Path referenceFasta) {
 
-        final CRAMReferenceSource referenceSource ;
+        final CRAMReferenceSource referenceSource;
         if (referenceFasta == null) {
-            log.warn("Reference fasta is not provided when writing CRAM file " + outputFile.getAbsolutePath());
+            log.info("Reference fasta is not provided when writing CRAM file " + outputFile.getAbsolutePath());
             referenceSource = ReferenceSource.getDefaultCRAMReferenceSource();
         } else {
             referenceSource = new ReferenceSource(referenceFasta);
         }
         OutputStream cramOS = null;
-        OutputStream indexOS = null ;
+        OutputStream indexOS = null;
 
         if (createIndex) {
             if (!IOUtil.isRegularPath(outputFile)) {
                 log.warn("Cannot create index for CRAM because output file is not a regular file: " + outputFile.toUri());
-            }
-            else {
+            } else {
                 final Path indexPath = IOUtil.addExtension(outputFile, BAMIndex.BAI_INDEX_SUFFIX);
                 try {
-                    indexOS = Files.newOutputStream(indexPath);
+
+                    indexOS = Files.newOutputStream(indexPath) ;
                 }
                 catch (final IOException ioe) {
                     throw new RuntimeIOException("Error creating index file for: " + indexPath.toUri(), ioe);
@@ -660,8 +660,7 @@ public class SAMFileWriterFactory implements Cloneable {
 
         try {
             cramOS = IOUtil.maybeBufferOutputStream(Files.newOutputStream(outputFile), bufferSize);
-        }
-        catch (final IOException ioe) {
+        } catch (final IOException ioe) {
             throw new RuntimeIOException("Error creating CRAM file: " + outputFile.toUri(), ioe);
         }
 

@@ -47,6 +47,18 @@ public class Defaults {
     public static final SamFlagField SAM_FLAG_FIELD_FORMAT;
 
     /**
+     * The extension to assume a sam file has when the actual file doesn't have an extension, useful
+     * for when outputing to /dev/stdout, for example.
+     */
+    public static final String DEFAULT_SAM_EXTENSION;
+
+    /**
+     * The extension to assume a vcf has when the actual file doesn't have an extension, useful
+     * for when outputing to /dev/stdout, for example.
+     */
+    public static final String DEFAULT_VCF_EXTENSION;
+
+    /**
      * Even if BUFFER_SIZE is 0, this is guaranteed to be non-zero.  If BUFFER_SIZE is non-zero,
      * this == BUFFER_SIZE (Default = 128k).
      */
@@ -104,6 +116,8 @@ public class Defaults {
         USE_ASYNC_IO_WRITE_FOR_SAMTOOLS = getBooleanProperty("use_async_io_write_samtools", false);
         USE_ASYNC_IO_WRITE_FOR_TRIBBLE = getBooleanProperty("use_async_io_write_tribble", false);
         COMPRESSION_LEVEL = getIntProperty("compression_level", 5);
+        DEFAULT_SAM_EXTENSION = getStringProperty("default_sam_type", "bam");
+        DEFAULT_VCF_EXTENSION = getStringProperty("default_vcf_type", "vcf");
         BUFFER_SIZE = getIntProperty("buffer_size", 1024 * 128);
         if (BUFFER_SIZE == 0) {
             NON_ZERO_BUFFER_SIZE = 1024 * 128;
