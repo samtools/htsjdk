@@ -87,7 +87,7 @@ public interface SamReader extends Iterable<SAMRecord>, Closeable {
         public static final Type SAM_TYPE = new TypeImpl("SAM", "sam", null);
         public static final Type BAM_CSI_TYPE = new TypeImpl("BAM", "bam", "csi");
 
-        public boolean hasValidFileExtension(String fileName) {
+        public boolean hasValidFileExtension(final String fileName) {
             return fileName != null && fileName.endsWith("." + fileExtension());
         }
     }

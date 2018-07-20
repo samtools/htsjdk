@@ -5,9 +5,6 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
-/**
- * Created by vadim on 21/04/2017.
- */
 public class BamFileIoUtilsTest {
     @Test
     public void testIsBamFile() {

@@ -62,11 +62,11 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     private static final long TOO_LARGE_UNSIGNED_INT_VALUE = BinaryCodec.MAX_UINT + 1L;
 
-    enum FORMAT {SAM, BAM, CRAM}
+    enum Format {SAM, BAM, CRAM}
 
     @BeforeTest
     public void loadDictionaryFromFasta () throws IOException {
-        IndexedFastaSequenceFile ff = new IndexedFastaSequenceFile(REF_FILE);
+        final IndexedFastaSequenceFile ff = new IndexedFastaSequenceFile(REF_FILE);
         DICTIONARY_BACKED_BY_REF_FILE = ff.getSequenceDictionary();
         ff.close();
     }
@@ -225,12 +225,11 @@ public class SAMIntegerTagTest extends HtsjdkTest {
         bamWriter.addAlignment(rec);
         bamWriter.close();
 
-        final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REF_FILE).open(bamFile);
-        SAMRecordIterator iterator = reader.iterator();
-        Assert.assertTrue(iterator.hasNext());
-        rec = iterator.next();
-        iterator.close();
-        reader.close();
+        try(final SamReader reader = SamReaderFactory.makeDefault().referenceSequence(REF_FILE).open(bamFile);
+            final SAMRecordIterator iterator = reader.iterator()) {
+            Assert.assertTrue(iterator.hasNext());
+            rec = iterator.next();
+        }
         bamFile.delete();
         return rec;
     }
@@ -267,14 +266,16 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     @Test(expectedExceptions = SAMException.class)
     public void testBadSamStrict() throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L));
-        reader.iterator().next();
+        try(final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.STRICT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
+            reader.iterator().next();
+        }
     }
 
     @Test
     public void testBadSamSilent() throws IOException {
-        final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L));
-        reader.iterator().next();
+        try(final SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(createSamForIntAttr(BinaryCodec.MAX_UINT + 1L))) {
+            reader.iterator().next();
+        }
     }
 
     @DataProvider(name = "legalIntegerAttributesFiles")
@@ -310,8 +311,8 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     @DataProvider(name = "valid_set")
     public static Object[][] valid_set() {
-        List<Object[]> params = new ArrayList<Object[]>();
-        for (FORMAT format:FORMAT.values()) {
+        final List<Object[]> params = new ArrayList<Object[]>();
+        for (Format format: Format.values()) {
             for (ValidationStringency stringency:ValidationStringency.values()) {
                 params.add(new Object[]{0, format, stringency});
                 params.add(new Object[]{1, format, stringency});
@@ -331,8 +332,8 @@ public class SAMIntegerTagTest extends HtsjdkTest {
 
     @DataProvider(name = "invalid_set")
     public static Object[][] invalid_set() {
-        List<Object[]> params = new ArrayList<Object[]>();
-        for (FORMAT format:FORMAT.values()) {
+        final List<Object[]> params = new ArrayList<Object[]>();
+        for (Format format: Format.values()) {
             for (ValidationStringency stringency:ValidationStringency.values()) {
                 params.add(new Object[]{(long)Integer.MIN_VALUE -1L, format, stringency});
                 params.add(new Object[]{TOO_LARGE_UNSIGNED_INT_VALUE, format, stringency});
@@ -343,18 +344,18 @@ public class SAMIntegerTagTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "valid_set")
-    public void testValidIntegerAttributeRoundtrip(final long value, final FORMAT format, ValidationStringency validationStringency) throws IOException {
+    public void testValidIntegerAttributeRoundtrip(final long value, final Format format, ValidationStringency validationStringency) throws IOException {
         testRoundtripIntegerAttribute(value, format, validationStringency);
     }
 
     @Test(dataProvider = "invalid_set", expectedExceptions = RuntimeException.class)
-    public void testInvalidIntegerAttributeRoundtrip(final long value, final FORMAT format, ValidationStringency validationStringency) throws IOException {
+    public void testInvalidIntegerAttributeRoundtrip(final long value, final Format format, ValidationStringency validationStringency) throws IOException {
         testRoundtripIntegerAttribute(value, format, validationStringency);
     }
 
-    private void testRoundtripIntegerAttribute(final Number value, final FORMAT format, ValidationStringency validationStringency) throws IOException {
+    private void testRoundtripIntegerAttribute(final Number value, final Format format, ValidationStringency validationStringency) throws IOException {
         final SAMFileHeader header = new SAMFileHeader();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         final SAMFileWriter w;
         switch (format) {
