@@ -61,7 +61,9 @@ jar {
     manifest {
         attributes 'Implementation-Title': 'HTSJDK',
                 'Implementation-Vendor' : 'Samtools Organization',
-                'Implementation-Version': version
+                'Implementation-Version': version,
+                'Bundle-SymbolicName': project.getGroup()+'.'+project.getName(),
+                'Bundle-Version': version
     }
 }
 
