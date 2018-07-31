@@ -25,7 +25,10 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMException;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekablePathStream;
+import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.GZIIndex;
 import htsjdk.samtools.util.IOUtil;
@@ -73,6 +76,15 @@ public class BlockCompressedIndexedFastaSequenceFile extends AbstractIndexedFast
         } catch (IOException e) {
             throw new SAMException("Fasta file should be readable but is not: " + path, e);
         }
+    }
+
+    public BlockCompressedIndexedFastaSequenceFile(final String source, final SeekableStream in, final FastaSequenceIndex index, final SAMSequenceDictionary dictionary, final GZIIndex gziIndex) {
+        super(source, index, dictionary);
+        if (gziIndex == null) {
+            throw new IllegalArgumentException("null gzi index");
+        }
+        stream = new BlockCompressedInputStream(in);
+        gzindex = gziIndex;
     }
 
     private static GZIIndex loadFastaGziIndex(final Path path) {
