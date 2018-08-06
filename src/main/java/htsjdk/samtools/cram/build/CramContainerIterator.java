@@ -29,7 +29,7 @@ public class CramContainerIterator implements Iterator<Container> {
     void readNextContainer() {
         try {
             nextContainer = containerFromStream(cramHeader.getVersion(), countingInputStream);
-            final long containerSizeInBytes = countingInputStream.getCount();
+            final long containerSizeInBytes = countingInputStream.getCount() - offset;
 
             nextContainer.offset = offset;
             offset += containerSizeInBytes;
