@@ -41,6 +41,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1061,5 +1062,15 @@ public class SequenceUtil {
         }
 
         return readName;
+    }
+
+    static public byte[] getRandomBases(Random random, final int length) {
+        final byte[] bases = new byte[length];
+
+        for (int i = 0; i < length; ++i) {
+            bases[i] = VALID_BASES_UPPER[random.nextInt(VALID_BASES_UPPER.length)];
+        }
+
+        return bases;
     }
 }
