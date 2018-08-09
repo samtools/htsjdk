@@ -33,6 +33,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.fastq.FastqConstants;
+import htsjdk.utils.ValidationUtils;
 
 import java.io.File;
 import java.math.BigInteger;
@@ -1065,6 +1066,7 @@ public class SequenceUtil {
     }
 
     static public byte[] getRandomBases(Random random, final int length) {
+        ValidationUtils.validateArg(length>=0, "length must be positive");
         final byte[] bases = new byte[length];
 
         for (int i = 0; i < length; ++i) {

@@ -27,7 +27,6 @@ package htsjdk.samtools.reference;
 import htsjdk.samtools.SAMSequenceDictionaryCodec;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.utils.NullWriter;
 import htsjdk.utils.ValidationUtils;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
@@ -40,21 +39,20 @@ import java.util.Map;
 
 /**
  * Writes a FASTA formatted reference file.
- * <p>
  * In addition it can also compose the index and dictionary files for the newly written reference file.
  * </p>
  * <p>
  * Example:
- * <code>
+ * <pre>
  * String[] seqNames = ...;
  * byte[][] seqBases = ...;
  * ...
  * try (final FastaReferenceWriter writer = new FastaReferenceFileWriter(outputFile)) {
- * for (int i = 0; i < seqNames.length; i++) {
- * writer.startSequence(seqNames[i]).appendBases(seqBases[i]);
+ *      for (int i = 0; i < seqNames.length; i++) {
+ *          writer.startSequence(seqNames[i]).appendBases(seqBases[i]);
+ *      }
  * }
- * }
- * </code>
+ * </pre>
  * </p>
  * <p>
  * The two main operations that one can invoke on a opened writer is {@link #startSequence} and {@link #appendBases}.
@@ -65,10 +63,10 @@ import java.util.Map;
  * The writer will make sure that the output adheres to the FASTA reference sequence file format restrictions:
  * <ul>
  * <li>Sequence names are valid (non-empty, without space/blank, control characters),</li>
- * <li>sequence description are valid (without control characters),</li>
- * <li>bases are valid nucleotides or IUPAC redundancy codes and X [ACGTNX...] (lower or uppercase are accepted),</li>
- * <li>sequence cannot have 0 length,</li>
- * <li>and that each sequence can only appear once in the output</li>
+ * <li>Sequence description are valid (without control characters),</li>
+ * <li>Bases are valid nucleotides or IUPAC redundancy codes and X [ACGTNX...] (lower or uppercase are accepted),</li>
+ * <li>Sequence cannot have 0 length,</li>
+ * <li>And that each sequence can only appear once in the output</li>
  * </ul>
  * </p>
  */
@@ -152,7 +150,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * The value is the sequence length in bases.
      * </p>
      */
-    private final Map<String, Long> sequenceNamesAndSizes;
+    private final Map<String, Long> sequenceNamesAndSizes = new LinkedHashMap<>();
 
     /**
      * Bases per line to be applied to the sequence that is been currently appended to the output.
@@ -204,7 +202,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      */
     public FastaReferenceWriter(final Path fastaFile, final boolean makeFaiOutput, final boolean makeDictOutput)
             throws IOException {
-        this(fastaFile, DEFAULT_BASES_PER_LINE, makeFaiOutput, makeDictOutput);
+        this(DEFAULT_BASES_PER_LINE, fastaFile, makeFaiOutput, makeDictOutput);
     }
 
     /**
@@ -223,11 +221,11 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      * @throws IOException              if such exception is thrown when accessing the output path resources.
      */
-    public FastaReferenceWriter(final Path fastaFile, final int basesPerLine, final boolean makeFaiOutput,
+    public FastaReferenceWriter(final int basesPerLine, final Path fastaFile, final boolean makeFaiOutput,
                                 final boolean makeDictOutput)
             throws IOException {
-        this(ValidationUtils.nonNull(fastaFile, "the output fasta-file cannot be null"),
-                basesPerLine,
+        this(basesPerLine,
+                ValidationUtils.nonNull(fastaFile, "output fasta-file"),
                 defaultFaiFile(makeFaiOutput, fastaFile),
                 defaultDictFile(makeDictOutput, fastaFile));
     }
@@ -250,7 +248,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      */
     public FastaReferenceWriter(final Path fastaFile, final Path indexFile, final Path dictFile)
             throws IOException {
-        this(fastaFile, DEFAULT_BASES_PER_LINE, indexFile, dictFile);
+        this(DEFAULT_BASES_PER_LINE, fastaFile, indexFile, dictFile);
     }
 
     /**
@@ -266,19 +264,13 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      * @throws IOException              if such exception is thrown when accessing the output path resources.
      */
-    public FastaReferenceWriter(final Path fastaFile, final int basesPerLine, final Path indexFile, final Path dictFile)
+    public FastaReferenceWriter(final int basesPerLine, final Path fastaFile, final Path indexFile, final Path dictFile)
             throws IOException {
-        // This code is a slight repeat of {@link #FastaReferenceWriter(OutputStream,int,OutputStream,OutputStream)
-        // for the sake of avoiding creating output if basesPerLine is invalid.
-        this.defaultBasePerLine = checkBasesPerLine(basesPerLine);
-
-        this.fastaStream = new CountingOutputStream(Files.newOutputStream(fastaFile));
-        this.indexWriter = indexFile == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(Files.newOutputStream(indexFile), CHARSET);
-        final BufferedWriter dictWriter = new BufferedWriter(dictFile == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(Files.newOutputStream(dictFile), CHARSET));
-        this.dictWriter = dictWriter;
-        this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
-        this.dictCodec.encodeHeaderLine(false);
-        this.sequenceNamesAndSizes = new LinkedHashMap<>();
+        this(checkBasesPerLine(basesPerLine),
+                Files.newOutputStream(fastaFile),
+                indexFile == null ? null : Files.newOutputStream(indexFile),
+                dictFile == null ? null : Files.newOutputStream(dictFile)
+        );
     }
 
     /**
@@ -292,8 +284,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param dictOutput  the output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
-    public FastaReferenceWriter(final OutputStream fastaOutput,
-                                final int basesPerLine,
+    public FastaReferenceWriter(final int basesPerLine,
+                                final OutputStream fastaOutput,
                                 final OutputStream indexOutput,
                                 final OutputStream dictOutput) {
         this.defaultBasePerLine = checkBasesPerLine(basesPerLine);
@@ -303,7 +295,6 @@ public final class FastaReferenceWriter implements AutoCloseable {
         this.dictWriter = dictWriter;
         this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
         this.dictCodec.encodeHeaderLine(false);
-        this.sequenceNamesAndSizes = new LinkedHashMap<>();
     }
 
     private static Path defaultFaiFile(final boolean makeFaiFile, final Path fastaFile) {
@@ -316,8 +307,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
     // checks that a sequence name is valid.
     private static void checkSequenceName(final String name) {
-        ValidationUtils.nonNull(name ,"Sequence name should not be null");
-        ValidationUtils.nonEmpty(name,"Sequence name should not be empty");
+        ValidationUtils.nonEmpty(name, "Sequence name");
 
         for (int i = 0; i < name.length(); i++) {
             final char ch = name.charAt(i);
@@ -330,7 +320,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
     }
 
     private static void checkSequenceBases(final byte[] bases, final int offset, final int length) {
-        ValidationUtils.nonNull(bases, "the input bases array cannot be null");
+        ValidationUtils.nonNull(bases, "input bases");
+        ValidationUtils.validateArg(bases.length >= offset + length, "Cannot validate bases beyond end of array.");
         final int to = offset + length;
         for (int i = offset; i < to; i++) {
             final byte b = bases[i];
@@ -343,20 +334,20 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private static String checkDescription(final String description) {
         if (description == null || description.isEmpty()) {
             return "";
-        } else {
-            for (int i = 0; i < description.length(); i++) {
-                final char c = description.charAt(i);
-                if (Character.isISOControl(c) && c != '\t') { // tab is the only valid control char in the description.
-                    throw new IllegalArgumentException("the input name contains non-tab control characters: '" +
-                            description + "'");
-                }
-            }
-            return description;
         }
+        for (int i = 0; i < description.length(); i++) {
+            final char c = description.charAt(i);
+            if (Character.isISOControl(c) && c != '\t') { // tab is the only valid control char in the description.
+                throw new IllegalArgumentException("the input name contains non-tab control characters: '" +
+                        description + "'");
+            }
+        }
+        return description;
+
     }
 
     private static int checkBasesPerLine(final int value) {
-        ValidationUtils.validateArg(value > 0, "base per line must be 1 or greater");
+        ValidationUtils.validateArg(value > 0, "bases per line must be 1 or greater");
         return value;
     }
 
@@ -367,7 +358,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * </p>
      * <p>
      * The sequence name cannot contain any blank characters (as determined by {@link Character#isWhitespace(char)}),
-     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header star character
+     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header start character
      * {@value #HEADER_START_CHAR}. It cannot be the empty string either ("").
      * </p>
      * <p>
@@ -701,14 +692,17 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IOException if such exception is thrown when closing output writers and output streams.
      */
     public void close() throws IOException {
-        if (!closed) {
-            closeSequence();
-            if (sequenceNamesAndSizes.isEmpty()) {
-                throw new IllegalStateException("no sequences where added to the reference");
+        try {
+            if (!closed) {
+                closeSequence();
+                if (sequenceNamesAndSizes.isEmpty()) {
+                    throw new IllegalStateException("no sequences were added to the reference");
+                }
+                fastaStream.close();
+                indexWriter.close();
+                dictWriter.close();
             }
-            fastaStream.close();
-            indexWriter.close();
-            dictWriter.close();
+        } finally {
             closed = true;
         }
     }
@@ -720,7 +714,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param makeIndex   whether the index file should be written at its standard location.
      * @param makeDict    whether the dictionary file should be written at it standard location.
      * @param name        the sequence name, cannot contain white space, or control chracter or the header start character.
-     * @param description the sequence description, "" if no description.
+     * @param description the sequence description, can be null or "" if no description.
      * @param bases       the sequence bases, cannot be {@code null}.
      * @throws IOException if such exception is thrown when writing in the output resources.
      */
@@ -742,7 +736,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param makeIndex    whether the index file should be written at its standard location.
      * @param makeDict     whether the dictionary file should be written at it standard location.
      * @param name         the sequence name, cannot contain white space, or control chracter or the header start character.
-     * @param description  the sequence description, "" if no description.
+     * @param description  the sequence description, can be null or "" if no description.
      * @param bases        the sequence bases, cannot be {@code null}.
      * @throws IOException if such exception is thrown when writing in the output resources.
      */
@@ -750,9 +744,36 @@ public final class FastaReferenceWriter implements AutoCloseable {
                                                     final boolean makeDict, final String name,
                                                     final String description, final byte[] bases)
             throws IOException {
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(whereTo, basesPerLine, makeIndex, makeDict)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriter(basesPerLine, whereTo, makeIndex, makeDict)) {
             writer.startSequence(name, description);
             writer.appendBases(bases);
         }
     }
+
+    private static class NullWriter extends Writer {
+
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+            // no op
+        }
+
+        @Override
+        public void flush() throws IOException {
+            // no op
+        }
+
+        @Override
+        public void close() throws IOException {
+            // no op
+        }
+
+        private NullWriter() {
+        }
+
+        /**
+         * The only singleton instance of this class (no need for more!)
+         */
+        public final static NullWriter NULL_WRITER = new NullWriter();
+    }
+
 }

@@ -39,8 +39,8 @@ import java.util.*;
  */
 public class SequenceUtilTest extends HtsjdkTest {
     private static final String HEADER = "@HD\tVN:1.0\tSO:unsorted\n";
-    private static final String SEQUENCE_NAME=
-        "@SQ\tSN:phix174.seq\tLN:5386\tUR:/seq/references/PhiX174/v0/PhiX174.fasta\tAS:PhiX174\tM5:3332ed720ac7eaa9b3655c06f6b9e196";
+    private static final String SEQUENCE_NAME =
+            "@SQ\tSN:phix174.seq\tLN:5386\tUR:/seq/references/PhiX174/v0/PhiX174.fasta\tAS:PhiX174\tM5:3332ed720ac7eaa9b3655c06f6b9e196";
 
     @Test
     public void testExactMatch() {
@@ -52,22 +52,22 @@ public class SequenceUtilTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] compatibleNonEqualLists(){
+    public Object[][] compatibleNonEqualLists() {
         final String s = HEADER +
-                String.format("@SQ\tSN:phix174.seq\tLN:%d\tUR:%s\tAS:PhiX174\tM5:%s\n", 5386, "/seq/references/PhiX174/v0/PhiX174.fasta", "3332ed720ac7eaa9b3655c06f6b9e196")+
+                String.format("@SQ\tSN:phix174.seq\tLN:%d\tUR:%s\tAS:PhiX174\tM5:%s\n", 5386, "/seq/references/PhiX174/v0/PhiX174.fasta", "3332ed720ac7eaa9b3655c06f6b9e196") +
                 String.format("@SQ\tSN:phix175.seq\tLN:%d\tUR:%s\tAS:HiMom\tM5:%s\n", 5385, "/seq/references/PhiX174/v0/HiMom.fasta", "deadbeed");
 
-        return new Object[][]{ {makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
+        return new Object[][]{{makeSequenceDictionary(5386, "/seq/references/PhiX174/v0/PhiX174.fasta",
                 "3332ed720ac7eaa9b3655c06f6b9e196"),
                 new SAMTextHeaderCodec().decode(BufferedLineReader.fromString(s), null).getSequenceDictionary()}};
     }
 
     @Test(dataProvider = "compatibleNonEqualLists")
     public void testCompatible(SAMSequenceDictionary sd1, SAMSequenceDictionary sd2) {
-         SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2, true);
+        SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2, true);
     }
 
-    @Test(dataProvider = "compatibleNonEqualLists",expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
+    @Test(dataProvider = "compatibleNonEqualLists", expectedExceptions = SequenceUtil.SequenceListsDifferException.class)
     public void testinCompatible(SAMSequenceDictionary sd1, SAMSequenceDictionary sd2) {
         SequenceUtil.assertSequenceDictionariesEqual(sd1, sd2, false);
     }
@@ -121,8 +121,8 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "makeReferenceFromAlignment")
     public Object[][] testMakeReferenceFromAlignmentDataProvider() {
-        return new Object[][] {
-               {"ACGTACGTACGT", "12M2H", "4GAAA4", true, "ACGTGAAAACGT"},
+        return new Object[][]{
+                {"ACGTACGTACGT", "12M2H", "4GAAA4", true, "ACGTGAAAACGT"},
                 {"ACGTACGTACGT", "2H12M", "12", false, "ACGTACGTACGT"},
                 {"ACGTACGTACGT", "4M4I4M2H", "8", false, "ACGT----ACGT"},
                 {"ACGTACGTACGT", "2S4M2I4M2S", "8", false, "00GTAC--ACGT00"},
@@ -144,7 +144,7 @@ public class SequenceUtilTest extends HtsjdkTest {
         rec.setReadString(readString);
         final byte[] byteArray = new byte[readString.length()];
 
-        Arrays.fill(byteArray, (byte)33);
+        Arrays.fill(byteArray, (byte) 33);
 
         rec.setBaseQualities(byteArray);
         rec.setCigarString(cigar);
@@ -161,10 +161,10 @@ public class SequenceUtilTest extends HtsjdkTest {
         Assert.assertEquals(nAmbiguous, expectedMismatchesAmbiguous);
     }
 
-    @DataProvider(name="mismatchCountsDataProvider")
+    @DataProvider(name = "mismatchCountsDataProvider")
     public Object[][] testMakeMismatchCountsDataProvider() {
         // note: R=A|G
-        return new Object[][] {
+        return new Object[][]{
                 {"A", "1M", "A", 0, 0},
                 {"A", "1M", "R", 1, 0},
                 {"G", "1M", "R", 1, 0},
@@ -181,11 +181,11 @@ public class SequenceUtilTest extends HtsjdkTest {
         };
     }
 
-    @DataProvider(name="mismatchBisulfiteCountsDataProvider")
+    @DataProvider(name = "mismatchBisulfiteCountsDataProvider")
     public Object[][] mismatchBisulfiteCountsDataProvider() {
 
         List<Object[]> tests = new ArrayList<>();
-        final List<String> bases = Arrays.asList("A","C","T","G");
+        final List<String> bases = Arrays.asList("A", "C", "T", "G");
 
         for (final String base : bases) {
             for (final String ref : bases) {
@@ -195,7 +195,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
                     if (base.equals(ref)) count = 0;
                     else if (base.equals("A") && ref.equals("G") && !strand) count = 0;
-                    else if (base.equals("T") && ref.equals("C") &&  strand) count = 0;
+                    else if (base.equals("T") && ref.equals("C") && strand) count = 0;
                     else count = 1;
 
                     tests.add(new Object[]{base, "1M", ref, strand, count});
@@ -205,7 +205,6 @@ public class SequenceUtilTest extends HtsjdkTest {
         }
         return tests.toArray(new Object[1][]);
     }
-
 
     @Test(dataProvider = "mismatchBisulfiteCountsDataProvider")
     public void testMismatchBisulfiteCounts(final String readString, final String cigar, final String reference,
@@ -218,7 +217,7 @@ public class SequenceUtilTest extends HtsjdkTest {
         rec.setReadNegativeStrandFlag(!positiveStrand);
         final byte[] byteArray = new byte[readString.length()];
 
-        Arrays.fill(byteArray,baseQuality);
+        Arrays.fill(byteArray, baseQuality);
 
         rec.setBaseQualities(byteArray);
         rec.setCigarString(cigar);
@@ -242,7 +241,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "countInsertedAndDeletedBasesTestCases")
     public Object[][] countInsertedAndDeletedBasesTestCases() {
-        return new Object[][] {
+        return new Object[][]{
                 {"2H2S32M", 0, 0},
                 {"2H2S32M12I2M2I3M", 14, 0},
                 {"32M2D10M", 0, 2},
@@ -253,10 +252,10 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "testKmerGenerationTestCases")
     public Object[][] testKmerGenerationTestCases() {
-        return new Object[][] {
+        return new Object[][]{
                 {0, new String[]{""}},
-                {1, new String[]{"A","C","G","T"}},
-                {2, new String[]{"AA","AC","AG","AT","CA","CC","CG","CT","GA","GC","GG","GT","TA","TC","TG","TT"}}
+                {1, new String[]{"A", "C", "G", "T"}},
+                {2, new String[]{"AA", "AC", "AG", "AT", "CA", "CC", "CG", "CT", "GA", "GC", "GG", "GT", "TA", "TC", "TG", "TT"}}
         };
     }
 
@@ -273,7 +272,7 @@ public class SequenceUtilTest extends HtsjdkTest {
     @DataProvider(name = "testBisulfiteConversionDataProvider")
     public Object[][] testBisulfiteConversionDataProvider() {
         // C ref -> T read on the positive strand, and G ref -> A read on the negative strand
-        return new Object[][] {
+        return new Object[][]{
                 {'C', 'T', false, false},
                 {'C', 'A', false, false},
                 {'C', 'C', false, false},
@@ -299,8 +298,8 @@ public class SequenceUtilTest extends HtsjdkTest {
                                final boolean expectedB1ReadMatchesB2Ref,
                                final boolean expectedB2ReadMatchesB1Ref) {
 
-        final char[] base1UcLc = new char[] { toUpperCase(base1), toLowerCase(base1) };
-        final char[] base2UcLc = new char[] { toUpperCase(base2), toLowerCase(base2) };
+        final char[] base1UcLc = new char[]{toUpperCase(base1), toLowerCase(base1)};
+        final char[] base2UcLc = new char[]{toUpperCase(base2), toLowerCase(base2)};
         // Test over all permutations - uc vs uc, uc vs lc, lc vs uc, lc vs lc
         for (char theBase1 : base1UcLc) {
             for (char theBase2 : base2UcLc) {
@@ -333,9 +332,9 @@ public class SequenceUtilTest extends HtsjdkTest {
      * B = C|G|T
      * N = A|C|G|T
      */
-    @DataProvider(name="basesEqualDataProvider")
+    @DataProvider(name = "basesEqualDataProvider")
     public Object[][] testBasesEqualDataProvider() {
-        return new Object[][] {
+        return new Object[][]{
                 {'A', 'A', true, true, true},
                 {'A', 'C', false, false, false},
                 {'A', 'G', false, false, false},
@@ -475,15 +474,15 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @DataProvider(name = "testGetSamReadNameFromFastqHeader")
     public Object[][] testGetSamReadNameFromFastqHeaderTestCases() {
-        return new Object[][] {
-                {"Simple:Name",          "Simple:Name"},
-                {"Simple:Name",          "Simple:Name"},
-                {"Name/1",               "Name"},
-                {"Name/2",               "Name"},
-                {"Name/3",               "Name/3"},
-                {"Simple:Name Blank",    "Simple:Name"},
+        return new Object[][]{
+                {"Simple:Name", "Simple:Name"},
+                {"Simple:Name", "Simple:Name"},
+                {"Name/1", "Name"},
+                {"Name/2", "Name"},
+                {"Name/3", "Name/3"},
+                {"Simple:Name Blank", "Simple:Name"},
                 {"Simple:Name Blank /1", "Simple:Name"},
-                {"Name/1/2",             "Name"}
+                {"Name/1/2", "Name"}
         };
     }
 
@@ -527,13 +526,13 @@ public class SequenceUtilTest extends HtsjdkTest {
         rec.setReadName("test");
         rec.setCigarString(cigarString);
 
-        Assert.assertEquals(SequenceUtil.calculateSamNmTagFromCigar(rec),expectedNmValue);
+        Assert.assertEquals(SequenceUtil.calculateSamNmTagFromCigar(rec), expectedNmValue);
     }
 
     @Test
     public void testReverseComplement() {
-        Assert.assertEquals(SequenceUtil.reverseComplement("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),"ZYXWVUASRQPONMLKJIHCFEDGBT");
-        Assert.assertEquals(SequenceUtil.reverseComplement("abcdefghijklmnopqrstuvwxy"),"yxwvuasrqponmlkjihcfedgbt"); //missing "z" on purpose so that we test both even-lengthed and odd-lengthed strings
+        Assert.assertEquals(SequenceUtil.reverseComplement("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), "ZYXWVUASRQPONMLKJIHCFEDGBT");
+        Assert.assertEquals(SequenceUtil.reverseComplement("abcdefghijklmnopqrstuvwxy"), "yxwvuasrqponmlkjihcfedgbt"); //missing "z" on purpose so that we test both even-lengthed and odd-lengthed strings
     }
 
     @Test
@@ -546,9 +545,9 @@ public class SequenceUtilTest extends HtsjdkTest {
     @Test
     public void testReverseQualities() {
 
-        final byte[] qualities1 = new byte[] {10, 20, 30, 40};
+        final byte[] qualities1 = new byte[]{10, 20, 30, 40};
         SequenceUtil.reverseQualities(qualities1);
-        assertEquals(qualities1, new byte[] {40, 30, 20, 10});
+        assertEquals(qualities1, new byte[]{40, 30, 20, 10});
 
         final byte[] qualities2 = {10, 20, 30};
         SequenceUtil.reverseQualities(qualities2);
@@ -577,8 +576,8 @@ public class SequenceUtilTest extends HtsjdkTest {
     @Test
     public void testIsIUPAC() {
         final String iupacString = ".aAbBcCdDgGhHkKmMnNrRsStTvVwWyY";
-        for (byte code=0; code<Byte.MAX_VALUE; code++) {
-            if (iupacString.contains(new String (new char[]{(char) code}))) {
+        for (byte code = 0; code < Byte.MAX_VALUE; code++) {
+            if (iupacString.contains(new String(new char[]{(char) code}))) {
                 Assert.assertTrue(SequenceUtil.isIUPAC(code));
             } else {
                 Assert.assertFalse(SequenceUtil.isIUPAC(code));
@@ -588,7 +587,7 @@ public class SequenceUtilTest extends HtsjdkTest {
 
     @Test
     public void testIUPAC_CODES_STRING() {
-        for (final byte code: SequenceUtil.getIUPACCodesString().getBytes()) {
+        for (final byte code : SequenceUtil.getIUPACCodesString().getBytes()) {
             Assert.assertTrue(SequenceUtil.isIUPAC(code));
         }
     }
@@ -618,5 +617,40 @@ public class SequenceUtilTest extends HtsjdkTest {
         final String expected = "ABCDNNGHNNKNMNNNNRSTNVWNYNABCDNNGHNNKNMNNNNRSTNVWNYNNNN=";
 
         Assert.assertEquals(SequenceUtil.toBamReadBasesInPlace(testInput.getBytes()), expected.getBytes());
+    }
+
+    @DataProvider
+    Object[][] testRandomBasesLength() {
+        return new Object[][]{
+                {0},
+                {1},
+                {2},
+                {3},
+                {5},
+                {10},
+                {100},
+                {1000},
+                {10000},
+                {100000}
+        };
+    }
+
+
+    @Test(dataProvider = "testRandomBasesLength")
+    void testRandomBasesLength(final int length) {
+        final Random random = new Random(42);
+        Assert.assertEquals(SequenceUtil.getRandomBases(random, length).length, length);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    void testRandomBasesNegative() {
+        final Random random = new Random(42);
+        SequenceUtil.getRandomBases(random, -1);
+    }
+
+    @Test
+    void testRandomBases() {
+        final Random random = new Random(42);
+        Assert.assertEquals(SequenceUtil.getRandomBases(random, 100), "GAGACTCGGATCCCCGCTTTTACCGTCTAAGCACTCAAGCTGGAGATTACCATACTTAGGCTCATGTAGCCACCCGCGCTCGTAAATTCTCGACATTCCG".getBytes());
     }
 }

@@ -1,11 +1,9 @@
 package htsjdk.samtools.reference;
 
-import com.sun.org.apache.regexp.internal.RE;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CollectionUtil;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
@@ -96,7 +94,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
         final File testDictOutput = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutput);
         testDictOutput.deleteOnExit();
-        try (FastaReferenceWriter unused=new FastaReferenceWriter(testOutput.toPath(), invalidBpl, true, true)){
+        try (FastaReferenceWriter unused = new FastaReferenceWriter(invalidBpl, testOutput.toPath(), true, true)) {
             // no-op
         } finally {
             // make sure that no output file was created:
@@ -243,7 +241,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
         try (final FastaReferenceWriter writer = defaultBpl < 0
                 ? new FastaReferenceWriter(fastaFile.toPath(), withIndex, withDictionary)
-                : new FastaReferenceWriter(fastaFile.toPath(), defaultBpl, withIndex, withDictionary)) {
+                : new FastaReferenceWriter(defaultBpl, fastaFile.toPath(), withIndex, withDictionary)) {
             writeReference(writer, withDescriptions, rdn, dictionary, bases, bpl);
         }
         assertOutput(fastaFile.toPath(), withIndex, withDictionary, withDescriptions, dictionary, defaultBpl, bases, bpl);
@@ -303,9 +301,9 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         final File source = new File("src/test/resources/htsjdk/samtools/hg19mini.fasta");
 
         final ReferenceSequenceFile sourceFasta = ReferenceSequenceFileFactory.getReferenceSequenceFile(source);
-        final Map<String, byte[] > seqs = new HashMap<>();
+        final Map<String, byte[]> seqs = new HashMap<>();
 
-        try(final FastaReferenceWriter fastaReferenceWriter = new FastaReferenceWriter(testOutputFile, 80, true, true)) {
+        try (final FastaReferenceWriter fastaReferenceWriter = new FastaReferenceWriter(80, testOutputFile, true, true)) {
             ReferenceSequence referenceSequence;
 
             while ((referenceSequence = sourceFasta.nextSequence()) != null) {
@@ -315,7 +313,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
         // Can't compare files directly since discription isn't read by ReferenceSequenceFile and so it isn't written to new fasta.
         final SAMSequenceDictionary testDictionary = SAMSequenceDictionaryExtractor.extractDictionary(testDictOutputFile);
-        assertFastaContent(testOutputFile, false, testDictionary, 80, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k-> -1,false));
+        assertFastaContent(testOutputFile, false, testDictionary, 80, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k -> -1, false));
         assertFastaIndexContent(testOutputFile, testIndexOutputFile, testDictionary, seqs);
         assertFastaDictionaryContent(testDictOutputFile, testDictionary);
 
@@ -323,7 +321,6 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(Files.deleteIfExists(testIndexOutputFile));
         Assert.assertTrue(Files.deleteIfExists(testDictOutputFile));
     }
-
 
     @Test
     public void testAlternativeIndexAndDictFileNames() throws IOException, GeneralSecurityException, URISyntaxException {
@@ -370,7 +367,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         try (final OutputStream testOutputStream = new FileOutputStream(testOutputFile);
              final OutputStream testIndexOutputStream = new FileOutputStream(testIndexOutputFile);
              final OutputStream testDictOutputStream = new FileOutputStream(testDictOutputFile)) {
-            try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutputStream, 50, testIndexOutputStream, testDictOutputStream)) {
+            try (final FastaReferenceWriter writer = new FastaReferenceWriter(50, testOutputStream, testIndexOutputStream, testDictOutputStream)) {
                 writer.startSequence("seq1");
                 writer.appendBases(seqs.get("seq1"));
             }
