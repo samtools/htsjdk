@@ -1,8 +1,11 @@
 package htsjdk.samtools.reference;
 
+import com.sun.org.apache.regexp.internal.RE;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.utils.SAMSequenceDictionaryExtractor;
 import org.testng.Assert;
@@ -11,6 +14,7 @@ import org.testng.annotations.Test;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.util.*;
@@ -284,6 +288,42 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutputFile).delete());
         Assert.assertTrue(ReferenceSequenceFileFactory.getFastaIndexFileName(testOutputFile.toPath()).toFile().delete());
     }
+
+    @Test
+    public void testCopyReference() throws IOException, GeneralSecurityException, URISyntaxException {
+        final Path testOutputFile = File.createTempFile("fwr-test", ".copy0.fasta").toPath();
+        testOutputFile.toFile().deleteOnExit();
+
+        final Path testIndexOutputFile = ReferenceSequenceFileFactory.getFastaIndexFileName(testOutputFile);
+        testIndexOutputFile.toFile().deleteOnExit();
+
+        final Path testDictOutputFile = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutputFile);
+        testDictOutputFile.toFile().deleteOnExit();
+
+        final File source = new File("src/test/resources/htsjdk/samtools/hg19mini.fasta");
+
+        final ReferenceSequenceFile sourceFasta = ReferenceSequenceFileFactory.getReferenceSequenceFile(source);
+        final Map<String, byte[] > seqs = new HashMap<>();
+
+        try(final FastaReferenceWriter fastaReferenceWriter = new FastaReferenceWriter(testOutputFile, 80, true, true)) {
+            ReferenceSequence referenceSequence;
+
+            while ((referenceSequence = sourceFasta.nextSequence()) != null) {
+                seqs.put(referenceSequence.getName(), referenceSequence.getBases());
+                fastaReferenceWriter.appendSequence(referenceSequence.getName(), referenceSequence.getBases());
+            }
+        }
+        // Can't compare files directly since discription isn't read by ReferenceSequenceFile and so it isn't written to new fasta.
+        final SAMSequenceDictionary testDictionary = SAMSequenceDictionaryExtractor.extractDictionary(testDictOutputFile);
+        assertFastaContent(testOutputFile, false, testDictionary, 80, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k-> -1,false));
+        assertFastaIndexContent(testOutputFile, testIndexOutputFile, testDictionary, seqs);
+        assertFastaDictionaryContent(testDictOutputFile, testDictionary);
+
+        Assert.assertTrue(Files.deleteIfExists(testOutputFile));
+        Assert.assertTrue(Files.deleteIfExists(testIndexOutputFile));
+        Assert.assertTrue(Files.deleteIfExists(testDictOutputFile));
+    }
+
 
     @Test
     public void testAlternativeIndexAndDictFileNames() throws IOException, GeneralSecurityException, URISyntaxException {

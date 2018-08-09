@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package htsjdk;
+package htsjdk.utils;
 
 import java.util.Collection;
 import java.util.function.Supplier;

@@ -24,19 +24,14 @@
 
 package htsjdk.samtools.reference;
 
-import htsjdk.ValidationUtils;
 import htsjdk.samtools.SAMSequenceDictionaryCodec;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.utils.NullWriter;
-import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.utils.ValidationUtils;
 import org.apache.commons.compress.utils.CountingOutputStream;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,7 +66,7 @@ import java.util.Map;
  * <ul>
  * <li>Sequence names are valid (non-empty, without space/blank, control characters),</li>
  * <li>sequence description are valid (without control characters),</li>
- * <li>bases are valid nucleotides ore IUPAC redundancy codes and X [ACGTNX...] (lower or uppercase are accepted),</li>
+ * <li>bases are valid nucleotides or IUPAC redundancy codes and X [ACGTNX...] (lower or uppercase are accepted),</li>
  * <li>sequence cannot have 0 length,</li>
  * <li>and that each sequence can only appear once in the output</li>
  * </ul>
@@ -127,6 +122,11 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * Writer for the index file.
      */
     private final Writer indexWriter;
+
+    /**
+     * FastaSequenceIndex for the index file.
+     */
+    private final FastaSequenceIndex index = new FastaSequenceIndex();
 
     /**
      * Output writer to the output dictionary.
