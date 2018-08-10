@@ -1065,6 +1065,13 @@ public class SequenceUtil {
         return readName;
     }
 
+    /**
+     *  Returns an array of bytes containing random DNA bases
+     *
+     * @param random A {@link Random} object to use for drawing randomw bases
+     * @param length How many bases to return.
+     * @return an array of random DNA bases of the requested length.
+     */
     static public byte[] getRandomBases(Random random, final int length) {
         ValidationUtils.validateArg(length>=0, "length must be positive");
         final byte[] bases = new byte[length];

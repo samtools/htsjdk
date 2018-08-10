@@ -670,5 +670,4 @@ public final class FastaReferenceWriter implements AutoCloseable {
          */
         public final static NullWriter NULL_WRITER = new NullWriter();
     }
-
 }
