@@ -289,7 +289,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * </p>
      * <p>
      * The sequence name cannot contain any blank characters (as determined by {@link Character#isWhitespace(char)}),
-     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header star character
+     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header start character
      * {@value #HEADER_START_CHAR}. It cannot be the empty string either ("").
      * </p>
      * <p>
@@ -322,7 +322,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * </p>
      * <p>
      * The sequence name cannot contain any blank characters (as determined by {@link Character#isWhitespace(char)}),
-     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header star character
+     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header start character
      * {@value #HEADER_START_CHAR}. It cannot be the empty string either ("").
      * </p>
      * <p>
@@ -360,7 +360,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * </p>
      * <p>
      * The sequence name cannot contain any blank characters (as determined by {@link Character#isWhitespace(char)}),
-     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header star character
+     * control characters (as determined by {@link Character#isISOControl(char)}) or the the FASTA header start character
      * {@value #HEADER_START_CHAR}. It cannot be the empty string either ("").
      * </p>
      * <p>
