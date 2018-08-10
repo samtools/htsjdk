@@ -32,7 +32,6 @@ import org.apache.commons.compress.utils.CountingOutputStream;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -183,98 +182,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private boolean closed;
 
     /**
-     * Creates a reference FASTA file writer.
-     * <p>
-     * The default bases-per-line is set to {@link #DEFAULT_BASES_PER_LINE}.
-     * </p>
-     * <p>
-     * Names for the fasta index and dictionary are constructed from the FASTA output file using common practices
-     * as resolved by {@link ReferenceSequenceFileFactory#getFastaIndexFileName(Path)}
-     * and {@link ReferenceSequenceFileFactory#getDefaultDictionaryForReferenceSequence(Path)}
-     * respectively.
-     * </p>
-     *
-     * @param fastaFile      the output fasta file path.
-     * @param makeFaiOutput  whether an index must be generated.
-     * @param makeDictOutput whether a dictionary must be generated.
-     * @throws IllegalArgumentException if {@code fastaFile} is {@code null}.
-     * @throws IOException              if such exception is thrown when accessing the output path resources.
-     */
-    public FastaReferenceWriter(final Path fastaFile, final boolean makeFaiOutput, final boolean makeDictOutput)
-            throws IOException {
-        this(DEFAULT_BASES_PER_LINE, fastaFile, makeFaiOutput, makeDictOutput);
-    }
-
-    /**
-     * Creates a reference FASTA file writer.
-     * <p>
-     * Names for the fasta index and dictionary are constructed from the FASTA output file using common practices
-     * as resolved by {@link ReferenceSequenceFileFactory#getFastaIndexFileName(Path)}
-     * and {@link ReferenceSequenceFileFactory#getDefaultDictionaryForReferenceSequence(Path)}
-     * respectively.
-     * </p>
-     *
-     * @param fastaFile      the output fasta file path.
-     * @param basesPerLine   default bases per line.
-     * @param makeFaiOutput  whether an index must be generated.
-     * @param makeDictOutput whether a dictionary must be generated.
-     * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
-     * @throws IOException              if such exception is thrown when accessing the output path resources.
-     */
-    public FastaReferenceWriter(final int basesPerLine, final Path fastaFile, final boolean makeFaiOutput,
-                                final boolean makeDictOutput)
-            throws IOException {
-        this(basesPerLine,
-                ValidationUtils.nonNull(fastaFile, "output fasta-file"),
-                defaultFaiFile(makeFaiOutput, fastaFile),
-                defaultDictFile(makeDictOutput, fastaFile));
-    }
-
-    /**
-     * Creates a reference FASTA file writer.
-     * <p>
-     * The default bases-per-line is set to {@link #DEFAULT_BASES_PER_LINE}.
-     * </p>
-     * <p>
-     * You can specify a specific path for the index and dictionary file. If either set to {@code null} such
-     * a file won't be generated.
-     * </p>
-     *
-     * @param fastaFile the output fasta file path.
-     * @param indexFile the path of the index file, if requested, {@code null} if none should be generated.
-     * @param dictFile  the path of the dictFile, if requested, {@code null} if nono should be generated.
-     * @throws IllegalArgumentException if {@code fastaFile} is {@code null}.
-     * @throws IOException              if such exception is thrown when accessing the output path resources.
-     */
-    public FastaReferenceWriter(final Path fastaFile, final Path indexFile, final Path dictFile)
-            throws IOException {
-        this(DEFAULT_BASES_PER_LINE, fastaFile, indexFile, dictFile);
-    }
-
-    /**
-     * Creates a reference FASTA file writer.
-     * <p>
-     * You can specify a specific path for the index and dictionary file. If either set to {@code null} such
-     * a file won't be generated.
-     * </p>
-     *
-     * @param fastaFile the output fasta file path.
-     * @param indexFile the path of the index file, if requested, {@code null} if none should be generated.
-     * @param dictFile  the path of the dictFile, if requested, {@code null} if nono should be generated.
-     * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
-     * @throws IOException              if such exception is thrown when accessing the output path resources.
-     */
-    public FastaReferenceWriter(final int basesPerLine, final Path fastaFile, final Path indexFile, final Path dictFile)
-            throws IOException {
-        this(checkBasesPerLine(basesPerLine),
-                Files.newOutputStream(fastaFile),
-                indexFile == null ? null : Files.newOutputStream(indexFile),
-                dictFile == null ? null : Files.newOutputStream(dictFile)
-        );
-    }
-
-    /**
-     * Creates a reference FASTA file writer.
+     * Creates a reference FASTA file writer (private...use the builder: {@link FastaReferenceWriterBuilder}.
      * <p>
      * You can specify a specific output stream to each file: the main fasta output, its index and its dictionary.
      * </p>
@@ -284,25 +192,17 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @param dictOutput  the output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
-    public FastaReferenceWriter(final int basesPerLine,
+    protected FastaReferenceWriter(final int basesPerLine,
                                 final OutputStream fastaOutput,
                                 final OutputStream indexOutput,
                                 final OutputStream dictOutput) {
-        this.defaultBasePerLine = checkBasesPerLine(basesPerLine);
+        this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
         this.indexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
         final BufferedWriter dictWriter = new BufferedWriter(dictOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(dictOutput, CHARSET));
         this.dictWriter = dictWriter;
         this.dictCodec = new SAMSequenceDictionaryCodec(dictWriter);
         this.dictCodec.encodeHeaderLine(false);
-    }
-
-    private static Path defaultFaiFile(final boolean makeFaiFile, final Path fastaFile) {
-        return makeFaiFile ? ReferenceSequenceFileFactory.getFastaIndexFileName(fastaFile) : null;
-    }
-
-    private static Path defaultDictFile(final boolean makeDictFile, final Path fastaFile) {
-        return makeDictFile ? ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(fastaFile) : null;
     }
 
     // checks that a sequence name is valid.
@@ -344,11 +244,6 @@ public final class FastaReferenceWriter implements AutoCloseable {
         }
         return description;
 
-    }
-
-    private static int checkBasesPerLine(final int value) {
-        ValidationUtils.validateArg(value > 0, "bases per line must be 1 or greater");
-        return value;
     }
 
     /**
@@ -417,7 +312,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
      */
     public FastaReferenceWriter startSequence(final String sequenceName, final int basesPerLine)
             throws IOException {
-        return startSequence(sequenceName, "", checkBasesPerLine(basesPerLine));
+        return startSequence(sequenceName, "", FastaReferenceWriterBuilder.checkBasesPerLine(basesPerLine));
     }
 
     /**
@@ -496,14 +391,14 @@ public final class FastaReferenceWriter implements AutoCloseable {
         assertIsNotClosed();
         checkSequenceName(sequenceName);
         final String nonNullDescription = checkDescription(description);
-        checkBasesPerLine(basesPerLine);
+        FastaReferenceWriterBuilder.checkBasesPerLine(basesPerLine);
         closeSequence();
         if (sequenceNamesAndSizes.containsKey(sequenceName)) {
             throw new IllegalStateException("the input sequence name '" + sequenceName + "' has already been added");
         }
         currentSequenceName = sequenceName;
         currentBasesPerLine = basesPerLine;
-        final StringBuilder builder = new StringBuilder(sequenceName.length() + nonNullDescription.length() + 10);
+        final StringBuilder builder = new StringBuilder(sequenceName.length() + nonNullDescription.length() + 2);
         builder.append(HEADER_START_CHAR).append(sequenceName);
         if (!nonNullDescription.isEmpty()) {
             builder.append(HEADER_NAME_AND_DESCRIPTION_SEPARATOR).append(nonNullDescription);
@@ -722,7 +617,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
                                                     final boolean makeDict, final String name,
                                                     final String description, final byte[] bases)
             throws IOException {
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(whereTo, makeIndex, makeDict)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(whereTo).setMakeFaiOutput(makeIndex).setMakeDictOutput(makeDict).build()) {
             writer.startSequence(name, description);
             writer.appendBases(bases);
         }
@@ -744,7 +639,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
                                                     final boolean makeDict, final String name,
                                                     final String description, final byte[] bases)
             throws IOException {
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(basesPerLine, whereTo, makeIndex, makeDict)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setBasesPerLine(basesPerLine).setFastaFile(whereTo).setMakeFaiOutput(makeIndex).setMakeDictOutput(makeDict).build()) {
             writer.startSequence(name, description);
             writer.appendBases(bases);
         }

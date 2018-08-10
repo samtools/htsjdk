@@ -28,7 +28,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput.toPath()).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1");
             writer.appendBases(SequenceUtil.getRandomBases(new Random(113), 100));
             writer.startSequence("seq2");
@@ -45,7 +45,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         testOutput.deleteOnExit();
 
         try {
-            new FastaReferenceWriter(testOutput.toPath(), false, false).close();
+            new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build().close();
         } finally {
             Assert.assertTrue(testOutput.delete());
         }
@@ -57,7 +57,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false);
+        final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build();
         writer.startSequence("seq1").appendBases(new byte[]{'A', 'C', 'G', 'T'});
         writer.close();
         try {
@@ -73,7 +73,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false);
+        final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build();
         writer.startSequence("seq1").appendBases(new byte[]{'A', 'C', 'G', 'T'});
         writer.close();
         try {
@@ -94,7 +94,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
         final File testDictOutput = ReferenceSequenceFileFactory.getDefaultDictionaryForReferenceSequence(testOutput);
         testDictOutput.deleteOnExit();
-        try (FastaReferenceWriter unused = new FastaReferenceWriter(invalidBpl, testOutput.toPath(), true, true)) {
+        try (FastaReferenceWriter unused = new FastaReferenceWriterBuilder().setBasesPerLine(invalidBpl).setFastaFile(testOutput).build()) {
             // no-op
         } finally {
             // make sure that no output file was created:
@@ -110,7 +110,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1", invalidBpl);
         } finally {
             Assert.assertTrue(testOutput.delete());
@@ -123,7 +123,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         testOutput.deleteOnExit();
 
         Assert.assertTrue(testOutput.delete());
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1");
             writer.appendBases(SequenceUtil.getRandomBases(new Random(113), 100));
             writer.startSequence("seq2");
@@ -139,7 +139,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         final File testOutput = File.createTempFile("fwr-test", ".fasta");
         testOutput.deleteOnExit();
         Assert.assertTrue(testOutput.delete());
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.appendBases(SequenceUtil.getRandomBases(new Random(113), 100));
         } finally {
             Assert.assertTrue(testOutput.delete());
@@ -151,7 +151,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         final File testOutput = File.createTempFile("fwr-test", ".fasta");
         testOutput.deleteOnExit();
         Assert.assertTrue(testOutput.delete());
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1");
             writer.appendBases(SequenceUtil.getRandomBases(new Random(113), 100));
             writer.startSequence("seq2");
@@ -168,7 +168,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1");
             writer.appendBases(SequenceUtil.getRandomBases(new Random(113), 100));
             writer.startSequence("seq1");
@@ -183,7 +183,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence(invalidName);
         } finally {
             Assert.assertTrue(testOutput.delete());
@@ -196,7 +196,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         Assert.assertTrue(testOutput.delete());
         testOutput.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutput.toPath(), false, false)) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1", invalidDescription);
         } finally {
             Assert.assertTrue(testOutput.delete());
@@ -239,11 +239,15 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         fastaIndexFile.deleteOnExit();
         dictFile.deleteOnExit();
 
-        try (final FastaReferenceWriter writer = defaultBpl < 0
-                ? new FastaReferenceWriter(fastaFile.toPath(), withIndex, withDictionary)
-                : new FastaReferenceWriter(defaultBpl, fastaFile.toPath(), withIndex, withDictionary)) {
+        final FastaReferenceWriterBuilder builder = new FastaReferenceWriterBuilder().setFastaFile(fastaFile).setMakeFaiOutput(withIndex).setMakeDictOutput(withDictionary);
+        if (defaultBpl > 0) {
+            builder.setBasesPerLine(defaultBpl);
+        }
+
+        try (final FastaReferenceWriter writer = builder.build()) {
             writeReference(writer, withDescriptions, rdn, dictionary, bases, bpl);
         }
+
         assertOutput(fastaFile.toPath(), withIndex, withDictionary, withDescriptions, dictionary, defaultBpl, bases, bpl);
         Assert.assertTrue(fastaFile.delete());
         Assert.assertEquals(fastaIndexFile.delete(), withIndex);
@@ -289,6 +293,8 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
     @Test
     public void testCopyReference() throws IOException, GeneralSecurityException, URISyntaxException {
+
+        final int basesPerLine = 80;
         final Path testOutputFile = File.createTempFile("fwr-test", ".copy0.fasta").toPath();
         testOutputFile.toFile().deleteOnExit();
 
@@ -303,7 +309,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         final ReferenceSequenceFile sourceFasta = ReferenceSequenceFileFactory.getReferenceSequenceFile(source);
         final Map<String, byte[]> seqs = new HashMap<>();
 
-        try (final FastaReferenceWriter fastaReferenceWriter = new FastaReferenceWriter(80, testOutputFile, true, true)) {
+        try (final FastaReferenceWriter fastaReferenceWriter = new FastaReferenceWriterBuilder().setBasesPerLine(basesPerLine).setFastaFile(testOutputFile).build()) {
             ReferenceSequence referenceSequence;
 
             while ((referenceSequence = sourceFasta.nextSequence()) != null) {
@@ -313,7 +319,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         }
         // Can't compare files directly since discription isn't read by ReferenceSequenceFile and so it isn't written to new fasta.
         final SAMSequenceDictionary testDictionary = SAMSequenceDictionaryExtractor.extractDictionary(testDictOutputFile);
-        assertFastaContent(testOutputFile, false, testDictionary, 80, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k -> -1, false));
+        assertFastaContent(testOutputFile, false, testDictionary, basesPerLine, seqs, new CollectionUtil.DefaultingMap<String, Integer>(k -> -1, false));
         assertFastaIndexContent(testOutputFile, testIndexOutputFile, testDictionary, seqs);
         assertFastaDictionaryContent(testDictOutputFile, testDictionary);
 
@@ -338,7 +344,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         );
         final Map<String, byte[]> seqs = Collections.singletonMap("seq1", SequenceUtil.getRandomBases(new Random(1341), 100));
         final Map<String, Integer> bpls = Collections.singletonMap("seq1", -1);
-        try (final FastaReferenceWriter writer = new FastaReferenceWriter(testOutputFile.toPath(), testIndexOutputFile.toPath(), testDictOutputFile.toPath())) {
+        try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutputFile).setIndexFile(testIndexOutputFile).setDictFile(testDictOutputFile).build()) {
             writer.startSequence("seq1");
             writer.appendBases(seqs.get("seq1"));
         }
@@ -367,7 +373,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
         try (final OutputStream testOutputStream = new FileOutputStream(testOutputFile);
              final OutputStream testIndexOutputStream = new FileOutputStream(testIndexOutputFile);
              final OutputStream testDictOutputStream = new FileOutputStream(testDictOutputFile)) {
-            try (final FastaReferenceWriter writer = new FastaReferenceWriter(50, testOutputStream, testIndexOutputStream, testDictOutputStream)) {
+            try (final FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setBasesPerLine(50).setFastaOutput(testOutputStream).setIndexOutput(testIndexOutputStream).setDictOutput(testDictOutputStream).build()) {
                 writer.startSequence("seq1");
                 writer.appendBases(seqs.get("seq1"));
             }
