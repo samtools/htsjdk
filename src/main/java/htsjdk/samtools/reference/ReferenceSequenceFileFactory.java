@@ -257,5 +257,4 @@ public class ReferenceSequenceFileFactory {
     public static Path getFastaIndexFileName(Path fastaFile) {
         return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
     }
-
 }

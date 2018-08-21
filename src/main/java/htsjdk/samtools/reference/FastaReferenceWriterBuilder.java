@@ -50,6 +50,8 @@ public class FastaReferenceWriterBuilder {
      * If the index file and output stream are both null and makeFaiOutput is true (default), a default index file will be created as well.
      * If the dictionary file and output stream are both null and makeDictOutput is true (default), a default dictionary file will be created as well.
      *
+     * You can only provide a compressed stream to the fastaOutput, and only in the case that an index isn't written.
+     *
      * @param fastaFile a {@link Path} to the output fasta file.
      * @return this builder
      */

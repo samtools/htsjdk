@@ -314,7 +314,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
             while ((referenceSequence = sourceFasta.nextSequence()) != null) {
                 seqs.put(referenceSequence.getName(), referenceSequence.getBases());
-                fastaReferenceWriter.appendSequence(referenceSequence.getName(), referenceSequence.getBases());
+                fastaReferenceWriter.addSequence(referenceSequence);
             }
         }
         // Can't compare files directly since discription isn't read by ReferenceSequenceFile and so it isn't written to new fasta.
@@ -429,7 +429,7 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
             } else {
                 if (bpl < 0) {
                     if (useAppendSequence) {
-                        Assert.assertSame(writer.appendSequence(sequence.getSequenceName(), seqs.get(sequence.getSequenceName())), writer);
+                        Assert.assertSame(writer.appendSequence(sequence.getSequenceName(), null, seqs.get(sequence.getSequenceName())), writer);
                     } else {
                         Assert.assertSame(writer.startSequence(sequence.getSequenceName()), writer);
                     }

@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright (c) 2009 The Broad Institute
+ * Copyright (c) 2018 The Broad Institute
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +33,7 @@ import org.apache.commons.compress.utils.CountingOutputStream;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Writes a FASTA formatted reference file.
@@ -121,11 +120,6 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private final Writer indexWriter;
 
     /**
-     * FastaSequenceIndex for the index file.
-     */
-    private final FastaSequenceIndex index = new FastaSequenceIndex();
-
-    /**
      * Output writer to the output dictionary.
      */
     private final Writer dictWriter;
@@ -141,15 +135,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
     private final int defaultBasePerLine;
 
     /**
-     * Records the sequences that have been already fully appended to this writer.
-     * <p>
-     * The key is the sequence name.
-     * </p>
-     * <p>
-     * The value is the sequence length in bases.
-     * </p>
+     * Records the sequence names that have been already fully appended to this writer.
      */
-    private final Map<String, Long> sequenceNamesAndSizes = new LinkedHashMap<>();
+    private final Set<String> sequenceNames = new HashSet<>();
 
     /**
      * Bases per line to be applied to the sequence that is been currently appended to the output.
@@ -185,6 +173,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * Creates a reference FASTA file writer (private...use the builder: {@link FastaReferenceWriterBuilder}.
      * <p>
      * You can specify a specific output stream to each file: the main fasta output, its index and its dictionary.
+     * You can only provide a compressed stream to the fastaOutput, and only in the case that an index isn't written.
+     *
+     *
      * </p>
      *
      * @param fastaOutput the output fasta file path.
@@ -193,9 +184,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
     protected FastaReferenceWriter(final int basesPerLine,
-                                final OutputStream fastaOutput,
-                                final OutputStream indexOutput,
-                                final OutputStream dictOutput) {
+                                   final OutputStream fastaOutput,
+                                   final OutputStream indexOutput,
+                                   final OutputStream dictOutput) {
         this.defaultBasePerLine = basesPerLine;
         this.fastaStream = new CountingOutputStream(fastaOutput);
         this.indexWriter = indexOutput == null ? NullWriter.NULL_WRITER : new OutputStreamWriter(indexOutput, CHARSET);
@@ -393,7 +384,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
         final String nonNullDescription = checkDescription(description);
         FastaReferenceWriterBuilder.checkBasesPerLine(basesPerLine);
         closeSequence();
-        if (sequenceNamesAndSizes.containsKey(sequenceName)) {
+        if (sequenceName.contains(sequenceName)) {
             throw new IllegalStateException("the input sequence name '" + sequenceName + "' has already been added");
         }
         currentSequenceName = sequenceName;
@@ -415,7 +406,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
             if (currentBasesCount == 0) {
                 throw new IllegalStateException("no base was added");
             }
-            sequenceNamesAndSizes.put(currentSequenceName, currentBasesCount);
+            sequenceNames.add(currentSequenceName);
             writeIndexEntry();
             writeDictEntry();
             fastaStream.write(LINE_SEPARATOR);
@@ -436,6 +427,21 @@ public final class FastaReferenceWriter implements AutoCloseable {
 
     private void writeDictEntry() {
         dictCodec.encodeSequenceRecord(new SAMSequenceRecord(currentSequenceName, (int) currentBasesCount));
+    }
+
+    /**
+     * Adds bases to current sequence from a {@code byte} array.
+     *
+     * @param basesString String containing the bases to be added.
+     * @return this instance.
+     * @throws IllegalArgumentException if {@bases} is {@code null} or
+     *                                  the input array contains invalid bases (as assessed by: {@link SequenceUtil#isIUPAC(byte)}).
+     * @throws IllegalStateException    if no sequence was started or the writer is already closed.
+     * @throws IOException              if such exception is throw when writing in any of the outputs.
+     */
+    public FastaReferenceWriter appendString(final String basesString)
+            throws IOException {
+        return appendBases(basesString.getBytes());
     }
 
     /**
@@ -501,16 +507,15 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * The new sequence remains open meaning that additional bases for that sequence can be added with additional calls to {@link #appendBases}.
      * </p>
      *
-     * @param name  the name of the new sequence.
-     * @param bases the (first) bases of the sequence.
+     * @param sequence a {@link ReferenceSequence} to add.
      * @return a reference to this very same writer.
      * @throws IOException              if such an exception is thrown when actually writing into the output streams/channels.
      * @throws IllegalArgumentException if either {@code name} or {@code bases} is {@code null} or contains an invalid value (e.g. unsupported bases or sequence names).
      * @throws IllegalStateException    if the writer is already closed, a previous sequence (if any was opened) has no base appended to it or a sequence
      *                                  with such name was already appended to this writer.
      */
-    public FastaReferenceWriter appendSequence(final String name, final byte[] bases) throws IOException {
-        return startSequence(name).appendBases(bases);
+    public FastaReferenceWriter addSequence(ReferenceSequence sequence) throws IOException {
+        return startSequence(sequence.getName()).appendBases(sequence.getBases());
     }
 
     /**
@@ -590,7 +595,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
         try {
             if (!closed) {
                 closeSequence();
-                if (sequenceNamesAndSizes.isEmpty()) {
+                if (sequenceNames.isEmpty()) {
                     throw new IllegalStateException("no sequences were added to the reference");
                 }
                 fastaStream.close();
