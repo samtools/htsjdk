@@ -43,19 +43,19 @@ public class SeekableBufferedStream extends SeekableStream {
 
         /** Returns the number of bytes that can be read from the buffer without reading more into the buffer. */
         int getBytesInBufferAvailable() {
-            if (this.count == this.pos) return 0; // documented test for "is buffer empty"
-            else return this.buf.length - this.pos;
+            return this.count - this.pos;
         }
 
         /** Return true if the position can be changed by the given delta and remain in the buffer. */
         boolean canChangePos(long delta) {
-            return this.pos + delta >= 0 && delta < getBytesInBufferAvailable();
+            long newPos = this.pos + delta;
+            return newPos >= 0 && newPos < this.count;
         }
 
         /** Changes the position in the buffer by a given delta. */
         void changePos(int delta) {
             int newPos = this.pos + delta;
-            if (newPos < 0 || newPos > this.buf.length) {
+            if (newPos < 0 || newPos >= this.count) {
                 throw new IllegalArgumentException("New position not in buffer pos=" + this.pos + ", delta=" + delta);
             }
             this.pos = newPos;

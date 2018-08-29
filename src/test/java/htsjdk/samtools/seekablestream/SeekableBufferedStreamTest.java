@@ -29,10 +29,10 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 
-import static htsjdk.samtools.seekablestream.SeekableBufferedStream.DEFAULT_BUFFER_SIZE;
 import static org.testng.Assert.assertEquals;
 
 public class SeekableBufferedStreamTest extends HtsjdkTest {
@@ -127,15 +127,28 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
     @Test
     public void testSeek() throws IOException {
         final int bufferSize = 20000;
+        final int filledBufferSize = bufferSize / 2;
         final int startPosition = 250000;
         final int length = 5000;
+
+        class LimitedSeekableFileStream extends SeekableFileStream {
+            LimitedSeekableFileStream(File file) throws FileNotFoundException {
+                super(file);
+            }
+            @Override
+            public int read(byte[] buffer, int offset, int length) throws IOException {
+                // only return a fraction of the buffer size (this is allowed by the read contract) to ensure that
+                // BufferedInputStream's internal buffer is not filled, and so some of its contents are not valid
+                return super.read(buffer, offset, Math.min(length, filledBufferSize));
+            }
+        }
 
         final int[] RELATIVE_SEEK_OFFSET = new int[]{-bufferSize*2, -bufferSize, -bufferSize/2, -length, -length/2, -1,
                 0, 1, length/2, length, bufferSize/2, bufferSize-1, bufferSize, bufferSize*2};
 
         for (final int seekOffset : RELATIVE_SEEK_OFFSET) {
             try (SeekableStream unBufferedStream = new SeekableFileStream(BAM_FILE);
-                 SeekableBufferedStream bufferedStream = new SeekableBufferedStream(new SeekableHTTPStream(new URL(BAM_URL_STRING)), bufferSize)) {
+                 SeekableBufferedStream bufferedStream = new SeekableBufferedStream(new LimitedSeekableFileStream(BAM_FILE), bufferSize)) {
                 byte[] buffer1 = new byte[length];
                 unBufferedStream.seek(startPosition);
                 int bytesRead = unBufferedStream.read(buffer1, 0, length);
@@ -157,7 +170,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
                 bytesRead = bufferedStream.read(buffer2, 0, length);
                 Assert.assertEquals(length, bytesRead);
                 Object newInternalBuffer = bufferedStream.bufferedStream;
-                if (seekOffset >=0 && seekOffset < bufferSize) {
+                if (seekOffset >=0 && seekOffset < filledBufferSize) {
                     Assert.assertSame(internalBuffer, newInternalBuffer,
                             "Internal buffer should have been reused for seek offset " + seekOffset);
                 } else {
