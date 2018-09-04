@@ -26,9 +26,13 @@ package htsjdk.samtools.fastq;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.TextTagCodec;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Codec for encoding records into FASTQ format.
@@ -91,13 +95,27 @@ public final class FastqEncoder {
         if(record.getReadPairedFlag() && (record.getFirstOfPairFlag() || record.getSecondOfPairFlag())) {
             readName += (record.getFirstOfPairFlag()) ? FastqConstants.FIRST_OF_PAIR : FastqConstants.SECOND_OF_PAIR;
         }
-        return new FastqRecord(readName, record.getReadString(), null, record.getBaseQualityString());
+        return new FastqRecord(readName, record.getReadString(), record.getStringAttribute(SAMTag.CO.name()), record.getBaseQualityString());
     }
 
     /**
      * Converts a {@link FastqRecord} into a simple unmapped {@link SAMRecord}.
      */
     public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header) {
+        return asSAMRecord(record, header, (s, r) -> {});
+    }
+
+    /**
+     * Converts a {@link FastqRecord} into a simple unmapped {@link SAMRecord}.
+     *
+     * <p>This method allows to pass a {@link BiConsumer} to add the information from the record in
+     * a customizable manner.
+     *
+     * @param record    object to encode.
+     * @param header    header for the returned object.
+     * @param custom    function to customize encoding. Note that default information might be overriden.
+     */
+    public static SAMRecord asSAMRecord(final FastqRecord record, final SAMFileHeader header, final BiConsumer<FastqRecord, SAMRecord> custom) {
         // construct the SAMRecord and set the unmapped flag
         final SAMRecord samRecord = new SAMRecord(header);
         samRecord.setReadUnmappedFlag(true);
@@ -107,7 +125,25 @@ public final class FastqEncoder {
         samRecord.setReadName(readName);
         samRecord.setReadBases(record.getReadBases());
         samRecord.setBaseQualities(record.getBaseQualities());
+        custom.accept(record, samRecord);
         return samRecord;
     }
 
+    /**
+     * Encodes the quality header into the comment tag (use in {@link #asSAMRecord(FastqRecord, SAMFileHeader, BiConsumer)}.
+     *
+     * <p>Note that all tabs present in the quality header are replaced by spaces.
+     */
+    public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_TO_COMMENT_TAG = (record, samRecord) ->
+        samRecord.setAttribute(SAMTag.CO.name(), record.getBaseQualityHeader().replaceAll("\t", " "));
+
+
+    public static final BiConsumer<FastqRecord, SAMRecord> QUALITY_HEADER_PARSE_SAM_TAGS = (record, samRecord) -> {
+        final String[] tokens = record.getBaseQualityHeader().split("\t");
+        final TextTagCodec codec = new TextTagCodec();
+        for (final String token: tokens) {
+            final Map.Entry<String, Object> tagValue = codec.decode(token);
+            samRecord.setAttribute(tagValue.getKey(), tagValue.getValue());
+        }
+    };
 }
