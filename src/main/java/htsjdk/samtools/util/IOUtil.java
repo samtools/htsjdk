@@ -1137,6 +1137,16 @@ public class IOUtil {
         }).collect(Collectors.toList());
     }
 
+    /*
+     * Converts the File to a Path, preserving nullness.
+     *
+     * @param fileOrNull a File, or null
+     * @return           the corresponding Path (or null)
+     */
+    public static Path toPath(File fileOrNull) {
+        return (null == fileOrNull ? null : fileOrNull.toPath());
+    }
+
     /** Takes a list of Files and converts them to a list of Paths
      * Runs .toPath() on the contents of the input.
      *

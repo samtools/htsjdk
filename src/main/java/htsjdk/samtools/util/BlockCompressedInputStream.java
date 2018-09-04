@@ -610,7 +610,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * @throws IOException
      */
     public static FileTermination checkTermination(final File file) throws IOException {
-        return checkTermination(file == null ? null : file.toPath());
+        return checkTermination(IOUtil.toPath(file));
     }
 
     /**
