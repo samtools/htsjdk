@@ -1,0 +1,49 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+}
+
+plugins {
+    id 'com.github.johnrengelman.shadow' version '2.0.4'
+    id 'java-library'
+}
+
+//This allows you to build a single shadowJar with the contents of all the
+// subprojects included in it
+dependencies {
+    compile subprojects
+}
+
+subprojects {
+    apply plugin: 'java-library'
+
+    group 'org.htsjdk'
+    version '0.0.1'
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        testCompile "org.testng:testng:6.14.3"
+    }
+
+    test {
+        useTestNG{}
+    }
+
+}
+
+project(':cram') {
+    dependencies {
+        api project(':core')
+    }
+}
+
+wrapper {
+    gradleVersion "4.10"
+}
