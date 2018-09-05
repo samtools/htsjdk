@@ -31,14 +31,12 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -108,6 +106,7 @@ import java.util.EnumSet;
 public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
     public static final EnumSet<Options> NO_OPTIONS = EnumSet.noneOf(Options.class);
+    private static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = new OpenOption[0];
 
     public enum OutputType {
         UNSPECIFIED,
@@ -399,8 +398,26 @@ public class VariantContextWriterBuilder {
         return this.options.contains(option);
     }
 
+
     /**
      * Validate and build the <code>VariantContextWriter</code>.
+     *
+     *
+     * @return the <code>VariantContextWriter</code> as specified by previous method calls,
+     *         optionally applying the specified OpenOptions.
+     * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
+     * @throws IllegalArgumentException if no output file or stream is specified.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
+     */
+    public VariantContextWriter build() {
+        return build(EMPTY_OPEN_OPTION_ARRAY);
+    }
+
+    /**
+     * Validate and build the <code>VariantContextWriter</code>.
+     *
+     * @param openOptions options to use when opening the underlying output stream.
      *
      * @return the <code>VariantContextWriter</code> as specified by previous method calls,
      *         optionally applying the specified OpenOptions.
@@ -486,7 +503,7 @@ public class VariantContextWriterBuilder {
      * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
      * but is neither a file or directory then VCF_STREAM is returned.
      *
-     * @param f A file whose {@link OutputType} we want to infer
+     * @param path A file whose {@link OutputType} we want to infer
      * @return The file's {@link OutputType}. Never {@code null}.
      */
     public static OutputType determineOutputTypeFromFile(final Path path) {
