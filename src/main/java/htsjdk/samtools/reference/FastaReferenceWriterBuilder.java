@@ -46,7 +46,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output fasta file to write to.
+     * Set the output fasta file to write to. Doesn't (currently) support compressed filenames.
      * If the index file and output stream are both null and makeFaiOutput is true (default), a default index file will be created as well.
      * If the dictionary file and output stream are both null and makeDictOutput is true (default), a default dictionary file will be created as well.
      *
@@ -62,7 +62,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output fasta file to write to.
+     * Set the output fasta file to write to. Doesn't (currently) support compressed filenames.
      * If the index file and output stream are both null and makeFaiOutput is true (default), a default index file will be created as well.
      * If the dictionary file and output stream are both null and makeDictOutput is true (default), a default dictionary file will be created as well.
      *
@@ -112,7 +112,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output index file to write to.
+     * Set the output index file to write to. Doesn't (currently) support compressed filenames.
      */
     public FastaReferenceWriterBuilder setIndexFile(Path indexFile) {
         this.indexFile = indexFile;
@@ -121,7 +121,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output index file to write to.
+     * Set the output index file to write to. Doesn't (currently) support compressed filenames.
      */
     public FastaReferenceWriterBuilder setIndexFile(File indexFile) {
         return setIndexFile(indexFile.toPath());
@@ -137,14 +137,14 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output dictionary file to write to.
+     * Set the output dictionary file to write to. Doesn't (currently) support compressed filenames.
      */
     public FastaReferenceWriterBuilder setDictFile(File dictFile) {
         return setDictFile(dictFile.toPath());
     }
 
     /**
-     * Set the output stream for writing the reference.
+     * Set the output stream for writing the reference. Doesn't support compressed streams.
      *
      * @param fastaOutput a {@link OutputStream} for the output fasta file.
      * @return this builder
@@ -157,7 +157,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output stream for writing the index.
+     * Set the output stream for writing the index. Doesn't support compressed streams.
      *
      * @param indexOutput a  {@link OutputStream} for the output index.
      * @return this builder
@@ -169,7 +169,7 @@ public class FastaReferenceWriterBuilder {
     }
 
     /**
-     * Set the output stream for writing the dictionary.
+     * Set the output stream for writing the dictionary. Doesn't support compressed streams.
      *
      * @param dictOutput a {@link OutputStream} for the output dictionary.
      * @return this builder

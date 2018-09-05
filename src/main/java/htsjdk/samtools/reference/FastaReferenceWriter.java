@@ -174,8 +174,8 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * <p>
      * You can specify a specific output stream to each file: the main fasta output, its index and its dictionary.
      * You can only provide a compressed stream to the fastaOutput, and only in the case that an index isn't written.
-     *
-     *
+     * <p>
+     * <p>
      * </p>
      *
      * @param fastaOutput the output fasta file path.
