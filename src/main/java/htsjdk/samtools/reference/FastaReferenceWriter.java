@@ -384,7 +384,7 @@ public final class FastaReferenceWriter implements AutoCloseable {
         final String nonNullDescription = checkDescription(description);
         FastaReferenceWriterBuilder.checkBasesPerLine(basesPerLine);
         closeSequence();
-        if (sequenceName.contains(sequenceName)) {
+        if (sequenceNames.contains(sequenceName)) {
             throw new IllegalStateException("the input sequence name '" + sequenceName + "' has already been added");
         }
         currentSequenceName = sequenceName;
