@@ -452,7 +452,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeWriter(header, presorted, IOUtil.toPath( outputFile ), null == referenceFasta ? null : referenceFasta.toPath());
+        return makeWriter(header, presorted, IOUtil.toPath( outputFile ), IOUtil.toPath(referenceFasta));
     }
 
     /**
@@ -572,7 +572,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeCRAMWriter(header, presorted, outputFile.toPath(),  null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, presorted, outputFile.toPath(),  IOUtil.toPath(referenceFasta));
     }
 
 
