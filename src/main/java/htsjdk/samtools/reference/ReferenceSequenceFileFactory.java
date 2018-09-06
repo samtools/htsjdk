@@ -93,7 +93,7 @@ public class ReferenceSequenceFileFactory {
      * @param preferIndexed if true attempt to return an indexed reader that supports non-linear traversal, else return the non-indexed reader
      */
     public static ReferenceSequenceFile getReferenceSequenceFile(final File file, final boolean truncateNamesAtWhitespace, final boolean preferIndexed) {
-        return getReferenceSequenceFile(file.toPath(), truncateNamesAtWhitespace, preferIndexed);
+        return getReferenceSequenceFile(IOUtil.toPath(file), truncateNamesAtWhitespace, preferIndexed);
     }
 
     /**
@@ -206,7 +206,7 @@ public class ReferenceSequenceFileFactory {
      * @param file the reference sequence file on disk.
      */
     public static File getDefaultDictionaryForReferenceSequence(final File file) {
-        return getDefaultDictionaryForReferenceSequence(file.toPath()).toFile();
+        return getDefaultDictionaryForReferenceSequence(IOUtil.toPath(file)).toFile();
     }
 
     /**

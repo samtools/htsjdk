@@ -123,7 +123,7 @@ public class BinaryCodec implements Closeable {
      * @param writing whether the file is being written to
      */
     public BinaryCodec(final File file, final boolean writing) {
-        this(null == file ? null : file.toPath(), writing);
+        this(IOUtil.toPath(file), writing);
     }
 
     /**

@@ -414,7 +414,7 @@ public class IOUtil {
      * @param file the file to check for readability
      */
     public static void assertFileIsReadable(final File file) {
-        assertFileIsReadable(file == null ? null : file.toPath());
+        assertFileIsReadable(toPath(file));
     }
 
     /**
@@ -521,7 +521,7 @@ public class IOUtil {
      * @param dir the dir to check for writability
      */
     public static void assertDirectoryIsWritable(final File dir) {
-        final Path asPath = (dir == null) ? null : dir.toPath();
+        final Path asPath = IOUtil.toPath(dir);
         assertDirectoryIsWritable(asPath);
     }
 
@@ -613,7 +613,7 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openFileForReading(final File file) {
-        return openFileForReading(file.toPath());
+        return openFileForReading(toPath(file));
     }
 
     /**
@@ -646,7 +646,7 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openGzipFileForReading(final File file) {
-        return openGzipFileForReading(file.toPath());
+        return openGzipFileForReading(toPath(file));
     }
 
     /**
@@ -886,7 +886,7 @@ public class IOUtil {
 
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
-        return openFileForBufferedReading(file.toPath());
+        return openFileForBufferedReading(toPath(file));
     }
 
     /** Checks that a path exists and is readable, and then returns a buffered reader for it. */

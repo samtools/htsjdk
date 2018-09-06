@@ -59,7 +59,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
-        this(file == null ? null : file.toPath(), index);
+        this(IOUtil.toPath(file), index);
     }
 
     /**
@@ -68,7 +68,7 @@ public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
      * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
      */
     public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
-        this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(file == null ? null : file.toPath()))));
+        this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(IOUtil.toPath(file)))));
     }
 
     /**

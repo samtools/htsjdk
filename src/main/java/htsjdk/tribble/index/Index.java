@@ -23,6 +23,7 @@
  */
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.util.LittleEndianOutputStream;
 
 import java.io.File;
@@ -79,7 +80,7 @@ public interface Index {
      * @throws IOException if the index is unable to write to the specified file
      */
     public default void write(final File idxFile) throws IOException {
-        write(idxFile.toPath());
+        write(IOUtil.toPath(idxFile));
     }
 
     /**
@@ -99,7 +100,7 @@ public interface Index {
      * @throws IOException if featureFile is not a normal file.
      */
     public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
-        writeBasedOnFeaturePath(featureFile.toPath());
+        writeBasedOnFeaturePath(IOUtil.toPath(featureFile));
     }
 
     /**

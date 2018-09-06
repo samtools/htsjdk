@@ -173,7 +173,7 @@ public abstract class AbstractIndex implements MutableIndex {
     }
 
     public AbstractIndex(final File featureFile) {
-        this(featureFile.toPath());
+        this(IOUtil.toPath(featureFile));
     }
 
     public AbstractIndex(final Path featurePath) {

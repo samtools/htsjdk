@@ -452,7 +452,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeWriter(header, presorted, null == outputFile ? null : outputFile.toPath(), null == referenceFasta ? null : referenceFasta.toPath());
+        return makeWriter(header, presorted, IOUtil.toPath( outputFile ), IOUtil.toPath(referenceFasta));
     }
 
     /**
@@ -468,7 +468,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     @Deprecated
     public SAMFileWriter makeWriter(final SAMFileHeader header, final boolean presorted, final Path outputPath, final File referenceFasta) {
-        return makeWriter(header, presorted, outputPath, null == referenceFasta ? null : referenceFasta.toPath());
+        return makeWriter(header, presorted, outputPath, IOUtil.toPath( referenceFasta ));
     }
 
     /**
@@ -503,7 +503,7 @@ public class SAMFileWriterFactory implements Cloneable {
      * @return CRAMFileWriter
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final OutputStream stream, final File referenceFasta) {
-        return makeCRAMWriter(header, stream, null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, stream, IOUtil.toPath( referenceFasta ));
     }
 
     /**
@@ -537,7 +537,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final File outputFile, final File referenceFasta) {
-        return createCRAMWriterWithSettings(header, true, outputFile.toPath(), null == referenceFasta ? null : referenceFasta.toPath());
+        return createCRAMWriterWithSettings(header, true, outputFile.toPath(), IOUtil.toPath( referenceFasta ));
     }
 
     /**
@@ -556,7 +556,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     @Deprecated
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final Path outputPath, final File referenceFasta) {
-        return makeCRAMWriter(header, true, outputPath, null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, true, outputPath, IOUtil.toPath( referenceFasta ));
     }
 
     /**
@@ -572,7 +572,7 @@ public class SAMFileWriterFactory implements Cloneable {
      *
      */
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final boolean presorted, final File outputFile, final File referenceFasta) {
-        return makeCRAMWriter(header, presorted, outputFile.toPath(),  null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, presorted, outputFile.toPath(),  IOUtil.toPath(referenceFasta));
     }
 
 
@@ -593,7 +593,7 @@ public class SAMFileWriterFactory implements Cloneable {
      */
     @Deprecated
     public CRAMFileWriter makeCRAMWriter(final SAMFileHeader header, final boolean presorted, final Path output, final File referenceFasta) {
-        return makeCRAMWriter(header, presorted, output, null == referenceFasta ? null : referenceFasta.toPath());
+        return makeCRAMWriter(header, presorted, output, IOUtil.toPath( referenceFasta ));
     }
 
     /**
