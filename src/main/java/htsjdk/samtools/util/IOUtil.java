@@ -1268,12 +1268,4 @@ public class IOUtil {
         }
         return path;
     }
-
-    /*
-     * @param file
-     * @return if file == null return null otherwise return file.toPath()
-     */
-    public static Path toPath(File file) {
-        return file == null ? null : file.toPath();
-    }
 }
