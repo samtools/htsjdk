@@ -402,9 +402,7 @@ public class VariantContextWriterBuilder {
     /**
      * Validate and build the <code>VariantContextWriter</code>.
      *
-     *
-     * @return the <code>VariantContextWriter</code> as specified by previous method calls,
-     *         optionally applying the specified OpenOptions.
+     * @return the <code>VariantContextWriter</code> as specified by previous method calls.
      * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
      * @throws IllegalArgumentException if no output file or stream is specified.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
