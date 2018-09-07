@@ -31,7 +31,6 @@ import htsjdk.samtools.Defaults;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.tribble.Tribble;
 import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.VariantBaseTest;
@@ -40,6 +39,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.nio.file.FileSystem;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.testng.Assert;
 import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
@@ -133,27 +134,47 @@ public class VariantContextWriterBuilderUnitTest extends VariantBaseTest {
     Assert.assertTrue(writer instanceof BCF2Writer, "testSetOutputFile BCF File");
   }
 
-  @Test
-  public void testDetermineOutputType() {
-    Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.vcf.toPath()));
-    Assert.assertEquals(OutputType.BCF, VariantContextWriterBuilder.determineOutputTypeFromFile(this.bcf.toPath()));
-    Assert.assertEquals(OutputType.VCF_STREAM, VariantContextWriterBuilder.determineOutputTypeFromFile(new File("/dev/stdout").toPath()));
-    for (final File f: this.blockCompressedVCFs) {
-      Assert.assertEquals(OutputType.BLOCK_COMPRESSED_VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(f.toPath()));
-    }
 
-    // Test symlinking
-    try {
-      final Path link = Files.createTempFile("foo.", ".tmp");
-      Files.deleteIfExists(link);
-      Files.createSymbolicLink(link, this.vcf.toPath());
-      link.toFile().deleteOnExit();
-      Assert.assertEquals(OutputType.VCF, VariantContextWriterBuilder.determineOutputTypeFromFile(link));
-      link.toFile().delete();
+  @DataProvider
+  public Iterator<Object[]> getFilesAndOutputTypes(){
+    List<Object[]> cases = new ArrayList<>();
+    cases.add(new Object[]{OutputType.VCF, this.vcf});
+    cases.add(new Object[]{OutputType.BCF, this.bcf});
+    cases.add(new Object[]{OutputType.VCF_STREAM, new File("/dev/stdout")});
+    for (final File file: this.blockCompressedVCFs) {
+      cases.add( new Object[]{OutputType.BLOCK_COMPRESSED_VCF, file});
     }
-    catch (final IOException ioe) {
-      throw new RuntimeIOException(ioe);
-    }
+    return cases.iterator();
+  }
+
+  @Test(dataProvider = "getFilesAndOutputTypes")
+  public void testDetermineOutputType(OutputType expected, File file) {
+      Assert.assertEquals(VariantContextWriterBuilder.determineOutputTypeFromFile(file), expected);
+  }
+
+  @Test(dataProvider = "getFilesAndOutputTypes")
+  public void testDetermineOutputTypeWithSymlink(OutputType expected, File file) throws IOException {
+      final File link = setUpSymlink(file);
+      Assert.assertEquals(expected, VariantContextWriterBuilder.determineOutputTypeFromFile(link));
+  }
+
+  @Test(dataProvider = "getFilesAndOutputTypes")
+  public void testDetermineOutputTypeOnPath(OutputType expected, File file) {
+    Assert.assertEquals(VariantContextWriterBuilder.determineOutputTypeFromFile(file.toPath()), expected);
+  }
+
+  @Test(dataProvider = "getFilesAndOutputTypes")
+  public void testDetermineOutputTypeWithSymlinkOnPath(OutputType expected, File file) throws IOException {
+    final File link = setUpSymlink(file);
+    Assert.assertEquals(expected, VariantContextWriterBuilder.determineOutputTypeFromFile(link.toPath()));
+  }
+
+  private static File setUpSymlink(File target) throws IOException {
+    final Path link = Files.createTempFile("foo.", ".tmp");
+    Files.deleteIfExists(link);
+    Files.createSymbolicLink(link, target.toPath());
+    link.toFile().deleteOnExit();
+    return link.toFile();
   }
 
   @Test
