@@ -28,8 +28,8 @@ public final class SBIIndexWriter {
     // gigabyte range.
     public static final long DEFAULT_GRANULARITY = 4096;
 
-    private static final byte[] EMPTY_MD5 = new byte[16];
-    private static final byte[] EMPTY_UUID = new byte[16];
+    static final byte[] EMPTY_MD5 = new byte[16];
+    static final byte[] EMPTY_UUID = new byte[16];
 
     private final OutputStream out;
     private final long granularity;
@@ -80,7 +80,7 @@ public final class SBIIndexWriter {
         }
     }
 
-    private void writeVirtualOffset(long virtualOffset) {
+    void writeVirtualOffset(long virtualOffset) {
         if (prev > virtualOffset) {
             throw new IllegalArgumentException(String.format(
                     "Offsets not in order: %#x > %#x",
@@ -110,27 +110,29 @@ public final class SBIIndexWriter {
      * @param uuid the UUID for the data file, or null if not specified
      */
     public void finish(long finalVirtualOffset, long dataFileLength, byte[] md5, byte[] uuid) {
-
-        // complete writing the temp offsets file
-        writeVirtualOffset(finalVirtualOffset);
-        tempOffsetsCodec.close();
-
         if (md5 != null && md5.length != 16) {
             throw new IllegalArgumentException("Invalid MD5 length: " + md5.length);
         }
         if (uuid != null && uuid.length != 16) {
             throw new IllegalArgumentException("Invalid UUID length: " + uuid.length);
         }
+        SBIIndex.Header header = new SBIIndex.Header(dataFileLength, md5 == null ? EMPTY_MD5 : md5, uuid == null ? EMPTY_UUID : uuid, recordCount, granularity);
+        finish(header, finalVirtualOffset);
+    }
 
+    void finish(SBIIndex.Header header, long finalVirtualOffset) {
+        // complete writing the temp offsets file
+        writeVirtualOffset(finalVirtualOffset);
+        tempOffsetsCodec.close();
         try (BinaryCodec binaryCodec = new BinaryCodec(out);
              InputStream tempOffsets = new BufferedInputStream(new FileInputStream(tempOffsetsFile))) {
             // header
             binaryCodec.writeBytes(SBIIndex.SBI_MAGIC);
-            binaryCodec.writeLong(dataFileLength);
-            binaryCodec.writeBytes(md5 == null ? EMPTY_MD5 : md5);
-            binaryCodec.writeBytes(uuid == null ? EMPTY_UUID : uuid);
-            binaryCodec.writeLong(recordCount);
-            binaryCodec.writeLong(granularity);
+            binaryCodec.writeLong(header.getFileLength());
+            binaryCodec.writeBytes(header.getMd5());
+            binaryCodec.writeBytes(header.getUuid());
+            binaryCodec.writeLong(header.getTotalNumberOfRecords());
+            binaryCodec.writeLong(header.getGranularity());
             binaryCodec.writeLong(virtualOffsetCount);
 
             // offsets
