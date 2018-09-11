@@ -1,0 +1,30 @@
+version: 2
+
+# Do not accept work in progress issues
+always_pending:
+  title_regex: 'WIP'
+  explanation: 'Work in progress...'
+
+group_defaults:
+  # Accept both comment approval and GitHub reviews
+  approve_by_comment:
+    enabled: true
+    approve_regex: '^:\+1:'
+    reject_regex: '^:\-1:'
+  github_reviews:
+    enabled: true
+  # ignore approval by the author
+  author_approval:
+    ignored: true
+
+# Groups of reviewers and their respective settings
+groups:
+  maintainers:
+    teams:
+      - htsjdk-next-maintainers
+    required: 1
+    # one rejection is enough not to accept the PR
+    reject_value: -99
+    conditions:
+      branches:
+      - master
