@@ -18,11 +18,12 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private long startTime;
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
-    private long processed;
-    private long lastStartTime;
-    private String lastChrom;
-    private int lastPos;
-    private String lastRN;
+    private long processed = 0;
+    // Set to -1 until the first record is added
+    private long lastStartTime = -1;
+    private String lastChrom = null;
+    private int lastPos = 0;
+    private String lastReadName = null;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -62,9 +63,10 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         else readInfo = this.lastChrom + ":" + fmt.format(this.lastPos);
 
         final String rnInfo;
-        if(lastRN != null) {
-            rnInfo = ", last read name: " + lastRN;
-        } else {
+        if(lastReadName != null) {
+            rnInfo = ".  Last read name: " + lastReadName;
+        }
+        else {
             rnInfo = "";
         }
 
@@ -91,7 +93,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     protected synchronized boolean record(final String chrom, final int pos, final String rname) {
         this.lastChrom = chrom;
         this.lastPos = pos;
-        this.lastRN = rname;
+        this.lastReadName = rname;
         if (this.lastStartTime == -1) {
             this.lastStartTime = System.currentTimeMillis();
         }
@@ -145,7 +147,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         lastStartTime = -1;
         lastChrom = null;
         lastPos = 0;
-        lastRN = null;
+        lastReadName = null;
     }
 
     /** Left pads a string until it is at least the given length. */
