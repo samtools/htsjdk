@@ -100,8 +100,11 @@ public class SeekableHTTPStream extends SeekableStream {
         if (offset < 0 || len < 0 || (offset + len) > buffer.length) {
             throw new IndexOutOfBoundsException("Offset="+offset+",len="+len+",buflen="+buffer.length);
         }
-        if (len == 0 || position == contentLength) {
+        if (len == 0 ) {
             return 0;
+        }
+        if (position == contentLength) {
+            return -1;
         }
 
         HttpURLConnection connection = null;
