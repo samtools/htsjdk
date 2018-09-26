@@ -71,7 +71,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     @Test
     public void testReadExactlyOneByteAtEndOfFile() throws IOException {
-        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))){
+        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))) {
             byte[] buff = new byte[1];
             long length = stream.length();
             stream.seek(length - 1);
