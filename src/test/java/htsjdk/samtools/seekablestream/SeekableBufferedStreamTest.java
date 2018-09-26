@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import static org.testng.Assert.assertEquals;
@@ -72,7 +71,7 @@ public class SeekableBufferedStreamTest extends HtsjdkTest {
 
     @Test
     public void testReadExactlyOneByteAtEndOfFile() throws IOException {
-        try( SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))){
+        try (final SeekableStream stream = new SeekableHTTPStream(new URL(BAM_URL_STRING))){
             byte[] buff = new byte[1];
             long length = stream.length();
             stream.seek(length - 1);
