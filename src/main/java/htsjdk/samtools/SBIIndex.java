@@ -1,3 +1,26 @@
+/*
+ * The MIT License
+ *
+ * Copyright (c) 2018 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.BinaryCodec;
@@ -132,13 +155,13 @@ public final class SBIIndex implements Serializable {
     }
 
     private static SBIIndex readIndex(final InputStream in) {
-        BinaryCodec binaryCodec = new BinaryCodec(in);
-        Header header = readHeader(binaryCodec);
-        long numOffsetsLong = binaryCodec.readLong();
+        final BinaryCodec binaryCodec = new BinaryCodec(in);
+        final Header header = readHeader(binaryCodec);
+        final long numOffsetsLong = binaryCodec.readLong();
         if (numOffsetsLong > Integer.MAX_VALUE) {
             throw new RuntimeException(String.format("Cannot read SBI with more than %s offsets.", Integer.MAX_VALUE));
         }
-        int numOffsets = (int) numOffsetsLong;
+        final int numOffsets = (int) numOffsetsLong;
         long[] virtualOffsets = new long[numOffsets];
         long prev = -1;
         for (int i = 0; i < numOffsets; i++) {
@@ -154,7 +177,7 @@ public final class SBIIndex implements Serializable {
         return new SBIIndex(header, virtualOffsets);
     }
 
-    private static Header readHeader(BinaryCodec binaryCodec) {
+    private static Header readHeader(final BinaryCodec binaryCodec) {
         final byte[] buffer = new byte[SBI_MAGIC.length];
         binaryCodec.readBytes(buffer);
         if (!Arrays.equals(buffer, SBI_MAGIC)) {
@@ -224,7 +247,7 @@ public final class SBIIndex implements Serializable {
      * @return a list of contiguous, non-overlapping, sorted chunks that cover the whole data file
      * @see #getChunk(long, long)
      */
-    public List<Chunk> split(long splitSize) {
+    public List<Chunk> split(final long splitSize) {
         if (splitSize <= 0) {
             throw new IllegalArgumentException(String.format("Split size must be positive: %s", splitSize));
         }
@@ -251,16 +274,16 @@ public final class SBIIndex implements Serializable {
      * or equal to the given split end position, or null if the chunk would be empty.
      * @see #split(long)
      */
-    public Chunk getChunk(long splitStart, long splitEnd) {
+    public Chunk getChunk(final long splitStart, final long splitEnd) {
         if (splitStart >= splitEnd) {
             throw new IllegalArgumentException(String.format("Split start (%s) must be less than end (%s)", splitStart, splitEnd));
         }
         long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
         long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(lastVirtualOffset);
-        splitStart = Math.min(splitStart, maxEnd);
-        splitEnd = Math.min(splitEnd, maxEnd);
-        long virtualSplitStart = BlockCompressedFilePointerUtil.makeFilePointer(splitStart);
-        long virtualSplitEnd = BlockCompressedFilePointerUtil.makeFilePointer(splitEnd);
+        long actualSplitStart = Math.min(splitStart, maxEnd);
+        long actualSplitEnd = Math.min(splitEnd, maxEnd);
+        long virtualSplitStart = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitStart);
+        long virtualSplitEnd = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitEnd);
         long virtualSplitStartAlignment = ceiling(virtualSplitStart);
         long virtualSplitEndAlignment = ceiling(virtualSplitEnd);
         if (virtualSplitStartAlignment == virtualSplitEndAlignment) {
@@ -269,7 +292,7 @@ public final class SBIIndex implements Serializable {
         return new Chunk(virtualSplitStartAlignment, virtualSplitEndAlignment);
     }
 
-    private long ceiling(long virtualOffset) {
+    private long ceiling(final long virtualOffset) {
         int index = Arrays.binarySearch(virtualOffsets, virtualOffset);
         if (index < 0) {
             index = -index - 1;
