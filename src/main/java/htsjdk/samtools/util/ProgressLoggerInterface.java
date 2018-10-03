@@ -34,5 +34,5 @@ public interface ProgressLoggerInterface {
 	boolean record(final String chrom, final int pos);
 	boolean record(final SAMRecord rec);
 	boolean record(final SAMRecord... recs);
-
+	void reset();
 }
