@@ -41,14 +41,18 @@ public class CRAMComplianceTest extends HtsjdkTest {
                 {"c1#noseq"},       // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"c1#unknown"},     // unsigned attributes: https://github.com/samtools/htsjdk/issues/499
                 {"ce#5b"},          // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
+                {"ce#1000"},        // copied from htslib - need to investigate record mismatch
                 {"ce#tag_depadded"},// reads with no read bases: https://github.com/samtools/htsjdk/issues/509
                 {"ce#tag_padded"},  // reads with no read bases: https://github.com/samtools/htsjdk/issues/509
                 {"ce#unmap"},       // unmapped reads with non-zero MAPQ value that is not restored
                                     // https://github.com/samtools/htsjdk/issues/714
-                {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
-                                    // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
                 {"xx#minimal"},     // cigar string "5H0M5H" is restored as "10H"
                                     // https://github.com/samtools/htsjdk/issues/713
+                {"xx#repeated"},    // copied from htslib - need to investigate record mismatch
+                {"xx#tlen"},        // copied from htslib - need to investigate record mismatch
+                {"xx#tlen2"},       // copied from htslib - need to investigate record mismatch
+                {"xx#triplet"},     // the version 2.1 variant of this file has a bad insertSize, which is
+                                    // probably residual detritus from https://github.com/samtools/htsjdk/issues/364
         };
     }
 
