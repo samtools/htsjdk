@@ -40,7 +40,10 @@ public class CramInt {
      * @return an integer value read from the buffer
      */
     public static int int32(final ByteBuffer buffer) {
-        return buffer.get() | buffer.get() << 8 | buffer.get() << 16 | buffer.get() << 24;
+        return (0xFF & (int) buffer.get()) |
+                (0xFF & (int) buffer.get()) << 8 |
+                (0xFF & (int) buffer.get()) << 16 |
+                (0xFF & (int) buffer.get()) << 24;
     }
 
     /**
@@ -61,7 +64,7 @@ public class CramInt {
     }
 
     /**
-     * Write int value to {@link OutputStream} encoded as CRAM int data type.
+     * Write int value to an array of bytes encoded as CRAM int data type.
      *
      * @param value value to be written out
      * @return the byte array holding the value encoded as CRAM int data type
@@ -74,5 +77,4 @@ public class CramInt {
         data[3] = (byte) (value >> 24 & 0xFF);
         return data;
     }
-
 }

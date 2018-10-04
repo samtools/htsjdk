@@ -7,7 +7,7 @@ import java.io.OutputStream;
 /**
  * Methods to read and write CRAM array of integers data type.
  */
-public class CramArray {
+public class CramIntArray {
     /**
      * Read CRAM int array from a {@link InputStream}.
      *
