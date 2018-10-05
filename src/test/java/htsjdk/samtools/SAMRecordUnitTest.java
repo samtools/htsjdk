@@ -25,18 +25,19 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 public class SAMRecordUnitTest extends HtsjdkTest {
 
@@ -1169,4 +1170,86 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     public void testHasAttribute(final SAMRecord samRecord, final String tag, final boolean expectedHasAttribute) {
         Assert.assertEquals(samRecord.hasAttribute(tag), expectedHasAttribute);
     }
+
+    @Test
+    public void test_setAttribute_empty_array() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final String arrayTag = "XA";
+        final SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getStringAttribute(arrayTag));
+        record.setAttribute(arrayTag, new int[0]);
+        Assert.assertNotNull(record.getSignedIntArrayAttribute(arrayTag));
+        Assert.assertEquals(record.getSignedIntArrayAttribute(arrayTag),new int[0]);
+        record.getSAMString();
+        Assert.assertEquals(record.getAttribute(arrayTag), new char[0]);
+        record.setAttribute(arrayTag, null);
+        Assert.assertNull(record.getStringAttribute(arrayTag));
+
+    }
+
+    @DataProvider
+    public Object[][] getEmptyArrays(){
+        final String BAM = BamFileIoUtils.BAM_FILE_EXTENSION;
+        final String SAM = IOUtil.SAM_FILE_EXTENSION;
+        final String CRAM = CramIO.CRAM_FILE_EXTENSION;
+        return new Object[][]{
+                {new int[0], int[].class, BAM},
+                {new short[0], short[].class, BAM},
+                {new byte[0], byte[].class, BAM},
+                {new float[0], float[].class, BAM},
+
+                {new int[0], int[].class, SAM},
+                {new short[0], short[].class, SAM},
+                {new byte[0], byte[].class, SAM},
+                {new float[0], float[].class, SAM},
+
+                {new int[0], int[].class, CRAM},
+                {new short[0], short[].class, CRAM},
+                {new byte[0], byte[].class, CRAM},
+                {new float[0], float[].class, CRAM},
+
+        };
+    }
+
+    @Test(dataProvider = "getEmptyArrays")
+    public void testWriteSamWithEmptyArray(Object emptyArray, Class<?> arrayClass, String fileExtension) throws IOException {
+        Assert.assertEquals(emptyArray.getClass(), arrayClass);
+        Assert.assertEquals(Array.getLength(emptyArray), 0);
+
+        final String arrayTag = "XA";
+        final SAMRecordSetBuilder samRecords = new SAMRecordSetBuilder();
+        samRecords.addFrag("Read",0,100, false);
+        final SAMRecord record = samRecords.getRecords().iterator().next();
+        record.setAttribute(arrayTag, emptyArray);
+        checkArrayIsEmpty(arrayTag, record, arrayClass);
+
+        final Path tmp = Files.createTempFile("tmp", fileExtension);
+        IOUtil.deleteOnExit(tmp);
+
+        final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory()
+                .setCreateMd5File(false)
+                .setCreateIndex(false);
+        final Path reference = IOUtil.getPath("src/test/resources/htsjdk/samtools/one-contig.fasta");
+        try(final SAMFileWriter samFileWriter = writerFactory.makeWriter(samRecords.getHeader(), false, tmp, reference)) {
+            samFileWriter.addAlignment(record);
+        }
+
+        try(final SamReader reader = SamReaderFactory.makeDefault()
+                .referenceSequence(reference)
+                .open(tmp)) {
+            final SAMRecordIterator iterator = reader.iterator();
+            Assert.assertTrue(iterator.hasNext());
+            final SAMRecord recordFromDisk = iterator.next();
+            checkArrayIsEmpty(arrayTag, recordFromDisk, arrayClass);
+        }
+    }
+
+    private static void checkArrayIsEmpty(String arrayTag, SAMRecord recordFromDisk, Class<?> expectedClass) {
+        final Object attribute = recordFromDisk.getAttribute(arrayTag);
+        Assert.assertNotNull(attribute);
+        Assert.assertEquals(attribute.getClass(), expectedClass);
+        Assert.assertEquals(Array.getLength(attribute), 0);
+    }
+
+
 }

@@ -98,8 +98,11 @@ public class TextTagCodec {
     }
 
     private String encodeArrayValue(final Object value) {
-        final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
         final int length = Array.getLength(value);
+        if(length == 0){
+            return "";
+        }
+        final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
         for (int i = 1; i < length; ++i) {
             ret.append(',');
             ret.append(Array.get(value, i).toString());
@@ -221,13 +224,20 @@ public class TextTagCodec {
 
     private Object covertStringArrayToObject(final String stringVal) {
         final String[] elementTypeAndValue = new String[2];
-        if (StringUtil.splitConcatenateExcessTokens(stringVal, elementTypeAndValue, ',') != 2) {
-            throw new SAMFormatException("Tag of type B should have an element type followed by comma");
+
+        final int numberOfTokens = StringUtil.splitConcatenateExcessTokens(stringVal, elementTypeAndValue, ',');
+        if (!(numberOfTokens == 1 || numberOfTokens == 2)) {
+            throw new SAMFormatException("Tag of type B requires an element type");
         }
         if (elementTypeAndValue[0].length() != 1) {
             throw new SAMFormatException("Unrecognized element type for array tag value: " + elementTypeAndValue[0]);
         }
+
         final char elementType = elementTypeAndValue[0].charAt(0);
+        if (numberOfTokens == 1) {
+            return createEmptyArray(elementType);
+        }
+
         final String[] stringValues = elementTypeAndValue[1].split(",");
         if (stringValues.length == 0) throw new SAMFormatException("Tag of type B should have at least one element");
         if (elementType == 'f') {
@@ -313,6 +323,16 @@ public class TextTagCodec {
             }
             default:
                 throw new SAMFormatException("Unrecognized array tag element type: " + elementType);
+        }
+    }
+
+    private static Object createEmptyArray(char elementType) {
+        switch( Character.toLowerCase(elementType) ) {
+            case 'c': { return new byte[0]; }
+            case 's': { return new short[0]; }
+            case 'i': { return new int[0]; }
+            case 'f': { return new float[0]; }
+            default: { throw new SAMFormatException("Unrecognized array tag element type: " + elementType); }
         }
     }
 
