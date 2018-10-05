@@ -415,7 +415,8 @@ public class BinaryCodec implements Closeable {
             throw new IllegalStateException("Calling read method on BinaryCodec open for write.");
         }
         try {
-            return inputStream.read(buffer, offset, length);
+            if (length == 0) return 0;
+            else return inputStream.read(buffer, offset, length);
         } catch (IOException e) {
             throw new RuntimeIOException(constructErrorMessage("Read error"), e);
         }
