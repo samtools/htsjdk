@@ -27,12 +27,7 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 
 
 /*
@@ -284,5 +279,11 @@ public class BinaryCodecTest extends HtsjdkTest {
         readCodec.close();
     }
 
-
+    @Test
+    public void testReadBytesOrFewerNoneAvailable() {
+        final byte[] value = new byte[0];
+        final ByteArrayInputStream instream = new ByteArrayInputStream(value);
+        final BinaryCodec readCodec = new BinaryCodec(instream);
+        Assert.assertEquals(readCodec.readBytesOrFewer(value, 0, 0), 0);
+    }
 }
