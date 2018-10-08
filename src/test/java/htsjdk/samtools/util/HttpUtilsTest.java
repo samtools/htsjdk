@@ -6,7 +6,9 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-public class HttpUtilsTest {
+import htsjdk.HtsjdkTest;
+
+public class HttpUtilsTest extends HtsjdkTest {
     @DataProvider(name = "existing_urls")
     public Object[][] testExistingURLsData() {
         return new Object[][]{
