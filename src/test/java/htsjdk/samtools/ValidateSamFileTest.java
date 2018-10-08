@@ -68,7 +68,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
     public void testValidSamFile() throws Exception {
         final SamReader samReader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(new File(TEST_DATA_DIR, "valid.sam"));
         final Histogram<String> results = executeValidation(samReader, null, IndexValidationStringency.EXHAUSTIVE);
-        Assert.assertTrue(results.isEmpty());
+        Assert.assertEquals(results.get(SAMValidationError.Type.READ_EXTENDS_BEYOND_INSERT.getHistogramString()).getValue(), 2.0);
     }
 
     @Test

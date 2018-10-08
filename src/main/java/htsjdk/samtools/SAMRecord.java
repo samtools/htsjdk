@@ -24,6 +24,8 @@
 package htsjdk.samtools;
 
 
+import htsjdk.samtools.SAMValidationError.Type;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
 import htsjdk.samtools.util.Log;
@@ -34,6 +36,8 @@ import htsjdk.samtools.util.BinaryCodec;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.*;
+
+import static java.lang.Math.abs;
 
 
 /**
@@ -1985,6 +1989,16 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 if (ret == null) ret = new ArrayList<SAMValidationError>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND,
                         "Paired read should be marked as first of pair or second of pair.", getReadName()));
+                if (firstOnly) return ret;
+            }
+
+            if (!getReadUnmappedFlag() && !getMateUnmappedFlag() && !isSecondaryOrSupplementary() &&
+                    getReferenceIndex().equals(getMateReferenceIndex()) &&
+                    SamPairUtil.getPairOrientation(this) == PairOrientation.FR &&
+                    CoordMath.getLength(getAlignmentStart(), getAlignmentEnd()) > abs(getInferredInsertSize())) {
+                if (ret == null) ret = new ArrayList<>();
+                ret.add(new SAMValidationError(Type.READ_EXTENDS_BEYOND_INSERT,
+                        "Mapped length of read is longer than the predicted insert size.", getReadName()));
                 if (firstOnly) return ret;
             }
 /*

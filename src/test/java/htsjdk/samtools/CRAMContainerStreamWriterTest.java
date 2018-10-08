@@ -82,6 +82,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
         // read all the records back in
         final CRAMFileReader cReader = new CRAMFileReader(null, new ByteArrayInputStream(outStream.toByteArray()), refSource);
+        cReader.setValidationStringency(ValidationStringency.SILENT);
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {
@@ -135,6 +136,7 @@ public class CRAMContainerStreamWriterTest extends HtsjdkTest {
 
         // now iterate through all the records in the aggregate file
         final CRAMFileReader cReader = new CRAMFileReader(null, new ByteArrayInputStream(aggregateStream.toByteArray()), refSource);
+        cReader.setValidationStringency(ValidationStringency.SILENT);
         final SAMRecordIterator iterator = cReader.getIterator();
         int count = 0;
         while (iterator.hasNext()) {

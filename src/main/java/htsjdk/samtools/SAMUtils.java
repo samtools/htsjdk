@@ -23,6 +23,7 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.SAMValidationError.Severity;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.CigarUtil;
 import htsjdk.samtools.util.CloserUtil;
@@ -446,16 +447,18 @@ public final class SAMUtils {
     public static void processValidationErrors(final List<SAMValidationError> validationErrors,
                                                final long samRecordIndex,
                                                final ValidationStringency validationStringency) {
+        // Do nothing if SILENT
+        if (validationStringency == ValidationStringency.SILENT) return;
+
         if (validationErrors != null && !validationErrors.isEmpty()) {
-            for (final SAMValidationError validationError : validationErrors) {
-                validationError.setRecordNumber(samRecordIndex);
+            validationErrors.forEach(e -> e.setRecordNumber(samRecordIndex));
+            final boolean onlyWarnings = validationErrors.stream().allMatch(e -> e.getType().severity == Severity.WARNING);
+
+            if (onlyWarnings || validationStringency == ValidationStringency.LENIENT) {
+                validationErrors.forEach(error -> System.err.println("Ignoring SAM validation error: " + error));
             }
-            if (validationStringency == ValidationStringency.STRICT) {
+            else {
                 throw new SAMFormatException("SAM validation error: " + validationErrors.get(0));
-            } else if (validationStringency == ValidationStringency.LENIENT) {
-                for (final SAMValidationError error : validationErrors) {
-                    System.err.println("Ignoring SAM validation error: " + error);
-                }
             }
         }
     }
