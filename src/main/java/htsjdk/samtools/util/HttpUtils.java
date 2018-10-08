@@ -29,9 +29,14 @@ public class HttpUtils {
         try {
             // Create a URLConnection object for a URL
             conn = openConnection(url);
+            if(conn instanceof HttpURLConnection) {
+                // The HEAD method is identical to GET except that the server MUST NOT return a message-body in the response.
+                final HttpURLConnection httpConn = HttpURLConnection.class.cast(conn);
+                httpConn.setRequestMethod("HEAD");
+            }
             return conn.getHeaderField(name);
 
-        } catch (IOException e) {
+        } catch (final IOException e) {
             e.printStackTrace();
             return null;
         }
