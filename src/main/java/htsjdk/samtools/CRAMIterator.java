@@ -34,10 +34,7 @@ import htsjdk.samtools.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
 
@@ -259,9 +256,7 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!iterator.hasNext()) {
             try {
                 nextContainer();
-            } catch (IOException e) {
-                throw new SAMException(e);
-            } catch (IllegalAccessException e) {
+            } catch (IOException | IllegalAccessException e) {
                 throw new SAMException(e);
             }
         }
@@ -271,7 +266,11 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public SAMRecord next() {
-        return iterator.next();
+        if(hasNext()) {
+            return iterator.next();
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 
     @Override
