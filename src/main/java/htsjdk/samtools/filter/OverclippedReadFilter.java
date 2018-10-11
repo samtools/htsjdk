@@ -29,48 +29,53 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 
 /**
- * Filters out reads with very few unclipped bases, likely due to the read coming
- * from a foreign organism, e.g. bacterial contamination.
+ * Filters out reads with very few unclipped bases, likely due to the read coming from a foreign
+ * organism, e.g. bacterial contamination.
  *
- * Based on GATK's OverclippedReadFilter.
+ * <p>Based on GATK's OverclippedReadFilter.
  */
 public class OverclippedReadFilter implements SamRecordFilter {
-    // if the number of unclipped bases is below this threshold, the read is considered overclipped
-    private final int unclippedBasesThreshold;
-    // if set to true, then reads with at least one clipped end will be filtered; if false, we require both ends to be clipped
-    private final boolean filterSingleEndClips;
+  // if the number of unclipped bases is below this threshold, the read is considered overclipped
+  private final int unclippedBasesThreshold;
+  // if set to true, then reads with at least one clipped end will be filtered; if false, we require
+  // both ends to be clipped
+  private final boolean filterSingleEndClips;
 
-    public OverclippedReadFilter(final int unclippedBasesThreshold, final boolean filterSingleEndClips) {
-        if (unclippedBasesThreshold < 0) throw new SAMException("unclippedBasesThreshold must be non-negative");
-        this.unclippedBasesThreshold = unclippedBasesThreshold;
-        this.filterSingleEndClips = filterSingleEndClips;
-    }
+  public OverclippedReadFilter(
+      final int unclippedBasesThreshold, final boolean filterSingleEndClips) {
+    if (unclippedBasesThreshold < 0)
+      throw new SAMException("unclippedBasesThreshold must be non-negative");
+    this.unclippedBasesThreshold = unclippedBasesThreshold;
+    this.filterSingleEndClips = filterSingleEndClips;
+  }
 
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        int alignedLength = 0;
-        int softClipBlocks = 0;
-        int minSoftClipBlocks = filterSingleEndClips ? 1 : 2;
-        CigarOperator lastOperator = null;
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    int alignedLength = 0;
+    int softClipBlocks = 0;
+    int minSoftClipBlocks = filterSingleEndClips ? 1 : 2;
+    CigarOperator lastOperator = null;
 
-        for ( final CigarElement element : record.getCigar().getCigarElements() ) {
-            if ( element.getOperator() == CigarOperator.S ) {
-                //Treat consecutive S blocks as a single one
-                if(lastOperator != CigarOperator.S){
-                    softClipBlocks += 1;
-                }
-
-            } else if ( element.getOperator().consumesReadBases() ) {   // M, I, X, and EQ (S was already accounted for above)
-                alignedLength += element.getLength();
-            }
-            lastOperator = element.getOperator();
+    for (final CigarElement element : record.getCigar().getCigarElements()) {
+      if (element.getOperator() == CigarOperator.S) {
+        // Treat consecutive S blocks as a single one
+        if (lastOperator != CigarOperator.S) {
+          softClipBlocks += 1;
         }
 
-        return(alignedLength < unclippedBasesThreshold && softClipBlocks >= minSoftClipBlocks);
+      } else if (element
+          .getOperator()
+          .consumesReadBases()) { // M, I, X, and EQ (S was already accounted for above)
+        alignedLength += element.getLength();
+      }
+      lastOperator = element.getOperator();
     }
 
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        return filterOut(first) || filterOut(second);
-    }
+    return (alignedLength < unclippedBasesThreshold && softClipBlocks >= minSoftClipBlocks);
+  }
+
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    return filterOut(first) || filterOut(second);
+  }
 }

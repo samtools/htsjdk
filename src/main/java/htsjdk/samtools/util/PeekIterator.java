@@ -26,63 +26,59 @@ package htsjdk.samtools.util;
 import java.util.Iterator;
 
 /**
- * Wrapper around an iterator that enables non-destructive peeking at the next element that would
- * be returned by next()
+ * Wrapper around an iterator that enables non-destructive peeking at the next element that would be
+ * returned by next()
  */
 public class PeekIterator<T> implements Iterator<T> {
-    Iterator<T> underlyingIterator;
-    T peekedElement = null;
+  Iterator<T> underlyingIterator;
+  T peekedElement = null;
 
-    public PeekIterator(final Iterator<T> underlyingIterator) {
-        this.underlyingIterator = underlyingIterator;
-    }
+  public PeekIterator(final Iterator<T> underlyingIterator) {
+    this.underlyingIterator = underlyingIterator;
+  }
 
-    /**
-     * @return true if the iteration has more elements. (In other words, returns true if next would return an element 
-     * rather than throwing an exception.)
-     */
-    @Override
-    public boolean hasNext() {
-        return peekedElement != null || underlyingIterator.hasNext();  
-    }
+  /**
+   * @return true if the iteration has more elements. (In other words, returns true if next would
+   *     return an element rather than throwing an exception.)
+   */
+  @Override
+  public boolean hasNext() {
+    return peekedElement != null || underlyingIterator.hasNext();
+  }
 
-    /**
-     * @return the next element in the iteration. Calling this method repeatedly until the hasNext() method returns
-     * false will return each element in the underlying collection exactly once.
-     */
-    @Override
-    public T next() {
-        if (peekedElement != null) {
-            final T ret = peekedElement;
-            peekedElement = null;
-            return ret;
-        }
-        return underlyingIterator.next();
+  /**
+   * @return the next element in the iteration. Calling this method repeatedly until the hasNext()
+   *     method returns false will return each element in the underlying collection exactly once.
+   */
+  @Override
+  public T next() {
+    if (peekedElement != null) {
+      final T ret = peekedElement;
+      peekedElement = null;
+      return ret;
     }
+    return underlyingIterator.next();
+  }
 
-    /**
-     * @return the next element in the iteration, but without removing it, so the next call to next() or peek()
-     * will return the same element as returned by the current call to peek().
-     */
-    public T peek() {
-        if (peekedElement == null) {
-            peekedElement = underlyingIterator.next();
-        }
-        return peekedElement;
+  /**
+   * @return the next element in the iteration, but without removing it, so the next call to next()
+   *     or peek() will return the same element as returned by the current call to peek().
+   */
+  public T peek() {
+    if (peekedElement == null) {
+      peekedElement = underlyingIterator.next();
     }
+    return peekedElement;
+  }
 
-    /**
-     * Unsupported
-     */
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
+  /** Unsupported */
+  @Override
+  public void remove() {
+    throw new UnsupportedOperationException();
+  }
 
-    /**
-     * @return the iterator wrapped by this object.
-     */
-    public Iterator<T> getUnderlyingIterator() {
-        return underlyingIterator;
-    }
+  /** @return the iterator wrapped by this object. */
+  public Iterator<T> getUnderlyingIterator() {
+    return underlyingIterator;
+  }
 }

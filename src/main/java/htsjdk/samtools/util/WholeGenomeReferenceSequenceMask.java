@@ -27,58 +27,55 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 
 /**
- * Implementation of ReferenceSequenceMask that indicates that all the loci in the sequence dictionary are of interest.
+ * Implementation of ReferenceSequenceMask that indicates that all the loci in the sequence
+ * dictionary are of interest.
+ *
  * @author alecw at broadinstitute dot org
  */
 public class WholeGenomeReferenceSequenceMask implements ReferenceSequenceMask {
 
-    SAMFileHeader header;
+  SAMFileHeader header;
 
-    public WholeGenomeReferenceSequenceMask(final SAMFileHeader header) {
-        this.header = header;
-    }
+  public WholeGenomeReferenceSequenceMask(final SAMFileHeader header) {
+    this.header = header;
+  }
 
-    /**
-     * @return true if the mask is set for the given sequence and position
-     */
-    @Override
-    public boolean get(final int sequenceIndex, final int position) {
-        if (sequenceIndex < 0) {
-            throw new IllegalArgumentException("Negative sequence index " + sequenceIndex);
-        }
-        if (sequenceIndex >= header.getSequenceDictionary().size()) {
-            return false;
-        }
-        final SAMSequenceRecord sequenceRecord = header.getSequence(sequenceIndex);
-        return position <= sequenceRecord.getSequenceLength();
+  /** @return true if the mask is set for the given sequence and position */
+  @Override
+  public boolean get(final int sequenceIndex, final int position) {
+    if (sequenceIndex < 0) {
+      throw new IllegalArgumentException("Negative sequence index " + sequenceIndex);
     }
+    if (sequenceIndex >= header.getSequenceDictionary().size()) {
+      return false;
+    }
+    final SAMSequenceRecord sequenceRecord = header.getSequence(sequenceIndex);
+    return position <= sequenceRecord.getSequenceLength();
+  }
 
-    /**
-     * @return the next pos on the given sequence >= position that is set, or -1 if there are no more set positions
-     */
-    @Override
-    public int nextPosition(final int sequenceIndex, final int position) {
-        if (get(sequenceIndex, position + 1)) {
-            return position + 1;
-        } else {
-            return -1;
-        }
+  /**
+   * @return the next pos on the given sequence >= position that is set, or -1 if there are no more
+   *     set positions
+   */
+  @Override
+  public int nextPosition(final int sequenceIndex, final int position) {
+    if (get(sequenceIndex, position + 1)) {
+      return position + 1;
+    } else {
+      return -1;
     }
+  }
 
-    /**
-     * @return Largest sequence index for which there are set bits.
-     */
-    @Override
-    public int getMaxSequenceIndex() {
-        return header.getSequenceDictionary().size() - 1;
-    }
+  /** @return Largest sequence index for which there are set bits. */
+  @Override
+  public int getMaxSequenceIndex() {
+    return header.getSequenceDictionary().size() - 1;
+  }
 
-    /**
-     * @return the largest position on the last sequence index
-     */
-    @Override
-    public int getMaxPosition() {
-        SAMSequenceRecord lastSequenceRecord = header.getSequence(getMaxSequenceIndex());
-        return lastSequenceRecord.getSequenceLength();
-    }
+  /** @return the largest position on the last sequence index */
+  @Override
+  public int getMaxPosition() {
+    SAMSequenceRecord lastSequenceRecord = header.getSequence(getMaxSequenceIndex());
+    return lastSequenceRecord.getSequenceLength();
+  }
 }

@@ -29,8 +29,8 @@ package htsjdk.samtools.util;
  * @author Doug Voet (dvoet at broadinstitute dot org)
  */
 public interface Locus {
-    int getSequenceIndex();
+  int getSequenceIndex();
 
-    /** @return 1-based position */
-    int getPosition();
+  /** @return 1-based position */
+  int getPosition();
 }

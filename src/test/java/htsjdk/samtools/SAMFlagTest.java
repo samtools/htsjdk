@@ -29,16 +29,16 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class SAMFlagTest extends HtsjdkTest {
-    @Test
-    public void testFlags() {
-        Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.READ_PAIRED));
-        Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.PROPER_PAIR));
-        Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.READ_REVERSE_STRAND));
-        Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.FIRST_OF_PAIR));
-        Assert.assertFalse(SAMFlag.getFlags(83).contains(SAMFlag.READ_UNMAPPED));
-        Assert.assertFalse(SAMFlag.getFlags(83).contains(SAMFlag.MATE_UNMAPPED));
-        Assert.assertTrue(SAMFlag.getFlags(0).isEmpty());
-        // TODO: this test should be modified once the deprecated NOT_PRIMARY_ALIGNMENT is removed
-        Assert.assertEquals(SAMFlag.getFlags(4095).size(), 13);
-    }
+  @Test
+  public void testFlags() {
+    Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.READ_PAIRED));
+    Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.PROPER_PAIR));
+    Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.READ_REVERSE_STRAND));
+    Assert.assertTrue(SAMFlag.getFlags(83).contains(SAMFlag.FIRST_OF_PAIR));
+    Assert.assertFalse(SAMFlag.getFlags(83).contains(SAMFlag.READ_UNMAPPED));
+    Assert.assertFalse(SAMFlag.getFlags(83).contains(SAMFlag.MATE_UNMAPPED));
+    Assert.assertTrue(SAMFlag.getFlags(0).isEmpty());
+    // TODO: this test should be modified once the deprecated NOT_PRIMARY_ALIGNMENT is removed
+    Assert.assertEquals(SAMFlag.getFlags(4095).size(), 13);
+  }
 }

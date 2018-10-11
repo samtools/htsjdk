@@ -24,108 +24,113 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class SAMTextWriterTest extends HtsjdkTest {
 
-    private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
-        final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
-        ret.addPair("readB", 20, 200, 300);
-        ret.addPair("readA", 20, 100, 150);
-        ret.addFrag("readC", 20, 140, true);
-        ret.addFrag("readD", 20, 140, false);
-        return ret;
+  private SAMRecordSetBuilder getSAMReader(
+      final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
+    final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
+    ret.addPair("readB", 20, 200, 300);
+    ret.addPair("readA", 20, 100, 150);
+    ret.addFrag("readC", 20, 140, true);
+    ret.addFrag("readD", 20, 140, false);
+    return ret;
+  }
+
+  @Test
+  public void testNullHeader() throws Exception {
+    final SAMRecordSetBuilder recordSetBuilder =
+        getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
+    for (final SAMRecord rec : recordSetBuilder.getRecords()) {
+      rec.setHeader(null);
+    }
+    doTest(recordSetBuilder);
+  }
+
+  @Test
+  public void testBasic() throws Exception {
+    doTest(SamFlagField.DECIMAL);
+  }
+
+  @Test
+  public void testBasicHexFlag() throws Exception {
+    doTest(SamFlagField.HEXADECIMAL);
+  }
+
+  @Test
+  public void testBasicOctalFlag() throws Exception {
+    doTest(SamFlagField.OCTAL);
+  }
+
+  @Test
+  public void testBasicStringFlag() throws Exception {
+    doTest(SamFlagField.STRING);
+  }
+
+  private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception {
+    doTest(recordSetBuilder, SamFlagField.DECIMAL);
+  }
+
+  private void doTest(final SamFlagField samFlagField) throws Exception {
+    doTest(getSAMReader(true, SAMFileHeader.SortOrder.coordinate), samFlagField);
+  }
+
+  private void doTest(final SAMRecordSetBuilder recordSetBuilder, final SamFlagField samFlagField)
+      throws Exception {
+    SamReader inputSAM = recordSetBuilder.getSamReader();
+    final File samFile = File.createTempFile("tmp.", ".sam");
+    samFile.deleteOnExit();
+    final Map<String, Object> tagMap = new HashMap<String, Object>();
+    tagMap.put("XC", new Character('q'));
+    tagMap.put("XI", 12345);
+    tagMap.put("XF", 1.2345f);
+    tagMap.put("XS", "Hi,Mom!");
+    for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
+      inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
+    }
+    final SAMFileWriter samWriter =
+        new SAMFileWriterFactory()
+            .setSamFlagFieldOutput(samFlagField)
+            .makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
+    for (final SAMRecord samRecord : inputSAM) {
+      samWriter.addAlignment(samRecord);
+    }
+    samWriter.close();
+
+    // Read it back in and confirm that it matches the input
+    inputSAM = recordSetBuilder.getSamReader();
+    // Stuff in the attributes again since this has been created again.
+    for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
+      inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
     }
 
-    @Test
-    public void testNullHeader() throws Exception {
-        final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
-        for (final SAMRecord rec : recordSetBuilder.getRecords()) {
-            rec.setHeader(null);
-        }
-        doTest(recordSetBuilder);
+    final SamReader newSAM = SamReaderFactory.makeDefault().open(samFile);
+    Assert.assertEquals(newSAM.getFileHeader(), inputSAM.getFileHeader());
+    final Iterator<SAMRecord> inputIt = inputSAM.iterator();
+    final Iterator<SAMRecord> newSAMIt = newSAM.iterator();
+    while (inputIt.hasNext()) {
+      Assert.assertTrue(newSAMIt.hasNext());
+      final SAMRecord inputSAMRecord = inputIt.next();
+      final SAMRecord newSAMRecord = newSAMIt.next();
+
+      // Force reference index attributes to be populated
+      inputSAMRecord.getReferenceIndex();
+      newSAMRecord.getReferenceIndex();
+      inputSAMRecord.getMateReferenceIndex();
+      newSAMRecord.getMateReferenceIndex();
+
+      // Force these to be equal
+      newSAMRecord.setIndexingBin(inputSAMRecord.getIndexingBin());
+
+      Assert.assertEquals(newSAMRecord, inputSAMRecord);
     }
-
-    @Test
-    public void testBasic() throws Exception {
-        doTest(SamFlagField.DECIMAL);
-    }
-
-    @Test
-    public void testBasicHexFlag() throws Exception {
-        doTest(SamFlagField.HEXADECIMAL);
-    }
-
-    @Test
-    public void testBasicOctalFlag() throws Exception {
-        doTest(SamFlagField.OCTAL);
-    }
-
-    @Test
-    public void testBasicStringFlag() throws Exception {
-        doTest(SamFlagField.STRING);
-    }
-
-    private void doTest(final SAMRecordSetBuilder recordSetBuilder) throws Exception {
-        doTest(recordSetBuilder, SamFlagField.DECIMAL);
-    }
-
-    private void doTest(final SamFlagField samFlagField) throws Exception {
-        doTest(getSAMReader(true, SAMFileHeader.SortOrder.coordinate), samFlagField);
-    }
-
-    private void doTest(final SAMRecordSetBuilder recordSetBuilder, final SamFlagField samFlagField) throws Exception {
-        SamReader inputSAM = recordSetBuilder.getSamReader();
-        final File samFile = File.createTempFile("tmp.", ".sam");
-        samFile.deleteOnExit();
-        final Map<String, Object> tagMap = new HashMap<String, Object>();
-        tagMap.put("XC", new Character('q'));
-        tagMap.put("XI", 12345);
-        tagMap.put("XF", 1.2345f);
-        tagMap.put("XS", "Hi,Mom!");
-        for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
-            inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
-        }
-        final SAMFileWriter samWriter = new SAMFileWriterFactory().setSamFlagFieldOutput(samFlagField).makeSAMWriter(inputSAM.getFileHeader(), false, samFile);
-        for (final SAMRecord samRecord : inputSAM) {
-            samWriter.addAlignment(samRecord);
-        }
-        samWriter.close();
-
-        // Read it back in and confirm that it matches the input
-        inputSAM = recordSetBuilder.getSamReader();
-        // Stuff in the attributes again since this has been created again.
-        for (final Map.Entry<String, Object> entry : tagMap.entrySet()) {
-            inputSAM.getFileHeader().setAttribute(entry.getKey(), entry.getValue().toString());
-        }
-
-        final SamReader newSAM = SamReaderFactory.makeDefault().open(samFile);
-        Assert.assertEquals(newSAM.getFileHeader(), inputSAM.getFileHeader());
-        final Iterator<SAMRecord> inputIt = inputSAM.iterator();
-        final Iterator<SAMRecord> newSAMIt = newSAM.iterator();
-        while (inputIt.hasNext()) {
-            Assert.assertTrue(newSAMIt.hasNext());
-            final SAMRecord inputSAMRecord = inputIt.next();
-            final SAMRecord newSAMRecord = newSAMIt.next();
-
-            // Force reference index attributes to be populated
-            inputSAMRecord.getReferenceIndex();
-            newSAMRecord.getReferenceIndex();
-            inputSAMRecord.getMateReferenceIndex();
-            newSAMRecord.getMateReferenceIndex();
-
-            // Force these to be equal
-            newSAMRecord.setIndexingBin(inputSAMRecord.getIndexingBin());
-
-            Assert.assertEquals(newSAMRecord, inputSAMRecord);
-        }
-        Assert.assertFalse(newSAMIt.hasNext());
-        inputSAM.close();
-    }
+    Assert.assertFalse(newSAMIt.hasNext());
+    inputSAM.close();
+  }
 }

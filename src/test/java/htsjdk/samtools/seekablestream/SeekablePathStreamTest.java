@@ -23,31 +23,31 @@
  */
 package htsjdk.samtools.seekablestream;
 
+import htsjdk.HtsjdkTest;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 public class SeekablePathStreamTest extends HtsjdkTest {
 
-    @Test
-    public void testRead() throws Exception {
-        Path testPath = new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt").toPath();
-        SeekablePathStream is = new SeekablePathStream(testPath);
-        Assert.assertEquals(is.position(), 0);
-        Assert.assertEquals(is.read(), (int) 'a');
-        Assert.assertEquals(is.position(), 1);
-        is.seek(20);
-        Assert.assertEquals(is.position(), 20);
-        byte[] buf = new byte[2];
-        Assert.assertEquals(is.read(buf, 0, buf.length), 2);
-        Assert.assertEquals(buf, new byte[] { (byte) 'c', (byte) 'c' });
-        Assert.assertEquals(is.skip(8), 8);
-        Assert.assertEquals(is.position(), 30);
-        Assert.assertEquals(is.length(), Files.size(testPath));
-        is.close();
-    }
+  @Test
+  public void testRead() throws Exception {
+    Path testPath =
+        new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt").toPath();
+    SeekablePathStream is = new SeekablePathStream(testPath);
+    Assert.assertEquals(is.position(), 0);
+    Assert.assertEquals(is.read(), (int) 'a');
+    Assert.assertEquals(is.position(), 1);
+    is.seek(20);
+    Assert.assertEquals(is.position(), 20);
+    byte[] buf = new byte[2];
+    Assert.assertEquals(is.read(buf, 0, buf.length), 2);
+    Assert.assertEquals(buf, new byte[] {(byte) 'c', (byte) 'c'});
+    Assert.assertEquals(is.skip(8), 8);
+    Assert.assertEquals(is.position(), 30);
+    Assert.assertEquals(is.length(), Files.size(testPath));
+    is.close();
+  }
 }

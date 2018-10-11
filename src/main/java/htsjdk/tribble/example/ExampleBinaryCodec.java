@@ -24,16 +24,15 @@
 package htsjdk.tribble.example;
 
 import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.BinaryFeatureCodec;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.FeatureCodec;
 import htsjdk.tribble.FeatureCodecHeader;
 import htsjdk.tribble.FeatureReader;
+import htsjdk.tribble.SimpleFeature;
 import htsjdk.tribble.readers.AsciiLineReader;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.tribble.readers.PositionalBufferedStream;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -50,79 +49,86 @@ import java.util.List;
  * @author Mark DePristo
  */
 public class ExampleBinaryCodec extends BinaryFeatureCodec<Feature> {
-    public final static String HEADER_LINE = "# BinaryTestFeature";
+  public static final String HEADER_LINE = "# BinaryTestFeature";
 
-    @Override
-    public Feature decodeLoc(final PositionalBufferedStream stream) throws IOException {
-        return decode(stream);
-    }
+  @Override
+  public Feature decodeLoc(final PositionalBufferedStream stream) throws IOException {
+    return decode(stream);
+  }
 
-    @Override
-    public Feature decode(final PositionalBufferedStream stream) throws IOException {
-        DataInputStream dis = new DataInputStream(stream);
-        String contig = dis.readUTF();
-        int start = dis.readInt();
-        int stop = dis.readInt();
-        return new SimpleFeature(contig, start, stop);
-    }
+  @Override
+  public Feature decode(final PositionalBufferedStream stream) throws IOException {
+    DataInputStream dis = new DataInputStream(stream);
+    String contig = dis.readUTF();
+    int start = dis.readInt();
+    int stop = dis.readInt();
+    return new SimpleFeature(contig, start, stop);
+  }
 
-    @Override
-    public FeatureCodecHeader readHeader(final PositionalBufferedStream stream) throws IOException {
-        // Construct a reader that does not read ahead (because we don't want to consume data from the stream that is not the header)
-        final AsciiLineReader nonReadAheadLineReader = new AsciiLineReader(stream);
-        final List<String> headerLines = new ArrayList<String>();
-        long headerLengthInBytes = 0;
-        while (stream.peek() == ('#' & 0xff)) { // Look for header lines, which are prefixed by '#'.
-            headerLines.add(nonReadAheadLineReader.readLine());
-            headerLengthInBytes = stream.getPosition();
-        }
-        return new FeatureCodecHeader(headerLines, headerLengthInBytes);
+  @Override
+  public FeatureCodecHeader readHeader(final PositionalBufferedStream stream) throws IOException {
+    // Construct a reader that does not read ahead (because we don't want to consume data from the
+    // stream that is not the header)
+    final AsciiLineReader nonReadAheadLineReader = new AsciiLineReader(stream);
+    final List<String> headerLines = new ArrayList<String>();
+    long headerLengthInBytes = 0;
+    while (stream.peek() == ('#' & 0xff)) { // Look for header lines, which are prefixed by '#'.
+      headerLines.add(nonReadAheadLineReader.readLine());
+      headerLengthInBytes = stream.getPosition();
     }
+    return new FeatureCodecHeader(headerLines, headerLengthInBytes);
+  }
 
-    @Override
-    public Class<Feature> getFeatureType() {
+  @Override
+  public Class<Feature> getFeatureType() {
 
-        return Feature.class;
-    }
-    @Override
-    public boolean canDecode(final String path) {
-        return false;
-    }
+    return Feature.class;
+  }
 
-    /**
-     * Convenience method that creates an ExampleBinaryCodec file from another feature file.
-     *
-     * For testing purposes really
-     *
-     * @param source file containing the features
-     * @param dest the place to write the binary features
-     * @param codec of the source file features
-     * @throws IOException
-     */
-    public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec) throws IOException {
-        final FeatureReader<FEATURE_TYPE> reader = AbstractFeatureReader.getFeatureReader(source.getAbsolutePath(), codec, false); // IndexFactory.loadIndex(idxFile));
-        final OutputStream output = new FileOutputStream(dest);
-        ExampleBinaryCodec.convertToBinaryTest(reader, output);
-    }
+  @Override
+  public boolean canDecode(final String path) {
+    return false;
+  }
 
-    /**
-     * Convenience method that creates an ExampleBinaryCodec file from another feature file.
-     *
-     * For testing purposes really
-     *
-     * @throws IOException
-     */
-    public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(final FeatureReader<FEATURE_TYPE> reader, final OutputStream out) throws IOException {
-        DataOutputStream dos = new DataOutputStream(out);
-        dos.writeBytes(HEADER_LINE + "\n");
-        Iterator<FEATURE_TYPE> it = reader.iterator();
-        while ( it.hasNext() ) {
-            final Feature f = it.next();
-            dos.writeUTF(f.getContig());
-            dos.writeInt(f.getStart());
-            dos.writeInt(f.getEnd());
-        }
-        dos.close();
-        reader.close();
+  /**
+   * Convenience method that creates an ExampleBinaryCodec file from another feature file.
+   *
+   * <p>For testing purposes really
+   *
+   * @param source file containing the features
+   * @param dest the place to write the binary features
+   * @param codec of the source file features
+   * @throws IOException
+   */
+  public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(
+      final File source, final File dest, final FeatureCodec<FEATURE_TYPE, LineIterator> codec)
+      throws IOException {
+    final FeatureReader<FEATURE_TYPE> reader =
+        AbstractFeatureReader.getFeatureReader(
+            source.getAbsolutePath(), codec, false); // IndexFactory.loadIndex(idxFile));
+    final OutputStream output = new FileOutputStream(dest);
+    ExampleBinaryCodec.convertToBinaryTest(reader, output);
+  }
+
+  /**
+   * Convenience method that creates an ExampleBinaryCodec file from another feature file.
+   *
+   * <p>For testing purposes really
+   *
+   * @throws IOException
+   */
+  public static <FEATURE_TYPE extends Feature> void convertToBinaryTest(
+      final FeatureReader<FEATURE_TYPE> reader, final OutputStream out) throws IOException {
+    DataOutputStream dos = new DataOutputStream(out);
+    dos.writeBytes(HEADER_LINE + "\n");
+    Iterator<FEATURE_TYPE> it = reader.iterator();
+    while (it.hasNext()) {
+      final Feature f = it.next();
+      dos.writeUTF(f.getContig());
+      dos.writeInt(f.getStart());
+      dos.writeInt(f.getEnd());
     }
+    dos.close();
+    reader.close();
+  }
 }

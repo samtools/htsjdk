@@ -25,16 +25,18 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import java.util.Collections;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-
 public class BinTest extends HtsjdkTest {
-    @Test
-    public void testEmptyBin() {
-        // Construct a new empty bin and ensure that the bin list is empty, not null.
-        Bin bin = new Bin(1,4681);
-        Assert.assertEquals(bin.getChunkList(),Collections.<Chunk>emptyList(),"getChunkList() in an empty bin should return an empty list.");
-    }
+  @Test
+  public void testEmptyBin() {
+    // Construct a new empty bin and ensure that the bin list is empty, not null.
+    Bin bin = new Bin(1, 4681);
+    Assert.assertEquals(
+        bin.getChunkList(),
+        Collections.<Chunk>emptyList(),
+        "getChunkList() in an empty bin should return an empty list.");
+  }
 }

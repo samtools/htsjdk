@@ -24,35 +24,32 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Date;
-
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class Iso8601DateTest extends HtsjdkTest {
-    @Test
-    public void testBasic() {
-        final String dateStr = "2008-12-15";
-        Iso8601Date first = new Iso8601Date(dateStr);
-        String firstFormatted = first.toString();
-        Iso8601Date second = new Iso8601Date(firstFormatted);
-        Assert.assertEquals(first, second);
-        String secondFormatted = second.toString();
-        Assert.assertEquals(firstFormatted, secondFormatted);
-    }
+  @Test
+  public void testBasic() {
+    final String dateStr = "2008-12-15";
+    Iso8601Date first = new Iso8601Date(dateStr);
+    String firstFormatted = first.toString();
+    Iso8601Date second = new Iso8601Date(firstFormatted);
+    Assert.assertEquals(first, second);
+    String secondFormatted = second.toString();
+    Assert.assertEquals(firstFormatted, secondFormatted);
+  }
 
-    @Test
-    public void testMillisecondTruncation() {
-        // Create a Date with milliseconds
-        final Date now = new Date();
-        if (now.getTime() % 1000 == 0) {
-            now.setTime(now.getTime() + 3);
-        }
-        Iso8601Date isoDate = new Iso8601Date(now);
-        Assert.assertEquals(isoDate.getTime() % 1000, 0);
-        Assert.assertEquals(isoDate.getTime() / 1000, now.getTime() / 1000);
+  @Test
+  public void testMillisecondTruncation() {
+    // Create a Date with milliseconds
+    final Date now = new Date();
+    if (now.getTime() % 1000 == 0) {
+      now.setTime(now.getTime() + 3);
     }
+    Iso8601Date isoDate = new Iso8601Date(now);
+    Assert.assertEquals(isoDate.getTime() % 1000, 0);
+    Assert.assertEquals(isoDate.getTime() / 1000, now.getTime() / 1000);
+  }
 }

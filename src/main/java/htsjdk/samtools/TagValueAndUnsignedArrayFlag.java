@@ -23,20 +23,18 @@
  */
 package htsjdk.samtools;
 
-/**
- * CVO to use as a method return value.
- */
+/** CVO to use as a method return value. */
 public class TagValueAndUnsignedArrayFlag {
-    public final Object value;
-    public final boolean isUnsignedArray;
+  public final Object value;
+  public final boolean isUnsignedArray;
 
-    public TagValueAndUnsignedArrayFlag(Object value, boolean unsignedArray) {
-        this.value = value;
-        isUnsignedArray = unsignedArray;
-    }
+  public TagValueAndUnsignedArrayFlag(Object value, boolean unsignedArray) {
+    this.value = value;
+    isUnsignedArray = unsignedArray;
+  }
 
-    TagValueAndUnsignedArrayFlag(Object value) {
-        this.value = value;
-        this.isUnsignedArray = false;
-    }
+  TagValueAndUnsignedArrayFlag(Object value) {
+    this.value = value;
+    this.isUnsignedArray = false;
+  }
 }

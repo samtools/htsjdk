@@ -26,27 +26,28 @@ package htsjdk.samtools.util;
 import java.io.Closeable;
 
 /**
- * Interface allows for implementations that read lines from a String, an ASCII file, or somewhere else.
+ * Interface allows for implementations that read lines from a String, an ASCII file, or somewhere
+ * else.
  */
-public interface LineReader extends Closeable{
+public interface LineReader extends Closeable {
 
-    /**
-     * Read a line and remove the line terminator
-     * @return the line read, or null if EOF has been reached.
-     */
-    String readLine();
+  /**
+   * Read a line and remove the line terminator
+   *
+   * @return the line read, or null if EOF has been reached.
+   */
+  String readLine();
 
-    /**
-     * @return 1-based number of line most recently read
-     */
-    int getLineNumber();
+  /** @return 1-based number of line most recently read */
+  int getLineNumber();
 
-    /**
-     * Non-destructive one-character look-ahead.
-     * @return If not eof, the next character that would be read.  If eof, -1.
-     */
-    int peek();
+  /**
+   * Non-destructive one-character look-ahead.
+   *
+   * @return If not eof, the next character that would be read. If eof, -1.
+   */
+  int peek();
 
-    @Override
-    public void close();
+  @Override
+  public void close();
 }

@@ -32,53 +32,62 @@ import htsjdk.samtools.util.StringUtil;
  * @author Tim Fennell
  */
 public class ReferenceSequence {
-    private final String name;
-    private final byte[] bases;
-    private final int contigIndex;
-    private final int length;
+  private final String name;
+  private final byte[] bases;
+  private final int contigIndex;
+  private final int length;
 
-    /**
-     * creates a fully formed ReferenceSequence
-     *
-     * @param name the name of the sequence from the source file
-     * @param index the zero based index of this contig in the source file
-     * @param bases the bases themselves stored as one-byte characters
-     */
-    public ReferenceSequence(String name, int index, byte[] bases) {
-        this.name = name;
-        this.contigIndex = index;
-        this.bases = bases;
-        this.length = bases.length;
-    }
+  /**
+   * creates a fully formed ReferenceSequence
+   *
+   * @param name the name of the sequence from the source file
+   * @param index the zero based index of this contig in the source file
+   * @param bases the bases themselves stored as one-byte characters
+   */
+  public ReferenceSequence(String name, int index, byte[] bases) {
+    this.name = name;
+    this.contigIndex = index;
+    this.bases = bases;
+    this.length = bases.length;
+  }
 
-    /** Gets the set of names given to this sequence in the source file. */
-    public String getName() { return name; }
+  /** Gets the set of names given to this sequence in the source file. */
+  public String getName() {
+    return name;
+  }
 
-    /**
-     * Gets the array of bases that define this sequence. The bases can include any
-     * letter and possibly include masking information in the form of lower case
-     * letters.  This array is mutable (obviously!) and it NOT a clone of the array
-     * held interally.  Do not modify it!!!
-     */
-    public byte[] getBases() { return bases; }
+  /**
+   * Gets the array of bases that define this sequence. The bases can include any letter and
+   * possibly include masking information in the form of lower case letters. This array is mutable
+   * (obviously!) and it NOT a clone of the array held interally. Do not modify it!!!
+   */
+  public byte[] getBases() {
+    return bases;
+  }
 
-    /**
-     * Returns the bases represented by this ReferenceSequence as a String. Since this will copy the bases
-     * and convert them to two-byte characters, this should not be used on very long reference sequences,
-     * but as a convenience when manipulating short sequences returned by
-     * {@link ReferenceSequenceFile#getSubsequenceAt(String, long, long)}
-     *
-     * @return The set of bases represented by this ReferenceSequence, as a String
-     */
-    public String getBaseString() { return StringUtil.bytesToString(bases); }
+  /**
+   * Returns the bases represented by this ReferenceSequence as a String. Since this will copy the
+   * bases and convert them to two-byte characters, this should not be used on very long reference
+   * sequences, but as a convenience when manipulating short sequences returned by {@link
+   * ReferenceSequenceFile#getSubsequenceAt(String, long, long)}
+   *
+   * @return The set of bases represented by this ReferenceSequence, as a String
+   */
+  public String getBaseString() {
+    return StringUtil.bytesToString(bases);
+  }
 
-    /** Gets the 0-based index of this contig in the source file from which it came. */
-    public int getContigIndex() { return contigIndex; }
+  /** Gets the 0-based index of this contig in the source file from which it came. */
+  public int getContigIndex() {
+    return contigIndex;
+  }
 
-    /** Gets the length of this reference sequence in bases. */
-    public int length() { return length; }
-    
-    public String toString() {
-        return "ReferenceSequence " + getName();
-    }
+  /** Gets the length of this reference sequence in bases. */
+  public int length() {
+    return length;
+  }
+
+  public String toString() {
+    return "ReferenceSequence " + getName();
+  }
 }

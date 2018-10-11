@@ -28,7 +28,6 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.zip.DeflaterFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,182 +36,208 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/**
- * Concrete implementation of SAMFileWriter for writing gzipped BAM files.
- */
+/** Concrete implementation of SAMFileWriter for writing gzipped BAM files. */
 public class BAMFileWriter extends SAMFileWriterImpl {
 
-    private final BinaryCodec outputBinaryCodec;
-    private BAMRecordCodec bamRecordCodec = null;
-    private final BlockCompressedOutputStream blockCompressedOutputStream;
-    private BAMIndexer bamIndexer = null;
+  private final BinaryCodec outputBinaryCodec;
+  private BAMRecordCodec bamRecordCodec = null;
+  private final BlockCompressedOutputStream blockCompressedOutputStream;
+  private BAMIndexer bamIndexer = null;
 
-    protected BAMFileWriter(final File path) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(path);
-        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
-    }
+  protected BAMFileWriter(final File path) {
+    blockCompressedOutputStream = new BlockCompressedOutputStream(path);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
+  }
 
-    protected BAMFileWriter(final File path, final int compressionLevel) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(path, compressionLevel);
-        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
-    }
+  protected BAMFileWriter(final File path, final int compressionLevel) {
+    blockCompressedOutputStream = new BlockCompressedOutputStream(path, compressionLevel);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(path.getAbsolutePath());
+  }
 
-    protected BAMFileWriter(final OutputStream os, final File file) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file);
-        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        outputBinaryCodec.setOutputFileName(getPathString(file));
-    }
+  protected BAMFileWriter(final OutputStream os, final File file) {
+    blockCompressedOutputStream = new BlockCompressedOutputStream(os, file);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(getPathString(file));
+  }
 
-    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel);
-        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        outputBinaryCodec.setOutputFileName(getPathString(file));
-    }
+  protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel) {
+    blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(getPathString(file));
+  }
 
-    protected BAMFileWriter(final OutputStream os, final File file, final int compressionLevel, final DeflaterFactory deflaterFactory) {
-        blockCompressedOutputStream = new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
-        outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        outputBinaryCodec.setOutputFileName(getPathString(file));
-    }
+  protected BAMFileWriter(
+      final OutputStream os,
+      final File file,
+      final int compressionLevel,
+      final DeflaterFactory deflaterFactory) {
+    blockCompressedOutputStream =
+        new BlockCompressedOutputStream(os, file, compressionLevel, deflaterFactory);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(getPathString(file));
+  }
 
-    protected BAMFileWriter(final OutputStream os, final String absoluteFilename, final int compressionLevel, final DeflaterFactory deflaterFactory) {
-      blockCompressedOutputStream = new BlockCompressedOutputStream(os, (Path)null, compressionLevel, deflaterFactory);
-      outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-      outputBinaryCodec.setOutputFileName(absoluteFilename);
-    }
+  protected BAMFileWriter(
+      final OutputStream os,
+      final String absoluteFilename,
+      final int compressionLevel,
+      final DeflaterFactory deflaterFactory) {
+    blockCompressedOutputStream =
+        new BlockCompressedOutputStream(os, (Path) null, compressionLevel, deflaterFactory);
+    outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    outputBinaryCodec.setOutputFileName(absoluteFilename);
+  }
 
   private void prepareToWriteAlignments() {
-        if (bamRecordCodec == null) {
-            bamRecordCodec = new BAMRecordCodec(getFileHeader());
-            bamRecordCodec.setOutputStream(outputBinaryCodec.getOutputStream(), getFilename());
+    if (bamRecordCodec == null) {
+      bamRecordCodec = new BAMRecordCodec(getFileHeader());
+      bamRecordCodec.setOutputStream(outputBinaryCodec.getOutputStream(), getFilename());
+    }
+  }
+
+  /** @return absolute path, or null if arg is null. */
+  private String getPathString(final File path) {
+    return (path != null) ? path.getAbsolutePath() : null;
+  }
+
+  // Allow enabling the bam index construction
+  // only enabled by factory method before anything is written
+  void enableBamIndexConstruction() {
+    if (!getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)) {
+      throw new SAMException(
+          "Not creating BAM index since not sorted by coordinates: " + getSortOrder());
+    }
+    if (getFilename() == null) {
+      throw new SAMException("Not creating BAM index since we don't have an output file name");
+    }
+    bamIndexer = createBamIndex(getFilename());
+  }
+
+  private BAMIndexer createBamIndex(final String pathURI) {
+    try {
+      final String indexFileBase =
+          pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION)
+              ? pathURI.substring(0, pathURI.lastIndexOf('.'))
+              : pathURI;
+      final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAMIndexSuffix);
+      if (Files.exists(indexPath)) {
+        if (!Files.isWritable(indexPath)) {
+          throw new SAMException(
+              "Not creating BAM index since unable to write index file " + indexPath.toUri());
         }
+      }
+      return new BAMIndexer(indexPath, getFileHeader());
+    } catch (Exception e) {
+      throw new SAMException("Not creating BAM index", e);
     }
+  }
 
-    /** @return absolute path, or null if arg is null.  */
-    private String getPathString(final File path){
-        return (path != null) ? path.getAbsolutePath() : null;
+  @Override
+  protected void writeAlignment(final SAMRecord alignment) {
+    prepareToWriteAlignments();
+
+    if (bamIndexer != null) {
+      try {
+        final long startOffset = blockCompressedOutputStream.getFilePointer();
+        bamRecordCodec.encode(alignment);
+        final long stopOffset = blockCompressedOutputStream.getFilePointer();
+        // set the alignment's SourceInfo and then prepare its index information
+        alignment.setFileSource(
+            new SAMFileSource(null, new BAMFileSpan(new Chunk(startOffset, stopOffset))));
+        bamIndexer.processAlignment(alignment);
+      } catch (Exception e) {
+        bamIndexer = null;
+        throw new SAMException("Exception when processing alignment for BAM index " + alignment, e);
+      }
+    } else {
+      bamRecordCodec.encode(alignment);
     }
+  }
 
-   // Allow enabling the bam index construction
-   // only enabled by factory method before anything is written
-   void enableBamIndexConstruction () {
-        if (!getSortOrder().equals(SAMFileHeader.SortOrder.coordinate)){
-           throw new SAMException("Not creating BAM index since not sorted by coordinates: " + getSortOrder());
-        }
-        if(getFilename() == null){
-            throw new SAMException("Not creating BAM index since we don't have an output file name");
-        }
-        bamIndexer = createBamIndex(getFilename());
+  @Override
+  protected void writeHeader(final String textHeader) {
+    writeHeader(outputBinaryCodec, getFileHeader(), textHeader);
+  }
+
+  @Override
+  protected void finish() {
+    outputBinaryCodec.close();
+    try {
+      if (bamIndexer != null) {
+        bamIndexer.finish();
+      }
+    } catch (Exception e) {
+      throw new SAMException("Exception writing BAM index file", e);
     }
+  }
 
-    private BAMIndexer createBamIndex(final String pathURI) {
-        try {
-            final String indexFileBase = pathURI.endsWith(BamFileIoUtils.BAM_FILE_EXTENSION) ?
-                    pathURI.substring(0, pathURI.lastIndexOf('.')) : pathURI;
-            final Path indexPath = IOUtil.getPath(indexFileBase + BAMIndex.BAMIndexSuffix);
-            if (Files.exists(indexPath)) {
-                if (!Files.isWritable(indexPath)) {
-                    throw new SAMException("Not creating BAM index since unable to write index file " + indexPath.toUri());
-                }
-            }
-            return new BAMIndexer(indexPath, getFileHeader());
-        } catch (Exception e) {
-            throw new SAMException("Not creating BAM index", e);
-        }
+  /**
+   * @return absolute path in URI format, or null if this writer does not correspond to a file. To
+   *     get a Path from this, use: IOUtil.getPath(getFilename())
+   */
+  @Override
+  protected String getFilename() {
+    return outputBinaryCodec.getOutputFileName();
+  }
+
+  /**
+   * Writes a header to a BAM file. samFileHeader and headerText are redundant - one can be used to
+   * regenerate the other but in some instances we already have both so this allows us to save some
+   * cycles
+   */
+  protected static void writeHeader(
+      final BinaryCodec outputBinaryCodec,
+      final SAMFileHeader samFileHeader,
+      final String headerText) {
+    outputBinaryCodec.writeBytes(BAMFileConstants.BAM_MAGIC);
+
+    // calculate and write the length of the SAM file header text and the header text
+    outputBinaryCodec.writeString(headerText, true, false);
+
+    // write the sequences binarily.  This is redundant with the text header
+    outputBinaryCodec.writeInt(samFileHeader.getSequenceDictionary().size());
+    for (final SAMSequenceRecord sequenceRecord :
+        samFileHeader.getSequenceDictionary().getSequences()) {
+      outputBinaryCodec.writeString(sequenceRecord.getSequenceName(), true, true);
+      outputBinaryCodec.writeInt(sequenceRecord.getSequenceLength());
     }
+  }
 
-    @Override
-    protected void writeAlignment(final SAMRecord alignment) {
-        prepareToWriteAlignments();
+  /**
+   * Writes a header to a BAM file. Might need to regenerate the String version of the header, if
+   * one already has both the samFileHeader and the String, use the version of this method which
+   * takes both.
+   */
+  protected static void writeHeader(
+      final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader) {
+    // Do not use SAMFileHeader.getTextHeader() as it is not updated when changes to the underlying
+    // object are made
+    final String headerString;
+    final Writer stringWriter = new StringWriter();
+    new SAMTextHeaderCodec().encode(stringWriter, samFileHeader, true);
+    headerString = stringWriter.toString();
 
-        if (bamIndexer != null) {
-            try {
-                final long startOffset = blockCompressedOutputStream.getFilePointer();
-                bamRecordCodec.encode(alignment);
-                final long stopOffset = blockCompressedOutputStream.getFilePointer();
-                // set the alignment's SourceInfo and then prepare its index information
-                alignment.setFileSource(new SAMFileSource(null, new BAMFileSpan(new Chunk(startOffset, stopOffset))));
-                bamIndexer.processAlignment(alignment);
-            } catch (Exception e) {
-                bamIndexer = null;
-                throw new SAMException("Exception when processing alignment for BAM index " + alignment, e);
-            }
-        } else {
-            bamRecordCodec.encode(alignment);
-        }
+    writeHeader(outputBinaryCodec, samFileHeader, headerString);
+  }
+
+  /**
+   * Write a BAM file header to an output stream in block compressed BAM format.
+   *
+   * @param outputStream the stream to write the BAM header to
+   * @param samFileHeader the header to write
+   */
+  public static void writeHeader(
+      final OutputStream outputStream, final SAMFileHeader samFileHeader) {
+    final BlockCompressedOutputStream blockCompressedOutputStream =
+        new BlockCompressedOutputStream(outputStream, (Path) null);
+    final BinaryCodec outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
+    writeHeader(outputBinaryCodec, samFileHeader);
+    try {
+      blockCompressedOutputStream.flush();
+    } catch (final IOException ioe) {
+      throw new RuntimeIOException(ioe);
     }
-
-    @Override
-    protected void writeHeader(final String textHeader) {
-        writeHeader(outputBinaryCodec, getFileHeader(), textHeader);
-    }
-
-    @Override
-    protected void finish() {
-        outputBinaryCodec.close();
-            try {
-                if (bamIndexer != null) {
-                    bamIndexer.finish();
-                }
-            } catch (Exception e) {
-                throw new SAMException("Exception writing BAM index file", e);
-            }
-    }
-
-    /** @return absolute path in URI format, or null if this writer does not correspond to a file.
-     * To get a Path from this, use: IOUtil.getPath(getFilename()) */
-    @Override
-    protected String getFilename() {
-        return outputBinaryCodec.getOutputFileName();
-    }
-
-    /**
-     * Writes a header to a BAM file. samFileHeader and headerText are redundant - one can be used to regenerate the other but in
-     * some instances we already have both so this allows us to save some cycles
-     */
-    protected static void writeHeader(final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader, final String headerText) {
-        outputBinaryCodec.writeBytes(BAMFileConstants.BAM_MAGIC);
-
-        // calculate and write the length of the SAM file header text and the header text
-        outputBinaryCodec.writeString(headerText, true, false);
-
-        // write the sequences binarily.  This is redundant with the text header
-        outputBinaryCodec.writeInt(samFileHeader.getSequenceDictionary().size());
-        for (final SAMSequenceRecord sequenceRecord: samFileHeader.getSequenceDictionary().getSequences()) {
-            outputBinaryCodec.writeString(sequenceRecord.getSequenceName(), true, true);
-            outputBinaryCodec.writeInt(sequenceRecord.getSequenceLength());
-        }
-    }
-
-    /**
-     * Writes a header to a BAM file. Might need to regenerate the String version of the header, if one already has both the
-     * samFileHeader and the String, use the version of this method which takes both.
-     */
-    protected static void writeHeader(final BinaryCodec outputBinaryCodec, final SAMFileHeader samFileHeader) {
-        // Do not use SAMFileHeader.getTextHeader() as it is not updated when changes to the underlying object are made
-        final String headerString;
-        final Writer stringWriter = new StringWriter();
-        new SAMTextHeaderCodec().encode(stringWriter, samFileHeader, true);
-        headerString = stringWriter.toString();
-
-        writeHeader(outputBinaryCodec, samFileHeader, headerString);
-    }
-
-    /**
-     * Write a BAM file header to an output stream in block compressed BAM format.
-     * @param outputStream the stream to write the BAM header to
-     * @param samFileHeader the header to write
-     */
-    public static void writeHeader(final OutputStream outputStream, final SAMFileHeader samFileHeader) {
-        final BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, (Path)null);
-        final BinaryCodec outputBinaryCodec = new BinaryCodec(blockCompressedOutputStream);
-        writeHeader(outputBinaryCodec, samFileHeader);
-        try {
-            blockCompressedOutputStream.flush();
-        } catch (final IOException ioe) {
-            throw new RuntimeIOException(ioe);
-        }
-    }
+  }
 }

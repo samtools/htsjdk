@@ -24,63 +24,57 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 
 /**
- * Fast (I hope) buffered Writer that converts char to byte merely by casting, rather than charset conversion.
+ * Fast (I hope) buffered Writer that converts char to byte merely by casting, rather than charset
+ * conversion.
  */
 public class AsciiWriter extends Writer {
 
-    private final OutputStream os;
-    // Buffer size has not been tuned.
-    private final byte[] buffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
-    private int numBytes;
+  private final OutputStream os;
+  // Buffer size has not been tuned.
+  private final byte[] buffer = new byte[Defaults.NON_ZERO_BUFFER_SIZE];
+  private int numBytes;
 
-    /**
-     * @param os need not be buffered as this class buffers
-     */
-    public AsciiWriter(final OutputStream os) {
-        this.os = os;
-        numBytes = 0;
-    }
+  /** @param os need not be buffered as this class buffers */
+  public AsciiWriter(final OutputStream os) {
+    this.os = os;
+    numBytes = 0;
+  }
 
-    /**
-     * flushes and closes underlying OutputStream.
-     */
-    @Override
-    public void close() throws IOException {
-        flush();
-        os.close();
-    }
+  /** flushes and closes underlying OutputStream. */
+  @Override
+  public void close() throws IOException {
+    flush();
+    os.close();
+  }
 
-    /**
-     * flushes underlying OutputStream
-     */
-    @Override
-    public void flush() throws IOException {
+  /** flushes underlying OutputStream */
+  @Override
+  public void flush() throws IOException {
+    os.write(buffer, 0, numBytes);
+    numBytes = 0;
+    os.flush();
+  }
+
+  /**
+   * All other Writer methods vector through this, so this is the only one that must be overridden.
+   */
+  @Override
+  public void write(final char[] chars, int offset, int length) throws IOException {
+    while (length > 0) {
+      final int charsToConvert = Math.min(length, buffer.length - numBytes);
+      StringUtil.charsToBytes(chars, offset, charsToConvert, buffer, numBytes);
+      numBytes += charsToConvert;
+      offset += charsToConvert;
+      length -= charsToConvert;
+      if (numBytes == buffer.length) {
         os.write(buffer, 0, numBytes);
         numBytes = 0;
-        os.flush();
+      }
     }
-
-    /**
-     * All other Writer methods vector through this, so this is the only one that must be overridden.
-     */
-    @Override
-    public void write(final char[] chars, int offset, int length) throws IOException {
-        while (length > 0) {
-            final int charsToConvert = Math.min(length, buffer.length - numBytes);
-            StringUtil.charsToBytes(chars, offset, charsToConvert, buffer, numBytes);
-            numBytes += charsToConvert;
-            offset += charsToConvert;
-            length -= charsToConvert;
-            if (numBytes == buffer.length) {
-                os.write(buffer, 0, numBytes);
-                numBytes = 0;
-            }
-        }
-    }
+  }
 }

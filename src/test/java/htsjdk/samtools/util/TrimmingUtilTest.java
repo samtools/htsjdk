@@ -27,45 +27,57 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * Tests for a simple phred-style quality trimming algorithm.
- */
+/** Tests for a simple phred-style quality trimming algorithm. */
 public class TrimmingUtilTest extends HtsjdkTest {
-    @Test
-    public void testEasyCases() {
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(30,30,30,30,30, 2, 2, 2, 2, 2), 15), 5);
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(30,30,30,30,30,30,30,30,30,30), 15), 10);
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(12,12,12,12,12,12,12,12,12,12), 15), 0);
+  @Test
+  public void testEasyCases() {
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(30, 30, 30, 30, 30, 2, 2, 2, 2, 2), 15), 5);
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(30, 30, 30, 30, 30, 30, 30, 30, 30, 30), 15),
+        10);
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(12, 12, 12, 12, 12, 12, 12, 12, 12, 12), 15),
+        0);
+  }
+
+  @Test
+  public void testBoundaryCasesForTrimQual() {
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(12, 12, 12, 12, 12, 12, 12, 12, 12, 12), 11),
+        10);
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(12, 12, 12, 12, 12, 12, 12, 12, 12, 12), 12),
+        10);
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(12, 12, 12, 12, 12, 12, 12, 12, 12, 12), 13),
+        0);
+  }
+
+  @Test
+  public void testLowQualityWithOccasionalHighQuality() {
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(30, 30, 30, 2, 5, 2, 3, 20, 2, 6), 15), 3);
+  }
+
+  @Test
+  public void testAlternatingHighAndLowQuality() {
+    Assert.assertEquals(
+        TrimmingUtil.findQualityTrimPoint(byteArray(30, 2, 30, 2, 30, 2, 30, 2, 30, 2), 15), 9);
+  }
+
+  @Test
+  public void testEmptyQuals() {
+    Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(), 15), 0);
+  }
+
+  /** Makes a byte[] from a variable length argument list of ints. */
+  byte[] byteArray(final int... ints) {
+    final byte[] bytes = new byte[ints.length];
+    for (int i = 0; i < bytes.length; ++i) {
+      bytes[i] = (byte) ints[i];
     }
 
-    @Test
-    public void testBoundaryCasesForTrimQual() {
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(12,12,12,12,12,12,12,12,12,12), 11), 10);
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(12,12,12,12,12,12,12,12,12,12), 12), 10);
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(12,12,12,12,12,12,12,12,12,12), 13), 0);
-    }
-
-    @Test
-    public void testLowQualityWithOccasionalHighQuality() {
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(30,30,30, 2, 5, 2, 3,20, 2, 6), 15), 3);
-    }
-
-    @Test
-    public void testAlternatingHighAndLowQuality() {
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(30, 2,30, 2,30, 2,30, 2,30, 2), 15), 9);
-    }
-    @Test
-    public void testEmptyQuals() {
-        Assert.assertEquals(TrimmingUtil.findQualityTrimPoint(byteArray(), 15), 0);
-    }
-
-    /** Makes a byte[] from a variable length argument list of ints. */
-    byte[] byteArray(final int... ints) {
-        final byte[] bytes = new byte[ints.length];
-        for (int i=0; i<bytes.length; ++i) {
-            bytes[i] = (byte) ints[i];
-        }
-
-        return bytes;
-    }
+    return bytes;
+  }
 }

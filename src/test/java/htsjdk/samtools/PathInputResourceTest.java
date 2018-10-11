@@ -1,12 +1,11 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.function.Function;
-
-import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -18,14 +17,16 @@ public class PathInputResourceTest extends HtsjdkTest {
     Path path = Paths.get(localBam);
     Path indexPath = Paths.get(localBam + ".bai");
     HashMap<String, Boolean> fired = new HashMap<>();
-    Function<SeekableByteChannel, SeekableByteChannel> wrapData = (SeekableByteChannel in) -> {
-      fired.put("data", true);
-      return in;
-    };
-    Function<SeekableByteChannel, SeekableByteChannel> wrapIndex = (SeekableByteChannel in) -> {
-      fired.put("index", true);
-      return in;
-    };
+    Function<SeekableByteChannel, SeekableByteChannel> wrapData =
+        (SeekableByteChannel in) -> {
+          fired.put("data", true);
+          return in;
+        };
+    Function<SeekableByteChannel, SeekableByteChannel> wrapIndex =
+        (SeekableByteChannel in) -> {
+          fired.put("index", true);
+          return in;
+        };
     SamInputResource in = SamInputResource.of(path, wrapData);
     in.index(indexPath, wrapIndex);
     InputResource indexResource = in.indexMaybe();
@@ -44,5 +45,4 @@ public class PathInputResourceTest extends HtsjdkTest {
     Assert.assertTrue(fired.containsKey("data"));
     Assert.assertTrue(fired.containsKey("index"));
   }
-
 }

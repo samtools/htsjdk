@@ -28,14 +28,10 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.seekablestream.ReadableSeekableStreamByteChannel;
 import htsjdk.samtools.seekablestream.SeekableStream;
-import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.samtools.util.IOUtil;
-
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -43,122 +39,129 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * A fasta file driven by an index for fast, concurrent lookups.  Supports two interfaces:
- * the ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
+ * A fasta file driven by an index for fast, concurrent lookups. Supports two interfaces: the
+ * ReferenceSequenceFile for old-style, stateful lookups and a direct getter.
  */
 public class IndexedFastaSequenceFile extends AbstractIndexedFastaSequenceFile {
-    /**
-     * The interface facilitating direct access to the fasta.
-     */
-    private final SeekableByteChannel channel;
+  /** The interface facilitating direct access to the fasta. */
+  private final SeekableByteChannel channel;
 
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param file The file to open.
-     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
-     */
-    public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
-        this(IOUtil.toPath(file), index);
-    }
+  /**
+   * Open the given indexed fasta sequence file. Throw an exception if the file cannot be opened.
+   *
+   * @param file The file to open.
+   * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
+   * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+   */
+  public IndexedFastaSequenceFile(final File file, final FastaSequenceIndex index) {
+    this(IOUtil.toPath(file), index);
+  }
 
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param file The file to open.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
-     */
-    public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
-        this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(IOUtil.toPath(file)))));
-    }
+  /**
+   * Open the given indexed fasta sequence file. Throw an exception if the file cannot be opened.
+   *
+   * @param file The file to open.
+   * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+   */
+  public IndexedFastaSequenceFile(final File file) throws FileNotFoundException {
+    this(file, new FastaSequenceIndex((findRequiredFastaIndexFile(IOUtil.toPath(file)))));
+  }
 
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param path The file to open.
-     * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
-     */
-    public IndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
-        super(path, index);
-        try {
-            // check if the it is a valid block-compressed file
-            if (IOUtil.isBlockCompressed(path, true)) {
-                throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
-            }
-            this.channel = Files.newByteChannel(path);
-        } catch (IOException e) {
-            throw new SAMException("FASTA file should be readable but is not: " + path, e);
-        }
+  /**
+   * Open the given indexed fasta sequence file. Throw an exception if the file cannot be opened.
+   *
+   * @param path The file to open.
+   * @param index Pre-built FastaSequenceIndex, for the case in which one does not exist on disk.
+   */
+  public IndexedFastaSequenceFile(final Path path, final FastaSequenceIndex index) {
+    super(path, index);
+    try {
+      // check if the it is a valid block-compressed file
+      if (IOUtil.isBlockCompressed(path, true)) {
+        throw new SAMException("Indexed block-compressed FASTA file cannot be handled: " + path);
+      }
+      this.channel = Files.newByteChannel(path);
+    } catch (IOException e) {
+      throw new SAMException("FASTA file should be readable but is not: " + path, e);
     }
+  }
 
-    /**
-     * Open the given indexed fasta sequence file.  Throw an exception if the file cannot be opened.
-     * @param path The file to open.
-     * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
-     */
-    public IndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
-        this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
-    }
+  /**
+   * Open the given indexed fasta sequence file. Throw an exception if the file cannot be opened.
+   *
+   * @param path The file to open.
+   * @throws FileNotFoundException If the fasta or any of its supporting files cannot be found.
+   */
+  public IndexedFastaSequenceFile(final Path path) throws FileNotFoundException {
+    this(path, new FastaSequenceIndex((findRequiredFastaIndexFile(path))));
+  }
 
-    /**
-     * Initialise the given indexed fasta sequence file stream.
-     * @param source The named source of the reference file (used in error messages).
-     * @param in The input stream to read the fasta file from.
-     * @param index The fasta index.
-     * @param dictionary The sequence dictionary, or null if there isn't one.
-     */
-    public IndexedFastaSequenceFile(String source, final SeekableStream in, final FastaSequenceIndex index, SAMSequenceDictionary dictionary) {
-        super(source, index, dictionary);
-        this.channel = new ReadableSeekableStreamByteChannel(in);
-    }
+  /**
+   * Initialise the given indexed fasta sequence file stream.
+   *
+   * @param source The named source of the reference file (used in error messages).
+   * @param in The input stream to read the fasta file from.
+   * @param index The fasta index.
+   * @param dictionary The sequence dictionary, or null if there isn't one.
+   */
+  public IndexedFastaSequenceFile(
+      String source,
+      final SeekableStream in,
+      final FastaSequenceIndex index,
+      SAMSequenceDictionary dictionary) {
+    super(source, index, dictionary);
+    this.channel = new ReadableSeekableStreamByteChannel(in);
+  }
 
-    /**
-     * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
-     */
-    @Deprecated
-    public static boolean canCreateIndexedFastaReader(final File fastaFile) {
-        return canCreateIndexedFastaReader(fastaFile.toPath());
-    }
+  /**
+   * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
+   */
+  @Deprecated
+  public static boolean canCreateIndexedFastaReader(final File fastaFile) {
+    return canCreateIndexedFastaReader(fastaFile.toPath());
+  }
 
-    /**
-     * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
-     */
-    @Deprecated
-    public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
-        try {
-            if (IOUtil.isBlockCompressed(fastaFile, true)) {
-                return false;
-            }
-            return (Files.exists(fastaFile) &&
-                    findFastaIndex(fastaFile) != null);
-        } catch (IOException e) {
-            return false;
-        }
+  /**
+   * @deprecated use {@link ReferenceSequenceFileFactory#canCreateIndexedFastaReader(Path)} instead.
+   */
+  @Deprecated
+  public static boolean canCreateIndexedFastaReader(final Path fastaFile) {
+    try {
+      if (IOUtil.isBlockCompressed(fastaFile, true)) {
+        return false;
+      }
+      return (Files.exists(fastaFile) && findFastaIndex(fastaFile) != null);
+    } catch (IOException e) {
+      return false;
     }
+  }
 
-    /**
-     * Reads a sequence of bytes from this channel into the given buffer,
-     * starting at the given file position.
-     * @param buffer the buffer into which bytes are to be transferred
-     * @param position the position to start reading at
-     * @return the number of bytes read
-     * @throws IOException if an I/O error occurs while reading
-     */
-    @Override
-    protected int readFromPosition(final ByteBuffer buffer, long position) throws IOException {
-        if (channel instanceof FileChannel) { // special case to take advantage of native code path
-            return ((FileChannel) channel).read(buffer,position);
-        } else {
-            long oldPos = channel.position();
-            try {
-                channel.position(position);
-                return channel.read(buffer);
-            } finally {
-                channel.position(oldPos);
-            }
-        }
+  /**
+   * Reads a sequence of bytes from this channel into the given buffer, starting at the given file
+   * position.
+   *
+   * @param buffer the buffer into which bytes are to be transferred
+   * @param position the position to start reading at
+   * @return the number of bytes read
+   * @throws IOException if an I/O error occurs while reading
+   */
+  @Override
+  protected int readFromPosition(final ByteBuffer buffer, long position) throws IOException {
+    if (channel instanceof FileChannel) { // special case to take advantage of native code path
+      return ((FileChannel) channel).read(buffer, position);
+    } else {
+      long oldPos = channel.position();
+      try {
+        channel.position(position);
+        return channel.read(buffer);
+      } finally {
+        channel.position(oldPos);
+      }
     }
+  }
 
-    @Override
-    public void close() throws IOException {
-        channel.close();
-    }
+  @Override
+  public void close() throws IOException {
+    channel.close();
+  }
 }

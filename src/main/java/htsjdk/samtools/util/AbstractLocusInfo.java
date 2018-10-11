@@ -24,140 +24,117 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * The unit of iteration for AbstractLocusIterator.
- * Holds information about the locus (the SAMSequenceRecord and 1-based position on the reference),
- * plus list of AbstractRecordAndOffset objects,
- * If <code>RecordAndOffset</code> class is used, one object represents one aligned read that overlaps the locus.
- * If <code>TypedRecordAndOffset</code> class is used, one object represents one aligned read,
- * that starts or ends at the locus.
+ * The unit of iteration for AbstractLocusIterator. Holds information about the locus (the
+ * SAMSequenceRecord and 1-based position on the reference), plus list of AbstractRecordAndOffset
+ * objects, If <code>RecordAndOffset</code> class is used, one object represents one aligned read
+ * that overlaps the locus. If <code>TypedRecordAndOffset</code> class is used, one object
+ * represents one aligned read, that starts or ends at the locus.
  *
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
- *
  */
 public class AbstractLocusInfo<E extends AbstractRecordAndOffset> implements Locus, Locatable {
-    /**
-     * Reference sequence, to which the reads are aligned.
-     **/
-    private final SAMSequenceRecord referenceSequence;
-    /**
-     * Position in the sequence, to which the reads are aligned.
-     **/
-    private final int position;
+  /** Reference sequence, to which the reads are aligned. */
+  private final SAMSequenceRecord referenceSequence;
+  /** Position in the sequence, to which the reads are aligned. */
+  private final int position;
 
-    /**
-     * Initial size for the list of <code>AbstractRecordAndOffset</code> objects
-     **/
-    private final static int INITIAL_LIST_SIZE = 100;
+  /** Initial size for the list of <code>AbstractRecordAndOffset</code> objects */
+  private static final int INITIAL_LIST_SIZE = 100;
 
-    /**
-     * List of aligned to current position reads
-     **/
-    private final List<E> recordAndOffsets = new ArrayList<>(INITIAL_LIST_SIZE);
+  /** List of aligned to current position reads */
+  private final List<E> recordAndOffsets = new ArrayList<>(INITIAL_LIST_SIZE);
 
-    /**
-     * @param referenceSequence reference sequence to which the reads are aligned
-     * @param position          position in the sequence to which the reads are aligned
-     */
-    public AbstractLocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
-        this.referenceSequence = referenceSequence;
-        this.position = position;
-    }
+  /**
+   * @param referenceSequence reference sequence to which the reads are aligned
+   * @param position position in the sequence to which the reads are aligned
+   */
+  public AbstractLocusInfo(final SAMSequenceRecord referenceSequence, final int position) {
+    this.referenceSequence = referenceSequence;
+    this.position = position;
+  }
 
-    /**
-     * Accumulates info for one read aligned to the locus. Method doesn't check, that <code>recordAndOffset</code>
-     * is really aligned to current reference position, so it must have valid reference sequence and
-     * position or further processing can go wrong.
-     *
-     * @param recordAndOffset object to add to current locus
-     */
-    public void add(E recordAndOffset) {
-        recordAndOffsets.add(recordAndOffset);
-    }
+  /**
+   * Accumulates info for one read aligned to the locus. Method doesn't check, that <code>
+   * recordAndOffset</code> is really aligned to current reference position, so it must have valid
+   * reference sequence and position or further processing can go wrong.
+   *
+   * @param recordAndOffset object to add to current locus
+   */
+  public void add(E recordAndOffset) {
+    recordAndOffsets.add(recordAndOffset);
+  }
 
-    /**
-     * @return the index of reference sequence
-     */
-    @Override
-    public int getSequenceIndex() {
-        return referenceSequence.getSequenceIndex();
-    }
+  /** @return the index of reference sequence */
+  @Override
+  public int getSequenceIndex() {
+    return referenceSequence.getSequenceIndex();
+  }
 
-    /**
-     * @return 1-based reference position
-     */
-    @Override
-    public int getPosition() {
-        return position;
-    }
+  /** @return 1-based reference position */
+  @Override
+  public int getPosition() {
+    return position;
+  }
 
-    /**
-     * @deprecated since name of the method can be confusing, new implementation should be used
-     *          {@code getRecordAndOffsets()}
-     * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
-     */
-    @Deprecated
-    public List<E> getRecordAndPositions() {
-        return Collections.unmodifiableList(recordAndOffsets);
-    }
+  /**
+   * @deprecated since name of the method can be confusing, new implementation should be used {@code
+   *     getRecordAndOffsets()}
+   * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
+   */
+  @Deprecated
+  public List<E> getRecordAndPositions() {
+    return Collections.unmodifiableList(recordAndOffsets);
+  }
 
-    /**
-     * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
-     */
-    public List<E> getRecordAndOffsets() {
-        return Collections.unmodifiableList(recordAndOffsets);
-    }
+  /**
+   * @return unmodifiable list of aligned to the reference position <code>recordsAndOffsets</code>
+   */
+  public List<E> getRecordAndOffsets() {
+    return Collections.unmodifiableList(recordAndOffsets);
+  }
 
-    /**
-     * @return the name of reference sequence
-     */
-    public String getSequenceName() {
-        return referenceSequence.getSequenceName();
-    }
+  /** @return the name of reference sequence */
+  public String getSequenceName() {
+    return referenceSequence.getSequenceName();
+  }
 
-    @Override
-    public String toString() {
-        return referenceSequence.getSequenceName() + ":" + position;
-    }
+  @Override
+  public String toString() {
+    return referenceSequence.getSequenceName() + ":" + position;
+  }
 
-    /**
-     * @return the length of reference sequence
-     */
-    public int getSequenceLength() {
-        return referenceSequence.getSequenceLength();
-    }
+  /** @return the length of reference sequence */
+  public int getSequenceLength() {
+    return referenceSequence.getSequenceLength();
+  }
 
-    /** 
-     * @return the number of records overlapping the position
-     */
-    public int size() { 
-        return this.recordAndOffsets.size(); 
-    }
+  /** @return the number of records overlapping the position */
+  public int size() {
+    return this.recordAndOffsets.size();
+  }
 
-    /**
-     * @return <code>true</code> if RecordAndOffset list is empty;
-     */
-    public boolean isEmpty() {
-        return getRecordAndOffsets().isEmpty();
-    }
+  /** @return <code>true</code> if RecordAndOffset list is empty; */
+  public boolean isEmpty() {
+    return getRecordAndOffsets().isEmpty();
+  }
 
-    @Override
-    public String getContig() {
-        return getSequenceName();
-    }
+  @Override
+  public String getContig() {
+    return getSequenceName();
+  }
 
-    @Override
-    public int getStart() {
-        return getPosition();
-    }
+  @Override
+  public int getStart() {
+    return getPosition();
+  }
 
-    @Override
-    public int getEnd() {
-        return getPosition();
-    }
+  @Override
+  public int getEnd() {
+    return getPosition();
+  }
 }

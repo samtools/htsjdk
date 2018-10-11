@@ -29,18 +29,17 @@ package htsjdk.samtools;
  * @author alecw@broadinstitute.org
  */
 public class FileTruncatedException extends SAMException {
-    public FileTruncatedException() {
-    }
+  public FileTruncatedException() {}
 
-    public FileTruncatedException(final String s) {
-        super(s);
-    }
+  public FileTruncatedException(final String s) {
+    super(s);
+  }
 
-    public FileTruncatedException(final String s, final Throwable throwable) {
-        super(s, throwable);
-    }
+  public FileTruncatedException(final String s, final Throwable throwable) {
+    super(s, throwable);
+  }
 
-    public FileTruncatedException(final Throwable throwable) {
-        super(throwable);
-    }
+  public FileTruncatedException(final Throwable throwable) {
+    super(throwable);
+  }
 }

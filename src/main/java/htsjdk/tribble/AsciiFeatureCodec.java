@@ -22,67 +22,68 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.LocationAware;
 import htsjdk.samtools.util.Log;
 import htsjdk.tribble.readers.*;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * A convenience base class for codecs that want to read in features from ASCII lines.
- * <p/>
- * This class overrides the general decode locs for streams and presents instead
- * Strings to decode(String) and readHeader(LineReader) functions.
+ *
+ * <p>This class overrides the general decode locs for streams and presents instead Strings to
+ * decode(String) and readHeader(LineReader) functions.
  *
  * @param <T> The feature type this codec reads
  */
-public abstract class AsciiFeatureCodec<T extends Feature> extends AbstractFeatureCodec<T, LineIterator> {
-    private static final Log log = Log.getInstance(AsciiFeatureCodec.class);
-    protected AsciiFeatureCodec(final Class<T> myClass) {
-        super(myClass);
-    }
-    
-    @Override
-    public void close(final LineIterator lineIterator) {
-        CloserUtil.close(lineIterator);
-    }
+public abstract class AsciiFeatureCodec<T extends Feature>
+    extends AbstractFeatureCodec<T, LineIterator> {
+  private static final Log log = Log.getInstance(AsciiFeatureCodec.class);
 
-    @Override
-    public boolean isDone(final LineIterator lineIterator) {
-        return !lineIterator.hasNext();
-    }
+  protected AsciiFeatureCodec(final Class<T> myClass) {
+    super(myClass);
+  }
 
-    @Override
-    public LocationAware makeIndexableSourceFromStream(final InputStream inputStream) {
-        return new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
-    }
+  @Override
+  public void close(final LineIterator lineIterator) {
+    CloserUtil.close(lineIterator);
+  }
 
-    @Override
-    public LineIterator makeSourceFromStream(final InputStream bufferedInputStream) {
-        return new LineIteratorImpl(new SynchronousLineReader(bufferedInputStream));
-    }
+  @Override
+  public boolean isDone(final LineIterator lineIterator) {
+    return !lineIterator.hasNext();
+  }
 
-    /** 
-     * Convenience method.  Decoding in ASCII files operates line-by-line, so obviate the need to call 
-     * {@link htsjdk.tribble.readers.LineIterator#next()} in implementing classes and, instead, have them implement
-     * {@link AsciiFeatureCodec#decode(String)}.
-     */
-    @Override
-    public T decode(final LineIterator lineIterator) {
-        return decode(lineIterator.next());
-    }
+  @Override
+  public LocationAware makeIndexableSourceFromStream(final InputStream inputStream) {
+    return new AsciiLineReaderIterator(AsciiLineReader.from(inputStream));
+  }
 
-    /** @see AsciiFeatureCodec#decode(htsjdk.tribble.readers.LineIterator) */
-    public abstract T decode(String s);
+  @Override
+  public LineIterator makeSourceFromStream(final InputStream bufferedInputStream) {
+    return new LineIteratorImpl(new SynchronousLineReader(bufferedInputStream));
+  }
 
-    @Override
-    public FeatureCodecHeader readHeader(final LineIterator lineIterator) throws IOException {
-        // TODO: Track header end here, rather than assuming there isn't one.
-        return new FeatureCodecHeader(readActualHeader(lineIterator), FeatureCodecHeader.NO_HEADER_END);
-    }
+  /**
+   * Convenience method. Decoding in ASCII files operates line-by-line, so obviate the need to call
+   * {@link htsjdk.tribble.readers.LineIterator#next()} in implementing classes and, instead, have
+   * them implement {@link AsciiFeatureCodec#decode(String)}.
+   */
+  @Override
+  public T decode(final LineIterator lineIterator) {
+    return decode(lineIterator.next());
+  }
 
-    /**
-     * Read and return the header, or null if there is no header.
-     *
-     * @return the actual header data in the file, or null if none is available
-     */
-    abstract public Object readActualHeader(final LineIterator reader);
+  /** @see AsciiFeatureCodec#decode(htsjdk.tribble.readers.LineIterator) */
+  public abstract T decode(String s);
+
+  @Override
+  public FeatureCodecHeader readHeader(final LineIterator lineIterator) throws IOException {
+    // TODO: Track header end here, rather than assuming there isn't one.
+    return new FeatureCodecHeader(readActualHeader(lineIterator), FeatureCodecHeader.NO_HEADER_END);
+  }
+
+  /**
+   * Read and return the header, or null if there is no header.
+   *
+   * @return the actual header data in the file, or null if none is available
+   */
+  public abstract Object readActualHeader(final LineIterator reader);
 }

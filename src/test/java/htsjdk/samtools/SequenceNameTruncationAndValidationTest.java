@@ -25,75 +25,66 @@ package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloserUtil;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-
 /**
- * Test new functionality that truncates sequence names at first whitespace in order to deal
- * with older BAMs that had spaces in sequence names.
+ * Test new functionality that truncates sequence names at first whitespace in order to deal with
+ * older BAMs that had spaces in sequence names.
  *
  * @author alecw@broadinstitute.org
  */
 public class SequenceNameTruncationAndValidationTest extends HtsjdkTest {
-    private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+  private static File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @Test(expectedExceptions = {SAMException.class}, dataProvider = "badSequenceNames")
-    public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {
-        new SAMSequenceRecord(sequenceName, 123);
-        Assert.fail("Should not reach here.");
-    }
+  @Test(
+      expectedExceptions = {SAMException.class},
+      dataProvider = "badSequenceNames")
+  public void testSequenceRecordThrowsWhenInvalid(final String sequenceName) {
+    new SAMSequenceRecord(sequenceName, 123);
+    Assert.fail("Should not reach here.");
+  }
 
-    @DataProvider(name = "badSequenceNames")
-    public Object[][] badSequenceNames() {
-        return new Object[][]{
-                {" "},
-                {"\t"},
-                {"\n"},
-                {"="},
-                {"Hi, Mom!"}
-        };
-    }
+  @DataProvider(name = "badSequenceNames")
+  public Object[][] badSequenceNames() {
+    return new Object[][] {{" "}, {"\t"}, {"\n"}, {"="}, {"Hi, Mom!"}};
+  }
 
-    @Test(dataProvider = "goodSequenceNames")
-    public void testSequenceRecordPositiveTest(final String sequenceName) {
-        new SAMSequenceRecord(sequenceName, 123);
-    }
+  @Test(dataProvider = "goodSequenceNames")
+  public void testSequenceRecordPositiveTest(final String sequenceName) {
+    new SAMSequenceRecord(sequenceName, 123);
+  }
 
-    @DataProvider(name = "goodSequenceNames")
-    public Object[][] goodSequenceNames() {
-        return new Object[][]{
-                {"Hi,@Mom!"}
-        };
-    }
+  @DataProvider(name = "goodSequenceNames")
+  public Object[][] goodSequenceNames() {
+    return new Object[][] {{"Hi,@Mom!"}};
+  }
 
-    @Test(dataProvider = "samFilesWithSpaceInSequenceName")
-    public void testSamSequenceTruncation(final String filename) {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, filename));
-        for (final SAMSequenceRecord sequence : reader.getFileHeader().getSequenceDictionary().getSequences()) {
-            Assert.assertFalse(sequence.getSequenceName().contains(" "), sequence.getSequenceName());
-        }
-        for (final SAMRecord rec : reader) {
-            Assert.assertFalse(rec.getReferenceName().contains(" "));
-        }
-        CloserUtil.close(reader);
+  @Test(dataProvider = "samFilesWithSpaceInSequenceName")
+  public void testSamSequenceTruncation(final String filename) {
+    final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, filename));
+    for (final SAMSequenceRecord sequence :
+        reader.getFileHeader().getSequenceDictionary().getSequences()) {
+      Assert.assertFalse(sequence.getSequenceName().contains(" "), sequence.getSequenceName());
     }
+    for (final SAMRecord rec : reader) {
+      Assert.assertFalse(rec.getReferenceName().contains(" "));
+    }
+    CloserUtil.close(reader);
+  }
 
-    @DataProvider(name = "samFilesWithSpaceInSequenceName")
-    public Object[][] samFilesWithSpaceInSequenceName() {
-        return new Object[][]{
-                {"sequenceWithSpace.sam"},
-                {"sequenceWithSpace.bam"}
-        };
-    }
+  @DataProvider(name = "samFilesWithSpaceInSequenceName")
+  public Object[][] samFilesWithSpaceInSequenceName() {
+    return new Object[][] {{"sequenceWithSpace.sam"}, {"sequenceWithSpace.bam"}};
+  }
 
-    @Test(expectedExceptions = {SAMFormatException.class})
-    public void testBadRname() {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "readWithBadRname.sam"));
-        for (final SAMRecord rec : reader) {
-        }
-        Assert.fail("Should not reach here.");
-    }
+  @Test(expectedExceptions = {SAMFormatException.class})
+  public void testBadRname() {
+    final SamReader reader =
+        SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, "readWithBadRname.sam"));
+    for (final SAMRecord rec : reader) {}
+    Assert.fail("Should not reach here.");
+  }
 }

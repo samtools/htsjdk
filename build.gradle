@@ -13,6 +13,7 @@ plugins {
     id 'com.palantir.git-version' version '0.11.0'
     id 'com.github.johnrengelman.shadow' version '2.0.4'
     id 'com.github.maiflai.scalatest' version '0.22'
+    id 'com.github.sherter.google-java-format' version '0.7.1'
 }
 
 repositories {
@@ -145,6 +146,12 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 task sourcesJar(type: Jar) {
     from sourceSets.main.allSource
     classifier = 'sources'
+}
+
+// This formats the code for each compile-like task.  This may behave oddly if there are syntax
+// errors in the code, for example by deleting import statements.
+tasks.withType(JavaCompile) {
+    dependsOn 'googleJavaFormat' // task name conflicts with plugin name
 }
 
 /**

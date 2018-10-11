@@ -24,6 +24,8 @@
 
 package htsjdk.samtools.util;
 
+import static org.testng.Assert.assertEquals;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -31,50 +33,50 @@ import htsjdk.samtools.SAMSequenceRecord;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-
-/**
- * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
- */
-
+/** @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com> */
 public class AbstractLocusInfoTest extends HtsjdkTest {
-    private final byte[] qualities = {30, 50, 50, 60, 60, 70, 70, 70, 80, 90, 30, 50, 50, 60, 60, 70, 70, 70, 80, 90};
-    private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C', 'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
-    private EdgingRecordAndOffset typedRecordAndOffset;
-    private EdgingRecordAndOffset typedRecordAndOffsetEnd;
-    private SAMSequenceRecord sequence = new SAMSequenceRecord("chrM", 100);
+  private final byte[] qualities = {
+    30, 50, 50, 60, 60, 70, 70, 70, 80, 90, 30, 50, 50, 60, 60, 70, 70, 70, 80, 90
+  };
+  private byte[] bases = {
+    'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C', 'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T',
+    'C'
+  };
+  private EdgingRecordAndOffset typedRecordAndOffset;
+  private EdgingRecordAndOffset typedRecordAndOffsetEnd;
+  private SAMSequenceRecord sequence = new SAMSequenceRecord("chrM", 100);
 
-    @BeforeTest
-    public void setUp() {
-        SAMRecord record = new SAMRecord(new SAMFileHeader());
-        record.setReadName("testRecord");
-        record.setReadBases(bases);
-        record.setBaseQualities(qualities);
-        typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 10, 10, 10);
-        typedRecordAndOffsetEnd = EdgingRecordAndOffset.createEndRecord(typedRecordAndOffset);
-    }
+  @BeforeTest
+  public void setUp() {
+    SAMRecord record = new SAMRecord(new SAMFileHeader());
+    record.setReadName("testRecord");
+    record.setReadBases(bases);
+    record.setBaseQualities(qualities);
+    typedRecordAndOffset = EdgingRecordAndOffset.createBeginRecord(record, 10, 10, 10);
+    typedRecordAndOffsetEnd = EdgingRecordAndOffset.createEndRecord(typedRecordAndOffset);
+  }
 
-    @Test
-    public void testConstructor() {
-        AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 1);
-        assertEquals("chrM", info.getSequenceName());
-        assertEquals(0, info.getRecordAndOffsets().size());
-        assertEquals(100, info.getSequenceLength());
-        assertEquals(1, info.getPosition());
-    }
+  @Test
+  public void testConstructor() {
+    AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 1);
+    assertEquals("chrM", info.getSequenceName());
+    assertEquals(0, info.getRecordAndOffsets().size());
+    assertEquals(100, info.getSequenceLength());
+    assertEquals(1, info.getPosition());
+  }
 
-    @Test
-    public void testAdd() {
-        AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 10);
-        info.add(typedRecordAndOffset);
-        info.add(typedRecordAndOffsetEnd);
-        assertEquals(2, info.getRecordAndOffsets().size());
-        assertEquals(typedRecordAndOffset, info.getRecordAndOffsets().get(0));
-        assertEquals(typedRecordAndOffsetEnd, info.getRecordAndOffsets().get(1));
-        assertEquals(10, info.getPosition());
-        assertEquals('A', info.getRecordAndOffsets().get(0).getReadBase());
-        assertEquals('A', info.getRecordAndOffsets().get(1).getReadBase());
-        assertEquals(30, info.getRecordAndOffsets().get(0).getBaseQuality());
-        assertEquals(30, info.getRecordAndOffsets().get(1).getBaseQuality());
-    }
+  @Test
+  public void testAdd() {
+    AbstractLocusInfo<EdgingRecordAndOffset> info = new AbstractLocusInfo<>(sequence, 10);
+    info.add(typedRecordAndOffset);
+    info.add(typedRecordAndOffsetEnd);
+    assertEquals(2, info.getRecordAndOffsets().size());
+    assertEquals(typedRecordAndOffset, info.getRecordAndOffsets().get(0));
+    assertEquals(typedRecordAndOffsetEnd, info.getRecordAndOffsets().get(1));
+    assertEquals(10, info.getPosition());
+    assertEquals('A', info.getRecordAndOffsets().get(0).getReadBase());
+    assertEquals('A', info.getRecordAndOffsets().get(1).getReadBase());
+    assertEquals(30, info.getRecordAndOffsets().get(0).getBaseQuality());
+    assertEquals(30, info.getRecordAndOffsets().get(1).getBaseQuality());
+  }
 }

@@ -25,13 +25,11 @@
 package htsjdk.tribble;
 
 /**
- * Created by IntelliJ IDEA.
- * User: depristo
- * Date: Jun 29, 2010
- * Time: 3:48:47 PM
- * To change this template use File | Settings | File Templates.
+ * Created by IntelliJ IDEA. User: depristo Date: Jun 29, 2010 Time: 3:48:47 PM To change this
+ * template use File | Settings | File Templates.
  */
 public interface NameAwareCodec {
-    public String getName();
-    public void setName(String name);
+  public String getName();
+
+  public void setName(String name);
 }

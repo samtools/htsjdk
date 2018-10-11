@@ -28,58 +28,57 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
- * Base class of implementing iterators. All you have to do is implement advance which gets
- * the next element.
+ * Base class of implementing iterators. All you have to do is implement advance which gets the next
+ * element.
  *
  * @author Doug Voet (dvoet at broadinstitute dot org)
  */
 public abstract class AbstractIterator<E> implements Iterator<E> {
-    protected E next;
-    private boolean iterating = false;
+  protected E next;
+  private boolean iterating = false;
 
-    @Override
-    public boolean hasNext() {
-        // If this is the start of iteration, queue up the first item
-        if (!iterating) {
-            next = advance();
-            iterating = true;
-        }
-        return next != null;
+  @Override
+  public boolean hasNext() {
+    // If this is the start of iteration, queue up the first item
+    if (!iterating) {
+      next = advance();
+      iterating = true;
+    }
+    return next != null;
+  }
+
+  @Override
+  public E next() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
     }
 
-    @Override
-    public E next() {
-        if (!hasNext()) {
-            throw new NoSuchElementException();
-        }
+    E ret = next;
+    next = advance();
+    return ret;
+  }
 
-        E ret = next;
-        next = advance();
-        return ret;
-    }
+  @Override
+  public void remove() {
+    throw new UnsupportedOperationException("Remove() not supported.");
+  }
 
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("Remove() not supported.");
-    }
+  /** @return the next element or null if the iterator is at the end */
+  protected abstract E advance();
 
-    /**
-     * @return the next element or null if the iterator is at the end
-     */
-    protected abstract E advance();
+  /**
+   * Returns the next element in the iterator, if one exists. Otherwise, returns null. Invoking this
+   * method does not advance the iterator.
+   *
+   * @return The next element in the iterator, without advancing, or, if no other element exists,
+   *     null.
+   */
+  public E peek() {
+    return next;
+  }
 
-    /**
-     * Returns the next element in the iterator, if one exists.  Otherwise, returns null.  Invoking this method does not advance the iterator.
-     * @return The next element in the iterator, without advancing, or, if no other element exists, null.
-     */
-    public E peek() {
-        return next;
-    }
-
-    /**
-     * @return true after the first time hasNext() or next() have been called
-     */
-    protected boolean isIterating() {
-        return iterating;
-    }
+  /** @return true after the first time hasNext() or next() have been called */
+  protected boolean isIterating() {
+    return iterating;
+  }
 }

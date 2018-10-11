@@ -24,78 +24,75 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
-
 import java.io.*;
 
 public class TestUtil {
 
-    public static int RANDOM_SEED = 42;
+  public static int RANDOM_SEED = 42;
 
+  /** Base url where all test files for http tests are found */
+  public static final String BASE_URL_FOR_HTTP_TESTS =
+      "https://personal.broadinstitute.org/picard/testdata/";
 
-    /**
-     * Base url where all test files for http tests are found
-     */
-    public static final String BASE_URL_FOR_HTTP_TESTS = "https://personal.broadinstitute.org/picard/testdata/";
-
-    public static File getTempDirectory(final String prefix, final String suffix) {
-        final File tempDirectory;
-        try {
-            tempDirectory = File.createTempFile(prefix, suffix);
-        } catch (IOException e) {
-            throw new SAMException("Failed to create temporary file.", e);
-        }
-        if (!tempDirectory.delete())
-            throw new SAMException("Failed to delete file: " + tempDirectory);
-        if (!tempDirectory.mkdir())
-            throw new SAMException("Failed to make directory: " + tempDirectory);
-        tempDirectory.deleteOnExit();
-        return tempDirectory;
+  public static File getTempDirectory(final String prefix, final String suffix) {
+    final File tempDirectory;
+    try {
+      tempDirectory = File.createTempFile(prefix, suffix);
+    } catch (IOException e) {
+      throw new SAMException("Failed to create temporary file.", e);
     }
+    if (!tempDirectory.delete()) throw new SAMException("Failed to delete file: " + tempDirectory);
+    if (!tempDirectory.mkdir())
+      throw new SAMException("Failed to make directory: " + tempDirectory);
+    tempDirectory.deleteOnExit();
+    return tempDirectory;
+  }
 
-    /**
-     * @deprecated Use properly spelled method. {@link #getTempDirectory}
-     */
-    @Deprecated
-    public static File getTempDirecory(final String prefix, final String suffix) {
-        return getTempDirectory(prefix, suffix);
+  /** @deprecated Use properly spelled method. {@link #getTempDirectory} */
+  @Deprecated
+  public static File getTempDirecory(final String prefix, final String suffix) {
+    return getTempDirectory(prefix, suffix);
+  }
+
+  /**
+   * Little test utility to help tests that create multiple levels of subdirectories clean up after
+   * themselves.
+   *
+   * @param directory The directory to be deleted (along with its subdirectories)
+   */
+  public static void recursiveDelete(final File directory) {
+    for (final File f : directory.listFiles()) {
+      if (f.isDirectory()) {
+        recursiveDelete(f);
+      }
+      f.delete();
     }
+  }
 
-        /**
-         * Little test utility to help tests that create multiple levels of subdirectories
-         * clean up after themselves.
-         *
-         * @param directory The directory to be deleted (along with its subdirectories)
-         */
-    public static void recursiveDelete(final File directory) {
-        for (final File f : directory.listFiles()) {
-            if (f.isDirectory()) {
-                recursiveDelete(f);
-            }
-            f.delete();
-        }
-    }
+  /**
+   * Serialize and Deserialize an object Useful for testing if serialization is correctly handled
+   * for a class.
+   *
+   * @param input an object to serialize and then deserialize
+   * @param <T> any Serializable type
+   * @return a copy of the initial object
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
+  public static <T extends Serializable> T serializeAndDeserialize(T input)
+      throws IOException, ClassNotFoundException {
+    final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
+    final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
 
-    /**
-     * Serialize and Deserialize an object
-     * Useful for testing if serialization is correctly handled for a class.
-     * @param input an object to serialize and then deserialize
-     * @param <T> any Serializable type
-     * @return a copy of the initial object
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    public static <T extends Serializable> T serializeAndDeserialize(T input) throws IOException, ClassNotFoundException {
-        final ByteArrayOutputStream byteArrayStream = new ByteArrayOutputStream();
-        final ObjectOutputStream out = new ObjectOutputStream(byteArrayStream);
+    out.writeObject(input);
+    final ObjectInputStream in =
+        new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
 
-        out.writeObject(input);
-        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(byteArrayStream.toByteArray()));
+    @SuppressWarnings("unchecked")
+    final T result = (T) in.readObject();
 
-        @SuppressWarnings("unchecked")
-        final T result = (T) in.readObject();
-
-        out.close();
-        in.close();
-        return result;
-    }
+    out.close();
+    in.close();
+    return result;
+  }
 }

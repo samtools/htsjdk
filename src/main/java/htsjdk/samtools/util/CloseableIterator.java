@@ -34,31 +34,30 @@ import java.util.stream.StreamSupport;
 
 /**
  * This interface is used by iterators that use releasable resources during iteration.
- * 
- * The consumer of a CloseableIterator should ensure that the close() method is always called,
- * for example by putting such a call in a finally block.  Two conventions should be followed
- * by all implementors of CloseableIterator:
- * 1) The close() method should be idempotent: calling close() twice should have no effect.
- * 2) When hasNext() returns false, the iterator implementation should automatically close itself.
- *    The latter makes it somewhat safer for consumers to use the for loop syntax for iteration:
- *    for (Type obj : getCloseableIterator()) { ... }
+ *
+ * <p>The consumer of a CloseableIterator should ensure that the close() method is always called,
+ * for example by putting such a call in a finally block. Two conventions should be followed by all
+ * implementors of CloseableIterator: 1) The close() method should be idempotent: calling close()
+ * twice should have no effect. 2) When hasNext() returns false, the iterator implementation should
+ * automatically close itself. The latter makes it somewhat safer for consumers to use the for loop
+ * syntax for iteration: for (Type obj : getCloseableIterator()) { ... }
  */
 public interface CloseableIterator<T> extends Iterator<T>, Closeable {
-    /** Should be implemented to close/release any underlying resources. */
-    @Override
-    void close();
+  /** Should be implemented to close/release any underlying resources. */
+  @Override
+  void close();
 
-    /** Consumes the contents of the iterator and returns it as a List. */
-    default List<T> toList() {
-        final List<T> list = new ArrayList<>();
-        while (hasNext()) list.add(next());
-        close();
-        return list;
-    }
+  /** Consumes the contents of the iterator and returns it as a List. */
+  default List<T> toList() {
+    final List<T> list = new ArrayList<>();
+    while (hasNext()) list.add(next());
+    close();
+    return list;
+  }
 
-    /** Returns a Stream that will consume from the underlying iterator. */
-    default Stream<T> stream() {
-        final Spliterator<T> s = Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED);
-        return StreamSupport.stream(s, false).onClose(this::close);
-    }
+  /** Returns a Stream that will consume from the underlying iterator. */
+  default Stream<T> stream() {
+    final Spliterator<T> s = Spliterators.spliteratorUnknownSize(this, Spliterator.ORDERED);
+    return StreamSupport.stream(s, false).onClose(this::close);
+  }
 }

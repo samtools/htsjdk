@@ -28,134 +28,140 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.filter.IntervalFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
-
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * Create an iterator over a {@link SamReader} that only returns reads that overlap one of the intervals
- * in an interval list.
+ * Create an iterator over a {@link SamReader} that only returns reads that overlap one of the
+ * intervals in an interval list.
  *
  * @author alecw@broadinstitute.org
  */
 public class SamRecordIntervalIteratorFactory {
 
-    /**
-     * @param samReader
-     * @param uniqueIntervals list of intervals of interest, with overlaps merged, in coordinate order
-     * @param useIndex        if false, do not use a BAM index even if it is present.
-     * @return an iterator that will be filtered so that only SAMRecords overlapping the intervals
-     * in uniqueIntervals will be returned.  If a BAM index is available, it will be used to improve performance.
-     * Note however that if there are many intervals that cover a great deal of the genome, using the BAM
-     * index may actually make performance worse.
-     */
-    public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(final SamReader samReader,
-                                                                      final List<Interval> uniqueIntervals,
-                                                                      final boolean useIndex) {
-        if (!samReader.hasIndex() || !useIndex) {
-            final int stopAfterSequence;
-            final int stopAfterPosition;
-            if (uniqueIntervals.isEmpty()) {
-                stopAfterSequence = -1;
-                stopAfterPosition = -1;
-            } else {
-                final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
-                stopAfterSequence = samReader.getFileHeader().getSequenceIndex(lastInterval.getContig());
-                stopAfterPosition = lastInterval.getEnd();
-            }
-            final IntervalFilter intervalFilter = new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
-            return new StopAfterFilteringIterator(samReader.iterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
-        } else {
-            final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
-            for (int i = 0; i < queryIntervals.length; ++i) {
-                final Interval inputInterval = uniqueIntervals.get(i);
-                queryIntervals[i] = new QueryInterval(samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
-                        inputInterval.getStart(), inputInterval.getEnd());
-            }
-            return samReader.queryOverlapping(queryIntervals);
-        }
+  /**
+   * @param samReader
+   * @param uniqueIntervals list of intervals of interest, with overlaps merged, in coordinate order
+   * @param useIndex if false, do not use a BAM index even if it is present.
+   * @return an iterator that will be filtered so that only SAMRecords overlapping the intervals in
+   *     uniqueIntervals will be returned. If a BAM index is available, it will be used to improve
+   *     performance. Note however that if there are many intervals that cover a great deal of the
+   *     genome, using the BAM index may actually make performance worse.
+   */
+  public CloseableIterator<SAMRecord> makeSamRecordIntervalIterator(
+      final SamReader samReader, final List<Interval> uniqueIntervals, final boolean useIndex) {
+    if (!samReader.hasIndex() || !useIndex) {
+      final int stopAfterSequence;
+      final int stopAfterPosition;
+      if (uniqueIntervals.isEmpty()) {
+        stopAfterSequence = -1;
+        stopAfterPosition = -1;
+      } else {
+        final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
+        stopAfterSequence = samReader.getFileHeader().getSequenceIndex(lastInterval.getContig());
+        stopAfterPosition = lastInterval.getEnd();
+      }
+      final IntervalFilter intervalFilter =
+          new IntervalFilter(uniqueIntervals, samReader.getFileHeader());
+      return new StopAfterFilteringIterator(
+          samReader.iterator(), intervalFilter, stopAfterSequence, stopAfterPosition);
+    } else {
+      final QueryInterval[] queryIntervals = new QueryInterval[uniqueIntervals.size()];
+      for (int i = 0; i < queryIntervals.length; ++i) {
+        final Interval inputInterval = uniqueIntervals.get(i);
+        queryIntervals[i] =
+            new QueryInterval(
+                samReader.getFileHeader().getSequenceIndex(inputInterval.getContig()),
+                inputInterval.getStart(),
+                inputInterval.getEnd());
+      }
+      return samReader.queryOverlapping(queryIntervals);
+    }
+  }
+
+  /**
+   * Halt iteration after a read is encountered that starts after the given sequence and position.
+   * Note that most of this code is copied from FilteringSamIterator. It would be nice just to
+   * override getNextRecord, but that method is called FilteringSamIterator ctor, so the stopAfter
+   * members can't be initialized before it is called. FilteringSamIterator ctor could take a
+   * boolean "advance" that would tell it whether or not to call getNextRecord in the ctor, so that
+   * it could be delayed in the subclass. If this pattern happens again, we should do that.
+   */
+  private class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
+    private final int stopAfterSequence;
+    private final int stopAfterPosition;
+    private final Iterator<SAMRecord> iterator;
+    private final SamRecordFilter filter;
+    private SAMRecord next = null;
+
+    private StopAfterFilteringIterator(
+        Iterator<SAMRecord> iterator,
+        SamRecordFilter filter,
+        int stopAfterSequence,
+        int stopAfterPosition) {
+      this.stopAfterSequence = stopAfterSequence;
+      this.stopAfterPosition = stopAfterPosition;
+      this.iterator = iterator;
+      this.filter = filter;
+      next = getNextRecord();
     }
 
     /**
-     * Halt iteration after a read is encountered that starts after the given sequence and position.
-     * Note that most of this code is copied from FilteringSamIterator.  It would be nice just to override getNextRecord,
-     * but that method is called FilteringSamIterator ctor, so the stopAfter members can't be initialized before
-     * it is called.
-     * FilteringSamIterator ctor could take a boolean "advance" that would tell it whether or not to call getNextRecord
-     * in the ctor, so that it could be delayed in the subclass.  If this pattern happens again, we should do that.
+     * Returns true if the iteration has more elements.
+     *
+     * @return true if the iteration has more elements. Otherwise returns false.
      */
-    private class StopAfterFilteringIterator implements CloseableIterator<SAMRecord> {
-        private final int stopAfterSequence;
-        private final int stopAfterPosition;
-        private final Iterator<SAMRecord> iterator;
-        private final SamRecordFilter filter;
-        private SAMRecord next = null;
-
-        private StopAfterFilteringIterator(Iterator<SAMRecord> iterator, SamRecordFilter filter,
-                                           int stopAfterSequence, int stopAfterPosition) {
-            this.stopAfterSequence = stopAfterSequence;
-            this.stopAfterPosition = stopAfterPosition;
-            this.iterator = iterator;
-            this.filter = filter;
-            next = getNextRecord();
-        }
-
-
-        /**
-         * Returns true if the iteration has more elements.
-         *
-         * @return true if the iteration has more elements.  Otherwise returns false.
-         */
-        @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        /**
-         * Returns the next element in the iteration.
-         *
-         * @return the next element in the iteration
-         * @throws java.util.NoSuchElementException
-         */
-        @Override
-        public SAMRecord next() {
-            if (next == null) {
-                throw new NoSuchElementException("Iterator has no more elements.");
-            }
-            final SAMRecord result = next;
-            next = getNextRecord();
-            return result;
-        }
-
-        /**
-         * Required method for Iterator API.
-         *
-         * @throws UnsupportedOperationException
-         */
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException("Remove() not supported by FilteringSamIterator");
-        }
-
-        @Override
-        public void close() {
-            CloserUtil.close(iterator);
-        }
-
-        protected SAMRecord getNextRecord() {
-            while (iterator.hasNext()) {
-                SAMRecord record = iterator.next();
-                if (record.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return null;
-                else if (record.getReferenceIndex() > stopAfterSequence) return null;
-                else if (record.getReferenceIndex() == stopAfterSequence && record.getAlignmentStart() > stopAfterPosition) {
-                    return null;
-                }
-                if (!filter.filterOut(record)) {
-                    return record;
-                }
-            }
-            return null;
-        }
+    @Override
+    public boolean hasNext() {
+      return next != null;
     }
+
+    /**
+     * Returns the next element in the iteration.
+     *
+     * @return the next element in the iteration
+     * @throws java.util.NoSuchElementException
+     */
+    @Override
+    public SAMRecord next() {
+      if (next == null) {
+        throw new NoSuchElementException("Iterator has no more elements.");
+      }
+      final SAMRecord result = next;
+      next = getNextRecord();
+      return result;
+    }
+
+    /**
+     * Required method for Iterator API.
+     *
+     * @throws UnsupportedOperationException
+     */
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException("Remove() not supported by FilteringSamIterator");
+    }
+
+    @Override
+    public void close() {
+      CloserUtil.close(iterator);
+    }
+
+    protected SAMRecord getNextRecord() {
+      while (iterator.hasNext()) {
+        SAMRecord record = iterator.next();
+        if (record.getReferenceIndex() == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) return null;
+        else if (record.getReferenceIndex() > stopAfterSequence) return null;
+        else if (record.getReferenceIndex() == stopAfterSequence
+            && record.getAlignmentStart() > stopAfterPosition) {
+          return null;
+        }
+        if (!filter.filterOut(record)) {
+          return record;
+        }
+      }
+      return null;
+    }
+  }
 }

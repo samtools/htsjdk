@@ -24,24 +24,21 @@
 
 package htsjdk.variant.variantcontext;
 
-/**
- * Type of Structural Variant as defined in the VCF spec 4.2
- *
- */
+/** Type of Structural Variant as defined in the VCF spec 4.2 */
 public enum StructuralVariantType {
-    /** Deletion relative to the reference */
-    DEL,
-    /** Insertion of novel sequence relative to the reference */
-    INS,
-    /** Region of elevated copy number relative to the reference */
-    DUP,
-    /** Inversion of reference sequence */
-    INV,
-    /** Copy number variable region */
-    CNV,
-    /** breakend structural variation. VCF Specification : <cite>An arbitrary rearrangement
-     *  event can be summarized as a set of novel adjacencies.
-     *  Each adjacency ties together two breakends.</cite>
-     */
-    BND
+  /** Deletion relative to the reference */
+  DEL,
+  /** Insertion of novel sequence relative to the reference */
+  INS,
+  /** Region of elevated copy number relative to the reference */
+  DUP,
+  /** Inversion of reference sequence */
+  INV,
+  /** Copy number variable region */
+  CNV,
+  /**
+   * breakend structural variation. VCF Specification : <cite>An arbitrary rearrangement event can
+   * be summarized as a set of novel adjacencies. Each adjacency ties together two breakends.</cite>
+   */
+  BND
 }

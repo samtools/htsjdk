@@ -8,7 +8,8 @@ import java.io.Closeable;
  * @author Tim Fennell
  */
 public interface FastqWriter extends Closeable {
-    void write(final FastqRecord rec);
-    @Override
-    void close();
+  void write(final FastqRecord rec);
+
+  @Override
+  void close();
 }

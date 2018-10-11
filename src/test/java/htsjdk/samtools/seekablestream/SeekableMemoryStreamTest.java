@@ -25,75 +25,78 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.io.EOFException;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.EOFException;
-import java.io.IOException;
-
 public class SeekableMemoryStreamTest extends HtsjdkTest {
 
-    @Test
-    public void test_getSource() {
-        String source = "source";
-        SeekableMemoryStream stream = new SeekableMemoryStream("qwe".getBytes(), source);
-        Assert.assertEquals(stream.getSource(), source);
+  @Test
+  public void test_getSource() {
+    String source = "source";
+    SeekableMemoryStream stream = new SeekableMemoryStream("qwe".getBytes(), source);
+    Assert.assertEquals(stream.getSource(), source);
+  }
+
+  @Test
+  public void test_EOF() throws IOException {
+    SeekableMemoryStream stream = new SeekableMemoryStream(new byte[] {}, null);
+    Assert.assertTrue(stream.eof());
+    Assert.assertEquals(stream.read(), -1);
+    Assert.assertTrue(stream.eof());
+  }
+
+  @Test
+  public void test_read_byte() throws IOException {
+    byte[] data = new byte[1024];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) i;
+    }
+    SeekableMemoryStream stream = new SeekableMemoryStream(data, null);
+
+    for (int i = 0; i < data.length; i++) {
+      byte expectedByteValue = (byte) i;
+      Assert.assertEquals((byte) stream.read(), expectedByteValue);
+    }
+  }
+
+  @Test
+  public void test_read_into_array() throws IOException {
+    byte[] data = new byte[1024];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) i;
+    }
+    SeekableMemoryStream stream = new SeekableMemoryStream(data, null);
+
+    byte[] copy = new byte[data.length];
+
+    int length = data.length;
+    int numberOfBytesReadSoFar = 0, maxBytesPerRead = 11;
+    while (numberOfBytesReadSoFar < length) {
+      final int count =
+          stream.read(
+              copy,
+              numberOfBytesReadSoFar,
+              Math.min(maxBytesPerRead, length - numberOfBytesReadSoFar));
+      if (count < 0) {
+        throw new EOFException();
+      }
+      numberOfBytesReadSoFar += count;
     }
 
-    @Test
-    public void test_EOF() throws IOException {
-        SeekableMemoryStream stream = new SeekableMemoryStream(new byte[]{}, null);
-        Assert.assertTrue(stream.eof());
-        Assert.assertEquals(stream.read(), -1);
-        Assert.assertTrue(stream.eof());
-    }
+    Assert.assertEquals(copy, data);
+  }
 
-    @Test
-    public void test_read_byte() throws IOException {
-        byte[] data = new byte[1024];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (byte) i;
-        }
-        SeekableMemoryStream stream = new SeekableMemoryStream(data, null);
-
-        for (int i = 0; i < data.length; i++) {
-            byte expectedByteValue = (byte) i;
-            Assert.assertEquals((byte) stream.read(), expectedByteValue);
-        }
-    }
-
-    @Test
-    public void test_read_into_array() throws IOException {
-        byte[] data = new byte[1024];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (byte) i;
-        }
-        SeekableMemoryStream stream = new SeekableMemoryStream(data, null);
-
-        byte[] copy = new byte[data.length];
-
-        int length = data.length;
-        int numberOfBytesReadSoFar = 0, maxBytesPerRead = 11;
-        while (numberOfBytesReadSoFar < length) {
-            final int count = stream.read(copy, numberOfBytesReadSoFar, Math.min(maxBytesPerRead, length - numberOfBytesReadSoFar));
-            if (count < 0) {
-                throw new EOFException();
-            }
-            numberOfBytesReadSoFar += count;
-        }
-
-        Assert.assertEquals(copy, data);
-    }
-
-    @Test
-    public void test_reset() throws IOException {
-        SeekableMemoryStream stream = new SeekableMemoryStream("qwe".getBytes(), null);
-        stream.mark(3);
-        // read fully
-        final int l = (int) stream.length();
-        Assert.assertEquals(stream.read(new byte[l]), l);
-        Assert.assertEquals(stream.read(), -1);
-        stream.reset();
-        Assert.assertEquals(stream.read(new byte[l]), l);
-    }
+  @Test
+  public void test_reset() throws IOException {
+    SeekableMemoryStream stream = new SeekableMemoryStream("qwe".getBytes(), null);
+    stream.mark(3);
+    // read fully
+    final int l = (int) stream.length();
+    Assert.assertEquals(stream.read(new byte[l]), l);
+    Assert.assertEquals(stream.read(), -1);
+    stream.reset();
+    Assert.assertEquals(stream.read(new byte[l]), l);
+  }
 }

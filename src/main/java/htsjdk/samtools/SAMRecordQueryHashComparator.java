@@ -24,49 +24,48 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Murmur3;
-
 import java.io.Serializable;
 
 /**
- * SAMRecord comparator that provides an ordering based on a hash of the queryname. Has
- * the useful property that reads with the same name will be grouped together, but that
- * reads appear in an otherwise random order.  Useful for when the read names in a BAM
- * are correlated to something else (e.g. position, read group), making a straight
- * queryname sort undesirable.
+ * SAMRecord comparator that provides an ordering based on a hash of the queryname. Has the useful
+ * property that reads with the same name will be grouped together, but that reads appear in an
+ * otherwise random order. Useful for when the read names in a BAM are correlated to something else
+ * (e.g. position, read group), making a straight queryname sort undesirable.
  *
  * @author Tim Fennell
  */
-public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class SAMRecordQueryHashComparator extends SAMRecordQueryNameComparator
+    implements Serializable {
+  private static final long serialVersionUID = 1L;
 
-    private final Murmur3 hasher = new Murmur3(42);
+  private final Murmur3 hasher = new Murmur3(42);
 
-    /**
-     * Compares two records based on an integer hash of their read name's. If the hash
-     * values are equal, falls back to the behaviour of SAMRecordQueryNameComparator
-     * to break the tie.
-     */
-    @Override
-    public int compare(final SAMRecord lhs, final SAMRecord rhs) {
-        final int retval = compareHashes(lhs, rhs);
-        if (retval == 0) return super.compare(lhs, rhs);
-        else return retval;
-    }
+  /**
+   * Compares two records based on an integer hash of their read name's. If the hash values are
+   * equal, falls back to the behaviour of SAMRecordQueryNameComparator to break the tie.
+   */
+  @Override
+  public int compare(final SAMRecord lhs, final SAMRecord rhs) {
+    final int retval = compareHashes(lhs, rhs);
+    if (retval == 0) return super.compare(lhs, rhs);
+    else return retval;
+  }
 
-    /**
-     * Compares two records based on an integer hash of their read names. If the hash
-     * values are equal, falls back to the behaviour of SAMRecordQueryNameComparator
-     * to break the tie.
-     */
-    @Override
-    public int fileOrderCompare(final SAMRecord lhs, final SAMRecord rhs) {
-        final int retval = compareHashes(lhs, rhs);
-        if (retval == 0) return super.fileOrderCompare(lhs, rhs);
-        else return retval;
-    }
+  /**
+   * Compares two records based on an integer hash of their read names. If the hash values are
+   * equal, falls back to the behaviour of SAMRecordQueryNameComparator to break the tie.
+   */
+  @Override
+  public int fileOrderCompare(final SAMRecord lhs, final SAMRecord rhs) {
+    final int retval = compareHashes(lhs, rhs);
+    if (retval == 0) return super.fileOrderCompare(lhs, rhs);
+    else return retval;
+  }
 
-    /** Compares the hash values for two records. */
-    private int compareHashes(final SAMRecord lhs, final SAMRecord rhs) {
-        return Integer.compare(this.hasher.hashUnencodedChars(lhs.getReadName()), this.hasher.hashUnencodedChars(rhs.getReadName()));
-    }
+  /** Compares the hash values for two records. */
+  private int compareHashes(final SAMRecord lhs, final SAMRecord rhs) {
+    return Integer.compare(
+        this.hasher.hashUnencodedChars(lhs.getReadName()),
+        this.hasher.hashUnencodedChars(rhs.getReadName()));
+  }
 }

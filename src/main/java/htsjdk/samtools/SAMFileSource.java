@@ -30,39 +30,38 @@ package htsjdk.samtools;
  * @version 0.1
  */
 public class SAMFileSource {
-    /**
-     * The reader originating this SAM record.
-     */
-    private SamReader mReader;
+  /** The reader originating this SAM record. */
+  private SamReader mReader;
 
-    /**
-     * The point on disk from which a record originates.
-     */
-    private SAMFileSpan mFilePointer;
+  /** The point on disk from which a record originates. */
+  private SAMFileSpan mFilePointer;
 
-    /**
-     * Create a new SAMFileSource with the given reader and file pointer.
-     * @param reader reader.
-     * @param filePointer File pointer.
-     */
-    public SAMFileSource(final SamReader reader, final SAMFileSpan filePointer) {
-        this.mReader = reader;
-        this.mFilePointer = filePointer;
-    }
+  /**
+   * Create a new SAMFileSource with the given reader and file pointer.
+   *
+   * @param reader reader.
+   * @param filePointer File pointer.
+   */
+  public SAMFileSource(final SamReader reader, final SAMFileSpan filePointer) {
+    this.mReader = reader;
+    this.mFilePointer = filePointer;
+  }
 
-    /**
-     * Retrieves the reader from which this read was initially retrieved.
-     * @return The reader.
-     */
-    public SamReader getReader() {
-        return mReader;
-    }
+  /**
+   * Retrieves the reader from which this read was initially retrieved.
+   *
+   * @return The reader.
+   */
+  public SamReader getReader() {
+    return mReader;
+  }
 
-    /**
-     * A pointer to the region on disk from which the read originated.
-     * @return A pointer within the file.
-     */
-    public SAMFileSpan getFilePointer() {
-        return mFilePointer;
-    }
+  /**
+   * A pointer to the region on disk from which the read originated.
+   *
+   * @return A pointer within the file.
+   */
+  public SAMFileSpan getFilePointer() {
+    return mFilePointer;
+  }
 }

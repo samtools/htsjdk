@@ -24,9 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,179 +31,183 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class MergingIteratorTest extends HtsjdkTest {
 
-	private static class QueueBackedIterator<T> implements CloseableIterator<T> {
+  private static class QueueBackedIterator<T> implements CloseableIterator<T> {
 
-		private final Iterator<T> backing;
-		QueueBackedIterator(final Queue<T> queue) {
-			this.backing = queue.iterator();
-		}
+    private final Iterator<T> backing;
 
-		@Override
-		public void close() {
-			// no-op
-		}
+    QueueBackedIterator(final Queue<T> queue) {
+      this.backing = queue.iterator();
+    }
 
-		@Override
-		public boolean hasNext() {
-			return backing.hasNext();
-		}
+    @Override
+    public void close() {
+      // no-op
+    }
 
-		@Override
-		public T next() {
-			return backing.next();
-		}
+    @Override
+    public boolean hasNext() {
+      return backing.hasNext();
+    }
 
-		@Override
-		public void remove() {
-			backing.remove();
-		}
-	}
+    @Override
+    public T next() {
+      return backing.next();
+    }
 
-	private static final Comparator<Integer> INTEGER_COMPARATOR = new Comparator<Integer>() {
-		@Override
-		public int compare(Integer integer, Integer integer2) {
-			return integer - integer2;
-		}
-	};
+    @Override
+    public void remove() {
+      backing.remove();
+    }
+  }
 
-	@Test
-	public void testOrderingAndCompleteness() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
-		queueOne.add(1);
-		queueOne.add(3);
-		queueOne.add(5);
+  private static final Comparator<Integer> INTEGER_COMPARATOR =
+      new Comparator<Integer>() {
+        @Override
+        public int compare(Integer integer, Integer integer2) {
+          return integer - integer2;
+        }
+      };
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
-		queueTwo.add(2);
-		queueTwo.add(4);
-		queueTwo.add(6);
+  @Test
+  public void testOrderingAndCompleteness() {
+    final Queue<Integer> queueOne = new LinkedList<Integer>();
+    queueOne.add(1);
+    queueOne.add(3);
+    queueOne.add(5);
 
-		final Queue<Integer> queueThree = new LinkedList<Integer>();
-		queueThree.add(0);
-		queueThree.add(1);
+    final Queue<Integer> queueTwo = new LinkedList<Integer>();
+    queueTwo.add(2);
+    queueTwo.add(4);
+    queueTwo.add(6);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
-		Collections.addAll(
-				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo),
-				new QueueBackedIterator<Integer>(queueThree));
+    final Queue<Integer> queueThree = new LinkedList<Integer>();
+    queueThree.add(0);
+    queueThree.add(1);
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+    final Collection<CloseableIterator<Integer>> iterators =
+        new ArrayList<CloseableIterator<Integer>>(3);
+    Collections.addAll(
+        iterators,
+        new QueueBackedIterator<Integer>(queueOne),
+        new QueueBackedIterator<Integer>(queueTwo),
+        new QueueBackedIterator<Integer>(queueThree));
 
-		int count = 0;
-		int last = -1;
-		while (mergingIterator.hasNext()) {
-			final Integer integer = mergingIterator.next();
-			count++;
-			if (integer == 1) Assert.assertTrue(integer >= last);
-			else Assert.assertTrue(integer > last);
-			last = integer;
-		}
+    final MergingIterator<Integer> mergingIterator =
+        new MergingIterator<Integer>(INTEGER_COMPARATOR, iterators);
 
-		Assert.assertEquals(queueOne.size() + queueTwo.size() + queueThree.size(), count);
-	}
+    int count = 0;
+    int last = -1;
+    while (mergingIterator.hasNext()) {
+      final Integer integer = mergingIterator.next();
+      count++;
+      if (integer == 1) Assert.assertTrue(integer >= last);
+      else Assert.assertTrue(integer > last);
+      last = integer;
+    }
 
-	@Test
-	public void testIteratorsOfUnevenLength() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
-		queueOne.add(1);
-		queueOne.add(3);
-		queueOne.add(5);
-		queueOne.add(7);
-		queueOne.add(9);
-		queueOne.add(11);
-		queueOne.add(13);
+    Assert.assertEquals(queueOne.size() + queueTwo.size() + queueThree.size(), count);
+  }
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
-		queueTwo.add(2);
+  @Test
+  public void testIteratorsOfUnevenLength() {
+    final Queue<Integer> queueOne = new LinkedList<Integer>();
+    queueOne.add(1);
+    queueOne.add(3);
+    queueOne.add(5);
+    queueOne.add(7);
+    queueOne.add(9);
+    queueOne.add(11);
+    queueOne.add(13);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
-		Collections.addAll(
-				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo));
+    final Queue<Integer> queueTwo = new LinkedList<Integer>();
+    queueTwo.add(2);
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+    final Collection<CloseableIterator<Integer>> iterators =
+        new ArrayList<CloseableIterator<Integer>>(3);
+    Collections.addAll(
+        iterators,
+        new QueueBackedIterator<Integer>(queueOne),
+        new QueueBackedIterator<Integer>(queueTwo));
 
-		int count = 0;
-		int last = -1;
-		while (mergingIterator.hasNext()) {
-			final Integer integer = mergingIterator.next();
-			count++;
-			Assert.assertTrue(integer > last);
-			last = integer;
-		}
+    final MergingIterator<Integer> mergingIterator =
+        new MergingIterator<Integer>(INTEGER_COMPARATOR, iterators);
 
-		Assert.assertEquals(queueOne.size() + queueTwo.size(), count);
-	}
+    int count = 0;
+    int last = -1;
+    while (mergingIterator.hasNext()) {
+      final Integer integer = mergingIterator.next();
+      count++;
+      Assert.assertTrue(integer > last);
+      last = integer;
+    }
 
-	@Test(expectedExceptions = IllegalStateException.class)
-	public void testOutOfOrderIterators() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
-		queueOne.add(1);
-		queueOne.add(3);
+    Assert.assertEquals(queueOne.size() + queueTwo.size(), count);
+  }
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
-		queueTwo.add(4);
-		queueTwo.add(2);
+  @Test(expectedExceptions = IllegalStateException.class)
+  public void testOutOfOrderIterators() {
+    final Queue<Integer> queueOne = new LinkedList<Integer>();
+    queueOne.add(1);
+    queueOne.add(3);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
-		Collections.addAll(
-				iterators,
-				new QueueBackedIterator<Integer>(queueOne),
-				new QueueBackedIterator<Integer>(queueTwo));
+    final Queue<Integer> queueTwo = new LinkedList<Integer>();
+    queueTwo.add(4);
+    queueTwo.add(2);
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+    final Collection<CloseableIterator<Integer>> iterators =
+        new ArrayList<CloseableIterator<Integer>>(3);
+    Collections.addAll(
+        iterators,
+        new QueueBackedIterator<Integer>(queueOne),
+        new QueueBackedIterator<Integer>(queueTwo));
 
-		Assert.assertEquals(mergingIterator.next().intValue(), 1);
-		Assert.assertEquals(mergingIterator.next().intValue(), 3);
-		Assert.assertEquals(mergingIterator.next().intValue(), 4);
-		mergingIterator.next(); // fails, because the next element would be "2"
-	}
+    final MergingIterator<Integer> mergingIterator =
+        new MergingIterator<Integer>(INTEGER_COMPARATOR, iterators);
 
-	@Test()
-	public void testCloseMultipleIteratorsMidIteration() {
-		final Queue<Integer> queueOne = new LinkedList<Integer>();
-		queueOne.add(1);
-		queueOne.add(4);
-		queueOne.add(7);
+    Assert.assertEquals(mergingIterator.next().intValue(), 1);
+    Assert.assertEquals(mergingIterator.next().intValue(), 3);
+    Assert.assertEquals(mergingIterator.next().intValue(), 4);
+    mergingIterator.next(); // fails, because the next element would be "2"
+  }
 
-		final Queue<Integer> queueTwo = new LinkedList<Integer>();
-		queueTwo.add(2);
-		queueTwo.add(5);
-		queueTwo.add(8);
+  @Test()
+  public void testCloseMultipleIteratorsMidIteration() {
+    final Queue<Integer> queueOne = new LinkedList<Integer>();
+    queueOne.add(1);
+    queueOne.add(4);
+    queueOne.add(7);
 
-		final Queue<Integer> queueThree = new LinkedList<Integer>();
-		queueThree.add(3);
-		queueThree.add(6);
-		queueThree.add(9);
+    final Queue<Integer> queueTwo = new LinkedList<Integer>();
+    queueTwo.add(2);
+    queueTwo.add(5);
+    queueTwo.add(8);
 
-		final Collection<CloseableIterator<Integer>> iterators = new ArrayList<CloseableIterator<Integer>>(3);
-		Collections.addAll(
-				iterators,
-				new QueueBackedIterator<>(queueOne),
-				new QueueBackedIterator<>(queueTwo),
-				new QueueBackedIterator<>(queueThree));
+    final Queue<Integer> queueThree = new LinkedList<Integer>();
+    queueThree.add(3);
+    queueThree.add(6);
+    queueThree.add(9);
 
-		final MergingIterator<Integer> mergingIterator = new MergingIterator<Integer>(
-				INTEGER_COMPARATOR,
-				iterators);
+    final Collection<CloseableIterator<Integer>> iterators =
+        new ArrayList<CloseableIterator<Integer>>(3);
+    Collections.addAll(
+        iterators,
+        new QueueBackedIterator<>(queueOne),
+        new QueueBackedIterator<>(queueTwo),
+        new QueueBackedIterator<>(queueThree));
 
-		Assert.assertEquals(mergingIterator.next().intValue(), 1);
-		Assert.assertEquals(mergingIterator.next().intValue(), 2);
-		Assert.assertEquals(mergingIterator.next().intValue(), 3);
+    final MergingIterator<Integer> mergingIterator =
+        new MergingIterator<Integer>(INTEGER_COMPARATOR, iterators);
 
-		mergingIterator.close();
-		Assert.assertFalse(mergingIterator.hasNext());
-	}
+    Assert.assertEquals(mergingIterator.next().intValue(), 1);
+    Assert.assertEquals(mergingIterator.next().intValue(), 2);
+    Assert.assertEquals(mergingIterator.next().intValue(), 3);
+
+    mergingIterator.close();
+    Assert.assertFalse(mergingIterator.hasNext());
+  }
 }

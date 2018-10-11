@@ -9,127 +9,130 @@ import htsjdk.samtools.cram.structure.Container;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.Slice;
 import htsjdk.samtools.reference.InMemoryReferenceSequenceFile;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
-/**
- * Created by vadim on 15/12/2015.
- */
+/** Created by vadim on 15/12/2015. */
 public class ContainerFactoryTest extends HtsjdkTest {
 
-    @Test
-    public void testUnmapped() throws IOException, IllegalAccessException {
-        SAMFileHeader header = new SAMFileHeader();
+  @Test
+  public void testUnmapped() throws IOException, IllegalAccessException {
+    SAMFileHeader header = new SAMFileHeader();
 
-        int recordsPerContainer = 10;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
+    int recordsPerContainer = 10;
+    ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
 
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(true);
-            record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
-            record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
-            record.readBases = record.qualityScores = "ACGTN".getBytes();
-            record.readName = Integer.toString(i);
+    List<CramCompressionRecord> records = new ArrayList<>();
+    for (int i = 0; i < recordsPerContainer; i++) {
+      final CramCompressionRecord record = new CramCompressionRecord();
+      record.setSegmentUnmapped(true);
+      record.sequenceId = SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX;
+      record.alignmentStart = SAMRecord.NO_ALIGNMENT_START;
+      record.readBases = record.qualityScores = "ACGTN".getBytes();
+      record.readName = Integer.toString(i);
 
-            records.add(record);
-        }
-
-        final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
-
-        assertContainerAlignmentBoundaries(container, SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+      records.add(record);
     }
 
-    @Test
-    public void testMapped() throws IOException, IllegalAccessException {
-        InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
-        String refName = "1";
-        String refString = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-        refFile.add(refName, refString.getBytes());
-        ReferenceSource source = new ReferenceSource(refFile);
-        SAMFileHeader header = new SAMFileHeader();
-        header.addSequence(new SAMSequenceRecord(refName, refString.length()));
-        int sequenceId = header.getSequenceIndex(refName);
+    final Container container = factory.buildContainer(records);
+    Assert.assertNotNull(container);
+    Assert.assertEquals(container.nofRecords, records.size());
 
-        int recordsPerContainer = 10;
-        byte[] bases = "AAAAA".getBytes();
-        int readLength = bases.length;
-        int alignmentStartOffset = 3;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
+    assertContainerAlignmentBoundaries(
+        container,
+        SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX,
+        Slice.NO_ALIGNMENT_START,
+        Slice.NO_ALIGNMENT_SPAN);
+  }
 
-        List<CramCompressionRecord> records = new ArrayList<>();
-        int span = 0;
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(false);
-            record.sequenceId = sequenceId;
-            record.alignmentStart = alignmentStartOffset + i;
-            record.readBases = record.qualityScores = bases;
-            record.readName = Integer.toString(i);
-            record.readLength = readLength;
-            record.readFeatures = Collections.emptyList();
+  @Test
+  public void testMapped() throws IOException, IllegalAccessException {
+    InMemoryReferenceSequenceFile refFile = new InMemoryReferenceSequenceFile();
+    String refName = "1";
+    String refString = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+    refFile.add(refName, refString.getBytes());
+    ReferenceSource source = new ReferenceSource(refFile);
+    SAMFileHeader header = new SAMFileHeader();
+    header.addSequence(new SAMSequenceRecord(refName, refString.length()));
+    int sequenceId = header.getSequenceIndex(refName);
 
-            records.add(record);
-            span = record.alignmentStart + readLength - alignmentStartOffset;
-        }
+    int recordsPerContainer = 10;
+    byte[] bases = "AAAAA".getBytes();
+    int readLength = bases.length;
+    int alignmentStartOffset = 3;
+    ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
 
-        final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
+    List<CramCompressionRecord> records = new ArrayList<>();
+    int span = 0;
+    for (int i = 0; i < recordsPerContainer; i++) {
+      final CramCompressionRecord record = new CramCompressionRecord();
+      record.setSegmentUnmapped(false);
+      record.sequenceId = sequenceId;
+      record.alignmentStart = alignmentStartOffset + i;
+      record.readBases = record.qualityScores = bases;
+      record.readName = Integer.toString(i);
+      record.readLength = readLength;
+      record.readFeatures = Collections.emptyList();
 
-        assertContainerAlignmentBoundaries(container, sequenceId, alignmentStartOffset, span);
+      records.add(record);
+      span = record.alignmentStart + readLength - alignmentStartOffset;
     }
 
-    @Test
-    public void testMultiref() throws IOException, IllegalAccessException {
-        SAMFileHeader header = new SAMFileHeader();
-        header.addSequence(new SAMSequenceRecord("1", 100));
-        header.addSequence(new SAMSequenceRecord("2", 200));
+    final Container container = factory.buildContainer(records);
+    Assert.assertNotNull(container);
+    Assert.assertEquals(container.nofRecords, records.size());
 
-        int recordsPerContainer = 10;
-        byte[] bases = "AAAAA".getBytes();
-        int readLength = bases.length;
-        int alignmentStartOffset = 3;
-        ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
+    assertContainerAlignmentBoundaries(container, sequenceId, alignmentStartOffset, span);
+  }
 
-        List<CramCompressionRecord> records = new ArrayList<>();
-        for (int i = 0; i < recordsPerContainer; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.setSegmentUnmapped(false);
-            record.sequenceId = i % 2;
-            record.alignmentStart = alignmentStartOffset + i;
-            record.readBases = record.qualityScores = bases;
-            record.readName = Integer.toString(i);
-            record.readLength = readLength;
-            record.readFeatures = Collections.emptyList();
+  @Test
+  public void testMultiref() throws IOException, IllegalAccessException {
+    SAMFileHeader header = new SAMFileHeader();
+    header.addSequence(new SAMSequenceRecord("1", 100));
+    header.addSequence(new SAMSequenceRecord("2", 200));
 
-            records.add(record);
-        }
+    int recordsPerContainer = 10;
+    byte[] bases = "AAAAA".getBytes();
+    int readLength = bases.length;
+    int alignmentStartOffset = 3;
+    ContainerFactory factory = new ContainerFactory(header, recordsPerContainer);
 
-        final Container container = factory.buildContainer(records);
-        Assert.assertNotNull(container);
-        Assert.assertEquals(container.nofRecords, records.size());
+    List<CramCompressionRecord> records = new ArrayList<>();
+    for (int i = 0; i < recordsPerContainer; i++) {
+      final CramCompressionRecord record = new CramCompressionRecord();
+      record.setSegmentUnmapped(false);
+      record.sequenceId = i % 2;
+      record.alignmentStart = alignmentStartOffset + i;
+      record.readBases = record.qualityScores = bases;
+      record.readName = Integer.toString(i);
+      record.readLength = readLength;
+      record.readFeatures = Collections.emptyList();
 
-        assertContainerAlignmentBoundaries(container, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+      records.add(record);
     }
 
+    final Container container = factory.buildContainer(records);
+    Assert.assertNotNull(container);
+    Assert.assertEquals(container.nofRecords, records.size());
 
-    private void assertContainerAlignmentBoundaries(Container container, int sequenceId, int alignmentStart, int alignmentSpan) {
-        Assert.assertEquals(container.sequenceId, sequenceId);
-        Assert.assertEquals(container.alignmentStart, alignmentStart);
-        Assert.assertEquals(container.alignmentSpan, alignmentSpan);
+    assertContainerAlignmentBoundaries(
+        container, Slice.MULTI_REFERENCE, Slice.NO_ALIGNMENT_START, Slice.NO_ALIGNMENT_SPAN);
+  }
 
-        if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX || sequenceId == Slice.MULTI_REFERENCE) {
-            Assert.assertEquals(container.alignmentStart, Slice.NO_ALIGNMENT_START);
-            Assert.assertEquals(container.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
-        }
+  private void assertContainerAlignmentBoundaries(
+      Container container, int sequenceId, int alignmentStart, int alignmentSpan) {
+    Assert.assertEquals(container.sequenceId, sequenceId);
+    Assert.assertEquals(container.alignmentStart, alignmentStart);
+    Assert.assertEquals(container.alignmentSpan, alignmentSpan);
+
+    if (sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX
+        || sequenceId == Slice.MULTI_REFERENCE) {
+      Assert.assertEquals(container.alignmentStart, Slice.NO_ALIGNMENT_START);
+      Assert.assertEquals(container.alignmentSpan, Slice.NO_ALIGNMENT_SPAN);
     }
+  }
 }

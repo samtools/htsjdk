@@ -27,17 +27,15 @@ package htsjdk.samtools.metrics;
 import java.io.Serializable;
 
 /**
- * A header for a metrics file.  A header simply consists of a type and some arbitrary
- * data, but must be able to turn itself into a String and parse it's data back out
- * of that String at a later date.
+ * A header for a metrics file. A header simply consists of a type and some arbitrary data, but must
+ * be able to turn itself into a String and parse it's data back out of that String at a later date.
  *
  * @author Tim Fennell
  */
 public interface Header extends Serializable {
-    /** Converts the header to a String for persisting to a file. */
-    public String toString();
+  /** Converts the header to a String for persisting to a file. */
+  public String toString();
 
-    /** Parses the data contained in the String version of the header. */
-    public void parse(String in);
-
+  /** Parses the data contained in the String version of the header. */
+  public void parse(String in);
 }

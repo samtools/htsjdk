@@ -26,14 +26,13 @@ package htsjdk.samtools.reference;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 /**
  * Tests for the reading of reference sequences in various formats.
@@ -41,60 +40,59 @@ import java.util.Random;
  * @author Tim Fennell
  */
 public class ReferenceSequenceTests extends HtsjdkTest {
-    private static final byte[] BASES = "acgtACGTN".getBytes();
-    private final Random random = new Random(TestUtil.RANDOM_SEED);
+  private static final byte[] BASES = "acgtACGTN".getBytes();
+  private final Random random = new Random(TestUtil.RANDOM_SEED);
 
-    @Test(dataProvider="fastaTestParameters")
-    public void testSingleShortSequence(int chroms, int basesPerChrom) throws Exception {
-        File f = makeRandomReference(chroms, basesPerChrom);
-        ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(f);
+  @Test(dataProvider = "fastaTestParameters")
+  public void testSingleShortSequence(int chroms, int basesPerChrom) throws Exception {
+    File f = makeRandomReference(chroms, basesPerChrom);
+    ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(f);
 
-        for (int i=1; i<=chroms; ++i) {
-            ReferenceSequence seq = ref.nextSequence();
-            Assert.assertNotNull(seq);
-            Assert.assertEquals(seq.length(), basesPerChrom);
-            Assert.assertEquals(seq.getName(), "chr" + i);
-            Assert.assertEquals(seq.getContigIndex(), i-1);
-        }
-
-        Assert.assertNull(ref.nextSequence());
+    for (int i = 1; i <= chroms; ++i) {
+      ReferenceSequence seq = ref.nextSequence();
+      Assert.assertNotNull(seq);
+      Assert.assertEquals(seq.length(), basesPerChrom);
+      Assert.assertEquals(seq.getName(), "chr" + i);
+      Assert.assertEquals(seq.getContigIndex(), i - 1);
     }
 
-    @DataProvider
-    Object[][] fastaTestParameters() {
-        return new Object[][] {
-                new Object[] { 1,     60},
-                new Object[] { 2,     60},
-                new Object[] {10,     60},
-                new Object[] { 1,   1000},
-                new Object[] { 2,   1000},
-                new Object[] {10,   1000},
-                new Object[] { 1, 250000},
-                new Object[] { 2, 250000},
-                new Object[] {10, 250000}
-        };
+    Assert.assertNull(ref.nextSequence());
+  }
+
+  @DataProvider
+  Object[][] fastaTestParameters() {
+    return new Object[][] {
+      new Object[] {1, 60},
+      new Object[] {2, 60},
+      new Object[] {10, 60},
+      new Object[] {1, 1000},
+      new Object[] {2, 1000},
+      new Object[] {10, 1000},
+      new Object[] {1, 250000},
+      new Object[] {2, 250000},
+      new Object[] {10, 250000}
+    };
+  }
+
+  /** Utility method to write a random reference sequence of specified length. */
+  private File makeRandomReference(int chroms, int basesPerChrom) throws Exception {
+    File file = File.createTempFile("reference.", ".fasta");
+    file.deleteOnExit();
+    BufferedWriter out = new BufferedWriter(new FileWriter(file));
+
+    for (int i = 1; i <= chroms; ++i) {
+      out.write("> chr" + i);
+      out.newLine();
+
+      for (int j = 1; j <= basesPerChrom; ++j) {
+        out.write(BASES[random.nextInt(BASES.length)]);
+
+        if (j % 80 == 0 || j == basesPerChrom) out.newLine();
+      }
     }
 
-
-    /** Utility method to write a random reference sequence of specified length. */
-    private File makeRandomReference(int chroms, int basesPerChrom) throws Exception {
-        File file = File.createTempFile("reference.", ".fasta");
-        file.deleteOnExit();
-        BufferedWriter out = new BufferedWriter(new FileWriter(file));
-
-        for (int i=1; i<=chroms; ++i) {
-            out.write("> chr" + i);
-            out.newLine();
-
-            for (int j=1; j<=basesPerChrom; ++j) {
-                out.write(BASES[random.nextInt(BASES.length)]);
-
-                if (j % 80 == 0 || j == basesPerChrom) out.newLine();
-            }
-        }
-
-        out.flush();
-        out.close();
-        return file;
-    }
+    out.flush();
+    out.close();
+    return file;
+  }
 }

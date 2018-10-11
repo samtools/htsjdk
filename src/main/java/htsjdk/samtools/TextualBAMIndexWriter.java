@@ -29,160 +29,180 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 
-/**
- * Class for writing binary BAM index files as human-readable text.
- * Used for testing only.
-
- */
+/** Class for writing binary BAM index files as human-readable text. Used for testing only. */
 class TextualBAMIndexWriter implements BAMIndexWriter {
 
-    protected final int nRef;
-    protected final File output;
-    private final PrintWriter pw;
-    private int count = 0;
+  protected final int nRef;
+  protected final File output;
+  private final PrintWriter pw;
+  private int count = 0;
 
-    /**
-     * constructor
-     *
-     * @param nRef    Number of reference sequences
-     * @param output   BAM Index output file
-     */
-    public TextualBAMIndexWriter(final int nRef, final File output) {
-        this.output = output;
-        this.nRef = nRef;
-        try {
-            pw = new PrintWriter(output);
-        } catch (final FileNotFoundException e) {
-            throw new SAMException("Can't find output file " + output, e);
-        }
-        writeHeader();
+  /**
+   * constructor
+   *
+   * @param nRef Number of reference sequences
+   * @param output BAM Index output file
+   */
+  public TextualBAMIndexWriter(final int nRef, final File output) {
+    this.output = output;
+    this.nRef = nRef;
+    try {
+      pw = new PrintWriter(output);
+    } catch (final FileNotFoundException e) {
+      throw new SAMException("Can't find output file " + output, e);
+    }
+    writeHeader();
+  }
+
+  /** Write header information at the beginning of the file */
+  private void writeHeader() {
+    pw.println("n_ref=" + nRef);
+  }
+
+  /** Write this content as human-readable text */
+  @Override
+  public void writeReference(final BAMIndexContent content) {
+
+    final int reference = content.getReferenceSequence();
+
+    if (content == null) {
+      writeNullContent(reference);
+      count++;
+      return;
     }
 
-    /**
-     * Write header information at the beginning of the file
-     */
-    private void writeHeader() {
-        pw.println("n_ref=" + nRef);
+    if (reference != count) {
+      throw new SAMException(
+          "Reference on content is " + reference + " but expecting reference " + count);
+    }
+    count++;
+
+    final BAMIndexContent.BinList bins = content.getBins();
+    final int size = bins == null ? 0 : content.getNumberOfNonNullBins();
+
+    if (size == 0) {
+      writeNullContent(reference);
+      return;
     }
 
-    /**
-     * Write this content as human-readable text
-     */
-    @Override
-    public void writeReference(final BAMIndexContent content) {
+    // final List<Chunk> chunks = content.getMetaData() == null ? null
+    //        : content.getMetaData().getMetaDataChunks();
+    final BAMIndexMetaData metaData = content.getMetaData();
 
-        final int reference = content.getReferenceSequence();
+    pw.println(
+        "Reference "
+            + reference
+            + " has n_bin= "
+            + Integer.toString(size + (metaData != null ? 1 : 0)));
 
-        if (content == null) {
-            writeNullContent(reference);
-            count++;
-            return;
-        }
-
-        if (reference != count){
-            throw new SAMException("Reference on content is " + reference + " but expecting reference " + count);
-        }
-        count++;
-
-        final BAMIndexContent.BinList bins = content.getBins();
-        final int size = bins == null ? 0 : content.getNumberOfNonNullBins();
-
-        if (size == 0) {
-            writeNullContent(reference);
-            return;
-        }
-
-        //final List<Chunk> chunks = content.getMetaData() == null ? null
-        //        : content.getMetaData().getMetaDataChunks();
-        final BAMIndexMetaData metaData = content.getMetaData();
-
-        pw.println("Reference " + reference + " has n_bin= " + Integer.toString(size + (metaData != null? 1 : 0)));
-
-        // chunks
-        for (final Bin bin : bins) {   // note, bins will always be sorted
-            if (bin.getBinNumber() == GenomicIndexUtil.MAX_BINS)  break;
-            if (bin.getChunkList() == null) {
-                pw.println("  Ref " + reference + " bin " + bin.getBinNumber() + " has no binArray");  // remove?
-                continue;
-            }
-            final List<Chunk> chunkList = bin.getChunkList();
-            if (chunkList == null) {
-                pw.println("  Ref " + reference + " bin " + bin.getBinNumber() + " has no chunkList");
-                continue;
-            }
-            pw.print("  Ref " + reference + " bin " + bin.getBinNumber() + " has n_chunk= " + chunkList.size());
-            if (chunkList.isEmpty()) {
-                 pw.println();
-            }
-            for (final Chunk c : chunkList) {
-                pw.println("     Chunk: " + c.toString() +
-                        " start: " + Long.toString(c.getChunkStart(), 16) +
-                        " end: " + Long.toString(c.getChunkEnd(), 16));
-            }
-        }
-
-        writeChunkMetaData(reference, metaData);
-        
-        // linear index
-        final LinearIndex linearIndex = content.getLinearIndex();
-        if (linearIndex == null || linearIndex.getIndexEntries() == null) {
-            pw.println("Reference " + reference + " has n_intv= 0");
-            return;
-        }
-        final long[] entries = linearIndex.getIndexEntries();
-        final int indexStart = linearIndex.getIndexStart();
-        // System.out.println("index start is " + indexStart);
-        final int n_intv = entries.length + indexStart;
-        pw.println("Reference " + reference + " has n_intv= " + n_intv);
-        for (int k = 0; k < entries.length; k++) {
-            if (entries[k] != 0) {
-                pw.println("  Ref " + reference + " ioffset for " + (k + indexStart) + " is " + Long.toString(entries[k]));
-            }
-        }
-        pw.flush ();  // write each reference to disk as it's being created
+    // chunks
+    for (final Bin bin : bins) { // note, bins will always be sorted
+      if (bin.getBinNumber() == GenomicIndexUtil.MAX_BINS) break;
+      if (bin.getChunkList() == null) {
+        pw.println(
+            "  Ref " + reference + " bin " + bin.getBinNumber() + " has no binArray"); // remove?
+        continue;
+      }
+      final List<Chunk> chunkList = bin.getChunkList();
+      if (chunkList == null) {
+        pw.println("  Ref " + reference + " bin " + bin.getBinNumber() + " has no chunkList");
+        continue;
+      }
+      pw.print(
+          "  Ref "
+              + reference
+              + " bin "
+              + bin.getBinNumber()
+              + " has n_chunk= "
+              + chunkList.size());
+      if (chunkList.isEmpty()) {
+        pw.println();
+      }
+      for (final Chunk c : chunkList) {
+        pw.println(
+            "     Chunk: "
+                + c.toString()
+                + " start: "
+                + Long.toString(c.getChunkStart(), 16)
+                + " end: "
+                + Long.toString(c.getChunkEnd(), 16));
+      }
     }
 
-    /**
-     * Write the meta data represented by the chunkLists associated with bin MAX_BINS 37450
-     *
-     * @param metaData information describing numAligned records, numUnAligned, etc
-     */
-    private void writeChunkMetaData(final int reference, final BAMIndexMetaData metaData) {
-        final int nChunks = metaData == null ? 0 : 2;
-        pw.print("  Ref " + reference + " bin 37450 has n_chunk= " + nChunks);
-        if (nChunks == 0) {
-            pw.println();
-        } else {
-            pw.println("     Chunk: " + //  c.toString() +
-                    " start: " + Long.toString(metaData.getFirstOffset(), 16) +
-                    " end: " + Long.toString(metaData.getLastOffset(), 16));
-            pw.println("     Chunk: " + //  c.toString() +
-                    " start: " + Long.toString(metaData.getAlignedRecordCount(), 16) +
-                    " end: " + Long.toString(metaData.getUnalignedRecordCount(), 16));
-        }
+    writeChunkMetaData(reference, metaData);
 
+    // linear index
+    final LinearIndex linearIndex = content.getLinearIndex();
+    if (linearIndex == null || linearIndex.getIndexEntries() == null) {
+      pw.println("Reference " + reference + " has n_intv= 0");
+      return;
     }
-       
-    private void writeNullContent(final int reference) {
-        pw.println("Reference " + reference + " has n_bin=0");
-        pw.println("Reference " + reference + " has n_intv=0");
+    final long[] entries = linearIndex.getIndexEntries();
+    final int indexStart = linearIndex.getIndexStart();
+    // System.out.println("index start is " + indexStart);
+    final int n_intv = entries.length + indexStart;
+    pw.println("Reference " + reference + " has n_intv= " + n_intv);
+    for (int k = 0; k < entries.length; k++) {
+      if (entries[k] != 0) {
+        pw.println(
+            "  Ref "
+                + reference
+                + " ioffset for "
+                + (k + indexStart)
+                + " is "
+                + Long.toString(entries[k]));
+      }
     }
+    pw.flush(); // write each reference to disk as it's being created
+  }
 
-    /**
-     * Write count of records without coordinates
-     *
-     * @param noCoordinateCount the count of records seen with no coordinate positions in the start coordinate
-     */
-    @Override
-    public void writeNoCoordinateRecordCount(final Long noCoordinateCount) {
-        pw.println("No Coordinate Count=" + noCoordinateCount);
+  /**
+   * Write the meta data represented by the chunkLists associated with bin MAX_BINS 37450
+   *
+   * @param metaData information describing numAligned records, numUnAligned, etc
+   */
+  private void writeChunkMetaData(final int reference, final BAMIndexMetaData metaData) {
+    final int nChunks = metaData == null ? 0 : 2;
+    pw.print("  Ref " + reference + " bin 37450 has n_chunk= " + nChunks);
+    if (nChunks == 0) {
+      pw.println();
+    } else {
+      pw.println(
+          "     Chunk: "
+              + //  c.toString() +
+              " start: "
+              + Long.toString(metaData.getFirstOffset(), 16)
+              + " end: "
+              + Long.toString(metaData.getLastOffset(), 16));
+      pw.println(
+          "     Chunk: "
+              + //  c.toString() +
+              " start: "
+              + Long.toString(metaData.getAlignedRecordCount(), 16)
+              + " end: "
+              + Long.toString(metaData.getUnalignedRecordCount(), 16));
     }
+  }
 
-    /**
-     * Any necessary processing at the end of the file
-     */
-    @Override
-    public void close() {
-        pw.close();
-    }
+  private void writeNullContent(final int reference) {
+    pw.println("Reference " + reference + " has n_bin=0");
+    pw.println("Reference " + reference + " has n_intv=0");
+  }
+
+  /**
+   * Write count of records without coordinates
+   *
+   * @param noCoordinateCount the count of records seen with no coordinate positions in the start
+   *     coordinate
+   */
+  @Override
+  public void writeNoCoordinateRecordCount(final Long noCoordinateCount) {
+    pw.println("No Coordinate Count=" + noCoordinateCount);
+  }
+
+  /** Any necessary processing at the end of the file */
+  @Override
+  public void close() {
+    pw.close();
+  }
 }

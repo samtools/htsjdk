@@ -31,90 +31,94 @@ import java.nio.channels.SeekableByteChannel;
 import java.util.function.Function;
 
 /**
- * Singleton class for getting {@link SeekableStream}s from URL/paths
- * Applications using this library can set their own factory
+ * Singleton class for getting {@link SeekableStream}s from URL/paths Applications using this
+ * library can set their own factory
+ *
  * @author jrobinso
  * @date Nov 30, 2009
  */
-public class SeekableStreamFactory{
+public class SeekableStreamFactory {
 
-    private static final ISeekableStreamFactory DEFAULT_FACTORY;
-    private static ISeekableStreamFactory currentFactory;
+  private static final ISeekableStreamFactory DEFAULT_FACTORY;
+  private static ISeekableStreamFactory currentFactory;
 
-    static{
-        DEFAULT_FACTORY = new DefaultSeekableStreamFactory();
-        currentFactory = DEFAULT_FACTORY;
+  static {
+    DEFAULT_FACTORY = new DefaultSeekableStreamFactory();
+    currentFactory = DEFAULT_FACTORY;
+  }
+
+  private SeekableStreamFactory() {}
+
+  public static void setInstance(final ISeekableStreamFactory factory) {
+    currentFactory = factory;
+  }
+
+  public static ISeekableStreamFactory getInstance() {
+    return currentFactory;
+  }
+
+  /**
+   * Does this path point to a regular file on disk and not something like a URL?
+   *
+   * @param path the path to test
+   * @return true if the path is to a file on disk
+   */
+  public static boolean isFilePath(final String path) {
+    return !(path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:"));
+  }
+
+  private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
+
+    @Override
+    public SeekableStream getStreamFor(final URL url) throws IOException {
+      return getStreamFor(url.toExternalForm());
     }
 
-    private SeekableStreamFactory(){}
-
-    public static void setInstance(final ISeekableStreamFactory factory){
-        currentFactory = factory;
-    }
-
-    public static ISeekableStreamFactory getInstance(){
-        return currentFactory;
+    @Override
+    public SeekableStream getStreamFor(final String path) throws IOException {
+      return getStreamFor(path, null);
     }
 
     /**
-     * Does this path point to a regular file on disk and not something like a URL?
-     * @param path the path to test
-     * @return true if the path is to a file on disk
+     * The wrapper will only be applied to the stream if the stream is treated as a {@link
+     * java.nio.file.Path}
+     *
+     * <p>This currently means any uri with a scheme that is not http, https, ftp, or file will have
+     * the wrapper applied to it
+     *
+     * @param path a uri like String representing a resource to open
+     * @param wrapper a wrapper to apply to the stream allowing direct transformations on the byte
+     *     stream to be applied
      */
-    public static boolean isFilePath(final String path) {
-        return ! ( path.startsWith("http:") || path.startsWith("https:") || path.startsWith("ftp:") );
+    @Override
+    public SeekableStream getStreamFor(
+        final String path, Function<SeekableByteChannel, SeekableByteChannel> wrapper)
+        throws IOException {
+      // todo -- add support for SeekableBlockInputStream
+
+      if (path.startsWith("http:") || path.startsWith("https:")) {
+        final URL url = new URL(path);
+        return new SeekableHTTPStream(url);
+      } else if (path.startsWith("ftp:")) {
+        return new SeekableFTPStream(new URL(path));
+      } else if (path.startsWith("file:")) {
+        return new SeekableFileStream(new File(new URL(path).getPath()));
+      } else if (IOUtil.hasScheme(path)) {
+        return new SeekablePathStream(IOUtil.getPath(path), wrapper);
+      } else {
+        return new SeekableFileStream(new File(path));
+      }
     }
 
-    private static class DefaultSeekableStreamFactory implements ISeekableStreamFactory {
-
-        @Override
-        public SeekableStream getStreamFor(final URL url) throws IOException {
-            return getStreamFor(url.toExternalForm());
-        }
-
-        @Override
-        public SeekableStream getStreamFor(final String path) throws IOException {
-            return getStreamFor(path, null);
-        }
-
-        /**
-         * The wrapper will only be applied to the stream if the stream is treated as a {@link java.nio.file.Path}
-         *
-         * This currently means any uri with a scheme that is not http, https, ftp, or file will have the wrapper applied to it
-         *
-         * @param path    a uri like String representing a resource to open
-         * @param wrapper a wrapper to apply to the stream allowing direct transformations on the byte stream to be applied
-         */
-        @Override
-        public SeekableStream getStreamFor(final String path,
-                                           Function<SeekableByteChannel, SeekableByteChannel> wrapper) throws IOException {
-            // todo -- add support for SeekableBlockInputStream
-
-            if (path.startsWith("http:") || path.startsWith("https:")) {
-                final URL url = new URL(path);
-                return new SeekableHTTPStream(url);
-            } else if (path.startsWith("ftp:")) {
-                return new SeekableFTPStream(new URL(path));
-            } else if (path.startsWith("file:")) {
-                return new SeekableFileStream(new File(new URL(path).getPath()));
-            } else if (IOUtil.hasScheme(path)) {
-                return new SeekablePathStream(IOUtil.getPath(path), wrapper);
-            } else {
-                return new SeekableFileStream(new File(path));
-            }
-        }
-
-        @Override
-        public SeekableStream getBufferedStream(SeekableStream stream){
-            return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
-        }
-
-        @Override
-        public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize){
-            if (bufferSize == 0) return stream;
-            else return new SeekableBufferedStream(stream, bufferSize);
-        }
-
+    @Override
+    public SeekableStream getBufferedStream(SeekableStream stream) {
+      return getBufferedStream(stream, SeekableBufferedStream.DEFAULT_BUFFER_SIZE);
     }
 
+    @Override
+    public SeekableStream getBufferedStream(SeekableStream stream, int bufferSize) {
+      if (bufferSize == 0) return stream;
+      else return new SeekableBufferedStream(stream, bufferSize);
+    }
+  }
 }

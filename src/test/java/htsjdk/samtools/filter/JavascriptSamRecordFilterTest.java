@@ -28,48 +28,48 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloserUtil;
-
+import java.io.File;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-
-/**
- * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
- */
-
+/** @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France */
 public class JavascriptSamRecordFilterTest extends HtsjdkTest {
-    final File testDir = new File("./src/test/resources/htsjdk/samtools");
+  final File testDir = new File("./src/test/resources/htsjdk/samtools");
 
-    @DataProvider
-    public Object[][] jsData() {
-        return new Object[][] { { "unsorted.sam", "samFilter01.js", 8 }, { "unsorted.sam", "samFilter02.js", 10 }, };
-    }
+  @DataProvider
+  public Object[][] jsData() {
+    return new Object[][] {
+      {"unsorted.sam", "samFilter01.js", 8}, {"unsorted.sam", "samFilter02.js", 10},
+    };
+  }
 
-    @Test(dataProvider = "jsData")
-    public void testJavascriptFilters(final String samFile, final String javascriptFile, final int expectCount) {
-        final SamReaderFactory srf = SamReaderFactory.makeDefault();
-        final SamReader samReader = srf.open(new File(testDir, samFile));
-        final JavascriptSamRecordFilter filter;
-        try {
-            filter = new JavascriptSamRecordFilter(new File(testDir, javascriptFile),
-                    samReader.getFileHeader());    
-        } catch (IOException err) {
-            Assert.fail("Cannot read script",err);
-            return;
-        }
-        final SAMRecordIterator iter = samReader.iterator();
-        int count = 0;
-        while (iter.hasNext()) {
-            if (filter.filterOut(iter.next())) {
-                continue;
-            }
-            ++count;
-        }
-        iter.close();
-        CloserUtil.close(samReader);
-        Assert.assertEquals(count, expectCount, "Expected number of reads " + expectCount + " but got " + count);
+  @Test(dataProvider = "jsData")
+  public void testJavascriptFilters(
+      final String samFile, final String javascriptFile, final int expectCount) {
+    final SamReaderFactory srf = SamReaderFactory.makeDefault();
+    final SamReader samReader = srf.open(new File(testDir, samFile));
+    final JavascriptSamRecordFilter filter;
+    try {
+      filter =
+          new JavascriptSamRecordFilter(
+              new File(testDir, javascriptFile), samReader.getFileHeader());
+    } catch (IOException err) {
+      Assert.fail("Cannot read script", err);
+      return;
     }
+    final SAMRecordIterator iter = samReader.iterator();
+    int count = 0;
+    while (iter.hasNext()) {
+      if (filter.filterOut(iter.next())) {
+        continue;
+      }
+      ++count;
+    }
+    iter.close();
+    CloserUtil.close(samReader);
+    Assert.assertEquals(
+        count, expectCount, "Expected number of reads " + expectCount + " but got " + count);
+  }
 }

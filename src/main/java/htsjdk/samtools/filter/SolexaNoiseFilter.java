@@ -30,39 +30,37 @@ import htsjdk.samtools.util.SequenceUtil;
  * Filter to determine whether a read is "noisy" due to a poly-A run that is a sequencing artifact.
  * Currently we filter out only reads that are composed entirely of As.
  *
- * $Id$
+ * <p>$Id$
  */
 public class SolexaNoiseFilter implements SamRecordFilter {
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record    the SAMRecord to evaluate
-     * @return  true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        final byte[] sequence = record.getReadBases();
-        for (final byte base : sequence) {
-            if (base != 'A' && base != 'a' &&
-                !SequenceUtil.isNoCall(base)) {
-                return false;
-            }
-        }
-        return true;
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    final byte[] sequence = record.getReadBases();
+    for (final byte base : sequence) {
+      if (base != 'A' && base != 'a' && !SequenceUtil.isNoCall(base)) {
+        return false;
+      }
     }
+    return true;
+  }
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        // only filter out the pair if both first and second reads have all As
-        return (filterOut(first) && filterOut(second));
-    }
+  /**
+   * Determines whether a pair of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    // only filter out the pair if both first and second reads have all As
+    return (filterOut(first) && filterOut(second));
+  }
 }

@@ -25,31 +25,29 @@ package htsjdk.tribble.bed;
 
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.annotation.Strand;
-
 import java.awt.*;
 
 /**
  * @author jrobinso
  * @date Dec 24, 2009
- *
- * BED feature start and end positions must adhere to the Feature interval specifications.
- * This is different than the 0-based representation in a BED file.  This conversion is handled by {@link BEDCodec}.
- * Anyone writing a bed file should be aware of this difference.
+ *     <p>BED feature start and end positions must adhere to the Feature interval specifications.
+ *     This is different than the 0-based representation in a BED file. This conversion is handled
+ *     by {@link BEDCodec}. Anyone writing a bed file should be aware of this difference.
  */
 public interface BEDFeature extends Feature {
-    Strand getStrand();
+  Strand getStrand();
 
-    String getType();
+  String getType();
 
-    Color getColor();
+  Color getColor();
 
-    String getDescription();
+  String getDescription();
 
-    java.util.List<FullBEDFeature.Exon> getExons();
+  java.util.List<FullBEDFeature.Exon> getExons();
 
-    String getName();
+  String getName();
 
-    float getScore();
+  float getScore();
 
-    String getLink();
+  String getLink();
 }

@@ -28,32 +28,32 @@ import htsjdk.samtools.SAMRecord;
 /**
  * Filter for filtering out reads that do not pass the quality filter
  *
- * $Id$
+ * <p>$Id$
  */
 public class FailsVendorReadQualityFilter implements SamRecordFilter {
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record    the SAMRecord to evaluate
-     * @return  true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return record.getReadFailsVendorQualityCheckFlag();
-    }
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    return record.getReadFailsVendorQualityCheckFlag();
+  }
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        // if either fails, exclude them both
-        return (first.getReadFailsVendorQualityCheckFlag() || second.getReadFailsVendorQualityCheckFlag());
-    }
+  /**
+   * Determines whether a pair of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    // if either fails, exclude them both
+    return (first.getReadFailsVendorQualityCheckFlag()
+        || second.getReadFailsVendorQualityCheckFlag());
+  }
 }

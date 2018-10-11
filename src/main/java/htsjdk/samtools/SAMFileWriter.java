@@ -23,29 +23,26 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.ProgressLoggerInterface;
 import java.io.Closeable;
 
-import htsjdk.samtools.util.ProgressLoggerInterface;
-
 /**
- * Interface for SAMText and BAM file writers.  Clients need not care which they write to,
- * once the object is constructed.
+ * Interface for SAMText and BAM file writers. Clients need not care which they write to, once the
+ * object is constructed.
  */
 public interface SAMFileWriter extends Closeable {
 
-	void addAlignment(SAMRecord alignment);
+  void addAlignment(SAMRecord alignment);
 
-    SAMFileHeader getFileHeader();
+  SAMFileHeader getFileHeader();
 
-	/**
-	 * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
-	 * SortingCollection.
-	 */
-	void setProgressLogger(final ProgressLoggerInterface progress);
+  /**
+   * Sets a ProgressLogger on this writer. This is useful when pulling, for instance, from a
+   * SortingCollection.
+   */
+  void setProgressLogger(final ProgressLoggerInterface progress);
 
-    /**
-     * Must be called to flush or file will likely be defective. 
-     */
-    @Override
-    void close();
+  /** Must be called to flush or file will likely be defective. */
+  @Override
+  void close();
 }

@@ -23,14 +23,18 @@
  */
 package htsjdk.samtools.util;
 
-/**
- * Enumeration for FastQ quality score formats formats.
- */
+/** Enumeration for FastQ quality score formats formats. */
 public enum FastqQualityFormat {
-    /** Early Solexa/Illumina (pre pipeline 1.3) style scores  which encode Solexa qualities using an ASCII offset of 64 */
-    Solexa,
-    /** Recent Solexa/Illumina (pipeline 1.3+) style scores which encode PHRED qualities using an ASCII offset of 64 */
-    Illumina,
-    /** Sanger style FASTQ files which encode PHRED qualities using an ASCII offset of 33 */
-    Standard
+  /**
+   * Early Solexa/Illumina (pre pipeline 1.3) style scores which encode Solexa qualities using an
+   * ASCII offset of 64
+   */
+  Solexa,
+  /**
+   * Recent Solexa/Illumina (pipeline 1.3+) style scores which encode PHRED qualities using an ASCII
+   * offset of 64
+   */
+  Illumina,
+  /** Sanger style FASTQ files which encode PHRED qualities using an ASCII offset of 33 */
+  Standard
 }

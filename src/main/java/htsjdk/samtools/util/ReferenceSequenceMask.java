@@ -24,32 +24,31 @@
 package htsjdk.samtools.util;
 
 /**
- * Interface for specifying loci of interest for genotype calling and other operations.
- * It is a requirement that the sequences be probed in ascending order.
+ * Interface for specifying loci of interest for genotype calling and other operations. It is a
+ * requirement that the sequences be probed in ascending order.
  *
  * @author alecw at broadinstitute dot oh are gee
  */
 public interface ReferenceSequenceMask {
 
-    /**
-     * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
-     * @return true if the mask is set for the given sequence and position
-     */
-    boolean get(int sequenceIndex, int position);
+  /**
+   * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
+   *
+   * @return true if the mask is set for the given sequence and position
+   */
+  boolean get(int sequenceIndex, int position);
 
-    /**
-     * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
-     * @return the next pos on the given sequence >= position that is set, or -1 if there are no more set positions
-     */
-    int nextPosition(int sequenceIndex, int position);
+  /**
+   * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
+   *
+   * @return the next pos on the given sequence >= position that is set, or -1 if there are no more
+   *     set positions
+   */
+  int nextPosition(int sequenceIndex, int position);
 
-    /**
-     * @return Largest sequence index for which there are set bits.
-     */
-    int getMaxSequenceIndex();
+  /** @return Largest sequence index for which there are set bits. */
+  int getMaxSequenceIndex();
 
-    /**
-     * @return the largest position on the last sequence index
-     */
-    int getMaxPosition();
+  /** @return the largest position on the last sequence index */
+  int getMaxPosition();
 }

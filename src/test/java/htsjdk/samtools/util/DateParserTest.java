@@ -73,79 +73,77 @@ webmaster
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.Date;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Date;
-
 /**
- * NOTE: This code has been taken from w3.org, and modified slightly to handle timezones of the form [-+]DDDD,
- * and also to fix a bug in the application of time zone to the parsed date.
+ * NOTE: This code has been taken from w3.org, and modified slightly to handle timezones of the form
+ * [-+]DDDD, and also to fix a bug in the application of time zone to the parsed date.
  *
- * Date parser for ISO 8601 format
- * http://www.w3.org/TR/1998/NOTE-datetime-19980827
+ * <p>Date parser for ISO 8601 format http://www.w3.org/TR/1998/NOTE-datetime-19980827
+ *
  * @version $Revision: 1.3 $
- * @author  bmahe@w3.org
+ * @author bmahe@w3.org
  */
-
 public class DateParserTest extends HtsjdkTest {
 
-    private static void test(final String isodate) {
-        Date date = DateParser.parse(isodate);
-        final String isodateRoundTrip = DateParser.getIsoDate(date);
+  private static void test(final String isodate) {
+    Date date = DateParser.parse(isodate);
+    final String isodateRoundTrip = DateParser.getIsoDate(date);
 
-        final Date orig = DateParser.parse(isodate);
-        final Date roundTrip = DateParser.parse(isodateRoundTrip);
+    final Date orig = DateParser.parse(isodate);
+    final Date roundTrip = DateParser.parse(isodateRoundTrip);
 
-        assertDatesAreClose(orig, roundTrip);
-    }
+    assertDatesAreClose(orig, roundTrip);
+  }
 
-    private static void test(final Date date) {
-        String isodate;
-        isodate = DateParser.getIsoDate(date);
-        final Date dateRoundTrip = DateParser.parse(isodate);
+  private static void test(final Date date) {
+    String isodate;
+    isodate = DateParser.getIsoDate(date);
+    final Date dateRoundTrip = DateParser.parse(isodate);
 
-        assertDatesAreClose(date, dateRoundTrip);
-        Assert.assertTrue(Math.abs(date.getTime() - dateRoundTrip.getTime()) < 10);
-    }
+    assertDatesAreClose(date, dateRoundTrip);
+    Assert.assertTrue(Math.abs(date.getTime() - dateRoundTrip.getTime()) < 10);
+  }
 
-    @DataProvider(name="dateDate")
-    public Object[][] dateData() {
-        return new Object[][]{
-                {"1997-07-16T19:20:30.45-02:00"},
-                {"1997-07-16T19:20:30+01:00"},
-                {"1997-07-16T19:20:30+01:00"},
-                {"1997-07-16T19:20"},
-                {"1997-07-16"},
-                {"1997-07"},
-                {"1997"},
-        };
-    }
+  @DataProvider(name = "dateDate")
+  public Object[][] dateData() {
+    return new Object[][] {
+      {"1997-07-16T19:20:30.45-02:00"},
+      {"1997-07-16T19:20:30+01:00"},
+      {"1997-07-16T19:20:30+01:00"},
+      {"1997-07-16T19:20"},
+      {"1997-07-16"},
+      {"1997-07"},
+      {"1997"},
+    };
+  }
 
-    @Test(dataProvider = "dateDate")
-    public static void testString(final String string) {
-        test(string);
-    }
+  @Test(dataProvider = "dateDate")
+  public static void testString(final String string) {
+    test(string);
+  }
 
-    @Test(dataProvider = "dateDate")
-    public static void testDates(final String string) {
-        test(DateParser.parse(string));
-    }
+  @Test(dataProvider = "dateDate")
+  public static void testDates(final String string) {
+    test(DateParser.parse(string));
+  }
 
-    @Test
-    public static void testDate() {
-        test(new Date());
-    }
+  @Test
+  public static void testDate() {
+    test(new Date());
+  }
 
-    public static void assertDatesAreClose(final Date lhs, final Date rhs) {
-        Assert.assertEquals(lhs.getYear(), rhs.getYear());
-        Assert.assertEquals(lhs.getMonth(), rhs.getMonth());
-        Assert.assertEquals(lhs.getDate(), rhs.getDate());
-        Assert.assertEquals(lhs.getDay(), rhs.getDay());
-        Assert.assertEquals(lhs.getHours(), rhs.getHours());
-        Assert.assertEquals(lhs.getMinutes(), rhs.getMinutes());
-        Assert.assertEquals(lhs.getSeconds(), rhs.getSeconds());
-        Assert.assertEquals(lhs.getTimezoneOffset(), rhs.getTimezoneOffset());
-    }
+  public static void assertDatesAreClose(final Date lhs, final Date rhs) {
+    Assert.assertEquals(lhs.getYear(), rhs.getYear());
+    Assert.assertEquals(lhs.getMonth(), rhs.getMonth());
+    Assert.assertEquals(lhs.getDate(), rhs.getDate());
+    Assert.assertEquals(lhs.getDay(), rhs.getDay());
+    Assert.assertEquals(lhs.getHours(), rhs.getHours());
+    Assert.assertEquals(lhs.getMinutes(), rhs.getMinutes());
+    Assert.assertEquals(lhs.getSeconds(), rhs.getSeconds());
+    Assert.assertEquals(lhs.getTimezoneOffset(), rhs.getTimezoneOffset());
+  }
 }

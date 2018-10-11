@@ -25,23 +25,26 @@ package htsjdk.samtools.util;
 
 /**
  * c.f. ResourceLimitedMap for details.
+ *
  * @param <Key> Used to find and create value.
- * @param <Value> Type stored in ResourceLimitedMap, which is created as necessary
- * and finalized when it is the least-recently used.
+ * @param <Value> Type stored in ResourceLimitedMap, which is created as necessary and finalized
+ *     when it is the least-recently used.
  */
 public interface ResourceLimitedMapFunctor<Key, Value> {
 
-    /**
-     * Create a new value corresponding to the key
-     * @param key
-     * @return a new value corresponding to the key
-     */
-    Value makeValue(final Key key);
+  /**
+   * Create a new value corresponding to the key
+   *
+   * @param key
+   * @return a new value corresponding to the key
+   */
+  Value makeValue(final Key key);
 
-    /**
-     * Clean up an existing value in conjunction with removing from ResourceLimitedMap.
-     * @param key
-     * @param value
-     */
-    void finalizeValue(final Key key, final Value value);
+  /**
+   * Clean up an existing value in conjunction with removing from ResourceLimitedMap.
+   *
+   * @param key
+   * @param value
+   */
+  void finalizeValue(final Key key, final Value value);
 }

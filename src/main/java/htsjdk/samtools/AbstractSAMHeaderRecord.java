@@ -23,98 +23,94 @@
  */
 package htsjdk.samtools;
 
-import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
- * Base class for the various concrete records in a SAM header, providing uniform
- * access to the attributes.
+ * Base class for the various concrete records in a SAM header, providing uniform access to the
+ * attributes.
  */
 @XmlTransient /* don't consider this class for XML-serialization */
 public abstract class AbstractSAMHeaderRecord implements Serializable {
-    public static final long serialVersionUID = 1L;
+  public static final long serialVersionUID = 1L;
 
-    private final Map<String,String> mAttributes = new LinkedHashMap<String, String>();
+  private final Map<String, String> mAttributes = new LinkedHashMap<String, String>();
 
-    public String getAttribute(final String key) {
-        return mAttributes.get(key);
+  public String getAttribute(final String key) {
+    return mAttributes.get(key);
+  }
+
+  /**
+   * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
+   * If value is null, the attribute is removed.
+   * Otherwise, the value will be converted to a String with toString.
+   * @param key attribute name
+   * @param value attribute value
+   * @deprecated Use {@link #setAttribute(String, String) instead
+   */
+  @Deprecated
+  public void setAttribute(final String key, final Object value) {
+    setAttribute(key, value == null ? null : value.toString());
+  }
+
+  /**
+   * Set the given value for the attribute named 'key'. Replaces an existing value, if any. If value
+   * is null, the attribute is removed.
+   *
+   * @param key attribute name
+   * @param value attribute value
+   */
+  public void setAttribute(final String key, final String value) {
+    if (value == null) {
+      mAttributes.remove(key);
+    } else {
+      mAttributes.put(key, value);
     }
+  }
 
-    /**
-     * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
-     * If value is null, the attribute is removed.
-     * Otherwise, the value will be converted to a String with toString.
-     * @param key attribute name
-     * @param value attribute value
-     * @deprecated Use {@link #setAttribute(String, String) instead
-     */
-    @Deprecated
-    public void setAttribute(final String key, final Object value) {
-        setAttribute(key, value == null? null: value.toString());
-    }
+  /** Returns the Set of attributes. */
+  public Set<Map.Entry<String, String>> getAttributes() {
+    return mAttributes.entrySet();
+  }
 
-    /**
-     * Set the given value for the attribute named 'key'.  Replaces an existing value, if any.
-     * If value is null, the attribute is removed.
-     * @param key attribute name
-     * @param value attribute value
-     */
-    public void setAttribute(final String key, final String value) {
-        if (value == null) {
-            mAttributes.remove(key);
-        } else {
-            mAttributes.put(key, value);
-        }
-    }
+  /**
+   * Returns the ID tag (or equivalent) for this header record. The default implementation throws a
+   * SAMException to indicate "not implemented".
+   */
+  public String getId() {
+    throw new UnsupportedOperationException("Method not implemented for: " + this.getClass());
+  }
 
-    /**
-     * Returns the Set of attributes.
-     */
-    public Set<Map.Entry<String,String>> getAttributes() {
-        return mAttributes.entrySet();
-    }
+  /** For use in the equals() method of the concrete class. */
+  protected boolean attributesEqual(final AbstractSAMHeaderRecord that) {
+    return mAttributes.equals(that.mAttributes);
+  }
 
+  /** For use in the hashCode() method of the concrete class. */
+  protected int attributesHashCode() {
+    return (mAttributes != null ? mAttributes.hashCode() : 0);
+  }
 
-    /**
-     * Returns the ID tag (or equivalent) for this header record. The
-     * default implementation throws a SAMException to indicate "not implemented".
-     */
-    public String getId() {
-        throw new UnsupportedOperationException("Method not implemented for: " + this.getClass());
-    }
+  /**
+   * Standard tags are the tags defined in SAM spec. These do not have type information in the test
+   * representation, because the type information is predefined for each tag.
+   *
+   * @return list of predefined tags for the concrete SAMHeader record type.
+   */
+  abstract Set<String> getStandardTags();
 
-    /**
-     * For use in the equals() method of the concrete class.
-     */
-    protected boolean attributesEqual(final AbstractSAMHeaderRecord that) {
-        return mAttributes.equals(that.mAttributes);
-    }
+  /** Simple to String that outputs the concrete class name and the set of attributes stored. */
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + this.mAttributes.toString();
+  }
 
-    /**
-     * For use in the hashCode() method of the concrete class.
-     */
-    protected int attributesHashCode() {
-        return (mAttributes != null ? mAttributes.hashCode() : 0);
-    }
-
-    /**
-     * Standard tags are the tags defined in SAM spec.  These do not have type information in the test
-     * representation, because the type information is predefined for each tag.
-     * @return list of predefined tags for the concrete SAMHeader record type.
-     */
-    abstract Set<String> getStandardTags();
-
-    /** Simple to String that outputs the concrete class name and the set of attributes stored. */
-    @Override public String toString() {
-        return getClass().getSimpleName() + this.mAttributes.toString();
-    }
-
-    /**
-     * Returns the record in the SAM line-based text format.  Fields are
-     * separated by '\t' characters. The String is NOT terminated by '\n'.
-     */
-    abstract public String getSAMString();
+  /**
+   * Returns the record in the SAM line-based text format. Fields are separated by '\t' characters.
+   * The String is NOT terminated by '\n'.
+   */
+  public abstract String getSAMString();
 }

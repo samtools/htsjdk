@@ -26,47 +26,41 @@ package htsjdk.samtools;
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class BAMIteratorTest extends HtsjdkTest {
-    private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+  private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
 
-    @Test(dataProvider = "dataProvider")
-    public void testIterateEmptyBam(final String bam) throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
-        int numRecords = 0;
-        for (final SAMRecord rec : reader) {
-            ++numRecords;
-        }
-        Assert.assertEquals(numRecords, 0);
-        CloserUtil.close(reader);
+  @Test(dataProvider = "dataProvider")
+  public void testIterateEmptyBam(final String bam) throws Exception {
+    final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
+    int numRecords = 0;
+    for (final SAMRecord rec : reader) {
+      ++numRecords;
     }
+    Assert.assertEquals(numRecords, 0);
+    CloserUtil.close(reader);
+  }
 
-    @Test(dataProvider = "dataProvider")
-    public void testQueryUnmappedEmptyBam(final String bam) throws Exception {
-        final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
-        final CloseableIterator<SAMRecord> it = reader.queryUnmapped();
-        int numRecords = 0;
-        while (it.hasNext()) {
-            it.next();
-            ++numRecords;
-        }
-        Assert.assertEquals(numRecords, 0);
-        CloserUtil.close(reader);
+  @Test(dataProvider = "dataProvider")
+  public void testQueryUnmappedEmptyBam(final String bam) throws Exception {
+    final SamReader reader = SamReaderFactory.makeDefault().open(new File(TEST_DATA_DIR, bam));
+    final CloseableIterator<SAMRecord> it = reader.queryUnmapped();
+    int numRecords = 0;
+    while (it.hasNext()) {
+      it.next();
+      ++numRecords;
     }
+    Assert.assertEquals(numRecords, 0);
+    CloserUtil.close(reader);
+  }
 
-    @DataProvider(name = "dataProvider")
-    public Object[][] bams() {
-        return new Object[][]{
-                {"empty.bam"},
-                {"empty_no_empty_gzip_block.bam"}
-        };
-    }
+  @DataProvider(name = "dataProvider")
+  public Object[][] bams() {
+    return new Object[][] {{"empty.bam"}, {"empty_no_empty_gzip_block.bam"}};
+  }
 }

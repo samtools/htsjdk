@@ -23,94 +23,90 @@
  */
 package htsjdk.tribble.util;
 
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.BlockCompressedInputStream;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.readers.TabixReader;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * classes that have anything to do with tabix
- */
+/** classes that have anything to do with tabix */
 public class TabixUtils {
 
-    public static final String STANDARD_INDEX_EXTENSION = ".tbi";
+  public static final String STANDARD_INDEX_EXTENSION = ".tbi";
 
-    public static class TPair64 implements Comparable<TPair64> {
-        public long u, v;
+  public static class TPair64 implements Comparable<TPair64> {
+    public long u, v;
 
-        public TPair64(final long _u, final long _v) {
-            u = _u;
-            v = _v;
+    public TPair64(final long _u, final long _v) {
+      u = _u;
+      v = _v;
+    }
+
+    public TPair64(final TPair64 p) {
+      u = p.u;
+      v = p.v;
+    }
+
+    @Override
+    public int compareTo(final TPair64 p) {
+      return u == p.u
+          ? 0
+          : ((u < p.u) ^ (u < 0) ^ (p.u < 0)) ? -1 : 1; // unsigned 64-bit comparison
+    }
+  }
+
+  public static class TIndex {
+    public HashMap<Integer, TPair64[]> b; // binning index
+    public long[] l; // linear index
+  }
+
+  public static class TIntv {
+    public int tid, beg, end;
+  }
+
+  public static boolean less64(final long u, final long v) { // unsigned 64-bit comparison
+    return (u < v) ^ (u < 0) ^ (v < 0);
+  }
+
+  /**
+   * Generates the SAMSequenceDictionary from the given tabix index file
+   *
+   * @param tabixIndex the tabix index file
+   * @return non-null sequence dictionary
+   */
+  public static SAMSequenceDictionary getSequenceDictionary(final File tabixIndex) {
+    if (tabixIndex == null) throw new IllegalArgumentException();
+
+    try {
+      final BlockCompressedInputStream is = new BlockCompressedInputStream(tabixIndex);
+
+      // read preliminary bytes
+      byte[] buf = new byte[32];
+      is.read(buf, 0, 32);
+
+      // read sequence dictionary
+      int i, j, len = TabixReader.readInt(is);
+      buf = new byte[len];
+      is.read(buf);
+
+      final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
+      for (i = j = 0; i < buf.length; ++i) {
+        if (buf[i] == 0) {
+          byte[] b = new byte[i - j];
+          System.arraycopy(buf, j, b, 0, b.length);
+          sequences.add(new SAMSequenceRecord(new String(b), b.length));
+          j = i + 1;
         }
+      }
+      is.close();
 
-        public TPair64(final TPair64 p) {
-            u = p.u;
-            v = p.v;
-        }
-
-        @Override
-        public int compareTo(final TPair64 p) {
-            return u == p.u ? 0 : ((u < p.u) ^ (u < 0) ^ (p.u < 0)) ? -1 : 1; // unsigned 64-bit comparison
-        }
+      return new SAMSequenceDictionary(sequences);
+    } catch (Exception e) {
+      throw new TribbleException("Unable to read tabix index: " + e.getMessage());
     }
-
-    public static class TIndex {
-        public HashMap<Integer, TPair64[]> b; // binning index
-        public long[] l; // linear index
-    }
-
-
-    public static class TIntv {
-        public int tid, beg, end;
-    }
-
-
-    public static boolean less64(final long u, final long v) { // unsigned 64-bit comparison
-        return (u < v) ^ (u < 0) ^ (v < 0);
-    }
-
-    /**
-     * Generates the SAMSequenceDictionary from the given tabix index file
-     *
-     * @param tabixIndex the tabix index file
-     * @return non-null sequence dictionary
-     */
-    public static SAMSequenceDictionary getSequenceDictionary(final File tabixIndex) {
-        if (tabixIndex == null) throw new IllegalArgumentException();
-
-        try {
-            final BlockCompressedInputStream is = new BlockCompressedInputStream(tabixIndex);
-
-            // read preliminary bytes
-            byte[] buf = new byte[32];
-            is.read(buf, 0, 32);
-
-            // read sequence dictionary
-            int i, j, len = TabixReader.readInt(is);
-            buf = new byte[len];
-            is.read(buf);
-
-            final List<SAMSequenceRecord> sequences = new ArrayList<SAMSequenceRecord>();
-            for (i = j = 0; i < buf.length; ++i) {
-                if (buf[i] == 0) {
-                    byte[] b = new byte[i - j];
-                    System.arraycopy(buf, j, b, 0, b.length);
-                    sequences.add(new SAMSequenceRecord(new String(b), b.length));
-                    j = i + 1;
-                }
-            }
-            is.close();
-
-            return new SAMSequenceDictionary(sequences);
-        } catch (Exception e) {
-            throw new TribbleException("Unable to read tabix index: " + e.getMessage());
-        }
-    }
+  }
 }

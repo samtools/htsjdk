@@ -27,36 +27,36 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.PeekIterator;
 
 /**
- * Wrapper around SAMRecord iterator that skips over secondary elements.
- * This iterator conflates a filtering iterator and a peekable iterator.  It would be cleaner to
- * handle those concerns separately.
+ * Wrapper around SAMRecord iterator that skips over secondary elements. This iterator conflates a
+ * filtering iterator and a peekable iterator. It would be cleaner to handle those concerns
+ * separately.
  */
 public class SecondaryAlignmentSkippingIterator {
-    private final PeekIterator<SAMRecord> it;
+  private final PeekIterator<SAMRecord> it;
 
-    public SecondaryAlignmentSkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
-        it = new PeekIterator<>(underlyingIt);
-        skipAnySecondary();
-    }
+  public SecondaryAlignmentSkippingIterator(final CloseableIterator<SAMRecord> underlyingIt) {
+    it = new PeekIterator<>(underlyingIt);
+    skipAnySecondary();
+  }
 
-    public boolean hasCurrent() {
-        return it.hasNext();
-    }
+  public boolean hasCurrent() {
+    return it.hasNext();
+  }
 
-    public SAMRecord getCurrent() {
-        assert(hasCurrent());
-        return it.peek();
-    }
+  public SAMRecord getCurrent() {
+    assert (hasCurrent());
+    return it.peek();
+  }
 
-    public boolean advance() {
-        it.next();
-        skipAnySecondary();
-        return hasCurrent();
-    }
+  public boolean advance() {
+    it.next();
+    skipAnySecondary();
+    return hasCurrent();
+  }
 
-    private void skipAnySecondary() {
-        while (it.hasNext() && it.peek().isSecondaryAlignment()) {
-            it.next();
-        }
+  private void skipAnySecondary() {
+    while (it.hasNext() && it.peek().isSecondaryAlignment()) {
+      it.next();
     }
+  }
 }

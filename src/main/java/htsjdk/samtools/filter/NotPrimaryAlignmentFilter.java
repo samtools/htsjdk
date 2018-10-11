@@ -26,10 +26,9 @@ package htsjdk.samtools.filter;
 /**
  * Filter out SAMRecords with NotPrimaryAlignment flag set
  *
- * $Id$
+ * <p>$Id$
+ *
  * @deprecated use {@link SecondaryAlignmentFilter} instead.
  */
 @Deprecated
-public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {
-
-}
+public class NotPrimaryAlignmentFilter extends SecondaryAlignmentFilter {}

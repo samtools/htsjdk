@@ -1,31 +1,30 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext;
 
-import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -35,87 +34,97 @@ import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 
- * <h3> High-level overview </h3>
  *
- * The VariantContext object is a single general class system for representing genetic variation data composed of:
+ *
+ * <h3>High-level overview </h3>
+ *
+ * The VariantContext object is a single general class system for representing genetic variation
+ * data composed of:
+ *
  * <ul>
- * <li>Allele: representing single genetic haplotypes (A, T, ATC, -) (note that null alleles are used here for illustration; see the Allele class for how to represent indels)</li>
- * <li>Genotype: an assignment of alleles for each chromosome of a single named sample at a particular locus</li>
- * <li>VariantContext: an abstract class holding all segregating alleles at a locus as well as genotypes
- *    for multiple individuals containing alleles at that locus</li>
+ *   <li>Allele: representing single genetic haplotypes (A, T, ATC, -) (note that null alleles are
+ *       used here for illustration; see the Allele class for how to represent indels)
+ *   <li>Genotype: an assignment of alleles for each chromosome of a single named sample at a
+ *       particular locus
+ *   <li>VariantContext: an abstract class holding all segregating alleles at a locus as well as
+ *       genotypes for multiple individuals containing alleles at that locus
  * </ul>
- * <p>
- * The class system works by defining segregating alleles, creating a variant context representing the segregating
- * information at a locus, and potentially creating and associating genotypes with individuals in the context.
- *</p>
- *<p>
- * All of the classes are highly validating -- call <code>validate()</code> if you modify them -- so you can rely on the
- * self-consistency of the data once you have a <code>VariantContext</code> in hand.  The system has a rich set of assessor
- * and manipulator routines, as well as more complex static support routines in <code>VariantContextUtils</code>.
- *</p>
- *<p>
- * The <code>VariantContext</code> (and <code>Genotype</code>) objects are attributed (supporting addition of arbitrary key/value pairs) and
- * filtered (can represent a variation that is viewed as suspect).
- *</p>
- *<p>
- *<code>VariantContext</code>s are dynamically typed, so whether a <code>VariantContext</code> is a SNP, Indel, or NoVariant depends
- * on the properties of the alleles in the context.  See the detailed documentation on the <code>Type</code> parameter below.
- *</p>
- *<p>
- * It's also easy to create subcontexts based on selected genotypes.
- *</p>
+ *
+ * <p>The class system works by defining segregating alleles, creating a variant context
+ * representing the segregating information at a locus, and potentially creating and associating
+ * genotypes with individuals in the context.
+ *
+ * <p>All of the classes are highly validating -- call <code>validate()</code> if you modify them --
+ * so you can rely on the self-consistency of the data once you have a <code>VariantContext</code>
+ * in hand. The system has a rich set of assessor and manipulator routines, as well as more complex
+ * static support routines in <code>VariantContextUtils</code>.
+ *
+ * <p>The <code>VariantContext</code> (and <code>Genotype</code>) objects are attributed (supporting
+ * addition of arbitrary key/value pairs) and filtered (can represent a variation that is viewed as
+ * suspect).
+ *
+ * <p><code>VariantContext</code>s are dynamically typed, so whether a <code>VariantContext</code>
+ * is a SNP, Indel, or NoVariant depends on the properties of the alleles in the context. See the
+ * detailed documentation on the <code>Type</code> parameter below.
+ *
+ * <p>It's also easy to create subcontexts based on selected genotypes.
+ *
  * <h3>Working with Variant Contexts</h3>
- * By default, VariantContexts are immutable.  In order to access (in the rare circumstances where you need them)
- * setter routines, you need to create <code>MutableVariantContext</code>s and <code>MutableGenotype</code>s.
+ *
+ * By default, VariantContexts are immutable. In order to access (in the rare circumstances where
+ * you need them) setter routines, you need to create <code>MutableVariantContext</code>s and <code>
+ * MutableGenotype</code>s.
  *
  * <h3>Some example data </h3>
- *<pre>
+ *
+ * <pre>
  * Allele A, Aref, T, Tref;
  * Allele del, delRef, ATC, ATCref;
- *</pre>
- *<p>
- * A [ref] / T at 10
- *</p>
- *<pre> 
+ * </pre>
+ *
+ * <p>A [ref] / T at 10
+ *
+ * <pre>
  * GenomeLoc snpLoc = GenomeLocParser.createGenomeLoc("chr1", 10, 10);
- *</pre>
- *<p>
- * A / ATC [ref] from 20-23
- *</p>
- *<pre>
+ * </pre>
+ *
+ * <p>A / ATC [ref] from 20-23
+ *
+ * <pre>
  * GenomeLoc delLoc = GenomeLocParser.createGenomeLoc("chr1", 20, 22);
- *</pre>
- *<p>
- *  // A [ref] / ATC immediately after 20
- *  </p>
- *  <pre>
+ * </pre>
+ *
+ * <p>// A [ref] / ATC immediately after 20
+ *
+ * <pre>
  * GenomeLoc insLoc = GenomeLocParser.createGenomeLoc("chr1", 20, 20);
- *</pre>
- * <h3> Alleles </h3>
+ * </pre>
+ *
+ * <h3>Alleles </h3>
  *
  * See the documentation in the <code>Allele</code> class itself
  *
  * <h4>What are they?</h4>
  *
- * <p>Alleles can be either reference or non-reference</p>
+ * <p>Alleles can be either reference or non-reference
  *
- * <p>Examples of alleles used here:</p>
- *<pre>
+ * <p>Examples of alleles used here:
+ *
+ * <pre>
  *   A = new Allele("A");
  *   Aref = new Allele("A", true);
  *   T = new Allele("T");
  *   ATC = new Allele("ATC");
- *</pre>
- * <h3> Creating variant contexts </h3>
+ * </pre>
  *
- * <h4> By hand </h4>
+ * <h3>Creating variant contexts </h3>
+ *
+ * <h4>By hand </h4>
  *
  * Here's an example of a A/T polymorphism with the A being reference:
  *
@@ -135,14 +144,15 @@ import java.util.stream.Collectors;
  * VariantContext vc = new VariantContext(name, delLoc, Arrays.asList(ATCref, del));
  * </pre>
  *
- * The only thing that distinguishes between an insertion and deletion is which is the reference allele.
- * An insertion has a reference allele that is smaller than the non-reference allele, and vice versa for deletions.
+ * The only thing that distinguishes between an insertion and deletion is which is the reference
+ * allele. An insertion has a reference allele that is smaller than the non-reference allele, and
+ * vice versa for deletions.
  *
  * <pre>
  * VariantContext vc = new VariantContext("name", insLoc, Arrays.asList(delRef, ATC));
  * </pre>
  *
- * <h4> Converting rods and other data structures to <code>VariantContext</code>s </h4>
+ * <h4>Converting rods and other data structures to <code>VariantContext</code>s </h4>
  *
  * You can convert many common types into VariantContexts using the general function:
  *
@@ -150,12 +160,12 @@ import java.util.stream.Collectors;
  * VariantContextAdaptors.convertToVariantContext(name, myObject)
  * </pre>
  *
- * dbSNP and VCFs, for example, can be passed in as <code>myObject</code> and a <code>VariantContext</code> corresponding to that
- * object will be returned.  A <code>null</code> return value indicates that the type isn't yet supported.  This is the best
- * and easiest way to create contexts using RODs.
+ * dbSNP and VCFs, for example, can be passed in as <code>myObject</code> and a <code>VariantContext
+ * </code> corresponding to that object will be returned. A <code>null</code> return value indicates
+ * that the type isn't yet supported. This is the best and easiest way to create contexts using
+ * RODs.
  *
- *
- * <h3> Working with genotypes </h3>
+ * <h3>Working with genotypes </h3>
  *
  * <pre>
  * List&lt;Allele&gt; alleles = Arrays.asList(Aref, T);
@@ -167,7 +177,8 @@ import java.util.stream.Collectors;
  *
  * At this point we have 3 genotypes in our context, g1-g3.
  *
- * You can assess a good deal of information about the genotypes through the <code>VariantContext</code>:
+ * <p>You can assess a good deal of information about the genotypes through the <code>VariantContext
+ * </code>:
  *
  * <pre>
  * vc.hasGenotypes()
@@ -184,15 +195,18 @@ import java.util.stream.Collectors;
  * vc.getCalledChrCount(T)
  * </pre>
  *
- * <h3> NO_CALL alleles </h3>
+ * <h3>NO_CALL alleles </h3>
  *
- * The system allows one to create <code>Genotype</code>s carrying special NO_CALL alleles that aren't present in the
- * set of context alleles and that represent undetermined alleles in a genotype:
- *<pre>
+ * The system allows one to create <code>Genotype</code>s carrying special NO_CALL alleles that
+ * aren't present in the set of context alleles and that represent undetermined alleles in a
+ * genotype:
+ *
+ * <pre>
  * Genotype g4 = new Genotype(Arrays.asList(Allele.NO_CALL, Allele.NO_CALL), "NO_DATA_FOR_SAMPLE", 10);
- *</pre>
+ * </pre>
  *
- * <h3> subcontexts </h3>
+ * <h3>subcontexts </h3>
+ *
  * It's also very easy get subcontext based only the data in a subset of the genotypes:
  *
  * <pre>
@@ -202,1546 +216,1702 @@ import java.util.stream.Collectors;
  *
  * <!-- comment by jdenvir: not sure what this tag is supposed to do:-->
  * <!-- <s3> -->
- *     <h3>Fully decoding.</h3>  
- *     Currently <code>VariantContext</code>s support some fields, particularly those
- *     stored as generic attributes, to be of any type.  For example, a field AB might
- *     be naturally a floating point number, 0.51, but when it's read into a VC its
- *     not decoded into the Java presentation but left as a string "0.51".  A fully
- *     decoded <code>VariantContext</code> is one where all values have been converted to their
- *     corresponding Java object types, based on the types declared in a <code>VCFHeader</code>.
  *
- *     The <code>fullyDecode(...)</code> method takes a header object and creates a new fully decoded <code>VariantContext</code>
- *     where all fields are converted to their true java representation.  The <code>VCBuilder</code>
- *     can be told that all fields are fully decoded, in which case no work is done when
- *     asking for a fully decoded version of the VC.
+ * <h3>Fully decoding.</h3>
+ *
+ * Currently <code>VariantContext</code>s support some fields, particularly those stored as generic
+ * attributes, to be of any type. For example, a field AB might be naturally a floating point
+ * number, 0.51, but when it's read into a VC its not decoded into the Java presentation but left as
+ * a string "0.51". A fully decoded <code>VariantContext</code> is one where all values have been
+ * converted to their corresponding Java object types, based on the types declared in a <code>
+ * VCFHeader</code>.
+ *
+ * <p>The <code>fullyDecode(...)</code> method takes a header object and creates a new fully decoded
+ * <code>VariantContext</code> where all fields are converted to their true java representation. The
+ * <code>VCBuilder</code> can be told that all fields are fully decoded, in which case no work is
+ * done when asking for a fully decoded version of the VC.
  * <!-- </s3> -->
- *
  */
 public class VariantContext implements Feature, Serializable {
-    public static final long serialVersionUID = 1L;
+  public static final long serialVersionUID = 1L;
 
-    private final static boolean WARN_ABOUT_BAD_END = true;
-    private final static int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
-    private boolean fullyDecoded = false;
-    protected CommonInfo commonInfo = null;
-    public final static double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
+  private static final boolean WARN_ABOUT_BAD_END = true;
+  private static final int MAX_ALLELE_SIZE_FOR_NON_SV = 150;
+  private boolean fullyDecoded = false;
+  protected CommonInfo commonInfo = null;
+  public static final double NO_LOG10_PERROR = CommonInfo.NO_LOG10_PERROR;
 
-    public final static Set<String> PASSES_FILTERS = Collections.unmodifiableSet(new LinkedHashSet<String>());
+  public static final Set<String> PASSES_FILTERS =
+      Collections.unmodifiableSet(new LinkedHashSet<String>());
 
-    /** The location of this VariantContext */
-    final protected String contig;
-    final protected long start;
-    final protected long stop;
-    private final String ID;
+  /** The location of this VariantContext */
+  protected final String contig;
 
-    /** The type (cached for performance reasons) of this context */
-    protected Type type = null;
+  protected final long start;
+  protected final long stop;
+  private final String ID;
 
-    /** A set of the alleles segregating in this context */
-    final protected List<Allele> alleles;
+  /** The type (cached for performance reasons) of this context */
+  protected Type type = null;
 
-    /** A mapping from sampleName -&gt; genotype objects for all genotypes associated with this context */
-    protected GenotypesContext genotypes = null;
+  /** A set of the alleles segregating in this context */
+  protected final List<Allele> alleles;
 
-    /** Counts for each of the possible Genotype types in this context */
-    protected int[] genotypeCounts = null;
+  /**
+   * A mapping from sampleName -&gt; genotype objects for all genotypes associated with this context
+   */
+  protected GenotypesContext genotypes = null;
 
-    public final static GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
+  /** Counts for each of the possible Genotype types in this context */
+  protected int[] genotypeCounts = null;
 
-    // a fast cached access point to the ref / alt alleles for biallelic case
-    private Allele REF = null;
+  public static final GenotypesContext NO_GENOTYPES = GenotypesContext.NO_GENOTYPES;
 
-    // set to the alt allele when biallelic, otherwise == null
-    private Allele ALT = null;
+  // a fast cached access point to the ref / alt alleles for biallelic case
+  private Allele REF = null;
 
-    /* cached monomorphic value: null -> not yet computed, False, True */
-    private Boolean monomorphic = null;
+  // set to the alt allele when biallelic, otherwise == null
+  private Allele ALT = null;
 
-    /*
-* Determine which genotype fields are in use in the genotypes in VC
-* @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
-*/
-    public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
-        final Set<String> keys = new HashSet<>();
+  /* cached monomorphic value: null -> not yet computed, False, True */
+  private Boolean monomorphic = null;
 
-        boolean sawGoodGT = false;
-        boolean sawGoodQual = false;
-        boolean sawGenotypeFilter = false;
-        boolean sawDP = false;
-        boolean sawAD = false;
-        boolean sawPL = false;
-        for (final Genotype g : this.getGenotypes()) {
-            keys.addAll(g.getExtendedAttributes().keySet());
-            if ( g.isAvailable() ) sawGoodGT = true;
-            if ( g.hasGQ() ) sawGoodQual = true;
-            if ( g.hasDP() ) sawDP = true;
-            if ( g.hasAD() ) sawAD = true;
-            if ( g.hasPL() ) sawPL = true;
-            if (g.isFiltered()) sawGenotypeFilter = true;
-        }
+  /*
+   * Determine which genotype fields are in use in the genotypes in VC
+   * @return an ordered list of genotype fields in use in VC.  If vc has genotypes this will always include GT first
+   */
+  public List<String> calcVCFGenotypeKeys(final VCFHeader header) {
+    final Set<String> keys = new HashSet<>();
 
-        if ( sawGoodQual ) keys.add(VCFConstants.GENOTYPE_QUALITY_KEY);
-        if ( sawDP ) keys.add(VCFConstants.DEPTH_KEY);
-        if ( sawAD ) keys.add(VCFConstants.GENOTYPE_ALLELE_DEPTHS);
-        if ( sawPL ) keys.add(VCFConstants.GENOTYPE_PL_KEY);
-        if ( sawGenotypeFilter ) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
-
-        List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
-
-        // make sure the GT is first
-        if (sawGoodGT) {
-            final List<String> newList = new ArrayList<>(sortedList.size() + 1);
-            newList.add(VCFConstants.GENOTYPE_KEY);
-            newList.addAll(sortedList);
-            sortedList = newList;
-        }
-
-        if (sortedList.isEmpty() && header.hasGenotypingData()) {
-            // this needs to be done in case all samples are no-calls
-            return Collections.singletonList(VCFConstants.GENOTYPE_KEY);
-        } else {
-            return sortedList;
-        }
+    boolean sawGoodGT = false;
+    boolean sawGoodQual = false;
+    boolean sawGenotypeFilter = false;
+    boolean sawDP = false;
+    boolean sawAD = false;
+    boolean sawPL = false;
+    for (final Genotype g : this.getGenotypes()) {
+      keys.addAll(g.getExtendedAttributes().keySet());
+      if (g.isAvailable()) sawGoodGT = true;
+      if (g.hasGQ()) sawGoodQual = true;
+      if (g.hasDP()) sawDP = true;
+      if (g.hasAD()) sawAD = true;
+      if (g.hasPL()) sawPL = true;
+      if (g.isFiltered()) sawGenotypeFilter = true;
     }
 
+    if (sawGoodQual) keys.add(VCFConstants.GENOTYPE_QUALITY_KEY);
+    if (sawDP) keys.add(VCFConstants.DEPTH_KEY);
+    if (sawAD) keys.add(VCFConstants.GENOTYPE_ALLELE_DEPTHS);
+    if (sawPL) keys.add(VCFConstants.GENOTYPE_PL_KEY);
+    if (sawGenotypeFilter) keys.add(VCFConstants.GENOTYPE_FILTER_KEY);
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // validation mode
-    //
-    // ---------------------------------------------------------------------------------------------------------
+    List<String> sortedList = ParsingUtils.sortList(new ArrayList<>(keys));
 
-    public enum Validation {
-        ALLELES,
-        GENOTYPES
+    // make sure the GT is first
+    if (sawGoodGT) {
+      final List<String> newList = new ArrayList<>(sortedList.size() + 1);
+      newList.add(VCFConstants.GENOTYPE_KEY);
+      newList.addAll(sortedList);
+      sortedList = newList;
     }
 
-    private final static EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
+    if (sortedList.isEmpty() && header.hasGenotypingData()) {
+      // this needs to be done in case all samples are no-calls
+      return Collections.singletonList(VCFConstants.GENOTYPE_KEY);
+    } else {
+      return sortedList;
+    }
+  }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // constructors: see VariantContextBuilder
-    //
-    // ---------------------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // validation mode
+  //
+  // ---------------------------------------------------------------------------------------------------------
 
-    /**
-     * Copy constructor
-     *
-     * @param other the VariantContext to copy
-     */
-    protected VariantContext(VariantContext other) {
-        this(other.getSource(), other.getID(), other.getContig(), other.getStart(), other.getEnd(),
-                other.getAlleles(), other.getGenotypes(), other.getLog10PError(),
-                other.getFiltersMaybeNull(),
-                other.getAttributes(),
-                other.fullyDecoded, NO_VALIDATION);
+  public enum Validation {
+    ALLELES,
+    GENOTYPES
+  }
+
+  private static final EnumSet<Validation> NO_VALIDATION = EnumSet.noneOf(Validation.class);
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // constructors: see VariantContextBuilder
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  /**
+   * Copy constructor
+   *
+   * @param other the VariantContext to copy
+   */
+  protected VariantContext(VariantContext other) {
+    this(
+        other.getSource(),
+        other.getID(),
+        other.getContig(),
+        other.getStart(),
+        other.getEnd(),
+        other.getAlleles(),
+        other.getGenotypes(),
+        other.getLog10PError(),
+        other.getFiltersMaybeNull(),
+        other.getAttributes(),
+        other.fullyDecoded,
+        NO_VALIDATION);
+  }
+
+  /**
+   * the actual constructor. Private access only
+   *
+   * @param source source
+   * @param contig the contig
+   * @param start the start base (one based)
+   * @param stop the stop reference base (one based)
+   * @param alleles alleles
+   * @param genotypes genotypes map
+   * @param log10PError qual
+   * @param filters filters: use null for unfiltered and empty set for passes filters
+   * @param attributes attributes
+   * @param validationToPerform set of validation steps to take
+   */
+  protected VariantContext(
+      final String source,
+      final String ID,
+      final String contig,
+      final long start,
+      final long stop,
+      final Collection<Allele> alleles,
+      final GenotypesContext genotypes,
+      final double log10PError,
+      final Set<String> filters,
+      final Map<String, Object> attributes,
+      final boolean fullyDecoded,
+      final EnumSet<Validation> validationToPerform) {
+    if (contig == null) {
+      throw new IllegalArgumentException("Contig cannot be null");
+    }
+    this.contig = contig;
+    this.start = start;
+    this.stop = stop;
+
+    // intern for efficiency.  equals calls will generate NPE if ID is inappropriately passed in as
+    // null
+    if (ID == null || ID.equals(""))
+      throw new IllegalArgumentException("ID field cannot be the null or the empty string");
+    this.ID = ID.equals(VCFConstants.EMPTY_ID_FIELD) ? VCFConstants.EMPTY_ID_FIELD : ID;
+
+    this.commonInfo = new CommonInfo(source, log10PError, filters, attributes);
+
+    if (alleles == null) {
+      throw new IllegalArgumentException("Alleles cannot be null");
     }
 
-    /**
-     * the actual constructor.  Private access only
-     *
-     * @param source          source
-     * @param contig          the contig
-     * @param start           the start base (one based)
-     * @param stop            the stop reference base (one based)
-     * @param alleles         alleles
-     * @param genotypes       genotypes map
-     * @param log10PError  qual
-     * @param filters         filters: use null for unfiltered and empty set for passes filters
-     * @param attributes      attributes
-     * @param validationToPerform     set of validation steps to take
-     */
-    protected VariantContext(final String source,
-                             final String ID,
-                             final String contig,
-                             final long start,
-                             final long stop,
-                             final Collection<Allele> alleles,
-                             final GenotypesContext genotypes,
-                             final double log10PError,
-                             final Set<String> filters,
-                             final Map<String, Object> attributes,
-                             final boolean fullyDecoded,
-                             final EnumSet<Validation> validationToPerform ) {
-        if ( contig == null ) { throw new IllegalArgumentException("Contig cannot be null"); }
-        this.contig = contig;
-        this.start = start;
-        this.stop = stop;
+    // we need to make this a LinkedHashSet in case the user prefers a given ordering of alleles
+    this.alleles = makeAlleles(alleles);
 
-        // intern for efficiency.  equals calls will generate NPE if ID is inappropriately passed in as null
-        if ( ID == null || ID.equals("") ) throw new IllegalArgumentException("ID field cannot be the null or the empty string");
-        this.ID = ID.equals(VCFConstants.EMPTY_ID_FIELD) ? VCFConstants.EMPTY_ID_FIELD : ID;
-
-        this.commonInfo = new CommonInfo(source, log10PError, filters, attributes);
-
-        if ( alleles == null ) { throw new IllegalArgumentException("Alleles cannot be null"); }
-
-        // we need to make this a LinkedHashSet in case the user prefers a given ordering of alleles
-        this.alleles = makeAlleles(alleles);
-
-        if ( genotypes == null || genotypes == NO_GENOTYPES ) {
-            this.genotypes = NO_GENOTYPES;
-        } else {
-            this.genotypes = genotypes.immutable();
-        }
-
-        // cache the REF and ALT alleles
-        int nAlleles = alleles.size();
-        for ( Allele a : alleles ) {
-            if ( a.isReference() ) {
-                REF = a;
-            } else if ( nAlleles == 2 ) { // only cache ALT when biallelic
-                ALT = a;
-            }
-        }
-
-        this.fullyDecoded = fullyDecoded;
-
-        if ( ! validationToPerform.isEmpty() ) {
-            validate(validationToPerform);
-        }
+    if (genotypes == null || genotypes == NO_GENOTYPES) {
+      this.genotypes = NO_GENOTYPES;
+    } else {
+      this.genotypes = genotypes.immutable();
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // Selectors
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    /**
-     * This method subsets down to a set of samples.
-     *
-     * At the same time returns the alleles to just those in use by the samples,
-     * if rederiveAllelesFromGenotypes is true, otherwise the full set of alleles
-     * in this VC is returned as the set of alleles in the subContext, even if
-     * some of those alleles aren't in the samples
-     *
-     * WARNING: BE CAREFUL WITH rederiveAllelesFromGenotypes UNLESS YOU KNOW WHAT YOU ARE DOING
-     *
-     * @param sampleNames    the sample names
-     * @param rederiveAllelesFromGenotypes if true, returns the alleles to just those in use by the samples, true should be default
-     * @return new VariantContext subsetting to just the given samples
-     */
-    public VariantContext subContextFromSamples(Set<String> sampleNames, final boolean rederiveAllelesFromGenotypes ) {
-        if ( sampleNames.containsAll(getSampleNames()) && ! rederiveAllelesFromGenotypes ) {
-            return this; // fast path when you don't have any work to do
-        } else {
-            VariantContextBuilder builder = new VariantContextBuilder(this);
-            GenotypesContext newGenotypes = genotypes.subsetToSamples(sampleNames);
-
-            if ( rederiveAllelesFromGenotypes ) {
-                Set<Allele> allelesFromGenotypes = allelesOfGenotypes(newGenotypes);
-
-                // ensure original order of genotypes
-                List<Allele> rederivedAlleles = new ArrayList<>(allelesFromGenotypes.size());
-                for (Allele allele : alleles)
-                    if (allelesFromGenotypes.contains(allele))
-                        rederivedAlleles.add(allele);
-
-                builder.alleles(rederivedAlleles);
-            }
-            else {
-                builder.alleles(alleles);
-            }
-
-            return builder.genotypes(newGenotypes).make();
-        }
+    // cache the REF and ALT alleles
+    int nAlleles = alleles.size();
+    for (Allele a : alleles) {
+      if (a.isReference()) {
+        REF = a;
+      } else if (nAlleles == 2) { // only cache ALT when biallelic
+        ALT = a;
+      }
     }
 
-    /**
-     * @see #subContextFromSamples(java.util.Set, boolean) with rederiveAllelesFromGenotypes = true
-     *
-     * @param sampleNames
-     * @return
-     */
-    public VariantContext subContextFromSamples(final Set<String> sampleNames) {
-        return subContextFromSamples(sampleNames, true);
+    this.fullyDecoded = fullyDecoded;
+
+    if (!validationToPerform.isEmpty()) {
+      validate(validationToPerform);
     }
+  }
 
-    public VariantContext subContextFromSample(String sampleName) {
-        return subContextFromSamples(Collections.singleton(sampleName));
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // Selectors
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  /**
+   * This method subsets down to a set of samples.
+   *
+   * <p>At the same time returns the alleles to just those in use by the samples, if
+   * rederiveAllelesFromGenotypes is true, otherwise the full set of alleles in this VC is returned
+   * as the set of alleles in the subContext, even if some of those alleles aren't in the samples
+   *
+   * <p>WARNING: BE CAREFUL WITH rederiveAllelesFromGenotypes UNLESS YOU KNOW WHAT YOU ARE DOING
+   *
+   * @param sampleNames the sample names
+   * @param rederiveAllelesFromGenotypes if true, returns the alleles to just those in use by the
+   *     samples, true should be default
+   * @return new VariantContext subsetting to just the given samples
+   */
+  public VariantContext subContextFromSamples(
+      Set<String> sampleNames, final boolean rederiveAllelesFromGenotypes) {
+    if (sampleNames.containsAll(getSampleNames()) && !rederiveAllelesFromGenotypes) {
+      return this; // fast path when you don't have any work to do
+    } else {
+      VariantContextBuilder builder = new VariantContextBuilder(this);
+      GenotypesContext newGenotypes = genotypes.subsetToSamples(sampleNames);
+
+      if (rederiveAllelesFromGenotypes) {
+        Set<Allele> allelesFromGenotypes = allelesOfGenotypes(newGenotypes);
+
+        // ensure original order of genotypes
+        List<Allele> rederivedAlleles = new ArrayList<>(allelesFromGenotypes.size());
+        for (Allele allele : alleles)
+          if (allelesFromGenotypes.contains(allele)) rederivedAlleles.add(allele);
+
+        builder.alleles(rederivedAlleles);
+      } else {
+        builder.alleles(alleles);
+      }
+
+      return builder.genotypes(newGenotypes).make();
     }
+  }
 
-    /**
-     * helper routine for subcontext
-     * @param genotypes genotypes
-     * @return allele set
-     */
-    private final Set<Allele> allelesOfGenotypes(Collection<Genotype> genotypes) {
-        final Set<Allele> alleles = new HashSet<>();
+  /**
+   * @see #subContextFromSamples(java.util.Set, boolean) with rederiveAllelesFromGenotypes = true
+   * @param sampleNames
+   * @return
+   */
+  public VariantContext subContextFromSamples(final Set<String> sampleNames) {
+    return subContextFromSamples(sampleNames, true);
+  }
 
-        boolean addedref = false;
-        for ( final Genotype g : genotypes ) {
-            for ( final Allele a : g.getAlleles() ) {
-                addedref = addedref || a.isReference();
-                if ( a.isCalled() )
-                    alleles.add(a);
-            }
-        }
-        if ( ! addedref ) alleles.add(getReference());
+  public VariantContext subContextFromSample(String sampleName) {
+    return subContextFromSamples(Collections.singleton(sampleName));
+  }
 
-        return alleles;
+  /**
+   * helper routine for subcontext
+   *
+   * @param genotypes genotypes
+   * @return allele set
+   */
+  private final Set<Allele> allelesOfGenotypes(Collection<Genotype> genotypes) {
+    final Set<Allele> alleles = new HashSet<>();
+
+    boolean addedref = false;
+    for (final Genotype g : genotypes) {
+      for (final Allele a : g.getAlleles()) {
+        addedref = addedref || a.isReference();
+        if (a.isCalled()) alleles.add(a);
+      }
     }
+    if (!addedref) alleles.add(getReference());
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // type operations
-    //
-    // ---------------------------------------------------------------------------------------------------------
+    return alleles;
+  }
 
-    /**
-     * @see <a href="http://www.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=handbook&part=ch5&rendertype=table&id=ch5.ch5_t3">NCBI Handbook</a>
-     *
-     * <h3>Format:</h3>
-     * <ul>
-     * <li><strong>dbSNP variation class</strong></li>
-     * <li>Rules for assigning allele classes</li>
-     * <li>Sample allele definition</li>
-     * </ul>
-     * <h3>Supported Types</h3>
-     * <ul>
-     * <li><strong>Single Nucleotide Polymorphisms (SNPs)a</strong></li>
-     * <li>Strictly defined as single base substitutions involving A, T, C, or G.</li>
-     * <li>A/T</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>Deletion/Insertion Polymorphisms (DIPs)</strong></li>
-     * <li>Designated using the full sequence of the insertion as one allele, and either a fully
-     *   defined string for the variant allele or a '-' character to specify the deleted allele.
-     *   This class will be assigned to a variation if the variation alleles are of different lengths or
-     *   if one of the alleles is deleted ('-').</li>
-     * <li>T/-/CCTA/G</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>No-variation</strong></li>
-     * <li>Reports may be submitted for segments of sequence that are assayed and determined to be invariant
-     *   in the sample.</li>
-     * <li>(NoVariation)</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>Mixed</strong></li>
-     * <li>Mix of other classes</li>
-     * </ul>
-     * 
-     * Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the population
-     *
-     *
-     * <h3>Not currently supported:</h3>
-     *
-     * <ul>
-     * <li><strong>Heterozygous sequence</strong></li>
-     * <li>The term heterozygous is used to specify a region detected by certain methods that do not
-     * resolve the polymorphism into a specific sequence motif. In these cases, a unique flanking
-     * sequence must be provided to define a sequence context for the variation.</li>
-     * <li>(heterozygous)</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>Microsatellite or short tandem repeat (STR)</strong></li>
-     * <li>Alleles are designated by providing the repeat motif and the copy number for each allele.
-     * Expansion of the allele repeat motif designated in dbSNP into full-length sequence will
-     * be only an approximation of the true genomic sequence because many microsatellite markers are
-     * not fully sequenced and are resolved as size variants only.</li>
-     * <li>(CAC)8/9/10/11</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>Named variant</strong></li>
-     * <li>Applies to insertion/deletion polymorphisms of longer sequence features, such as retroposon
-     * dimorphism for Alu or line elements. These variations frequently include a deletion '-' indicator
-     * for the absent allele.</li>
-     * <li>(alu) / -</li>
-     * </ul>
-     * <br>
-     * <ul>
-     * <li><strong>Multi-Nucleotide Polymorphism (MNP)</strong></li>
-     * <li>Assigned to variations that are multi-base variations of a single, common length</li>
-     * <li>GGA/AGT</li>
-     * </ul>
-     */
-    public enum Type {
-        NO_VARIATION,
-        SNP,
-        MNP,    // a multi-nucleotide polymorphism
-        INDEL,
-        SYMBOLIC,
-        MIXED,
-    }
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // type operations
+  //
+  // ---------------------------------------------------------------------------------------------------------
 
-    /**
-     * Determines (if necessary) and returns the type of this variation by examining the alleles it contains.
-     *
-     * @return the type of this VariantContext
-     **/
-    public Type getType() {
-        if ( type == null )
-            determineType();
+  /**
+   * @see <a
+   *     href="http://www.ncbi.nlm.nih.gov/bookshelf/br.fcgi?book=handbook&part=ch5&rendertype=table&id=ch5.ch5_t3">NCBI
+   *     Handbook</a>
+   *     <h3>Format:</h3>
+   *     <ul>
+   *       <li><strong>dbSNP variation class</strong>
+   *       <li>Rules for assigning allele classes
+   *       <li>Sample allele definition
+   *     </ul>
+   *     <h3>Supported Types</h3>
+   *     <ul>
+   *       <li><strong>Single Nucleotide Polymorphisms (SNPs)a</strong>
+   *       <li>Strictly defined as single base substitutions involving A, T, C, or G.
+   *       <li>A/T
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>Deletion/Insertion Polymorphisms (DIPs)</strong>
+   *       <li>Designated using the full sequence of the insertion as one allele, and either a fully
+   *           defined string for the variant allele or a '-' character to specify the deleted
+   *           allele. This class will be assigned to a variation if the variation alleles are of
+   *           different lengths or if one of the alleles is deleted ('-').
+   *       <li>T/-/CCTA/G
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>No-variation</strong>
+   *       <li>Reports may be submitted for segments of sequence that are assayed and determined to
+   *           be invariant in the sample.
+   *       <li>(NoVariation)
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>Mixed</strong>
+   *       <li>Mix of other classes
+   *     </ul>
+   *     Also supports NO_VARIATION type, used to indicate that the site isn't polymorphic in the
+   *     population
+   *     <h3>Not currently supported:</h3>
+   *     <ul>
+   *       <li><strong>Heterozygous sequence</strong>
+   *       <li>The term heterozygous is used to specify a region detected by certain methods that do
+   *           not resolve the polymorphism into a specific sequence motif. In these cases, a unique
+   *           flanking sequence must be provided to define a sequence context for the variation.
+   *       <li>(heterozygous)
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>Microsatellite or short tandem repeat (STR)</strong>
+   *       <li>Alleles are designated by providing the repeat motif and the copy number for each
+   *           allele. Expansion of the allele repeat motif designated in dbSNP into full-length
+   *           sequence will be only an approximation of the true genomic sequence because many
+   *           microsatellite markers are not fully sequenced and are resolved as size variants
+   *           only.
+   *       <li>(CAC)8/9/10/11
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>Named variant</strong>
+   *       <li>Applies to insertion/deletion polymorphisms of longer sequence features, such as
+   *           retroposon dimorphism for Alu or line elements. These variations frequently include a
+   *           deletion '-' indicator for the absent allele.
+   *       <li>(alu) / -
+   *     </ul>
+   *     <br>
+   *     <ul>
+   *       <li><strong>Multi-Nucleotide Polymorphism (MNP)</strong>
+   *       <li>Assigned to variations that are multi-base variations of a single, common length
+   *       <li>GGA/AGT
+   *     </ul>
+   */
+  public enum Type {
+    NO_VARIATION,
+    SNP,
+    MNP, // a multi-nucleotide polymorphism
+    INDEL,
+    SYMBOLIC,
+    MIXED,
+  }
 
-        return type;
-    }
+  /**
+   * Determines (if necessary) and returns the type of this variation by examining the alleles it
+   * contains.
+   *
+   * @return the type of this VariantContext
+   */
+  public Type getType() {
+    if (type == null) determineType();
 
-    /**
-     * convenience method for SNPs
-     *
-     * @return true if this is a SNP, false otherwise
-     */
-    public boolean isSNP() { return getType() == Type.SNP; }
+    return type;
+  }
 
+  /**
+   * convenience method for SNPs
+   *
+   * @return true if this is a SNP, false otherwise
+   */
+  public boolean isSNP() {
+    return getType() == Type.SNP;
+  }
 
-    /**
-     * convenience method for variants
-     *
-     * @return true if this is a variant allele, false if it's reference
-     */
-    public boolean isVariant() { return getType() != Type.NO_VARIATION; }
+  /**
+   * convenience method for variants
+   *
+   * @return true if this is a variant allele, false if it's reference
+   */
+  public boolean isVariant() {
+    return getType() != Type.NO_VARIATION;
+  }
 
-    /**
-     * convenience method for point events
-     *
-     * @return true if this is a SNP or ref site, false if it's an indel or mixed event
-     */
-    public boolean isPointEvent() { return isSNP() || !isVariant(); }
+  /**
+   * convenience method for point events
+   *
+   * @return true if this is a SNP or ref site, false if it's an indel or mixed event
+   */
+  public boolean isPointEvent() {
+    return isSNP() || !isVariant();
+  }
 
-    /**
-     * convenience method for indels
-     *
-     * @return true if this is an indel, false otherwise
-     */
-    public boolean isIndel() { return getType() == Type.INDEL; }
+  /**
+   * convenience method for indels
+   *
+   * @return true if this is an indel, false otherwise
+   */
+  public boolean isIndel() {
+    return getType() == Type.INDEL;
+  }
 
-    /**
-     * @return true if the alleles indicate a simple insertion (i.e., the reference allele is Null)
-     */
-    public boolean isSimpleInsertion() {
-        // can't just call !isSimpleDeletion() because of complex indels
-        return isSimpleIndel() && getReference().length() == 1;
-    }
+  /**
+   * @return true if the alleles indicate a simple insertion (i.e., the reference allele is Null)
+   */
+  public boolean isSimpleInsertion() {
+    // can't just call !isSimpleDeletion() because of complex indels
+    return isSimpleIndel() && getReference().length() == 1;
+  }
 
-    /**
-     * @return true if the alleles indicate a simple deletion (i.e., a single alt allele that is Null)
-     */
-    public boolean isSimpleDeletion() {
-        // can't just call !isSimpleInsertion() because of complex indels
-        return isSimpleIndel() && getAlternateAllele(0).length() == 1;
-    }
+  /**
+   * @return true if the alleles indicate a simple deletion (i.e., a single alt allele that is Null)
+   */
+  public boolean isSimpleDeletion() {
+    // can't just call !isSimpleInsertion() because of complex indels
+    return isSimpleIndel() && getAlternateAllele(0).length() == 1;
+  }
 
-    /**
-     * @return true if the alleles indicate a simple indel, false otherwise.
-     */
-    public boolean isSimpleIndel() {
-        return getType() == Type.INDEL                   // allelic lengths differ
-                && isBiallelic()                         // exactly 2 alleles
-                && getReference().length() > 0           // ref is not null or symbolic
-                && getAlternateAllele(0).length() > 0    // alt is not null or symbolic
-                && getReference().getBases()[0] == getAlternateAllele(0).getBases()[0]    // leading bases match for both alleles
-                && (getReference().length() == 1 || getAlternateAllele(0).length() == 1);
-    }
+  /** @return true if the alleles indicate a simple indel, false otherwise. */
+  public boolean isSimpleIndel() {
+    return getType() == Type.INDEL // allelic lengths differ
+        && isBiallelic() // exactly 2 alleles
+        && getReference().length() > 0 // ref is not null or symbolic
+        && getAlternateAllele(0).length() > 0 // alt is not null or symbolic
+        && getReference().getBases()[0]
+            == getAlternateAllele(0).getBases()[0] // leading bases match for both alleles
+        && (getReference().length() == 1 || getAlternateAllele(0).length() == 1);
+  }
 
-    /**
-     * @return true if the alleles indicate neither a simple deletion nor a simple insertion
-     */
-    public boolean isComplexIndel() {
-        return isIndel() && !isSimpleDeletion() && !isSimpleInsertion();
-    }
+  /** @return true if the alleles indicate neither a simple deletion nor a simple insertion */
+  public boolean isComplexIndel() {
+    return isIndel() && !isSimpleDeletion() && !isSimpleInsertion();
+  }
 
-    public boolean isSymbolic() {
-        return getType() == Type.SYMBOLIC;
-    }
+  public boolean isSymbolic() {
+    return getType() == Type.SYMBOLIC;
+  }
 
-    public boolean isStructuralIndel() {
-        if ( getType() == Type.INDEL ) {
-            List<Integer> sizes = getIndelLengths();
-            if ( sizes != null ) {
-                for ( Integer length : sizes ) {
-                    if ( length > MAX_ALLELE_SIZE_FOR_NON_SV ) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     *
-     * @return true if the variant is symbolic or a large indel
-     */
-    public boolean isSymbolicOrSV() {
-        return isSymbolic() || isStructuralIndel();
-    }
-
-    public boolean isMNP() {
-        return getType() == Type.MNP;
-    }
-
-    /**
-     * convenience method for indels
-     *
-     * @return true if this is an mixed variation, false otherwise
-     */
-    public boolean isMixed() { return getType() == Type.MIXED; }
-
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // Generic accessors
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    public boolean hasID() {
-        return getID() != VCFConstants.EMPTY_ID_FIELD;
-    }
-
-    public boolean emptyID() {
-        return ! hasID();
-    }
-
-    public String getID() {
-        return ID;
-    }
-
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // get routines to access context info fields
-    //
-    // ---------------------------------------------------------------------------------------------------------
-    public String getSource()                   { return commonInfo.getName(); }
-    public Set<String> getFiltersMaybeNull()    { return commonInfo.getFiltersMaybeNull(); }
-    public Set<String> getFilters()             { return commonInfo.getFilters(); }
-    public boolean isFiltered()                 { return commonInfo.isFiltered(); }
-    public boolean isNotFiltered()              { return commonInfo.isNotFiltered(); }
-    public boolean filtersWereApplied()         { return commonInfo.filtersWereApplied(); }
-    public boolean hasLog10PError()             { return commonInfo.hasLog10PError(); }
-    public double getLog10PError()              { return commonInfo.getLog10PError(); }
-    public double getPhredScaledQual()          { return commonInfo.getPhredScaledQual(); }
-
-    public Map<String, Object>  getAttributes() { return commonInfo.getAttributes(); }
-    public boolean hasAttribute(String key)     { return commonInfo.hasAttribute(key); }
-    public Object getAttribute(String key)      { return commonInfo.getAttribute(key); }
-
-    public Object getAttribute(String key, Object defaultValue) {
-        return commonInfo.getAttribute(key, defaultValue);
-    }
-
-    public String getAttributeAsString(String key, String defaultValue)   { return commonInfo.getAttributeAsString(key, defaultValue); }
-    public int getAttributeAsInt(String key, int defaultValue)            { return commonInfo.getAttributeAsInt(key, defaultValue); }
-    public double getAttributeAsDouble(String key, double  defaultValue)  { return commonInfo.getAttributeAsDouble(key, defaultValue); }
-    public boolean getAttributeAsBoolean(String key, boolean  defaultValue)  { return commonInfo.getAttributeAsBoolean(key, defaultValue); }
-    /** returns the value as an empty list if the key was not found,
-        as a java.util.List if the value is a List or an Array,
-        as a Collections.singletonList if there is only one value */
-    public List<Object> getAttributeAsList(String key)  { return commonInfo.getAttributeAsList(key); }
-    public List<String> getAttributeAsStringList(String key, String defaultValue) { return commonInfo.getAttributeAsStringList(key, defaultValue); }
-    public List<Integer> getAttributeAsIntList(String key, int defaultValue) { return commonInfo.getAttributeAsIntList(key, defaultValue); }
-    public List<Double> getAttributeAsDoubleList(String key, double defaultValue) { return commonInfo.getAttributeAsDoubleList(key, defaultValue); }
-    public CommonInfo getCommonInfo() {
-        return commonInfo;
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // Working with alleles
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    /**
-     * @return the reference allele for this context
-     */
-    public Allele getReference() {
-        Allele ref = REF;
-        if ( ref == null )
-            throw new IllegalStateException("BUG: no reference allele found at " + this);
-        return ref;
-    }
-
-
-    /**
-     * @return true if the context is strictly bi-allelic
-     */
-    public boolean isBiallelic() {
-        return getNAlleles() == 2;
-    }
-
-    /**
-     * @return The number of segregating alleles in this context
-     */
-    public int getNAlleles() {
-        return alleles.size();
-    }
-
-    /**
-     * Returns the maximum ploidy of all samples in this VC, or default if there are no genotypes
-     *
-     * This function is caching, so it's only expensive on the first call
-     *
-     * @param defaultPloidy the default ploidy, if all samples are no-called
-     * @return default, or the max ploidy
-     */
-    public int getMaxPloidy(final int defaultPloidy) {
-        return genotypes.getMaxPloidy(defaultPloidy);
-    }
-
-    /**
-     * @return The allele sharing the same bases as this String.  A convenience method; better to use byte[]
-     */
-    public Allele getAllele(String allele) {
-        return getAllele(allele.getBytes());
-    }
-
-    /**
-     * @return The allele sharing the same bases as this byte[], or null if no such allele is present.
-     */
-    public Allele getAllele(byte[] allele) {
-        return Allele.getMatchingAllele(getAlleles(), allele);
-    }
-
-    /**
-     * @return True if this context contains Allele allele, or false otherwise
-     */
-    public boolean hasAllele(final Allele allele) {
-        return hasAllele(allele, false, true);
-    }
-
-    public boolean hasAllele(final Allele allele, final boolean ignoreRefState) {
-        return hasAllele(allele, ignoreRefState, true);
-    }
-
-    public boolean hasAlternateAllele(final Allele allele) {
-        return hasAllele(allele, false, false);
-    }
-
-    public boolean hasAlternateAllele(final Allele allele, final boolean ignoreRefState) {
-        return hasAllele(allele, ignoreRefState, false);
-    }
-
-    private boolean hasAllele(final Allele allele, final boolean ignoreRefState, final boolean considerRefAllele) {
-        if ( (considerRefAllele && allele == REF) || allele == ALT ) // optimization for cached cases
+  public boolean isStructuralIndel() {
+    if (getType() == Type.INDEL) {
+      List<Integer> sizes = getIndelLengths();
+      if (sizes != null) {
+        for (Integer length : sizes) {
+          if (length > MAX_ALLELE_SIZE_FOR_NON_SV) {
             return true;
-
-        final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
-        for ( Allele a : allelesToConsider ) {
-            if ( a.equals(allele, ignoreRefState) )
-                return true;
+          }
         }
+      }
+    }
+    return false;
+  }
 
+  /** @return true if the variant is symbolic or a large indel */
+  public boolean isSymbolicOrSV() {
+    return isSymbolic() || isStructuralIndel();
+  }
+
+  public boolean isMNP() {
+    return getType() == Type.MNP;
+  }
+
+  /**
+   * convenience method for indels
+   *
+   * @return true if this is an mixed variation, false otherwise
+   */
+  public boolean isMixed() {
+    return getType() == Type.MIXED;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // Generic accessors
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  public boolean hasID() {
+    return getID() != VCFConstants.EMPTY_ID_FIELD;
+  }
+
+  public boolean emptyID() {
+    return !hasID();
+  }
+
+  public String getID() {
+    return ID;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // get routines to access context info fields
+  //
+  // ---------------------------------------------------------------------------------------------------------
+  public String getSource() {
+    return commonInfo.getName();
+  }
+
+  public Set<String> getFiltersMaybeNull() {
+    return commonInfo.getFiltersMaybeNull();
+  }
+
+  public Set<String> getFilters() {
+    return commonInfo.getFilters();
+  }
+
+  public boolean isFiltered() {
+    return commonInfo.isFiltered();
+  }
+
+  public boolean isNotFiltered() {
+    return commonInfo.isNotFiltered();
+  }
+
+  public boolean filtersWereApplied() {
+    return commonInfo.filtersWereApplied();
+  }
+
+  public boolean hasLog10PError() {
+    return commonInfo.hasLog10PError();
+  }
+
+  public double getLog10PError() {
+    return commonInfo.getLog10PError();
+  }
+
+  public double getPhredScaledQual() {
+    return commonInfo.getPhredScaledQual();
+  }
+
+  public Map<String, Object> getAttributes() {
+    return commonInfo.getAttributes();
+  }
+
+  public boolean hasAttribute(String key) {
+    return commonInfo.hasAttribute(key);
+  }
+
+  public Object getAttribute(String key) {
+    return commonInfo.getAttribute(key);
+  }
+
+  public Object getAttribute(String key, Object defaultValue) {
+    return commonInfo.getAttribute(key, defaultValue);
+  }
+
+  public String getAttributeAsString(String key, String defaultValue) {
+    return commonInfo.getAttributeAsString(key, defaultValue);
+  }
+
+  public int getAttributeAsInt(String key, int defaultValue) {
+    return commonInfo.getAttributeAsInt(key, defaultValue);
+  }
+
+  public double getAttributeAsDouble(String key, double defaultValue) {
+    return commonInfo.getAttributeAsDouble(key, defaultValue);
+  }
+
+  public boolean getAttributeAsBoolean(String key, boolean defaultValue) {
+    return commonInfo.getAttributeAsBoolean(key, defaultValue);
+  }
+  /**
+   * returns the value as an empty list if the key was not found, as a java.util.List if the value
+   * is a List or an Array, as a Collections.singletonList if there is only one value
+   */
+  public List<Object> getAttributeAsList(String key) {
+    return commonInfo.getAttributeAsList(key);
+  }
+
+  public List<String> getAttributeAsStringList(String key, String defaultValue) {
+    return commonInfo.getAttributeAsStringList(key, defaultValue);
+  }
+
+  public List<Integer> getAttributeAsIntList(String key, int defaultValue) {
+    return commonInfo.getAttributeAsIntList(key, defaultValue);
+  }
+
+  public List<Double> getAttributeAsDoubleList(String key, double defaultValue) {
+    return commonInfo.getAttributeAsDoubleList(key, defaultValue);
+  }
+
+  public CommonInfo getCommonInfo() {
+    return commonInfo;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // Working with alleles
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  /** @return the reference allele for this context */
+  public Allele getReference() {
+    Allele ref = REF;
+    if (ref == null) throw new IllegalStateException("BUG: no reference allele found at " + this);
+    return ref;
+  }
+
+  /** @return true if the context is strictly bi-allelic */
+  public boolean isBiallelic() {
+    return getNAlleles() == 2;
+  }
+
+  /** @return The number of segregating alleles in this context */
+  public int getNAlleles() {
+    return alleles.size();
+  }
+
+  /**
+   * Returns the maximum ploidy of all samples in this VC, or default if there are no genotypes
+   *
+   * <p>This function is caching, so it's only expensive on the first call
+   *
+   * @param defaultPloidy the default ploidy, if all samples are no-called
+   * @return default, or the max ploidy
+   */
+  public int getMaxPloidy(final int defaultPloidy) {
+    return genotypes.getMaxPloidy(defaultPloidy);
+  }
+
+  /**
+   * @return The allele sharing the same bases as this String. A convenience method; better to use
+   *     byte[]
+   */
+  public Allele getAllele(String allele) {
+    return getAllele(allele.getBytes());
+  }
+
+  /**
+   * @return The allele sharing the same bases as this byte[], or null if no such allele is present.
+   */
+  public Allele getAllele(byte[] allele) {
+    return Allele.getMatchingAllele(getAlleles(), allele);
+  }
+
+  /** @return True if this context contains Allele allele, or false otherwise */
+  public boolean hasAllele(final Allele allele) {
+    return hasAllele(allele, false, true);
+  }
+
+  public boolean hasAllele(final Allele allele, final boolean ignoreRefState) {
+    return hasAllele(allele, ignoreRefState, true);
+  }
+
+  public boolean hasAlternateAllele(final Allele allele) {
+    return hasAllele(allele, false, false);
+  }
+
+  public boolean hasAlternateAllele(final Allele allele, final boolean ignoreRefState) {
+    return hasAllele(allele, ignoreRefState, false);
+  }
+
+  private boolean hasAllele(
+      final Allele allele, final boolean ignoreRefState, final boolean considerRefAllele) {
+    if ((considerRefAllele && allele == REF) || allele == ALT) // optimization for cached cases
+    return true;
+
+    final List<Allele> allelesToConsider = considerRefAllele ? getAlleles() : getAlternateAlleles();
+    for (Allele a : allelesToConsider) {
+      if (a.equals(allele, ignoreRefState)) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Gets the alleles. This method should return all of the alleles present at the location,
+   * including the reference allele. There are no constraints imposed on the ordering of alleles in
+   * the set. If the reference is not an allele in this context it will not be included.
+   *
+   * @return the set of alleles
+   */
+  public List<Allele> getAlleles() {
+    return alleles;
+  }
+
+  /**
+   * Gets the alternate alleles. This method should return all the alleles present at the location,
+   * NOT including the reference allele. There are no constraints imposed on the ordering of alleles
+   * in the set.
+   *
+   * @return the set of alternate alleles
+   */
+  public List<Allele> getAlternateAlleles() {
+    return alleles.subList(1, alleles.size());
+  }
+
+  /**
+   * Gets the sizes of the alternate alleles if they are insertion/deletion events, and returns a
+   * list of their sizes
+   *
+   * @return a list of indel lengths ( null if not of type indel or mixed )
+   */
+  public List<Integer> getIndelLengths() {
+    if (getType() != Type.INDEL && getType() != Type.MIXED) {
+      return null;
+    }
+
+    List<Integer> lengths = new ArrayList<>();
+    for (Allele a : getAlternateAlleles()) {
+      lengths.add(a.length() - getReference().length());
+    }
+
+    return lengths;
+  }
+
+  /**
+   * @param i -- the ith allele (from 0 to n - 2 for a context with n alleles including a reference
+   *     allele)
+   * @return the ith non-reference allele in this context
+   * @throws IllegalArgumentException if i is invalid
+   */
+  public Allele getAlternateAllele(int i) {
+    return alleles.get(i + 1);
+  }
+
+  /**
+   * @param other VariantContext whose alleles to compare against
+   * @return true if this VariantContext has the same alleles (both ref and alts) as other,
+   *     regardless of ordering. Otherwise returns false.
+   */
+  public boolean hasSameAllelesAs(final VariantContext other) {
+    return hasSameAlternateAllelesAs(other) && other.getReference().equals(getReference(), false);
+  }
+
+  /**
+   * @param other VariantContext whose alternate alleles to compare against
+   * @return true if this VariantContext has the same alternate alleles as other, regardless of
+   *     ordering. Otherwise returns false.
+   */
+  public boolean hasSameAlternateAllelesAs(final VariantContext other) {
+    List<Allele> thisAlternateAlleles = getAlternateAlleles();
+    List<Allele> otherAlternateAlleles = other.getAlternateAlleles();
+
+    if (thisAlternateAlleles.size() != otherAlternateAlleles.size()) {
+      return false;
+    }
+
+    for (Allele allele : thisAlternateAlleles) {
+      if (!otherAlternateAlleles.contains(allele)) {
         return false;
+      }
     }
 
+    return true;
+  }
 
-    /**
-     * Gets the alleles.  This method should return all of the alleles present at the location,
-     * including the reference allele.  There are no constraints imposed on the ordering of alleles
-     * in the set. If the reference is not an allele in this context it will not be included.
-     *
-     * @return the set of alleles
-     */
-    public List<Allele> getAlleles() { return alleles; }
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // Working with genotypes
+  //
+  // ---------------------------------------------------------------------------------------------------------
 
-    /**
-     * Gets the alternate alleles.  This method should return all the alleles present at the location,
-     * NOT including the reference allele.  There are no constraints imposed on the ordering of alleles
-     * in the set.
-     *
-     * @return the set of alternate alleles
-     */
-    public List<Allele> getAlternateAlleles() {
-        return alleles.subList(1, alleles.size());
+  /** @return the number of samples in the context */
+  public int getNSamples() {
+    return genotypes.size();
+  }
+
+  /** @return true if the context has associated genotypes */
+  public boolean hasGenotypes() {
+    return !genotypes.isEmpty();
+  }
+
+  public boolean hasGenotypes(Collection<String> sampleNames) {
+    return genotypes.containsSamples(sampleNames);
+  }
+
+  /** @return set of all Genotypes associated with this context */
+  public GenotypesContext getGenotypes() {
+    return genotypes;
+  }
+
+  public Iterable<Genotype> getGenotypesOrderedByName() {
+    return genotypes.iterateInSampleNameOrder();
+  }
+
+  public Iterable<Genotype> getGenotypesOrderedBy(Iterable<String> sampleOrdering) {
+    return genotypes.iterateInSampleNameOrder(sampleOrdering);
+  }
+
+  /**
+   * Returns a map from sampleName -&gt; Genotype for the genotype associated with sampleName.
+   * Returns a map for consistency with the multi-get function.
+   *
+   * @param sampleName the sample name
+   * @return mapping from sample name to genotype
+   * @throws IllegalArgumentException if sampleName isn't bound to a genotype
+   */
+  public GenotypesContext getGenotypes(String sampleName) {
+    return getGenotypes(Collections.singleton(sampleName));
+  }
+
+  /**
+   * Returns a map from sampleName -&gt; Genotype for each sampleName in sampleNames. Returns a map
+   * for consistency with the multi-get function.
+   *
+   * <p>For testing convenience only
+   *
+   * @param sampleNames a unique list of sample names
+   * @return subsetting genotypes context
+   * @throws IllegalArgumentException if sampleName isn't bound to a genotype
+   */
+  protected GenotypesContext getGenotypes(Collection<String> sampleNames) {
+    return getGenotypes().subsetToSamples(new HashSet<>(sampleNames));
+  }
+
+  public GenotypesContext getGenotypes(Set<String> sampleNames) {
+    return getGenotypes().subsetToSamples(sampleNames);
+  }
+
+  /** @return the set of all sample names in this context, not ordered */
+  public Set<String> getSampleNames() {
+    return getGenotypes().getSampleNames();
+  }
+
+  public List<String> getSampleNamesOrderedByName() {
+    return getGenotypes().getSampleNamesOrderedByName();
+  }
+
+  /**
+   * @param sample the sample name
+   * @return the Genotype associated with the given sample in this context or null if the sample is
+   *     not in this context
+   */
+  public Genotype getGenotype(String sample) {
+    return getGenotypes().get(sample);
+  }
+
+  public boolean hasGenotype(String sample) {
+    return getGenotypes().containsSample(sample);
+  }
+
+  /**
+   * @param ith the sample index
+   * @return the ith genotype in this context or null if there aren't that many genotypes
+   */
+  public Genotype getGenotype(int ith) {
+    return genotypes.size() > ith ? genotypes.get(ith) : null;
+  }
+
+  /**
+   * Returns the number of chromosomes carrying any allele in the genotypes (i.e., excluding
+   * NO_CALLS)
+   *
+   * @return chromosome count
+   */
+  public int getCalledChrCount() {
+    final Set<String> noSamples = Collections.emptySet();
+    return getCalledChrCount(noSamples);
+  }
+
+  /**
+   * Returns the number of chromosomes carrying any allele in the genotypes (i.e., excluding
+   * NO_CALLS)
+   *
+   * @param sampleIds IDs of samples to take into account. If empty then all samples are included.
+   * @return chromosome count
+   */
+  public int getCalledChrCount(Set<String> sampleIds) {
+    int n = 0;
+    GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
+
+    for (final Genotype g : genotypes) {
+      for (final Allele a : g.getAlleles()) n += a.isNoCall() ? 0 : 1;
     }
 
-    /**
-     * Gets the sizes of the alternate alleles if they are insertion/deletion events, and returns a list of their sizes
-     *
-     * @return a list of indel lengths ( null if not of type indel or mixed )
-     */
-    public List<Integer> getIndelLengths() {
-        if ( getType() != Type.INDEL && getType() != Type.MIXED ) {
-            return null;
+    return n;
+  }
+
+  /**
+   * Returns the number of chromosomes carrying allele A in the genotypes
+   *
+   * @param a allele
+   * @return chromosome count
+   */
+  public int getCalledChrCount(Allele a) {
+    return getCalledChrCount(a, new HashSet<>(0));
+  }
+
+  /**
+   * Returns the number of chromosomes carrying allele A in the genotypes
+   *
+   * @param a allele
+   * @param sampleIds - IDs of samples to take into account. If empty then all samples are included.
+   * @return chromosome count
+   */
+  public int getCalledChrCount(Allele a, Set<String> sampleIds) {
+    int n = 0;
+    GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
+
+    for (final Genotype g : genotypes) {
+      n += g.countAllele(a);
+    }
+
+    return n;
+  }
+
+  /**
+   * Genotype-specific functions -- are the genotypes monomorphic w.r.t. to the alleles segregating
+   * at this site? That is, is the number of alternate alleles among all fo the genotype == 0?
+   *
+   * @return true if it's monomorphic
+   */
+  public boolean isMonomorphicInSamples() {
+    if (monomorphic == null)
+      monomorphic =
+          !isVariant()
+              || (hasGenotypes() && getCalledChrCount(getReference()) == getCalledChrCount());
+    return monomorphic;
+  }
+
+  /**
+   * Genotype-specific functions -- are the genotypes polymorphic w.r.t. to the alleles segregating
+   * at this site? That is, is the number of alternate alleles among all fo the genotype &gt; 0?
+   *
+   * @return true if it's polymorphic
+   */
+  public boolean isPolymorphicInSamples() {
+    return !isMonomorphicInSamples();
+  }
+
+  private void calculateGenotypeCounts() {
+    if (genotypeCounts == null) {
+      genotypeCounts = new int[GenotypeType.values().length];
+
+      for (final Genotype g : getGenotypes()) {
+        genotypeCounts[g.getType().ordinal()]++;
+      }
+    }
+  }
+
+  /**
+   * Genotype-specific functions -- how many no-calls are there in the genotypes?
+   *
+   * @return number of no calls
+   */
+  public int getNoCallCount() {
+    calculateGenotypeCounts();
+    return genotypeCounts[GenotypeType.NO_CALL.ordinal()];
+  }
+
+  /**
+   * Genotype-specific functions -- how many hom ref calls are there in the genotypes?
+   *
+   * @return number of hom ref calls
+   */
+  public int getHomRefCount() {
+    calculateGenotypeCounts();
+    return genotypeCounts[GenotypeType.HOM_REF.ordinal()];
+  }
+
+  /**
+   * Genotype-specific functions -- how many het calls are there in the genotypes?
+   *
+   * @return number of het calls
+   */
+  public int getHetCount() {
+    calculateGenotypeCounts();
+    return genotypeCounts[GenotypeType.HET.ordinal()];
+  }
+
+  /**
+   * Genotype-specific functions -- how many hom var calls are there in the genotypes?
+   *
+   * @return number of hom var calls
+   */
+  public int getHomVarCount() {
+    calculateGenotypeCounts();
+    return genotypeCounts[GenotypeType.HOM_VAR.ordinal()];
+  }
+
+  /**
+   * Genotype-specific functions -- how many mixed calls are there in the genotypes?
+   *
+   * @return number of mixed calls
+   */
+  public int getMixedCount() {
+    calculateGenotypeCounts();
+    return genotypeCounts[GenotypeType.MIXED.ordinal()];
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // validation: extra-strict validation routines for paranoid users
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  /**
+   * Run all extra-strict validation tests on a Variant Context object
+   *
+   * @param reportedReference the reported reference allele
+   * @param observedReference the observed reference allele
+   * @param rsIDs the true dbSNP IDs
+   */
+  public void extraStrictValidation(
+      final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
+    // validate the reference
+    validateReferenceBases(reportedReference, observedReference);
+
+    // validate the RS IDs
+    validateRSIDs(rsIDs);
+
+    // validate the alternate alleles
+    validateAlternateAlleles();
+
+    // validate the AN and AC fields
+    validateChromosomeCounts();
+
+    // TODO: implement me
+    // checkReferenceTrack();
+  }
+
+  public void validateReferenceBases(
+      final Allele reportedReference, final Allele observedReference) {
+    if (reportedReference != null && !reportedReference.basesMatch(observedReference)) {
+      throw new TribbleException.InternalCodecException(
+          String.format(
+              "the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s",
+              getContig(),
+              getStart(),
+              observedReference.getBaseString(),
+              reportedReference.getBaseString()));
+    }
+  }
+
+  public void validateRSIDs(Set<String> rsIDs) {
+    if (rsIDs != null && hasID()) {
+      for (String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR)) {
+        if (id.startsWith("rs") && !rsIDs.contains(id))
+          throw new TribbleException.InternalCodecException(
+              String.format(
+                  "the rsID %s for the record at position %s:%d is not in dbSNP",
+                  id, getContig(), getStart()));
+      }
+    }
+  }
+
+  public void validateAlternateAlleles() {
+    if (!hasGenotypes()) return;
+
+    // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
+    // (we exclude symbolic alleles because it's commonly expected that they don't show up in the
+    // genotypes, e.g. with GATK gVCFs)
+    final List<Allele> reportedAlleles = new ArrayList<Allele>();
+    for (final Allele allele : getAlleles()) {
+      if (!allele.isSymbolic()) reportedAlleles.add(allele);
+    }
+
+    // maintain a list of non-symbolic alleles observed in the genotypes
+    final Set<Allele> observedAlleles = new HashSet<>();
+    observedAlleles.add(getReference());
+    for (final Genotype g : getGenotypes()) {
+      if (g.isCalled()) {
+        for (final Allele allele : g.getAlleles()) {
+          if (!allele.isSymbolic()) observedAlleles.add(allele);
         }
+      }
+    }
+    if (observedAlleles.contains(Allele.NO_CALL)) observedAlleles.remove(Allele.NO_CALL);
 
-        List<Integer> lengths = new ArrayList<>();
-        for ( Allele a : getAlternateAlleles() ) {
-            lengths.add(a.length() - getReference().length());
+    if (reportedAlleles.size() != observedAlleles.size())
+      throw new TribbleException.InternalCodecException(
+          String.format(
+              "one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes",
+              getContig(), getStart()));
+
+    int originalSize = reportedAlleles.size();
+    // take the intersection and see if things change
+    observedAlleles.retainAll(reportedAlleles);
+    if (observedAlleles.size() != originalSize)
+      throw new TribbleException.InternalCodecException(
+          String.format(
+              "one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes",
+              getContig(), getStart()));
+  }
+
+  private void validateAttributeIsExpectedSize(
+      final String attributeKey, final int numAlternateAlleles) {
+    final List<Object> actualValues = getAttributeAsList(attributeKey);
+    if (!actualValues.isEmpty()) {
+      // always have at least one actual value
+      final int expectedValuesSize = numAlternateAlleles > 0 ? numAlternateAlleles : 1;
+      if (actualValues.size() != expectedValuesSize) {
+        throw new TribbleException.InternalCodecException(
+            String.format(
+                "the %s tag has the incorrect number of records at position %s:%d, %d vs. %d",
+                attributeKey, getContig(), getStart(), actualValues.size(), expectedValuesSize));
+      }
+    }
+  }
+
+  public void validateChromosomeCounts() {
+    final int numberOfAlternateAlleles = alleles.size() - 1;
+    validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
+    validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
+
+    if (!hasGenotypes()) return;
+
+    // AN
+    if (hasAttribute(VCFConstants.ALLELE_NUMBER_KEY)) {
+      final int reportedAN =
+          Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
+      final int observedAN = getCalledChrCount();
+      if (reportedAN != observedAN)
+        throw new TribbleException.InternalCodecException(
+            String.format(
+                "the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d",
+                getContig(), getStart(), reportedAN, observedAN));
+    }
+
+    // AC
+    if (hasAttribute(VCFConstants.ALLELE_COUNT_KEY)) {
+      final ArrayList<Integer> observedACs = new ArrayList<>();
+
+      // if there are alternate alleles, record the relevant tags
+      if (numberOfAlternateAlleles > 0) {
+        for (Allele allele : getAlternateAlleles()) {
+          observedACs.add(getCalledChrCount(allele));
         }
+      } else { // otherwise, set them to 0
+        observedACs.add(0);
+      }
 
-        return lengths;
+      final List<Object> reportedACs = getAttributeAsList(VCFConstants.ALLELE_COUNT_KEY);
+
+      for (int i = 0; i < observedACs.size(); i++) {
+        // need to cast to int to make sure we don't have an issue below with object equals (earlier
+        // bug) - EB
+        final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
+        if (reportedAC != observedACs.get(i))
+          throw new TribbleException.InternalCodecException(
+              String.format(
+                  "the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d",
+                  getContig(), getStart(), reportedAC, observedACs.get(i)));
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // validation: the normal validation routines are called automatically upon creation of the VC
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  private boolean validate(final EnumSet<Validation> validationToPerform) {
+    validateStop();
+    for (final Validation val : validationToPerform) {
+      switch (val) {
+        case ALLELES:
+          validateAlleles();
+          break;
+        case GENOTYPES:
+          validateGenotypes();
+          break;
+        default:
+          throw new IllegalArgumentException("Unexpected validation mode " + val);
+      }
     }
 
-    /**
-     * @param i -- the ith allele (from 0 to n - 2 for a context with n alleles including a reference allele)
-     * @return the ith non-reference allele in this context
-     * @throws IllegalArgumentException if i is invalid
-     */
-    public Allele getAlternateAllele(int i) {
-        return alleles.get(i+1);
-    }
+    return true;
+  }
 
-    /**
-     * @param  other  VariantContext whose alleles to compare against
-     * @return true if this VariantContext has the same alleles (both ref and alts) as other,
-     *         regardless of ordering. Otherwise returns false.
-     */
-    public boolean hasSameAllelesAs ( final VariantContext other ) {
-        return hasSameAlternateAllelesAs(other) && other.getReference().equals(getReference(), false);
-    }
-
-    /**
-     * @param  other  VariantContext whose alternate alleles to compare against
-     * @return true if this VariantContext has the same alternate alleles as other,
-     *         regardless of ordering. Otherwise returns false.
-     */
-    public boolean hasSameAlternateAllelesAs ( final VariantContext other ) {
-        List<Allele> thisAlternateAlleles = getAlternateAlleles();
-        List<Allele> otherAlternateAlleles = other.getAlternateAlleles();
-
-        if ( thisAlternateAlleles.size() != otherAlternateAlleles.size() ) {
-            return false;
-        }
-
-        for ( Allele allele : thisAlternateAlleles ) {
-            if ( ! otherAlternateAlleles.contains(allele) ) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // Working with genotypes
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    /**
-     * @return the number of samples in the context
-     */
-    public int getNSamples() {
-        return genotypes.size();
-    }
-
-    /**
-     * @return true if the context has associated genotypes
-     */
-    public boolean hasGenotypes() {
-        return ! genotypes.isEmpty();
-    }
-
-    public boolean hasGenotypes(Collection<String> sampleNames) {
-        return genotypes.containsSamples(sampleNames);
-    }
-
-    /**
-     * @return set of all Genotypes associated with this context
-     */
-    public GenotypesContext getGenotypes() {
-        return genotypes;
-    }
-
-    public Iterable<Genotype> getGenotypesOrderedByName() {
-        return genotypes.iterateInSampleNameOrder();
-    }
-
-    public Iterable<Genotype> getGenotypesOrderedBy(Iterable<String> sampleOrdering) {
-        return genotypes.iterateInSampleNameOrder(sampleOrdering);
-    }
-
-    /**
-     * Returns a map from sampleName -&gt; Genotype for the genotype associated with sampleName.  Returns a map
-     * for consistency with the multi-get function.
-     *
-     * @param sampleName   the sample name
-     * @return mapping from sample name to genotype
-     * @throws IllegalArgumentException if sampleName isn't bound to a genotype
-     */
-    public GenotypesContext getGenotypes(String sampleName) {
-        return getGenotypes(Collections.singleton(sampleName));
-    }
-
-    /**
-     * Returns a map from sampleName -&gt; Genotype for each sampleName in sampleNames.  Returns a map
-     * for consistency with the multi-get function.
-     *
-     * For testing convenience only
-     *
-     * @param sampleNames a unique list of sample names
-     * @return subsetting genotypes context
-     * @throws IllegalArgumentException if sampleName isn't bound to a genotype
-     */
-    protected GenotypesContext getGenotypes(Collection<String> sampleNames) {
-        return getGenotypes().subsetToSamples(new HashSet<>(sampleNames));
-    }
-
-    public GenotypesContext getGenotypes(Set<String> sampleNames) {
-        return getGenotypes().subsetToSamples(sampleNames);
-    }
-
-
-    /**
-     * @return the set of all sample names in this context, not ordered
-     */
-    public Set<String> getSampleNames() {
-        return getGenotypes().getSampleNames();
-    }
-
-    public List<String> getSampleNamesOrderedByName() {
-        return getGenotypes().getSampleNamesOrderedByName();
-    }
-
-    /**
-     * @param sample  the sample name
-     *
-     * @return the Genotype associated with the given sample in this context or null if the sample is not in this context
-     */
-    public Genotype getGenotype(String sample) {
-        return getGenotypes().get(sample);
-    }
-
-    public boolean hasGenotype(String sample) {
-        return getGenotypes().containsSample(sample);
-    }
-
-    /**
-     * @param ith the sample index
-     *
-     * @return the ith genotype in this context or null if there aren't that many genotypes
-     */
-    public Genotype getGenotype(int ith) {
-        return genotypes.size() > ith ? genotypes.get(ith) : null;
-    }
-
-    /**
-     * Returns the number of chromosomes carrying any allele in the genotypes (i.e., excluding NO_CALLS)
-     *
-     * @return chromosome count
-     */
-    public int getCalledChrCount() {
-        final Set<String> noSamples = Collections.emptySet();
-        return  getCalledChrCount(noSamples);
-    }
-
-    /**
-     * Returns the number of chromosomes carrying any allele in the genotypes (i.e., excluding NO_CALLS)
-     *
-     * @param sampleIds IDs of samples to take into account. If empty then all samples are included.
-     * @return chromosome count
-     */
-    public int getCalledChrCount(Set<String> sampleIds) {
-        int n = 0;
-        GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
-
-        for ( final Genotype g : genotypes) {
-            for ( final Allele a : g.getAlleles() )
-                n += a.isNoCall() ? 0 : 1;
-        }
-
-        return n;
-    }
-
-    /**
-     * Returns the number of chromosomes carrying allele A in the genotypes
-     *
-     * @param a allele
-     * @return chromosome count
-     */
-    public int getCalledChrCount(Allele a) {
-        return getCalledChrCount(a, new HashSet<>(0));
-    }
-
-    /**
-     * Returns the number of chromosomes carrying allele A in the genotypes
-     *
-     * @param a allele
-     * @param sampleIds - IDs of samples to take into account. If empty then all samples are included.
-     * @return chromosome count
-     */
-    public int getCalledChrCount(Allele a, Set<String> sampleIds) {
-        int n = 0;
-        GenotypesContext genotypes = sampleIds.isEmpty() ? getGenotypes() : getGenotypes(sampleIds);
-
-        for ( final Genotype g : genotypes ) {
-            n += g.countAllele(a);
-        }
-
-        return n;
-    }
-
-    /**
-     * Genotype-specific functions -- are the genotypes monomorphic w.r.t. to the alleles segregating at this
-     * site?  That is, is the number of alternate alleles among all fo the genotype == 0?
-     *
-     * @return true if it's monomorphic
-     */
-    public boolean isMonomorphicInSamples() {
-        if ( monomorphic == null )
-            monomorphic = ! isVariant() || (hasGenotypes() && getCalledChrCount(getReference()) == getCalledChrCount());
-        return monomorphic;
-    }
-
-    /**
-     * Genotype-specific functions -- are the genotypes polymorphic w.r.t. to the alleles segregating at this
-     * site?  That is, is the number of alternate alleles among all fo the genotype &gt; 0?
-     *
-     * @return true if it's polymorphic
-     */
-    public boolean isPolymorphicInSamples() {
-        return ! isMonomorphicInSamples();
-    }
-
-    private void calculateGenotypeCounts() {
-        if ( genotypeCounts == null ) {
-            genotypeCounts = new int[GenotypeType.values().length];
-
-            for ( final Genotype g : getGenotypes() ) {
-                genotypeCounts[g.getType().ordinal()]++;
-            }
-        }
-    }
-
-    /**
-     * Genotype-specific functions -- how many no-calls are there in the genotypes?
-     *
-     * @return number of no calls
-     */
-    public int getNoCallCount() {
-        calculateGenotypeCounts();
-        return genotypeCounts[GenotypeType.NO_CALL.ordinal()];
-    }
-
-    /**
-     * Genotype-specific functions -- how many hom ref calls are there in the genotypes?
-     *
-     * @return number of hom ref calls
-     */
-    public int getHomRefCount() {
-        calculateGenotypeCounts();
-        return genotypeCounts[GenotypeType.HOM_REF.ordinal()];
-    }
-
-    /**
-     * Genotype-specific functions -- how many het calls are there in the genotypes?
-     *
-     * @return number of het calls
-     */
-    public int getHetCount() {
-        calculateGenotypeCounts();
-        return genotypeCounts[GenotypeType.HET.ordinal()];
-    }
-
-    /**
-     * Genotype-specific functions -- how many hom var calls are there in the genotypes?
-     *
-     * @return number of hom var calls
-     */
-    public int getHomVarCount() {
-        calculateGenotypeCounts();
-        return genotypeCounts[GenotypeType.HOM_VAR.ordinal()];
-    }
-
-    /**
-     * Genotype-specific functions -- how many mixed calls are there in the genotypes?
-     *
-     * @return number of mixed calls
-     */
-    public int getMixedCount() {
-        calculateGenotypeCounts();
-        return genotypeCounts[GenotypeType.MIXED.ordinal()];
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // validation: extra-strict validation routines for paranoid users
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    /**
-     * Run all extra-strict validation tests on a Variant Context object
-     *
-     * @param reportedReference   the reported reference allele
-     * @param observedReference     the observed reference allele
-     * @param rsIDs               the true dbSNP IDs
-     */
-    public void extraStrictValidation(final Allele reportedReference, final Allele observedReference, final Set<String> rsIDs) {
-        // validate the reference
-        validateReferenceBases(reportedReference, observedReference);
-
-        // validate the RS IDs
-        validateRSIDs(rsIDs);
-
-        // validate the alternate alleles
-        validateAlternateAlleles();
-
-        // validate the AN and AC fields
-        validateChromosomeCounts();
-
-        // TODO: implement me
-        //checkReferenceTrack();
-    }
-
-    public void validateReferenceBases(final Allele reportedReference, final Allele observedReference) {
-        if ( reportedReference != null && !reportedReference.basesMatch(observedReference) ) {
-            throw new TribbleException.InternalCodecException(String.format("the REF allele is incorrect for the record at position %s:%d, fasta says %s vs. VCF says %s", getContig(), getStart(), observedReference.getBaseString(), reportedReference.getBaseString()));
-        }
-    }
-
-    public void validateRSIDs(Set<String> rsIDs) {
-        if ( rsIDs != null && hasID() ) {
-            for ( String id : getID().split(VCFConstants.ID_FIELD_SEPARATOR) ) {
-                if ( id.startsWith("rs") && !rsIDs.contains(id) )
-                    throw new TribbleException.InternalCodecException(String.format("the rsID %s for the record at position %s:%d is not in dbSNP", id, getContig(), getStart()));
-            }
-        }
-    }
-
-    public void validateAlternateAlleles() {
-        if ( !hasGenotypes() )
-            return;
-
-        // maintain a list of non-symbolic alleles expected in the REF and ALT fields of the record
-        // (we exclude symbolic alleles because it's commonly expected that they don't show up in the genotypes, e.g. with GATK gVCFs)
-        final List<Allele> reportedAlleles = new ArrayList<Allele>();
-        for ( final Allele allele : getAlleles() ) {
-            if ( !allele.isSymbolic() )
-                reportedAlleles.add(allele);
-        }
-
-        // maintain a list of non-symbolic alleles observed in the genotypes
-        final Set<Allele> observedAlleles = new HashSet<>();
-        observedAlleles.add(getReference());
-        for ( final Genotype g : getGenotypes() ) {
-            if ( g.isCalled() ) {
-                for ( final Allele allele : g.getAlleles() ) {
-                    if ( !allele.isSymbolic() )
-                        observedAlleles.add(allele);
-                }
-            }
-        }
-        if ( observedAlleles.contains(Allele.NO_CALL) )
-            observedAlleles.remove(Allele.NO_CALL);
-
-        if ( reportedAlleles.size() != observedAlleles.size() )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
-
-        int originalSize = reportedAlleles.size();
-        // take the intersection and see if things change
-        observedAlleles.retainAll(reportedAlleles);
-        if ( observedAlleles.size() != originalSize )
-            throw new TribbleException.InternalCodecException(String.format("one or more of the ALT allele(s) for the record at position %s:%d are not observed at all in the sample genotypes", getContig(), getStart()));
-    }
-
-    private void validateAttributeIsExpectedSize(final String attributeKey, final int numAlternateAlleles ) {
-        final List<Object> actualValues = getAttributeAsList(attributeKey);
-        if (!actualValues.isEmpty()) {
-            // always have at least one actual value
-            final int expectedValuesSize = numAlternateAlleles > 0 ? numAlternateAlleles : 1;
-            if (actualValues.size() != expectedValuesSize) {
-                throw new TribbleException.InternalCodecException(String.format("the %s tag has the incorrect number of records at position %s:%d, %d vs. %d", attributeKey, getContig(), getStart(), actualValues.size(), expectedValuesSize));
-            }
-        }
-    }
-
-    public void validateChromosomeCounts() {
-        final int numberOfAlternateAlleles = alleles.size() - 1;
-        validateAttributeIsExpectedSize(VCFConstants.ALLELE_COUNT_KEY, numberOfAlternateAlleles);
-        validateAttributeIsExpectedSize(VCFConstants.ALLELE_FREQUENCY_KEY, numberOfAlternateAlleles);
-
-        if ( !hasGenotypes() )
-            return;
-
-        // AN
-        if ( hasAttribute(VCFConstants.ALLELE_NUMBER_KEY) ) {
-            final int reportedAN = Integer.valueOf(getAttribute(VCFConstants.ALLELE_NUMBER_KEY).toString());
-            final int observedAN = getCalledChrCount();
-            if ( reportedAN != observedAN )
-                throw new TribbleException.InternalCodecException(String.format("the Allele Number (AN) tag is incorrect for the record at position %s:%d, %d vs. %d", getContig(), getStart(), reportedAN, observedAN));
-        }
-
-        // AC
-        if ( hasAttribute(VCFConstants.ALLELE_COUNT_KEY) ) {
-            final ArrayList<Integer> observedACs = new ArrayList<>();
-
-            // if there are alternate alleles, record the relevant tags
-            if ( numberOfAlternateAlleles > 0 ) {
-                for ( Allele allele : getAlternateAlleles() ) {
-                    observedACs.add(getCalledChrCount(allele));
-                }
-            }
-            else { // otherwise, set them to 0
-                observedACs.add(0);
-            }
-
-            final List<Object> reportedACs = getAttributeAsList(VCFConstants.ALLELE_COUNT_KEY);
-
-            for (int i = 0; i < observedACs.size(); i++) {
-                // need to cast to int to make sure we don't have an issue below with object equals (earlier bug) - EB
-                final int reportedAC = Integer.valueOf(reportedACs.get(i).toString());
-                if ( reportedAC != observedACs.get(i) )
-                    throw new TribbleException.InternalCodecException(String.format("the Allele Count (AC) tag is incorrect for the record at position %s:%d, %s vs. %d", getContig(), getStart(), reportedAC, observedACs.get(i)));
-            }
-        }
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // validation: the normal validation routines are called automatically upon creation of the VC
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    private boolean validate(final EnumSet<Validation> validationToPerform) {
-        validateStop();
-        for (final Validation val : validationToPerform ) {
-            switch (val) {
-                case ALLELES: validateAlleles(); break;
-                case GENOTYPES: validateGenotypes(); break;
-                default: throw new IllegalArgumentException("Unexpected validation mode " + val);
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Check that getEnd() == END from the info field, if it's present
-     */
-    private void validateStop() {
-        if ( hasAttribute(VCFConstants.END_KEY) ) {
-            final int end = getAttributeAsInt(VCFConstants.END_KEY, -1);
-            assert end != -1;
-            if ( end != getEnd() ) {
-                final String message = "Badly formed variant context at location " + getContig() + ":"
-                        + getStart() + "; getEnd() was " + getEnd()
-                        + " but this VariantContext contains an END key with value " + end;
-                if ( GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END ) {
-                    System.err.println(message);
-                }
-                else {
-                    throw new TribbleException(message);
-                }
-            }
+  /** Check that getEnd() == END from the info field, if it's present */
+  private void validateStop() {
+    if (hasAttribute(VCFConstants.END_KEY)) {
+      final int end = getAttributeAsInt(VCFConstants.END_KEY, -1);
+      assert end != -1;
+      if (end != getEnd()) {
+        final String message =
+            "Badly formed variant context at location "
+                + getContig()
+                + ":"
+                + getStart()
+                + "; getEnd() was "
+                + getEnd()
+                + " but this VariantContext contains an END key with value "
+                + end;
+        if (GeneralUtils.DEBUG_MODE_ENABLED && WARN_ABOUT_BAD_END) {
+          System.err.println(message);
         } else {
-            final long length = (stop - start) + 1;
-            if ( ! hasSymbolicAlleles() && length != getReference().length() ) {
-                throw new IllegalStateException("BUG: GenomeLoc " + contig + ":" + start + "-" + stop + " has a size == " + length + " but the variation reference allele has length " + getReference().length() + " this = " + this);
-            }
+          throw new TribbleException(message);
         }
+      }
+    } else {
+      final long length = (stop - start) + 1;
+      if (!hasSymbolicAlleles() && length != getReference().length()) {
+        throw new IllegalStateException(
+            "BUG: GenomeLoc "
+                + contig
+                + ":"
+                + start
+                + "-"
+                + stop
+                + " has a size == "
+                + length
+                + " but the variation reference allele has length "
+                + getReference().length()
+                + " this = "
+                + this);
+      }
+    }
+  }
+
+  private void validateAlleles() {
+
+    boolean alreadySeenRef = false;
+
+    for (final Allele allele : alleles) {
+      // make sure there's only one reference allele
+      if (allele.isReference()) {
+        if (alreadySeenRef)
+          throw new IllegalArgumentException(
+              "BUG: Received two reference tagged alleles in VariantContext "
+                  + alleles
+                  + " this="
+                  + this);
+        alreadySeenRef = true;
+      }
+
+      if (allele.isNoCall()) {
+        throw new IllegalArgumentException(
+            "BUG: Cannot add a no call allele to a variant context " + alleles + " this=" + this);
+      }
     }
 
-    private void validateAlleles() {
+    // make sure there's one reference allele
+    if (!alreadySeenRef)
+      throw new IllegalArgumentException("No reference allele found in VariantContext");
+  }
 
-        boolean alreadySeenRef = false;
+  private void validateGenotypes() {
+    if (this.genotypes == null) throw new IllegalStateException("Genotypes is null");
 
-        for ( final Allele allele : alleles ) {
-            // make sure there's only one reference allele
-            if ( allele.isReference() ) {
-                if ( alreadySeenRef ) throw new IllegalArgumentException("BUG: Received two reference tagged alleles in VariantContext " + alleles + " this=" + this);
-                alreadySeenRef = true;
-            }
-
-            if ( allele.isNoCall() ) {
-                throw new IllegalArgumentException("BUG: Cannot add a no call allele to a variant context " + alleles + " this=" + this);
-            }
+    for (final Genotype g : this.genotypes) {
+      if (g.isAvailable()) {
+        for (Allele gAllele : g.getAlleles()) {
+          if (!hasAllele(gAllele) && gAllele.isCalled())
+            throw new IllegalStateException(
+                "Allele in genotype " + gAllele + " not in the variant context " + alleles);
         }
+      }
+    }
+  }
 
-        // make sure there's one reference allele
-        if ( ! alreadySeenRef )
-            throw new IllegalArgumentException("No reference allele found in VariantContext");
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // utility routines
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  private void determineType() {
+    if (type == null) {
+      switch (getNAlleles()) {
+        case 0:
+          throw new IllegalStateException(
+              "Unexpected error: requested type of VariantContext with no alleles!" + this);
+        case 1:
+          // note that this doesn't require a reference allele.  You can be monomorphic independent
+          // of having a
+          // reference allele
+          type = Type.NO_VARIATION;
+          break;
+        default:
+          determinePolymorphicType();
+      }
+    }
+  }
+
+  private void determinePolymorphicType() {
+    type = null;
+
+    // do a pairwise comparison of all alleles against the reference allele
+    for (Allele allele : alleles) {
+      if (allele == REF) continue;
+
+      // find the type of this allele relative to the reference
+      Type biallelicType = typeOfBiallelicVariant(REF, allele);
+
+      // for the first alternate allele, set the type to be that one
+      if (type == null) {
+        type = biallelicType;
+      }
+      // if the type of this allele is different from that of a previous one, assign it the MIXED
+      // type and quit
+      else if (biallelicType != type) {
+        type = Type.MIXED;
+        return;
+      }
+    }
+  }
+
+  private static Type typeOfBiallelicVariant(Allele ref, Allele allele) {
+    if (ref.isSymbolic())
+      throw new IllegalStateException(
+          "Unexpected error: encountered a record with a symbolic reference allele");
+
+    if (allele.isSymbolic()) return Type.SYMBOLIC;
+
+    if (ref.length() == allele.length()) {
+      if (allele.length() == 1) return Type.SNP;
+      else return Type.MNP;
     }
 
-    private void validateGenotypes() {
-        if ( this.genotypes == null ) throw new IllegalStateException("Genotypes is null");
+    // Important note: previously we were checking that one allele is the prefix of the other.
+    // However, that's not an
+    // appropriate check as can be seen from the following example:
+    // REF = CTTA and ALT = C,CT,CA
+    // This should be assigned the INDEL type but was being marked as a MIXED type because of the
+    // prefix check.
+    // In truth, it should be absolutely impossible to return a MIXED type from this method because
+    // it simply
+    // performs a pairwise comparison of a single alternate allele against the reference allele
+    // (whereas the MIXED type
+    // is reserved for cases of multiple alternate alleles of different types).  Therefore, if we've
+    // reached this point
+    // in the code (so we're not a SNP, MNP, or symbolic allele), we absolutely must be an INDEL.
 
-        for ( final Genotype g : this.genotypes ) {
-            if ( g.isAvailable() ) {
-                for ( Allele gAllele : g.getAlleles() ) {
-                    if ( ! hasAllele(gAllele) && gAllele.isCalled() )
-                        throw new IllegalStateException("Allele in genotype " + gAllele + " not in the variant context " + alleles);
-                }
-            }
+    return Type.INDEL;
+
+    // old incorrect logic:
+    // if (oneIsPrefixOfOther(ref, allele))
+    //     return Type.INDEL;
+    // else
+    //     return Type.MIXED;
+  }
+
+  public String toString() {
+    // Note: passing genotypes to String.format() will implicitly decode the genotypes
+    // This may not be desirable, so don't decode by default
+
+    return genotypes.isLazyWithData() ? toStringUnparsedGenotypes() : toStringDecodeGenotypes();
+  }
+
+  public String toStringDecodeGenotypes() {
+    return String.format(
+        "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
+        getSource(),
+        contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
+        this.getType(),
+        ParsingUtils.sortList(this.getAlleles()),
+        ParsingUtils.sortedString(this.getAttributes()),
+        this.getGenotypes(),
+        String.join(",", commonInfo.getFilters()));
+  }
+
+  private String toStringUnparsedGenotypes() {
+    return String.format(
+        "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
+        getSource(),
+        contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
+        this.getType(),
+        ParsingUtils.sortList(this.getAlleles()),
+        ParsingUtils.sortedString(this.getAttributes()),
+        ((LazyGenotypesContext) this.genotypes).getUnparsedGenotypeData(),
+        String.join(",", commonInfo.getFilters()));
+  }
+
+  public String toStringWithoutGenotypes() {
+    return String.format(
+        "[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
+        getSource(),
+        contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
+        hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
+        this.getType(),
+        ParsingUtils.sortList(this.getAlleles()),
+        ParsingUtils.sortedString(this.getAttributes()),
+        String.join(",", commonInfo.getFilters()));
+  }
+
+  // protected basic manipulation routines
+  private static List<Allele> makeAlleles(Collection<Allele> alleles) {
+    final List<Allele> alleleList = new ArrayList<>(alleles.size());
+
+    boolean sawRef = false;
+    for (final Allele a : alleles) {
+      for (final Allele b : alleleList) {
+        if (a.equals(b, true))
+          throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
+      }
+
+      // deal with the case where the first allele isn't the reference
+      if (a.isReference()) {
+        if (sawRef)
+          throw new IllegalArgumentException(
+              "Alleles for a VariantContext must contain at most one reference allele: " + alleles);
+        alleleList.add(0, a);
+        sawRef = true;
+      } else alleleList.add(a);
+    }
+
+    if (alleleList.isEmpty())
+      throw new IllegalArgumentException(
+          "Cannot create a VariantContext with an empty allele list");
+
+    if (alleleList.get(0).isNonReference())
+      throw new IllegalArgumentException(
+          "Alleles for a VariantContext must contain at least one reference allele: " + alleles);
+
+    return alleleList;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // Fully decode
+  //
+  // ---------------------------------------------------------------------------------------------------------
+
+  /**
+   * Return a VC equivalent to this one but where all fields are fully decoded
+   *
+   * <p>See VariantContext document about fully decoded
+   *
+   * @param header containing types about all fields in this VC
+   * @return a fully decoded version of this VC
+   */
+  public VariantContext fullyDecode(final VCFHeader header, final boolean lenientDecoding) {
+    if (isFullyDecoded()) return this;
+    else {
+      // TODO -- warning this is potentially very expensive as it creates copies over and over
+      final VariantContextBuilder builder = new VariantContextBuilder(this);
+      fullyDecodeInfo(builder, header, lenientDecoding);
+      fullyDecodeGenotypes(builder, header);
+      builder.fullyDecoded(true);
+      return builder.make();
+    }
+  }
+
+  /**
+   * See VariantContext document about fully decoded
+   *
+   * @return true if this is a fully decoded VC
+   */
+  public boolean isFullyDecoded() {
+    return fullyDecoded;
+  }
+
+  private final void fullyDecodeInfo(
+      final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
+    builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
+  }
+
+  private final Map<String, Object> fullyDecodeAttributes(
+      final Map<String, Object> attributes, final VCFHeader header, final boolean lenientDecoding) {
+    final Map<String, Object> newAttributes = new HashMap<>(10);
+
+    for (final Map.Entry<String, Object> attr : attributes.entrySet()) {
+      final String field = attr.getKey();
+
+      if (field.equals(VCFConstants.GENOTYPE_FILTER_KEY))
+        continue; // gross, FT is part of the extended attributes
+
+      final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
+      final Object decoded = decodeValue(field, attr.getValue(), format);
+
+      if (decoded != null
+          && !lenientDecoding
+          && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
+          && format.getType()
+              != VCFHeaderLineType.Flag) { // we expect exactly the right number of elements
+        final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
+        final int expSize = format.getCount(this);
+        if (obsSize != expSize) {
+          throw new TribbleException.InvalidHeader(
+              "Discordant field size detected for field "
+                  + field
+                  + " at "
+                  + getContig()
+                  + ":"
+                  + getStart()
+                  + ".  Field had "
+                  + obsSize
+                  + " values "
+                  + "but the header says this should have "
+                  + expSize
+                  + " values based on header record "
+                  + format);
         }
+      }
+      newAttributes.put(field, decoded);
     }
 
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // utility routines
-    //
-    // ---------------------------------------------------------------------------------------------------------
+    return newAttributes;
+  }
 
-    private void determineType() {
-        if ( type == null ) {
-            switch ( getNAlleles() ) {
-                case 0:
-                    throw new IllegalStateException("Unexpected error: requested type of VariantContext with no alleles!" + this);
-                case 1:
-                    // note that this doesn't require a reference allele.  You can be monomorphic independent of having a
-                    // reference allele
-                    type = Type.NO_VARIATION;
-                    break;
-                default:
-                    determinePolymorphicType();
-            }
+  private final Object decodeValue(
+      final String field, final Object value, final VCFCompoundHeaderLine format) {
+    if (value instanceof String) {
+      if (field.equals(VCFConstants.GENOTYPE_PL_KEY))
+        return GenotypeLikelihoods.fromPLField((String) value);
+
+      final String string = (String) value;
+      if (string.indexOf(',') != -1) {
+        final String[] splits = string.split(",");
+        final List<Object> values = new ArrayList<>(splits.length);
+        for (int i = 0; i < splits.length; i++) values.add(decodeOne(field, splits[i], format));
+        return values;
+      } else {
+        return decodeOne(field, string, format);
+      }
+    } else if (value instanceof List && (((List) value).get(0)) instanceof String) {
+      final List<String> asList = (List<String>) value;
+      final List<Object> values = new ArrayList<>(asList.size());
+      for (final String s : asList) values.add(decodeOne(field, s, format));
+      return values;
+    } else {
+      return value;
+    }
+
+    // allowMissingValuesComparedToHeader
+  }
+
+  private final Object decodeOne(
+      final String field, final String string, final VCFCompoundHeaderLine format) {
+    try {
+      if (string.equals(VCFConstants.MISSING_VALUE_v4)) return null;
+      else {
+        switch (format.getType()) {
+          case Character:
+            return string;
+          case Flag:
+            final boolean b = Boolean.valueOf(string) || string.equals("1");
+            if (b == false)
+              throw new TribbleException(
+                  "VariantContext FLAG fields "
+                      + field
+                      + " cannot contain false values"
+                      + " as seen at "
+                      + getContig()
+                      + ":"
+                      + getStart());
+            return b;
+          case String:
+            return string;
+          case Integer:
+            return Integer.valueOf(string);
+          case Float:
+            return Double.valueOf(string);
+          default:
+            throw new TribbleException("Unexpected type for field" + field);
         }
+      }
+    } catch (NumberFormatException e) {
+      throw new TribbleException(
+          "Could not decode field "
+              + field
+              + " with value "
+              + string
+              + " of declared type "
+              + format.getType());
     }
+  }
 
-    private void determinePolymorphicType() {
-        type = null;
-
-        // do a pairwise comparison of all alleles against the reference allele
-        for ( Allele allele : alleles ) {
-            if ( allele == REF )
-                continue;
-
-            // find the type of this allele relative to the reference
-            Type biallelicType = typeOfBiallelicVariant(REF, allele);
-
-            // for the first alternate allele, set the type to be that one
-            if ( type == null ) {
-                type = biallelicType;
-            }
-            // if the type of this allele is different from that of a previous one, assign it the MIXED type and quit
-            else if ( biallelicType != type ) {
-                type = Type.MIXED;
-                return;
-            }
-        }
+  private final void fullyDecodeGenotypes(
+      final VariantContextBuilder builder, final VCFHeader header) {
+    final GenotypesContext gc = new GenotypesContext();
+    for (final Genotype g : getGenotypes()) {
+      gc.add(fullyDecodeGenotypes(g, header));
     }
+    builder.genotypesNoValidation(gc);
+  }
 
-    private static Type typeOfBiallelicVariant(Allele ref, Allele allele) {
-        if ( ref.isSymbolic() )
-            throw new IllegalStateException("Unexpected error: encountered a record with a symbolic reference allele");
+  private final Genotype fullyDecodeGenotypes(final Genotype g, final VCFHeader header) {
+    final Map<String, Object> map = fullyDecodeAttributes(g.getExtendedAttributes(), header, true);
+    return new GenotypeBuilder(g).attributes(map).make();
+  }
 
-        if ( allele.isSymbolic() )
-            return Type.SYMBOLIC;
+  // ---------------------------------------------------------------------------------------------------------
+  //
+  // tribble integration routines -- not for public consumption
+  //
+  // ---------------------------------------------------------------------------------------------------------
 
-        if ( ref.length() == allele.length() ) {
-            if ( allele.length() == 1 )
-                return Type.SNP;
-            else
-                return Type.MNP;
-        }
+  @Override
+  public String getContig() {
+    return contig;
+  }
 
-        // Important note: previously we were checking that one allele is the prefix of the other.  However, that's not an
-        // appropriate check as can be seen from the following example:
-        // REF = CTTA and ALT = C,CT,CA
-        // This should be assigned the INDEL type but was being marked as a MIXED type because of the prefix check.
-        // In truth, it should be absolutely impossible to return a MIXED type from this method because it simply
-        // performs a pairwise comparison of a single alternate allele against the reference allele (whereas the MIXED type
-        // is reserved for cases of multiple alternate alleles of different types).  Therefore, if we've reached this point
-        // in the code (so we're not a SNP, MNP, or symbolic allele), we absolutely must be an INDEL.
+  /**
+   * @return 1-based inclusive start position of the Variant INDEL events usually start on the first
+   *     unaltered reference base before the INDEL
+   *     <p><strong>Warning:</strong> be aware that the start position of the VariantContext is
+   *     defined in terms of the start position specified in the underlying vcf file,
+   *     VariantContexts representing the same biological event may have different start positions
+   *     depending on the specifics of the vcf file they are derived from
+   */
+  @Override
+  public int getStart() {
+    return (int) start;
+  }
 
-        return Type.INDEL;
+  /**
+   * @return 1-based closed end position of the Variant If the END info field is specified that
+   *     value is returned, otherwise the end is the start + reference allele length - 1. For
+   *     VariantContexts with a single alternate allele, if that allele is an insertion, the end
+   *     position will be on the reference base before the insertion event. If the single alt allele
+   *     is a deletion, the end will be on the final deleted reference base.
+   */
+  @Override
+  public int getEnd() {
+    return (int) stop;
+  }
 
-        // old incorrect logic:
-        // if (oneIsPrefixOfOther(ref, allele))
-        //     return Type.INDEL;
-        // else
-        //     return Type.MIXED;
-    }
+  public boolean hasSymbolicAlleles() {
+    return hasSymbolicAlleles(getAlleles());
+  }
 
-    public String toString() {
-        // Note: passing genotypes to String.format() will implicitly decode the genotypes
-        // This may not be desirable, so don't decode by default
+  public static boolean hasSymbolicAlleles(final List<Allele> alleles) {
+    return alleles.stream().anyMatch(Allele::isSymbolic);
+  }
 
-        return genotypes.isLazyWithData() ? toStringUnparsedGenotypes() : toStringDecodeGenotypes();
-    }
+  public Allele getAltAlleleWithHighestAlleleCount() {
+    // optimization: for bi-allelic sites, just return the only alt allele
+    if (isBiallelic()) return getAlternateAllele(0);
 
-    public String toStringDecodeGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
-                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
-                this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()),
-                this.getGenotypes(),
-                String.join(",", commonInfo.getFilters()));
-    }
+    return getAlternateAlleles()
+        .stream()
+        .max(Comparator.comparing(this::getCalledChrCount))
+        .orElse(null);
+  }
 
-    private String toStringUnparsedGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
-                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
-                this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
-                String.join(",", commonInfo.getFilters()));
-    }
+  /**
+   * Lookup the index of allele in this variant context
+   *
+   * @param allele the allele whose index we want to get
+   * @return the index of the allele into getAlleles(), or -1 if it cannot be found
+   */
+  public int getAlleleIndex(final Allele allele) {
+    return getAlleles().indexOf(allele);
+  }
 
-    public String toStringWithoutGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
-                getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
-                hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
-                this.getType(),
-                ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()),
-                String.join(",", commonInfo.getFilters()));
-    }
+  /**
+   * Return the allele index #getAlleleIndex for each allele in alleles
+   *
+   * @param alleles the alleles we want to look up
+   * @return a list of indices for each allele, in order
+   */
+  public List<Integer> getAlleleIndices(final Collection<Allele> alleles) {
+    return alleles
+        .stream()
+        .map(this::getAlleleIndex)
+        .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
+  }
 
-    // protected basic manipulation routines
-    private static List<Allele> makeAlleles(Collection<Allele> alleles) {
-        final List<Allele> alleleList = new ArrayList<>(alleles.size());
+  /** @deprecated 7/18 use {@link #getGLIndicesOfAlternateAllele(Allele)} instead */
+  @Deprecated
+  public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
+    return getGLIndicesOfAlternateAllele(targetAllele);
+  }
 
-        boolean sawRef = false;
-        for ( final Allele a : alleles ) {
-            for ( final Allele b : alleleList ) {
-                if ( a.equals(b, true) )
-                    throw new IllegalArgumentException("Duplicate allele added to VariantContext: " + a);
-            }
+  public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
+    final int index = getAlleleIndex(targetAllele);
+    if (index == -1)
+      throw new IllegalArgumentException(
+          "Allele " + targetAllele + " not in this VariantContex " + this);
+    return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
+  }
 
-            // deal with the case where the first allele isn't the reference
-            if ( a.isReference() ) {
-                if ( sawRef )
-                    throw new IllegalArgumentException("Alleles for a VariantContext must contain at most one reference allele: " + alleles);
-                alleleList.add(0, a);
-                sawRef = true;
-            }
-            else
-                alleleList.add(a);
-        }
-
-        if ( alleleList.isEmpty() )
-            throw new IllegalArgumentException("Cannot create a VariantContext with an empty allele list");
-
-        if ( alleleList.get(0).isNonReference() )
-            throw new IllegalArgumentException("Alleles for a VariantContext must contain at least one reference allele: " + alleles);
-
-        return alleleList;
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // Fully decode
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    /**
-     * Return a VC equivalent to this one but where all fields are fully decoded
-     *
-     * See VariantContext document about fully decoded
-     *
-     * @param header containing types about all fields in this VC
-     * @return a fully decoded version of this VC
-     */
-    public VariantContext fullyDecode(final VCFHeader header, final boolean lenientDecoding) {
-        if ( isFullyDecoded() )
-            return this;
-        else {
-            // TODO -- warning this is potentially very expensive as it creates copies over and over
-            final VariantContextBuilder builder = new VariantContextBuilder(this);
-            fullyDecodeInfo(builder, header, lenientDecoding);
-            fullyDecodeGenotypes(builder, header);
-            builder.fullyDecoded(true);
-            return builder.make();
-        }
-    }
-
-    /**
-     * See VariantContext document about fully decoded
-     * @return true if this is a fully decoded VC
-     */
-    public boolean isFullyDecoded() {
-        return fullyDecoded;
-    }
-
-    private final void fullyDecodeInfo(final VariantContextBuilder builder, final VCFHeader header, final boolean lenientDecoding) {
-        builder.attributes(fullyDecodeAttributes(getAttributes(), header, lenientDecoding));
-    }
-
-    private final Map<String, Object> fullyDecodeAttributes(final Map<String, Object> attributes,
-                                                            final VCFHeader header,
-                                                            final boolean lenientDecoding) {
-        final Map<String, Object> newAttributes = new HashMap<>(10);
-
-        for ( final Map.Entry<String, Object> attr : attributes.entrySet() ) {
-            final String field = attr.getKey();
-
-            if ( field.equals(VCFConstants.GENOTYPE_FILTER_KEY) )
-                continue; // gross, FT is part of the extended attributes
-
-            final VCFCompoundHeaderLine format = VariantContextUtils.getMetaDataForField(header, field);
-            final Object decoded = decodeValue(field, attr.getValue(), format);
-
-            if ( decoded != null &&
-                    ! lenientDecoding
-                    && format.getCountType() != VCFHeaderLineCount.UNBOUNDED
-                    && format.getType() != VCFHeaderLineType.Flag ) { // we expect exactly the right number of elements
-                final int obsSize = decoded instanceof List ? ((List) decoded).size() : 1;
-                final int expSize = format.getCount(this);
-                if ( obsSize != expSize ) {
-                    throw new TribbleException.InvalidHeader("Discordant field size detected for field " +
-                            field + " at " + getContig() + ":" + getStart() + ".  Field had " + obsSize + " values " +
-                            "but the header says this should have " + expSize + " values based on header record " +
-                            format);
-                }
-            }
-            newAttributes.put(field, decoded);
-        }
-
-        return newAttributes;
-    }
-
-    private final Object decodeValue(final String field, final Object value, final VCFCompoundHeaderLine format) {
-        if ( value instanceof String ) {
-            if ( field.equals(VCFConstants.GENOTYPE_PL_KEY) )
-                return GenotypeLikelihoods.fromPLField((String)value);
-
-            final String string = (String)value;
-            if ( string.indexOf(',') != -1 ) {
-                final String[] splits = string.split(",");
-                final List<Object> values = new ArrayList<>(splits.length);
-                for ( int i = 0; i < splits.length; i++ )
-                    values.add(decodeOne(field, splits[i], format));
-                return values;
-            } else {
-                return decodeOne(field, string, format);
-            }
-        } else if ( value instanceof List && (((List) value).get(0)) instanceof String ) {
-            final List<String> asList = (List<String>)value;
-            final List<Object> values = new ArrayList<>(asList.size());
-            for ( final String s : asList )
-                values.add(decodeOne(field, s, format));
-            return values;
-        } else {
-            return value;
-        }
-
-        // allowMissingValuesComparedToHeader
-    }
-
-    private final Object decodeOne(final String field, final String string, final VCFCompoundHeaderLine format) {
-        try {
-            if ( string.equals(VCFConstants.MISSING_VALUE_v4) )
-                return null;
-            else {
-                switch ( format.getType() ) {
-                    case Character: return string;
-                    case Flag:
-                        final boolean b = Boolean.valueOf(string) || string.equals("1");
-                        if ( b == false )
-                            throw new TribbleException("VariantContext FLAG fields " + field + " cannot contain false values"
-                                    + " as seen at " + getContig() + ":" + getStart());
-                        return b;
-                    case String:    return string;
-                    case Integer:   return Integer.valueOf(string);
-                    case Float:     return Double.valueOf(string);
-                    default: throw new TribbleException("Unexpected type for field" + field);
-                }
-            }
-        } catch (NumberFormatException e) {
-            throw new TribbleException("Could not decode field " + field + " with value " + string + " of declared type " + format.getType());
-        }
-    }
-
-    private final void fullyDecodeGenotypes(final VariantContextBuilder builder, final VCFHeader header) {
-        final GenotypesContext gc = new GenotypesContext();
-        for ( final Genotype g : getGenotypes() ) {
-            gc.add(fullyDecodeGenotypes(g, header));
-        }
-        builder.genotypesNoValidation(gc);
-    }
-
-    private final Genotype fullyDecodeGenotypes(final Genotype g, final VCFHeader header) {
-        final Map<String, Object> map = fullyDecodeAttributes(g.getExtendedAttributes(), header, true);
-        return new GenotypeBuilder(g).attributes(map).make();
-    }
-
-    // ---------------------------------------------------------------------------------------------------------
-    //
-    // tribble integration routines -- not for public consumption
-    //
-    // ---------------------------------------------------------------------------------------------------------
-
-    @Override
-    public String getContig() {
-        return contig;
-    }
-
-    /**
-     * @return 1-based inclusive start position of the Variant
-     * INDEL events usually start on the first unaltered reference base before the INDEL
-     * 
-     * <strong>Warning:</strong> be aware that the start position of the VariantContext is defined in terms of the start position specified in the
-     * underlying vcf file, VariantContexts representing the same biological event may have different start positions depending on the
-     * specifics of the vcf file they are derived from
-     */
-    @Override
-    public int getStart() {
-        return (int)start;
-    }
-
-    /**
-     * @return 1-based closed end position of the Variant
-     * If the END info field is specified that value is returned, otherwise the end is the start + reference allele length - 1.
-     * For VariantContexts with a single alternate allele, if that allele is an insertion, the end position will be on the reference base
-     * before the insertion event.  If the single alt allele is a deletion, the end will be on the final deleted reference base.
-     */
-    @Override
-    public int getEnd() {
-        return (int)stop;
-    }
-
-    public boolean hasSymbolicAlleles() {
-        return hasSymbolicAlleles(getAlleles());
-    }
-
-    public static boolean hasSymbolicAlleles( final List<Allele> alleles ) {
-        return alleles.stream().anyMatch(Allele::isSymbolic);
-    }
-
-    public Allele getAltAlleleWithHighestAlleleCount() {
-        // optimization: for bi-allelic sites, just return the only alt allele
-        if ( isBiallelic() )
-            return getAlternateAllele(0);
-
-        return getAlternateAlleles().stream()
-                .max(Comparator.comparing(this::getCalledChrCount))
-                .orElse(null);
-    }
-
-    /**
-     * Lookup the index of allele in this variant context
-     *
-     * @param allele the allele whose index we want to get
-     * @return the index of the allele into getAlleles(), or -1 if it cannot be found
-     */
-    public int getAlleleIndex(final Allele allele) {
-        return getAlleles().indexOf(allele);
-    }
-
-    /**
-     * Return the allele index #getAlleleIndex for each allele in alleles
-     *
-     * @param alleles the alleles we want to look up
-     * @return a list of indices for each allele, in order
-     */
-    public List<Integer> getAlleleIndices(final Collection<Allele> alleles) {
-        return alleles.stream()
-                .map(this::getAlleleIndex)
-                .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
-    }
-
-    /**
-     * @deprecated 7/18 use {@link #getGLIndicesOfAlternateAllele(Allele)} instead
-     */
-    @Deprecated
-    public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
-       return getGLIndicesOfAlternateAllele(targetAllele);
-    }
-
-    public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
-        final int index = getAlleleIndex(targetAllele);
-        if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
-        return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
-    }
-
-    /** 
-     * Search for the INFO=SVTYPE and return the type of Structural Variant 
-     * @return the StructuralVariantType of null if there is no property SVTYPE 
-     * */
-    public StructuralVariantType getStructuralVariantType() {
-        final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
-        return svType == null ? null : StructuralVariantType.valueOf(svType);
-    }
+  /**
+   * Search for the INFO=SVTYPE and return the type of Structural Variant
+   *
+   * @return the StructuralVariantType of null if there is no property SVTYPE
+   */
+  public StructuralVariantType getStructuralVariantType() {
+    final String svType = this.getAttributeAsString(VCFConstants.SVTYPE, null);
+    return svType == null ? null : StructuralVariantType.valueOf(svType);
+  }
 }

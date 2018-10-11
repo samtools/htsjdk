@@ -24,266 +24,263 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.io.*;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.*;
-
-
 /*
-  * The Broad Institute
-  * SOFTWARE COPYRIGHT NOTICE AGREEMENT
-  * This software and its documentation are copyright Jan 9, 2009 by the
-  * Broad Institute/Massachusetts Institute of Technology. All rights are reserved.
-  *
-  * This software is supplied without any warranty or guaranteed support whatsoever. Neither
-  * the Broad Institute nor MIT can be responsible for its use, misuse, or functionality.
-  */
+ * The Broad Institute
+ * SOFTWARE COPYRIGHT NOTICE AGREEMENT
+ * This software and its documentation are copyright Jan 9, 2009 by the
+ * Broad Institute/Massachusetts Institute of Technology. All rights are reserved.
+ *
+ * This software is supplied without any warranty or guaranteed support whatsoever. Neither
+ * the Broad Institute nor MIT can be responsible for its use, misuse, or functionality.
+ */
 
 public class BinaryCodecTest extends HtsjdkTest {
-	public final static String TEST_BASENAME = "htsjdk-BinaryCodecTest";
+  public static final String TEST_BASENAME = "htsjdk-BinaryCodecTest";
 
-    @Test
-    public void testReadAndWrite() throws IOException {
-        final byte[] value = new byte[2];
-        value[0] = 1;
-        value[1] = 2;
-        //Writing to file
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeBytes(value);
-        codec.close();
+  @Test
+  public void testReadAndWrite() throws IOException {
+    final byte[] value = new byte[2];
+    value[0] = 1;
+    value[1] = 2;
+    // Writing to file
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeBytes(value);
+    codec.close();
 
-        //Reading from file
-        final byte[] valuesTwo = new byte[2];
-        valuesTwo[0] = 1;
-        valuesTwo[1] = 2;
+    // Reading from file
+    final byte[] valuesTwo = new byte[2];
+    valuesTwo[0] = 1;
+    valuesTwo[1] = 2;
 
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        final byte[] bytesFromBinaryFile = new byte[2];
-        readCodec.readBytes(bytesFromBinaryFile);
-        Assert.assertEquals(valuesTwo, bytesFromBinaryFile);
-        readCodec.close();
-        outputFile.delete();
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    final byte[] bytesFromBinaryFile = new byte[2];
+    readCodec.readBytes(bytesFromBinaryFile);
+    Assert.assertEquals(valuesTwo, bytesFromBinaryFile);
+    readCodec.close();
+    outputFile.delete();
+  }
+
+  @Test
+  public void testReadAndWriteString() throws IOException {
+    final String value = "Test String to Write";
+
+    // Writing to file
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeString(value, true, false);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    final int stringLength = readCodec.readInt();
+    Assert.assertEquals(value.length(), stringLength);
+    final String s = readCodec.readString(stringLength);
+    Assert.assertEquals(value, s);
+    readCodec.close();
+  }
+
+  @Test
+  public void testReadAndWriteInt() throws IOException {
+    final int value = 42;
+
+    // Writing to file
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeInt(value);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(value, readCodec.readInt());
+    readCodec.close();
+  }
+
+  @Test
+  public void testReadAndWriteDouble() throws IOException {
+    final double value = 54.4;
+
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeDouble(value);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(value, readCodec.readDouble());
+    readCodec.close();
+  }
+
+  @Test
+  public void testReadAndWriteLong() throws IOException {
+    final long value = 42;
+
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeLong(value);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(value, readCodec.readLong());
+    readCodec.close();
+  }
+
+  @Test
+  public void testReadAndWriteFloat() throws IOException {
+    final float value = 42.5F;
+
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeFloat(value);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(value, readCodec.readFloat());
+    readCodec.close();
+  }
+
+  @Test
+  public void testReadAndWriteBoolean() throws IOException {
+
+    boolean values[] = {true, false};
+
+    for (boolean value : values) {
+      final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+      outputFile.deleteOnExit();
+      final OutputStream stream = new FileOutputStream(outputFile);
+      final BinaryCodec codec = new BinaryCodec(stream);
+      codec.writeBoolean(value);
+      codec.close();
+
+      // Reading from file
+      final InputStream instream = new FileInputStream(outputFile);
+      final BinaryCodec readCodec = new BinaryCodec(instream);
+      Assert.assertEquals(value, readCodec.readBoolean());
+      readCodec.close();
+    }
+  }
+
+  @Test
+  public void testReadAndWriteMutlitpleData() throws IOException {
+    final float fValue = 42.5F;
+    final String sValue = "TestString";
+
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    codec.writeFloat(fValue);
+    codec.writeString(sValue, true, false);
+    codec.close();
+
+    // Reading from file
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(fValue, readCodec.readFloat());
+    final int stringLength = readCodec.readInt();
+    Assert.assertEquals(sValue, readCodec.readString(stringLength));
+    readCodec.close();
+  }
+
+  @Test
+  public void readPastEndOfFile() throws IOException {
+    final long startTime = System.currentTimeMillis();
+    int i = 0;
+
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    while (i < 100) {
+      codec.writeInt(i);
+      i++;
+    }
+    codec.close();
+
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+
+    System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
+    int z = 0;
+    boolean reachedStatement = false;
+    while (z < 1000) {
+      try {
+        Assert.assertEquals(z, readCodec.readInt());
+      } catch (Exception e) {
+        Assert.assertEquals(RuntimeEOFException.class, e.getClass());
+        reachedStatement = true;
+      }
+      z++;
     }
 
-    @Test
-    public void testReadAndWriteString() throws IOException {
-        final String value = "Test String to Write";
+    Assert.assertTrue(reachedStatement);
+    readCodec.close();
+  }
 
-        //Writing to file
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeString(value, true, false);
-        codec.close();
+  @Test
+  public void timeTest() throws IOException {
+    final long startTime = System.currentTimeMillis();
+    int i = 0;
 
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        final int stringLength = readCodec.readInt();
-        Assert.assertEquals(value.length(), stringLength);
-        final String s = readCodec.readString(stringLength);
-        Assert.assertEquals(value, s);
-        readCodec.close();
+    final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
+    outputFile.deleteOnExit();
+    final OutputStream stream = new FileOutputStream(outputFile);
+    final BinaryCodec codec = new BinaryCodec(stream);
+    while (i < 100) {
+      codec.writeInt(i);
+      i++;
+    }
+    codec.close();
+
+    final InputStream instream = new FileInputStream(outputFile);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+
+    System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
+    int z = 0;
+    boolean reachedStatement = false;
+    while (z < 1000) {
+      try {
+        Assert.assertEquals(z, readCodec.readInt());
+      } catch (Exception e) {
+        Assert.assertEquals(RuntimeEOFException.class, e.getClass());
+        reachedStatement = true;
+      }
+      z++;
     }
 
-    @Test
-    public void testReadAndWriteInt() throws IOException {
-        final int value = 42;
+    Assert.assertTrue(reachedStatement);
+    readCodec.close();
+  }
 
-        //Writing to file
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeInt(value);
-        codec.close();
-
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(value, readCodec.readInt());
-        readCodec.close();
-    }
-
-    @Test
-    public void testReadAndWriteDouble() throws IOException {
-        final double value = 54.4;
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeDouble(value);
-        codec.close();
-
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(value, readCodec.readDouble());
-        readCodec.close();
-    }
-
-    @Test
-    public void testReadAndWriteLong() throws IOException {
-        final long value = 42;
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeLong(value);
-        codec.close();
-
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(value, readCodec.readLong());
-        readCodec.close();
-
-    }
-
-    @Test
-    public void testReadAndWriteFloat()  throws IOException{
-        final float value = 42.5F;
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeFloat(value);
-        codec.close();
-
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(value, readCodec.readFloat());
-        readCodec.close();
-    }
-
-    @Test
-    public void testReadAndWriteBoolean()  throws IOException{
-
-        boolean values[] = {true, false};
-
-        for (boolean value : values) {
-            final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-            outputFile.deleteOnExit();
-            final OutputStream stream = new FileOutputStream(outputFile);
-            final BinaryCodec codec = new BinaryCodec(stream);
-            codec.writeBoolean(value);
-            codec.close();
-
-            //Reading from file
-            final InputStream instream = new FileInputStream(outputFile);
-            final BinaryCodec readCodec = new BinaryCodec(instream);
-            Assert.assertEquals(value, readCodec.readBoolean());
-            readCodec.close();
-        }
-    }
-
-    @Test
-    public void testReadAndWriteMutlitpleData()  throws IOException{
-        final float fValue = 42.5F;
-        final String sValue = "TestString";
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        codec.writeFloat(fValue);
-        codec.writeString(sValue, true, false);
-        codec.close();
-
-        //Reading from file
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(fValue, readCodec.readFloat());
-        final int stringLength = readCodec.readInt();
-        Assert.assertEquals(sValue, readCodec.readString(stringLength));
-        readCodec.close();
-    }
-
-    @Test
-    public void readPastEndOfFile() throws IOException{
-        final long startTime = System.currentTimeMillis();
-        int i = 0;
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        while (i<100){
-            codec.writeInt(i);
-            i++;
-        }
-        codec.close();
-
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-
-        System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
-        int z = 0;
-        boolean reachedStatement = false;
-        while (z<1000) {
-            try {
-                Assert.assertEquals(z, readCodec.readInt());
-            } catch (Exception e) {
-               Assert.assertEquals(RuntimeEOFException.class, e.getClass());
-                reachedStatement = true;
-            }
-            z++;
-        }
-
-        Assert.assertTrue(reachedStatement);
-        readCodec.close();
-    }
-
-    @Test
-    public void timeTest() throws IOException{
-        final long startTime = System.currentTimeMillis();
-        int i = 0;
-
-        final File outputFile = File.createTempFile(TEST_BASENAME, ".bin");
-        outputFile.deleteOnExit();
-        final OutputStream stream = new FileOutputStream(outputFile);
-        final BinaryCodec codec = new BinaryCodec(stream);
-        while (i<100){
-            codec.writeInt(i);
-            i++;
-        }
-        codec.close();
-
-        final InputStream instream = new FileInputStream(outputFile);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-
-        System.out.println((System.currentTimeMillis() - startTime) + "ms to write");
-        int z = 0;
-        boolean reachedStatement = false;
-        while (z<1000) {
-            try {
-                Assert.assertEquals(z, readCodec.readInt());
-            } catch (Exception e) {
-               Assert.assertEquals(RuntimeEOFException.class, e.getClass());
-                reachedStatement = true;
-            }
-            z++;
-        }
-
-        Assert.assertTrue(reachedStatement);
-        readCodec.close();
-    }
-
-    @Test
-    public void testReadBytesOrFewerNoneAvailable() {
-        final byte[] value = new byte[0];
-        final ByteArrayInputStream instream = new ByteArrayInputStream(value);
-        final BinaryCodec readCodec = new BinaryCodec(instream);
-        Assert.assertEquals(readCodec.readBytesOrFewer(value, 0, 0), 0);
-    }
+  @Test
+  public void testReadBytesOrFewerNoneAvailable() {
+    final byte[] value = new byte[0];
+    final ByteArrayInputStream instream = new ByteArrayInputStream(value);
+    final BinaryCodec readCodec = new BinaryCodec(instream);
+    Assert.assertEquals(readCodec.readBytesOrFewer(value, 0, 0), 0);
+  }
 }

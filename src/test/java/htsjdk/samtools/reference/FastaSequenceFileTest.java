@@ -27,86 +27,90 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.util.StringUtil;
+import java.io.File;
+import java.io.PrintWriter;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.PrintWriter;
-
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class FastaSequenceFileTest extends HtsjdkTest {
-    @Test
-    public void testTrailingWhitespace() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
-        final String chr1 = "chr1";
-        writer.println(">" + chr1);
-        final String sequence = "ACGTACGT";
-        writer.println(sequence);
-        writer.println(sequence + " \t");
-        writer.close();
-        final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
-        final ReferenceSequence referenceSequence = fastaReader.nextSequence();
-        Assert.assertEquals(referenceSequence.getName(), chr1);
-        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), sequence + sequence);
-    }
+  @Test
+  public void testTrailingWhitespace() throws Exception {
+    final File fasta = File.createTempFile("test", ".fasta");
+    fasta.deleteOnExit();
+    final PrintWriter writer = new PrintWriter(fasta);
+    final String chr1 = "chr1";
+    writer.println(">" + chr1);
+    final String sequence = "ACGTACGT";
+    writer.println(sequence);
+    writer.println(sequence + " \t");
+    writer.close();
+    final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
+    final ReferenceSequence referenceSequence = fastaReader.nextSequence();
+    Assert.assertEquals(referenceSequence.getName(), chr1);
+    Assert.assertEquals(
+        StringUtil.bytesToString(referenceSequence.getBases()), sequence + sequence);
+  }
 
-    @Test
-    public void testIntermediateWhitespace() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
-        final String chr1 = "chr1";
-        writer.println(">" + chr1 + " extra stuff after sequence name");
-        final String sequence = "ACGTACGT";
-        writer.println(sequence + "  ");
-        writer.println(sequence + " \t");
-        writer.println(sequence);
-        writer.close();
-        final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
-        final ReferenceSequence referenceSequence = fastaReader.nextSequence();
-        Assert.assertEquals(referenceSequence.getName(), chr1);
-        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), sequence + sequence + sequence);
-    }
+  @Test
+  public void testIntermediateWhitespace() throws Exception {
+    final File fasta = File.createTempFile("test", ".fasta");
+    fasta.deleteOnExit();
+    final PrintWriter writer = new PrintWriter(fasta);
+    final String chr1 = "chr1";
+    writer.println(">" + chr1 + " extra stuff after sequence name");
+    final String sequence = "ACGTACGT";
+    writer.println(sequence + "  ");
+    writer.println(sequence + " \t");
+    writer.println(sequence);
+    writer.close();
+    final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
+    final ReferenceSequence referenceSequence = fastaReader.nextSequence();
+    Assert.assertEquals(referenceSequence.getName(), chr1);
+    Assert.assertEquals(
+        StringUtil.bytesToString(referenceSequence.getBases()), sequence + sequence + sequence);
+  }
 
-    // There was a bug when reading a fasta with trailing whitespace, only when a sequence dictionary exists.
-    @Test
-    public void testTrailingWhitespaceWithPreexistingSequenceDictionary() throws Exception {
-        final File fasta = new File("src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
-        final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
-        ReferenceSequence referenceSequence = fastaReader.nextSequence();
-        Assert.assertEquals(referenceSequence.getName(), "chr1");
-        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "ACGTACGT");
-        referenceSequence = fastaReader.nextSequence();
-        Assert.assertEquals(referenceSequence.getName(), "chr2");
-        Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "TCGATCGA");
+  // There was a bug when reading a fasta with trailing whitespace, only when a sequence dictionary
+  // exists.
+  @Test
+  public void testTrailingWhitespaceWithPreexistingSequenceDictionary() throws Exception {
+    final File fasta =
+        new File(
+            "src/test/resources/htsjdk/samtools/reference/reference_with_trailing_whitespace.fasta");
+    final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta, true);
+    ReferenceSequence referenceSequence = fastaReader.nextSequence();
+    Assert.assertEquals(referenceSequence.getName(), "chr1");
+    Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "ACGTACGT");
+    referenceSequence = fastaReader.nextSequence();
+    Assert.assertEquals(referenceSequence.getName(), "chr2");
+    Assert.assertEquals(StringUtil.bytesToString(referenceSequence.getBases()), "TCGATCGA");
+  }
 
+  @Test
+  public void testStream() throws Exception {
+    final File fasta = File.createTempFile("test", ".fasta");
+    fasta.deleteOnExit();
+    final PrintWriter writer = new PrintWriter(fasta);
+    final String chr1 = "chr1";
+    writer.println(">" + chr1);
+    final String sequence = "ACGTACGT";
+    writer.println(sequence);
+    writer.println(sequence + " \t");
+    writer.close();
+    try (SeekableStream seekableStream = new SeekableFileStream(fasta)) {
+      final FastaSequenceFile fastaReader =
+          new FastaSequenceFile(fasta.getAbsolutePath(), seekableStream, null, true);
+      final ReferenceSequence referenceSequence1 = fastaReader.nextSequence();
+      Assert.assertEquals(referenceSequence1.getName(), chr1);
+      Assert.assertEquals(
+          StringUtil.bytesToString(referenceSequence1.getBases()), sequence + sequence);
+      // try to reset and re-read the first sequence
+      fastaReader.reset();
+      final ReferenceSequence referenceSequence2 = fastaReader.nextSequence();
+      Assert.assertEquals(referenceSequence2.getName(), chr1);
+      Assert.assertEquals(
+          StringUtil.bytesToString(referenceSequence2.getBases()), sequence + sequence);
     }
-
-    @Test
-    public void testStream() throws Exception {
-        final File fasta = File.createTempFile("test", ".fasta");
-        fasta.deleteOnExit();
-        final PrintWriter writer = new PrintWriter(fasta);
-        final String chr1 = "chr1";
-        writer.println(">" + chr1);
-        final String sequence = "ACGTACGT";
-        writer.println(sequence);
-        writer.println(sequence + " \t");
-        writer.close();
-        try (SeekableStream seekableStream = new SeekableFileStream(fasta)) {
-            final FastaSequenceFile fastaReader = new FastaSequenceFile(fasta.getAbsolutePath(), seekableStream, null, true);
-            final ReferenceSequence referenceSequence1 = fastaReader.nextSequence();
-            Assert.assertEquals(referenceSequence1.getName(), chr1);
-            Assert.assertEquals(StringUtil.bytesToString(referenceSequence1.getBases()), sequence + sequence);
-            // try to reset and re-read the first sequence
-            fastaReader.reset();
-            final ReferenceSequence referenceSequence2 = fastaReader.nextSequence();
-            Assert.assertEquals(referenceSequence2.getName(), chr1);
-            Assert.assertEquals(StringUtil.bytesToString(referenceSequence2.getBases()), sequence + sequence);
-        }
-    }
+  }
 }

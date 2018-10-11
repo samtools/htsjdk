@@ -27,11 +27,8 @@ import htsjdk.variant.variantcontext.VariantContext;
 import java.util.function.Predicate;
 
 /**
- *
  * API for filtering VariantContexts.
  *
  * @author Yossi Farjoun
- *
  */
-public interface VariantContextFilter extends Predicate<VariantContext> {
-}
+public interface VariantContextFilter extends Predicate<VariantContext> {}

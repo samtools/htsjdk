@@ -25,65 +25,67 @@ package htsjdk.samtools;
 
 import java.nio.ByteBuffer;
 
-/**
- * Converter between disk and in-memory (object, not String) CIGAR representation.
- */
+/** Converter between disk and in-memory (object, not String) CIGAR representation. */
 class BinaryCigarCodec {
 
-    /**
-     * Convert CIGAR from object representation to disk representation.
-     * @return Array of unsigned ints, one for each element of CIGAR.
-     */
-    static int[] encode(final Cigar cigar) {
-        if (cigar.numCigarElements() == 0) {
-            return new int[0];
-        }
-
-        // Binary rep can be no longer than 1/2 of text rep
-        // Although this is documented as uint, I think lengths will never get that long,
-        // and it's a pain in Java.
-        final int[] binaryCigar = new int[cigar.numCigarElements()];
-        int binaryCigarLength = 0;
-        for (int i = 0; i < cigar.numCigarElements(); ++i) {
-            final CigarElement cigarElement = cigar.getCigarElement(i);
-            final int op = CigarOperator.enumToBinary(cigarElement.getOperator());
-            binaryCigar[binaryCigarLength++] = cigarElement.getLength() << 4 | op;
-        }
-        return binaryCigar;
+  /**
+   * Convert CIGAR from object representation to disk representation.
+   *
+   * @return Array of unsigned ints, one for each element of CIGAR.
+   */
+  static int[] encode(final Cigar cigar) {
+    if (cigar.numCigarElements() == 0) {
+      return new int[0];
     }
 
-    /**
-     * Convert CIGAR from disk representation to object.
-     * @param binaryCigar ByteArray that is assumed to have byte order set appropriately for extracting ints.
-     */
-    static Cigar decode(final ByteBuffer binaryCigar) {
-        final Cigar ret = new Cigar();
-        while (binaryCigar.hasRemaining()) {
-            final int cigarette = binaryCigar.getInt();
-            ret.add(binaryCigarToCigarElement(cigarette));
-        }
-        return ret;
+    // Binary rep can be no longer than 1/2 of text rep
+    // Although this is documented as uint, I think lengths will never get that long,
+    // and it's a pain in Java.
+    final int[] binaryCigar = new int[cigar.numCigarElements()];
+    int binaryCigarLength = 0;
+    for (int i = 0; i < cigar.numCigarElements(); ++i) {
+      final CigarElement cigarElement = cigar.getCigarElement(i);
+      final int op = CigarOperator.enumToBinary(cigarElement.getOperator());
+      binaryCigar[binaryCigarLength++] = cigarElement.getLength() << 4 | op;
     }
+    return binaryCigar;
+  }
 
-    /**
-     * Convert CIGAR from disk representation to object.
-     * @param binaryCigar Array of unsigned ints, one for each CIGAR element.
-     */
-    static Cigar decode(final int[] binaryCigar) {
-        final Cigar ret = new Cigar();
-        for (final int cigarette : binaryCigar) {
-            ret.add(binaryCigarToCigarElement(cigarette));
-        }
-        return ret;
+  /**
+   * Convert CIGAR from disk representation to object.
+   *
+   * @param binaryCigar ByteArray that is assumed to have byte order set appropriately for
+   *     extracting ints.
+   */
+  static Cigar decode(final ByteBuffer binaryCigar) {
+    final Cigar ret = new Cigar();
+    while (binaryCigar.hasRemaining()) {
+      final int cigarette = binaryCigar.getInt();
+      ret.add(binaryCigarToCigarElement(cigarette));
     }
+    return ret;
+  }
 
-    /**
-     * @param cigarette CIGAR element (operator + length) encoded as an unsigned int.
-     * @return Object representation of the CIGAR element.
-     */
-    private static CigarElement binaryCigarToCigarElement(final int cigarette) {
-        final int binaryOp = cigarette & 0xf;
-        final int length = cigarette >>> 4;
-        return new CigarElement(length, CigarOperator.binaryToEnum(binaryOp));
+  /**
+   * Convert CIGAR from disk representation to object.
+   *
+   * @param binaryCigar Array of unsigned ints, one for each CIGAR element.
+   */
+  static Cigar decode(final int[] binaryCigar) {
+    final Cigar ret = new Cigar();
+    for (final int cigarette : binaryCigar) {
+      ret.add(binaryCigarToCigarElement(cigarette));
     }
+    return ret;
+  }
+
+  /**
+   * @param cigarette CIGAR element (operator + length) encoded as an unsigned int.
+   * @return Object representation of the CIGAR element.
+   */
+  private static CigarElement binaryCigarToCigarElement(final int cigarette) {
+    final int binaryOp = cigarette & 0xf;
+    final int length = cigarette >>> 4;
+    return new CigarElement(length, CigarOperator.binaryToEnum(binaryOp));
+  }
 }

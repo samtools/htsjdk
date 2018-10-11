@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.Defaults;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,67 +32,67 @@ import java.io.LineNumberReader;
 import java.nio.charset.Charset;
 
 /**
- * Implementation of LineReader that is a thin wrapper around BufferedReader.  On Linux, this is faster
- * than AsciiLineReaderImpl.  If you use AsciiLineReader rather than this class, it will detect the OS
- * and delegate to the preferred implementation.
- * 
+ * Implementation of LineReader that is a thin wrapper around BufferedReader. On Linux, this is
+ * faster than AsciiLineReaderImpl. If you use AsciiLineReader rather than this class, it will
+ * detect the OS and delegate to the preferred implementation.
+ *
  * @author alecw@broadinstitute.org
  */
 public class BufferedLineReader extends LineNumberReader implements LineReader {
 
-    public BufferedLineReader(final InputStream is) {
-        this(is, Defaults.NON_ZERO_BUFFER_SIZE);
-    }
+  public BufferedLineReader(final InputStream is) {
+    this(is, Defaults.NON_ZERO_BUFFER_SIZE);
+  }
 
-    public BufferedLineReader(final InputStream is, final int bufferSize) {
-        super(new InputStreamReader(is, Charset.forName("UTF-8")), bufferSize);
-    }
+  public BufferedLineReader(final InputStream is, final int bufferSize) {
+    super(new InputStreamReader(is, Charset.forName("UTF-8")), bufferSize);
+  }
 
-    /**
-     * Returns a {@link BufferedLineReader} that gets its input from a String. No charset conversion
-     * is necessary because the String is in unicode.
-     */
-    public static BufferedLineReader fromString(final String s) {
-        return new BufferedLineReader(new ByteArrayInputStream(s.getBytes()));
-    }
+  /**
+   * Returns a {@link BufferedLineReader} that gets its input from a String. No charset conversion
+   * is necessary because the String is in unicode.
+   */
+  public static BufferedLineReader fromString(final String s) {
+    return new BufferedLineReader(new ByteArrayInputStream(s.getBytes()));
+  }
 
-    /**
-     * Read a line and remove the line terminator
-     *
-     * @return the line read, or null if EOF has been reached.
-     */
-    @Override
-    public String readLine() {
-        try {
-            return super.readLine();
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+  /**
+   * Read a line and remove the line terminator
+   *
+   * @return the line read, or null if EOF has been reached.
+   */
+  @Override
+  public String readLine() {
+    try {
+      return super.readLine();
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
     }
+  }
 
-    /**
-     * Non-destructive one-character look-ahead.
-     *
-     * @return If not eof, the next character that would be read.  If eof, -1.
-     */
-    @Override
-    public int peek() {
-        try {
-            mark(2); // Two characters required here as the next read will collapse \r\n to a single \n
-            final int ret = read();
-            reset();
-            return ret;
-        } catch (IOException e) {
-                throw new RuntimeIOException(e);
-        }
+  /**
+   * Non-destructive one-character look-ahead.
+   *
+   * @return If not eof, the next character that would be read. If eof, -1.
+   */
+  @Override
+  public int peek() {
+    try {
+      mark(2); // Two characters required here as the next read will collapse \r\n to a single \n
+      final int ret = read();
+      reset();
+      return ret;
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
     }
+  }
 
-    @Override
-    public void close() {
-        try {
-            super.close();
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
+  @Override
+  public void close() {
+    try {
+      super.close();
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
     }
+  }
 }

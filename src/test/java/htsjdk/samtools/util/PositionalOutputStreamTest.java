@@ -25,39 +25,37 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.io.IOException;
+import java.io.OutputStream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.io.OutputStream;
-
-/**
- * @author Daniel Gomez-Sanchez (magicDGS)
- */
+/** @author Daniel Gomez-Sanchez (magicDGS) */
 public class PositionalOutputStreamTest extends HtsjdkTest {
 
-    @Test
-    public void basicPositionTest() throws Exception {
-        // wrapped null output stream to check
-        final PositionalOutputStream wrapped = new PositionalOutputStream(new OutputStream() {
-            @Override
-            public void write(int b) throws IOException {}
-        });
-        int position = 0;
-        // check that we start at position 0
-        Assert.assertEquals(wrapped.getPosition(), position);
-        // check that write one int just add one
-        wrapped.write(100);
-        Assert.assertEquals(wrapped.getPosition(), ++position);
-        // check that write a byte array adds its length
-        final byte[] bytes = new byte[]{1, 3, 5, 7};
-        wrapped.write(bytes);
-        position += bytes.length;
-        Assert.assertEquals(wrapped.getPosition(), position);
-        // check that write just some bytes from an array adds its length
-        wrapped.write(bytes, 2, 2);
-        position += 2;
-        Assert.assertEquals(wrapped.getPosition(), position);
-    }
-
+  @Test
+  public void basicPositionTest() throws Exception {
+    // wrapped null output stream to check
+    final PositionalOutputStream wrapped =
+        new PositionalOutputStream(
+            new OutputStream() {
+              @Override
+              public void write(int b) throws IOException {}
+            });
+    int position = 0;
+    // check that we start at position 0
+    Assert.assertEquals(wrapped.getPosition(), position);
+    // check that write one int just add one
+    wrapped.write(100);
+    Assert.assertEquals(wrapped.getPosition(), ++position);
+    // check that write a byte array adds its length
+    final byte[] bytes = new byte[] {1, 3, 5, 7};
+    wrapped.write(bytes);
+    position += bytes.length;
+    Assert.assertEquals(wrapped.getPosition(), position);
+    // check that write just some bytes from an array adds its length
+    wrapped.write(bytes, 2, 2);
+    position += 2;
+    Assert.assertEquals(wrapped.getPosition(), position);
+  }
 }

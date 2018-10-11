@@ -22,33 +22,33 @@
  * THE SOFTWARE.
  */
 package htsjdk.samtools.filter;
+
 import htsjdk.samtools.SAMRecord;
 
 /**
  * Filter out SAMRecords with DuplicateRead flag set
  *
- * $Id$
+ * <p>$Id$
  */
 public class DuplicateReadFilter implements SamRecordFilter {
-    /**
-     * @param record the SAMRecord to evaluate
-     * @return true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return record.getDuplicateReadFlag();
-    }
+  /**
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    return record.getDuplicateReadFlag();
+  }
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        throw new UnsupportedOperationException("Paired DuplicateReadFilter filter not implemented!");
-    }
+  /**
+   * Determines whether a pair of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    throw new UnsupportedOperationException("Paired DuplicateReadFilter filter not implemented!");
+  }
 }

@@ -23,23 +23,19 @@
  */
 package htsjdk.samtools.util;
 
-
-/**
- * Thrown by classes handling script engines like the javascript-based filters for SAM/VCF
- */
+/** Thrown by classes handling script engines like the javascript-based filters for SAM/VCF */
 public class RuntimeScriptException extends RuntimeException {
-    public RuntimeScriptException() {
-    }
+  public RuntimeScriptException() {}
 
-    public RuntimeScriptException(final String s) {
-        super(s);
-    }
+  public RuntimeScriptException(final String s) {
+    super(s);
+  }
 
-    public RuntimeScriptException(final String s, final Throwable throwable) {
-        super(s, throwable);
-    }
+  public RuntimeScriptException(final String s, final Throwable throwable) {
+    super(s, throwable);
+  }
 
-    public RuntimeScriptException(final Throwable throwable) {
-        super(throwable);
-    }
+  public RuntimeScriptException(final Throwable throwable) {
+    super(throwable);
+  }
 }

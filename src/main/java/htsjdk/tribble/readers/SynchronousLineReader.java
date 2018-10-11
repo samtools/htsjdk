@@ -25,42 +25,42 @@ package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
 /**
- * Implementation of {@link LineReader} that reads lines directly from the underlying stream or reader.
+ * Implementation of {@link LineReader} that reads lines directly from the underlying stream or
+ * reader.
  */
-public final class SynchronousLineReader implements LineReader{
-    private final LongLineBufferedReader longLineBufferedReader;
+public final class SynchronousLineReader implements LineReader {
+  private final LongLineBufferedReader longLineBufferedReader;
 
-    public SynchronousLineReader(final InputStream stream){
-        this(new InputStreamReader(stream));
-    }
+  public SynchronousLineReader(final InputStream stream) {
+    this(new InputStreamReader(stream));
+  }
 
-    public SynchronousLineReader(final Reader reader){
-        this.longLineBufferedReader = new LongLineBufferedReader(reader);
-    }
+  public SynchronousLineReader(final Reader reader) {
+    this.longLineBufferedReader = new LongLineBufferedReader(reader);
+  }
 
-    @Override
-    public String readLine() {
-        try {
-            return longLineBufferedReader.readLine();
-        } catch (final IOException e) {
-            throw new RuntimeIOException(e);
-        }
+  @Override
+  public String readLine() {
+    try {
+      return longLineBufferedReader.readLine();
+    } catch (final IOException e) {
+      throw new RuntimeIOException(e);
     }
+  }
 
-    @Override
-    public void close() {
-        CloserUtil.close(longLineBufferedReader);
-    }
-    
-    @Override
-    public String toString() {
-        return "SynchronousLineReader";
-    }
+  @Override
+  public void close() {
+    CloserUtil.close(longLineBufferedReader);
+  }
+
+  @Override
+  public String toString() {
+    return "SynchronousLineReader";
+  }
 }

@@ -24,37 +24,38 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.LocationAware;
-
 import java.io.IOException;
 
 /**
- * Minimal interface for an object at support getting the current position in the stream / writer / file, as well as a handful of other
- * reader-like features.
- * 
+ * Minimal interface for an object at support getting the current position in the stream / writer /
+ * file, as well as a handful of other reader-like features.
+ *
  * @author depristo
  */
 public interface Positional extends LocationAware {
-    /**
-     * Is the stream done?  Equivalent to ! hasNext() for an iterator?
-     * @return true if the stream has reached EOF, false otherwise
-     */
-    public boolean isDone() throws IOException;
+  /**
+   * Is the stream done? Equivalent to ! hasNext() for an iterator?
+   *
+   * @return true if the stream has reached EOF, false otherwise
+   */
+  public boolean isDone() throws IOException;
 
-    /**
-     * Skip the next nBytes in the stream.
-     * @param nBytes to skip, must be >= 0
-     * @return the number of bytes actually skippped.
-     * @throws IOException
-     */
-    public long skip(long nBytes) throws IOException;
+  /**
+   * Skip the next nBytes in the stream.
+   *
+   * @param nBytes to skip, must be >= 0
+   * @return the number of bytes actually skippped.
+   * @throws IOException
+   */
+  public long skip(long nBytes) throws IOException;
 
-    /**
-     * Return the next byte in the first, without actually reading it from the stream.
-     *
-     * Has the same output as read()
-     *
-     * @return the next byte, or -1 if EOF encountered
-     * @throws IOException
-     */
-    public int peek() throws IOException;
+  /**
+   * Return the next byte in the first, without actually reading it from the stream.
+   *
+   * <p>Has the same output as read()
+   *
+   * @return the next byte, or -1 if EOF encountered
+   * @throws IOException
+   */
+  public int peek() throws IOException;
 }

@@ -24,13 +24,12 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.io.IOException;
+import java.net.URL;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
-import java.net.URL;
 
 /**
  * @author Jim Robinson
@@ -39,70 +38,56 @@ import java.net.URL;
 @Test(groups = "ftp")
 public class SeekableFTPStreamTest extends HtsjdkTest {
 
+  static String urlString = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
+  static long fileSize = 27;
+  static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
+  SeekableFTPStream stream;
 
-    static String urlString = "ftp://ftp.broadinstitute.org/pub/igv/TEST/test.txt";
-    static long fileSize = 27;
-    static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
-    SeekableFTPStream stream;
+  @BeforeMethod()
+  public void setUp() throws IOException {
+    stream = new SeekableFTPStream(new URL(urlString));
+  }
 
-    @BeforeMethod()
-    public void setUp() throws IOException {
-        stream = new SeekableFTPStream(new URL(urlString));
+  @AfterMethod()
+  public void tearDown() throws IOException {
+    stream.close();
+  }
 
-    }
+  @Test
+  public void testLength() throws Exception {
+    long length = stream.length();
+    Assert.assertEquals(fileSize, length);
+  }
 
-    @AfterMethod()
-    public void tearDown() throws IOException {
-        stream.close();
-    }
+  /**
+   * Test a buffered read. The buffer is much large than the file size, assert that the desired # of
+   * bytes are read
+   *
+   * @throws Exception
+   */
+  @Test
+  public void testBufferedRead() throws Exception {
 
-    @Test
-    public void testLength() throws Exception {
-        long length = stream.length();
-        Assert.assertEquals(fileSize, length);
-    }
+    byte[] buffer = new byte[64000];
+    int nRead = stream.read(buffer);
+    Assert.assertEquals(fileSize, nRead);
+  }
 
+  /** Test requesting a range that extends beyond the end of the file */
+  @Test
+  public void testRange() throws Exception {
+    stream.seek(20);
+    byte[] buffer = new byte[64000];
+    int nRead = stream.read(buffer);
+    Assert.assertEquals(fileSize - 20, nRead);
+  }
 
-    /**
-     * Test a buffered read.  The buffer is much large than the file size,  assert that the desired # of bytes are read
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testBufferedRead() throws Exception {
-
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(fileSize, nRead);
-
-    }
-
-    /**
-     * Test requesting a range that extends beyond the end of the file
-     */
-
-    @Test
-    public void testRange() throws Exception {
-        stream.seek(20);
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(fileSize - 20, nRead);
-
-    }
-
-    /**
-     * Test requesting a range that begins beyond the end of the file
-     */
-
-    @Test
-    public void testBadRange() throws Exception {
-        stream.seek(30);
-        byte[] buffer = new byte[64000];
-        int nRead = stream.read(buffer);
-        Assert.assertEquals(-1, nRead);
-    }
-
-
+  /** Test requesting a range that begins beyond the end of the file */
+  @Test
+  public void testBadRange() throws Exception {
+    stream.seek(30);
+    byte[] buffer = new byte[64000];
+    int nRead = stream.read(buffer);
+    Assert.assertEquals(-1, nRead);
+  }
 }
-
-

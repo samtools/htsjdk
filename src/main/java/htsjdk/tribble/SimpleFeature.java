@@ -24,33 +24,31 @@ package htsjdk.tribble;
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * A simple concrete Feature.
- */
+/** A simple concrete Feature. */
 public class SimpleFeature implements Feature {
 
-    private final String contig;
-    private final int start;
-    private final int end;
+  private final String contig;
+  private final int start;
+  private final int end;
 
-    public SimpleFeature(final String contig, final int start, final int end) {
-        this.contig = contig;
-        this.start = start;
-        this.end = end;
-    }
+  public SimpleFeature(final String contig, final int start, final int end) {
+    this.contig = contig;
+    this.start = start;
+    this.end = end;
+  }
 
-    @Override
-    public String getContig() {
-        return contig;
-    }
+  @Override
+  public String getContig() {
+    return contig;
+  }
 
-    @Override
-    public int getStart() {
-        return start;
-    }
+  @Override
+  public int getStart() {
+    return start;
+  }
 
-    @Override
-    public int getEnd() {
-        return end;
-    }
+  @Override
+  public int getEnd() {
+    return end;
+  }
 }

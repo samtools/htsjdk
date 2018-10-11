@@ -26,16 +26,16 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- *  A trivial filter (always false) that can be used in testing
+ * A trivial filter (always false) that can be used in testing
  *
- *  @author Yossi Farjoun
+ * @author Yossi Farjoun
  */
 public class AllFailFilter implements VariantContextFilter {
 
-    /* @return false so that all VCs are filtered out. */
-    @Override
-    public boolean test(final VariantContext record) {
+  /* @return false so that all VCs are filtered out. */
+  @Override
+  public boolean test(final VariantContext record) {
 
-        return false;
-    }
+    return false;
+  }
 }

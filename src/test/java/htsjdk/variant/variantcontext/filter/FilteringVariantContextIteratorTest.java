@@ -27,63 +27,62 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.HtsjdkTest;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-
 /**
- * Tests for testing the (VariantContext)FilteringVariantContextIterator, and the HeterozygosityFilter
+ * Tests for testing the (VariantContext)FilteringVariantContextIterator, and the
+ * HeterozygosityFilter
  */
-
 public class FilteringVariantContextIteratorTest extends HtsjdkTest {
-    final File testDir = new File("src/test/resources/htsjdk/variant");
+  final File testDir = new File("src/test/resources/htsjdk/variant");
 
-    @DataProvider
-    public Object [][] filteringIteratorData() {
-        return new Object[][] {
-                {new HeterozygosityFilter(true, "NA00001"), 2},
-                {new HeterozygosityFilter(false, "NA00001"), 3},
-                {new HeterozygosityFilter(true, null), 2},
-                {new HeterozygosityFilter(false, null), 3},
-                {new AllPassFilter(), 5},
-                {new HeterozygosityFilter(true, "NA00002"), 4},
-                {new HeterozygosityFilter(false, "NA00002"), 1},
-        };
+  @DataProvider
+  public Object[][] filteringIteratorData() {
+    return new Object[][] {
+      {new HeterozygosityFilter(true, "NA00001"), 2},
+      {new HeterozygosityFilter(false, "NA00001"), 3},
+      {new HeterozygosityFilter(true, null), 2},
+      {new HeterozygosityFilter(false, null), 3},
+      {new AllPassFilter(), 5},
+      {new HeterozygosityFilter(true, "NA00002"), 4},
+      {new HeterozygosityFilter(false, "NA00002"), 1},
+    };
+  }
+
+  @Test(dataProvider = "filteringIteratorData")
+  public void testFilteringIterator(final VariantContextFilter filter, final int expectedCount) {
+
+    final File vcf = new File(testDir, "ex2.vcf");
+    final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
+    final FilteringVariantContextIterator filteringIterator =
+        new FilteringVariantContextIterator(vcfReader.iterator(), filter);
+    int count = 0;
+
+    for (final VariantContext vc : filteringIterator) {
+      count++;
     }
 
-    @Test(dataProvider = "filteringIteratorData")
-    public void testFilteringIterator(final VariantContextFilter filter, final int expectedCount) {
+    Assert.assertEquals(count, expectedCount);
+  }
 
-        final File vcf = new File(testDir,"ex2.vcf");
-        final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
-        final FilteringVariantContextIterator filteringIterator = new FilteringVariantContextIterator(vcfReader.iterator(), filter);
-        int count = 0;
+  @DataProvider
+  public Object[][] badSampleData() {
+    return new Object[][] {
+      {"ex2.vcf", "DOES_NOT_EXIST"},
+      {"breakpoint.vcf", null},
+    };
+  }
 
-        for(final VariantContext vc : filteringIterator) {
-            count++;
-        }
+  @Test(dataProvider = "badSampleData", expectedExceptions = IllegalArgumentException.class)
+  public void testMissingSample(final String file, final String sample) {
 
-        Assert.assertEquals(count, expectedCount);
-    }
+    final File vcf = new File(testDir, file);
+    final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
+    final HeterozygosityFilter heterozygosityFilter = new HeterozygosityFilter(true, sample);
 
-    @DataProvider
-    public Object [][] badSampleData() {
-        return new Object[][] {
-                {"ex2.vcf", "DOES_NOT_EXIST"},
-                {"breakpoint.vcf", null},
-        };
-    }
-
-    @Test(dataProvider = "badSampleData", expectedExceptions = IllegalArgumentException.class)
-    public void testMissingSample(final String file, final String sample) {
-
-        final File vcf = new File(testDir, file);
-        final VCFFileReader vcfReader = new VCFFileReader(vcf, false);
-        final HeterozygosityFilter heterozygosityFilter = new HeterozygosityFilter(true, sample);
-
-        new FilteringVariantContextIterator(vcfReader.iterator(), heterozygosityFilter).next();
-    }
+    new FilteringVariantContextIterator(vcfReader.iterator(), heterozygosityFilter).next();
+  }
 }
-

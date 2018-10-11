@@ -27,87 +27,72 @@ package htsjdk.samtools.util;
 import htsjdk.samtools.SAMRecord;
 
 /**
- * Holds a SAMRecord plus the zero-based offset into that SAMRecord's bases and quality scores that corresponds
- * to the base and quality at the genomic position described the containing AbstractLocusInfo. One object represents
- * one base for <code>SamLocusIterator.RecordAndOffset</code> implementation or one alignment block of
- * <code>SAMRecord</code> for <code>TypedRecordAndOffset</code> implementation.
- * 
+ * Holds a SAMRecord plus the zero-based offset into that SAMRecord's bases and quality scores that
+ * corresponds to the base and quality at the genomic position described the containing
+ * AbstractLocusInfo. One object represents one base for <code>SamLocusIterator.RecordAndOffset
+ * </code> implementation or one alignment block of <code>SAMRecord</code> for <code>
+ * TypedRecordAndOffset</code> implementation.
+ *
  * @author Darina_Nikolaeva@epam.com, EPAM Systems, Inc. <www.epam.com>
  * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 public class AbstractRecordAndOffset {
 
-    /**
-     * A SAMRecord aligned to reference position
-     */
-    protected final SAMRecord record;
-    /**
-     * Zero-based offset in the read corresponding to the current position in AbstractLocusInfo
-     */
-    protected final int offset;
+  /** A SAMRecord aligned to reference position */
+  protected final SAMRecord record;
+  /** Zero-based offset in the read corresponding to the current position in AbstractLocusInfo */
+  protected final int offset;
 
-    /**
-     * @param record inner SAMRecord
-     * @param offset from the start of the read
-     */
-    public AbstractRecordAndOffset(final SAMRecord record, final int offset) {
-        this.offset = offset;
-        this.record = record;
-    }
+  /**
+   * @param record inner SAMRecord
+   * @param offset from the start of the read
+   */
+  public AbstractRecordAndOffset(final SAMRecord record, final int offset) {
+    this.offset = offset;
+    this.record = record;
+  }
 
-    /**
-     * @return offset of aligned read base from the start of the read.
-     */
-    public int getOffset() {
-        return offset;
-    }
+  /** @return offset of aligned read base from the start of the read. */
+  public int getOffset() {
+    return offset;
+  }
 
-    /**
-     * @return inner <code>SAMRecord</code> object.
-     */
-    public SAMRecord getRecord() {
-        return record;
-    }
+  /** @return inner <code>SAMRecord</code> object. */
+  public SAMRecord getRecord() {
+    return record;
+  }
 
-    /**
-     * @return the read base according to <code>offset</code>.
-     */
-    public byte getReadBase() {
-        return record.getReadBases()[offset];
-    }
+  /** @return the read base according to <code>offset</code>. */
+  public byte getReadBase() {
+    return record.getReadBases()[offset];
+  }
 
-    /**
-     * @return the length of alignment block represented by the object.
-     */
-    public int getLength() {
-        return 1;
-    }
+  /** @return the length of alignment block represented by the object. */
+  public int getLength() {
+    return 1;
+  }
 
-    /**
-     * @return read name of inner SAMRecord.
-     */
-    public String getReadName() {
-        return record.getReadName();
-    }
+  /** @return read name of inner SAMRecord. */
+  public String getReadName() {
+    return record.getReadName();
+  }
 
-    /**
-     * @return array of base qualities of inner SAMRecord.
-     */
-    public byte[] getBaseQualities() {
-        return record.getBaseQualities();
-    }
-    
-    /**
-     * @return the base quality according to <code>offset</code>.
-     */
-    public byte getBaseQuality() {
-        return record.getBaseQualities()[offset];
-    }
+  /** @return array of base qualities of inner SAMRecord. */
+  public byte[] getBaseQualities() {
+    return record.getBaseQualities();
+  }
 
-    protected void validateOffset(int offset, final byte[] array) {
-        if (offset < 0 || offset >= array.length) {
-            throw new IllegalArgumentException("The requested position is not covered by this " + this.getClass().getSimpleName() +
-                    " object.");
-        }
+  /** @return the base quality according to <code>offset</code>. */
+  public byte getBaseQuality() {
+    return record.getBaseQualities()[offset];
+  }
+
+  protected void validateOffset(int offset, final byte[] array) {
+    if (offset < 0 || offset >= array.length) {
+      throw new IllegalArgumentException(
+          "The requested position is not covered by this "
+              + this.getClass().getSimpleName()
+              + " object.");
     }
+  }
 }

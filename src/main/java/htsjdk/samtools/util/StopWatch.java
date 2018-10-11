@@ -23,54 +23,49 @@
  */
 package htsjdk.samtools.util;
 
-/**
- * Utility to help in performance testing.
- */
+/** Utility to help in performance testing. */
 public class StopWatch {
 
-    private long startTime = 0;
-    private long elapsedTime = 0;
-    private boolean running = false;
+  private long startTime = 0;
+  private long elapsedTime = 0;
+  private boolean running = false;
 
+  public void start() {
+    this.startTime = System.currentTimeMillis();
+    this.running = true;
+  }
 
-    public void start() {
-        this.startTime = System.currentTimeMillis();
-        this.running = true;
+  public void stop() {
+    long stopTime = System.currentTimeMillis();
+    elapsedTime += stopTime - startTime;
+    this.running = false;
+  }
+
+  public void reset() {
+    stop();
+    elapsedTime = 0;
+    startTime = 0;
+  }
+
+  /**
+   * Returns the cumulative time between all the start() and stop() calls made to this object. If
+   * the StopWatch is currently running, also includes the time between the most recent start() and
+   * now.
+   *
+   * @return elapsedTime in milliseconds
+   */
+  public long getElapsedTime() {
+    final long currentElapsed;
+    if (running) {
+      currentElapsed = (System.currentTimeMillis() - startTime);
+    } else {
+      currentElapsed = 0;
     }
+    return currentElapsed + elapsedTime;
+  }
 
-
-    public void stop() {
-        long stopTime = System.currentTimeMillis();
-        elapsedTime += stopTime - startTime;
-        this.running = false;
-    }
-
-    public void reset() {
-        stop();
-        elapsedTime = 0;
-        startTime = 0;
-    }
-
-    /**
-     * Returns the cumulative time between all the start() and stop() calls made to this object.  If the
-     * StopWatch is currently running, also includes the time between the most recent start() and now.
-     * @return elapsedTime in milliseconds
-     */
-    public long getElapsedTime() {
-        final long currentElapsed;
-        if (running) {
-             currentElapsed = (System.currentTimeMillis() - startTime);
-        } else {
-            currentElapsed = 0;
-        }
-        return currentElapsed + elapsedTime;
-    }
-
-
-    /**
-     * @return same as getElapsedTime(), but truncated to seconds.
-     */
-    public long getElapsedTimeSecs() {
-        return getElapsedTime() / 1000;
-    }
+  /** @return same as getElapsedTime(), but truncated to seconds. */
+  public long getElapsedTimeSecs() {
+    return getElapsedTime() / 1000;
+  }
 }

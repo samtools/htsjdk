@@ -28,29 +28,30 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * @author Daniel Gomez-Sanchez (magicDGS)
- */
+/** @author Daniel Gomez-Sanchez (magicDGS) */
 public class SAMRecordQueryHashComparatorTest extends HtsjdkTest {
 
-    private static SAMRecordQueryHashComparator COMPARATOR = new SAMRecordQueryHashComparator();
+  private static SAMRecordQueryHashComparator COMPARATOR = new SAMRecordQueryHashComparator();
 
-    @Test
-    public void testCompareDifferentNames() throws Exception {
-        final SAMRecord a = new SAMRecord(null);
-        a.setReadName("A");
-        final SAMRecord b = new SAMRecord(null);
-        b.setReadName("B");
-        // hashes are providing a different order in this case
-        Assert.assertTrue(COMPARATOR.compare(a, b) != 0);
-        Assert.assertTrue(COMPARATOR.compare(b, a) != 0);
-    }
+  @Test
+  public void testCompareDifferentNames() throws Exception {
+    final SAMRecord a = new SAMRecord(null);
+    a.setReadName("A");
+    final SAMRecord b = new SAMRecord(null);
+    b.setReadName("B");
+    // hashes are providing a different order in this case
+    Assert.assertTrue(COMPARATOR.compare(a, b) != 0);
+    Assert.assertTrue(COMPARATOR.compare(b, a) != 0);
+  }
 
-    // with equal names, it delegates to the SAMRecordQuerynameComparator methods
-    // so this should always provide the same result
-    @Test(dataProvider = "equalNameComparisonData", dataProviderClass = SAMRecordQueryNameComparatorTest.class)
-    public void testCompareEqualNames(final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
-        final int comparisonResult = COMPARATOR.compare(record1, record2);
-        Assert.assertEquals(Integer.signum(comparisonResult), sign);
-    }
+  // with equal names, it delegates to the SAMRecordQuerynameComparator methods
+  // so this should always provide the same result
+  @Test(
+      dataProvider = "equalNameComparisonData",
+      dataProviderClass = SAMRecordQueryNameComparatorTest.class)
+  public void testCompareEqualNames(
+      final SAMRecord record1, final SAMRecord record2, final int sign) throws Exception {
+    final int comparisonResult = COMPARATOR.compare(record1, record2);
+    Assert.assertEquals(Integer.signum(comparisonResult), sign);
+  }
 }

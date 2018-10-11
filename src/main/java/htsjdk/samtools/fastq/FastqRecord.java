@@ -26,218 +26,216 @@ package htsjdk.samtools.fastq;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.util.StringUtil;
-
 import java.io.Serializable;
 
-/**
- * Simple representation of a FASTQ record, without any conversion
- */
+/** Simple representation of a FASTQ record, without any conversion */
 public class FastqRecord implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private final String readName;
-    private final String readString;
-    private final String qualityHeader;
-    private final String baseQualityString;
+  private static final long serialVersionUID = 1L;
+  private final String readName;
+  private final String readString;
+  private final String qualityHeader;
+  private final String baseQualityString;
 
-    /**
-     * Default constructor
-     *
-     * @param readName      the read name (without {@link FastqConstants#SEQUENCE_HEADER})
-     * @param readBases     the read sequence bases
-     * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
-     * @param baseQualities the base quality scores
-     */
-    public FastqRecord(final String readName, final String readBases, final String qualityHeader, final String baseQualities) {
-        if (readName != null && !readName.isEmpty()) {
-            this.readName = readName;
-        } else {
-            this.readName = null;
-        }
-        if (qualityHeader != null && !qualityHeader.isEmpty()) {
-            this.qualityHeader = qualityHeader;
-        } else {
-            this.qualityHeader = null;
-        }
-        this.readString = readBases;
-        this.baseQualityString = baseQualities;
+  /**
+   * Default constructor
+   *
+   * @param readName the read name (without {@link FastqConstants#SEQUENCE_HEADER})
+   * @param readBases the read sequence bases
+   * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
+   * @param baseQualities the base quality scores
+   */
+  public FastqRecord(
+      final String readName,
+      final String readBases,
+      final String qualityHeader,
+      final String baseQualities) {
+    if (readName != null && !readName.isEmpty()) {
+      this.readName = readName;
+    } else {
+      this.readName = null;
     }
-
-    /**
-     * Constructor for byte[] arrays
-     *
-     * @param readName      the read name (without {@link FastqConstants#SEQUENCE_HEADER})
-     * @param readBases     the read sequence bases as ASCII bytes ACGTN=.
-     * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
-     * @param baseQualities the base qualities as binary PHRED scores (not ASCII)
-     */
-    public FastqRecord(final String readName, final byte[] readBases, final String qualityHeader, final byte[] baseQualities) {
-        this(readName, StringUtil.bytesToString(readBases), qualityHeader, SAMUtils.phredToFastq(baseQualities));
+    if (qualityHeader != null && !qualityHeader.isEmpty()) {
+      this.qualityHeader = qualityHeader;
+    } else {
+      this.qualityHeader = null;
     }
+    this.readString = readBases;
+    this.baseQualityString = baseQualities;
+  }
 
-    /**
-     * Copy constructor
-     *
-     * @param other record to copy
-     */
-    public FastqRecord(final FastqRecord other) {
-        if (other == null) {
-            throw new IllegalArgumentException("new FastqRecord(null)");
-        }
-        this.readName = other.readName;
-        this.readString = other.readString;
-        this.qualityHeader = other.qualityHeader;
-        this.baseQualityString = other.baseQualityString;
+  /**
+   * Constructor for byte[] arrays
+   *
+   * @param readName the read name (without {@link FastqConstants#SEQUENCE_HEADER})
+   * @param readBases the read sequence bases as ASCII bytes ACGTN=.
+   * @param qualityHeader the quality header (without {@link FastqConstants#SEQUENCE_HEADER})
+   * @param baseQualities the base qualities as binary PHRED scores (not ASCII)
+   */
+  public FastqRecord(
+      final String readName,
+      final byte[] readBases,
+      final String qualityHeader,
+      final byte[] baseQualities) {
+    this(
+        readName,
+        StringUtil.bytesToString(readBases),
+        qualityHeader,
+        SAMUtils.phredToFastq(baseQualities));
+  }
+
+  /**
+   * Copy constructor
+   *
+   * @param other record to copy
+   */
+  public FastqRecord(final FastqRecord other) {
+    if (other == null) {
+      throw new IllegalArgumentException("new FastqRecord(null)");
     }
+    this.readName = other.readName;
+    this.readString = other.readString;
+    this.qualityHeader = other.qualityHeader;
+    this.baseQualityString = other.baseQualityString;
+  }
 
-    /**
-     * @return the read name
-     * @deprecated since 02/2017. Use {@link #getReadName()} instead
-     */
-    @Deprecated
-    public String getReadHeader() {
-        return getReadName();
-    }
+  /**
+   * @return the read name
+   * @deprecated since 02/2017. Use {@link #getReadName()} instead
+   */
+  @Deprecated
+  public String getReadHeader() {
+    return getReadName();
+  }
 
-    /**
-     * Get the read name
-     *
-     * @return the read name (may be {@code null}).
-     */
-    public String getReadName() {
-        return readName;
-    }
+  /**
+   * Get the read name
+   *
+   * @return the read name (may be {@code null}).
+   */
+  public String getReadName() {
+    return readName;
+  }
 
-    /**
-     * Get the DNA sequence
-     *
-     * @return read sequence as a string of ACGTN= (may be {@code null}).
-     */
-    public String getReadString() {
-        return readString;
-    }
+  /**
+   * Get the DNA sequence
+   *
+   * @return read sequence as a string of ACGTN= (may be {@code null}).
+   */
+  public String getReadString() {
+    return readString;
+  }
 
-    /**
-     * Get the DNA sequence.
-     *
-     * @return read sequence as ASCII bytes ACGTN=; {@link SAMRecord#NULL_SEQUENCE} if no bases are present.
-     */
-    public byte[] getReadBases() {
-        return (readString == null) ? SAMRecord.NULL_SEQUENCE : StringUtil.stringToBytes(readString);
-    }
+  /**
+   * Get the DNA sequence.
+   *
+   * @return read sequence as ASCII bytes ACGTN=; {@link SAMRecord#NULL_SEQUENCE} if no bases are
+   *     present.
+   */
+  public byte[] getReadBases() {
+    return (readString == null) ? SAMRecord.NULL_SEQUENCE : StringUtil.stringToBytes(readString);
+  }
 
-    /**
-     * Get the base qualities encoded as a FASTQ string
-     *
-     * @return the quality string (may be {@code null}).
-     */
-    public String getBaseQualityString() {
-        return baseQualityString;
-    }
+  /**
+   * Get the base qualities encoded as a FASTQ string
+   *
+   * @return the quality string (may be {@code null}).
+   */
+  public String getBaseQualityString() {
+    return baseQualityString;
+  }
 
-    /**
-     * Get the base qualities as binary PHRED scores (not ASCII)
-     *
-     * @return the base quality; {@link SAMRecord#NULL_QUALS} if no bases are present.
-     */
-    public byte[] getBaseQualities() {
-        return (baseQualityString == null) ? SAMRecord.NULL_QUALS : SAMUtils.fastqToPhred(baseQualityString);
-    }
+  /**
+   * Get the base qualities as binary PHRED scores (not ASCII)
+   *
+   * @return the base quality; {@link SAMRecord#NULL_QUALS} if no bases are present.
+   */
+  public byte[] getBaseQualities() {
+    return (baseQualityString == null)
+        ? SAMRecord.NULL_QUALS
+        : SAMUtils.fastqToPhred(baseQualityString);
+  }
 
-    /**
-     * Get the read length
-     *
-     * @return number of bases in the read
-     */
-    public int getReadLength() {
-        return (readString == null) ? 0 : readString.length();
-    }
+  /**
+   * Get the read length
+   *
+   * @return number of bases in the read
+   */
+  public int getReadLength() {
+    return (readString == null) ? 0 : readString.length();
+  }
 
-    /**
-     * Get the base quality header
-     *
-     * @return the base quality header (may be {@code null}).
-     */
-    public String getBaseQualityHeader() {
-        return qualityHeader;
-    }
+  /**
+   * Get the base quality header
+   *
+   * @return the base quality header (may be {@code null}).
+   */
+  public String getBaseQualityHeader() {
+    return qualityHeader;
+  }
 
-    /**
-     * shortcut to getReadString().length()
-     *
-     * @deprecated since 02/2017. Use {@link #getReadLength()} instead
-     */
-    @Deprecated
-    public int length() {
-        return getReadLength();
-    }
+  /**
+   * shortcut to getReadString().length()
+   *
+   * @deprecated since 02/2017. Use {@link #getReadLength()} instead
+   */
+  @Deprecated
+  public int length() {
+    return getReadLength();
+  }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime
-                * result
-                + ((qualityHeader == null) ? 0 : qualityHeader.hashCode());
-        result = prime * result
-                + ((baseQualityString == null) ? 0 : baseQualityString.hashCode());
-        result = prime * result
-                + ((readName == null) ? 0 : readName.hashCode());
-        result = prime * result + ((readString == null) ? 0 : readString.hashCode());
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((qualityHeader == null) ? 0 : qualityHeader.hashCode());
+    result = prime * result + ((baseQualityString == null) ? 0 : baseQualityString.hashCode());
+    result = prime * result + ((readName == null) ? 0 : readName.hashCode());
+    result = prime * result + ((readString == null) ? 0 : readString.hashCode());
+    return result;
+  }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        FastqRecord other = (FastqRecord) obj;
-        if (readString == null) {
-            if (other.readString != null)
-                return false;
-        } else if (!readString.equals(other.readString))
-            return false;
-        if (qualityHeader == null) {
-            if (other.qualityHeader != null)
-                return false;
-        } else if (!qualityHeader.equals(other.qualityHeader))
-            return false;
-        if (baseQualityString == null) {
-            if (other.baseQualityString != null)
-                return false;
-        } else if (!baseQualityString.equals(other.baseQualityString))
-            return false;
-        if (readName == null) {
-            if (other.readName != null)
-                return false;
-        } else if (!readName.equals(other.readName))
-            return false;
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    FastqRecord other = (FastqRecord) obj;
+    if (readString == null) {
+      if (other.readString != null) return false;
+    } else if (!readString.equals(other.readString)) return false;
+    if (qualityHeader == null) {
+      if (other.qualityHeader != null) return false;
+    } else if (!qualityHeader.equals(other.qualityHeader)) return false;
+    if (baseQualityString == null) {
+      if (other.baseQualityString != null) return false;
+    } else if (!baseQualityString.equals(other.baseQualityString)) return false;
+    if (readName == null) {
+      if (other.readName != null) return false;
+    } else if (!readName.equals(other.readName)) return false;
 
-        return true;
-    }
+    return true;
+  }
 
-    /**
-     * Returns the record as the String FASTQ format.
-     * @see FastqEncoder#encode(FastqRecord)
-     */
-    public String toFastQString() {
-        return FastqEncoder.encode(this);
-    }
+  /**
+   * Returns the record as the String FASTQ format.
+   *
+   * @see FastqEncoder#encode(FastqRecord)
+   */
+  public String toFastQString() {
+    return FastqEncoder.encode(this);
+  }
 
-    /**
-     * Returns {@link #toFastQString()}.
-     *
-     * WARNING: This method will be changed in the future for a simpler representation of the object.
-     * For code relying on the formatting as a FASTQ String, please refactor your code to use
-     * {@link #toFastQString()}.
-     */
-    @Override
-    public String toString() {
-        // TODO: this should be change in the future for a simpler and more informative form such as
-        // TODO: return String.format("%s: %s bp", readName, getReadLength());
-        return toFastQString();
-    }
+  /**
+   * Returns {@link #toFastQString()}.
+   *
+   * <p>WARNING: This method will be changed in the future for a simpler representation of the
+   * object. For code relying on the formatting as a FASTQ String, please refactor your code to use
+   * {@link #toFastQString()}.
+   */
+  @Override
+  public String toString() {
+    // TODO: this should be change in the future for a simpler and more informative form such as
+    // TODO: return String.format("%s: %s bp", readName, getReadLength());
+    return toFastQString();
+  }
 }

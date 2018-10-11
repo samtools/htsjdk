@@ -24,46 +24,47 @@
 package htsjdk.samtools;
 
 /**
- * Represents the contents of a bam index file for one reference.
- * A BAM index (.bai) file contains information for all references in the bam file.
- * This class describes the data present in the index file for one of these references;
- * including the bins, chunks, and linear index.
+ * Represents the contents of a bam index file for one reference. A BAM index (.bai) file contains
+ * information for all references in the bam file. This class describes the data present in the
+ * index file for one of these references; including the bins, chunks, and linear index.
  */
 class BAMIndexContent extends BinningIndexContent {
-    /**
-     * Chunks containing metaData for the reference, e.g. number of aligned and unaligned records
-     */
-    private final BAMIndexMetaData mMetaData;
+  /** Chunks containing metaData for the reference, e.g. number of aligned and unaligned records */
+  private final BAMIndexMetaData mMetaData;
 
+  /**
+   * @param referenceSequence Content corresponds to this reference.
+   * @param binList Array of bins represented by this content, possibly sparse
+   * @param metaData Extra information about the reference in this index
+   * @param linearIndex Additional index used to optimize queries
+   */
+  BAMIndexContent(
+      final int referenceSequence,
+      final BinList binList,
+      final BAMIndexMetaData metaData,
+      final LinearIndex linearIndex) {
+    super(referenceSequence, binList, linearIndex);
+    this.mMetaData = metaData;
+  }
 
+  /**
+   * @param referenceSequence Content corresponds to this reference.
+   * @param bins Array of bins represented by this content, possibly sparse
+   * @param numberOfBins Number of non-null bins
+   * @param metaData Extra information about the reference in this index
+   * @param linearIndex Additional index used to optimize queries
+   */
+  BAMIndexContent(
+      final int referenceSequence,
+      final Bin[] bins,
+      final int numberOfBins,
+      final BAMIndexMetaData metaData,
+      final LinearIndex linearIndex) {
+    this(referenceSequence, new BinList(bins, numberOfBins), metaData, linearIndex);
+  }
 
-    /**
-     * @param referenceSequence Content corresponds to this reference.
-     * @param binList              Array of bins represented by this content, possibly sparse
-     * @param metaData          Extra information about the reference in this index
-     * @param linearIndex       Additional index used to optimize queries
-     */
-    BAMIndexContent(final int referenceSequence, final BinList binList, final BAMIndexMetaData metaData, final LinearIndex linearIndex) {
-        super(referenceSequence, binList, linearIndex);
-        this.mMetaData = metaData;
-    }
-
-    /**
-     * @param referenceSequence Content corresponds to this reference.
-     * @param bins              Array of bins represented by this content, possibly sparse
-     * @param numberOfBins      Number of non-null bins
-     * @param metaData          Extra information about the reference in this index
-     * @param linearIndex       Additional index used to optimize queries
-     */
-    BAMIndexContent(final int referenceSequence, final Bin[] bins, final int numberOfBins, final BAMIndexMetaData metaData, final LinearIndex linearIndex) {
-        this(referenceSequence, new BinList(bins, numberOfBins), metaData, linearIndex);
-    }
-
-    /**
-     * @return the meta data chunks for this content
-     */
-    public BAMIndexMetaData getMetaData() {
-        return mMetaData;
-    }
-
+  /** @return the meta data chunks for this content */
+  public BAMIndexMetaData getMetaData() {
+    return mMetaData;
+  }
 }

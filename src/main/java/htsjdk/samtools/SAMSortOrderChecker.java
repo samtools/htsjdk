@@ -25,54 +25,56 @@ package htsjdk.samtools;
 
 /**
  * Encapsulates simple check for SAMRecord order.
+ *
  * @author alecw@broadinstitute.org
  */
 public class SAMSortOrderChecker {
-    private final SAMFileHeader.SortOrder sortOrder;
-    private SAMRecord prev;
-    private final SAMRecordComparator comparator;
+  private final SAMFileHeader.SortOrder sortOrder;
+  private SAMRecord prev;
+  private final SAMRecordComparator comparator;
 
-    public SAMSortOrderChecker(final SAMFileHeader.SortOrder sortOrder) {
-        this.sortOrder = sortOrder;
-        this.comparator = sortOrder == null ? null : sortOrder.getComparatorInstance();
-    }
+  public SAMSortOrderChecker(final SAMFileHeader.SortOrder sortOrder) {
+    this.sortOrder = sortOrder;
+    this.comparator = sortOrder == null ? null : sortOrder.getComparatorInstance();
+  }
 
-    /**
-     * Check if given SAMRecord violates sort order relative to previous SAMRecord.
-     * @return True if sort order is unsorted, if this is the first record, or if previous <= rec.
-     */
-    public boolean isSorted(final SAMRecord rec) {
-        if (comparator == null) {
-            return true;
-        }
-        boolean ret = true;
-        if (prev != null) {
-            ret = comparator.fileOrderCompare(prev, rec) <= 0;
-        }
-        prev = rec;
-        return ret;
+  /**
+   * Check if given SAMRecord violates sort order relative to previous SAMRecord.
+   *
+   * @return True if sort order is unsorted, if this is the first record, or if previous <= rec.
+   */
+  public boolean isSorted(final SAMRecord rec) {
+    if (comparator == null) {
+      return true;
     }
+    boolean ret = true;
+    if (prev != null) {
+      ret = comparator.fileOrderCompare(prev, rec) <= 0;
+    }
+    prev = rec;
+    return ret;
+  }
 
-    public SAMRecord getPreviousRecord() {
-        return prev;
-    }
+  public SAMRecord getPreviousRecord() {
+    return prev;
+  }
 
-    public SAMFileHeader.SortOrder getSortOrder() {
-        return sortOrder;
-    }
+  public SAMFileHeader.SortOrder getSortOrder() {
+    return sortOrder;
+  }
 
-    /**
-     * Return the sort key used for the given sort order.  Useful in error messages.
-     * This should only be used in error messages and program correctness should not rely on this.
-     */
-    public String getSortKey(final SAMRecord rec) {
-        switch (sortOrder) {
-            case coordinate:
-                return rec.getReferenceName() + ":" + rec.getAlignmentStart();
-            case queryname:
-                return rec.getReadName();
-            default:
-                return rec.getSAMString().trim();
-        }
+  /**
+   * Return the sort key used for the given sort order. Useful in error messages. This should only
+   * be used in error messages and program correctness should not rely on this.
+   */
+  public String getSortKey(final SAMRecord rec) {
+    switch (sortOrder) {
+      case coordinate:
+        return rec.getReferenceName() + ":" + rec.getAlignmentStart();
+      case queryname:
+        return rec.getReadName();
+      default:
+        return rec.getSAMString().trim();
     }
+  }
 }

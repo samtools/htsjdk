@@ -24,7 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMFileHeader;
-
 import java.util.BitSet;
 import java.util.List;
 
@@ -35,95 +34,95 @@ import java.util.List;
  */
 public class IntervalListReferenceSequenceMask implements ReferenceSequenceMask {
 
-    private final SAMFileHeader header;
-    // if memory usage becomes a problem... this could be changed to a SparseBitSet
-    // http://java.sun.com/developer/onlineTraining/collections/magercises/BitSet/index.html
-    private final BitSet currentBitSet = new BitSet();
-    private int currentSequenceIndex = -1;
-    private final PeekableIterator<Interval> intervalIterator;
-    private final int lastSequenceIndex;
-    private final int lastPosition;
+  private final SAMFileHeader header;
+  // if memory usage becomes a problem... this could be changed to a SparseBitSet
+  // http://java.sun.com/developer/onlineTraining/collections/magercises/BitSet/index.html
+  private final BitSet currentBitSet = new BitSet();
+  private int currentSequenceIndex = -1;
+  private final PeekableIterator<Interval> intervalIterator;
+  private final int lastSequenceIndex;
+  private final int lastPosition;
 
-    public IntervalListReferenceSequenceMask(final IntervalList intervalList) {
-        this.header = intervalList.getHeader();
-        if (intervalList.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
-            intervalList.sorted();
-        }
-        final List<Interval> uniqueIntervals = intervalList.uniqued().getIntervals();
-        if (uniqueIntervals.isEmpty()) {
-            lastSequenceIndex = -1;
-            lastPosition = 0;
+  public IntervalListReferenceSequenceMask(final IntervalList intervalList) {
+    this.header = intervalList.getHeader();
+    if (intervalList.getHeader().getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
+      intervalList.sorted();
+    }
+    final List<Interval> uniqueIntervals = intervalList.uniqued().getIntervals();
+    if (uniqueIntervals.isEmpty()) {
+      lastSequenceIndex = -1;
+      lastPosition = 0;
+    } else {
+      final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
+      lastSequenceIndex = header.getSequenceIndex((lastInterval.getContig()));
+      lastPosition = lastInterval.getEnd();
+    }
+    intervalIterator = new PeekableIterator<Interval>(uniqueIntervals.iterator());
+  }
+
+  /**
+   * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
+   *
+   * @return true if the mask is set for the given sequence and position
+   */
+  @Override
+  public boolean get(final int sequenceIndex, final int position) {
+    ensureSequenceLoaded(sequenceIndex);
+    return currentBitSet.get(position);
+  }
+
+  /**
+   * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
+   *
+   * @return the next pos on the given sequence >= position that is set, or -1 if there are no more
+   *     set positions
+   */
+  @Override
+  public int nextPosition(final int sequenceIndex, final int position) {
+    ensureSequenceLoaded(sequenceIndex);
+    // nextSetBit returns the first set bit on or after the starting index, therefore position+1
+    return currentBitSet.nextSetBit(position + 1);
+  }
+
+  private void ensureSequenceLoaded(final int sequenceIndex) {
+    if (sequenceIndex < this.currentSequenceIndex) {
+      throw new IllegalArgumentException(
+          "Cannot look at an earlier sequence.  Current: "
+              + this.currentSequenceIndex
+              + "; requested: "
+              + sequenceIndex);
+    }
+    if (sequenceIndex > currentSequenceIndex) {
+      currentBitSet.clear();
+      while (intervalIterator.hasNext()) {
+        final Interval interval = intervalIterator.peek();
+        final int nextSequenceIndex = header.getSequenceIndex(interval.getContig());
+        if (nextSequenceIndex < sequenceIndex) {
+          intervalIterator.next();
+        } else if (nextSequenceIndex == sequenceIndex) {
+          currentBitSet.set(interval.getStart(), interval.getEnd() + 1);
+          intervalIterator.next();
         } else {
-            final Interval lastInterval = uniqueIntervals.get(uniqueIntervals.size() - 1);
-            lastSequenceIndex = header.getSequenceIndex((lastInterval.getContig()));
-            lastPosition = lastInterval.getEnd();
+          break;
         }
-        intervalIterator = new PeekableIterator<Interval>(uniqueIntervals.iterator());
+      }
+      currentSequenceIndex = sequenceIndex;
     }
+  }
 
-    /**
-     * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
-     *
-     * @return true if the mask is set for the given sequence and position
-     */
-    @Override
-    public boolean get(final int sequenceIndex, final int position) {
-        ensureSequenceLoaded(sequenceIndex);
-        return currentBitSet.get(position);
-    }
+  /** @return Largest sequence index for which there are set bits. */
+  @Override
+  public int getMaxSequenceIndex() {
+    return lastSequenceIndex;
+  }
 
-    /**
-     * It is required that sequenceIndex is >= any previous sequenceIndex passed to this class.
-     *
-     * @return the next pos on the given sequence >= position that is set, or -1 if there are no more set positions
-     */
-    @Override
-    public int nextPosition(final int sequenceIndex, final int position) {
-        ensureSequenceLoaded(sequenceIndex);
-        // nextSetBit returns the first set bit on or after the starting index, therefore position+1
-        return currentBitSet.nextSetBit(position + 1);
-    }
+  /** @return the largest position on the last sequence index */
+  @Override
+  public int getMaxPosition() {
+    return lastPosition;
+  }
 
-    private void ensureSequenceLoaded(final int sequenceIndex) {
-        if (sequenceIndex < this.currentSequenceIndex) {
-            throw new IllegalArgumentException("Cannot look at an earlier sequence.  Current: " +
-                    this.currentSequenceIndex + "; requested: " + sequenceIndex);
-        }
-        if (sequenceIndex > currentSequenceIndex) {
-            currentBitSet.clear();
-            while (intervalIterator.hasNext()) {
-                final Interval interval = intervalIterator.peek();
-                final int nextSequenceIndex = header.getSequenceIndex(interval.getContig());
-                if (nextSequenceIndex < sequenceIndex) {
-                    intervalIterator.next();
-                } else if (nextSequenceIndex == sequenceIndex) {
-                    currentBitSet.set(interval.getStart(), interval.getEnd() + 1);
-                    intervalIterator.next();
-                } else {
-                    break;
-                }
-            }
-            currentSequenceIndex = sequenceIndex;
-        }
-    }
-
-    /**
-     * @return Largest sequence index for which there are set bits.
-     */
-    @Override
-    public int getMaxSequenceIndex() {
-        return lastSequenceIndex;
-    }
-
-    /**
-     * @return the largest position on the last sequence index
-     */
-    @Override
-    public int getMaxPosition() {
-        return lastPosition;
-    }
-
-    public SAMFileHeader getHeader() {
-        return header;
-    }
+  public SAMFileHeader getHeader() {
+    return header;
+  }
 }

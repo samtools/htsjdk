@@ -24,58 +24,57 @@
 package htsjdk.samtools.filter;
 
 import htsjdk.samtools.SAMRecord;
-
 import java.util.List;
 
 /**
  * Aggregates multiple filters and provides a method for applying them all to a given record with
  * one method call.
  *
- * $Id$
+ * <p>$Id$
  */
 public class AggregateFilter implements SamRecordFilter {
 
-    private final List<SamRecordFilter> filters;
+  private final List<SamRecordFilter> filters;
 
-    /**
-     * Constructor
-     * @param filters   the list of filters that this Aggregator applies
-     */
-    public AggregateFilter(final List<SamRecordFilter> filters) {
-        this.filters = filters;
-    }
+  /**
+   * Constructor
+   *
+   * @param filters the list of filters that this Aggregator applies
+   */
+  public AggregateFilter(final List<SamRecordFilter> filters) {
+    this.filters = filters;
+  }
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record    the SAMRecord to evaluate
-     * @return  true if the SAMRecord matches at least one filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        for (final SamRecordFilter filter : filters) {
-            if (filter.filterOut(record)) {
-                return true;
-            }
-        }
-        return false;
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches at least one filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    for (final SamRecordFilter filter : filters) {
+      if (filter.filterOut(record)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-         for (final SamRecordFilter filter : filters) {
-            if (filter.filterOut(first, second)) {
-                return true;
-            }
-        }
-        return false;
+  /**
+   * Determines whether a pair of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    for (final SamRecordFilter filter : filters) {
+      if (filter.filterOut(first, second)) {
+        return true;
+      }
     }
+    return false;
+  }
 }

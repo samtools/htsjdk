@@ -27,108 +27,114 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.ValidationStringency;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.*;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class ReadTagTest extends HtsjdkTest {
 
-    @Test
-    public void test () {
-        SAMFileHeader h = new SAMFileHeader();
-        SAMRecord r = new SAMRecord(h);
-        r.setAttribute("OQ", "A:SOME:RANDOM:NONSENSE".getBytes());
-        r.setAttribute("XA", 1333123);
-        r.setAttribute("XB", (byte) 31);
-        r.setAttribute("XB", 'Q');
-        r.setAttribute("XC", "A STRING");
+  @Test
+  public void test() {
+    SAMFileHeader h = new SAMFileHeader();
+    SAMRecord r = new SAMRecord(h);
+    r.setAttribute("OQ", "A:SOME:RANDOM:NONSENSE".getBytes());
+    r.setAttribute("XA", 1333123);
+    r.setAttribute("XB", (byte) 31);
+    r.setAttribute("XB", 'Q');
+    r.setAttribute("XC", "A STRING");
 
-        int intValue = 1123123123;
-        byte[] data = ReadTag.writeSingleValue((byte) 'i', intValue, false);
-        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        Object value = ReadTag.readSingleValue((byte) 'i', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
-        Assert.assertEquals (((Integer) value).intValue(), intValue);
+    int intValue = 1123123123;
+    byte[] data = ReadTag.writeSingleValue((byte) 'i', intValue, false);
+    ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    Object value =
+        ReadTag.readSingleValue((byte) 'i', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
+    Assert.assertEquals(((Integer) value).intValue(), intValue);
 
-        String sValue = "value";
-        data = ReadTag.writeSingleValue((byte) 'Z', sValue, false);
-        byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = ReadTag.readSingleValue((byte) 'Z', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
-        Assert.assertEquals(sValue, value);
+    String sValue = "value";
+    data = ReadTag.writeSingleValue((byte) 'Z', sValue, false);
+    byteBuffer = ByteBuffer.wrap(data);
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    value =
+        ReadTag.readSingleValue((byte) 'Z', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
+    Assert.assertEquals(sValue, value);
 
-        byte[] baValue = "value".getBytes();
-        data = ReadTag.writeSingleValue((byte) 'B', baValue, false);
-        byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        value = ReadTag.readSingleValue((byte) 'B', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
-        Assert.assertEquals((byte[]) value, baValue);
+    byte[] baValue = "value".getBytes();
+    data = ReadTag.writeSingleValue((byte) 'B', baValue, false);
+    byteBuffer = ByteBuffer.wrap(data);
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    value =
+        ReadTag.readSingleValue((byte) 'B', byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
+    Assert.assertEquals((byte[]) value, baValue);
+  }
+
+  @Test
+  public void testUnsignedInt() {
+    long intValue = Integer.MAX_VALUE + 1L;
+    byte[] data = ReadTag.writeSingleValue((byte) 'I', intValue, false);
+    ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    Object value = ReadTag.readSingleValue((byte) 'I', byteBuffer, ValidationStringency.SILENT);
+    Assert.assertTrue(value instanceof Long);
+    long lValue = (Long) value;
+    Assert.assertEquals(lValue & 0xFFFFFFFF, intValue);
+  }
+
+  @Test
+  public void testParallelReadTag() throws Exception {
+    // NOTE: testng 5.5 (circa 2007) doesn't support parallel data providers, but modern versions
+    // do.
+    // For now, roll our own.
+    final Object[][] allArgs = getParallelReadTagData();
+    final long timeout = 1000L * 5; // just in case
+    final List<Thread> threads = new ArrayList<Thread>(allArgs.length);
+    final Map<Object[], Exception> results =
+        Collections.synchronizedMap(new HashMap<Object[], Exception>());
+    for (final Object[] argLine : allArgs) {
+      threads.add(
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                testParallelReadTag((Byte) argLine[0], argLine[1]);
+              } catch (final Exception e) {
+                Assert.assertNull(results.put(argLine, e));
+              }
+            }
+          });
     }
-
-    @Test
-    public void testUnsignedInt() {
-        long intValue = Integer.MAX_VALUE+1L;
-        byte[] data = ReadTag.writeSingleValue((byte) 'I', intValue, false);
-        ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        Object value = ReadTag.readSingleValue((byte) 'I', byteBuffer, ValidationStringency.SILENT);
-        Assert.assertTrue(value instanceof Long);
-        long lValue = (Long)value;
-        Assert.assertEquals (lValue & 0xFFFFFFFF, intValue);
+    for (final Thread thread : threads) {
+      thread.start();
     }
-
-    @Test
-    public void testParallelReadTag() throws Exception {
-        // NOTE: testng 5.5 (circa 2007) doesn't support parallel data providers, but modern versions do.
-        // For now, roll our own.
-        final Object[][] allArgs = getParallelReadTagData();
-        final long timeout = 1000L * 5; // just in case
-        final List<Thread> threads = new ArrayList<Thread>(allArgs.length);
-        final Map<Object[], Exception> results = Collections.synchronizedMap(new HashMap<Object[], Exception>());
-        for (final Object[] argLine: allArgs) {
-            threads.add(new Thread() {
-                @Override
-                public void run() {
-                    try {
-                        testParallelReadTag((Byte)argLine[0], argLine[1]);
-                    } catch (final Exception e) {
-                        Assert.assertNull(results.put(argLine, e));
-                    }
-                }
-            });
-        }
-        for (final Thread thread: threads) {
-            thread.start();
-        }
-        for (final Thread thread: threads) {
-            thread.join(timeout);
-        }
-        for (final Map.Entry<Object[], Exception> result: results.entrySet()) {
-            // Will fail only on the first, for now, but a debugger will be able to see all the results.
-            Assert.fail("failed: " + Arrays.toString(result.getKey()), result.getValue());
-        }
+    for (final Thread thread : threads) {
+      thread.join(timeout);
     }
-
-    //@Test(dataProvider = "parallelReadTagData")
-    public void testParallelReadTag(final byte tagType, final Object originalValue) {
-        // refactored from ReadTag.main()
-        final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-        final Object readValue = ReadTag.readSingleValue(tagType, byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
-        Assert.assertEquals(readValue, originalValue);
+    for (final Map.Entry<Object[], Exception> result : results.entrySet()) {
+      // Will fail only on the first, for now, but a debugger will be able to see all the results.
+      Assert.fail("failed: " + Arrays.toString(result.getKey()), result.getValue());
     }
+  }
 
-    //@DataProvider(name = "parallelReadTagData", parallel = true)
-    public Object[][] getParallelReadTagData() {
-        final int testCount = 10;
-        final Object[][] testData = new Object[testCount][];
-        for (int i = 0; i < testCount; i++) {
-            testData[i] = new Object[]{(byte)'Z', "test" + i};
-        }
-        return testData;
+  // @Test(dataProvider = "parallelReadTagData")
+  public void testParallelReadTag(final byte tagType, final Object originalValue) {
+    // refactored from ReadTag.main()
+    final byte[] data = ReadTag.writeSingleValue(tagType, originalValue, false);
+    final ByteBuffer byteBuffer = ByteBuffer.wrap(data);
+    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    final Object readValue =
+        ReadTag.readSingleValue(tagType, byteBuffer, ValidationStringency.DEFAULT_STRINGENCY);
+    Assert.assertEquals(readValue, originalValue);
+  }
+
+  // @DataProvider(name = "parallelReadTagData", parallel = true)
+  public Object[][] getParallelReadTagData() {
+    final int testCount = 10;
+    final Object[][] testData = new Object[testCount][];
+    for (int i = 0; i < testCount; i++) {
+      testData[i] = new Object[] {(byte) 'Z', "test" + i};
     }
+    return testData;
+  }
 }

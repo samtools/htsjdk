@@ -25,29 +25,26 @@ package htsjdk.tribble.index;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-
 import java.util.LinkedHashMap;
 
-/**
- * Base class for Tribble-specific index creators.
- */
+/** Base class for Tribble-specific index creators. */
 public abstract class TribbleIndexCreator implements IndexCreator {
-    // a constant we use for marking sequence dictionary entries in the Tribble index property list
-    private static final String SEQUENCE_DICTIONARY_PROPERTY_PREDICATE = "DICT:";
+  // a constant we use for marking sequence dictionary entries in the Tribble index property list
+  private static final String SEQUENCE_DICTIONARY_PROPERTY_PREDICATE = "DICT:";
 
-    protected LinkedHashMap<String, String> properties = new LinkedHashMap<String, String>();
+  protected LinkedHashMap<String, String> properties = new LinkedHashMap<String, String>();
 
-    public void addProperty(final String key, final String value) {
-        properties.put(key, value);
+  public void addProperty(final String key, final String value) {
+    properties.put(key, value);
+  }
+
+  /** Set the sequence dictionary entries for the index property list. */
+  @Override
+  public void setIndexSequenceDictionary(final SAMSequenceDictionary dict) {
+    for (final SAMSequenceRecord seq : dict.getSequences()) {
+      final String contig = SEQUENCE_DICTIONARY_PROPERTY_PREDICATE + seq.getSequenceName();
+      final String length = String.valueOf(seq.getSequenceLength());
+      addProperty(contig, length);
     }
-
-    /** Set the sequence dictionary entries for the index property list. */
-    @Override
-    public void setIndexSequenceDictionary(final SAMSequenceDictionary dict) {
-        for (final SAMSequenceRecord seq : dict.getSequences()) {
-            final String contig = SEQUENCE_DICTIONARY_PROPERTY_PREDICATE + seq.getSequenceName();
-            final String length = String.valueOf(seq.getSequenceLength());
-            addProperty(contig,length);
-        }
-    }
+  }
 }

@@ -25,49 +25,56 @@ package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.variant.vcf.VCFFileReader;
-
+import java.io.File;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.IOException;
-
-/**
- * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
- */
-
+/** @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France */
 public class JavascriptVariantFilterTest extends HtsjdkTest {
-    final File testDir = new File("src/test/resources/htsjdk/variant");
+  final File testDir = new File("src/test/resources/htsjdk/variant");
 
-    @DataProvider
-    public Object[][] jsData() {
-        return new Object[][] {
-                { "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter01.js",61 },
-                { "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf", "variantFilter02.js",38 }, };
-    }
+  @DataProvider
+  public Object[][] jsData() {
+    return new Object[][] {
+      {
+        "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf",
+        "variantFilter01.js",
+        61
+      },
+      {
+        "ILLUMINA.wex.broad_phase2_baseline.20111114.both.exome.genotypes.1000.vcf",
+        "variantFilter02.js",
+        38
+      },
+    };
+  }
 
-    @Test(dataProvider = "jsData")
-    public void testJavascriptFilters(final String vcfFile, final String javascriptFile, final int expectCount) {
-        final File vcfInput = new File(testDir, vcfFile);
-        final File jsInput = new File(testDir, javascriptFile);
-        final VCFFileReader vcfReader = new VCFFileReader(vcfInput, false);
-        final JavascriptVariantFilter filter;
-        try {
-            filter = new JavascriptVariantFilter(jsInput, vcfReader.getFileHeader());
-        } catch (IOException err) {
-            Assert.fail("cannot read script "+jsInput, err);
-            vcfReader.close();
-            return;
-        }
-        final FilteringVariantContextIterator iter = new FilteringVariantContextIterator(vcfReader.iterator(), filter);
-        int count = 0;
-        while (iter.hasNext()) {
-            iter.next();
-            ++count;
-        }
-        iter.close();
-        vcfReader.close();
-        Assert.assertEquals(count, expectCount, "Expected number of variants " + expectCount + " but got " + count);
+  @Test(dataProvider = "jsData")
+  public void testJavascriptFilters(
+      final String vcfFile, final String javascriptFile, final int expectCount) {
+    final File vcfInput = new File(testDir, vcfFile);
+    final File jsInput = new File(testDir, javascriptFile);
+    final VCFFileReader vcfReader = new VCFFileReader(vcfInput, false);
+    final JavascriptVariantFilter filter;
+    try {
+      filter = new JavascriptVariantFilter(jsInput, vcfReader.getFileHeader());
+    } catch (IOException err) {
+      Assert.fail("cannot read script " + jsInput, err);
+      vcfReader.close();
+      return;
     }
+    final FilteringVariantContextIterator iter =
+        new FilteringVariantContextIterator(vcfReader.iterator(), filter);
+    int count = 0;
+    while (iter.hasNext()) {
+      iter.next();
+      ++count;
+    }
+    iter.close();
+    vcfReader.close();
+    Assert.assertEquals(
+        count, expectCount, "Expected number of variants " + expectCount + " but got " + count);
+  }
 }

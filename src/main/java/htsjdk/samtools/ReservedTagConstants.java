@@ -23,48 +23,47 @@
  */
 package htsjdk.samtools;
 
-/**
- * Constants for tags used in our SAM/BAM files
- */
+/** Constants for tags used in our SAM/BAM files */
 public class ReservedTagConstants {
-    public static final String READ_GROUP_ID = SAMTag.RG.name(); // Specified in the SAM spec doc
-    public static final String PROGRAM_GROUP_ID =  SAMTag.PG.name(); // Specified in the SAM spec doc
+  public static final String READ_GROUP_ID = SAMTag.RG.name(); // Specified in the SAM spec doc
+  public static final String PROGRAM_GROUP_ID = SAMTag.PG.name(); // Specified in the SAM spec doc
 
-    /** Present and set to 1 if a read is a noise read. */
-    public static final String XN = "XN";
+  /** Present and set to 1 if a read is a noise read. */
+  public static final String XN = "XN";
 
-    /** Number of nucleotide differences (Specified in the SAM spec doc) */
-    public static final String NM = SAMTag.NM.name();
+  /** Number of nucleotide differences (Specified in the SAM spec doc) */
+  public static final String NM = SAMTag.NM.name();
 
-    /** The sum of the mismatched qualities. */
-    public static final String XQ = "XQ";
+  /** The sum of the mismatched qualities. */
+  public static final String XQ = "XQ";
 
-    /**
-     * The name of an attribute which stores the 1-based index of the start of
-     * sequence within a read (in original orientation) that should be clipped
-     * or trimmed before alignment and downstream use.
-     * The region to be clipped extends from this position to the end of the read.
-     */
-    public static final String XT = "XT";
+  /**
+   * The name of an attribute which stores the 1-based index of the start of sequence within a read
+   * (in original orientation) that should be clipped or trimmed before alignment and downstream
+   * use. The region to be clipped extends from this position to the end of the read.
+   */
+  public static final String XT = "XT";
 
-    /** The original sequence before 454 cafie and homopolymer correction */
-    public static final String XS = "XS";
+  /** The original sequence before 454 cafie and homopolymer correction */
+  public static final String XS = "XS";
 
-    /** The Four54 edit string of 454 cafie and homopolymer corrections
-     * <pre>
-     *   editString ::= {base operator position [- position]}* ;  // Cafie needs 2 positions
-     *   base ::= A | T | G | C | N ;   // N only for undercall
-     *   operator ::= o | u | c ;       // o = Overcall, u = Undercall, c = Cafie.
-     *   position is 0 based position of the correction (assuming forward strand) .  Cafie positions are to-from.
-     *   For example: XF :Z:Gc4-6Nu11Co15 means a cafie correction moved a G from position 6 to 4,
-     *   an N was inserted for an undercall at position 11, and a C was removed as an overcall at position 15
-     */
-    public static final String XF = "XF";
+  /** The Four54 edit string of 454 cafie and homopolymer corrections
+   * <pre>
+   *   editString ::= {base operator position [- position]}* ;  // Cafie needs 2 positions
+   *   base ::= A | T | G | C | N ;   // N only for undercall
+   *   operator ::= o | u | c ;       // o = Overcall, u = Undercall, c = Cafie.
+   *   position is 0 based position of the correction (assuming forward strand) .  Cafie positions are to-from.
+   *   For example: XF :Z:Gc4-6Nu11Co15 means a cafie correction moved a G from position 6 to 4,
+   *   an N was inserted for an undercall at position 11, and a C was removed as an overcall at position 15
+   */
+  public static final String XF = "XF";
 
-    /** The original pred quality scores before modifications such as 454 cafie and homopolymer correction */
-    public static final String OQ = SAMTag.OQ.name();
+  /**
+   * The original pred quality scores before modifications such as 454 cafie and homopolymer
+   * correction
+   */
+  public static final String OQ = SAMTag.OQ.name();
 
-    /** The original cigar before indel cleaning, or 454 cafie and homopolymer correction */
-    public static final String OC = "OC";
-
+  /** The original cigar before indel cleaning, or 454 cafie and homopolymer correction */
+  public static final String OC = "OC";
 }

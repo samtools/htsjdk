@@ -27,27 +27,27 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class SAMCloneTest extends HtsjdkTest {
-    private SAMRecordSetBuilder getSAMReader(final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
-        final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
-        ret.addPair("readB", 20, 200, 300);
-        ret.addPair("readA", 20, 100, 150);
-        ret.addFrag("readC", 20, 140, true);
-        ret.addFrag("readD", 20, 140, false);
-        return ret;
-    }
+  private SAMRecordSetBuilder getSAMReader(
+      final boolean sortForMe, final SAMFileHeader.SortOrder sortOrder) {
+    final SAMRecordSetBuilder ret = new SAMRecordSetBuilder(sortForMe, sortOrder);
+    ret.addPair("readB", 20, 200, 300);
+    ret.addPair("readA", 20, 100, 150);
+    ret.addFrag("readC", 20, 140, true);
+    ret.addFrag("readD", 20, 140, false);
+    return ret;
+  }
 
-    @Test
-    public void testBasic() throws Exception {
-        final SAMRecordSetBuilder recordSetBuilder = getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
-        SamReader inputSAM = recordSetBuilder.getSamReader();
-        for (final SAMRecord samRecord : inputSAM) {
-            SAMRecord newRecord = (SAMRecord) samRecord.clone();
-            Assert.assertEquals(newRecord, samRecord);
-        }
-        inputSAM.close();
+  @Test
+  public void testBasic() throws Exception {
+    final SAMRecordSetBuilder recordSetBuilder =
+        getSAMReader(true, SAMFileHeader.SortOrder.coordinate);
+    SamReader inputSAM = recordSetBuilder.getSamReader();
+    for (final SAMRecord samRecord : inputSAM) {
+      SAMRecord newRecord = (SAMRecord) samRecord.clone();
+      Assert.assertEquals(newRecord, samRecord);
     }
+    inputSAM.close();
+  }
 }

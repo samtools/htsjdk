@@ -25,97 +25,102 @@ package htsjdk.tribble;
 
 import htsjdk.tribble.util.ParsingUtils;
 import htsjdk.tribble.util.TabixUtils;
-
 import java.io.File;
 import java.nio.file.Path;
 
-/**
- * Common, tribble wide constants and static functions
- */
+/** Common, tribble wide constants and static functions */
 public class Tribble {
-    private Tribble() { } // can't be instantiated
+  private Tribble() {} // can't be instantiated
 
-    public final static String STANDARD_INDEX_EXTENSION = ".idx";
+  public static final String STANDARD_INDEX_EXTENSION = ".idx";
 
-    /**
-     * Return the name of the index file for the provided {@code filename}
-     * Does not actually create an index
-     * @param filename  name of the file
-     * @return non-null String representing the index filename
-     */
-    public static String indexFile(final String filename) {
-        return indexFile(filename, STANDARD_INDEX_EXTENSION);
-    }
+  /**
+   * Return the name of the index file for the provided {@code filename} Does not actually create an
+   * index
+   *
+   * @param filename name of the file
+   * @return non-null String representing the index filename
+   */
+  public static String indexFile(final String filename) {
+    return indexFile(filename, STANDARD_INDEX_EXTENSION);
+  }
 
-    /**
-     * Return the File of the index file for the provided {@code file}
-     * Does not actually create an index
-     * @param file  the file
-     * @return a non-null File representing the index
-     */
-    public static File indexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), STANDARD_INDEX_EXTENSION);
-    }
+  /**
+   * Return the File of the index file for the provided {@code file} Does not actually create an
+   * index
+   *
+   * @param file the file
+   * @return a non-null File representing the index
+   */
+  public static File indexFile(final File file) {
+    return indexFile(file.getAbsoluteFile(), STANDARD_INDEX_EXTENSION);
+  }
 
-    /**
-     * Return the name of the index file for the provided {@code path}
-     * Does not actually create an index
-     * @param path the path
-     * @return Path representing the index filename
-     */
-    public static Path indexPath(final Path path) {
-        return path.getFileSystem().getPath(indexFile(path.toAbsolutePath().toString()));
-    }
+  /**
+   * Return the name of the index file for the provided {@code path} Does not actually create an
+   * index
+   *
+   * @param path the path
+   * @return Path representing the index filename
+   */
+  public static Path indexPath(final Path path) {
+    return path.getFileSystem().getPath(indexFile(path.toAbsolutePath().toString()));
+  }
 
-    /**
-     * Return the name of the tabix index file for the provided {@code filename}
-     * Does not actually create an index
-     * @param filename  name of the file
-     * @return non-null String representing the index filename
-     */
-    public static String tabixIndexFile(final String filename) {
-        return indexFile(filename, TabixUtils.STANDARD_INDEX_EXTENSION);
-    }
+  /**
+   * Return the name of the tabix index file for the provided {@code filename} Does not actually
+   * create an index
+   *
+   * @param filename name of the file
+   * @return non-null String representing the index filename
+   */
+  public static String tabixIndexFile(final String filename) {
+    return indexFile(filename, TabixUtils.STANDARD_INDEX_EXTENSION);
+  }
 
-    /**
-     * Return the File of the tabix index file for the provided {@code file}
-     * Does not actually create an index
-     * @param file  the file
-     * @return a non-null File representing the index
-     */
-    public static File tabixIndexFile(final File file) {
-        return indexFile(file.getAbsoluteFile(), TabixUtils.STANDARD_INDEX_EXTENSION);
-    }
+  /**
+   * Return the File of the tabix index file for the provided {@code file} Does not actually create
+   * an index
+   *
+   * @param file the file
+   * @return a non-null File representing the index
+   */
+  public static File tabixIndexFile(final File file) {
+    return indexFile(file.getAbsoluteFile(), TabixUtils.STANDARD_INDEX_EXTENSION);
+  }
 
-    /**
-     * Return the name of the tabix index file for the provided {@code path}
-     * Does not actually create an index
-     * @param path the path
-     * @return Path representing the index filename
-     */
-    public static Path tabixIndexPath(final Path path) {
-        return path.getFileSystem().getPath(tabixIndexFile(path.toAbsolutePath().toString()));
-    }
+  /**
+   * Return the name of the tabix index file for the provided {@code path} Does not actually create
+   * an index
+   *
+   * @param path the path
+   * @return Path representing the index filename
+   */
+  public static Path tabixIndexPath(final Path path) {
+    return path.getFileSystem().getPath(tabixIndexFile(path.toAbsolutePath().toString()));
+  }
 
-    /**
-     * Return the name of the index file for the provided {@code filename} and {@code extension}
-     * Does not actually create an index
-     * @param filename  name of the file
-     * @param extension the extension to use for the index
-     * @return non-null String representing the index filename
-     */
-    private static String indexFile(final String filename, final String extension) {
-        return ParsingUtils.appendToPath(filename, extension);
-    }
+  /**
+   * Return the name of the index file for the provided {@code filename} and {@code extension} Does
+   * not actually create an index
+   *
+   * @param filename name of the file
+   * @param extension the extension to use for the index
+   * @return non-null String representing the index filename
+   */
+  private static String indexFile(final String filename, final String extension) {
+    return ParsingUtils.appendToPath(filename, extension);
+  }
 
-    /**
-     * Return the File of the index file for the provided {@code file} and {@code extension}
-     * Does not actually create an index
-     * @param file  the file
-     * @param extension the extension to use for the index
-     * @return a non-null File representing the index
-     */
-    private static File indexFile(final File file, final String extension) {
-        return new File(file.getAbsoluteFile() + extension);
-    }
+  /**
+   * Return the File of the index file for the provided {@code file} and {@code extension} Does not
+   * actually create an index
+   *
+   * @param file the file
+   * @param extension the extension to use for the index
+   * @return a non-null File representing the index
+   */
+  private static File indexFile(final File file, final String extension) {
+    return new File(file.getAbsoluteFile() + extension);
+  }
 }

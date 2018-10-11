@@ -26,293 +26,311 @@ package htsjdk.samtools;
 import java.io.Serializable;
 
 /**
- * Class that encapsulates a validation error message as well as a type code so that
- * errors can be aggregated by type.
+ * Class that encapsulates a validation error message as well as a type code so that errors can be
+ * aggregated by type.
  *
  * @author Doug Voet
  */
 public class SAMValidationError implements Serializable {
-    public static final long serialVersionUID = 1L;
+  public static final long serialVersionUID = 1L;
 
-    public enum Severity {
-        WARNING, ERROR
-    }
+  public enum Severity {
+    WARNING,
+    ERROR
+  }
 
-    public enum Type {
-        /** quality encodings out of range; appear to be Solexa or Illumina when Phread expected */
-        INVALID_QUALITY_FORMAT(Severity.WARNING),
+  public enum Type {
+    /** quality encodings out of range; appear to be Solexa or Illumina when Phread expected */
+    INVALID_QUALITY_FORMAT(Severity.WARNING),
 
-        /** proper pair flag set for unpaired read */
-        INVALID_FLAG_PROPER_PAIR,
+    /** proper pair flag set for unpaired read */
+    INVALID_FLAG_PROPER_PAIR,
 
-        /** mate unmapped flag set when mate is mapped or not set when mate is not mapped */
-        INVALID_FLAG_MATE_UNMAPPED,
+    /** mate unmapped flag set when mate is mapped or not set when mate is not mapped */
+    INVALID_FLAG_MATE_UNMAPPED,
 
-        /** mate unmapped flag does not match read unmapped flag of mate */
-        MISMATCH_FLAG_MATE_UNMAPPED,
+    /** mate unmapped flag does not match read unmapped flag of mate */
+    MISMATCH_FLAG_MATE_UNMAPPED,
 
-        /** mate negative strand flag set for unpaired read */
-        INVALID_FLAG_MATE_NEG_STRAND,
+    /** mate negative strand flag set for unpaired read */
+    INVALID_FLAG_MATE_NEG_STRAND,
 
-        /** mate negative strand flag does not match read negative strand flag of mate */
-        MISMATCH_FLAG_MATE_NEG_STRAND,
+    /** mate negative strand flag does not match read negative strand flag of mate */
+    MISMATCH_FLAG_MATE_NEG_STRAND,
 
-        /** first of pair flag set for unpaired read */
-        INVALID_FLAG_FIRST_OF_PAIR,
+    /** first of pair flag set for unpaired read */
+    INVALID_FLAG_FIRST_OF_PAIR,
 
-        /** second of pair flag set for unpaired read */
-        INVALID_FLAG_SECOND_OF_PAIR,
+    /** second of pair flag set for unpaired read */
+    INVALID_FLAG_SECOND_OF_PAIR,
 
-        /** pair flag set but not marked as first or second of pair */
-        PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND(Severity.WARNING),
+    /** pair flag set but not marked as first or second of pair */
+    PAIRED_READ_NOT_MARKED_AS_FIRST_OR_SECOND(Severity.WARNING),
 
-        /** not primary alignment flag set for unmapped read */
-        INVALID_FLAG_NOT_PRIM_ALIGNMENT,
+    /** not primary alignment flag set for unmapped read */
+    INVALID_FLAG_NOT_PRIM_ALIGNMENT,
 
-        /** supplementary alignment flag set for unmapped read */
-        INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT,
+    /** supplementary alignment flag set for unmapped read */
+    INVALID_FLAG_SUPPLEMENTARY_ALIGNMENT,
 
-        /** mapped read flat not set for mapped read */
-        INVALID_FLAG_READ_UNMAPPED,
-
-        /**
-         * inferred insert size is out of range
-         * @see SAMRecord#MAX_INSERT_SIZE
-         */
-        INVALID_INSERT_SIZE,
-
-        /** mapping quality set for unmapped read or is >= 256 */
-        INVALID_MAPPING_QUALITY,
-
-        /** CIGAR string is empty for mapped read or not empty of unmapped read, or other CIGAR badness. */
-        INVALID_CIGAR,
-
-        /** CIGAR string contains I followed by D, or vice versa */
-        ADJACENT_INDEL_IN_CIGAR(Severity.WARNING),
-
-        /** mate reference index (MRNM) set for unpaired read */
-        INVALID_MATE_REF_INDEX,
-
-        /** mate reference index (MRNM) does not match reference index of mate */
-        MISMATCH_MATE_REF_INDEX,
-
-        /** reference index not found in sequence dictionary */
-        INVALID_REFERENCE_INDEX,
-
-        /** alignment start is can not be correct */
-        INVALID_ALIGNMENT_START,
-
-        /** mate alignment does not match alignment start of mate */
-        MISMATCH_MATE_ALIGNMENT_START,
-
-        /** the record's mate fields do not match the corresponding fields of the mate */
-        MATE_FIELD_MISMATCH,
-
-        /** the NM tag (nucleotide differences) is incorrect */
-        INVALID_TAG_NM,
-
-        /** the NM tag (nucleotide differences) is missing */
-        MISSING_TAG_NM(Severity.WARNING),
-
-        /** the sam/bam file is missing the header */
-        MISSING_HEADER,
-
-        /** there is no sequence dictionary in the header */
-        MISSING_SEQUENCE_DICTIONARY,
-
-        /** the header is missing read group information */
-        MISSING_READ_GROUP,
-
-        /** the record is out of order */
-        RECORD_OUT_OF_ORDER,
-
-        /** A read group ID on a SAMRecord is not found in the header */
-        READ_GROUP_NOT_FOUND,
-
-        /** A SAMRecord is found with no read group id */
-        RECORD_MISSING_READ_GROUP(Severity.WARNING),
-
-        /** Indexing bin set on SAMRecord does not agree with computed value. */
-        INVALID_INDEXING_BIN,
-
-        MISSING_VERSION_NUMBER,
-
-        INVALID_VERSION_NUMBER,
-
-        TRUNCATED_FILE,
-
-        MISMATCH_READ_LENGTH_AND_QUALS_LENGTH,
-
-        EMPTY_READ,
-
-        /**
-         * Bases corresponding to M operator in CIGAR are beyond the end of the reference.
-         */
-        CIGAR_MAPS_OFF_REFERENCE,
-
-        /** Length of E2 (secondary base calls) and U2 (secondary base quals) tag values should match read length */
-        MISMATCH_READ_LENGTH_AND_E2_LENGTH,
-        MISMATCH_READ_LENGTH_AND_U2_LENGTH,
-
-        /** Secondary base calls should not be the same as primary, unless one or the other is N */
-        E2_BASE_EQUALS_PRIMARY_BASE(Severity.WARNING),
-
-        /** BAM appears to be healthy, but is an older file so doesn't have terminator block. */
-        BAM_FILE_MISSING_TERMINATOR_BLOCK(Severity.WARNING),
-
-        /** Header record is not one of the standard types */
-        UNRECOGNIZED_HEADER_TYPE,
-
-        /** Header tag does not have colon */
-        POORLY_FORMATTED_HEADER_TAG,
-
-        /** Header tag appears more than once in header line with different value */
-        HEADER_TAG_MULTIPLY_DEFINED,
-
-        HEADER_RECORD_MISSING_REQUIRED_TAG,
-
-        /** Header tag contains illegal value */
-        HEADER_TAG_NON_CONFORMING_VALUE,
-
-        /** Date string is not ISO-8601 */
-        INVALID_DATE_STRING(Severity.WARNING),
-
-        /** Unsigned integer tag value is deprecated in BAM. */
-        TAG_VALUE_TOO_LARGE,
-
-        /** Invalid virtualFilePointer in index */
-        INVALID_INDEX_FILE_POINTER,
-
-        /** PI tag value is not numeric. */
-        INVALID_PREDICTED_MEDIAN_INSERT_SIZE,
-
-        /** Same read group id appears more than once */
-        DUPLICATE_READ_GROUP_ID,
-
-        /** The read group is missing its PL (platform unit) field */
-        MISSING_PLATFORM_VALUE,
-
-        /** The read group has an invalid value set for its PL field */
-        INVALID_PLATFORM_VALUE,
-
-        /** Same program group id appears more than once */
-        DUPLICATE_PROGRAM_GROUP_ID,
-
-        /** Read is marked as paired, but its pair was not found.  */
-        MATE_NOT_FOUND,
-
-        /** Both mates are marked as first of pair, or both mates are marked as second of pair. */
-        MATES_ARE_SAME_END,
-
-        /** The Cigar String in the MC Tag does not match the Cigar String for the mate of this read. */
-        MISMATCH_MATE_CIGAR_STRING,
-
-        /** There is a Cigar String (stored in the MC Tag) for a read whose mate is NOT mapped. */
-        MATE_CIGAR_STRING_INVALID_PRESENCE,
-
-        /** The mate reference of the unpaired read should be "*" */
-        INVALID_UNPAIRED_MATE_REFERENCE,
-
-        /** The unaligned mate read start position should be 0 */
-        INVALID_UNALIGNED_MATE_START,
-
-        /** Mismatch between the number of bases covered by the CIGAR and sequence */
-        MISMATCH_CIGAR_SEQ_LENGTH,
-
-        /** Mismatch between the sequence and quality length */
-        MISMATCH_SEQ_QUAL_LENGTH,
-
-        /** Mismatch between file and sequence dictionaries */
-        MISMATCH_FILE_SEQ_DICT,
-
-        /** Base quality is not stored for the read. */
-        QUALITY_NOT_STORED(Severity.WARNING),
-
-        /** A duplicate Sam tag was found in a record. */
-        DUPLICATE_SAM_TAG,
-
-        /** The CG Tag should only be used in BAM format to hold a large cigar */
-        CG_TAG_FOUND_IN_ATTRIBUTES;
-
-        public final Severity severity;
-
-        private Type() {
-            this.severity = Severity.ERROR;
-        }
-
-        private Type(final Severity severity) {
-            this.severity = severity;
-        }
-
-        /**
-         * @return Format for writing to histogram summary output.
-         */
-        public String getHistogramString() {
-            return this.severity.name() + ":" + this.name();
-        }
-    }
-
-    private final Type type;
-    private final String message;
-    private final String readName;
-    private long recordNumber = -1;
-    private String source;
+    /** mapped read flat not set for mapped read */
+    INVALID_FLAG_READ_UNMAPPED,
 
     /**
-     * Construct a SAMValidationError with unknown record number.
-     * @param type
-     * @param message
-     * @param readName May be null if readName is not known.
+     * inferred insert size is out of range
+     *
+     * @see SAMRecord#MAX_INSERT_SIZE
      */
-    public SAMValidationError(final Type type, final String message, final String readName) {
-        this.type = type;
-        this.message = message;
-        this.readName = readName;
-    }
+    INVALID_INSERT_SIZE,
+
+    /** mapping quality set for unmapped read or is >= 256 */
+    INVALID_MAPPING_QUALITY,
 
     /**
-     * Construct a SAMValidationError with possibly-known record number.
-     * @param type
-     * @param message
-     * @param readName May be null if readName is not known.
-     * @param recordNumber Position of the record in the SAM file it has been read from.  -1 if not known.
+     * CIGAR string is empty for mapped read or not empty of unmapped read, or other CIGAR badness.
      */
-    public SAMValidationError(final Type type, final String message, final String readName, final long recordNumber) {
-        this(type, message, readName);
-        this.recordNumber = recordNumber;
+    INVALID_CIGAR,
+
+    /** CIGAR string contains I followed by D, or vice versa */
+    ADJACENT_INDEL_IN_CIGAR(Severity.WARNING),
+
+    /** mate reference index (MRNM) set for unpaired read */
+    INVALID_MATE_REF_INDEX,
+
+    /** mate reference index (MRNM) does not match reference index of mate */
+    MISMATCH_MATE_REF_INDEX,
+
+    /** reference index not found in sequence dictionary */
+    INVALID_REFERENCE_INDEX,
+
+    /** alignment start is can not be correct */
+    INVALID_ALIGNMENT_START,
+
+    /** mate alignment does not match alignment start of mate */
+    MISMATCH_MATE_ALIGNMENT_START,
+
+    /** the record's mate fields do not match the corresponding fields of the mate */
+    MATE_FIELD_MISMATCH,
+
+    /** the NM tag (nucleotide differences) is incorrect */
+    INVALID_TAG_NM,
+
+    /** the NM tag (nucleotide differences) is missing */
+    MISSING_TAG_NM(Severity.WARNING),
+
+    /** the sam/bam file is missing the header */
+    MISSING_HEADER,
+
+    /** there is no sequence dictionary in the header */
+    MISSING_SEQUENCE_DICTIONARY,
+
+    /** the header is missing read group information */
+    MISSING_READ_GROUP,
+
+    /** the record is out of order */
+    RECORD_OUT_OF_ORDER,
+
+    /** A read group ID on a SAMRecord is not found in the header */
+    READ_GROUP_NOT_FOUND,
+
+    /** A SAMRecord is found with no read group id */
+    RECORD_MISSING_READ_GROUP(Severity.WARNING),
+
+    /** Indexing bin set on SAMRecord does not agree with computed value. */
+    INVALID_INDEXING_BIN,
+
+    MISSING_VERSION_NUMBER,
+
+    INVALID_VERSION_NUMBER,
+
+    TRUNCATED_FILE,
+
+    MISMATCH_READ_LENGTH_AND_QUALS_LENGTH,
+
+    EMPTY_READ,
+
+    /** Bases corresponding to M operator in CIGAR are beyond the end of the reference. */
+    CIGAR_MAPS_OFF_REFERENCE,
+
+    /**
+     * Length of E2 (secondary base calls) and U2 (secondary base quals) tag values should match
+     * read length
+     */
+    MISMATCH_READ_LENGTH_AND_E2_LENGTH,
+    MISMATCH_READ_LENGTH_AND_U2_LENGTH,
+
+    /** Secondary base calls should not be the same as primary, unless one or the other is N */
+    E2_BASE_EQUALS_PRIMARY_BASE(Severity.WARNING),
+
+    /** BAM appears to be healthy, but is an older file so doesn't have terminator block. */
+    BAM_FILE_MISSING_TERMINATOR_BLOCK(Severity.WARNING),
+
+    /** Header record is not one of the standard types */
+    UNRECOGNIZED_HEADER_TYPE,
+
+    /** Header tag does not have colon */
+    POORLY_FORMATTED_HEADER_TAG,
+
+    /** Header tag appears more than once in header line with different value */
+    HEADER_TAG_MULTIPLY_DEFINED,
+
+    HEADER_RECORD_MISSING_REQUIRED_TAG,
+
+    /** Header tag contains illegal value */
+    HEADER_TAG_NON_CONFORMING_VALUE,
+
+    /** Date string is not ISO-8601 */
+    INVALID_DATE_STRING(Severity.WARNING),
+
+    /** Unsigned integer tag value is deprecated in BAM. */
+    TAG_VALUE_TOO_LARGE,
+
+    /** Invalid virtualFilePointer in index */
+    INVALID_INDEX_FILE_POINTER,
+
+    /** PI tag value is not numeric. */
+    INVALID_PREDICTED_MEDIAN_INSERT_SIZE,
+
+    /** Same read group id appears more than once */
+    DUPLICATE_READ_GROUP_ID,
+
+    /** The read group is missing its PL (platform unit) field */
+    MISSING_PLATFORM_VALUE,
+
+    /** The read group has an invalid value set for its PL field */
+    INVALID_PLATFORM_VALUE,
+
+    /** Same program group id appears more than once */
+    DUPLICATE_PROGRAM_GROUP_ID,
+
+    /** Read is marked as paired, but its pair was not found. */
+    MATE_NOT_FOUND,
+
+    /** Both mates are marked as first of pair, or both mates are marked as second of pair. */
+    MATES_ARE_SAME_END,
+
+    /** The Cigar String in the MC Tag does not match the Cigar String for the mate of this read. */
+    MISMATCH_MATE_CIGAR_STRING,
+
+    /** There is a Cigar String (stored in the MC Tag) for a read whose mate is NOT mapped. */
+    MATE_CIGAR_STRING_INVALID_PRESENCE,
+
+    /** The mate reference of the unpaired read should be "*" */
+    INVALID_UNPAIRED_MATE_REFERENCE,
+
+    /** The unaligned mate read start position should be 0 */
+    INVALID_UNALIGNED_MATE_START,
+
+    /** Mismatch between the number of bases covered by the CIGAR and sequence */
+    MISMATCH_CIGAR_SEQ_LENGTH,
+
+    /** Mismatch between the sequence and quality length */
+    MISMATCH_SEQ_QUAL_LENGTH,
+
+    /** Mismatch between file and sequence dictionaries */
+    MISMATCH_FILE_SEQ_DICT,
+
+    /** Base quality is not stored for the read. */
+    QUALITY_NOT_STORED(Severity.WARNING),
+
+    /** A duplicate Sam tag was found in a record. */
+    DUPLICATE_SAM_TAG,
+
+    /** The CG Tag should only be used in BAM format to hold a large cigar */
+    CG_TAG_FOUND_IN_ATTRIBUTES;
+
+    public final Severity severity;
+
+    private Type() {
+      this.severity = Severity.ERROR;
     }
 
-    public String toString() {
-        final StringBuilder builder = new StringBuilder();
-        builder.append(type.severity.toString()).append(": ");
-        if (source != null) {
-            builder.append("File ").append(source.toString()).append(", ");
-        }
-        if (recordNumber > 0) {
-            builder.append("Record ").append(recordNumber).append(", ");
-        }
-        if (readName != null) {
-            builder.append("Read name ").append(readName).append(", ");
-        }
-        return builder.append(message).toString();
+    private Type(final Severity severity) {
+      this.severity = severity;
     }
 
-    public Type getType() { return type; }
-    public String getMessage() { return message; }
-
-    /** may be null */
-    public String getReadName() { return readName; }
-
-    /** 1-based.  -1 if not known. */
-    public long getRecordNumber() { return recordNumber; }
-
-    public void setRecordNumber(final long recordNumber) { this.recordNumber = recordNumber; }
-
-    public String getSource() {
-        return source;
+    /** @return Format for writing to histogram summary output. */
+    public String getHistogramString() {
+      return this.severity.name() + ":" + this.name();
     }
+  }
 
-    public void setSource(final String source) {
-        this.source = source;
+  private final Type type;
+  private final String message;
+  private final String readName;
+  private long recordNumber = -1;
+  private String source;
+
+  /**
+   * Construct a SAMValidationError with unknown record number.
+   *
+   * @param type
+   * @param message
+   * @param readName May be null if readName is not known.
+   */
+  public SAMValidationError(final Type type, final String message, final String readName) {
+    this.type = type;
+    this.message = message;
+    this.readName = readName;
+  }
+
+  /**
+   * Construct a SAMValidationError with possibly-known record number.
+   *
+   * @param type
+   * @param message
+   * @param readName May be null if readName is not known.
+   * @param recordNumber Position of the record in the SAM file it has been read from. -1 if not
+   *     known.
+   */
+  public SAMValidationError(
+      final Type type, final String message, final String readName, final long recordNumber) {
+    this(type, message, readName);
+    this.recordNumber = recordNumber;
+  }
+
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append(type.severity.toString()).append(": ");
+    if (source != null) {
+      builder.append("File ").append(source.toString()).append(", ");
     }
+    if (recordNumber > 0) {
+      builder.append("Record ").append(recordNumber).append(", ");
+    }
+    if (readName != null) {
+      builder.append("Read name ").append(readName).append(", ");
+    }
+    return builder.append(message).toString();
+  }
+
+  public Type getType() {
+    return type;
+  }
+
+  public String getMessage() {
+    return message;
+  }
+
+  /** may be null */
+  public String getReadName() {
+    return readName;
+  }
+
+  /** 1-based. -1 if not known. */
+  public long getRecordNumber() {
+    return recordNumber;
+  }
+
+  public void setRecordNumber(final long recordNumber) {
+    this.recordNumber = recordNumber;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public void setSource(final String source) {
+    this.source = source;
+  }
 }

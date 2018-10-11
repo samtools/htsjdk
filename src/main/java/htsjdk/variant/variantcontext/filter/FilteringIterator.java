@@ -22,26 +22,24 @@
  * THE SOFTWARE.
  */
 
-
 package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.Iterator;
 
 /**
  * A filtering iterator for VariantContexts that takes a base iterator and a VariantContextFilter.
  *
- * The iterator returns all the variantcontexts for which the filter's function "test" returns true (and only those)
+ * <p>The iterator returns all the variantcontexts for which the filter's function "test" returns
+ * true (and only those)
  *
  * @author Yossi Farjoun
- *
- * @deprecated  since 2/29/16 use {@link FilteringVariantContextIterator} instead
+ * @deprecated since 2/29/16 use {@link FilteringVariantContextIterator} instead
  */
-
 @Deprecated
-public class FilteringIterator extends FilteringVariantContextIterator{
-    public FilteringIterator(final Iterator<VariantContext> iterator, final VariantContextFilter filter) {
-        super(iterator, filter);
-    }
+public class FilteringIterator extends FilteringVariantContextIterator {
+  public FilteringIterator(
+      final Iterator<VariantContext> iterator, final VariantContextFilter filter) {
+    super(iterator, filter);
+  }
 }

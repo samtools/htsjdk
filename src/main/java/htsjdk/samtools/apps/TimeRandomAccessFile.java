@@ -26,30 +26,30 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class TimeRandomAccessFile {
-    public static void main(String[] args) throws Exception {
-        RandomAccessFile raf = new RandomAccessFile(new File(args[0]), "r");
-        byte[] buf = new byte[64 * 1024];
-        long totalBytesRead = 0;
-        int bytesRead;
-        while ((bytesRead = readBytes(raf, buf, 0, buf.length)) > 0) {
-            totalBytesRead += bytesRead;
-        }
-        System.out.println("Total bytes: " + totalBytesRead);
+  public static void main(String[] args) throws Exception {
+    RandomAccessFile raf = new RandomAccessFile(new File(args[0]), "r");
+    byte[] buf = new byte[64 * 1024];
+    long totalBytesRead = 0;
+    int bytesRead;
+    while ((bytesRead = readBytes(raf, buf, 0, buf.length)) > 0) {
+      totalBytesRead += bytesRead;
     }
-    private static int readBytes(final RandomAccessFile file, final byte[] buffer, final int offset, final int length)
-        throws IOException {
-        int bytesRead = 0;
-        while (bytesRead < length) {
-            final int count = file.read(buffer, offset + bytesRead, length - bytesRead);
-            if (count <= 0) {
-                break;
-            }
-            bytesRead += count;
-        }
-        return bytesRead;
+    System.out.println("Total bytes: " + totalBytesRead);
+  }
+
+  private static int readBytes(
+      final RandomAccessFile file, final byte[] buffer, final int offset, final int length)
+      throws IOException {
+    int bytesRead = 0;
+    while (bytesRead < length) {
+      final int count = file.read(buffer, offset + bytesRead, length - bytesRead);
+      if (count <= 0) {
+        break;
+      }
+      bytesRead += count;
     }
+    return bytesRead;
+  }
 }

@@ -1,15 +1,11 @@
 package htsjdk.samtools;
 
 import java.io.IOException;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.StandardOpenOption;
 
-/**
- * A buffer-backed SeekableByteChannel, for testing.
- */
+/** A buffer-backed SeekableByteChannel, for testing. */
 public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
 
   private ByteBuffer buf;
@@ -44,7 +40,7 @@ public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
   @Override
   public SeekableByteChannel position(long newPosition) throws IOException {
     checkOpen();
-    buf.position((int)newPosition);
+    buf.position((int) newPosition);
     return this;
   }
 
@@ -57,13 +53,13 @@ public class SeekableByteChannelFromBuffer implements SeekableByteChannel {
   @Override
   public SeekableByteChannel truncate(long size) throws IOException {
     checkOpen();
-    if (size <0) {
+    if (size < 0) {
       throw new IllegalArgumentException("negative size");
     }
     if (size > buf.limit()) {
       throw new IllegalArgumentException("size larger than current");
     }
-    buf.limit((int)size);
+    buf.limit((int) size);
     return null;
   }
 

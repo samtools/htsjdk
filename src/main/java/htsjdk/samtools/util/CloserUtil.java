@@ -29,53 +29,51 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Utility to close things that implement Closeable
- * WARNING: This should only be used for Closeable things open for read, because it ignores exceptions, and
- * the caller will probably want to know about exceptions when closing a file being written to, because
- * this may indicate a failure to flush.
+ * Utility to close things that implement Closeable WARNING: This should only be used for Closeable
+ * things open for read, because it ignores exceptions, and the caller will probably want to know
+ * about exceptions when closing a file being written to, because this may indicate a failure to
+ * flush.
  *
  * @author Kathleen Tibbetts
  */
 public class CloserUtil {
 
-    /**
-     * Calls close() on <code>obj</code> if it implements Closeable
-     *
-     * @param obj   The potentially closeable object
-     */
-    public static void close(Object obj) {
-        if (obj != null) {
-            close(Arrays.asList(obj));
-        }
+  /**
+   * Calls close() on <code>obj</code> if it implements Closeable
+   *
+   * @param obj The potentially closeable object
+   */
+  public static void close(Object obj) {
+    if (obj != null) {
+      close(Arrays.asList(obj));
     }
+  }
 
-    /**
-     * Calls close() on all elements of <code>objs</code> that implement Closeable
-     *
-     * @param objs   A list of potentially closeable objects
-     *
-     * NOTE: This method must take a List<? extends Object>, not List<Object>, otherwise the overload above will be selected
-     * if the argument is not exactly List<Object>.
-     */
-    public static void close(List<? extends Object> objs) {
-        for (Object o : objs) {
-            if (o instanceof Closeable) {
-                try {
-                    ((Closeable)o).close();
-                }
-                catch (IOException ioe) {
-                    // Do nothing 
-                }
-            } else if (o instanceof CloseableIterator) {
-                ((CloseableIterator)o).close();
-            }
-            else {
-                try {
-                    java.lang.reflect.Method m = o.getClass().getMethod("close");
-                    m.invoke(o);
-                }
-                catch (Exception e) { /** Ignore */ }
-            }
+  /**
+   * Calls close() on all elements of <code>objs</code> that implement Closeable
+   *
+   * @param objs A list of potentially closeable objects
+   *     <p>NOTE: This method must take a List<? extends Object>, not List<Object>, otherwise the
+   *     overload above will be selected if the argument is not exactly List<Object>.
+   */
+  public static void close(List<? extends Object> objs) {
+    for (Object o : objs) {
+      if (o instanceof Closeable) {
+        try {
+          ((Closeable) o).close();
+        } catch (IOException ioe) {
+          // Do nothing
         }
+      } else if (o instanceof CloseableIterator) {
+        ((CloseableIterator) o).close();
+      } else {
+        try {
+          java.lang.reflect.Method m = o.getClass().getMethod("close");
+          m.invoke(o);
+        } catch (Exception e) {
+          /** Ignore */
+        }
+      }
     }
+  }
 }

@@ -26,15 +26,15 @@ package htsjdk.samtools.util;
 import java.io.ByteArrayInputStream;
 
 /**
- * Implementation of LineReader that gets its input from a String.  No charset conversion
- * is necessary because the String is in unicode.  Handles CR, LF or CRLF line termination,
- * but if asked to return the line terminator, it always comes back as LF.
+ * Implementation of LineReader that gets its input from a String. No charset conversion is
+ * necessary because the String is in unicode. Handles CR, LF or CRLF line termination, but if asked
+ * to return the line terminator, it always comes back as LF.
  *
  * @deprecated use {@link BufferedLineReader#fromString(String)}.
  */
 @Deprecated
 public class StringLineReader extends BufferedLineReader {
-    public StringLineReader(final String s) {
-        super(new ByteArrayInputStream(s.getBytes()));
-    }
+  public StringLineReader(final String s) {
+    super(new ByteArrayInputStream(s.getBytes()));
+  }
 }

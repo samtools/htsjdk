@@ -29,39 +29,39 @@ package htsjdk.samtools.util;
  * @author Tim Fennell
  */
 public class TrimmingUtil {
-    /**
-     * Implements phred-style quality trimming. Takes in an array of quality values as a
-     * byte[] and return the first index within the byte array that should be clipped,
-     * such that the caller can then invoke things like:
-     *     int retval = findQualityTrimPoint(10, quals);
-     *     final byte[] trimmedQuals = Arrays.copyOfRange(quals, 0, retval);
-     *     final String trimmedBases = bases.substring(0, retval);
-     *
-     * If the entire read is of low quality this function may return 0!  It is left to the caller
-     * to decide whether or not to trim reads down to 0-bases, or to enforce some minimum length.
-     *
-     * @param quals a byte[] of quality scores in phred scaling (i.e. integer values between 0 and ~60)
-     * @param trimQual the lowest quality that is considered "good". In the simplest case
-     *                 where a read is composed exclusively of "good" qualities followed by
-     *                 "bad" qualities, this is the lowest quality value left after trimming.
-     * @return The zero-based index of the first base within the quality string that should be trimmed.
-     *         When no trimming is required, quals.length (i.e. an index one greater than the last valid
-     *         index) will be returned.
-     */
-    public static int findQualityTrimPoint(final byte[] quals, final int trimQual) {
-        final int length = quals.length;
-        int score = 0, maxScore = 0, trimPoint = length;
-        if (trimQual < 1 || length == 0) return 0;
+  /**
+   * Implements phred-style quality trimming. Takes in an array of quality values as a byte[] and
+   * return the first index within the byte array that should be clipped, such that the caller can
+   * then invoke things like: int retval = findQualityTrimPoint(10, quals); final byte[]
+   * trimmedQuals = Arrays.copyOfRange(quals, 0, retval); final String trimmedBases =
+   * bases.substring(0, retval);
+   *
+   * <p>If the entire read is of low quality this function may return 0! It is left to the caller to
+   * decide whether or not to trim reads down to 0-bases, or to enforce some minimum length.
+   *
+   * @param quals a byte[] of quality scores in phred scaling (i.e. integer values between 0 and
+   *     ~60)
+   * @param trimQual the lowest quality that is considered "good". In the simplest case where a read
+   *     is composed exclusively of "good" qualities followed by "bad" qualities, this is the lowest
+   *     quality value left after trimming.
+   * @return The zero-based index of the first base within the quality string that should be
+   *     trimmed. When no trimming is required, quals.length (i.e. an index one greater than the
+   *     last valid index) will be returned.
+   */
+  public static int findQualityTrimPoint(final byte[] quals, final int trimQual) {
+    final int length = quals.length;
+    int score = 0, maxScore = 0, trimPoint = length;
+    if (trimQual < 1 || length == 0) return 0;
 
-        for (int i=length-1; i>=0; --i) {
-            score += trimQual - (quals[i]);
-            if (score < 0) break;
-            if (score > maxScore) {
-                maxScore = score;
-                trimPoint = i;
-            }
-        }
-
-        return trimPoint;
+    for (int i = length - 1; i >= 0; --i) {
+      score += trimQual - (quals[i]);
+      if (score < 0) break;
+      if (score > maxScore) {
+        maxScore = score;
+        trimPoint = i;
+      }
     }
+
+    return trimPoint;
+  }
 }

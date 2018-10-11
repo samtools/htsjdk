@@ -25,237 +25,242 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.samtools.util.SortingCollection;
-
 import java.io.File;
 import java.io.StringWriter;
-import java.util.function.Supplier;
 
 /**
- * Base class for implementing SAM writer with any underlying format.
- * Mostly this manages accumulation & sorting of SAMRecords when appropriate,
- * and produces the text version of the header, since that seems to be a popular item
- * in both text and binary file formats.
+ * Base class for implementing SAM writer with any underlying format. Mostly this manages
+ * accumulation & sorting of SAMRecords when appropriate, and produces the text version of the
+ * header, since that seems to be a popular item in both text and binary file formats.
  */
-public abstract class SAMFileWriterImpl implements SAMFileWriter
-{
-    private static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;      
-    private int maxRecordsInRam = DEAFULT_MAX_RECORDS_IN_RAM;
-    private SAMFileHeader.SortOrder sortOrder;
-    private SAMFileHeader header;
-    private SortingCollection<SAMRecord> alignmentSorter;
-    private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    private ProgressLoggerInterface progressLogger = null;
-    private boolean isClosed = false;
+public abstract class SAMFileWriterImpl implements SAMFileWriter {
+  private static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;
+  private int maxRecordsInRam = DEAFULT_MAX_RECORDS_IN_RAM;
+  private SAMFileHeader.SortOrder sortOrder;
+  private SAMFileHeader header;
+  private SortingCollection<SAMRecord> alignmentSorter;
+  private File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+  private ProgressLoggerInterface progressLogger = null;
+  private boolean isClosed = false;
 
-    // If true, records passed to addAlignment are already in the order specified by sortOrder
-    private boolean presorted;
+  // If true, records passed to addAlignment are already in the order specified by sortOrder
+  private boolean presorted;
 
-    // For validating presorted records.
-    private SAMSortOrderChecker sortOrderChecker;
+  // For validating presorted records.
+  private SAMSortOrderChecker sortOrderChecker;
 
-    /**
-     * When writing records that are not presorted, specify the number of records stored in RAM
-     * before spilling to disk.  This method sets the default value for all SamFileWriterImpl
-     * instances. Must be called before the constructor is called.
-     * @param maxRecordsInRam
-     */
-    public static void setDefaultMaxRecordsInRam(final int maxRecordsInRam) {
-        DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;    
+  /**
+   * When writing records that are not presorted, specify the number of records stored in RAM before
+   * spilling to disk. This method sets the default value for all SamFileWriterImpl instances. Must
+   * be called before the constructor is called.
+   *
+   * @param maxRecordsInRam
+   */
+  public static void setDefaultMaxRecordsInRam(final int maxRecordsInRam) {
+    DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;
+  }
+
+  /**
+   * When writing records that are not presorted, this number determines the number of records
+   * stored in RAM before spilling to disk.
+   *
+   * @return DEAFULT_MAX_RECORDS_IN_RAM
+   */
+  public static int getDefaultMaxRecordsInRam() {
+    return DEAFULT_MAX_RECORDS_IN_RAM;
+  }
+
+  /**
+   * Sets the progress logger used by this implementation. Setting this lets this writer emit log
+   * messages as SAM records in a SortingCollection are being written to disk.
+   */
+  @Override
+  public void setProgressLogger(final ProgressLoggerInterface progress) {
+    this.progressLogger = progress;
+  }
+
+  /**
+   * Must be called before calling setHeader(). SortOrder value in the header passed to setHeader()
+   * is ignored. If setSortOrder is not called, default is SortOrder.unsorted.
+   */
+  public void setSortOrder(final SAMFileHeader.SortOrder sortOrder, final boolean presorted) {
+    if (header != null) {
+      throw new IllegalStateException(
+          "Cannot call SAMFileWriterImpl.setSortOrder after setHeader for " + getFilename());
     }
-    
-    /**
-     * When writing records that are not presorted, this number determines the 
-     * number of records stored in RAM before spilling to disk.
-     * @return DEAFULT_MAX_RECORDS_IN_RAM 
-     */
-    public static int getDefaultMaxRecordsInRam() {
-        return DEAFULT_MAX_RECORDS_IN_RAM;    
-    }
+    this.sortOrder = sortOrder;
+    this.presorted = presorted;
+  }
 
-    /**
-     * Sets the progress logger used by this implementation. Setting this lets this writer emit log
-     * messages as SAM records in a SortingCollection are being written to disk.
-     */
-    @Override
-    public void setProgressLogger(final ProgressLoggerInterface progress) {
-        this.progressLogger = progress;
-    }
+  /** Must be called after calling setHeader(). */
+  protected SAMFileHeader.SortOrder getSortOrder() {
+    return this.sortOrder;
+  }
 
-    /**
-     * Must be called before calling setHeader().  SortOrder value in the header passed
-     * to setHeader() is ignored.  If setSortOrder is not called, default is SortOrder.unsorted.
-     */
-    public void setSortOrder(final SAMFileHeader.SortOrder sortOrder, final boolean presorted) {
-        if (header != null) {
-            throw new IllegalStateException("Cannot call SAMFileWriterImpl.setSortOrder after setHeader for " +
-                    getFilename());
+  /**
+   * When writing records that are not presorted, specify the number of records stored in RAM before
+   * spilling to disk. Must be called before setHeader().
+   *
+   * @param maxRecordsInRam
+   */
+  protected void setMaxRecordsInRam(final int maxRecordsInRam) {
+    if (this.header != null) {
+      throw new IllegalStateException("setMaxRecordsInRam must be called before setHeader()");
+    }
+    this.maxRecordsInRam = maxRecordsInRam;
+  }
+
+  protected int getMaxRecordsInRam() {
+    return maxRecordsInRam;
+  }
+
+  /**
+   * When writing records that are not presorted, specify the path of the temporary directory for
+   * spilling to disk. Must be called before setHeader().
+   *
+   * @param tmpDir path to the temporary directory
+   */
+  protected void setTempDirectory(final File tmpDir) {
+    if (tmpDir != null) {
+      this.tmpDir = tmpDir;
+    }
+  }
+
+  protected File getTempDirectory() {
+    return tmpDir;
+  }
+
+  /** Must be called before addAlignment. Header cannot be null. */
+  public void setHeader(final SAMFileHeader header) {
+    if (null == header) {
+      throw new IllegalArgumentException("A non-null SAMFileHeader is required for a writer");
+    }
+    this.header = header;
+    if (sortOrder == null) {
+      sortOrder = SAMFileHeader.SortOrder.unsorted;
+    }
+    header.setSortOrder(sortOrder);
+
+    writeHeader(header);
+
+    if (presorted) {
+      if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+        presorted = false;
+      } else {
+        sortOrderChecker = new SAMSortOrderChecker(sortOrder);
+      }
+    } else if (!sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+      alignmentSorter =
+          SortingCollection.newInstance(
+              SAMRecord.class,
+              new BAMRecordCodec(header),
+              sortOrder.getComparatorInstance(),
+              maxRecordsInRam,
+              tmpDir);
+    }
+  }
+
+  @Override
+  public SAMFileHeader getFileHeader() {
+    return header;
+  }
+
+  /**
+   * Add an alignment record to be emitted by the writer.
+   *
+   * @param alignment Must not be null. The record will be updated to use the header used by this
+   *     writer, which will in turn cause any unresolved reference and mate reference indices to be
+   *     resolved against the header's sequence dictionary.
+   * @throws IllegalArgumentException if the record's reference or mate reference indices cannot be
+   *     resolved against the writer's header using the current reference and mate reference names
+   */
+  @Override
+  public void addAlignment(final SAMRecord alignment) {
+    alignment.setHeaderStrict(
+        header); // re-establish the record header and resolve reference indices
+    if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
+      writeAlignment(alignment);
+    } else if (presorted) {
+      assertPresorted(alignment);
+      writeAlignment(alignment);
+    } else {
+      alignmentSorter.add(alignment);
+    }
+  }
+
+  private void assertPresorted(final SAMRecord alignment) {
+    final SAMRecord prev = sortOrderChecker.getPreviousRecord();
+    if (!sortOrderChecker.isSorted(alignment)) {
+      throw new IllegalArgumentException(
+          "Alignments added out of order in SAMFileWriterImpl.addAlignment for "
+              + getFilename()
+              + ". Sort order is "
+              + this.sortOrder
+              + ". Offending records are at ["
+              + sortOrderChecker.getSortKey(prev)
+              + "] and ["
+              + sortOrderChecker.getSortKey(alignment)
+              + "]");
+    }
+  }
+
+  /** Must be called or else file will likely be defective. */
+  @Override
+  public final void close() {
+    if (!isClosed) {
+      if (alignmentSorter != null) {
+        for (final SAMRecord alignment : alignmentSorter) {
+          writeAlignment(alignment);
+          if (progressLogger != null) progressLogger.record(alignment);
         }
-        this.sortOrder = sortOrder;
-        this.presorted = presorted;
+        alignmentSorter.cleanup();
+      }
+      finish();
     }
+    isClosed = true;
+  }
 
-    /**
-     * Must be called after calling setHeader().
-     */
-    protected SAMFileHeader.SortOrder getSortOrder() {
-        return this.sortOrder;
-    }
+  /**
+   * Writes the record to disk. Sort order has been taken care of by the time this method is called.
+   * The record must hava a non-null SAMFileHeader.
+   *
+   * @param alignment
+   */
+  protected abstract void writeAlignment(SAMRecord alignment);
 
-    /**
-     * When writing records that are not presorted, specify the number of records stored in RAM
-     * before spilling to disk.  Must be called before setHeader().
-     * @param maxRecordsInRam
-     */
-    protected void setMaxRecordsInRam(final int maxRecordsInRam) {
-        if (this.header != null) {
-            throw new IllegalStateException("setMaxRecordsInRam must be called before setHeader()");
-        }
-        this.maxRecordsInRam = maxRecordsInRam;
-    }
+  /**
+   * Write the header to disk. Header object is available via getHeader().
+   *
+   * @param textHeader for convenience if the implementation needs it.
+   * @deprecated since 06/2018. {@link #writeHeader(SAMFileHeader)} is preferred for avoid String
+   *     construction if not need it.
+   */
+  @Deprecated
+  protected abstract void writeHeader(String textHeader);
 
-    protected int getMaxRecordsInRam() {
-        return maxRecordsInRam;
-    }
+  /**
+   * Write the header to disk. Header object is available via getHeader().
+   *
+   * <p>IMPORTANT: this method will be abstract once {@link #writeHeader(String)} is removed.
+   *
+   * <p>Note: default implementation uses {@link SAMTextHeaderCodec#encode} and calls {@link
+   * #writeHeader(String)}.
+   *
+   * @param header object to write.
+   */
+  protected void writeHeader(final SAMFileHeader header) {
+    final StringWriter headerTextBuffer = new StringWriter();
+    new SAMTextHeaderCodec().encode(headerTextBuffer, header);
+    writeHeader(headerTextBuffer.toString());
+  }
 
-    /**
-     * When writing records that are not presorted, specify the path of the temporary directory 
-     * for spilling to disk.  Must be called before setHeader().
-     * @param tmpDir path to the temporary directory
-     */
-    protected void setTempDirectory(final File tmpDir) {
-        if (tmpDir!=null) {
-            this.tmpDir = tmpDir;
-        }
-    }
+  /** Do any required flushing here. */
+  protected abstract void finish();
 
-    protected File getTempDirectory() {
-        return tmpDir;
-    }
-
-    /**
-     * Must be called before addAlignment. Header cannot be null.
-     */
-    public void setHeader(final SAMFileHeader header)
-    {
-        if (null == header) {
-            throw new IllegalArgumentException("A non-null SAMFileHeader is required for a writer");
-        }
-        this.header = header;
-        if (sortOrder == null) {
-             sortOrder = SAMFileHeader.SortOrder.unsorted;
-        }
-        header.setSortOrder(sortOrder);
-
-        writeHeader(header);
-
-        if (presorted) {
-            if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-                presorted = false;
-            } else {
-                sortOrderChecker = new SAMSortOrderChecker(sortOrder);
-            }
-        } else if (!sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-            alignmentSorter = SortingCollection.newInstance(SAMRecord.class,
-                    new BAMRecordCodec(header), sortOrder.getComparatorInstance(), maxRecordsInRam, tmpDir);
-        }
-    }
-
-    @Override
-    public SAMFileHeader getFileHeader() {
-        return header;
-    }
-
-    /**
-     * Add an alignment record to be emitted by the writer.
-     *
-     * @param alignment Must not be null. The record will be updated to use the header used by this writer, which will
-     *                  in turn cause any unresolved reference and mate reference indices to be resolved against the
-     *                  header's sequence dictionary.
-     * @throws IllegalArgumentException if the record's reference or mate reference indices cannot be
-     * resolved against the writer's header using the current reference and mate reference names
-     */
-    @Override
-    public void addAlignment(final SAMRecord alignment)
-    {
-        alignment.setHeaderStrict(header); // re-establish the record header and resolve reference indices
-        if (sortOrder.equals(SAMFileHeader.SortOrder.unsorted)) {
-            writeAlignment(alignment);
-        } else if (presorted) {
-            assertPresorted(alignment);
-            writeAlignment(alignment);
-        } else {
-            alignmentSorter.add(alignment);
-        }
-    }
-
-    private void assertPresorted(final SAMRecord alignment) {
-        final SAMRecord prev = sortOrderChecker.getPreviousRecord();
-        if (!sortOrderChecker.isSorted(alignment)) {
-            throw new IllegalArgumentException("Alignments added out of order in SAMFileWriterImpl.addAlignment for " +
-                    getFilename() + ". Sort order is " + this.sortOrder + ". Offending records are at ["
-                    + sortOrderChecker.getSortKey(prev) + "] and ["
-                    + sortOrderChecker.getSortKey(alignment) + "]");
-        }
-    }
-
-    /**
-     * Must be called or else file will likely be defective.
-     */
-    @Override
-    public final void close()
-    {
-        if (!isClosed) {
-            if (alignmentSorter != null) {
-                for (final SAMRecord alignment : alignmentSorter) {
-                    writeAlignment(alignment);
-                    if (progressLogger != null) progressLogger.record(alignment);
-                }
-                alignmentSorter.cleanup();
-            }
-            finish();
-        }
-        isClosed = true;
-    }
-
-    /**
-     * Writes the record to disk.  Sort order has been taken care of by the time
-     * this method is called. The record must hava a non-null SAMFileHeader.
-     * @param alignment
-     */
-    abstract protected void writeAlignment(SAMRecord alignment);
-
-    /**
-     * Write the header to disk.  Header object is available via getHeader().
-     * @param textHeader for convenience if the implementation needs it.
-     * @deprecated since 06/2018. {@link #writeHeader(SAMFileHeader)} is preferred for avoid String construction if not need it.
-     */
-    @Deprecated
-    abstract protected void writeHeader(String textHeader);
-
-    /**
-     * Write the header to disk. Header object is available via getHeader().
-     *
-     * <p>IMPORTANT: this method will be abstract once {@link #writeHeader(String)} is removed.
-     *
-     * <p>Note: default implementation uses {@link SAMTextHeaderCodec#encode} and calls
-     * {@link #writeHeader(String)}.
-     *
-     * @param header object to write.
-     */
-    protected void writeHeader(final SAMFileHeader header) {
-        final StringWriter headerTextBuffer = new StringWriter();
-        new SAMTextHeaderCodec().encode(headerTextBuffer, header);
-        writeHeader(headerTextBuffer.toString());
-    }
-
-    /**
-     * Do any required flushing here.
-     */
-    abstract protected void finish();
-
-    /**
-     * For producing error messages.
-     * @return Output filename, or null if there isn't one.
-     */
-    abstract protected String getFilename();
+  /**
+   * For producing error messages.
+   *
+   * @return Output filename, or null if there isn't one.
+   */
+  protected abstract String getFilename();
 }

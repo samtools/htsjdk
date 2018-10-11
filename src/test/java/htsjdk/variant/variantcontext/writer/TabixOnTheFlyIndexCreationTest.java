@@ -33,36 +33,42 @@ import htsjdk.tribble.util.TabixUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCF3Codec;
 import htsjdk.variant.vcf.VCFHeader;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.util.EnumSet;
+import org.testng.annotations.Test;
 
 public class TabixOnTheFlyIndexCreationTest extends HtsjdkTest {
-    private static final File SMALL_VCF = new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
-    @Test
-    public void simpleTest() throws Exception {
-        final VCF3Codec codec = new VCF3Codec();
-        final FeatureReader<VariantContext> reader = AbstractFeatureReader.getFeatureReader(SMALL_VCF.getAbsolutePath(), codec, false);
-        final VCFHeader headerFromFile = (VCFHeader)reader.getHeader();
-        final File vcf = File.createTempFile("TabixOnTheFlyIndexCreationTest.", IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
-        final File tabix = new File(vcf.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
-        vcf.deleteOnExit();
-        tabix.deleteOnExit();
-        final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
-                .setOutputFile(vcf)
-                .setReferenceDictionary(headerFromFile.getSequenceDictionary())
-                .setOptions(EnumSet.of(Options.INDEX_ON_THE_FLY, Options.ALLOW_MISSING_FIELDS_IN_HEADER))
-                .build();
-        vcfWriter.writeHeader(headerFromFile);
-        final CloseableTribbleIterator<VariantContext> it = reader.iterator();
-        while (it.hasNext()) {
-            vcfWriter.add(it.next());
-        }
-        it.close();
-        vcfWriter.close();
+  private static final File SMALL_VCF =
+      new File("src/test/resources/htsjdk/tribble/tabix/trioDup.vcf.gz");
 
-        // Hard to validate, so just confirm that index can be read.
-        new TabixIndex(tabix);
+  @Test
+  public void simpleTest() throws Exception {
+    final VCF3Codec codec = new VCF3Codec();
+    final FeatureReader<VariantContext> reader =
+        AbstractFeatureReader.getFeatureReader(SMALL_VCF.getAbsolutePath(), codec, false);
+    final VCFHeader headerFromFile = (VCFHeader) reader.getHeader();
+    final File vcf =
+        File.createTempFile(
+            "TabixOnTheFlyIndexCreationTest.", IOUtil.COMPRESSED_VCF_FILE_EXTENSION);
+    final File tabix = new File(vcf.getAbsolutePath() + TabixUtils.STANDARD_INDEX_EXTENSION);
+    vcf.deleteOnExit();
+    tabix.deleteOnExit();
+    final VariantContextWriter vcfWriter =
+        new VariantContextWriterBuilder()
+            .setOutputFile(vcf)
+            .setReferenceDictionary(headerFromFile.getSequenceDictionary())
+            .setOptions(
+                EnumSet.of(Options.INDEX_ON_THE_FLY, Options.ALLOW_MISSING_FIELDS_IN_HEADER))
+            .build();
+    vcfWriter.writeHeader(headerFromFile);
+    final CloseableTribbleIterator<VariantContext> it = reader.iterator();
+    while (it.hasNext()) {
+      vcfWriter.add(it.next());
     }
+    it.close();
+    vcfWriter.close();
+
+    // Hard to validate, so just confirm that index can be read.
+    new TabixIndex(tabix);
+  }
 }

@@ -28,105 +28,107 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * @author Daniel Gomez-Sanchez (magicDGS)
- */
-public class BufferedLineReaderTest extends HtsjdkTest{
+/** @author Daniel Gomez-Sanchez (magicDGS) */
+public class BufferedLineReaderTest extends HtsjdkTest {
 
-    private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
-    private static final boolean[] LAST_LINE_TERMINATED = {false, true};
+  private static final String[] TERMINATORS = {"\r", "\n", "\r\n"};
+  private static final boolean[] LAST_LINE_TERMINATED = {false, true};
 
-    enum EmptyLineState {
-        FIRST_LINE, LAST_LINE, MIDDLE_LINE, COMPLETELY_EMPTY
+  enum EmptyLineState {
+    FIRST_LINE,
+    LAST_LINE,
+    MIDDLE_LINE,
+    COMPLETELY_EMPTY
+  }
+
+  /** Test a bunch of combinations instead of writing a method for each. */
+  @Test
+  public void testFromString() {
+    for (final String terminator : TERMINATORS) {
+      for (final boolean lastLineTerminated : LAST_LINE_TERMINATED) {
+        for (final EmptyLineState emptyLineState : EmptyLineState.values()) {
+          if (emptyLineState == EmptyLineState.COMPLETELY_EMPTY) {
+            fromStringEmptyTestHelper(terminator, lastLineTerminated);
+          } else {
+            fromStringTestHelper(terminator, lastLineTerminated, emptyLineState);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * various test cases where there is no input, except perhaps a line terminator
+   *
+   * @param terminator what the terminator should be in the input
+   * @param lastLineTerminated does the input have a terminator
+   */
+  private void fromStringEmptyTestHelper(
+      final String terminator, final boolean lastLineTerminated) {
+    final String input;
+    if (lastLineTerminated) {
+      input = terminator;
+    } else {
+      input = "";
+    }
+    final BufferedLineReader blr = BufferedLineReader.fromString(input);
+    blr.peek();
+    final String output = blr.readLine();
+    if (lastLineTerminated) {
+      Assert.assertEquals(output, "");
+    }
+    blr.peek();
+    Assert.assertNull(blr.readLine());
+  }
+
+  /**
+   * Test a variety of test cases in which there is more than one line.
+   *
+   * @param terminator to use in the input
+   * @param lastLineTerminated should the input end with a terminator
+   * @param emptyLineState where in the input should an empty line be.
+   */
+  private void fromStringTestHelper(
+      final String terminator,
+      final boolean lastLineTerminated,
+      final EmptyLineState emptyLineState) {
+    final String[] lines = new String[3];
+    if (emptyLineState == EmptyLineState.FIRST_LINE) {
+      lines[0] = "";
+      lines[1] = "Hi, Mom!";
+      lines[2] = "Hi, Dad?";
+    } else if (emptyLineState == EmptyLineState.LAST_LINE) {
+      lines[0] = "Hi, Dad?";
+      lines[1] = "Hi, Mom!";
+      lines[2] = "";
+    } else if (emptyLineState == EmptyLineState.MIDDLE_LINE) {
+      lines[0] = "Hi, Dad?";
+      lines[1] = "";
+      lines[2] = "Hi, Mom!";
+    }
+    String input = StringUtil.join(terminator, lines);
+    if (lastLineTerminated) {
+      input = input.concat(terminator);
+    }
+    final BufferedLineReader blr = BufferedLineReader.fromString(input);
+    for (int i = 0; i < lines.length - 1; ++i) {
+      blr.peek();
+      final String s = blr.readLine();
+      String expected = lines[i];
+      Assert.assertEquals(s, expected);
     }
 
-    /**
-     * Test a bunch of combinations instead of writing a method for each.
-     */
-    @Test
-    public void testFromString() {
-        for (final String terminator : TERMINATORS) {
-            for (final boolean lastLineTerminated : LAST_LINE_TERMINATED) {
-                for (final EmptyLineState emptyLineState : EmptyLineState
-                        .values()) {
-                    if (emptyLineState == EmptyLineState.COMPLETELY_EMPTY) {
-                        fromStringEmptyTestHelper(terminator, lastLineTerminated);
-                    } else {
-                        fromStringTestHelper(terminator, lastLineTerminated, emptyLineState);
-                    }
-                }
-            }
-        }
+    // Last line may need to be handled specially
+    blr.peek();
+    String s = blr.readLine();
+    if (!lastLineTerminated && emptyLineState == EmptyLineState.LAST_LINE) {
+      Assert.assertNull(s);
+    } else {
+      String expected = lines[lines.length - 1];
+      Assert.assertEquals(s, expected);
     }
-
-    /**
-     * various test cases where there is no input, except perhaps a line terminator
-     * @param terminator what the terminator should be in the input
-     * @param lastLineTerminated does the input have a terminator
-     */
-    private void fromStringEmptyTestHelper(final String terminator, final boolean lastLineTerminated) {
-        final String input;
-        if (lastLineTerminated) {
-            input = terminator;
-        } else {
-            input = "";
-        }
-        final BufferedLineReader blr = BufferedLineReader.fromString(input);
-        blr.peek();
-        final String output = blr.readLine();
-        if (lastLineTerminated) {
-            Assert.assertEquals(output, "");
-        }
-        blr.peek();
-        Assert.assertNull(blr.readLine());
-    }
-
-    /**
-     * Test a variety of test cases in which there is more than one line.
-     * @param terminator to use in the input
-     * @param lastLineTerminated should the input end with a terminator
-     * @param emptyLineState where in the input should an empty line be.
-     */
-    private void fromStringTestHelper(final String terminator, final boolean lastLineTerminated, final EmptyLineState emptyLineState) {
-        final String[] lines = new String[3];
-        if (emptyLineState == EmptyLineState.FIRST_LINE) {
-            lines[0] = "";
-            lines[1] = "Hi, Mom!";
-            lines[2] = "Hi, Dad?";
-        } else if (emptyLineState == EmptyLineState.LAST_LINE) {
-            lines[0] = "Hi, Dad?";
-            lines[1] = "Hi, Mom!";
-            lines[2] = "";
-        } else if (emptyLineState == EmptyLineState.MIDDLE_LINE) {
-            lines[0] = "Hi, Dad?";
-            lines[1] = "";
-            lines[2] = "Hi, Mom!";
-        }
-        String input = StringUtil.join(terminator, lines);
-        if (lastLineTerminated) {
-            input = input.concat(terminator);
-        }
-        final BufferedLineReader blr = BufferedLineReader.fromString(input);
-        for (int i = 0; i < lines.length - 1; ++i) {
-            blr.peek();
-            final String s = blr.readLine();
-            String expected = lines[i];
-            Assert.assertEquals(s, expected);
-        }
-
-        // Last line may need to be handled specially
-        blr.peek();
-        String s = blr.readLine();
-        if (!lastLineTerminated
-                && emptyLineState == EmptyLineState.LAST_LINE) {
-            Assert.assertNull(s);
-        } else {
-            String expected = lines[lines.length - 1];
-            Assert.assertEquals(s, expected);
-        }
-        blr.peek();
-        s = blr.readLine();
-        Assert.assertNull(s);
-    }
-
+    blr.peek();
+    s = blr.readLine();
+    Assert.assertNull(s);
+  }
 }

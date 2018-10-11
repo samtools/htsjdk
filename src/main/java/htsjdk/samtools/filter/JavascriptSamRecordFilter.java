@@ -23,79 +23,71 @@
  */
 package htsjdk.samtools.filter;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-
 /**
  * javascript based read filter
- * 
- * 
- * The script puts the following variables in the script context:
  *
- * - 'record' a SamRecord (
- * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
- * SAMRecord.java ) - 'header' (
- * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
+ * <p>The script puts the following variables in the script context:
+ *
+ * <p>- 'record' a SamRecord (
+ * https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/ SAMRecord.java ) -
+ * 'header' ( https://github.com/samtools/htsjdk/blob/master/src/java/htsjdk/samtools/
  * SAMFileHeader.java )
- * 
+ *
  * @author Pierre Lindenbaum PhD Institut du Thorax - INSERM - Nantes - France
  */
 public class JavascriptSamRecordFilter extends AbstractJavascriptFilter<SAMFileHeader, SAMRecord>
-        implements SamRecordFilter {
-    /**
-     * constructor using a javascript File
-     * 
-     * @param scriptFile
-     *            the javascript file to be compiled
-     * @param header
-     *            the SAMHeader
-     */
-    public JavascriptSamRecordFilter(final File scriptFile, final SAMFileHeader header) throws IOException {
-        super(scriptFile, header);
-    }
+    implements SamRecordFilter {
+  /**
+   * constructor using a javascript File
+   *
+   * @param scriptFile the javascript file to be compiled
+   * @param header the SAMHeader
+   */
+  public JavascriptSamRecordFilter(final File scriptFile, final SAMFileHeader header)
+      throws IOException {
+    super(scriptFile, header);
+  }
 
-    /**
-     * constructor using a javascript expression
-     * 
-     * @param scriptExpression
-     *            the javascript expression to be compiled
-     * @param header
-     *            the SAMHeader
-     */
-    public JavascriptSamRecordFilter(final String scriptExpression, final SAMFileHeader header) {
-        super(scriptExpression, header);
-    }
+  /**
+   * constructor using a javascript expression
+   *
+   * @param scriptExpression the javascript expression to be compiled
+   * @param header the SAMHeader
+   */
+  public JavascriptSamRecordFilter(final String scriptExpression, final SAMFileHeader header) {
+    super(scriptExpression, header);
+  }
 
-    /**
-     * constructor using a java.io.Reader
-     * 
-     * @param scriptReader
-     *            the javascript reader to be compiled. will be closed
-     * @param header
-     *            the SAMHeader
-     */
-    public JavascriptSamRecordFilter(final Reader scriptReader, final SAMFileHeader header) {
-        super(scriptReader, header);
-    }
+  /**
+   * constructor using a java.io.Reader
+   *
+   * @param scriptReader the javascript reader to be compiled. will be closed
+   * @param header the SAMHeader
+   */
+  public JavascriptSamRecordFilter(final Reader scriptReader, final SAMFileHeader header) {
+    super(scriptReader, header);
+  }
 
-    /** return true of both records are filteredOut (AND) */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        return filterOut(first) && filterOut(second);
-    }
+  /** return true of both records are filteredOut (AND) */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    return filterOut(first) && filterOut(second);
+  }
 
-    /** read is filtered out if the javascript program returns false */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return !accept(record);
-    }
+  /** read is filtered out if the javascript program returns false */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    return !accept(record);
+  }
 
-    @Override
-    public String getRecordKey() {
-        return "record";
-    }
+  @Override
+  public String getRecordKey() {
+    return "record";
+  }
 }

@@ -24,14 +24,6 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,222 +33,235 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Random;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
 public class SortingCollectionTest extends HtsjdkTest {
-    // Create a separate directory for files so it is possible to confirm that the directory is emptied
-    protected File tmpDir() {
-        return new File(System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"), getClass().getSimpleName());
+  // Create a separate directory for files so it is possible to confirm that the directory is
+  // emptied
+  protected File tmpDir() {
+    return new File(
+        System.getProperty("java.io.tmpdir") + "/" + System.getProperty("user.name"),
+        getClass().getSimpleName());
+  }
+
+  @BeforeMethod
+  void setup() {
+    resetTmpDir();
+  }
+
+  @AfterMethod
+  void tearDown() {
+    resetTmpDir();
+  }
+
+  /** Deletes and re-creates the temporary directory. */
+  void resetTmpDir() {
+    System.err.println("Resetting tmpdir");
+    IOUtil.deleteDirectoryTree(tmpDir());
+    if (!tmpDir().mkdirs())
+      throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
+  }
+
+  protected boolean tmpDirIsEmpty() {
+    return tmpDir().listFiles().length == 0;
+  }
+
+  @DataProvider(name = "test1")
+  public Object[][] createTestData() {
+    return new Object[][] {
+      {"empty", 0, 100},
+      {"singleton", 1, 100},
+      {"less than threshold", 100, 200},
+      {"threshold minus 1", 99, 100},
+      {"greater than threshold", 550, 100},
+      {"threshold multiple", 600, 100},
+      {"threshold multiple plus one", 101, 100},
+      {"exactly threshold", 100, 100},
+    };
+  }
+
+  /**
+   * Generate some strings, put into SortingCollection, confirm that the right number of Strings
+   * come out, and in the right order.
+   *
+   * @param numStringsToGenerate
+   * @param maxRecordsInRam
+   */
+  @Test(dataProvider = "test1")
+  public void testPositive(
+      final String testName, final int numStringsToGenerate, final int maxRecordsInRam) {
+    final String[] strings = new String[numStringsToGenerate];
+    int numStringsGenerated = 0;
+    final SortingCollection<String> sortingCollection = makeSortingCollection(maxRecordsInRam);
+    for (final String s : new RandomStringGenerator(numStringsToGenerate)) {
+      sortingCollection.add(s);
+      strings[numStringsGenerated++] = s;
     }
-    
-    @BeforeMethod void setup() { resetTmpDir(); }
-    @AfterMethod void tearDown() { resetTmpDir(); }
+    Arrays.sort(strings, new StringComparator());
 
-    /** Deletes and re-creates the temporary directory. */
-    void resetTmpDir() {
-        System.err.println("Resetting tmpdir");
-        IOUtil.deleteDirectoryTree(tmpDir());
-        if (!tmpDir().mkdirs()) throw new IllegalStateException("Could not create tmpdir: " + tmpDir().getAbsolutePath());
+    Assert.assertEquals(tmpDirIsEmpty(), numStringsToGenerate <= maxRecordsInRam);
+    sortingCollection.setDestructiveIteration(false);
+    assertIteratorEqualsList(strings, sortingCollection.iterator());
+    assertIteratorEqualsList(strings, sortingCollection.iterator());
 
+    sortingCollection.cleanup();
+    Assert.assertEquals(tmpDir().list().length, 0);
+  }
+
+  @Test
+  public void spillToDiskTest() {
+    final SortingCollection<String> sortingCollection = makeSortingCollection(10);
+    final String[] strings = new String[] {"1", "2", "3"};
+
+    for (String str : strings) {
+      sortingCollection.add(str);
     }
 
-    protected boolean tmpDirIsEmpty() {
-        return tmpDir().listFiles().length == 0;
+    Assert.assertEquals(tmpDir().list().length, 0);
+    sortingCollection.spillToDisk();
+    Assert.assertEquals(tmpDir().list().length, 1);
+
+    assertIteratorEqualsList(strings, sortingCollection.iterator());
+
+    sortingCollection.cleanup();
+    Assert.assertEquals(tmpDir().list().length, 0);
+  }
+
+  private void assertIteratorEqualsList(
+      final String[] strings, final Iterator<String> sortingCollection) {
+    int i = 0;
+    while (sortingCollection.hasNext()) {
+      final String s = sortingCollection.next();
+      Assert.assertEquals(s, strings[i++]);
+    }
+    Assert.assertEquals(i, strings.length);
+  }
+
+  private SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
+    return SortingCollection.newInstance(
+        String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
+  }
+
+  /** Generate pseudo-random Strings for testing */
+  static class RandomStringGenerator implements Iterable<String>, Iterator<String> {
+    Random random = new Random(TestUtil.RANDOM_SEED);
+    int numElementsToGenerate;
+    int numElementsGenerated = 0;
+
+    /** @param numElementsToGenerate Iteration ends after this many have been generated. */
+    RandomStringGenerator(final int numElementsToGenerate) {
+      this.numElementsToGenerate = numElementsToGenerate;
     }
 
-    @DataProvider(name = "test1")
-    public Object[][] createTestData() {
-        return new Object[][] {
-                {"empty", 0, 100},
-                {"singleton", 1, 100},
-                {"less than threshold", 100, 200},
-                {"threshold minus 1", 99, 100},
-                {"greater than threshold", 550, 100},
-                {"threshold multiple", 600, 100},
-                {"threshold multiple plus one", 101, 100},
-                {"exactly threshold", 100, 100},
-        };
+    @Override
+    public Iterator<String> iterator() {
+      return this;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return numElementsGenerated < numElementsToGenerate;
+    }
+
+    @Override
+    public String next() {
+      ++numElementsGenerated;
+      return Integer.toString(random.nextInt());
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  static class StringComparator implements Comparator<String> {
+
+    @Override
+    public int compare(final String s, final String s1) {
+      return s.compareTo(s1);
+    }
+  }
+
+  static class StringCodec implements SortingCollection.Codec<String> {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+    OutputStream os;
+    InputStream is;
+
+    @Override
+    public SortingCollection.Codec<String> clone() {
+      return new StringCodec();
     }
 
     /**
-     * Generate some strings, put into SortingCollection, confirm that the right number of
-     * Strings come out, and in the right order.
-     * @param numStringsToGenerate
-     * @param maxRecordsInRam
+     * Where to write encoded output
+     *
+     * @param os
      */
-    @Test(dataProvider = "test1")
-    public void testPositive(final String testName, final int numStringsToGenerate, final int maxRecordsInRam) {
-        final String[] strings = new String[numStringsToGenerate];
-        int numStringsGenerated = 0;
-        final SortingCollection<String> sortingCollection = makeSortingCollection(maxRecordsInRam);
-        for (final String s : new RandomStringGenerator(numStringsToGenerate)) {
-            sortingCollection.add(s);
-            strings[numStringsGenerated++] = s;
-        }
-        Arrays.sort(strings, new StringComparator());
-
-        Assert.assertEquals(tmpDirIsEmpty(), numStringsToGenerate <= maxRecordsInRam);
-        sortingCollection.setDestructiveIteration(false);
-        assertIteratorEqualsList(strings, sortingCollection.iterator());
-        assertIteratorEqualsList(strings, sortingCollection.iterator());
-        
-        sortingCollection.cleanup();
-        Assert.assertEquals(tmpDir().list().length, 0);
-    }
-
-    @Test
-    public void spillToDiskTest() {
-        final SortingCollection<String> sortingCollection = makeSortingCollection(10);
-        final String[] strings = new String[] {
-                "1", "2", "3"
-        };
-
-        for (String str : strings) {
-            sortingCollection.add(str);
-        }
-
-        Assert.assertEquals(tmpDir().list().length, 0);
-        sortingCollection.spillToDisk();
-        Assert.assertEquals(tmpDir().list().length, 1);
-
-        assertIteratorEqualsList(strings, sortingCollection.iterator());
-
-        sortingCollection.cleanup();
-        Assert.assertEquals(tmpDir().list().length, 0);
-    }
-
-    private void assertIteratorEqualsList(final String[] strings, final Iterator<String> sortingCollection) {
-        int i = 0;
-        while (sortingCollection.hasNext()) {
-            final String s = sortingCollection.next();
-            Assert.assertEquals(s, strings[i++]);
-        }
-        Assert.assertEquals(i, strings.length);
-    }
-
-    private SortingCollection<String> makeSortingCollection(final int maxRecordsInRam) {
-        return SortingCollection.newInstance(String.class, new StringCodec(), new StringComparator(), maxRecordsInRam, tmpDir());
+    @Override
+    public void setOutputStream(final OutputStream os) {
+      this.os = os;
     }
 
     /**
-     * Generate pseudo-random Strings for testing
+     * Where to read encoded input from
+     *
+     * @param is
      */
-    static class RandomStringGenerator implements Iterable<String>, Iterator<String> {
-        Random random = new Random(TestUtil.RANDOM_SEED);
-        int numElementsToGenerate;
-        int numElementsGenerated = 0;
-
-        /**
-         * @param numElementsToGenerate Iteration ends after this many have been generated.
-         */
-        RandomStringGenerator(final int numElementsToGenerate) {
-            this.numElementsToGenerate = numElementsToGenerate;
-        }
-
-        @Override
-        public Iterator<String> iterator() {
-            return this;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return numElementsGenerated < numElementsToGenerate;
-        }
-
-        @Override
-        public String next() {
-            ++numElementsGenerated;
-            return Integer.toString(random.nextInt());
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
+    @Override
+    public void setInputStream(final InputStream is) {
+      this.is = is;
     }
 
-    static class StringComparator implements Comparator<String> {
-
-        @Override
-        public int compare(final String s, final String s1) {
-            return s.compareTo(s1);
-        }
+    /**
+     * Write object to file
+     *
+     * @param val what to write
+     */
+    @Override
+    public void encode(final String val) {
+      try {
+        byteBuffer.clear();
+        byteBuffer.putInt(val.length());
+        os.write(byteBuffer.array());
+        os.write(val.getBytes());
+      } catch (IOException e) {
+        throw new RuntimeIOException(e);
+      }
     }
 
-    static class StringCodec implements SortingCollection.Codec<String> {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
-        OutputStream os;
-        InputStream is;
-
-        @Override
-        public SortingCollection.Codec<String> clone() {
-            return new StringCodec();
+    /**
+     * Read the next record from the input stream and convert into a java object.
+     *
+     * @return null if no more records. Should throw exception if EOF is encountered in the middle
+     *     of a record.
+     */
+    @Override
+    public String decode() {
+      try {
+        byteBuffer.clear();
+        int bytesRead = is.read(byteBuffer.array());
+        if (bytesRead == -1) {
+          return null;
         }
-
-        /**
-         * Where to write encoded output
-         *
-         * @param os
-         */
-        @Override
-        public void setOutputStream(final OutputStream os) {
-            this.os = os;
+        if (bytesRead != 4) {
+          throw new RuntimeException("Unexpected EOF in middle of record");
         }
-
-        /**
-         * Where to read encoded input from
-         *
-         * @param is
-         */
-        @Override
-        public void setInputStream(final InputStream is) {
-            this.is = is;
+        byteBuffer.limit(4);
+        final int length = byteBuffer.getInt();
+        final byte[] buf = new byte[length];
+        bytesRead = is.read(buf);
+        if (bytesRead != length) {
+          throw new RuntimeException("Unexpected EOF in middle of record");
         }
-
-        /**
-         * Write object to file
-         *
-         * @param val what to write
-         */
-        @Override
-        public void encode(final String val) {
-            try {
-                byteBuffer.clear();
-                byteBuffer.putInt(val.length());
-                os.write(byteBuffer.array());
-                os.write(val.getBytes());
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
-
-        /**
-         * Read the next record from the input stream and convert into a java object.
-         *
-         * @return null if no more records.  Should throw exception if EOF is encountered in the middle of
-         *         a record.
-         */
-        @Override
-        public String decode() {
-            try {
-                byteBuffer.clear();
-                int bytesRead = is.read(byteBuffer.array());
-                if (bytesRead == -1) {
-                    return null;
-                }
-                if (bytesRead != 4) {
-                    throw new RuntimeException("Unexpected EOF in middle of record");
-                }
-                byteBuffer.limit(4);
-                final int length = byteBuffer.getInt();
-                final byte[] buf = new byte[length];
-                bytesRead = is.read(buf);
-                if (bytesRead != length) {
-                    throw new RuntimeException("Unexpected EOF in middle of record");
-                }
-                return new String(buf);
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
+        return new String(buf);
+      } catch (IOException e) {
+        throw new RuntimeIOException(e);
+      }
     }
+  }
 }

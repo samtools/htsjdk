@@ -33,94 +33,91 @@ import java.util.Arrays;
  */
 public class LinearIndex {
 
-    public static final int MAX_LINEAR_INDEX_SIZE = GenomicIndexUtil.MAX_LINEAR_INDEX_SIZE;
+  public static final int MAX_LINEAR_INDEX_SIZE = GenomicIndexUtil.MAX_LINEAR_INDEX_SIZE;
 
-    public static final int BAM_LIDX_SHIFT = 14;
+  public static final int BAM_LIDX_SHIFT = 14;
 
-    /**
-     * The reference sequence number for this linear index.
-     */
-    private final int mReferenceSequence;
+  /** The reference sequence number for this linear index. */
+  private final int mReferenceSequence;
 
-    /**
-     * Dictates the first stored element of the index.
-     */
-    private final int mIndexStart;
+  /** Dictates the first stored element of the index. */
+  private final int mIndexStart;
 
-    /**
-     * The linear index entries within this bin.
-     */
-    private final long[] mIndexEntries;
+  /** The linear index entries within this bin. */
+  private final long[] mIndexEntries;
 
-    public LinearIndex(final int referenceSequence, final int indexStart, final long[] indexEntries) {
-        this.mReferenceSequence = referenceSequence;
-        this.mIndexStart = indexStart;
-        this.mIndexEntries = indexEntries;
-    }
+  public LinearIndex(final int referenceSequence, final int indexStart, final long[] indexEntries) {
+    this.mReferenceSequence = referenceSequence;
+    this.mIndexStart = indexStart;
+    this.mIndexEntries = indexEntries;
+  }
 
-    public int getReferenceSequence() {
-        return mReferenceSequence;
-    }
+  public int getReferenceSequence() {
+    return mReferenceSequence;
+  }
 
-    public int size() {
-        return mIndexEntries.length;
-    }
+  public int size() {
+    return mIndexEntries.length;
+  }
 
-    public long get(final int index) {
-        return mIndexEntries[index-mIndexStart];
-    }
+  public long get(final int index) {
+    return mIndexEntries[index - mIndexStart];
+  }
 
-    public static int convertToLinearIndexOffset(final int contigPos) {
-        final int indexPos = (contigPos <= 0) ? 0 : contigPos-1;
-        return indexPos >> BAM_LIDX_SHIFT;
-    }
+  public static int convertToLinearIndexOffset(final int contigPos) {
+    final int indexPos = (contigPos <= 0) ? 0 : contigPos - 1;
+    return indexPos >> BAM_LIDX_SHIFT;
+  }
 
-    /**
-     * Gets the minimum offset of any alignment start appearing in this index, according to the linear index. 
-     * @param startPos Starting position for this query.
-     * @return The minimum offset, in chunk format, of any read appearing in this position.
-     */
-    public long getMinimumOffset(final int startPos) {
-        final int start = (startPos <= 0) ? 0 : startPos-1;
-        final int regionLinearBin = start >> BAM_LIDX_SHIFT;
-        // System.out.println("# regionLinearBin: " + regionLinearBin);
-        long minimumOffset = 0;
-        if (regionLinearBin-mIndexStart < mIndexEntries.length)
-            minimumOffset = mIndexEntries[regionLinearBin-mIndexStart];
-        return minimumOffset;
-    }
+  /**
+   * Gets the minimum offset of any alignment start appearing in this index, according to the linear
+   * index.
+   *
+   * @param startPos Starting position for this query.
+   * @return The minimum offset, in chunk format, of any read appearing in this position.
+   */
+  public long getMinimumOffset(final int startPos) {
+    final int start = (startPos <= 0) ? 0 : startPos - 1;
+    final int regionLinearBin = start >> BAM_LIDX_SHIFT;
+    // System.out.println("# regionLinearBin: " + regionLinearBin);
+    long minimumOffset = 0;
+    if (regionLinearBin - mIndexStart < mIndexEntries.length)
+      minimumOffset = mIndexEntries[regionLinearBin - mIndexStart];
+    return minimumOffset;
+  }
 
-    /**
-     * Direct access to the array.  Be careful!
-     * @return The elements of the linear index.
-     */
-    public long[] getIndexEntries() {
-        return mIndexEntries;
-    }
+  /**
+   * Direct access to the array. Be careful!
+   *
+   * @return The elements of the linear index.
+   */
+  public long[] getIndexEntries() {
+    return mIndexEntries;
+  }
 
-    public int getIndexStart() {
-        return mIndexStart;
-    }
+  public int getIndexStart() {
+    return mIndexStart;
+  }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-        final LinearIndex that = (LinearIndex) o;
+    final LinearIndex that = (LinearIndex) o;
 
-        if (mIndexStart != that.mIndexStart) return false;
-        if (mReferenceSequence != that.mReferenceSequence) return false;
-        if (!Arrays.equals(mIndexEntries, that.mIndexEntries)) return false;
+    if (mIndexStart != that.mIndexStart) return false;
+    if (mReferenceSequence != that.mReferenceSequence) return false;
+    if (!Arrays.equals(mIndexEntries, that.mIndexEntries)) return false;
 
-        return true;
-    }
+    return true;
+  }
 
-    @Override
-    public int hashCode() {
-        int result = mReferenceSequence;
-        result = 31 * result + mIndexStart;
-        result = 31 * result + Arrays.hashCode(mIndexEntries);
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    int result = mReferenceSequence;
+    result = 31 * result + mIndexStart;
+    result = 31 * result + Arrays.hashCode(mIndexEntries);
+    return result;
+  }
 }

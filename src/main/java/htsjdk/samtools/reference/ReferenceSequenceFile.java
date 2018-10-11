@@ -25,67 +25,64 @@
 package htsjdk.samtools.reference;
 
 import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * An interface for working with files of reference sequences regardless of the file format
- * being used.
+ * An interface for working with files of reference sequences regardless of the file format being
+ * used.
  *
  * @author Tim Fennell
  */
 public interface ReferenceSequenceFile extends Closeable {
 
-    /**
-     * Must return a sequence dictionary with at least the following fields completed
-     * for each sequence: name, length.
-     *
-     * @return a list of sequence records representing the sequences in this reference file
-     */
-    public SAMSequenceDictionary getSequenceDictionary();
+  /**
+   * Must return a sequence dictionary with at least the following fields completed for each
+   * sequence: name, length.
+   *
+   * @return a list of sequence records representing the sequences in this reference file
+   */
+  public SAMSequenceDictionary getSequenceDictionary();
 
-    /**
-     * Retrieves the next whole sequences from the file.
-     * @return a ReferenceSequence or null if at the end of the file
-     */
-    public ReferenceSequence nextSequence();
+  /**
+   * Retrieves the next whole sequences from the file.
+   *
+   * @return a ReferenceSequence or null if at the end of the file
+   */
+  public ReferenceSequence nextSequence();
 
-    /**
-     * Resets the ReferenceSequenceFile so that the next call to nextSequence() will return
-     * the first sequence in the file.
-     */
-    public void reset();
+  /**
+   * Resets the ReferenceSequenceFile so that the next call to nextSequence() will return the first
+   * sequence in the file.
+   */
+  public void reset();
 
+  /** @return true if getSequence and getSubsequenceAt methods are allowed. */
+  public boolean isIndexed();
 
-    /**
-     * @return true if getSequence and getSubsequenceAt methods are allowed.
-     */
-    public boolean isIndexed();
+  /**
+   * Retrieves the complete sequence described by this contig.
+   *
+   * @param contig contig whose data should be returned.
+   * @return The full sequence associated with this contig.
+   * @throws UnsupportedOperationException if !sIndexed.
+   */
+  public ReferenceSequence getSequence(String contig);
 
-    /**
-     * Retrieves the complete sequence described by this contig.
-     * @param contig contig whose data should be returned.
-     * @return The full sequence associated with this contig.
-     * @throws UnsupportedOperationException if !sIndexed.
-     */
-    public ReferenceSequence getSequence( String contig );
+  /**
+   * Gets the subsequence of the contig in the range [start,stop]
+   *
+   * @param contig Contig whose subsequence to retrieve.
+   * @param start inclusive, 1-based start of region.
+   * @param stop inclusive, 1-based stop of region.
+   * @return The partial reference sequence associated with this range.
+   * @throws UnsupportedOperationException if !sIndexed.
+   */
+  public ReferenceSequence getSubsequenceAt(String contig, long start, long stop);
 
-    /**
-     * Gets the subsequence of the contig in the range [start,stop]
-     * @param contig Contig whose subsequence to retrieve.
-     * @param start inclusive, 1-based start of region.
-     * @param stop inclusive, 1-based stop of region.
-     * @return The partial reference sequence associated with this range.
-     * @throws UnsupportedOperationException if !sIndexed.
-     */
-    public ReferenceSequence getSubsequenceAt( String contig, long start, long stop );
-    
-    /**
-     * @return Reference name, file name, or something other human-readable representation.
-     */
-    public String toString();
+  /** @return Reference name, file name, or something other human-readable representation. */
+  public String toString();
 
-    @Override
-    public void close() throws IOException;
+  @Override
+  public void close() throws IOException;
 }

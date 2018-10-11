@@ -25,52 +25,41 @@ package htsjdk.tribble.example;
 
 import htsjdk.tribble.index.Index;
 import htsjdk.tribble.index.IndexFactory;
-
 import java.io.File;
 
-/**
- * Check with two index files are equal
- */
+/** Check with two index files are equal */
 public class IndicesAreEqual {
 
-    /**
-     *
-     * @param args 2 parameters, the paths of the two index files to compare
-     */
-    public static void main(String[] args) {
-        if ( args.length != 2 )
-            printUsage();
-        else {
-            Index index1 = loadIndex(args[0]);
-            Index index2 = loadIndex(args[1]);
-            System.out.printf("%n");
-            System.out.printf("index1: %s%n", args[0]);
-            System.out.printf("index2: %s%n", args[1]);
-            boolean eq = index1.equals(index2);
-            System.out.printf("  equals() = %b%n", eq);
-        }
+  /** @param args 2 parameters, the paths of the two index files to compare */
+  public static void main(String[] args) {
+    if (args.length != 2) printUsage();
+    else {
+      Index index1 = loadIndex(args[0]);
+      Index index2 = loadIndex(args[1]);
+      System.out.printf("%n");
+      System.out.printf("index1: %s%n", args[0]);
+      System.out.printf("index2: %s%n", args[1]);
+      boolean eq = index1.equals(index2);
+      System.out.printf("  equals() = %b%n", eq);
     }
+  }
 
-    /**
-     * print usage information
-     */
-    public static void printUsage() {
-        System.err.println("Usage: java -jar IndicesAreEqual.jar index1 index2");
-        System.err.println("    Prints out true / false if index1 and index2 are equal");
-        System.exit(1);
-    }
+  /** print usage information */
+  public static void printUsage() {
+    System.err.println("Usage: java -jar IndicesAreEqual.jar index1 index2");
+    System.err.println("    Prints out true / false if index1 and index2 are equal");
+    System.exit(1);
+  }
 
-    /**
-     * @return an index instance
-     */
-    public static Index loadIndex(String filename) {
-        //System.err.println("Loading index from disk for index file -> " + filename);
-        File file = new File(filename);
-        if (file.canRead()) {
-            return IndexFactory.loadIndex(file.getAbsolutePath());
-        } else {
-            printUsage();
-            return null;
-        }
+  /** @return an index instance */
+  public static Index loadIndex(String filename) {
+    // System.err.println("Loading index from disk for index file -> " + filename);
+    File file = new File(filename);
+    if (file.canRead()) {
+      return IndexFactory.loadIndex(file.getAbsolutePath());
+    } else {
+      printUsage();
+      return null;
     }
+  }
 }

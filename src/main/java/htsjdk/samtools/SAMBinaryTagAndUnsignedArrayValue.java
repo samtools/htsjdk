@@ -30,36 +30,38 @@ package htsjdk.samtools;
  * @author alecw@broadinstitute.org
  */
 public class SAMBinaryTagAndUnsignedArrayValue extends SAMBinaryTagAndValue {
-    public SAMBinaryTagAndUnsignedArrayValue(final short tag, final Object value) {
-        super(tag, value);
-        if (!value.getClass().isArray() || value instanceof float[]) {
-            throw new IllegalArgumentException("Attribute type " + value.getClass() +
-                    " cannot be encoded as an unsigned array. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
-        }
+  public SAMBinaryTagAndUnsignedArrayValue(final short tag, final Object value) {
+    super(tag, value);
+    if (!value.getClass().isArray() || value instanceof float[]) {
+      throw new IllegalArgumentException(
+          "Attribute type "
+              + value.getClass()
+              + " cannot be encoded as an unsigned array. Tag: "
+              + SAMTagUtil.getSingleton().makeStringTag(tag));
     }
+  }
 
-    /** Creates and returns a shallow copy of the list of tag/values. */
-    @Override
-    public SAMBinaryTagAndValue copy() {
-        final SAMBinaryTagAndValue retval = new SAMBinaryTagAndUnsignedArrayValue(this.tag, this.value);
-        if (next != null) retval.next = next.copy();
-        return retval;
+  /** Creates and returns a shallow copy of the list of tag/values. */
+  @Override
+  public SAMBinaryTagAndValue copy() {
+    final SAMBinaryTagAndValue retval = new SAMBinaryTagAndUnsignedArrayValue(this.tag, this.value);
+    if (next != null) retval.next = next.copy();
+    return retval;
+  }
+
+  /** Creates and returns a deep copy of the list of tag/values. */
+  @Override
+  public SAMBinaryTagAndValue deepCopy() {
+    final SAMBinaryTagAndValue retval =
+        new SAMBinaryTagAndUnsignedArrayValue(this.tag, cloneValue());
+    if (next != null) {
+      retval.next = next.deepCopy();
     }
+    return retval;
+  }
 
-    /** Creates and returns a deep copy of the list of tag/values. */
-    @Override
-    public SAMBinaryTagAndValue deepCopy() {
-        final SAMBinaryTagAndValue retval = new SAMBinaryTagAndUnsignedArrayValue(this.tag, cloneValue());
-        if (next != null) {
-            retval.next = next.deepCopy();
-        }
-        return retval;
-    }
-
-
-    @Override
-    public boolean isUnsignedArray() {
-        return true;
-    }
+  @Override
+  public boolean isUnsignedArray() {
+    return true;
+  }
 }

@@ -32,46 +32,46 @@ import htsjdk.samtools.SAMRecord;
  * @author Tim Fennell
  */
 public final class QualityUtil {
-    private static final double[] errorProbabilityByPhredScore;
+  private static final double[] errorProbabilityByPhredScore;
 
-    static {
-        errorProbabilityByPhredScore = new double[101];
-        for (int i=0; i<errorProbabilityByPhredScore.length; ++i) {
-            errorProbabilityByPhredScore[i] = 1d/Math.pow(10d, i/10d);
-        }
+  static {
+    errorProbabilityByPhredScore = new double[101];
+    for (int i = 0; i < errorProbabilityByPhredScore.length; ++i) {
+      errorProbabilityByPhredScore[i] = 1d / Math.pow(10d, i / 10d);
+    }
+  }
+
+  /** Given a phred score between 0 and 100 returns the probability of error. */
+  public static double getErrorProbabilityFromPhredScore(final int i) {
+    return errorProbabilityByPhredScore[i];
+  }
+
+  /** Gets the phred score for any given probability of error. */
+  public static int getPhredScoreFromErrorProbability(final double probability) {
+    return (int) Math.round(-10 * Math.log10(probability));
+  }
+
+  /** Gets the phred score given the specified observations and errors. */
+  public static int getPhredScoreFromObsAndErrors(final double observations, final double errors) {
+    return getPhredScoreFromErrorProbability(errors / observations);
+  }
+
+  /**
+   * Calculates the sum of error probabilities for all read bases in the SAM record. Takes the SAM
+   * record as opposed to the qualities directly so that it can make sure to count no-calls as 1
+   * instead of what the quality score says.
+   */
+  public static double sumOfErrorProbabilities(final SAMRecord rec) {
+    final byte[] bases = rec.getReadBases();
+    final byte[] quals = rec.getBaseQualities();
+
+    double sum = 0;
+
+    for (int i = 0; i < bases.length; ++i) {
+      if (SequenceUtil.isNoCall(bases[i])) ++sum;
+      else sum += QualityUtil.getErrorProbabilityFromPhredScore(quals[i]);
     }
 
-    /** Given a phred score between 0 and 100 returns the probability of error. */
-    public static double getErrorProbabilityFromPhredScore(final int i) {
-        return errorProbabilityByPhredScore[i];
-    }
-
-    /** Gets the phred score for any given probability of error. */
-    public static int getPhredScoreFromErrorProbability(final double probability) {
-        return (int) Math.round(-10 * Math.log10(probability));
-    }
-
-    /** Gets the phred score given the specified observations and errors. */
-    public static int getPhredScoreFromObsAndErrors(final double observations, final double errors) {
-        return getPhredScoreFromErrorProbability(errors / observations);
-    }
-
-    /**
-     * Calculates the sum of error probabilities for all read bases in the SAM record. Takes
-     * the SAM record as opposed to the qualities directly so that it can make sure to count
-     * no-calls as 1 instead of what the quality score says.
-     * */
-    public static double sumOfErrorProbabilities(final SAMRecord rec) {
-        final byte[] bases = rec.getReadBases();
-        final byte[] quals = rec.getBaseQualities();
-
-        double sum = 0;
-
-        for (int i=0; i<bases.length; ++i) {
-            if (SequenceUtil.isNoCall(bases[i])) ++sum;
-            else sum += QualityUtil.getErrorProbabilityFromPhredScore(quals[i]);
-        }
-
-        return sum;
-    }
+    return sum;
+  }
 }

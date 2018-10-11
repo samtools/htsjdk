@@ -22,32 +22,32 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 
 /**
- * A "non-seekable" ftp stream.  This one doesn't support random access.
+ * A "non-seekable" ftp stream. This one doesn't support random access.
  *
- * It is assumed that the ftp client has been connected, put in passive mode,
- * set to binary, and otherwise prepped for reading before creating this stream.
+ * <p>It is assumed that the ftp client has been connected, put in passive mode, set to binary, and
+ * otherwise prepped for reading before creating this stream.
  *
  * @author jrobinso
  * @date Oct 31, 2010
  */
 public class FTPStream extends FilterInputStream {
 
-    FTPClient ftp;
+  FTPClient ftp;
 
-    public FTPStream(FTPClient ftp) throws IOException {
-        super(ftp.getDataStream());
-        this.ftp = ftp;
-    }
+  public FTPStream(FTPClient ftp) throws IOException {
+    super(ftp.getDataStream());
+    this.ftp = ftp;
+  }
 
+  @Override
+  public int read(byte[] bytes, int i, int i1) throws IOException {
+    return super.read(
+        bytes, i, i1); // To change body of overridden methods use File | Settings | File Templates.
+  }
 
-    @Override
-    public int read(byte[] bytes, int i, int i1) throws IOException {
-        return super.read(bytes, i, i1);    //To change body of overridden methods use File | Settings | File Templates.
-    }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-        ftp.disconnect();
-    }
+  @Override
+  public void close() throws IOException {
+    super.close();
+    ftp.disconnect();
+  }
 }

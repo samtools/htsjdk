@@ -24,57 +24,59 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.seekablestream.SeekableStream;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A class for reading BAM file indices, hitting the disk once per query.
- */
-public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex
-{
-    public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
-        super(file, dictionary);
-    }
+/** A class for reading BAM file indices, hitting the disk once per query. */
+public class DiskBasedBAMFileIndex extends AbstractBAMFileIndex {
+  public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary) {
+    super(file, dictionary);
+  }
 
-    public DiskBasedBAMFileIndex(final SeekableStream stream, final SAMSequenceDictionary dictionary) {
-        super(stream, dictionary);
-    }
+  public DiskBasedBAMFileIndex(
+      final SeekableStream stream, final SAMSequenceDictionary dictionary) {
+    super(stream, dictionary);
+  }
 
-    public DiskBasedBAMFileIndex(final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
-        super(file, dictionary, useMemoryMapping);
-    }
+  public DiskBasedBAMFileIndex(
+      final File file, final SAMSequenceDictionary dictionary, final boolean useMemoryMapping) {
+    super(file, dictionary, useMemoryMapping);
+  }
 
-    /**
-     * Get list of regions of BAM file that may contain SAMRecords for the given range
-     * @param referenceIndex sequence of desired SAMRecords
-     * @param startPos 1-based start of the desired interval, inclusive
-     * @param endPos 1-based end of the desired interval, inclusive
-     * @return array of pairs of virtual file positions.  Each pair is the first and last
-     * virtual file position in a range that can be scanned to find SAMRecords that overlap the given
-     * positions. The last position in each pair is a virtual file pointer to the first SAMRecord beyond
-     * the range that may contain the indicated SAMRecords.
-     */
-    @Override
-    public BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos) {
-        final BAMIndexContent queryResults = query(referenceIndex,startPos,endPos);
+  /**
+   * Get list of regions of BAM file that may contain SAMRecords for the given range
+   *
+   * @param referenceIndex sequence of desired SAMRecords
+   * @param startPos 1-based start of the desired interval, inclusive
+   * @param endPos 1-based end of the desired interval, inclusive
+   * @return array of pairs of virtual file positions. Each pair is the first and last virtual file
+   *     position in a range that can be scanned to find SAMRecords that overlap the given
+   *     positions. The last position in each pair is a virtual file pointer to the first SAMRecord
+   *     beyond the range that may contain the indicated SAMRecords.
+   */
+  @Override
+  public BAMFileSpan getSpanOverlapping(
+      final int referenceIndex, final int startPos, final int endPos) {
+    final BAMIndexContent queryResults = query(referenceIndex, startPos, endPos);
 
-        if(queryResults == null)
-            return null;
+    if (queryResults == null) return null;
 
-        List<Chunk> chunkList = new ArrayList<Chunk>();
-        for(final Chunk chunk: queryResults.getAllChunks())
-            chunkList.add(chunk.clone());
-        chunkList = Chunk.optimizeChunkList(chunkList,queryResults.getLinearIndex().getMinimumOffset(startPos));
-        return new BAMFileSpan(chunkList);
-    }
+    List<Chunk> chunkList = new ArrayList<Chunk>();
+    for (final Chunk chunk : queryResults.getAllChunks()) chunkList.add(chunk.clone());
+    chunkList =
+        Chunk.optimizeChunkList(
+            chunkList, queryResults.getLinearIndex().getMinimumOffset(startPos));
+    return new BAMFileSpan(chunkList);
+  }
 
-     @Override
-     protected BAMIndexContent getQueryResults(final int reference){
-         throw new UnsupportedOperationException();
-         // todo: there ought to be a way to support this using the first startPos for the reference and the last
-         // return query(reference, 1, -1);
-         // If this were implemented, BAMIndexer.createAndWriteIndex could extend DiskBasedBAMFileIndex -or- CachingBAMFileIndex
-    }
+  @Override
+  protected BAMIndexContent getQueryResults(final int reference) {
+    throw new UnsupportedOperationException();
+    // todo: there ought to be a way to support this using the first startPos for the reference and
+    // the last
+    // return query(reference, 1, -1);
+    // If this were implemented, BAMIndexer.createAndWriteIndex could extend DiskBasedBAMFileIndex
+    // -or- CachingBAMFileIndex
+  }
 }

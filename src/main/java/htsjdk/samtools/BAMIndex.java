@@ -33,36 +33,37 @@ import java.io.Closeable;
  */
 public interface BAMIndex extends Closeable {
 
-    public static final String BAMIndexSuffix = ".bai";
+  public static final String BAMIndexSuffix = ".bai";
 
-    /**
-     * Gets the compressed chunks which should be searched for the contents of records contained by the span
-     * referenceIndex:startPos-endPos, inclusive.  See the BAM spec for more information on how a chunk is
-     * represented.
-     * 
-     * @param referenceIndex The contig.
-     * @param startPos Genomic start of query.
-     * @param endPos Genomic end of query.
-     * @return A file span listing the chunks in the BAM file.
-     */
-    BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos);
+  /**
+   * Gets the compressed chunks which should be searched for the contents of records contained by
+   * the span referenceIndex:startPos-endPos, inclusive. See the BAM spec for more information on
+   * how a chunk is represented.
+   *
+   * @param referenceIndex The contig.
+   * @param startPos Genomic start of query.
+   * @param endPos Genomic end of query.
+   * @return A file span listing the chunks in the BAM file.
+   */
+  BAMFileSpan getSpanOverlapping(final int referenceIndex, final int startPos, final int endPos);
 
-    /**
-     * Gets the start of the last linear bin in the index.
-     * @return The chunk indicating the start of the last bin in the linear index.
-     */
-    long getStartOfLastLinearBin();
+  /**
+   * Gets the start of the last linear bin in the index.
+   *
+   * @return The chunk indicating the start of the last bin in the linear index.
+   */
+  long getStartOfLastLinearBin();
 
-    /**
-     * Gets meta data for the given reference including information about number of aligned, unaligned, and noCoordinate records
-     * @param reference the reference of interest
-     * @return meta data for the reference
-     */
-    public BAMIndexMetaData getMetaData(int reference);
+  /**
+   * Gets meta data for the given reference including information about number of aligned,
+   * unaligned, and noCoordinate records
+   *
+   * @param reference the reference of interest
+   * @return meta data for the reference
+   */
+  public BAMIndexMetaData getMetaData(int reference);
 
-    /**
-     * Close the index and release any associated resources.
-     */
-    @Override
-    void close();
+  /** Close the index and release any associated resources. */
+  @Override
+  void close();
 }

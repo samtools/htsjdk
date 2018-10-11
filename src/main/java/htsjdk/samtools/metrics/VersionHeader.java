@@ -27,56 +27,64 @@ package htsjdk.samtools.metrics;
 import htsjdk.samtools.util.StringUtil;
 
 /**
- * Header that stores information about the version of some piece of software or
- * data used to create the metrics file.  Payload consists of a name or description
- * of the versioned item and a version string.
+ * Header that stores information about the version of some piece of software or data used to create
+ * the metrics file. Payload consists of a name or description of the versioned item and a version
+ * string.
  *
  * @author Tim Fennell
  */
 public class VersionHeader implements Header {
-    private String versionedItem;
-    private String versionString;
+  private String versionedItem;
+  private String versionString;
 
-    @Override
-    public void parse(String in) {
-        String[] fields = in.split("\t");
-        this.versionedItem = fields[0];
-        this.versionString = fields[1];
-    }
+  @Override
+  public void parse(String in) {
+    String[] fields = in.split("\t");
+    this.versionedItem = fields[0];
+    this.versionString = fields[1];
+  }
 
-    public String toString() {
-        return this.versionedItem + "\t" + this.versionString;
-    }
+  public String toString() {
+    return this.versionedItem + "\t" + this.versionString;
+  }
 
-    public String getVersionedItem() { return versionedItem; }
-    public void setVersionedItem(String versionedItem) {
-        this.versionedItem = StringUtil.assertCharactersNotInString(versionedItem, '\t', '\n');
-    }
+  public String getVersionedItem() {
+    return versionedItem;
+  }
 
-    public String getVersionString() { return versionString; }
-    public void setVersionString(String versionString) {
-        this.versionString = StringUtil.assertCharactersNotInString(versionString, '\t', '\n');
-    }
+  public void setVersionedItem(String versionedItem) {
+    this.versionedItem = StringUtil.assertCharactersNotInString(versionedItem, '\t', '\n');
+  }
 
-    /** Equals method that checks that both the item and version string are equal. */
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+  public String getVersionString() {
+    return versionString;
+  }
 
-        VersionHeader that = (VersionHeader) o;
+  public void setVersionString(String versionString) {
+    this.versionString = StringUtil.assertCharactersNotInString(versionString, '\t', '\n');
+  }
 
-        if (versionString != null ? !versionString.equals(that.versionString) : that.versionString != null)
-            return false;
-        if (versionedItem != null ? !versionedItem.equals(that.versionedItem) : that.versionedItem != null)
-            return false;
+  /** Equals method that checks that both the item and version string are equal. */
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-        return true;
-    }
+    VersionHeader that = (VersionHeader) o;
 
-    @Override
-    public int hashCode() {
-        int result = versionedItem != null ? versionedItem.hashCode() : 0;
-        result = 31 * result + (versionString != null ? versionString.hashCode() : 0);
-        return result;
-    }
+    if (versionString != null
+        ? !versionString.equals(that.versionString)
+        : that.versionString != null) return false;
+    if (versionedItem != null
+        ? !versionedItem.equals(that.versionedItem)
+        : that.versionedItem != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = versionedItem != null ? versionedItem.hashCode() : 0;
+    result = 31 * result + (versionString != null ? versionString.hashCode() : 0);
+    return result;
+  }
 }

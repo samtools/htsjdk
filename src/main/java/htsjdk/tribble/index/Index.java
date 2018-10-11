@@ -25,7 +25,6 @@ package htsjdk.tribble.index;
 
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.util.LittleEndianOutputStream;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,95 +32,92 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Interface for all index implementations.
- * An index file is used for efficient lookup of features from a feature file;
- * and Index represents that index file.
+ * Interface for all index implementations. An index file is used for efficient lookup of features
+ * from a feature file; and Index represents that index file.
  */
 public interface Index {
-    /**
-     * Query the index.
-     * @param chr the chromosome
-     * @param start the start position
-     * @param end the end position
-     * @return a list of blocks that contain the specified interval.  Can never return null
-     * @throws IllegalArgumentException of chr isn't part of this index
-     */
-    List<Block> getBlocks(String chr, int start, int end);
+  /**
+   * Query the index.
+   *
+   * @param chr the chromosome
+   * @param start the start position
+   * @param end the end position
+   * @return a list of blocks that contain the specified interval. Can never return null
+   * @throws IllegalArgumentException of chr isn't part of this index
+   */
+  List<Block> getBlocks(String chr, int start, int end);
 
-    /**
-     * @return true if the index is up to date, false otherwise
-     */
-    public boolean isCurrentVersion();
+  /** @return true if the index is up to date, false otherwise */
+  public boolean isCurrentVersion();
 
-    /**
-     * @return a list of the sequence names we've seen during indexing, in order
-     */
-    List<String> getSequenceNames();
+  /** @return a list of the sequence names we've seen during indexing, in order */
+  List<String> getSequenceNames();
 
-    /**
-     * @param chr the chromosome (or contig) name
-     * @return true if we have an entry; false otherwise
-     */
-    public boolean containsChromosome(final String chr);
+  /**
+   * @param chr the chromosome (or contig) name
+   * @return true if we have an entry; false otherwise
+   */
+  public boolean containsChromosome(final String chr);
 
-    /**
-     * all indexes are writable to disk
-     * @param stream the stream to write the index to.  Caller must close after invocation.
-     * @throws IOException if the index is unable to write to the specified location
-     */
-    public void write(LittleEndianOutputStream stream) throws IOException;
+  /**
+   * all indexes are writable to disk
+   *
+   * @param stream the stream to write the index to. Caller must close after invocation.
+   * @throws IOException if the index is unable to write to the specified location
+   */
+  public void write(LittleEndianOutputStream stream) throws IOException;
 
-    /**
-     * Writes the index into a file.
-     *
-     * Default implementation delegates to {@link #write(Path)}
-     *
-     * @param idxFile Where to write the index.
-     * @throws IOException if the index is unable to write to the specified file
-     */
-    public default void write(final File idxFile) throws IOException {
-        write(IOUtil.toPath(idxFile));
-    }
+  /**
+   * Writes the index into a file.
+   *
+   * <p>Default implementation delegates to {@link #write(Path)}
+   *
+   * @param idxFile Where to write the index.
+   * @throws IOException if the index is unable to write to the specified file
+   */
+  public default void write(final File idxFile) throws IOException {
+    write(IOUtil.toPath(idxFile));
+  }
 
-    /**
-     * Writes the index into a path.
-     *
-     * @param indexPath Where to write the index.
-     * @throws IOException if the index is unable to write to the specified path.
-     */
-    public void write(final Path indexPath) throws IOException;
+  /**
+   * Writes the index into a path.
+   *
+   * @param indexPath Where to write the index.
+   * @throws IOException if the index is unable to write to the specified path.
+   */
+  public void write(final Path indexPath) throws IOException;
 
-    /**
-     * Write an appropriately named and located Index file based on the name and location of the featureFile.
-     *
-     * Default implementation delegates to {@link #writeBasedOnFeaturePath(Path)}
-     *
-     * @param featureFile
-     * @throws IOException if featureFile is not a normal file.
-     */
-    public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
-        writeBasedOnFeaturePath(IOUtil.toPath(featureFile));
-    }
+  /**
+   * Write an appropriately named and located Index file based on the name and location of the
+   * featureFile.
+   *
+   * <p>Default implementation delegates to {@link #writeBasedOnFeaturePath(Path)}
+   *
+   * @param featureFile
+   * @throws IOException if featureFile is not a normal file.
+   */
+  public default void writeBasedOnFeatureFile(File featureFile) throws IOException {
+    writeBasedOnFeaturePath(IOUtil.toPath(featureFile));
+  }
 
-    /**
-     * Write an appropriately named and located Index file based on the name and location of the featureFile.
-     * If featureFile is not a normal file, the index will silently not be written.
-     *
-     * @param featurePath
-     * @throws IOException if featureFile is not a normal file.
-     */
-    public void writeBasedOnFeaturePath(Path featurePath) throws IOException;
+  /**
+   * Write an appropriately named and located Index file based on the name and location of the
+   * featureFile. If featureFile is not a normal file, the index will silently not be written.
+   *
+   * @param featurePath
+   * @throws IOException if featureFile is not a normal file.
+   */
+  public void writeBasedOnFeaturePath(Path featurePath) throws IOException;
 
-    /**
-     * @return get the list of properties for this index.  Returns null if no properties.
-     */
-    public Map<String,String> getProperties();
+  /** @return get the list of properties for this index. Returns null if no properties. */
+  public Map<String, String> getProperties();
 
-    /**
-     * Returns true if this and obj are 'effectively' equivalent indices.  Ignores the
-     * time stamp on the file, as this may not be the same for even identical indices
-     * @param obj
-     * @return
-     */
-    public boolean equalsIgnoreProperties(Object obj);
+  /**
+   * Returns true if this and obj are 'effectively' equivalent indices. Ignores the time stamp on
+   * the file, as this may not be the same for even identical indices
+   *
+   * @param obj
+   * @return
+   */
+  public boolean equalsIgnoreProperties(Object obj);
 }

@@ -27,134 +27,129 @@ import java.net.URL;
 import java.net.URLConnection;
 
 /**
- * Simple implementation of URLHelper based on the JDK URL and HttpURLConnection classes.  This
+ * Simple implementation of URLHelper based on the JDK URL and HttpURLConnection classes. This
  * version optionally takes a proxy, but does not support authentication.
  *
  * @author jrobinso
  * @date Jun 28, 2011
  */
 public class HTTPHelper implements URLHelper {
-    /**
-     * Global proxy setting -- shared by all instances
-     */
-    static Proxy proxy;
+  /** Global proxy setting -- shared by all instances */
+  static Proxy proxy;
 
-    private URL url;
+  private URL url;
 
-    public HTTPHelper(URL url) {
-        this.url = url;
-        proxy = null;
+  public HTTPHelper(URL url) {
+    this.url = url;
+    proxy = null;
 
-        try {
-            URLConnection conn = openConnection();
-            conn.setDefaultUseCaches(false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    try {
+      URLConnection conn = openConnection();
+      conn.setDefaultUseCaches(false);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
+  }
 
-    public static synchronized void setProxy(Proxy p) {
-        proxy = p;
+  public static synchronized void setProxy(Proxy p) {
+    proxy = p;
+  }
+
+  @Override
+  public URL getUrl() {
+    return url;
+  }
+
+  /**
+   * @return content length of the resource
+   * @throws IOException
+   */
+  @Override
+  public long getContentLength() throws IOException {
+
+    HttpURLConnection con = null;
+    try {
+      con = openConnection();
+      con.setRequestMethod("HEAD");
+      if ((con.getResponseCode() != HttpURLConnection.HTTP_OK)) {
+        System.out.println(
+            "Error (" + con.getResponseMessage() + " ) fetching content length: " + url);
+        return -1;
+      } else {
+        String contentLength = con.getHeaderField("Content-Length");
+        return contentLength == null ? -1 : Long.parseLong(contentLength);
+      }
+    } finally {
+      if (con != null) con.disconnect();
+    }
+  }
+
+  @Override
+  public InputStream openInputStream() throws IOException {
+
+    HttpURLConnection connection = openConnection();
+    return new WrapperInputStream(connection, connection.getInputStream());
+  }
+
+  /**
+   * Open an input stream for the requested byte range. Its the client's responsibility to close the
+   * stream.
+   *
+   * @param start start of range in bytes
+   * @param end end of range ni bytes
+   * @return
+   * @throws IOException
+   * @deprecated since 12/10/14 Will be removed in a future release, as is somewhat fragile and not
+   *     used.
+   */
+  @Override
+  @Deprecated
+  public InputStream openInputStreamForRange(long start, long end) throws IOException {
+
+    HttpURLConnection connection = openConnection();
+    String byteRange = "bytes=" + start + "-" + end;
+    connection.setRequestProperty("Range", byteRange);
+    return new WrapperInputStream(connection, connection.getInputStream());
+  }
+
+  private HttpURLConnection openConnection() throws IOException {
+    HttpURLConnection connection;
+    if (proxy == null) {
+      connection = (HttpURLConnection) url.openConnection();
+    } else {
+      connection = (HttpURLConnection) url.openConnection(proxy);
+    }
+    return connection;
+  }
+
+  @Override
+  public boolean exists() throws IOException {
+    HttpURLConnection con = null;
+    try {
+      con = openConnection();
+      con.setRequestMethod("HEAD");
+      return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
+    } catch (IOException e) {
+      // This is what we are testing for, so its not really an exception
+      return false;
+    } finally {
+      if (con != null) con.disconnect();
+    }
+  }
+
+  class WrapperInputStream extends FilterInputStream {
+
+    HttpURLConnection connection;
+
+    protected WrapperInputStream(HttpURLConnection connection, InputStream inputStream) {
+      super(inputStream);
+      this.connection = connection;
     }
 
     @Override
-    public URL getUrl() {
-        return url;
+    public void close() throws IOException {
+      super.close();
+      connection.disconnect();
     }
-
-    /**
-     * @return content length of the resource
-     * @throws IOException
-     */
-    @Override
-    public long getContentLength() throws IOException {
-
-        HttpURLConnection con = null;
-        try {
-            con = openConnection();
-            con.setRequestMethod("HEAD");
-            if ((con.getResponseCode() != HttpURLConnection.HTTP_OK)) {
-                System.out.println("Error (" + con.getResponseMessage() + " ) fetching content length: " + url);
-                return -1;
-            } else {
-                String contentLength = con.getHeaderField("Content-Length");
-                return contentLength == null ? -1 : Long.parseLong(contentLength);
-            }
-        } finally {
-            if (con != null) con.disconnect();
-        }
-    }
-
-
-    @Override
-    public InputStream openInputStream() throws IOException {
-
-        HttpURLConnection connection = openConnection();
-        return new WrapperInputStream(connection, connection.getInputStream());
-    }
-
-
-    /**
-     * Open an input stream for the requested byte range.  Its the client's responsibility to close the stream.
-     *
-     * @param start start of range in bytes
-     * @param end   end of range ni bytes
-     * @return
-     * @throws IOException
-     *
-     * @deprecated  since 12/10/14  Will be removed in a future release, as is somewhat fragile
-     * and not used.
-     */
-    @Override
-    @Deprecated
-    public InputStream openInputStreamForRange(long start, long end) throws IOException {
-
-        HttpURLConnection connection = openConnection();
-        String byteRange = "bytes=" + start + "-" + end;
-        connection.setRequestProperty("Range", byteRange);
-        return new WrapperInputStream(connection, connection.getInputStream());
-    }
-
-    private HttpURLConnection openConnection() throws IOException {
-        HttpURLConnection connection;
-        if (proxy == null) {
-            connection = (HttpURLConnection) url.openConnection();
-        } else {
-            connection = (HttpURLConnection) url.openConnection(proxy);
-        }
-        return connection;
-    }
-
-    @Override
-    public boolean exists() throws IOException {
-        HttpURLConnection con = null;
-        try {
-            con = openConnection();
-            con.setRequestMethod("HEAD");
-            return (con.getResponseCode() == HttpURLConnection.HTTP_OK);
-        } catch (IOException e) {
-            // This is what we are testing for, so its not really an exception
-            return false;
-        } finally {
-            if (con != null) con.disconnect();
-        }
-    }
-
-    class WrapperInputStream extends FilterInputStream {
-
-        HttpURLConnection connection;
-
-        protected WrapperInputStream(HttpURLConnection connection, InputStream inputStream) {
-            super(inputStream);
-            this.connection = connection;
-        }
-
-        @Override
-        public void close() throws IOException {
-            super.close();
-            connection.disconnect();
-        }
-    }
-
-
+  }
 }

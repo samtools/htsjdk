@@ -24,28 +24,28 @@
 package htsjdk.samtools.util;
 
 /**
- * Simple implementation of Locus interface for ease of passing as an arg and comparing with other Locus implementations.
+ * Simple implementation of Locus interface for ease of passing as an arg and comparing with other
+ * Locus implementations.
+ *
  * @author alecw@broadinstitute.org
  */
 public class LocusImpl implements Locus {
-    private final int sequenceIndex;
-    private final int position;
+  private final int sequenceIndex;
+  private final int position;
 
-    public LocusImpl(int sequenceIndex, int position) {
-        this.position = position;
-        this.sequenceIndex = sequenceIndex;
-    }
+  public LocusImpl(int sequenceIndex, int position) {
+    this.position = position;
+    this.sequenceIndex = sequenceIndex;
+  }
 
-    @Override
-    public int getSequenceIndex() {
-        return sequenceIndex;
-    }
+  @Override
+  public int getSequenceIndex() {
+    return sequenceIndex;
+  }
 
-    /**
-     * @return 1-based position
-     */
-    @Override
-    public int getPosition() {
-        return position;
-    }
+  /** @return 1-based position */
+  @Override
+  public int getPosition() {
+    return position;
+  }
 }

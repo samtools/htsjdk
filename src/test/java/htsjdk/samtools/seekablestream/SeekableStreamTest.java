@@ -25,68 +25,64 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.util.Random;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Random;
-
-/**
- * @author Daniel Gomez-Sanchez (magicDGS)
- */
+/** @author Daniel Gomez-Sanchez (magicDGS) */
 public class SeekableStreamTest extends HtsjdkTest {
 
-    @Test
-    public void testMarkAndReset() throws Exception {
-        final int length = 100;
-        // instantiate the stream
-        final SeekableStream stream = getRandomSeekableStream(length);
-        // read one byte and mark the stream
-        stream.read();
-        stream.mark(0);
-        final int current = stream.read();
-        // consume the stream
-        stream.readFully(new byte[length - 2]);
-        Assert.assertEquals(stream.read(), -1);
-        // come back to the mark
-        stream.reset();
-        Assert.assertEquals(stream.read(), current);
-    }
+  @Test
+  public void testMarkAndReset() throws Exception {
+    final int length = 100;
+    // instantiate the stream
+    final SeekableStream stream = getRandomSeekableStream(length);
+    // read one byte and mark the stream
+    stream.read();
+    stream.mark(0);
+    final int current = stream.read();
+    // consume the stream
+    stream.readFully(new byte[length - 2]);
+    Assert.assertEquals(stream.read(), -1);
+    // come back to the mark
+    stream.reset();
+    Assert.assertEquals(stream.read(), current);
+  }
 
-    @Test
-    public void testResetUnmark() throws Exception {
-        final int length = 100;
-        // instantiate the stream
-        final SeekableStream stream = getRandomSeekableStream(100);
-        // consume the stream
-        final int current = stream.read();
-        stream.readFully(new byte[length - 1]);
-        Assert.assertEquals(stream.read(), -1);
-        stream.reset();
-        Assert.assertEquals(stream.read(), current);
-    }
+  @Test
+  public void testResetUnmark() throws Exception {
+    final int length = 100;
+    // instantiate the stream
+    final SeekableStream stream = getRandomSeekableStream(100);
+    // consume the stream
+    final int current = stream.read();
+    stream.readFully(new byte[length - 1]);
+    Assert.assertEquals(stream.read(), -1);
+    stream.reset();
+    Assert.assertEquals(stream.read(), current);
+  }
 
-    @Test
-    public void testAvailable() throws Exception {
-        // initiate random stream
-        final int length = 100;
-        final SeekableStream stream = getRandomSeekableStream(length);
-        // check that available returns the length
-        Assert.assertEquals(stream.available(), length);
-        // consume the stream
-        for(int i = 1; i < length + 1; i++) {
-            Assert.assertNotEquals(stream.read(), -1);
-            Assert.assertEquals(stream.available(), length - i);
-        }
-        // once consumed, no stream available
-        Assert.assertEquals(stream.available(), 0);
+  @Test
+  public void testAvailable() throws Exception {
+    // initiate random stream
+    final int length = 100;
+    final SeekableStream stream = getRandomSeekableStream(length);
+    // check that available returns the length
+    Assert.assertEquals(stream.available(), length);
+    // consume the stream
+    for (int i = 1; i < length + 1; i++) {
+      Assert.assertNotEquals(stream.read(), -1);
+      Assert.assertEquals(stream.available(), length - i);
     }
+    // once consumed, no stream available
+    Assert.assertEquals(stream.available(), 0);
+  }
 
-    private static SeekableStream getRandomSeekableStream(final int size) {
-        // generate random array
-        final byte[] array = new byte[size];
-        new Random().nextBytes(array);
-        // instantiate the stream
-        return new SeekableMemoryStream(array, "test");
-    }
-
+  private static SeekableStream getRandomSeekableStream(final int size) {
+    // generate random array
+    final byte[] array = new byte[size];
+    new Random().nextBytes(array);
+    // instantiate the stream
+    return new SeekableMemoryStream(array, "test");
+  }
 }

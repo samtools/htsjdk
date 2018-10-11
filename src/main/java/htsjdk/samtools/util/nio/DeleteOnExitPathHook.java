@@ -16,48 +16,48 @@ import java.util.LinkedHashSet;
  * @author Daniel Gomez-Sanchez (magicDGS)
  */
 public class DeleteOnExitPathHook {
-    private static LinkedHashSet<Path> paths = new LinkedHashSet<>();
-    static {
-        Runtime.getRuntime().addShutdownHook(new Thread(DeleteOnExitPathHook::runHooks));
+  private static LinkedHashSet<Path> paths = new LinkedHashSet<>();
+
+  static {
+    Runtime.getRuntime().addShutdownHook(new Thread(DeleteOnExitPathHook::runHooks));
+  }
+
+  private DeleteOnExitPathHook() {}
+
+  /**
+   * Adds a {@link Path} for deletion on JVM exit.
+   *
+   * @param path path to be deleted.
+   * @throws IllegalStateException if the shutdown hook is in progress.
+   */
+  public static synchronized void add(Path path) {
+    if (paths == null) {
+      // DeleteOnExitHook is running. Too late to add a file
+      throw new IllegalStateException("Shutdown in progress");
     }
 
-    private DeleteOnExitPathHook() {}
+    paths.add(path);
+  }
 
-    /**
-     * Adds a {@link Path} for deletion on JVM exit.
-     *
-     * @param path path to be deleted.
-     *
-     * @throws IllegalStateException if the shutdown hook is in progress.
-     */
-    public static synchronized void add(Path path) {
-        if(paths == null) {
-            // DeleteOnExitHook is running. Too late to add a file
-            throw new IllegalStateException("Shutdown in progress");
-        }
+  static void runHooks() {
+    LinkedHashSet<Path> thePaths;
 
-        paths.add(path);
+    synchronized (DeleteOnExitPathHook.class) {
+      thePaths = paths;
+      paths = null;
     }
 
-    static void runHooks() {
-        LinkedHashSet<Path> thePaths;
+    ArrayList<Path> toBeDeleted = new ArrayList<>(thePaths);
 
-        synchronized (DeleteOnExitPathHook.class) {
-            thePaths = paths;
-            paths = null;
-        }
-
-        ArrayList<Path> toBeDeleted = new ArrayList<>(thePaths);
-
-        // reverse the list to maintain previous jdk deletion order.
-        // Last in first deleted.
-        Collections.reverse(toBeDeleted);
-        for (Path path : toBeDeleted) {
-            try {
-                Files.delete(path);
-            } catch (IOException | SecurityException e) {
-                // do nothing if cannot be deleted, because it is a shutdown hook
-            }
-        }
+    // reverse the list to maintain previous jdk deletion order.
+    // Last in first deleted.
+    Collections.reverse(toBeDeleted);
+    for (Path path : toBeDeleted) {
+      try {
+        Files.delete(path);
+      } catch (IOException | SecurityException e) {
+        // do nothing if cannot be deleted, because it is a shutdown hook
+      }
     }
+  }
 }

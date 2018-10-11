@@ -23,62 +23,71 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
-
 public class SAMFileHeaderTest extends HtsjdkTest {
 
-    @Test
-    public void testSortOrder() {
-        final SAMFileHeader header = new SAMFileHeader();
+  @Test
+  public void testSortOrder() {
+    final SAMFileHeader header = new SAMFileHeader();
 
-        header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
+    header.setSortOrder(SAMFileHeader.SortOrder.coordinate);
+    Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
+        SAMFileHeader.SortOrder.coordinate.name());
 
-        header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.queryname.name());
-        Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.queryname);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.queryname.name());
+    header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.queryname.name());
+    Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.queryname);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
+        SAMFileHeader.SortOrder.queryname.name());
 
-        header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.SORT_ORDER_TAG), SAMFileHeader.SortOrder.coordinate.name());
-    }
+    header.setAttribute(SAMFileHeader.SORT_ORDER_TAG, SAMFileHeader.SortOrder.coordinate);
+    Assert.assertEquals(header.getSortOrder(), SAMFileHeader.SortOrder.coordinate);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.SORT_ORDER_TAG),
+        SAMFileHeader.SortOrder.coordinate.name());
+  }
 
-    @Test
-    public void testGroupOrder() {
-        final SAMFileHeader header = new SAMFileHeader();
+  @Test
+  public void testGroupOrder() {
+    final SAMFileHeader header = new SAMFileHeader();
 
-        header.setGroupOrder(SAMFileHeader.GroupOrder.query);
-        Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.query.name());
+    header.setGroupOrder(SAMFileHeader.GroupOrder.query);
+    Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.query.name());
 
-        header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.reference.name());
-        Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.reference);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.reference.name());
+    header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.reference.name());
+    Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.reference);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG),
+        SAMFileHeader.GroupOrder.reference.name());
 
-        header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.query);
-        Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
-        Assert.assertEquals(header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.query.name());
-    }
+    header.setAttribute(SAMFileHeader.GROUP_ORDER_TAG, SAMFileHeader.GroupOrder.query);
+    Assert.assertEquals(header.getGroupOrder(), SAMFileHeader.GroupOrder.query);
+    Assert.assertEquals(
+        header.getAttribute(SAMFileHeader.GROUP_ORDER_TAG), SAMFileHeader.GroupOrder.query.name());
+  }
 
-    @Test
-    public void testGetSequenceIfSequenceDictionaryIsEmpty() {
-        final SAMFileHeader header = new SAMFileHeader();
-        header.setSequenceDictionary(null);
+  @Test
+  public void testGetSequenceIfSequenceDictionaryIsEmpty() {
+    final SAMFileHeader header = new SAMFileHeader();
+    header.setSequenceDictionary(null);
 
-        Assert.assertNull(header.getSequence("chr1"));
-    }
+    Assert.assertNull(header.getSequence("chr1"));
+  }
 
-    @Test
-    public void testGetSequenceIfNameIsNotFound() {
-        final SAMFileHeader header = new SAMFileHeader();
-        final SAMSequenceRecord rec = new SAMSequenceRecord("chr1",1);
-        final SAMSequenceDictionary dict = new SAMSequenceDictionary(Arrays.asList(rec));
-        header.setSequenceDictionary(dict);
+  @Test
+  public void testGetSequenceIfNameIsNotFound() {
+    final SAMFileHeader header = new SAMFileHeader();
+    final SAMSequenceRecord rec = new SAMSequenceRecord("chr1", 1);
+    final SAMSequenceDictionary dict = new SAMSequenceDictionary(Arrays.asList(rec));
+    header.setSequenceDictionary(dict);
 
-        Assert.assertNull(header.getSequence("chr2"));
-    }
+    Assert.assertNull(header.getSequence("chr2"));
+  }
 }

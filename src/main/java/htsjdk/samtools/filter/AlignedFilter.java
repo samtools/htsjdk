@@ -28,62 +28,60 @@ import htsjdk.samtools.SAMRecord;
 /**
  * Filter to either include or exclude aligned reads
  *
- * $Id$
+ * <p>$Id$
  */
 public class AlignedFilter implements SamRecordFilter {
 
-    private boolean includeAligned = false;
+  private boolean includeAligned = false;
 
-    public AlignedFilter(final boolean includeAligned) {
-        this.includeAligned = includeAligned;
+  public AlignedFilter(final boolean includeAligned) {
+    this.includeAligned = includeAligned;
+  }
+
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    if (includeAligned) {
+      if (!record.getReadUnmappedFlag()) {
+        return false;
+      }
+    } else {
+      // exclude aligned
+      if (record.getReadUnmappedFlag()) {
+        return false;
+      }
     }
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record the SAMRecord to evaluate
-     *
-     * @return true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        if (includeAligned) {
-            if (!record.getReadUnmappedFlag()) {
-                return false;
-            }
-        } else {
-            // exclude aligned
-            if (record.getReadUnmappedFlag()) {
-                return false;
-            }
-        }
+    return true;
+  }
 
-        return true;
+  /**
+   * Determines whether a pair of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+
+    if (includeAligned) {
+      // both first and second must be mapped for it to not be filtered out
+      if (!first.getReadUnmappedFlag() && !second.getReadUnmappedFlag()) {
+        return false;
+      }
+    } else {
+      // exclude aligned - if either first or second is unmapped don't filter it out
+      if (first.getReadUnmappedFlag() || second.getReadUnmappedFlag()) {
+        return false;
+      }
     }
 
-    /**
-     * Determines whether a pair of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-
-        if (includeAligned) {
-            // both first and second must be mapped for it to not be filtered out
-            if (!first.getReadUnmappedFlag() && !second.getReadUnmappedFlag()) {
-                return false;
-            }
-        } else {
-            // exclude aligned - if either first or second is unmapped don't filter it out
-            if (first.getReadUnmappedFlag() || second.getReadUnmappedFlag()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
+    return true;
+  }
 }

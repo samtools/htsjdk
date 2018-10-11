@@ -23,41 +23,36 @@
  */
 package htsjdk.samtools.util;
 
+import static org.testng.Assert.assertEquals;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-
-/**
- * 
- * @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com>
- *
- */
-
+/** @author Mariia_Zueva@epam.com, EPAM Systems, Inc. <www.epam.com> */
 public class AbstractRecordAndOffsetTest extends HtsjdkTest {
 
-    private final byte[] qualities = {30, 40, 50, 60, 70, 80 ,90, 70, 80, 90};
-    private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
-    SAMRecord record;
+  private final byte[] qualities = {30, 40, 50, 60, 70, 80, 90, 70, 80, 90};
+  private byte[] bases = {'A', 'C', 'G', 'T', 'A', 'C', 'G', 'T', 'T', 'C'};
+  SAMRecord record;
 
-    @BeforeTest
-    public void setUp(){
-        record = new SAMRecord(new SAMFileHeader());
-        record.setReadName("testRecord");
-        record.setReadBases(bases);
-        record.setBaseQualities(qualities);
-    }
+  @BeforeTest
+  public void setUp() {
+    record = new SAMRecord(new SAMFileHeader());
+    record.setReadName("testRecord");
+    record.setReadBases(bases);
+    record.setBaseQualities(qualities);
+  }
 
-    @Test
-    public void testConstructor(){
-        AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0);
-        assertEquals(qualities, abstractRecordAndOffset.getBaseQualities());
-        assertEquals(bases, abstractRecordAndOffset.getRecord().getReadBases());
-        assertEquals('A', abstractRecordAndOffset.getReadBase());
-        assertEquals(30, abstractRecordAndOffset.getBaseQuality());
-        assertEquals(0, abstractRecordAndOffset.getOffset());
-    }
+  @Test
+  public void testConstructor() {
+    AbstractRecordAndOffset abstractRecordAndOffset = new AbstractRecordAndOffset(record, 0);
+    assertEquals(qualities, abstractRecordAndOffset.getBaseQualities());
+    assertEquals(bases, abstractRecordAndOffset.getRecord().getReadBases());
+    assertEquals('A', abstractRecordAndOffset.getReadBase());
+    assertEquals(30, abstractRecordAndOffset.getBaseQuality());
+    assertEquals(0, abstractRecordAndOffset.getOffset());
+  }
 }

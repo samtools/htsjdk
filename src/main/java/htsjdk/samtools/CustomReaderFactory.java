@@ -24,59 +24,54 @@
 package htsjdk.samtools;
 
 import htsjdk.samtools.util.Log;
-
 import java.net.URL;
 import java.net.URLClassLoader;
 
-
 /**
- * Factory for creating custom readers for accessing API based resources, 
- * e.g. ga4gh.
- * The configuration is controlled via custom_reader property (@see Defaults).
- * This allows injection of such readers from code bases outside HTSJDK.
+ * Factory for creating custom readers for accessing API based resources, e.g. ga4gh. The
+ * configuration is controlled via custom_reader property (@see Defaults). This allows injection of
+ * such readers from code bases outside HTSJDK.
  */
 public class CustomReaderFactory {
-  private final static Log LOG = Log.getInstance(CustomReaderFactory.class);
+  private static final Log LOG = Log.getInstance(CustomReaderFactory.class);
   /**
-   * Interface to be implemented by custom factory classes that register
-   * themselves with this factory and are loaded dynamically.
+   * Interface to be implemented by custom factory classes that register themselves with this
+   * factory and are loaded dynamically.
    */
   public interface ICustomReaderFactory {
     SamReader open(URL url);
   }
-  
+
   private static final CustomReaderFactory DEFAULT_FACTORY;
   private static CustomReaderFactory currentFactory;
-  
+
   private String urlPrefix = "";
   private String factoryClassName = "";
   private String jarFile = "";
   private ICustomReaderFactory factory;
-  
+
   static {
-      DEFAULT_FACTORY = new CustomReaderFactory();
-      currentFactory = DEFAULT_FACTORY;
+    DEFAULT_FACTORY = new CustomReaderFactory();
+    currentFactory = DEFAULT_FACTORY;
   }
 
-  public static void setInstance(final CustomReaderFactory factory){
-      currentFactory = factory;
+  public static void setInstance(final CustomReaderFactory factory) {
+    currentFactory = factory;
   }
-  
+
   public static void resetToDefaultInstance() {
     setInstance(DEFAULT_FACTORY);
   }
 
-  public static CustomReaderFactory getInstance(){
-      return currentFactory;
+  public static CustomReaderFactory getInstance() {
+    return currentFactory;
   }
-  
-  /**
-   * Initializes factory based on the custom_reader property specification.
-   */
+
+  /** Initializes factory based on the custom_reader property specification. */
   private CustomReaderFactory() {
     this(Defaults.CUSTOM_READER_FACTORY);
   }
-  
+
   CustomReaderFactory(String cfg) {
     final String[] cfgComponents = cfg.split(",");
     if (cfgComponents.length < 2) {
@@ -88,32 +83,38 @@ public class CustomReaderFactory {
       jarFile = cfgComponents[2];
     }
   }
-  
+
   /**
    * Lazily creates factory based on the configuration.
+   *
    * @return null if creation fails, factory instance otherwise.
    */
   private synchronized ICustomReaderFactory getFactory() {
     if (factory == null) {
       try {
         Class clazz = null;
-        
+
         if (!jarFile.isEmpty()) {
-          LOG.info("Attempting to load factory class " + factoryClassName + 
-              " from " + jarFile);
-          final URL jarURL = new URL("file:///"+jarFile);
-          clazz = Class.forName(factoryClassName, true, 
-                    new URLClassLoader (new URL[] { jarURL }, 
-                        this.getClass().getClassLoader()));
+          LOG.info("Attempting to load factory class " + factoryClassName + " from " + jarFile);
+          final URL jarURL = new URL("file:///" + jarFile);
+          clazz =
+              Class.forName(
+                  factoryClassName,
+                  true,
+                  new URLClassLoader(new URL[] {jarURL}, this.getClass().getClassLoader()));
         } else {
           LOG.info("Attempting to load factory class " + factoryClassName);
           clazz = Class.forName(factoryClassName);
         }
-        
-        factory = (ICustomReaderFactory)clazz.newInstance();
-        LOG.info("Created custom factory for " + urlPrefix + " from " + 
-            factoryClassName + " loaded from " + (jarFile.isEmpty() ? 
-                " this jar" : jarFile));
+
+        factory = (ICustomReaderFactory) clazz.newInstance();
+        LOG.info(
+            "Created custom factory for "
+                + urlPrefix
+                + " from "
+                + factoryClassName
+                + " loaded from "
+                + (jarFile.isEmpty() ? " this jar" : jarFile));
       } catch (Exception e) {
         LOG.error(e);
         return null;
@@ -121,16 +122,15 @@ public class CustomReaderFactory {
     }
     return factory;
   }
-  
+
   /**
-   * Check if the url is supposed to be handled by the custom factory and if so
-   * attempt to create reader via an instance of this custom factory.
-   * 
+   * Check if the url is supposed to be handled by the custom factory and if so attempt to create
+   * reader via an instance of this custom factory.
+   *
    * @return null if the url is not handled by this factory, SamReader otherwise.
    */
   public SamReader maybeOpen(URL url) {
-    if (urlPrefix.isEmpty() || 
-        !url.toString().toLowerCase().startsWith(urlPrefix)) {
+    if (urlPrefix.isEmpty() || !url.toString().toLowerCase().startsWith(urlPrefix)) {
       return null;
     }
     LOG.info("Attempting to open " + url + " with custom factory");

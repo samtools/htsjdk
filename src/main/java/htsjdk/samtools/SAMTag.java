@@ -23,61 +23,59 @@
  */
 package htsjdk.samtools;
 
-/**
- * The standard tags for a SAM record that are defined in the SAM spec.
- */
+/** The standard tags for a SAM record that are defined in the SAM spec. */
 public enum SAMTag {
-    AM,
-    AS,
-    BC,
-    BQ,
-    CC,
-    CG,
-    CM,
-    CO,
-    CP,
-    CQ,
-    CS,
-    CT,
-    E2,
-    FI,
-    FS,
-    FT,
-    FZ,
-    GC, // for backwards compatibility
-    GS, // for backwards compatibility
-    GQ, // for backwards compatibility
-    LB,
-    H0,
-    H1,
-    H2,
-    HI,
-    IH,
-    MC,
-    MF, // for backwards compatibility
-    MD,
-    MQ,
-    NH,
-    NM,
-    OQ,
-    OP,
-    OC,
-    OF,
-    OR,
-    PG,
-    PQ,
-    PT,
-    PU,
-    QT,
-    Q2,
-    R2,
-    RG,
-    RT,
-    S2, // for backwards compatibility
-    SA,
-    SM,
-    SQ, // for backwards compatibility
-    TC,
-    U2,
-    UQ
+  AM,
+  AS,
+  BC,
+  BQ,
+  CC,
+  CG,
+  CM,
+  CO,
+  CP,
+  CQ,
+  CS,
+  CT,
+  E2,
+  FI,
+  FS,
+  FT,
+  FZ,
+  GC, // for backwards compatibility
+  GS, // for backwards compatibility
+  GQ, // for backwards compatibility
+  LB,
+  H0,
+  H1,
+  H2,
+  HI,
+  IH,
+  MC,
+  MF, // for backwards compatibility
+  MD,
+  MQ,
+  NH,
+  NM,
+  OQ,
+  OP,
+  OC,
+  OF,
+  OR,
+  PG,
+  PQ,
+  PT,
+  PU,
+  QT,
+  Q2,
+  R2,
+  RG,
+  RT,
+  S2, // for backwards compatibility
+  SA,
+  SM,
+  SQ, // for backwards compatibility
+  TC,
+  U2,
+  UQ
 }

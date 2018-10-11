@@ -30,26 +30,23 @@ import java.io.Closeable;
  *
  * @author mborkan
  */
-interface BAMIndexWriter extends Closeable {  // note - only package visibility
+interface BAMIndexWriter extends Closeable { // note - only package visibility
 
-    /**
-     * Write the data for one alignments to one reference sequence
-     *
-     * @param content    BAMIndexContent containing the information for one reference
-     */
-    public void writeReference(final BAMIndexContent content);
+  /**
+   * Write the data for one alignments to one reference sequence
+   *
+   * @param content BAMIndexContent containing the information for one reference
+   */
+  public void writeReference(final BAMIndexContent content);
 
-    /**
-     * Writes out the count of records without coordinates
-     *
-     * @param count
-     */
-    public void writeNoCoordinateRecordCount(final Long count);
+  /**
+   * Writes out the count of records without coordinates
+   *
+   * @param count
+   */
+  public void writeNoCoordinateRecordCount(final Long count);
 
-    /**
-     * Any necessary processing at the end of the file
-     */
-    @Override
-    public void close();
-
+  /** Any necessary processing at the end of the file */
+  @Override
+  public void close();
 }

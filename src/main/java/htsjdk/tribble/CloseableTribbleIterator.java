@@ -22,6 +22,8 @@ import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * The basic iterator we use in Tribble, which allows closing and basic iteration.
+ *
  * @param <T> the feature type
  */
-public interface CloseableTribbleIterator<T extends Feature> extends CloseableIterator<T>, Iterable<T> {}
+public interface CloseableTribbleIterator<T extends Feature>
+    extends CloseableIterator<T>, Iterable<T> {}

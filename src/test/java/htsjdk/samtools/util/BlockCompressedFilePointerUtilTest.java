@@ -24,73 +24,79 @@
 package htsjdk.samtools.util;
 
 import htsjdk.HtsjdkTest;
+import java.util.ArrayList;
+import java.util.List;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
 public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
-    @Test
-    public void basicTest() 
-    {
-        List<Long> pointers = new ArrayList<Long>();
-        pointers.add(makeFilePointer(0, 0));
-        pointers.add(makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        final long BIG_BLOCK_ADDRESS = 1L << 46;
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, 0));
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS-1, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, 0));
-        pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        pointers.add(makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0));
-        pointers.add(makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
-        for (int i = 0; i < pointers.size() - 1; ++i) {
-            for (int j = i+1; j < pointers.size(); ++j) {
-                Assert.assertTrue(BlockCompressedFilePointerUtil.compare(pointers.get(i), pointers.get(j)) < 0,
-                        BlockCompressedFilePointerUtil.asString(pointers.get(i)) + " should be < " +
-                                BlockCompressedFilePointerUtil.asString(pointers.get(j)));
-                Assert.assertTrue(BlockCompressedFilePointerUtil.compare(pointers.get(j), pointers.get(i)) > 0,
-                        BlockCompressedFilePointerUtil.asString(pointers.get(j)) + " should be > " +
-                                BlockCompressedFilePointerUtil.asString(pointers.get(i)));
-            }
-        }
-        
+  @Test
+  public void basicTest() {
+    List<Long> pointers = new ArrayList<Long>();
+    pointers.add(makeFilePointer(0, 0));
+    pointers.add(makeFilePointer(0, BlockCompressedFilePointerUtil.MAX_OFFSET));
+    final long BIG_BLOCK_ADDRESS = 1L << 46;
+    pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS - 1, 0));
+    pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS - 1, BlockCompressedFilePointerUtil.MAX_OFFSET));
+    pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, 0));
+    pointers.add(makeFilePointer(BIG_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET));
+    pointers.add(makeFilePointer(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, 0));
+    pointers.add(
+        makeFilePointer(
+            BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS,
+            BlockCompressedFilePointerUtil.MAX_OFFSET));
+    for (int i = 0; i < pointers.size() - 1; ++i) {
+      for (int j = i + 1; j < pointers.size(); ++j) {
+        Assert.assertTrue(
+            BlockCompressedFilePointerUtil.compare(pointers.get(i), pointers.get(j)) < 0,
+            BlockCompressedFilePointerUtil.asString(pointers.get(i))
+                + " should be < "
+                + BlockCompressedFilePointerUtil.asString(pointers.get(j)));
+        Assert.assertTrue(
+            BlockCompressedFilePointerUtil.compare(pointers.get(j), pointers.get(i)) > 0,
+            BlockCompressedFilePointerUtil.asString(pointers.get(j))
+                + " should be > "
+                + BlockCompressedFilePointerUtil.asString(pointers.get(i)));
+      }
     }
+  }
 
-    /**
-     * Create the virtual file pointer, and also assert that is can be converted back into the input parameters.
-     * @param blockAddress
-     * @param blockOffset
-     * @return block compressed file pointer
-     */
-    private long makeFilePointer(long blockAddress, int blockOffset)
-    {
-        final long ret = BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, blockOffset);
-        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(ret), blockAddress);
-        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(ret), blockOffset);
-        Assert.assertEquals(BlockCompressedFilePointerUtil.compare(ret, ret), 0);
-        return ret;
-    }
+  /**
+   * Create the virtual file pointer, and also assert that is can be converted back into the input
+   * parameters.
+   *
+   * @param blockAddress
+   * @param blockOffset
+   * @return block compressed file pointer
+   */
+  private long makeFilePointer(long blockAddress, int blockOffset) {
+    final long ret = BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, blockOffset);
+    Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(ret), blockAddress);
+    Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(ret), blockOffset);
+    Assert.assertEquals(BlockCompressedFilePointerUtil.compare(ret, ret), 0);
+    return ret;
+  }
 
-    @Test(dataProvider = "badInputs", expectedExceptions = IllegalArgumentException.class)
-    public void negativeTests(long blockAddress, int blockOffset) {
-        BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, blockOffset);
-        Assert.assertFalse(true, "Should not get here.");
-    }
+  @Test(dataProvider = "badInputs", expectedExceptions = IllegalArgumentException.class)
+  public void negativeTests(long blockAddress, int blockOffset) {
+    BlockCompressedFilePointerUtil.makeFilePointer(blockAddress, blockOffset);
+    Assert.assertFalse(true, "Should not get here.");
+  }
 
-    @DataProvider(name="badInputs")
-    public Object[][]  badInputs() {
-        return new Object[][]{
-                {-1L, 0},
-                {0L, -1},
-                {BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS+1, 0},
-                {0L, BlockCompressedFilePointerUtil.MAX_OFFSET+1}
-        };
-    }
+  @DataProvider(name = "badInputs")
+  public Object[][] badInputs() {
+    return new Object[][] {
+      {-1L, 0},
+      {0L, -1},
+      {BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS + 1, 0},
+      {0L, BlockCompressedFilePointerUtil.MAX_OFFSET + 1}
+    };
+  }
 }
 
-/******************************************************************/
-/**************************[END OF BlockCompressedFilePointerUtilTest.java]*************************/
-/******************************************************************/
+/** *************************************************************** */
+/**
+ * ************************[END OF BlockCompressedFilePointerUtilTest.java]************************
+ */
+/** *************************************************************** */

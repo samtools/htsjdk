@@ -24,93 +24,91 @@
 package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-
-/**
- * Created by farjoun on 5/27/17.
- */
+/** Created by farjoun on 5/27/17. */
 public class ByteArraySeekableStreamTest extends HtsjdkTest {
-    private final byte[] bytes = "ABCDE12345".getBytes();
+  private final byte[] bytes = "ABCDE12345".getBytes();
 
-    @Test
-    public void testNormalBehavior() throws IOException {
-        ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
+  @Test
+  public void testNormalBehavior() throws IOException {
+    ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
 
-        Assert.assertEquals(byteArraySeekableStream.length(), 10);
-        for (int i = 0; i < 10; i++) {
-            Assert.assertFalse(byteArraySeekableStream.eof());
-            Assert.assertEquals(byteArraySeekableStream.position(), i);
-            Assert.assertEquals(byteArraySeekableStream.read(), bytes[i]);
-        }
-
-        Assert.assertTrue(byteArraySeekableStream.eof());
-        Assert.assertEquals(byteArraySeekableStream.position(), 10);
-        Assert.assertEquals(byteArraySeekableStream.read(), -1);
-
-        final long i = 0;
-        byteArraySeekableStream.seek(i);
-
-        Assert.assertEquals(byteArraySeekableStream.position(), i);
-        Assert.assertEquals(byteArraySeekableStream.read(), bytes[(int) i]);
-
-        byte[] copy = new byte[10];
-
-        Assert.assertEquals(byteArraySeekableStream.read(copy), 9);
-        Assert.assertEquals(byteArraySeekableStream.position(), 10);
-
-        byteArraySeekableStream.seek(0L);
-
-        Assert.assertEquals(byteArraySeekableStream.read(copy), 10);
-        Assert.assertEquals(byteArraySeekableStream.position(), 10);
-
-        Assert.assertEquals(copy, bytes);
+    Assert.assertEquals(byteArraySeekableStream.length(), 10);
+    for (int i = 0; i < 10; i++) {
+      Assert.assertFalse(byteArraySeekableStream.eof());
+      Assert.assertEquals(byteArraySeekableStream.position(), i);
+      Assert.assertEquals(byteArraySeekableStream.read(), bytes[i]);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testCantSeekNegative() throws IOException {
+    Assert.assertTrue(byteArraySeekableStream.eof());
+    Assert.assertEquals(byteArraySeekableStream.position(), 10);
+    Assert.assertEquals(byteArraySeekableStream.read(), -1);
 
-        ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
+    final long i = 0;
+    byteArraySeekableStream.seek(i);
 
-        byteArraySeekableStream.seek(-1L);
+    Assert.assertEquals(byteArraySeekableStream.position(), i);
+    Assert.assertEquals(byteArraySeekableStream.read(), bytes[(int) i]);
 
-        // if allowed to seek, this will throw OutOfBounds
-        final int f = byteArraySeekableStream.read();
-    }
+    byte[] copy = new byte[10];
 
-    @Test
-    public void testCantReadPostEof() throws IOException {
+    Assert.assertEquals(byteArraySeekableStream.read(copy), 9);
+    Assert.assertEquals(byteArraySeekableStream.position(), 10);
 
-        ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
-        byte[] copy = new byte[10];
+    byteArraySeekableStream.seek(0L);
 
-        byteArraySeekableStream.seek(10);
-        Assert.assertEquals(byteArraySeekableStream.read(copy), -1);
-        Assert.assertEquals(byteArraySeekableStream.read(), -1);
-    }
+    Assert.assertEquals(byteArraySeekableStream.read(copy), 10);
+    Assert.assertEquals(byteArraySeekableStream.position(), 10);
 
-    @DataProvider(name = "abnormalReadRequests")
-    public Object[][] abnormalReadRequestsProvider() {
-        return new Object[][]{
-                {new byte[10], -1, 0},
-                {new byte[10], -1, -1},
-                {new byte[10], 0, -1},
-                {new byte[10], 0, -1},
-                {new byte[10], 0, 11},
-                {new byte[10], 6, 6},
-                {new byte[10], 11, 0},
-        };
-    }
+    Assert.assertEquals(copy, bytes);
+  }
 
-    @Test(dataProvider = "abnormalReadRequests", expectedExceptions = IndexOutOfBoundsException.class)
-    public void testAbnormalReadRequest(final byte[] b, final int off, final int length) throws IOException {
+  @Test(expectedExceptions = IllegalArgumentException.class)
+  public void testCantSeekNegative() throws IOException {
 
-        ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
-        int i = byteArraySeekableStream.read(b, off, length);
+    ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
 
-        Assert.assertEquals(i, -2); ///impossible
-    }
+    byteArraySeekableStream.seek(-1L);
+
+    // if allowed to seek, this will throw OutOfBounds
+    final int f = byteArraySeekableStream.read();
+  }
+
+  @Test
+  public void testCantReadPostEof() throws IOException {
+
+    ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
+    byte[] copy = new byte[10];
+
+    byteArraySeekableStream.seek(10);
+    Assert.assertEquals(byteArraySeekableStream.read(copy), -1);
+    Assert.assertEquals(byteArraySeekableStream.read(), -1);
+  }
+
+  @DataProvider(name = "abnormalReadRequests")
+  public Object[][] abnormalReadRequestsProvider() {
+    return new Object[][] {
+      {new byte[10], -1, 0},
+      {new byte[10], -1, -1},
+      {new byte[10], 0, -1},
+      {new byte[10], 0, -1},
+      {new byte[10], 0, 11},
+      {new byte[10], 6, 6},
+      {new byte[10], 11, 0},
+    };
+  }
+
+  @Test(dataProvider = "abnormalReadRequests", expectedExceptions = IndexOutOfBoundsException.class)
+  public void testAbnormalReadRequest(final byte[] b, final int off, final int length)
+      throws IOException {
+
+    ByteArraySeekableStream byteArraySeekableStream = new ByteArraySeekableStream(bytes);
+    int i = byteArraySeekableStream.read(b, off, length);
+
+    Assert.assertEquals(i, -2); // /impossible
+  }
 }

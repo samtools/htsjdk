@@ -29,82 +29,88 @@ import htsjdk.tribble.TribbleException;
  * The values in a Tabix header that define the format of the file being indexed, e.g. gff, bed, vcf
  */
 public class TabixFormat implements Cloneable {
-    public static final int ZERO_BASED    = 0x10000;
-    public static final int GENERIC_FLAGS = 0;
-    public static final int SAM_FLAGS     = 1;
-    public static final int VCF_FLAGS     = 2;
-    public static final int UCSC_FLAGS    = GENERIC_FLAGS | ZERO_BASED;
+  public static final int ZERO_BASED = 0x10000;
+  public static final int GENERIC_FLAGS = 0;
+  public static final int SAM_FLAGS = 1;
+  public static final int VCF_FLAGS = 2;
+  public static final int UCSC_FLAGS = GENERIC_FLAGS | ZERO_BASED;
 
-    /** Predefined headers for known formats */
-    public static TabixFormat GFF = new TabixFormat(GENERIC_FLAGS, 1, 4, 5, '#', 0);
-    public static TabixFormat BED = new TabixFormat(UCSC_FLAGS, 1, 2, 3, '#', 0);
-    public static TabixFormat PSLTBL = new TabixFormat(UCSC_FLAGS, 15, 17, 18, '#', 0);
-    public static TabixFormat SAM = new TabixFormat(SAM_FLAGS, 3, 4, 0, '@', 0);
-    public static TabixFormat VCF = new TabixFormat(VCF_FLAGS, 1, 2, 0, '#', 0);
+  /** Predefined headers for known formats */
+  public static TabixFormat GFF = new TabixFormat(GENERIC_FLAGS, 1, 4, 5, '#', 0);
 
-    /** Describes interpretation of file being indexed.  See FLAGS constants above. */
-    public int flags;
-    /** One-based index of the column in the file being indexed containing the sequence name */
-    public int sequenceColumn;
-    /** One-based index of the column in the file being indexed containing the start position. */
-    public int startPositionColumn;
-    /**
-     * One-based index of the column in the file being indexed containing the end position. Zero implies
-     * there is no end position column.
-     */
-    public int endPositionColumn;
-    /** Lines in the file being indexed that start with this character are ignored. */
-    public char metaCharacter;
+  public static TabixFormat BED = new TabixFormat(UCSC_FLAGS, 1, 2, 3, '#', 0);
+  public static TabixFormat PSLTBL = new TabixFormat(UCSC_FLAGS, 15, 17, 18, '#', 0);
+  public static TabixFormat SAM = new TabixFormat(SAM_FLAGS, 3, 4, 0, '@', 0);
+  public static TabixFormat VCF = new TabixFormat(VCF_FLAGS, 1, 2, 0, '#', 0);
 
-    /** TODO: This is written, and part of the index header, but does not appear to be used. */
-    public int numHeaderLinesToSkip;
+  /** Describes interpretation of file being indexed. See FLAGS constants above. */
+  public int flags;
+  /** One-based index of the column in the file being indexed containing the sequence name */
+  public int sequenceColumn;
+  /** One-based index of the column in the file being indexed containing the start position. */
+  public int startPositionColumn;
+  /**
+   * One-based index of the column in the file being indexed containing the end position. Zero
+   * implies there is no end position column.
+   */
+  public int endPositionColumn;
+  /** Lines in the file being indexed that start with this character are ignored. */
+  public char metaCharacter;
 
-    public TabixFormat() {
+  /** TODO: This is written, and part of the index header, but does not appear to be used. */
+  public int numHeaderLinesToSkip;
+
+  public TabixFormat() {}
+
+  public TabixFormat(
+      final int flags,
+      final int sequenceColumn,
+      final int startPositionColumn,
+      final int endPositionColumn,
+      final char metaCharacter,
+      final int numHeaderLinesToSkip) {
+    this.flags = flags;
+    this.sequenceColumn = sequenceColumn;
+    this.startPositionColumn = startPositionColumn;
+    this.endPositionColumn = endPositionColumn;
+    this.metaCharacter = metaCharacter;
+    this.numHeaderLinesToSkip = numHeaderLinesToSkip;
+  }
+
+  @Override
+  public TabixFormat clone() {
+    try {
+      return (TabixFormat) super.clone();
+    } catch (final CloneNotSupportedException e) {
+      throw new TribbleException("unpossible!");
     }
+  }
 
-    public TabixFormat(final int flags, final int sequenceColumn, final int startPositionColumn, final int endPositionColumn, final char metaCharacter, final int numHeaderLinesToSkip) {
-        this.flags = flags;
-        this.sequenceColumn = sequenceColumn;
-        this.startPositionColumn = startPositionColumn;
-        this.endPositionColumn = endPositionColumn;
-        this.metaCharacter = metaCharacter;
-        this.numHeaderLinesToSkip = numHeaderLinesToSkip;
-    }
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-    @Override
-    public TabixFormat clone() {
-        try {
-            return (TabixFormat)super.clone();
-        } catch (final CloneNotSupportedException e) {
-            throw new TribbleException("unpossible!");
-        }
-    }
+    final TabixFormat that = (TabixFormat) o;
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    if (endPositionColumn != that.endPositionColumn) return false;
+    if (flags != that.flags) return false;
+    if (metaCharacter != that.metaCharacter) return false;
+    if (numHeaderLinesToSkip != that.numHeaderLinesToSkip) return false;
+    if (sequenceColumn != that.sequenceColumn) return false;
+    if (startPositionColumn != that.startPositionColumn) return false;
 
-        final TabixFormat that = (TabixFormat) o;
+    return true;
+  }
 
-        if (endPositionColumn != that.endPositionColumn) return false;
-        if (flags != that.flags) return false;
-        if (metaCharacter != that.metaCharacter) return false;
-        if (numHeaderLinesToSkip != that.numHeaderLinesToSkip) return false;
-        if (sequenceColumn != that.sequenceColumn) return false;
-        if (startPositionColumn != that.startPositionColumn) return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = flags;
-        result = 31 * result + sequenceColumn;
-        result = 31 * result + startPositionColumn;
-        result = 31 * result + endPositionColumn;
-        result = 31 * result + (int) metaCharacter;
-        result = 31 * result + numHeaderLinesToSkip;
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    int result = flags;
+    result = 31 * result + sequenceColumn;
+    result = 31 * result + startPositionColumn;
+    result = 31 * result + endPositionColumn;
+    result = 31 * result + (int) metaCharacter;
+    result = 31 * result + numHeaderLinesToSkip;
+    return result;
+  }
 }

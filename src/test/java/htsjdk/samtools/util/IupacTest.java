@@ -32,47 +32,44 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import java.io.File;
+import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.util.Arrays;
-
 public class IupacTest extends HtsjdkTest {
-    @Test(dataProvider = "basicDataProvider")
-    public void basic(final String tempFileExtension) throws Exception {
-        final File outputFile = File.createTempFile("iupacTest.", tempFileExtension);
-        outputFile.deleteOnExit();
-        final SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader(), false, outputFile);
-        final String bases1 = "=ACMGRSVTWYHKDBNA";
-        final String bases2 = "A=ACMGRSVTWYHKDBN"; // Test both high-order and low-order base encoding.
-        final byte[] quals = new byte[bases1.length()];
-        Arrays.fill(quals, (byte) 20);
-        final String[] reads = {bases1, bases1.toLowerCase(), bases2, bases2.toLowerCase()};
-        for (int i = 0; i < reads.length; ++i) {
-            final SAMRecord rec = new SAMRecord(writer.getFileHeader());
-            rec.setReadName("read" + i);
-            rec.setReadUnmappedFlag(true);
-            rec.setReadString(reads[i]);
-            rec.setBaseQualities(quals);
-            writer.addAlignment(rec);
-        }
-        writer.close();
-        final SamReader reader = SamReaderFactory.makeDefault().open(outputFile);
-        final SAMRecordIterator it = reader.iterator();
-        for (int i = 0; i < reads.length; ++i) {
-            final SAMRecord rec = it.next();
-            Assert.assertEquals(rec.getReadString(), reads[i].toUpperCase());
-        }
-        reader.close();
+  @Test(dataProvider = "basicDataProvider")
+  public void basic(final String tempFileExtension) throws Exception {
+    final File outputFile = File.createTempFile("iupacTest.", tempFileExtension);
+    outputFile.deleteOnExit();
+    final SAMFileWriter writer =
+        new SAMFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader(), false, outputFile);
+    final String bases1 = "=ACMGRSVTWYHKDBNA";
+    final String bases2 = "A=ACMGRSVTWYHKDBN"; // Test both high-order and low-order base encoding.
+    final byte[] quals = new byte[bases1.length()];
+    Arrays.fill(quals, (byte) 20);
+    final String[] reads = {bases1, bases1.toLowerCase(), bases2, bases2.toLowerCase()};
+    for (int i = 0; i < reads.length; ++i) {
+      final SAMRecord rec = new SAMRecord(writer.getFileHeader());
+      rec.setReadName("read" + i);
+      rec.setReadUnmappedFlag(true);
+      rec.setReadString(reads[i]);
+      rec.setBaseQualities(quals);
+      writer.addAlignment(rec);
     }
+    writer.close();
+    final SamReader reader = SamReaderFactory.makeDefault().open(outputFile);
+    final SAMRecordIterator it = reader.iterator();
+    for (int i = 0; i < reads.length; ++i) {
+      final SAMRecord rec = it.next();
+      Assert.assertEquals(rec.getReadString(), reads[i].toUpperCase());
+    }
+    reader.close();
+  }
 
-    @DataProvider(name = "basicDataProvider")
-    public Object[][] basicDataProvider() {
-        return new Object[][]{
-                {BamFileIoUtils.BAM_FILE_EXTENSION},
-                {".sam"}
-        };
-    }
+  @DataProvider(name = "basicDataProvider")
+  public Object[][] basicDataProvider() {
+    return new Object[][] {{BamFileIoUtils.BAM_FILE_EXTENSION}, {".sam"}};
+  }
 }

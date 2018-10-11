@@ -26,47 +26,39 @@ package htsjdk.tribble.example;
 
 import htsjdk.tribble.index.IndexFactory;
 import htsjdk.tribble.index.linear.LinearIndex;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 
-
 public class IndexToTable {
 
-    /**
-     * this class:
-     *  1) checks to see that the feature file exists
-     *  2) loads an index from disk, if one doesn't exist, it creates it and writes it to disk
-     *  3) Converts the index to a human readable table
-     *  @see htsjdk.tribble.index.linear.LinearIndex#writeTable(java.io.PrintStream)
-     *
-     * @param args 2 parameters:
-     *             1) The path of the file to index
-     *             2) The output file path
-     */
-    public static void main(String[] args) {
+  /**
+   * this class: 1) checks to see that the feature file exists 2) loads an index from disk, if one
+   * doesn't exist, it creates it and writes it to disk 3) Converts the index to a human readable
+   * table
+   *
+   * @see htsjdk.tribble.index.linear.LinearIndex#writeTable(java.io.PrintStream)
+   * @param args 2 parameters: 1) The path of the file to index 2) The output file path
+   */
+  public static void main(String[] args) {
 
-        // check yourself before you wreck yourself - we require one arg, the input file
-        if (args.length != 2)
-            printUsage();
+    // check yourself before you wreck yourself - we require one arg, the input file
+    if (args.length != 2) printUsage();
 
-        //LinearIndex.enableAdaptiveIndexing = false;
-        LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
-        try {
-            idx.writeTable(new PrintStream(new FileOutputStream(new File(args[1]))));
-        } catch ( FileNotFoundException e ) {
-            e.printStackTrace();
-            System.exit(1);
-        }
+    // LinearIndex.enableAdaptiveIndexing = false;
+    LinearIndex idx = (LinearIndex) IndexFactory.loadIndex(new File(args[0]).getAbsolutePath());
+    try {
+      idx.writeTable(new PrintStream(new FileOutputStream(new File(args[1]))));
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      System.exit(1);
     }
+  }
 
-    /**
-     * print usage information
-     */
-    public static void printUsage() {
-        System.err.println("Usage: java -jar IndexToTable.jar index.file output.table");
-        System.exit(1);
-    }
+  /** print usage information */
+  public static void printUsage() {
+    System.err.println("Usage: java -jar IndexToTable.jar index.file output.table");
+    System.exit(1);
+  }
 }

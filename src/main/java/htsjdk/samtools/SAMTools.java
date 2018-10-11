@@ -23,100 +23,94 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.File;
-
 
 /**
  * Command line utility for manipulating SAM/BAM files.
- * @deprecated since 07/2017. This class does not add anything to the HTSJDK library except an example of how to iterate over a SAM/BAM file.
- * In addition, it is not tested.
+ *
+ * @deprecated since 07/2017. This class does not add anything to the HTSJDK library except an
+ *     example of how to iterate over a SAM/BAM file. In addition, it is not tested.
  */
 @Deprecated
 public class SAMTools {
-    private String mCommand = null;
-    private File mInputFile = null;
+  private String mCommand = null;
+  private File mInputFile = null;
 
-
-    public static void main(final String[] args)
-            throws Exception {
-        final int status = new SAMTools().run(args);
-        if (status != 0) {
-            System.exit(status);
-        }
+  public static void main(final String[] args) throws Exception {
+    final int status = new SAMTools().run(args);
+    if (status != 0) {
+      System.exit(status);
     }
+  }
 
-    private SAMTools() {
-    }
+  private SAMTools() {}
 
-    private void usage() {
-        System.out.println();
-        System.out.println("SAMTools version 0.1.0");
-        System.out.println("Tools for manipulating SAM/BAM files");
-        System.out.println();
-        System.out.println("Usage: SAMTools <command> <options...>");
-        System.out.println();
-        System.out.println("Commands:");
-        System.out.println("  help");
-        System.out.println("  view        <file>");
-        System.out.println();
-    }
+  private void usage() {
+    System.out.println();
+    System.out.println("SAMTools version 0.1.0");
+    System.out.println("Tools for manipulating SAM/BAM files");
+    System.out.println();
+    System.out.println("Usage: SAMTools <command> <options...>");
+    System.out.println();
+    System.out.println("Commands:");
+    System.out.println("  help");
+    System.out.println("  view        <file>");
+    System.out.println();
+  }
 
-    private boolean parseArguments(final String[] args) {
-        if (args.length == 0) {
-            usage();
-            return true;
-        }
-        final String command = args[0];
-        final int argpos = 1;
-        final int argcount = args.length - argpos;
-        if (command.equals("help")) {
-            usage();
-            return true;
-        } else if (command.equals("view")) {
-            if (argcount != 1) {
-                usage();
-                return false;
-            }
-            mInputFile = new File(args[1]);
-            if (!mInputFile.exists()) {
-                System.out.println("Input file not found: " + mInputFile);
-                return false;
-            }
-        } else {
-            System.out.println("Unrecognized command: " + command);
-            System.out.println();
-            usage();
-            return false;
-        }
-        mCommand = command;
-        return true;
+  private boolean parseArguments(final String[] args) {
+    if (args.length == 0) {
+      usage();
+      return true;
     }
+    final String command = args[0];
+    final int argpos = 1;
+    final int argcount = args.length - argpos;
+    if (command.equals("help")) {
+      usage();
+      return true;
+    } else if (command.equals("view")) {
+      if (argcount != 1) {
+        usage();
+        return false;
+      }
+      mInputFile = new File(args[1]);
+      if (!mInputFile.exists()) {
+        System.out.println("Input file not found: " + mInputFile);
+        return false;
+      }
+    } else {
+      System.out.println("Unrecognized command: " + command);
+      System.out.println();
+      usage();
+      return false;
+    }
+    mCommand = command;
+    return true;
+  }
 
-    private int run(final String[] args)
-            throws Exception {
-        if (!parseArguments(args)) {
-            return 1;
-        }
-        if (mCommand == null) {
-            return 0;
-        }
-        if (mCommand.equals("view")) {
-            return runView();
-        }
-        return 1;
+  private int run(final String[] args) throws Exception {
+    if (!parseArguments(args)) {
+      return 1;
     }
+    if (mCommand == null) {
+      return 0;
+    }
+    if (mCommand.equals("view")) {
+      return runView();
+    }
+    return 1;
+  }
 
-    private int runView() {
-        final SamReader reader = SamReaderFactory.makeDefault().open(mInputFile);
-        final CloseableIterator<SAMRecord> iterator = reader.iterator();
-        while (iterator.hasNext()) {
-            final SAMRecord record = iterator.next();
-            System.out.println(record.getSAMString());
-        }
-        iterator.close();
-        return 0;
+  private int runView() {
+    final SamReader reader = SamReaderFactory.makeDefault().open(mInputFile);
+    final CloseableIterator<SAMRecord> iterator = reader.iterator();
+    while (iterator.hasNext()) {
+      final SAMRecord record = iterator.next();
+      System.out.println(record.getSAMString());
     }
+    iterator.close();
+    return 0;
+  }
 }

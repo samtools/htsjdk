@@ -2,22 +2,18 @@ package htsjdk.samtools.metrics;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.TestUtil;
+import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-
-
 public class VersionHeaderTest extends HtsjdkTest {
 
-    @Test
-    public void testSerializeVersionHeader() throws IOException, ClassNotFoundException {
-        final VersionHeader versionHeader = new VersionHeader();
-        versionHeader.setVersionedItem("SomeThing");
-        versionHeader.setVersionString("1.0.1");
-        final VersionHeader deserialized = TestUtil.serializeAndDeserialize(versionHeader);
-        Assert.assertEquals(deserialized, versionHeader);
-
-    }
-
+  @Test
+  public void testSerializeVersionHeader() throws IOException, ClassNotFoundException {
+    final VersionHeader versionHeader = new VersionHeader();
+    versionHeader.setVersionedItem("SomeThing");
+    versionHeader.setVersionString("1.0.1");
+    final VersionHeader deserialized = TestUtil.serializeAndDeserialize(versionHeader);
+    Assert.assertEquals(deserialized, versionHeader);
+  }
 }

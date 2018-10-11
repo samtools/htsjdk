@@ -25,59 +25,56 @@ package htsjdk.samtools.util;
 
 import java.util.Iterator;
 
-/**
- * Generic Closable Iterator that allows you to peek at the next value before calling next
- */
+/** Generic Closable Iterator that allows you to peek at the next value before calling next */
 public class PeekableIterator<Object> implements CloseableIterator<Object> {
-    private Iterator<Object> iterator;
-    private Object nextObject;
+  private Iterator<Object> iterator;
+  private Object nextObject;
 
-    /** Constructs a new iterator that wraps the supplied iterator. */
-    public PeekableIterator(Iterator<Object> iterator) {
-        this.iterator = iterator;
-        advance();
-    }
+  /** Constructs a new iterator that wraps the supplied iterator. */
+  public PeekableIterator(Iterator<Object> iterator) {
+    this.iterator = iterator;
+    advance();
+  }
 
-    /** Closes the underlying iterator. */
-    @Override
-    public void close() {
-        CloserUtil.close(iterator);
-    }
+  /** Closes the underlying iterator. */
+  @Override
+  public void close() {
+    CloserUtil.close(iterator);
+  }
 
-    /** True if there are more items, in which case both next() and peek() will return a value. */
-    @Override
-    public boolean hasNext() {
-        return this.nextObject != null;
-    }
+  /** True if there are more items, in which case both next() and peek() will return a value. */
+  @Override
+  public boolean hasNext() {
+    return this.nextObject != null;
+  }
 
-    /** Returns the next object and advances the iterator. */
-    @Override
-    public Object next() {
-        Object retval = this.nextObject;
-        advance();
-        return retval;
-    }
+  /** Returns the next object and advances the iterator. */
+  @Override
+  public Object next() {
+    Object retval = this.nextObject;
+    advance();
+    return retval;
+  }
 
-    /**
-     * Returns the next object but does not advance the iterator. Subsequent calls to peek()
-     * and next() will return the same object.
-     */
-    public Object peek(){
-        return this.nextObject;
-    }
+  /**
+   * Returns the next object but does not advance the iterator. Subsequent calls to peek() and
+   * next() will return the same object.
+   */
+  public Object peek() {
+    return this.nextObject;
+  }
 
-    private void advance(){
-        if (this.iterator.hasNext()) {
-            this.nextObject = iterator.next();
-        }
-        else {
-            this.nextObject = null;
-        }
+  private void advance() {
+    if (this.iterator.hasNext()) {
+      this.nextObject = iterator.next();
+    } else {
+      this.nextObject = null;
     }
+  }
 
-    /** Unsupported Operation. */
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("Not supported: remove");
-    }
+  /** Unsupported Operation. */
+  @Override
+  public void remove() {
+    throw new UnsupportedOperationException("Not supported: remove");
+  }
 }

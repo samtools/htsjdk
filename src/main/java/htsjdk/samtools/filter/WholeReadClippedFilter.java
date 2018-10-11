@@ -27,39 +27,36 @@ import htsjdk.samtools.ReservedTagConstants;
 import htsjdk.samtools.SAMRecord;
 
 /**
- * Filter SAMRecords so that only those that have at least one un-clipped base are
- * returned.
+ * Filter SAMRecords so that only those that have at least one un-clipped base are returned.
  *
- * $Id$
+ * <p>$Id$
  *
  * @author ktibbett@broadinstitute.org
  */
 public class WholeReadClippedFilter implements SamRecordFilter {
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record the SAMRecord to evaluate
-     * @return true if the SAMRecord matches the filter, and should be filtered out,
-     *         otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return record.getAttribute(ReservedTagConstants.XT) != null
-                && (Integer)record.getAttribute(ReservedTagConstants.XT) == 1;
-    }
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, and should be filtered out, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    return record.getAttribute(ReservedTagConstants.XT) != null
+        && (Integer) record.getAttribute(ReservedTagConstants.XT) == 1;
+  }
 
-     /**
-     * Determines whether a paired of SAMRecord matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the SAMRecords matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        // if either fails, exclude them both
-        return (filterOut(first) || filterOut(second));
-    }
+  /**
+   * Determines whether a paired of SAMRecord matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the SAMRecords matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    // if either fails, exclude them both
+    return (filterOut(first) || filterOut(second));
+  }
 }

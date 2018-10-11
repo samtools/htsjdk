@@ -22,29 +22,28 @@
  */
 package htsjdk.samtools;
 
-
 import htsjdk.samtools.util.CloserUtil;
-
 import java.io.File;
 
-/**
- * @deprecated since 07/2017. This tool is undocumented and untested.
- */
+/** @deprecated since 07/2017. This tool is undocumented and untested. */
 @Deprecated
 public class FixBAMFile {
-    public static void main(String[] args) {
-        File inputFile = new File(args[0]);
-        File outputFile = new File(args[1]);
-        SamReader reader = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT).open(inputFile);
-        SAMFileHeader header = reader.getFileHeader();
-        SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile);
-        for (SAMRecord record : reader) {
-            if (record.getIndexingBin() != null) {
-                record.setIndexingBin(record.computeIndexingBin());
-            }
-            writer.addAlignment(record);
-        }
-        writer.close();
-        CloserUtil.close(reader);
+  public static void main(String[] args) {
+    File inputFile = new File(args[0]);
+    File outputFile = new File(args[1]);
+    SamReader reader =
+        SamReaderFactory.makeDefault()
+            .validationStringency(ValidationStringency.SILENT)
+            .open(inputFile);
+    SAMFileHeader header = reader.getFileHeader();
+    SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(header, true, outputFile);
+    for (SAMRecord record : reader) {
+      if (record.getIndexingBin() != null) {
+        record.setIndexingBin(record.computeIndexingBin());
+      }
+      writer.addAlignment(record);
     }
+    writer.close();
+    CloserUtil.close(reader);
+  }
 }

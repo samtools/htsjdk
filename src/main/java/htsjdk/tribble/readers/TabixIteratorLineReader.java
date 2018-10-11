@@ -24,7 +24,6 @@
 package htsjdk.tribble.readers;
 
 import htsjdk.samtools.util.RuntimeIOException;
-
 import java.io.IOException;
 
 /**
@@ -33,29 +32,28 @@ import java.io.IOException;
  */
 public class TabixIteratorLineReader implements LineReader {
 
-    TabixReader.Iterator iterator;
+  TabixReader.Iterator iterator;
 
+  public TabixIteratorLineReader(TabixReader.Iterator iterator) {
+    this.iterator = iterator;
+  }
 
-    public TabixIteratorLineReader(TabixReader.Iterator iterator) {
-        this.iterator = iterator;
+  @Override
+  public String readLine() {
+    try {
+      return iterator != null ? iterator.next() : null;
+    } catch (IOException e) {
+      throw new RuntimeIOException(e);
     }
+  }
 
-    @Override
-    public String readLine() {
-        try {
-            return iterator != null ? iterator.next() : null;
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
-    }
+  @Override
+  public void close() {
+    // Ignore -
+  }
 
-    @Override
-    public void close() {
-        // Ignore -
-    }
-    
-    @Override
-    public String toString() {
-        return "TabixIteratorLineReader";
-    }
+  @Override
+  public String toString() {
+    return "TabixIteratorLineReader";
+  }
 }

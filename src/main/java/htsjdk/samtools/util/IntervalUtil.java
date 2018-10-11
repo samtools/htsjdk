@@ -25,52 +25,52 @@ package htsjdk.samtools.util;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.util.Iterator;
 
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class IntervalUtil {
 
-    /** Return true if the sequence/position lie in the provided interval. */
-    public static boolean contains(final Interval interval, final String sequenceName, final long position) {
-        return interval.getContig().equals(sequenceName) && (position >= interval.getStart() && position <= interval.getEnd());
-    }
+  /** Return true if the sequence/position lie in the provided interval. */
+  public static boolean contains(
+      final Interval interval, final String sequenceName, final long position) {
+    return interval.getContig().equals(sequenceName)
+        && (position >= interval.getStart() && position <= interval.getEnd());
+  }
 
-    /** Return true if the sequence/position lie in the provided interval list. */
-    public static boolean contains(final IntervalList intervalList, final String sequenceName, final long position) {
-        for (final Interval interval : intervalList.uniqued().getIntervals()) {
-            if (contains(interval, sequenceName, position))
-                return true;
-        }
-        return false;
+  /** Return true if the sequence/position lie in the provided interval list. */
+  public static boolean contains(
+      final IntervalList intervalList, final String sequenceName, final long position) {
+    for (final Interval interval : intervalList.uniqued().getIntervals()) {
+      if (contains(interval, sequenceName, position)) return true;
     }
+    return false;
+  }
 
-    /**
-     * Throws RuntimeException if the given intervals are not locus ordered and non-overlapping
-     *
-     * @param intervals
-     * @param sequenceDictionary used to determine order of sequences
-     */
-    public static void assertOrderedNonOverlapping(final Iterator<Interval> intervals, final SAMSequenceDictionary sequenceDictionary) {
-        if (!intervals.hasNext()) {
-            return;
-        }
-        Interval prevInterval = intervals.next();
-        int prevSequenceIndex = sequenceDictionary.getSequenceIndex(prevInterval.getContig());
-        while (intervals.hasNext()) {
-            final Interval interval = intervals.next();
-            if (prevInterval.intersects(interval)) {
-                throw new SAMException("Intervals should not overlap: " + prevInterval + "; " + interval);
-            }
-            final int thisSequenceIndex = sequenceDictionary.getSequenceIndex(interval.getContig());
-            if (prevSequenceIndex > thisSequenceIndex ||
-                    (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
-                throw new SAMException("Intervals not in order: " + prevInterval + "; " + interval);
-            }
-            prevInterval = interval;
-            prevSequenceIndex = thisSequenceIndex;
-        }
+  /**
+   * Throws RuntimeException if the given intervals are not locus ordered and non-overlapping
+   *
+   * @param intervals
+   * @param sequenceDictionary used to determine order of sequences
+   */
+  public static void assertOrderedNonOverlapping(
+      final Iterator<Interval> intervals, final SAMSequenceDictionary sequenceDictionary) {
+    if (!intervals.hasNext()) {
+      return;
     }
+    Interval prevInterval = intervals.next();
+    int prevSequenceIndex = sequenceDictionary.getSequenceIndex(prevInterval.getContig());
+    while (intervals.hasNext()) {
+      final Interval interval = intervals.next();
+      if (prevInterval.intersects(interval)) {
+        throw new SAMException("Intervals should not overlap: " + prevInterval + "; " + interval);
+      }
+      final int thisSequenceIndex = sequenceDictionary.getSequenceIndex(interval.getContig());
+      if (prevSequenceIndex > thisSequenceIndex
+          || (prevSequenceIndex == thisSequenceIndex && prevInterval.compareTo(interval) >= 0)) {
+        throw new SAMException("Intervals not in order: " + prevInterval + "; " + interval);
+      }
+      prevInterval = interval;
+      prevSequenceIndex = thisSequenceIndex;
+    }
+  }
 }

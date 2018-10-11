@@ -7,50 +7,52 @@ package htsjdk.samtools;
  */
 public class DefaultSAMRecordFactory implements SAMRecordFactory {
 
-    private static final DefaultSAMRecordFactory INSTANCE = new DefaultSAMRecordFactory();
-    
-    public static DefaultSAMRecordFactory getInstance() {
-        return INSTANCE;   
-    }
+  private static final DefaultSAMRecordFactory INSTANCE = new DefaultSAMRecordFactory();
 
-    /** Create a new SAMRecord to be filled in */
-    @Override
-    public SAMRecord createSAMRecord(final SAMFileHeader header) {
-        return new SAMRecord(header);
-    }
+  public static DefaultSAMRecordFactory getInstance() {
+    return INSTANCE;
+  }
 
-    /**
-     * Create a new BAM Record. If the reference sequence index or mate reference sequence index are
-     * any value other than NO_ALIGNMENT_REFERENCE_INDEX, the values must be resolvable against the sequence
-     * dictionary in the header argument.
-     */
-    @Override
-    public BAMRecord createBAMRecord (final SAMFileHeader header,
-                                      final int referenceSequenceIndex,
-                                      final int alignmentStart,
-                                      final short readNameLength,
-                                      final short mappingQuality,
-                                      final int indexingBin,
-                                      final int cigarLen,
-                                      final int flags,
-                                      final int readLen,
-                                      final int mateReferenceSequenceIndex,
-                                      final int mateAlignmentStart,
-                                      final int insertSize,
-                                      final byte[] variableLengthBlock) {
+  /** Create a new SAMRecord to be filled in */
+  @Override
+  public SAMRecord createSAMRecord(final SAMFileHeader header) {
+    return new SAMRecord(header);
+  }
 
-        return new BAMRecord(header,
-                             referenceSequenceIndex,
-                             alignmentStart,
-                             readNameLength,
-                             mappingQuality,
-                             indexingBin,
-                             cigarLen,
-                             flags,
-                             readLen,
-                             mateReferenceSequenceIndex,
-                             mateAlignmentStart,
-                             insertSize,
-                             variableLengthBlock);
-    }
+  /**
+   * Create a new BAM Record. If the reference sequence index or mate reference sequence index are
+   * any value other than NO_ALIGNMENT_REFERENCE_INDEX, the values must be resolvable against the
+   * sequence dictionary in the header argument.
+   */
+  @Override
+  public BAMRecord createBAMRecord(
+      final SAMFileHeader header,
+      final int referenceSequenceIndex,
+      final int alignmentStart,
+      final short readNameLength,
+      final short mappingQuality,
+      final int indexingBin,
+      final int cigarLen,
+      final int flags,
+      final int readLen,
+      final int mateReferenceSequenceIndex,
+      final int mateAlignmentStart,
+      final int insertSize,
+      final byte[] variableLengthBlock) {
+
+    return new BAMRecord(
+        header,
+        referenceSequenceIndex,
+        alignmentStart,
+        readNameLength,
+        mappingQuality,
+        indexingBin,
+        cigarLen,
+        flags,
+        readLen,
+        mateReferenceSequenceIndex,
+        mateAlignmentStart,
+        insertSize,
+        variableLengthBlock);
+  }
 }

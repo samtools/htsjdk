@@ -20,9 +20,9 @@ matrix:
        env: TEST_TYPE=FTP
 script:
   - if [[ $TEST_TYPE == "FTP" ]]; then
-        ./gradlew testFTP jacocoTestReport;
+        ./gradlew verifyGoogleJavaFormat testFTP jacocoTestReport;
     else
-        ./gradlew test jacocoTestReport;
+        ./gradlew verifyGoogleJavaFormat test jacocoTestReport;
     fi
 
 after_success:

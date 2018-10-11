@@ -24,127 +24,124 @@
 package htsjdk.tribble.bed;
 
 import htsjdk.tribble.annotation.Strand;
-
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *  Feature from a BED file without exon blocks.
- */
+/** Feature from a BED file without exon blocks. */
 public class SimpleBEDFeature implements BEDFeature {
-    protected String chr;
-    protected int start = -1;
-    protected int end = -1;
-    protected Strand strand = Strand.NONE;
-    private String name = "";
-    private float score = Float.NaN;
-    private String type = "";
-    private Color color;
-    private String description;//protected float confidence;
-    //private String identifier;
-    private String link;
+  protected String chr;
+  protected int start = -1;
+  protected int end = -1;
+  protected Strand strand = Strand.NONE;
+  private String name = "";
+  private float score = Float.NaN;
+  private String type = "";
+  private Color color;
+  private String description; // protected float confidence;
+  // private String identifier;
+  private String link;
 
-    public SimpleBEDFeature(int start, int end, String chr) {
-        this.start = start;
-        this.end = end;
-        this.chr = chr;
-    }
+  public SimpleBEDFeature(int start, int end, String chr) {
+    this.start = start;
+    this.end = end;
+    this.chr = chr;
+  }
 
-    @Override
-    public String getContig() {
-        return chr;
-    }
+  @Override
+  public String getContig() {
+    return chr;
+  }
 
-    @Override
-    public int getStart() {
-        return start;
-    }
+  @Override
+  public int getStart() {
+    return start;
+  }
 
-    @Override
-    public int getEnd() {
-        return end;
-    }
+  @Override
+  public int getEnd() {
+    return end;
+  }
 
-    @Override
-    public Strand getStrand() {
-        return strand;
-    }
+  @Override
+  public Strand getStrand() {
+    return strand;
+  }
 
-    public void setStrand(Strand strand) {
-        this.strand = strand;
-    }
+  public void setStrand(Strand strand) {
+    this.strand = strand;
+  }
 
-    public void setChr(String chr) {
-        this.chr = chr;
-    }
+  public void setChr(String chr) {
+    this.chr = chr;
+  }
 
-    public void setStart(int start) {
-        this.start = start;
-    }
+  public void setStart(int start) {
+    this.start = start;
+  }
 
-    public void setEnd(int end) {
-        this.end = end;
-    }
+  public void setEnd(int end) {
+    this.end = end;
+  }
 
-    @Override
-    public String getType() {
-        return type;
-    }
+  @Override
+  public String getType() {
+    return type;
+  }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    @Override
-    public Color getColor() {
-        return color;
-    }
+  @Override
+  public Color getColor() {
+    return color;
+  }
 
-    public void setColor(Color color) {
-        this.color = color;
-    }
+  public void setColor(Color color) {
+    this.color = color;
+  }
 
-    @Override
-    public String getDescription() {
-        return description;
-    }
+  @Override
+  public String getDescription() {
+    return description;
+  }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-    @Override
-    public String getName() {
-        return name;
-    }
+  @Override
+  public String getName() {
+    return name;
+  }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    @Override
-    public float getScore() {
-        return score;
-    }
+  @Override
+  public float getScore() {
+    return score;
+  }
 
-    public void setScore(float score) {
-        this.score = score;
-    }
+  public void setScore(float score) {
+    this.score = score;
+  }
 
-    @Override
-    public String getLink() {
-        return link;
-    }
+  @Override
+  public String getLink() {
+    return link;
+  }
 
-    public void setLink(String link) {
-        this.link = link;
-    }
+  public void setLink(String link) {
+    this.link = link;
+  }
 
-    final static List<FullBEDFeature.Exon> emptyExonList = new ArrayList();
+  static final List<FullBEDFeature.Exon> emptyExonList = new ArrayList();
 
-    @Override
-    public java.util.List<FullBEDFeature.Exon> getExons() {
-        return emptyExonList;
-    }
+  @Override
+  public java.util.List<FullBEDFeature.Exon> getExons() {
+    return emptyExonList;
+  }
 }

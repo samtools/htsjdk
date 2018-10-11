@@ -26,7 +26,6 @@ package htsjdk.samtools.filter;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -35,78 +34,75 @@ import java.util.Set;
 
 /**
  * Filter by a set of specified readnames
- * <p/>
- * $Id$
+ *
+ * <p>$Id$
  */
 public class ReadNameFilter implements SamRecordFilter {
 
-    private boolean includeReads = false;
-    private Set<String> readNameFilterSet = new HashSet<>();
+  private boolean includeReads = false;
+  private Set<String> readNameFilterSet = new HashSet<>();
 
-    public ReadNameFilter(final File readNameFilterFile, final boolean includeReads) {
+  public ReadNameFilter(final File readNameFilterFile, final boolean includeReads) {
 
-        IOUtil.assertFileIsReadable(readNameFilterFile);
-        IOUtil.assertFileSizeNonZero(readNameFilterFile);
+    IOUtil.assertFileIsReadable(readNameFilterFile);
+    IOUtil.assertFileSizeNonZero(readNameFilterFile);
 
-        try {
-            final BufferedReader in = IOUtil.openFileForBufferedReading(readNameFilterFile);
+    try {
+      final BufferedReader in = IOUtil.openFileForBufferedReading(readNameFilterFile);
 
-            String line = null;
+      String line = null;
 
-            while ((line = in.readLine()) != null) {
-                if (!line.trim().isEmpty()) {
-                    readNameFilterSet.add(line.split("\\s+")[0]);
-                }
-            }
-
-            in.close();
-        } catch (IOException e) {
-            throw new SAMException(e.getMessage(), e);
+      while ((line = in.readLine()) != null) {
+        if (!line.trim().isEmpty()) {
+          readNameFilterSet.add(line.split("\\s+")[0]);
         }
+      }
 
-        this.includeReads = includeReads;
+      in.close();
+    } catch (IOException e) {
+      throw new SAMException(e.getMessage(), e);
     }
 
-    public ReadNameFilter(final Set<String> readNameFilterSet, final boolean includeReads) {
-        this.readNameFilterSet = readNameFilterSet;
-        this.includeReads = includeReads;
+    this.includeReads = includeReads;
+  }
+
+  public ReadNameFilter(final Set<String> readNameFilterSet, final boolean includeReads) {
+    this.readNameFilterSet = readNameFilterSet;
+    this.includeReads = includeReads;
+  }
+
+  /**
+   * Determines whether a SAMRecord matches this filter
+   *
+   * @param record the SAMRecord to evaluate
+   * @return true if the SAMRecord matches the filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord record) {
+    return readNameFilterSet.contains(record.getReadName()) != includeReads;
+  }
+
+  /**
+   * Determines whether a pair of SAMRecords matches this filter
+   *
+   * @param first the first SAMRecord to evaluate
+   * @param second the second SAMRecord to evaluate
+   * @return true if the pair of records matches filter, otherwise false
+   */
+  @Override
+  public boolean filterOut(final SAMRecord first, final SAMRecord second) {
+    if (includeReads) {
+      if (readNameFilterSet.contains(first.getReadName())
+          && readNameFilterSet.contains(second.getReadName())) {
+        return false;
+      }
+    } else {
+      if (!readNameFilterSet.contains(first.getReadName())
+          && !readNameFilterSet.contains(second.getReadName())) {
+        return false;
+      }
     }
 
-    /**
-     * Determines whether a SAMRecord matches this filter
-     *
-     * @param record the SAMRecord to evaluate
-     *
-     * @return true if the SAMRecord matches the filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord record) {
-        return readNameFilterSet.contains(record.getReadName()) != includeReads;
-    }
-
-    /**
-     * Determines whether a pair of SAMRecords matches this filter
-     *
-     * @param first  the first SAMRecord to evaluate
-     * @param second the second SAMRecord to evaluate
-     *
-     * @return true if the pair of records matches filter, otherwise false
-     */
-    @Override
-    public boolean filterOut(final SAMRecord first, final SAMRecord second) {
-        if (includeReads) {
-            if (readNameFilterSet.contains(first.getReadName()) &&
-                readNameFilterSet.contains(second.getReadName())) {
-                return false;
-            }
-        } else {
-            if (!readNameFilterSet.contains(first.getReadName()) &&
-                !readNameFilterSet.contains(second.getReadName())) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
+    return true;
+  }
 }

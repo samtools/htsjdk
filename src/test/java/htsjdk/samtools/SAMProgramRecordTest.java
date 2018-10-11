@@ -27,17 +27,17 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * Test for SAMReadGroupRecordTest
- */
+/** Test for SAMReadGroupRecordTest */
 public class SAMProgramRecordTest extends HtsjdkTest {
 
-    @Test
-    public void testGetSAMString() {
-        SAMProgramRecord r = new SAMProgramRecord("SW-eIV");
-        r.setProgramName("telnet");
-        r.setProgramVersion("0.17-40");
-        r.setCommandLine("telnet towel.blinkenlights.nl");
-        Assert.assertEquals("@PG\tID:SW-eIV\tPN:telnet\tVN:0.17-40\tCL:telnet towel.blinkenlights.nl", r.getSAMString());
-    }
+  @Test
+  public void testGetSAMString() {
+    SAMProgramRecord r = new SAMProgramRecord("SW-eIV");
+    r.setProgramName("telnet");
+    r.setProgramVersion("0.17-40");
+    r.setCommandLine("telnet towel.blinkenlights.nl");
+    Assert.assertEquals(
+        "@PG\tID:SW-eIV\tPN:telnet\tVN:0.17-40\tCL:telnet towel.blinkenlights.nl",
+        r.getSAMString());
+  }
 }

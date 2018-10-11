@@ -30,45 +30,54 @@ import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-/**
- * Basic test for the SolexaNoiseFilter
- */
+/** Basic test for the SolexaNoiseFilter */
 public class SolexaNoiseFilterTest extends HtsjdkTest {
 
-    private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
-    private final SolexaNoiseFilter filter = new SolexaNoiseFilter();
+  private final SAMRecordSetBuilder builder = new SAMRecordSetBuilder();
+  private final SolexaNoiseFilter filter = new SolexaNoiseFilter();
 
-    /**
-     * Basic positive and negative tests for the PolyANoiseFilter
-     *
-     * @param sequence          The sequence to be tested
-     * @param expectedResult    The expected result (true is the sequence should match the filter, otherwise false)
-     */
-    @Test(dataProvider="data")
-    public void testSolexaNoiseFilter(final String testName, final String sequence, final boolean expectedResult) {
-        builder.addUnmappedFragment("testfrag");
-        final SAMRecord record = builder.iterator().next();
-        record.setReadString(sequence);
-        Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
-    }
+  /**
+   * Basic positive and negative tests for the PolyANoiseFilter
+   *
+   * @param sequence The sequence to be tested
+   * @param expectedResult The expected result (true is the sequence should match the filter,
+   *     otherwise false)
+   */
+  @Test(dataProvider = "data")
+  public void testSolexaNoiseFilter(
+      final String testName, final String sequence, final boolean expectedResult) {
+    builder.addUnmappedFragment("testfrag");
+    final SAMRecord record = builder.iterator().next();
+    record.setReadString(sequence);
+    Assert.assertEquals(filter.filterOut(record), expectedResult, testName);
+  }
 
-
-    /**
-     * Data for various sequences which may or may not match the filter.
-     */
-    @DataProvider(name = "data")
-    private Object[][] getSolexaNoiseTestData()
-    {
-        return new Object[][]{
-            {"36-base read all a's filter out", "AAAAAaaaaaAAAAAAAAAAAAAAAAAAAAaaaaaa", true},
-            {"36-base read with n, filter out", "AAAAAaaaaaAAAAAAAAAAAAAAAAAAAAaaaaan", true}, 
-            {"51-base read, final base mismatch", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT", false},
-            {"51-base read, middle base mismatch", "aaaaaaaaaaaaaaaaaaaaaaaaaaTaaaaaaaaaaaaaaaaaaaaaaaa", false},
-            {"76-base read, a's and n's, filter out",
-                    "aaaaaaaaaaaaaaaaaNNaaaaaaaaaaaaaaaaaaaaaanaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", true},
-            {"76-base doesn't match",
-                    "NNNATAAAnnnnnnnnnnTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", false},
-        };
-    }
-
+  /** Data for various sequences which may or may not match the filter. */
+  @DataProvider(name = "data")
+  private Object[][] getSolexaNoiseTestData() {
+    return new Object[][] {
+      {"36-base read all a's filter out", "AAAAAaaaaaAAAAAAAAAAAAAAAAAAAAaaaaaa", true},
+      {"36-base read with n, filter out", "AAAAAaaaaaAAAAAAAAAAAAAAAAAAAAaaaaan", true},
+      {
+        "51-base read, final base mismatch",
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT",
+        false
+      },
+      {
+        "51-base read, middle base mismatch",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaTaaaaaaaaaaaaaaaaaaaaaaaa",
+        false
+      },
+      {
+        "76-base read, a's and n's, filter out",
+        "aaaaaaaaaaaaaaaaaNNaaaaaaaaaaaaaaaaaaaaaanaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        true
+      },
+      {
+        "76-base doesn't match",
+        "NNNATAAAnnnnnnnnnnTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+        false
+      },
+    };
+  }
 }

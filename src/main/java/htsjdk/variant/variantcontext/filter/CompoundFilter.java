@@ -25,50 +25,52 @@
 package htsjdk.variant.variantcontext.filter;
 
 import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.ArrayList;
 
 /**
- * A Predicate on VariantContexts that returns true when either all its sub-predicates are true, or none are false.
+ * A Predicate on VariantContexts that returns true when either all its sub-predicates are true, or
+ * none are false.
  *
  * @author Yossi Farjoun
  */
-public class CompoundFilter extends ArrayList<VariantContextFilter> implements VariantContextFilter {
+public class CompoundFilter extends ArrayList<VariantContextFilter>
+    implements VariantContextFilter {
 
-    final boolean requireAll;
+  final boolean requireAll;
 
-    /**
-     * A constructor that will determine if this compound filter will require that *all* the included filters pass
-     * or *some* of them pass (depending on the requireAll parameter in the constructor).
-     *
-     * @param requireAll a boolean parameter determining whether this filter requires all its elements to pass (true) for
-     * it to pass, or only one (false). If there are no variantfilters it will return true.
-     */
-    public CompoundFilter(final boolean requireAll) {
-        super();
-        this.requireAll = requireAll;
+  /**
+   * A constructor that will determine if this compound filter will require that *all* the included
+   * filters pass or *some* of them pass (depending on the requireAll parameter in the constructor).
+   *
+   * @param requireAll a boolean parameter determining whether this filter requires all its elements
+   *     to pass (true) for it to pass, or only one (false). If there are no variantfilters it will
+   *     return true.
+   */
+  public CompoundFilter(final boolean requireAll) {
+    super();
+    this.requireAll = requireAll;
+  }
+
+  /**
+   * @param variantContext the record to examine against the sub-filters
+   * @return true if variantContext either passes all the filters (when requireAll==true) or doesn't
+   *     fail any of the filters (when requireAll==false)
+   */
+  @Override
+  public boolean test(final VariantContext variantContext) {
+
+    if (requireAll) {
+      for (final VariantContextFilter filter : this) {
+        if (!filter.test(variantContext)) return false;
+      }
+
+      return true;
+    } else {
+      for (final VariantContextFilter filter : this) {
+        if (filter.test(variantContext)) return true;
+      }
+
+      return isEmpty();
     }
-
-    /**
-     * @param variantContext the record to examine against the sub-filters
-     * @return true if variantContext either passes all the filters (when requireAll==true)
-     * or doesn't fail any of the filters (when requireAll==false)
-     */
-    @Override
-    public boolean test(final VariantContext variantContext) {
-
-        if (requireAll) {
-            for (final VariantContextFilter filter : this) {
-                if (!filter.test(variantContext)) return false;
-            }
-
-            return true;
-        } else {
-            for (final VariantContextFilter filter : this) {
-                if (filter.test(variantContext)) return true;
-            }
-
-            return isEmpty();
-        }
-    }
+  }
 }

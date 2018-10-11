@@ -23,29 +23,28 @@
  */
 package htsjdk.samtools.fastq;
 
-/**
- * @author alecw@broadinstitute.org
- */
+/** @author alecw@broadinstitute.org */
 public class FastqConstants {
-    public static final String SEQUENCE_HEADER = "@" ;
-    public static final String QUALITY_HEADER = "+" ;
-    public static final String FIRST_OF_PAIR = "/1";
-    public static final String SECOND_OF_PAIR = "/2";
+  public static final String SEQUENCE_HEADER = "@";
+  public static final String QUALITY_HEADER = "+";
+  public static final String FIRST_OF_PAIR = "/1";
+  public static final String SECOND_OF_PAIR = "/2";
 
-    public enum FastqExtensions {
-        FASTQ(".fastq"),
-        FASTQ_GZ(".fastq.gz"),
-        FQ(".fq"),
-        FQ_GZ(".fq.gz"),
-        BFQ(".bfq");
-        
-        private final String extension;
-        
-        private FastqExtensions(final String extension) {
-            this.extension = extension;
-        }
-        
-        public String getExtension() { return this.extension; }
-        
+  public enum FastqExtensions {
+    FASTQ(".fastq"),
+    FASTQ_GZ(".fastq.gz"),
+    FQ(".fq"),
+    FQ_GZ(".fq.gz"),
+    BFQ(".bfq");
+
+    private final String extension;
+
+    private FastqExtensions(final String extension) {
+      this.extension = extension;
     }
+
+    public String getExtension() {
+      return this.extension;
+    }
+  }
 }

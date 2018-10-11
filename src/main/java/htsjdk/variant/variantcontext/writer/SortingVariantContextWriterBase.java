@@ -1,33 +1,32 @@
 /*
-* Copyright (c) 2012 The Broad Institute
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use,
-* copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the
-* Software is furnished to do so, subject to the following
-* conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-* OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
-* THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ * Copyright (c) 2012 The Broad Institute
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
+ * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 package htsjdk.variant.variantcontext.writer;
 
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFHeader;
-
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Queue;
@@ -36,176 +35,194 @@ import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * This class writes VCF files, allowing records to be passed in unsorted.
- * It also enforces that it is never passed records of the same chromosome with any other chromosome in between them.
+ * This class writes VCF files, allowing records to be passed in unsorted. It also enforces that it
+ * is never passed records of the same chromosome with any other chromosome in between them.
  *
- * @deprecated 9/2017, this class is completely untested and unsupported, there is no replacement at this time
- * if you use this class please file an issue on github or it will be removed at some point in the future
+ * @deprecated 9/2017, this class is completely untested and unsupported, there is no replacement at
+ *     this time if you use this class please file an issue on github or it will be removed at some
+ *     point in the future
  */
 @Deprecated
 abstract class SortingVariantContextWriterBase implements VariantContextWriter {
 
-    // The VCFWriter to which to actually write the sorted VCF records
-    private final VariantContextWriter innerWriter;
+  // The VCFWriter to which to actually write the sorted VCF records
+  private final VariantContextWriter innerWriter;
 
-    // the current queue of un-emitted records
-    private final Queue<VCFRecord> queue;
+  // the current queue of un-emitted records
+  private final Queue<VCFRecord> queue;
 
-    // The locus until which we are permitted to write out (inclusive)
-    protected Integer mostUpstreamWritableLoc;
-    protected static final int BEFORE_MOST_UPSTREAM_LOC = 0; // No real locus index is <= 0
+  // The locus until which we are permitted to write out (inclusive)
+  protected Integer mostUpstreamWritableLoc;
+  protected static final int BEFORE_MOST_UPSTREAM_LOC = 0; // No real locus index is <= 0
 
-    // The set of chromosomes already passed over and to which it is forbidden to return
-    private final Set<String> finishedChromosomes;
+  // The set of chromosomes already passed over and to which it is forbidden to return
+  private final Set<String> finishedChromosomes;
 
-    // Should we call innerWriter.close() in close()
-    private final boolean takeOwnershipOfInner;
+  // Should we call innerWriter.close() in close()
+  private final boolean takeOwnershipOfInner;
 
-    // --------------------------------------------------------------------------------
-    //
-    // Constructors
-    //
-    // --------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------
+  //
+  // Constructors
+  //
+  // --------------------------------------------------------------------------------
 
-    /**
-     * create a local-sorting VCF writer, given an inner VCF writer to write to
-     *
-     * @param innerWriter        the VCFWriter to write to
-     * @param takeOwnershipOfInner Should this Writer close innerWriter when it's done with it
-     */
-    public SortingVariantContextWriterBase(VariantContextWriter innerWriter, boolean takeOwnershipOfInner) {
-        this.innerWriter = innerWriter;
-        this.finishedChromosomes = new TreeSet<String>();
-        this.takeOwnershipOfInner = takeOwnershipOfInner;
+  /**
+   * create a local-sorting VCF writer, given an inner VCF writer to write to
+   *
+   * @param innerWriter the VCFWriter to write to
+   * @param takeOwnershipOfInner Should this Writer close innerWriter when it's done with it
+   */
+  public SortingVariantContextWriterBase(
+      VariantContextWriter innerWriter, boolean takeOwnershipOfInner) {
+    this.innerWriter = innerWriter;
+    this.finishedChromosomes = new TreeSet<String>();
+    this.takeOwnershipOfInner = takeOwnershipOfInner;
 
-        // has to be PriorityBlockingQueue to be thread-safe
-        this.queue = new PriorityBlockingQueue<VCFRecord>(50, new VariantContextComparator());
+    // has to be PriorityBlockingQueue to be thread-safe
+    this.queue = new PriorityBlockingQueue<VCFRecord>(50, new VariantContextComparator());
 
-        this.mostUpstreamWritableLoc = BEFORE_MOST_UPSTREAM_LOC;
+    this.mostUpstreamWritableLoc = BEFORE_MOST_UPSTREAM_LOC;
+  }
+
+  public SortingVariantContextWriterBase(VariantContextWriter innerWriter) {
+    this(innerWriter, false); // by default, don't own inner
+  }
+
+  // --------------------------------------------------------------------------------
+  //
+  // public interface functions
+  //
+  // --------------------------------------------------------------------------------
+
+  @Override
+  public void writeHeader(VCFHeader header) {
+    innerWriter.writeHeader(header);
+  }
+
+  /** attempt to close the VCF file; we need to flush the queue first */
+  @Override
+  public void close() {
+    stopWaitingToSort();
+
+    if (takeOwnershipOfInner) innerWriter.close();
+  }
+
+  /**
+   * add a record to the file
+   *
+   * @param vc the Variant Context object
+   */
+  @Override
+  public synchronized void add(VariantContext vc) {
+    /* Note that the code below does not prevent the successive add()-ing of: (chr1, 10), (chr20, 200), (chr15, 100)
+      since there is no implicit ordering of chromosomes:
+    */
+    VCFRecord firstRec = queue.peek();
+    if (firstRec != null
+        && !vc.getContig()
+            .equals(firstRec.vc.getContig())) { // if we hit a new contig, flush the queue
+      if (finishedChromosomes.contains(vc.getContig()))
+        throw new IllegalArgumentException(
+            "Added a record at "
+                + vc.getContig()
+                + ":"
+                + vc.getStart()
+                + ", but already finished with chromosome"
+                + vc.getContig());
+
+      finishedChromosomes.add(firstRec.vc.getContig());
+      stopWaitingToSort();
     }
 
-    public SortingVariantContextWriterBase(VariantContextWriter innerWriter) {
-        this(innerWriter, false); // by default, don't own inner
-    }
+    noteCurrentRecord(vc); // possibly overwritten
 
-    // --------------------------------------------------------------------------------
-    //
-    // public interface functions
-    //
-    // --------------------------------------------------------------------------------
+    queue.add(new VCFRecord(vc));
+    emitSafeRecords();
+  }
+
+  @Override
+  public void setHeader(final VCFHeader header) {
+    innerWriter.setHeader(header);
+  }
+
+  /**
+   * Gets a string representation of this object.
+   *
+   * @return a string representation of this object
+   */
+  @Override
+  public String toString() {
+    return getClass().getName();
+  }
+
+  // --------------------------------------------------------------------------------
+  //
+  // protected interface functions for subclasses to use
+  //
+  // --------------------------------------------------------------------------------
+
+  private synchronized void stopWaitingToSort() {
+    emitRecords(true);
+    mostUpstreamWritableLoc = BEFORE_MOST_UPSTREAM_LOC;
+  }
+
+  protected synchronized void emitSafeRecords() {
+    emitRecords(false);
+  }
+
+  protected void noteCurrentRecord(VariantContext vc) {
+    // did the user break the contract by giving a record too late?
+    if (mostUpstreamWritableLoc != null
+        && vc.getStart()
+            < mostUpstreamWritableLoc) // went too far back, since may have already written anything
+                                       // that is <= mostUpstreamWritableLoc
+    throw new IllegalArgumentException(
+          "Permitted to write any record upstream of position "
+              + mostUpstreamWritableLoc
+              + ", but a record at "
+              + vc.getContig()
+              + ":"
+              + vc.getStart()
+              + " was just added.");
+  }
+
+  // --------------------------------------------------------------------------------
+  //
+  // private implementation functions
+  //
+  // --------------------------------------------------------------------------------
+
+  private synchronized void emitRecords(boolean emitUnsafe) {
+    while (!queue.isEmpty()) {
+      VCFRecord firstRec = queue.peek();
+
+      // No need to wait, waiting for nothing, or before what we're waiting for:
+      if (emitUnsafe
+          || mostUpstreamWritableLoc == null
+          || firstRec.vc.getStart() <= mostUpstreamWritableLoc) {
+        queue.poll();
+        innerWriter.add(firstRec.vc);
+      } else {
+        break;
+      }
+    }
+  }
+
+  private static class VariantContextComparator implements Comparator<VCFRecord>, Serializable {
+    private static final long serialVersionUID = 1L;
 
     @Override
-    public void writeHeader(VCFHeader header) {
-        innerWriter.writeHeader(header);
+    public int compare(VCFRecord r1, VCFRecord r2) {
+      return r1.vc.getStart() - r2.vc.getStart();
     }
+  }
 
-    /**
-     * attempt to close the VCF file; we need to flush the queue first
-     */
-    @Override
-    public void close() {
-        stopWaitingToSort();
+  private static class VCFRecord {
+    public VariantContext vc;
 
-        if (takeOwnershipOfInner)
-            innerWriter.close();
+    public VCFRecord(VariantContext vc) {
+      this.vc = vc;
     }
-
-
-    /**
-     * add a record to the file
-     *
-     * @param vc      the Variant Context object
-     */
-    @Override
-    public synchronized void add(VariantContext vc) {
-        /* Note that the code below does not prevent the successive add()-ing of: (chr1, 10), (chr20, 200), (chr15, 100)
-           since there is no implicit ordering of chromosomes:
-         */
-        VCFRecord firstRec = queue.peek();
-        if (firstRec != null && !vc.getContig().equals(firstRec.vc.getContig())) { // if we hit a new contig, flush the queue
-            if (finishedChromosomes.contains(vc.getContig()))
-                throw new IllegalArgumentException("Added a record at " + vc.getContig() + ":" + vc.getStart() + ", but already finished with chromosome" + vc.getContig());
-
-            finishedChromosomes.add(firstRec.vc.getContig());
-            stopWaitingToSort();
-        }
-
-        noteCurrentRecord(vc); // possibly overwritten
-
-        queue.add(new VCFRecord(vc));
-        emitSafeRecords();
-    }
-
-    @Override
-    public void setHeader(final VCFHeader header) {
-        innerWriter.setHeader(header);
-    }
-
-    /**
-     * Gets a string representation of this object.
-     * @return a string representation of this object
-     */
-    @Override
-    public String toString() {
-        return getClass().getName();
-    }
-
-    // --------------------------------------------------------------------------------
-    //
-    // protected interface functions for subclasses to use
-    //
-    // --------------------------------------------------------------------------------
-
-    private synchronized void stopWaitingToSort() {
-        emitRecords(true);
-        mostUpstreamWritableLoc = BEFORE_MOST_UPSTREAM_LOC;
-    }
-
-    protected synchronized void emitSafeRecords() {
-        emitRecords(false);
-    }
-
-    protected void noteCurrentRecord(VariantContext vc) {
-        // did the user break the contract by giving a record too late?
-        if (mostUpstreamWritableLoc != null && vc.getStart() < mostUpstreamWritableLoc) // went too far back, since may have already written anything that is <= mostUpstreamWritableLoc
-            throw new IllegalArgumentException("Permitted to write any record upstream of position " + mostUpstreamWritableLoc + ", but a record at " + vc.getContig() + ":" + vc.getStart() + " was just added.");
-    }
-
-    // --------------------------------------------------------------------------------
-    //
-    // private implementation functions
-    //
-    // --------------------------------------------------------------------------------
-
-    private synchronized void emitRecords(boolean emitUnsafe) {
-        while (!queue.isEmpty()) {
-            VCFRecord firstRec = queue.peek();
-
-            // No need to wait, waiting for nothing, or before what we're waiting for:
-            if (emitUnsafe || mostUpstreamWritableLoc == null || firstRec.vc.getStart() <= mostUpstreamWritableLoc) {
-                queue.poll();
-                innerWriter.add(firstRec.vc);
-            }
-            else {
-                break;
-            }
-        }
-    }
-
-    private static class VariantContextComparator implements Comparator<VCFRecord>, Serializable {
-        private static final long serialVersionUID = 1L;
-
-        @Override
-        public int compare(VCFRecord r1, VCFRecord r2) {
-            return r1.vc.getStart() - r2.vc.getStart();
-        }
-    }
-
-    private static class VCFRecord {
-        public VariantContext vc;
-
-        public VCFRecord(VariantContext vc) {
-            this.vc = vc;
-        }
-    }
+  }
 }

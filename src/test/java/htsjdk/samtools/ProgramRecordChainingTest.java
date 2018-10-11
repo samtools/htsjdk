@@ -27,32 +27,29 @@ import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-/**
- * Test for SequenceUtil.chainProgramRecord
- */
+/** Test for SequenceUtil.chainProgramRecord */
 public class ProgramRecordChainingTest extends HtsjdkTest {
 
-    @Test
-    public void testChainProgramRecord() {
-        SAMFileHeader header = new SAMFileHeader();
-        SAMProgramRecord first = header.createProgramRecord();
-        SAMUtils.chainSAMProgramRecord(header, first);
-        Assert.assertEquals(header.getProgramRecords().size(), 1);
-        Assert.assertNull(first.getPreviousProgramGroupId());
+  @Test
+  public void testChainProgramRecord() {
+    SAMFileHeader header = new SAMFileHeader();
+    SAMProgramRecord first = header.createProgramRecord();
+    SAMUtils.chainSAMProgramRecord(header, first);
+    Assert.assertEquals(header.getProgramRecords().size(), 1);
+    Assert.assertNull(first.getPreviousProgramGroupId());
 
-        SAMProgramRecord second = header.createProgramRecord();
-        SAMUtils.chainSAMProgramRecord(header, second);
-        Assert.assertEquals(header.getProgramRecords().size(), 2);
-        Assert.assertNull(first.getPreviousProgramGroupId());
-        Assert.assertEquals(second.getPreviousProgramGroupId(), first.getProgramGroupId());
+    SAMProgramRecord second = header.createProgramRecord();
+    SAMUtils.chainSAMProgramRecord(header, second);
+    Assert.assertEquals(header.getProgramRecords().size(), 2);
+    Assert.assertNull(first.getPreviousProgramGroupId());
+    Assert.assertEquals(second.getPreviousProgramGroupId(), first.getProgramGroupId());
 
-        SAMProgramRecord third = new SAMProgramRecord("3");
-        SAMUtils.chainSAMProgramRecord(header, third);
-        header.addProgramRecord(third);
-        Assert.assertEquals(header.getProgramRecords().size(), 3);
-        Assert.assertNull(first.getPreviousProgramGroupId());
-        Assert.assertEquals(second.getPreviousProgramGroupId(), first.getProgramGroupId());
-        Assert.assertEquals(third.getPreviousProgramGroupId(), second.getProgramGroupId());
-
-    }
+    SAMProgramRecord third = new SAMProgramRecord("3");
+    SAMUtils.chainSAMProgramRecord(header, third);
+    header.addProgramRecord(third);
+    Assert.assertEquals(header.getProgramRecords().size(), 3);
+    Assert.assertNull(first.getPreviousProgramGroupId());
+    Assert.assertEquals(second.getPreviousProgramGroupId(), first.getProgramGroupId());
+    Assert.assertEquals(third.getPreviousProgramGroupId(), second.getProgramGroupId());
+  }
 }

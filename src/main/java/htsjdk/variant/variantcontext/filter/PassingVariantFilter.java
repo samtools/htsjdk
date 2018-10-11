@@ -27,18 +27,19 @@ package htsjdk.variant.variantcontext.filter;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
- * A Predicate on VariantContexts that returns true at sites that are either unfiltered, or passing (as variants).
+ * A Predicate on VariantContexts that returns true at sites that are either unfiltered, or passing
+ * (as variants).
  *
  * @author Yossi Farjoun
  */
 public class PassingVariantFilter implements VariantContextFilter {
 
-    /**
-     * @return true if variantContext is a SNP
-     * @param variantContext the record to examine for being a SNP
-     */
-    @Override
-    public boolean test(final VariantContext variantContext) {
-        return variantContext.isNotFiltered();
-    }
+  /**
+   * @return true if variantContext is a SNP
+   * @param variantContext the record to examine for being a SNP
+   */
+  @Override
+  public boolean test(final VariantContext variantContext) {
+    return variantContext.isNotFiltered();
+  }
 }

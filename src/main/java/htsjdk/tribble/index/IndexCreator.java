@@ -27,31 +27,32 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.tribble.Feature;
 
 /**
- *
  * An interface for creating indexes
  *
  * @author jrobinso
- */                                                                           
+ */
 public interface IndexCreator {
-    /**
-     * Add a feature to the index
-     * @param feature the feature, of which start, end, and contig must be filled in
-     * @param filePosition the current file position, at the beginning of the specified feature
-     */
-    public void addFeature(Feature feature, long filePosition);
+  /**
+   * Add a feature to the index
+   *
+   * @param feature the feature, of which start, end, and contig must be filled in
+   * @param filePosition the current file position, at the beginning of the specified feature
+   */
+  public void addFeature(Feature feature, long filePosition);
 
-    /**
-     * Create the index, given the stream of features passed in to this point
-     * @param finalFilePosition the final file position, for indexes that have to close out with the final position
-     * @return an index object
-     */
-    public Index finalizeIndex(long finalFilePosition);
+  /**
+   * Create the index, given the stream of features passed in to this point
+   *
+   * @param finalFilePosition the final file position, for indexes that have to close out with the
+   *     final position
+   * @return an index object
+   */
+  public Index finalizeIndex(long finalFilePosition);
 
-    /**
-     * Set the sequence dictionary for the index. Default implementation does nothing.
-     * @param dict the dictionary to add to the index.
-     */
-    public default void setIndexSequenceDictionary(final SAMSequenceDictionary dict) { }
+  /**
+   * Set the sequence dictionary for the index. Default implementation does nothing.
+   *
+   * @param dict the dictionary to add to the index.
+   */
+  public default void setIndexSequenceDictionary(final SAMSequenceDictionary dict) {}
 }
-
-

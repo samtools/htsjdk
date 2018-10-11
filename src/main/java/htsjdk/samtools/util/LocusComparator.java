@@ -32,11 +32,11 @@ import java.util.Comparator;
  * @author Doug Voet (dvoet at broadinstitute dot org)
  */
 public class LocusComparator<T extends Locus> implements Comparator<T>, Serializable {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    @Override
-    public int compare(T thing1, T thing2) {
-        int refCompare = thing1.getSequenceIndex() - thing2.getSequenceIndex();
-        return refCompare == 0 ? thing1.getPosition() - thing2.getPosition() : refCompare;
-    }
+  @Override
+  public int compare(T thing1, T thing2) {
+    int refCompare = thing1.getSequenceIndex() - thing2.getSequenceIndex();
+    return refCompare == 0 ? thing1.getPosition() - thing2.getPosition() : refCompare;
+  }
 }

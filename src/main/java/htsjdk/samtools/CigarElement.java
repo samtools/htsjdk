@@ -26,51 +26,55 @@ package htsjdk.samtools;
 import java.io.Serializable;
 
 /**
- * One component of a cigar string.  The component comprises the operator, and the number of bases to which
- * the  operator applies.
+ * One component of a cigar string. The component comprises the operator, and the number of bases to
+ * which the operator applies.
  */
 public class CigarElement implements Serializable {
-    public static final long serialVersionUID = 1L;
+  public static final long serialVersionUID = 1L;
 
-    private final int length;
-    private final CigarOperator operator;
+  private final int length;
+  private final CigarOperator operator;
 
-    public CigarElement(final int length, final CigarOperator operator) {
-        if (length < 0) throw new IllegalArgumentException(String.format("Cigar element being constructed with negative length: %d and operation: %s" , length, operator.name()));
-        this.length = length;
-        this.operator = operator;
-    }
+  public CigarElement(final int length, final CigarOperator operator) {
+    if (length < 0)
+      throw new IllegalArgumentException(
+          String.format(
+              "Cigar element being constructed with negative length: %d and operation: %s",
+              length, operator.name()));
+    this.length = length;
+    this.operator = operator;
+  }
 
-    public int getLength() {
-        return length;
-    }
+  public int getLength() {
+    return length;
+  }
 
-    public CigarOperator getOperator() {
-        return operator;
-    }
+  public CigarOperator getOperator() {
+    return operator;
+  }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof CigarElement)) return false;
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) return true;
+    if (!(o instanceof CigarElement)) return false;
 
-        final CigarElement that = (CigarElement) o;
+    final CigarElement that = (CigarElement) o;
 
-        if (length != that.length) return false;
-        if (operator != that.operator) return false;
+    if (length != that.length) return false;
+    if (operator != that.operator) return false;
 
-        return true;
-    }
+    return true;
+  }
 
-    @Override
-    public int hashCode() {
-        int result = length;
-        result = 31 * result + (operator != null ? operator.hashCode() : 0);
-        return result;
-    }
-    
-    @Override
-    public String toString() {
-        return String.valueOf(this.length)+this.operator;
-    }
+  @Override
+  public int hashCode() {
+    int result = length;
+    result = 31 * result + (operator != null ? operator.hashCode() : 0);
+    return result;
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(this.length) + this.operator;
+  }
 }

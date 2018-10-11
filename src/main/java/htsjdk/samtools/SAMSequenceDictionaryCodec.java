@@ -28,87 +28,87 @@ import htsjdk.samtools.util.LineReader;
 import java.io.BufferedWriter;
 
 /**
- * "On the fly" codec SAMSequenceDictionaryCodec.
- * Encodes each sequence and directly writes it to the Dictionary file.
+ * "On the fly" codec SAMSequenceDictionaryCodec. Encodes each sequence and directly writes it to
+ * the Dictionary file.
  *
- * To use this class you should provide BufferedWriter to it, and so you should close it as you stop using this class.
- * You can work with this class as shown below.
+ * <p>To use this class you should provide BufferedWriter to it, and so you should close it as you
+ * stop using this class. You can work with this class as shown below.
  *
- * Example of using this class:
+ * <p>Example of using this class:
  *
- * List<SAMSequenceRecord> dict = ...;
+ * <p>List<SAMSequenceRecord> dict = ...;
  *
- * //open BufferedReader and close in try-with-resources
- * try(BufferedWriter writer = new BufferedWriter(new FileWriter("path/to/file"))) {
- *      SAMSequenceDictionaryCodec codec = new SAMSequenceDictionaryCodec(writer);
+ * <p>//open BufferedReader and close in try-with-resources try(BufferedWriter writer = new
+ * BufferedWriter(new FileWriter("path/to/file"))) { SAMSequenceDictionaryCodec codec = new
+ * SAMSequenceDictionaryCodec(writer);
  *
- *      //we have list of sequences, so encode header line and after that encode each sequence
- *      codec.encodeHeaderLine(false);
- *      dict.forEach(codec::encodeSequenceRecord);
- *}
+ * <p>//we have list of sequences, so encode header line and after that encode each sequence
+ * codec.encodeHeaderLine(false); dict.forEach(codec::encodeSequenceRecord); }
  *
- * or
+ * <p>or
  *
- * SAMSequenceDictionary dict = ...;
+ * <p>SAMSequenceDictionary dict = ...;
  *
- * //open BufferedReader and close in try-with-resources
- * try(BufferedWriter writer = new BufferedWriter(new FileWriter("path/to/file"))) {
- *      SAMSequenceDictionaryCodec codec = new SAMSequenceDictionaryCodec(writer);
+ * <p>//open BufferedReader and close in try-with-resources try(BufferedWriter writer = new
+ * BufferedWriter(new FileWriter("path/to/file"))) { SAMSequenceDictionaryCodec codec = new
+ * SAMSequenceDictionaryCodec(writer);
  *
- *      //we have complete {@link SAMSequenceDictionary}, so just encode it.
- *      codec.encode(dict);
- *}
+ * <p>//we have complete {@link SAMSequenceDictionary}, so just encode it. codec.encode(dict); }
  *
  * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
  */
 public class SAMSequenceDictionaryCodec {
 
-    private static final SAMFileHeader EMPTY_HEADER = new SAMFileHeader();
+  private static final SAMFileHeader EMPTY_HEADER = new SAMFileHeader();
 
-    private final SAMTextHeaderCodec codec;
+  private final SAMTextHeaderCodec codec;
 
-    public SAMSequenceDictionaryCodec(final BufferedWriter writer) {
-        codec = new SAMTextHeaderCodec();
-        codec.setmFileHeader(EMPTY_HEADER);
-        codec.setWriter(writer);
-    }
+  public SAMSequenceDictionaryCodec(final BufferedWriter writer) {
+    codec = new SAMTextHeaderCodec();
+    codec.setmFileHeader(EMPTY_HEADER);
+    codec.setWriter(writer);
+  }
 
-    /**
-     * Write {@link SAMSequenceRecord}.
-     * @param sequenceRecord object to be converted to text.
-     */
-    public void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
-        codec.encodeSequenceRecord(sequenceRecord);
-    }
+  /**
+   * Write {@link SAMSequenceRecord}.
+   *
+   * @param sequenceRecord object to be converted to text.
+   */
+  public void encodeSequenceRecord(final SAMSequenceRecord sequenceRecord) {
+    codec.encodeSequenceRecord(sequenceRecord);
+  }
 
-    /**
-     * Write Header line.
-     * @param keepExistingVersionNumber boolean flag to keep existing version number.
-     */
-    public void encodeHeaderLine(final boolean keepExistingVersionNumber) {
-        codec.encodeHeaderLine(keepExistingVersionNumber);
-    }
+  /**
+   * Write Header line.
+   *
+   * @param keepExistingVersionNumber boolean flag to keep existing version number.
+   */
+  public void encodeHeaderLine(final boolean keepExistingVersionNumber) {
+    codec.encodeHeaderLine(keepExistingVersionNumber);
+  }
 
-    /**
-     * Reads text SAM header and converts to a SAMSequenceDictionary object.
-     * @param reader Where to get header text from.
-     * @param source Name of the input file, for error messages.  May be null.
-     * @return complete SAMSequenceDictionary object.
-     */
-    public SAMSequenceDictionary decode(final LineReader reader, final String source) {
-       return codec.decode(reader, source).getSequenceDictionary();
-    }
+  /**
+   * Reads text SAM header and converts to a SAMSequenceDictionary object.
+   *
+   * @param reader Where to get header text from.
+   * @param source Name of the input file, for error messages. May be null.
+   * @return complete SAMSequenceDictionary object.
+   */
+  public SAMSequenceDictionary decode(final LineReader reader, final String source) {
+    return codec.decode(reader, source).getSequenceDictionary();
+  }
 
-    /**
-     * Convert {@link SAMSequenceDictionary} from in-memory representation to text representation.
-     * @param dictionary object to be converted to text.
-     */
-    public void encode(final SAMSequenceDictionary dictionary) {
-        codec.encodeHeaderLine(false);
-        dictionary.getSequences().forEach(this::encodeSequenceRecord);
-    }
+  /**
+   * Convert {@link SAMSequenceDictionary} from in-memory representation to text representation.
+   *
+   * @param dictionary object to be converted to text.
+   */
+  public void encode(final SAMSequenceDictionary dictionary) {
+    codec.encodeHeaderLine(false);
+    dictionary.getSequences().forEach(this::encodeSequenceRecord);
+  }
 
-    public void setValidationStringency(final ValidationStringency validationStringency) {
-        codec.setValidationStringency(validationStringency);
-    }
+  public void setValidationStringency(final ValidationStringency validationStringency) {
+    codec.setValidationStringency(validationStringency);
+  }
 }

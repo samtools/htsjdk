@@ -24,106 +24,98 @@
 package htsjdk.samtools.util;
 
 /**
- * Optimized method for converting Solexa ASCII qualities into Phred scores.
- * Pre-computes all values in order to eliminate repeated computation.
+ * Optimized method for converting Solexa ASCII qualities into Phred scores. Pre-computes all values
+ * in order to eliminate repeated computation.
  */
 public class SolexaQualityConverter {
 
-    /**
-     * This value is added to a Solexa quality score to make it printable ASCII
-     */
-    public static final int SOLEXA_ADDEND = 64;
+  /** This value is added to a Solexa quality score to make it printable ASCII */
+  public static final int SOLEXA_ADDEND = 64;
 
-    /**
-     * This value is added to a Phred scord to make it printable ASCII
-     */
-    public static final int PHRED_ADDEND = 33;
+  /** This value is added to a Phred scord to make it printable ASCII */
+  public static final int PHRED_ADDEND = 33;
 
-    /**
-     * This value is removed from an Illumina 1.8 quality score to make it a Phred score
-     */
-    public final static int ILLUMINA_TO_PHRED_SUBTRAHEND = SOLEXA_ADDEND - PHRED_ADDEND;
+  /** This value is removed from an Illumina 1.8 quality score to make it a Phred score */
+  public static final int ILLUMINA_TO_PHRED_SUBTRAHEND = SOLEXA_ADDEND - PHRED_ADDEND;
 
-    private static SolexaQualityConverter singleton = null;
+  private static SolexaQualityConverter singleton = null;
 
-    public static synchronized SolexaQualityConverter getSingleton()  {
-        if (singleton == null) {
-            singleton = new SolexaQualityConverter();
-        }
-        return singleton;
+  public static synchronized SolexaQualityConverter getSingleton() {
+    if (singleton == null) {
+      singleton = new SolexaQualityConverter();
     }
+    return singleton;
+  }
 
-    /**
-     * Mapping from ASCII value in Gerald export file to phred score
-     */
-    private final byte[] phredScore = new byte[256];
+  /** Mapping from ASCII value in Gerald export file to phred score */
+  private final byte[] phredScore = new byte[256];
 
-    private SolexaQualityConverter() {
-        for (int i = 0; i < SOLEXA_ADDEND; ++i) {
-            phredScore[i] = 0;
-        }
-        for (int i = SOLEXA_ADDEND; i < phredScore.length; ++i) {
-            phredScore[i] = convertSolexaQualityCharToPhredBinary(i);
-        }
+  private SolexaQualityConverter() {
+    for (int i = 0; i < SOLEXA_ADDEND; ++i) {
+      phredScore[i] = 0;
     }
-
-
-    /** Converts a solexa character quality into a phred numeric quality. */
-    private byte convertSolexaQualityCharToPhredBinary(final int solexaQuality) {
-        return (byte) Math.round(10d * Math.log10(1d+Math.pow(10d, (solexaQuality - SOLEXA_ADDEND)/10d)));
+    for (int i = SOLEXA_ADDEND; i < phredScore.length; ++i) {
+      phredScore[i] = convertSolexaQualityCharToPhredBinary(i);
     }
+  }
 
-    /**
-     * Convert a solexa quality ASCII character into a phred score.
-     */
-    public byte solexaCharToPhredBinary(final byte solexaQuality) {
-        return phredScore[solexaQuality];
-    }
+  /** Converts a solexa character quality into a phred numeric quality. */
+  private byte convertSolexaQualityCharToPhredBinary(final int solexaQuality) {
+    return (byte)
+        Math.round(10d * Math.log10(1d + Math.pow(10d, (solexaQuality - SOLEXA_ADDEND) / 10d)));
+  }
 
-    /**
-     * @return a byte array that can be indexed by Solexa ASCII quality, with value
-     * of corresponding Phred score.  Elements 0-63 are invalid because Solexa qualities
-     * should all be >= 64.  Do not modify this array!
-     */
-    public byte[] getSolexaToPhredConversionTable() {
-        return phredScore;
-    }
+  /** Convert a solexa quality ASCII character into a phred score. */
+  public byte solexaCharToPhredBinary(final byte solexaQuality) {
+    return phredScore[solexaQuality];
+  }
 
-    /**
-     * Decodes an array of solexa quality ASCII chars into Phred numeric space.
-     * Decode in place in order to avoid extra object allocation.
-     */
-    public void convertSolexaQualityCharsToPhredBinary(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
-            solexaQuals[i] = phredScore[solexaQuals[i]];
-        }
-    }
+  /**
+   * @return a byte array that can be indexed by Solexa ASCII quality, with value of corresponding
+   *     Phred score. Elements 0-63 are invalid because Solexa qualities should all be >= 64. Do not
+   *     modify this array!
+   */
+  public byte[] getSolexaToPhredConversionTable() {
+    return phredScore;
+  }
 
-    /**
-     * Decodes an array of solexa quality ASCII chars into Phred ASCII space.
-     * Decode in place in order to avoid extra object allocation.
-     */
-    public void convertSolexaQualityCharsToPhredChars(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
-            solexaQuals[i] = (byte)((phredScore[solexaQuals[i]] + PHRED_ADDEND) & 0xff);
-        }
+  /**
+   * Decodes an array of solexa quality ASCII chars into Phred numeric space. Decode in place in
+   * order to avoid extra object allocation.
+   */
+  public void convertSolexaQualityCharsToPhredBinary(final byte[] solexaQuals) {
+    for (int i = 0; i < solexaQuals.length; ++i) {
+      solexaQuals[i] = phredScore[solexaQuals[i]];
     }
+  }
 
-    /**
-     * Casava 1.3 stores phred-scaled qualities, but non-standard because they have 64 added to them
-     * rather than the standard 33.
-     * @param solexaQuals qualities are converted in place.
-     */
-    public void convertSolexa_1_3_QualityCharsToPhredBinary(final byte[] solexaQuals) {
-        for (int i=0; i<solexaQuals.length; ++i) {
-            solexaQuals[i] -= SOLEXA_ADDEND;
-        }
+  /**
+   * Decodes an array of solexa quality ASCII chars into Phred ASCII space. Decode in place in order
+   * to avoid extra object allocation.
+   */
+  public void convertSolexaQualityCharsToPhredChars(final byte[] solexaQuals) {
+    for (int i = 0; i < solexaQuals.length; ++i) {
+      solexaQuals[i] = (byte) ((phredScore[solexaQuals[i]] + PHRED_ADDEND) & 0xff);
     }
+  }
 
-    public void convertSolexa_1_3_QualityCharsToPhredBinary(int offset, int length, final byte[] solexaQuals) {
-        final int limit = offset + length;
-        for (int i=offset; i < limit; ++i) {
-            solexaQuals[i] -= SOLEXA_ADDEND;
-        }
+  /**
+   * Casava 1.3 stores phred-scaled qualities, but non-standard because they have 64 added to them
+   * rather than the standard 33.
+   *
+   * @param solexaQuals qualities are converted in place.
+   */
+  public void convertSolexa_1_3_QualityCharsToPhredBinary(final byte[] solexaQuals) {
+    for (int i = 0; i < solexaQuals.length; ++i) {
+      solexaQuals[i] -= SOLEXA_ADDEND;
     }
+  }
+
+  public void convertSolexa_1_3_QualityCharsToPhredBinary(
+      int offset, int length, final byte[] solexaQuals) {
+    final int limit = offset + length;
+    for (int i = offset; i < limit; ++i) {
+      solexaQuals[i] -= SOLEXA_ADDEND;
+    }
+  }
 }

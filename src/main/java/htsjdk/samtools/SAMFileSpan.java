@@ -24,26 +24,29 @@
 package htsjdk.samtools;
 
 /**
- * A interface representing a collection of (possibly) discontinuous segments in the
- * BAM file, possibly representing the results of an index query.
+ * A interface representing a collection of (possibly) discontinuous segments in the BAM file,
+ * possibly representing the results of an index query.
  */
 public interface SAMFileSpan extends Cloneable {
-    /**
-     * Gets a pointer over the data immediately following this span.
-     * @return The a pointer to data immediately following this span.
-     */
-    public SAMFileSpan getContentsFollowing();
+  /**
+   * Gets a pointer over the data immediately following this span.
+   *
+   * @return The a pointer to data immediately following this span.
+   */
+  public SAMFileSpan getContentsFollowing();
 
-    /**
-     * Remove all pointers in this file span before the given file span starts.
-     * @param fileSpan The filespan before which to eliminate.
-     * @return The portion of the chunk list after the given chunk.
-     */
-    public SAMFileSpan removeContentsBefore(final SAMFileSpan fileSpan);
+  /**
+   * Remove all pointers in this file span before the given file span starts.
+   *
+   * @param fileSpan The filespan before which to eliminate.
+   * @return The portion of the chunk list after the given chunk.
+   */
+  public SAMFileSpan removeContentsBefore(final SAMFileSpan fileSpan);
 
-    /**
-     * Does this file span point to any data, or is it completely empty?
-     * @return True if the file span is empty, false otherwise.
-     */
-    public boolean isEmpty();
+  /**
+   * Does this file span point to any data, or is it completely empty?
+   *
+   * @return True if the file span is empty, false otherwise.
+   */
+  public boolean isEmpty();
 }

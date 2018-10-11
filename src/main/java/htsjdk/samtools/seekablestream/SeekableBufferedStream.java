@@ -29,139 +29,146 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * A wrapper class to provide buffered read access to a SeekableStream.  Just wrapping such a stream with
- * a BufferedInputStream will not work as it does not support seeking.  In this implementation a
+ * A wrapper class to provide buffered read access to a SeekableStream. Just wrapping such a stream
+ * with a BufferedInputStream will not work as it does not support seeking. In this implementation a
  * seek call is delegated to the wrapped stream, and the buffer reset.
  */
 public class SeekableBufferedStream extends SeekableStream {
 
-    /** Little extension to buffered input stream to give access to the available bytes in the buffer. */
-    private class ExtBufferedInputStream extends BufferedInputStream {
-        private ExtBufferedInputStream(final InputStream inputStream, final int i) {
-            super(inputStream, i);
+  /**
+   * Little extension to buffered input stream to give access to the available bytes in the buffer.
+   */
+  private class ExtBufferedInputStream extends BufferedInputStream {
+    private ExtBufferedInputStream(final InputStream inputStream, final int i) {
+      super(inputStream, i);
+    }
+
+    /**
+     * Returns the number of bytes that can be read from the buffer without reading more into the
+     * buffer.
+     */
+    int getBytesInBufferAvailable() {
+      return this.count - this.pos;
+    }
+
+    /** Return true if the position can be changed by the given delta and remain in the buffer. */
+    boolean canChangePos(long delta) {
+      long newPos = this.pos + delta;
+      return newPos >= 0 && newPos < this.count;
+    }
+
+    /** Changes the position in the buffer by a given delta. */
+    void changePos(int delta) {
+      int newPos = this.pos + delta;
+      if (newPos < 0 || newPos >= this.count) {
+        throw new IllegalArgumentException(
+            "New position not in buffer pos=" + this.pos + ", delta=" + delta);
+      }
+      this.pos = newPos;
+    }
+  }
+
+  public static final int DEFAULT_BUFFER_SIZE = 512000;
+
+  private final int bufferSize;
+  final SeekableStream wrappedStream;
+  ExtBufferedInputStream bufferedStream;
+  long position;
+
+  public SeekableBufferedStream(final SeekableStream stream, final int bufferSize) {
+    this.bufferSize = bufferSize;
+    this.wrappedStream = stream;
+    this.position = 0;
+    bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
+  }
+
+  public SeekableBufferedStream(final SeekableStream stream) {
+    this(stream, DEFAULT_BUFFER_SIZE);
+  }
+
+  @Override
+  public long length() {
+    return wrappedStream.length();
+  }
+
+  @Override
+  public long skip(final long skipLength) throws IOException {
+    if (skipLength < this.bufferedStream.getBytesInBufferAvailable()) {
+      final long retval = this.bufferedStream.skip(skipLength);
+      this.position += retval;
+      return retval;
+    } else {
+      final long position = this.position + skipLength;
+      seekInternal(position);
+      return skipLength;
+    }
+  }
+
+  @Override
+  public void seek(final long position) throws IOException {
+    if (this.position == position) {
+      return;
+    }
+    // check if the seek is within the buffer
+    long delta = position - this.position;
+    if (this.bufferedStream.canChangePos(delta)) {
+      // casting to an int is safe since the buffer is less than the size of an int
+      this.bufferedStream.changePos((int) delta);
+      this.position = position;
+    } else {
+      seekInternal(position);
+    }
+  }
+
+  private void seekInternal(final long position) throws IOException {
+    wrappedStream.seek(position);
+    bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
+    this.position = position;
+  }
+
+  @Override
+  public int read() throws IOException {
+    int b = bufferedStream.read();
+    position++;
+    return b;
+  }
+
+  @Override
+  public int read(final byte[] buffer, final int offset, final int length) throws IOException {
+    int nBytesRead = bufferedStream.read(buffer, offset, length);
+    if (nBytesRead > 0) {
+      // if we can't read as many bytes as we are asking for then attempt another read to reset the
+      // buffer.
+      if (nBytesRead < length) {
+        final int additionalBytesRead =
+            bufferedStream.read(buffer, nBytesRead + offset, length - nBytesRead);
+        // if there were additional bytes read then update nBytesRead
+        if (additionalBytesRead > 0) {
+          nBytesRead += additionalBytesRead;
         }
-
-        /** Returns the number of bytes that can be read from the buffer without reading more into the buffer. */
-        int getBytesInBufferAvailable() {
-            return this.count - this.pos;
-        }
-
-        /** Return true if the position can be changed by the given delta and remain in the buffer. */
-        boolean canChangePos(long delta) {
-            long newPos = this.pos + delta;
-            return newPos >= 0 && newPos < this.count;
-        }
-
-        /** Changes the position in the buffer by a given delta. */
-        void changePos(int delta) {
-            int newPos = this.pos + delta;
-            if (newPos < 0 || newPos >= this.count) {
-                throw new IllegalArgumentException("New position not in buffer pos=" + this.pos + ", delta=" + delta);
-            }
-            this.pos = newPos;
-        }
+      }
+      position += nBytesRead;
     }
+    return nBytesRead;
+  }
 
+  @Override
+  public void close() throws IOException {
+    wrappedStream.close();
+  }
 
-    public static final int DEFAULT_BUFFER_SIZE = 512000;
+  @Override
+  public boolean eof() throws IOException {
+    return position >= wrappedStream.length();
+  }
 
-    final private int bufferSize;
-    final SeekableStream wrappedStream;
-    ExtBufferedInputStream bufferedStream;
-    long position;
+  @Override
+  public String getSource() {
+    return wrappedStream.getSource();
+  }
 
-    public SeekableBufferedStream(final SeekableStream stream, final int bufferSize) {
-        this.bufferSize = bufferSize;
-        this.wrappedStream = stream;
-        this.position = 0;
-        bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
-    }
-
-    public SeekableBufferedStream(final SeekableStream stream) {
-        this(stream, DEFAULT_BUFFER_SIZE);
-    }
-
-    @Override
-    public long length() {
-        return wrappedStream.length();
-    }
-
-    @Override
-    public long skip(final long skipLength) throws IOException {
-        if (skipLength < this.bufferedStream.getBytesInBufferAvailable()) {
-            final long retval = this.bufferedStream.skip(skipLength);
-            this.position += retval;
-            return retval;
-        } else {
-            final long position = this.position + skipLength;
-            seekInternal(position);
-            return skipLength;
-        }
-    }
-
-    @Override
-    public void seek(final long position) throws IOException {
-        if (this.position == position) {
-            return;
-        }
-        // check if the seek is within the buffer
-        long delta = position - this.position;
-        if (this.bufferedStream.canChangePos(delta)) {
-            // casting to an int is safe since the buffer is less than the size of an int
-            this.bufferedStream.changePos((int) delta);
-            this.position = position;
-        } else {
-            seekInternal(position);
-        }
-    }
-
-    private void seekInternal(final long position) throws IOException {
-        wrappedStream.seek(position);
-        bufferedStream = new ExtBufferedInputStream(wrappedStream, bufferSize);
-        this.position = position;
-    }
-
-    @Override
-    public int read() throws IOException {
-        int b = bufferedStream.read();
-        position++;
-        return b;
-    }
-
-    @Override
-    public int read(final byte[] buffer, final int offset, final int length) throws IOException {
-        int nBytesRead = bufferedStream.read(buffer, offset, length);
-        if (nBytesRead > 0) {
-            //if we can't read as many bytes as we are asking for then attempt another read to reset the buffer.
-            if (nBytesRead < length) {
-                final int additionalBytesRead = bufferedStream.read(buffer, nBytesRead + offset, length - nBytesRead);
-                //if there were additional bytes read then update nBytesRead
-                if (additionalBytesRead > 0) {
-                    nBytesRead += additionalBytesRead;
-                }
-            }
-            position += nBytesRead;
-        }
-        return nBytesRead;
-    }
-
-    @Override
-    public void close() throws IOException {
-        wrappedStream.close();
-    }
-
-    @Override
-    public boolean eof() throws IOException {
-        return position >= wrappedStream.length();
-    }
-
-    @Override
-    public String getSource() {
-        return wrappedStream.getSource();
-    }
-
-    @Override
-    public long position() throws IOException {
-        return position;
-    }
+  @Override
+  public long position() throws IOException {
+    return position;
+  }
 }

@@ -24,101 +24,98 @@
 
 package htsjdk.samtools;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
+
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
 import htsjdk.samtools.util.LineReader;
 import htsjdk.samtools.util.TestUtil;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.io.BufferedWriter;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.Random;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
-
-/**
- * @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com>
- */
+/** @author Pavel_Silin@epam.com, EPAM Systems, Inc. <www.epam.com> */
 public class SAMSequenceDictionaryCodecTest extends HtsjdkTest {
 
-    private static final Random random = new Random(TestUtil.RANDOM_SEED);
-    private SAMSequenceDictionary dictionary;
-    private StringWriter writer;
-    private SAMSequenceDictionaryCodec codec;
-    private BufferedWriter bufferedWriter;
+  private static final Random random = new Random(TestUtil.RANDOM_SEED);
+  private SAMSequenceDictionary dictionary;
+  private StringWriter writer;
+  private SAMSequenceDictionaryCodec codec;
+  private BufferedWriter bufferedWriter;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        String[] seqs = new String[]{"chr1", "chr2", "chr12", "chr16", "chrX"};
-        dictionary = new SAMSequenceDictionary();
-        for (String seq : seqs) {
-            dictionary.addSequence(new SAMSequenceRecord(seq, random.nextInt(10_000_000)));
-        }
-        writer = new StringWriter();
-        bufferedWriter = new BufferedWriter(writer);
-        codec = new SAMSequenceDictionaryCodec(bufferedWriter);
+  @BeforeMethod
+  public void setUp() throws Exception {
+    String[] seqs = new String[] {"chr1", "chr2", "chr12", "chr16", "chrX"};
+    dictionary = new SAMSequenceDictionary();
+    for (String seq : seqs) {
+      dictionary.addSequence(new SAMSequenceRecord(seq, random.nextInt(10_000_000)));
     }
+    writer = new StringWriter();
+    bufferedWriter = new BufferedWriter(writer);
+    codec = new SAMSequenceDictionaryCodec(bufferedWriter);
+  }
 
-    @Test
-    public void testEncodeDecodeDictionary() throws Exception {
-        LineReader readerOne = null;
-        LineReader readerTwo = null;
-        try {
-            codec.encode(dictionary);
-            bufferedWriter.close();
-            readerOne = BufferedLineReader.fromString(writer.toString());
-            SAMSequenceDictionary actual = codec.decode(readerOne, null);
-            assertEquals(actual, dictionary);
+  @Test
+  public void testEncodeDecodeDictionary() throws Exception {
+    LineReader readerOne = null;
+    LineReader readerTwo = null;
+    try {
+      codec.encode(dictionary);
+      bufferedWriter.close();
+      readerOne = BufferedLineReader.fromString(writer.toString());
+      SAMSequenceDictionary actual = codec.decode(readerOne, null);
+      assertEquals(actual, dictionary);
 
-            readerTwo = BufferedLineReader.fromString(writer.toString());
+      readerTwo = BufferedLineReader.fromString(writer.toString());
 
-            String line = readerTwo.readLine();
-            assertTrue(line.startsWith("@HD"));
+      String line = readerTwo.readLine();
+      assertTrue(line.startsWith("@HD"));
 
-            line = readerTwo.readLine();
-            while (line != null) {
-                assertTrue(line.startsWith("@SQ"));
-                line = readerTwo.readLine();
-            }
-        } finally {
-            assert readerOne != null;
-            assert readerTwo != null;
-            readerOne.close();
-            readerTwo.close();
-        }
+      line = readerTwo.readLine();
+      while (line != null) {
+        assertTrue(line.startsWith("@SQ"));
+        line = readerTwo.readLine();
+      }
+    } finally {
+      assert readerOne != null;
+      assert readerTwo != null;
+      readerOne.close();
+      readerTwo.close();
     }
+  }
 
-    @Test
-    public void testEncodeDecodeListOfSeqs() throws Exception {
-        LineReader readerOne = null;
-        LineReader readerTwo = null;
+  @Test
+  public void testEncodeDecodeListOfSeqs() throws Exception {
+    LineReader readerOne = null;
+    LineReader readerTwo = null;
 
-        try {
-            List<SAMSequenceRecord> sequences = dictionary.getSequences();
-            codec.encodeHeaderLine(false);
-            sequences.forEach(codec::encodeSequenceRecord);
-            bufferedWriter.close();
-            readerOne = BufferedLineReader.fromString(writer.toString());
-            SAMSequenceDictionary actual = codec.decode(readerOne, null);
-            assertEquals(actual, dictionary);
-            readerTwo = BufferedLineReader.fromString(writer.toString());
+    try {
+      List<SAMSequenceRecord> sequences = dictionary.getSequences();
+      codec.encodeHeaderLine(false);
+      sequences.forEach(codec::encodeSequenceRecord);
+      bufferedWriter.close();
+      readerOne = BufferedLineReader.fromString(writer.toString());
+      SAMSequenceDictionary actual = codec.decode(readerOne, null);
+      assertEquals(actual, dictionary);
+      readerTwo = BufferedLineReader.fromString(writer.toString());
 
-            String line = readerTwo.readLine();
-            assertTrue(line.startsWith("@HD"));
+      String line = readerTwo.readLine();
+      assertTrue(line.startsWith("@HD"));
 
-            line = readerTwo.readLine();
-            while (line != null) {
-                assertTrue(line.startsWith("@SQ"));
-                line = readerTwo.readLine();
-            }
-        } finally {
-            assert readerOne != null;
-            assert readerTwo != null;
-            readerOne.close();
-            readerTwo.close();
-        }
+      line = readerTwo.readLine();
+      while (line != null) {
+        assertTrue(line.startsWith("@SQ"));
+        line = readerTwo.readLine();
+      }
+    } finally {
+      assert readerOne != null;
+      assert readerTwo != null;
+      readerOne.close();
+      readerTwo.close();
     }
+  }
 }

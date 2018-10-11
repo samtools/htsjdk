@@ -25,63 +25,62 @@ package htsjdk.samtools.fastq;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.util.IOUtil;
-
 import java.io.File;
 import java.io.Flushable;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
 /**
- * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there are some
- * cases in which that behavior is explicitly not wanted.
+ * In general FastqWriterFactory should be used so that AsyncFastqWriter can be enabled, but there
+ * are some cases in which that behavior is explicitly not wanted.
  */
-public class BasicFastqWriter implements FastqWriter,Flushable {
-    private final String path;
-    private final PrintStream writer;
+public class BasicFastqWriter implements FastqWriter, Flushable {
+  private final String path;
+  private final PrintStream writer;
 
-    public BasicFastqWriter(final File file) {
-        this(file, false);
-    }
+  public BasicFastqWriter(final File file) {
+    this(file, false);
+  }
 
-    public BasicFastqWriter(final File file, final boolean createMd5) {
-        this(file, new PrintStream(IOUtil.maybeBufferOutputStream(maybeMd5Wrap(file, createMd5))));
-    }
+  public BasicFastqWriter(final File file, final boolean createMd5) {
+    this(file, new PrintStream(IOUtil.maybeBufferOutputStream(maybeMd5Wrap(file, createMd5))));
+  }
 
-    private BasicFastqWriter(final File file, final PrintStream writer) {
-        this.path = (file != null? file.getAbsolutePath(): "");
-        this.writer = writer;
-    }
+  private BasicFastqWriter(final File file, final PrintStream writer) {
+    this.path = (file != null ? file.getAbsolutePath() : "");
+    this.writer = writer;
+  }
 
-    public BasicFastqWriter(final PrintStream writer) {
-        this(null, writer);
-    }
+  public BasicFastqWriter(final PrintStream writer) {
+    this(null, writer);
+  }
 
-    @Override
-    public void write(final FastqRecord rec) {
-        // encode without creating a String
-        FastqEncoder.write(writer, rec);
-        // and print a new line
-        writer.println();
-        if (writer.checkError()) {
-            throw new SAMException("Error in writing fastq file " + path);
-        }
+  @Override
+  public void write(final FastqRecord rec) {
+    // encode without creating a String
+    FastqEncoder.write(writer, rec);
+    // and print a new line
+    writer.println();
+    if (writer.checkError()) {
+      throw new SAMException("Error in writing fastq file " + path);
     }
+  }
 
-    @Override
-    public void flush() {
-        writer.flush();
-    }
+  @Override
+  public void flush() {
+    writer.flush();
+  }
 
-    @Override
-    public void close() {
-        writer.close();
-    }
+  @Override
+  public void close() {
+    writer.close();
+  }
 
-    private static OutputStream maybeMd5Wrap(final File file, final boolean createMd5) {
-        if (createMd5) {
-            return IOUtil.openFileForMd5CalculatingWriting(file);
-        } else {
-            return IOUtil.openFileForWriting(file);
-        }
+  private static OutputStream maybeMd5Wrap(final File file, final boolean createMd5) {
+    if (createMd5) {
+      return IOUtil.openFileForMd5CalculatingWriting(file);
+    } else {
+      return IOUtil.openFileForWriting(file);
     }
+  }
 }

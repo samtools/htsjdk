@@ -26,19 +26,16 @@ package htsjdk.tribble.readers;
 import java.io.Closeable;
 import java.io.IOException;
 
-/**
- * Interface for line-oriented readers.
- */
+/** Interface for line-oriented readers. */
 public interface LineReader extends Closeable {
 
-    /**
-     * @return The next "line" from the source. Typically a line is a set of characters
-     * terminated by '\n', '\r', or '\r\n'. The line-terminator is not included
-     * @throws IOException
-     */
-    public String readLine() throws IOException;
+  /**
+   * @return The next "line" from the source. Typically a line is a set of characters terminated by
+   *     '\n', '\r', or '\r\n'. The line-terminator is not included
+   * @throws IOException
+   */
+  public String readLine() throws IOException;
 
-
-    @Override
-    public void close();
+  @Override
+  public void close();
 }

@@ -25,29 +25,25 @@ package htsjdk.samtools.seekablestream;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.util.BufferedLineReader;
+import java.io.File;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.File;
-
 /**
- * Created by IntelliJ IDEA.
- * User: jrobinso
- * Date: Dec 20, 2009
- * Time: 11:13:19 AM
- * To change this template use File | Settings | File Templates.
+ * Created by IntelliJ IDEA. User: jrobinso Date: Dec 20, 2009 Time: 11:13:19 AM To change this
+ * template use File | Settings | File Templates.
  */
 public class SeekableFileStreamTest extends HtsjdkTest {
 
-    @Test
-    public void testSeek() throws Exception {
-        String expectedLine = "ccccccccc";
-        File testFile = new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt");
-        SeekableFileStream is = new SeekableFileStream(testFile);
-        is.seek(20);
-        BufferedLineReader reader = new BufferedLineReader(is);
-        String nextLine = reader.readLine();
-        Assert.assertEquals(expectedLine, nextLine);
-        reader.close();
-    }
+  @Test
+  public void testSeek() throws Exception {
+    String expectedLine = "ccccccccc";
+    File testFile = new File("src/test/resources/htsjdk/samtools/seekablestream/seekTest.txt");
+    SeekableFileStream is = new SeekableFileStream(testFile);
+    is.seek(20);
+    BufferedLineReader reader = new BufferedLineReader(is);
+    String nextLine = reader.readLine();
+    Assert.assertEquals(expectedLine, nextLine);
+    reader.close();
+  }
 }

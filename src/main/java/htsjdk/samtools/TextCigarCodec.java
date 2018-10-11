@@ -25,67 +25,63 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.StringUtil;
 
-/**
- * Convert between String and Cigar class representations of CIGAR.
- */
-public class TextCigarCodec
-{
-    private static final byte ZERO_BYTE = "0".getBytes()[0];
-    private static final byte NINE_BYTE = "9".getBytes()[0];
+/** Convert between String and Cigar class representations of CIGAR. */
+public class TextCigarCodec {
+  private static final byte ZERO_BYTE = "0".getBytes()[0];
+  private static final byte NINE_BYTE = "9".getBytes()[0];
 
-    /**
-     * Convert from Cigar class representation to String.
-     * @param cigar in Cigar class format
-     * @return CIGAR in String form ala SAM text file.  "*" means empty CIGAR.
-     */
-    public static String encode(final Cigar cigar) {
-        if (cigar.isEmpty()) {
-            return SAMRecord.NO_ALIGNMENT_CIGAR;
-        }
-        final StringBuilder ret = new StringBuilder();
-        for (final CigarElement cigarElement : cigar.getCigarElements()) {
-            ret.append(cigarElement.getLength());
-            ret.append(cigarElement.getOperator());
-        }
-        return ret.toString();
+  /**
+   * Convert from Cigar class representation to String.
+   *
+   * @param cigar in Cigar class format
+   * @return CIGAR in String form ala SAM text file. "*" means empty CIGAR.
+   */
+  public static String encode(final Cigar cigar) {
+    if (cigar.isEmpty()) {
+      return SAMRecord.NO_ALIGNMENT_CIGAR;
     }
+    final StringBuilder ret = new StringBuilder();
+    for (final CigarElement cigarElement : cigar.getCigarElements()) {
+      ret.append(cigarElement.getLength());
+      ret.append(cigarElement.getOperator());
+    }
+    return ret.toString();
+  }
 
-    /**
-     * Convert from String CIGAR representation to Cigar class representation.  Does not
-     * do validation beyond the most basic CIGAR string well-formedness, i.e. each operator is
-     * valid, and preceded by a decimal length.
-     * @param textCigar CIGAR in String form ala SAM text file.  "*" means empty CIGAR.
-     * @throws RuntimeException if textCigar is invalid at the most basic level.
-     * @return cigar in Cigar class format
-     */
-    public static Cigar decode(final String textCigar) {
-        if (SAMRecord.NO_ALIGNMENT_CIGAR.equals(textCigar)) {
-            return new Cigar();
-        }
-        final Cigar ret = new Cigar();
-        final byte[] cigarBytes = StringUtil.stringToBytes(textCigar);
-        for (int i = 0; i < cigarBytes.length; ++i) {
-            if (!isDigit(cigarBytes[i])) {
-                throw new IllegalArgumentException("Malformed CIGAR string: " + textCigar);
-            }
-            int length = (cigarBytes[i] - ZERO_BYTE);
-            for (++i; isDigit(cigarBytes[i]); ++i) {
-                length = (length * 10) + cigarBytes[i] - ZERO_BYTE;
-            }
-            final CigarOperator operator = CigarOperator.characterToEnum(cigarBytes[i]);
-            ret.add(new CigarElement(length, operator));
-        }
-        return ret;
+  /**
+   * Convert from String CIGAR representation to Cigar class representation. Does not do validation
+   * beyond the most basic CIGAR string well-formedness, i.e. each operator is valid, and preceded
+   * by a decimal length.
+   *
+   * @param textCigar CIGAR in String form ala SAM text file. "*" means empty CIGAR.
+   * @throws RuntimeException if textCigar is invalid at the most basic level.
+   * @return cigar in Cigar class format
+   */
+  public static Cigar decode(final String textCigar) {
+    if (SAMRecord.NO_ALIGNMENT_CIGAR.equals(textCigar)) {
+      return new Cigar();
     }
-    
-    private static boolean isDigit(final byte c) {
-        return c >= ZERO_BYTE && c <= NINE_BYTE;
+    final Cigar ret = new Cigar();
+    final byte[] cigarBytes = StringUtil.stringToBytes(textCigar);
+    for (int i = 0; i < cigarBytes.length; ++i) {
+      if (!isDigit(cigarBytes[i])) {
+        throw new IllegalArgumentException("Malformed CIGAR string: " + textCigar);
+      }
+      int length = (cigarBytes[i] - ZERO_BYTE);
+      for (++i; isDigit(cigarBytes[i]); ++i) {
+        length = (length * 10) + cigarBytes[i] - ZERO_BYTE;
+      }
+      final CigarOperator operator = CigarOperator.characterToEnum(cigarBytes[i]);
+      ret.add(new CigarElement(length, operator));
     }
+    return ret;
+  }
 
-    
-        
+  private static boolean isDigit(final byte c) {
+    return c >= ZERO_BYTE && c <= NINE_BYTE;
+  }
 }
 
-/******************************************************************/
-/**************************[END OF TextCigarCodec.java]*************************/
-/******************************************************************/
+/** *************************************************************** */
+/** ************************[END OF TextCigarCodec.java]************************ */
+/** *************************************************************** */
