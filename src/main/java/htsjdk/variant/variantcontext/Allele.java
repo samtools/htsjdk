@@ -26,7 +26,6 @@
 package htsjdk.variant.variantcontext;
 
 import htsjdk.samtools.util.StringUtil;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -200,6 +199,16 @@ public class Allele implements Comparable<Allele>, Serializable {
     public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
     public final static Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);
 
+    // for simple deletion, e.g. "ALT==<DEL>" (note that the spec allows, for now at least, alt alleles like <DEL:ME>)
+    public final static Allele SV_SIMPLE_DEL = StructuralVariantType.DEL.toSymbolicAltAllele();
+    // for simple insertion, e.g. "ALT==<INS>"
+    public final static Allele SV_SIMPLE_INS = StructuralVariantType.INS.toSymbolicAltAllele();
+    // for simple inversion, e.g. "ALT==<INV>"
+    public final static Allele SV_SIMPLE_INV = StructuralVariantType.INV.toSymbolicAltAllele();
+    // for simple generic cnv, e.g. "ALT==<CNV>"
+    public final static Allele SV_SIMPLE_CNV = StructuralVariantType.CNV.toSymbolicAltAllele();
+    // for simple duplication, e.g. "ALT==<DUP>"
+    public final static Allele SV_SIMPLE_DUP = StructuralVariantType.DUP.toSymbolicAltAllele();
 
     // ---------------------------------------------------------------------------------------------------------
     //
