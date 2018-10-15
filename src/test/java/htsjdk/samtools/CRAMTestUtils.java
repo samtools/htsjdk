@@ -14,6 +14,7 @@ import java.util.Iterator;
 
 public final class CRAMTestUtils {
 
+    //private constructor since this is a utility class
     private CRAMTestUtils(){};
 
     /**
@@ -40,21 +41,22 @@ public final class CRAMTestUtils {
     }
 
     private static CRAMFileReader writeAndReadFromInMemoryCram(Collection<SAMRecord> records, CRAMReferenceSource source, SAMFileHeader header) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, header, "whatever");
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            CRAMFileWriter cramFileWriter = new CRAMFileWriter(baos, source, header, "whatever")){
 
-        for (SAMRecord record : records) {
-            cramFileWriter.addAlignment(record);
+            records.forEach(cramFileWriter::addAlignment);
+
+            //force a flush before reading from the buffer
+            cramFileWriter.close();
+
+            return new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
         }
-        cramFileWriter.close();
-
-        return new CRAMFileReader(new ByteArrayInputStream(baos.toByteArray()), (SeekableStream) null, source, ValidationStringency.SILENT);
     }
 
     /**
      * return a CRAMReferenceSource that returns all A's for any sequence queried
      */
-    public static CRAMReferenceSource getFakeReferenceSource(){
+    public static CRAMReferenceSource getFakeReferenceSource() {
         return (sequenceRecord, tryNameVariants) -> {
             byte[] bases = new byte[sequenceRecord.getSequenceLength()];
             Arrays.fill(bases, (byte)'A');

@@ -266,7 +266,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public SAMRecord next() {
-        if(hasNext()) {
+        if (hasNext()) {
             return iterator.next();
         } else {
             throw new NoSuchElementException();
