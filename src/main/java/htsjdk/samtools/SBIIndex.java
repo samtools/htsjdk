@@ -85,7 +85,7 @@ public final class SBIIndex implements Serializable {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Header header = (Header) o;
+            final Header header = (Header) o;
             return fileLength == header.fileLength &&
                     totalNumberOfRecords == header.totalNumberOfRecords &&
                     granularity == header.granularity &&
@@ -162,10 +162,10 @@ public final class SBIIndex implements Serializable {
             throw new RuntimeException(String.format("Cannot read SBI with more than %s offsets.", Integer.MAX_VALUE));
         }
         final int numOffsets = (int) numOffsetsLong;
-        long[] virtualOffsets = new long[numOffsets];
+        final long[] virtualOffsets = new long[numOffsets];
         long prev = -1;
         for (int i = 0; i < numOffsets; i++) {
-            long cur = binaryCodec.readLong();
+            final long cur = binaryCodec.readLong();
             if (prev > cur) {
                 throw new RuntimeException(String.format(
                         "Invalid SBI; offsets not in order: %#x > %#x",
@@ -183,13 +183,13 @@ public final class SBIIndex implements Serializable {
         if (!Arrays.equals(buffer, SBI_MAGIC)) {
             throw new RuntimeException("Invalid file header in SBI: " + new String(buffer) + " (" + Arrays.toString(buffer) + ")");
         }
-        long fileLength = binaryCodec.readLong();
-        byte[] md5 = new byte[16];
+        final long fileLength = binaryCodec.readLong();
+        final byte[] md5 = new byte[16];
         binaryCodec.readBytes(md5);
-        byte[] uuid = new byte[16];
+        final byte[] uuid = new byte[16];
         binaryCodec.readBytes(uuid);
-        long totalNumberOfRecords = binaryCodec.readLong();
-        long granularity = binaryCodec.readLong();
+        final long totalNumberOfRecords = binaryCodec.readLong();
+        final long granularity = binaryCodec.readLong();
         return new Header(fileLength, md5, uuid, totalNumberOfRecords, granularity);
     }
 
@@ -251,10 +251,10 @@ public final class SBIIndex implements Serializable {
         if (splitSize <= 0) {
             throw new IllegalArgumentException(String.format("Split size must be positive: %s", splitSize));
         }
-        long fileSize = dataFileLength();
-        List<Chunk> chunks = new ArrayList<>();
+        final long fileSize = dataFileLength();
+        final List<Chunk> chunks = new ArrayList<>();
         for (long splitStart = 0; splitStart < fileSize; splitStart += splitSize) {
-            Chunk chunk = getChunk(splitStart, splitStart + splitSize);
+            final Chunk chunk = getChunk(splitStart, splitStart + splitSize);
             if (chunk != null) {
                 chunks.add(chunk);
             }
@@ -278,14 +278,14 @@ public final class SBIIndex implements Serializable {
         if (splitStart >= splitEnd) {
             throw new IllegalArgumentException(String.format("Split start (%s) must be less than end (%s)", splitStart, splitEnd));
         }
-        long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
-        long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(lastVirtualOffset);
-        long actualSplitStart = Math.min(splitStart, maxEnd);
-        long actualSplitEnd = Math.min(splitEnd, maxEnd);
-        long virtualSplitStart = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitStart);
-        long virtualSplitEnd = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitEnd);
-        long virtualSplitStartAlignment = ceiling(virtualSplitStart);
-        long virtualSplitEndAlignment = ceiling(virtualSplitEnd);
+        final long lastVirtualOffset = virtualOffsets[virtualOffsets.length - 1];
+        final long maxEnd = BlockCompressedFilePointerUtil.getBlockAddress(lastVirtualOffset);
+        final long actualSplitStart = Math.min(splitStart, maxEnd);
+        final long actualSplitEnd = Math.min(splitEnd, maxEnd);
+        final long virtualSplitStart = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitStart);
+        final long virtualSplitEnd = BlockCompressedFilePointerUtil.makeFilePointer(actualSplitEnd);
+        final long virtualSplitStartAlignment = ceiling(virtualSplitStart);
+        final long virtualSplitEndAlignment = ceiling(virtualSplitEnd);
         if (virtualSplitStartAlignment == virtualSplitEndAlignment) {
             return null;
         }
@@ -309,7 +309,7 @@ public final class SBIIndex implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SBIIndex sbiIndex = (SBIIndex) o;
+        final SBIIndex sbiIndex = (SBIIndex) o;
         return Objects.equals(header, sbiIndex.header) &&
                 Arrays.equals(virtualOffsets, sbiIndex.virtualOffsets);
     }

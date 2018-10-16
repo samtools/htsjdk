@@ -102,7 +102,7 @@ public final class SBIIndexWriter {
         }
     }
 
-    void writeVirtualOffset(long virtualOffset) {
+    void writeVirtualOffset(final long virtualOffset) {
         if (prev > virtualOffset) {
             throw new IllegalArgumentException(String.format(
                     "Offsets not in order: %#x > %#x",
@@ -119,7 +119,7 @@ public final class SBIIndexWriter {
      * @param finalVirtualOffset the virtual offset at which the next record would start if it were added to the file
      * @param dataFileLength the length of the data file in bytes
      */
-    public void finish(long finalVirtualOffset, long dataFileLength) {
+    public void finish(final long finalVirtualOffset, final long dataFileLength) {
         finish(finalVirtualOffset, dataFileLength, null, null);
     }
 
@@ -131,18 +131,18 @@ public final class SBIIndexWriter {
      * @param md5 the MD5 hash of the data file, or null if not specified
      * @param uuid the UUID for the data file, or null if not specified
      */
-    public void finish(long finalVirtualOffset, long dataFileLength, byte[] md5, byte[] uuid) {
+    public void finish(final long finalVirtualOffset, final long dataFileLength, final byte[] md5, final byte[] uuid) {
         if (md5 != null && md5.length != 16) {
             throw new IllegalArgumentException("Invalid MD5 length: " + md5.length);
         }
         if (uuid != null && uuid.length != 16) {
             throw new IllegalArgumentException("Invalid UUID length: " + uuid.length);
         }
-        SBIIndex.Header header = new SBIIndex.Header(dataFileLength, md5 == null ? EMPTY_MD5 : md5, uuid == null ? EMPTY_UUID : uuid, recordCount, granularity);
+        final SBIIndex.Header header = new SBIIndex.Header(dataFileLength, md5 == null ? EMPTY_MD5 : md5, uuid == null ? EMPTY_UUID : uuid, recordCount, granularity);
         finish(header, finalVirtualOffset);
     }
 
-    void finish(SBIIndex.Header header, long finalVirtualOffset) {
+    void finish(final SBIIndex.Header header, final long finalVirtualOffset) {
         // complete writing the temp offsets file
         writeVirtualOffset(finalVirtualOffset);
         tempOffsetsCodec.close();
@@ -169,5 +169,4 @@ public final class SBIIndexWriter {
             }
         }
     }
-
 }

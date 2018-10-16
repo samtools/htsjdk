@@ -50,7 +50,7 @@ public final class BAMSBIIndexer {
      * @throws IOException as per java IO contract
      */
     public static void createIndex(final Path bamFile, final long granularity) throws IOException {
-        Path splittingBaiFile = IOUtil.addExtension(bamFile, SBIIndex.FILE_EXTENSION);
+        final Path splittingBaiFile = IOUtil.addExtension(bamFile, SBIIndex.FILE_EXTENSION);
         try (SeekableStream in = new SeekablePathStream(bamFile); OutputStream out = Files.newOutputStream(splittingBaiFile)) {
             createIndex(in, out, granularity);
         }
@@ -70,7 +70,7 @@ public final class BAMSBIIndexer {
             blockIn.seek(recordStart);
             // Create a buffer for reading the BAM record lengths. BAM is little-endian.
             final ByteBuffer byteBuffer = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN);
-            SBIIndexWriter indexWriter = new SBIIndexWriter(out, granularity);
+            final SBIIndexWriter indexWriter = new SBIIndexWriter(out, granularity);
             while (true) {
                 try {
                     recordStart = blockIn.getFilePointer();
