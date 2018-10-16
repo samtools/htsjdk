@@ -29,12 +29,11 @@ import htsjdk.samtools.util.RuntimeIOException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Writes SBI files as understood by {@link SBIIndex}.
@@ -56,7 +55,7 @@ public final class SBIIndexWriter {
 
     private final OutputStream out;
     private final long granularity;
-    private final File tempOffsetsFile;
+    private final Path tempOffsetsFile;
     private final BinaryCodec tempOffsetsCodec;
     private long prev = -1;
     private long recordCount;
@@ -85,8 +84,8 @@ public final class SBIIndexWriter {
             // the end, once we know the number of offsets. This is more efficient than using a List<Long> for very
             // large numbers of offsets (e.g. 10^8, which is possible for low granularity), since the list resizing
             // operation is slow.
-            this.tempOffsetsFile = File.createTempFile("offsets-", ".headerless.sbi");
-            this.tempOffsetsCodec = new BinaryCodec(new BufferedOutputStream(new FileOutputStream(tempOffsetsFile)));
+            this.tempOffsetsFile = Files.createTempFile("offsets-", ".headerless.sbi");
+            this.tempOffsetsCodec = new BinaryCodec(new BufferedOutputStream(Files.newOutputStream(tempOffsetsFile)));
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         }
@@ -148,7 +147,7 @@ public final class SBIIndexWriter {
         writeVirtualOffset(finalVirtualOffset);
         tempOffsetsCodec.close();
         try (BinaryCodec binaryCodec = new BinaryCodec(out);
-             InputStream tempOffsets = new BufferedInputStream(new FileInputStream(tempOffsetsFile))) {
+             InputStream tempOffsets = new BufferedInputStream(Files.newInputStream(tempOffsetsFile))) {
             // header
             binaryCodec.writeBytes(SBIIndex.SBI_MAGIC);
             binaryCodec.writeLong(header.getFileLength());
@@ -163,7 +162,11 @@ public final class SBIIndexWriter {
         } catch (IOException e) {
             throw new RuntimeIOException(e);
         } finally {
-            tempOffsetsFile.delete();
+            try {
+                Files.delete(tempOffsetsFile);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
         }
     }
 
