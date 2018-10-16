@@ -99,7 +99,7 @@ public class TextTagCodec {
 
     private String encodeArrayValue(final Object value) {
         final int length = Array.getLength(value);
-        if(length == 0){
+        if (length == 0){
             return "";
         }
         final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
