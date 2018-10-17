@@ -1188,7 +1188,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     }
 
     @DataProvider
-    public Object[][] getEmptyArrays(){
+    public Object[][] getEmptyArrays() {
         final String BAM = BamFileIoUtils.BAM_FILE_EXTENSION;
         final String SAM = IOUtil.SAM_FILE_EXTENSION;
         final String CRAM = CramIO.CRAM_FILE_EXTENSION;
