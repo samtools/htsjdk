@@ -1,12 +1,13 @@
 package htsjdk.samtools;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-public class TextTagCodecTest {
+public class TextTagCodecTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getArraysToEncode(){
