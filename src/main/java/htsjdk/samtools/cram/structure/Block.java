@@ -91,7 +91,7 @@ public class Block {
         InputStreamUtils.readFully(inputStream, block.compressedContent, 0, block.compressedContent.length);
         if (v3OrHigher) {
             final int actualChecksum = ((CRC32InputStream) inputStream).getCRC32();
-            final int checksum = CramInt.int32(inputStream);
+            final int checksum = CramInt.readInt32(inputStream);
             if (checksum != actualChecksum)
                 throw new RuntimeException(String.format("Block CRC32 mismatch: %04x vs %04x", checksum, actualChecksum));
         }

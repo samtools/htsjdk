@@ -9,6 +9,25 @@ import java.util.List;
 
 public class IOTestCases extends HtsjdkTest {
 
+    @DataProvider(name = "littleEndianTests32")
+    public static Object[][] littleEndianTests32() {
+        return new Object[][] {
+                {1, new byte[]{1, 0, 0, 0}},                // 0x01
+                {127, new byte[]{127, 0, 0, 0}},            // 0x7F
+                {128, new byte[]{-128, 0, 0, 0}},           // 0x80
+                {129, new byte[]{-127, 0, 0, 0}},           // 0x81
+                {255, new byte[]{-1, 0, 0, 0}},             // 0xFF
+                {256, new byte[]{0, 1, 0, 0}},              // 0x0100
+                {257, new byte[]{1, 1, 0, 0}},              // 0x0101
+                {65535, new byte[]{-1, -1, 0, 0}},          // 0xFFFF
+                {65536, new byte[]{0, 0, 1, 0}},            // 0x010000
+                {16777216, new byte[]{0, 0, 0, 1}},         // 0x01000000
+                {2147483647, new byte[]{-1, -1, -1, 127}},  // 0x7FFFFFFF
+                {-2147483648, new byte[]{0, 0, 0, -128}},   // 0x80000000
+                {-1, new byte[]{-1, -1, -1, -1}}            // 0xFFFFFFFF
+        };
+    }
+
     private static <T> Object[][] asDataProvider(List<T> list) {
         Object[][] params = new Object[list.size()][] ;
         for (int i=0; i<params.length; i++)

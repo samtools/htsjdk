@@ -91,7 +91,7 @@ public class VersionTest extends HtsjdkTest {
         CRC32 digester = new CRC32();
         digester.update(containerHeaderBytes);
         Assert.assertEquals(container.checksum, (int) digester.getValue());
-        Assert.assertEquals(CramInt.int32(crcBytes), container.checksum);
+        Assert.assertEquals(CramInt.readInt32(crcBytes), container.checksum);
 
         // test block's crc:
         cramSeekableStream.seek(firstBlockStart);
@@ -102,6 +102,6 @@ public class VersionTest extends HtsjdkTest {
         crcBytes = InputStreamUtils.readFully(cramSeekableStream, crcByteSize);
         digester = new CRC32();
         digester.update(blockBytes);
-        Assert.assertEquals(CramInt.int32(crcBytes), (int) digester.getValue());
+        Assert.assertEquals(CramInt.readInt32(crcBytes), (int) digester.getValue());
     }
 }

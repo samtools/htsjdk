@@ -49,7 +49,7 @@ class ContainerHeaderIO {
             peek[i] = (byte) character;
         }
 
-        container.containerByteSize = CramInt.int32(peek);
+        container.containerByteSize = CramInt.readInt32(peek);
         container.sequenceId = ITF8.readUnsignedITF8(inputStream);
         container.alignmentStart = ITF8.readUnsignedITF8(inputStream);
         container.alignmentSpan = ITF8.readUnsignedITF8(inputStream);
@@ -59,7 +59,7 @@ class ContainerHeaderIO {
         container.blockCount = ITF8.readUnsignedITF8(inputStream);
         container.landmarks = CramIntArray.array(inputStream);
         if (major >= 3)
-            container.checksum = CramInt.int32(inputStream);
+            container.checksum = CramInt.readInt32(inputStream);
 
         return true;
     }

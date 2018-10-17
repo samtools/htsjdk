@@ -8,48 +8,99 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CramIntTest extends HtsjdkTest {
+    private byte[] streamWritten(List<Integer> ints) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            for (int value : ints) {
+                CramInt.writeInt32(value, baos);
+            }
+            return baos.toByteArray();
+        }
+    }
+
+    private byte[] byteArrayWritten(List<Integer> ints) {
+        final int bufSize = 4;
+        final int arraySize = bufSize * ints.size();
+        byte[] array = new byte[arraySize];
+
+        int offset = 0;
+        byte[] arrayBuffer;
+
+        for (int value : ints) {
+            arrayBuffer = CramInt.writeInt32(value);
+            System.arraycopy(arrayBuffer, 0, array, offset, bufSize);
+            offset += bufSize;
+        }
+
+        return array;
+    }
+
+    @Test(dataProvider = "littleEndianTests32", dataProviderClass = IOTestCases.class)
+    public void checkStreamLittleEndian(Integer testInt, byte[] expected) throws IOException {
+        List<Integer> ints = new ArrayList<>();
+        ints.add(testInt);
+
+        byte[] actual = streamWritten(ints);
+        Assert.assertEquals(actual, expected);
+    }
+
+    @Test(dataProvider = "littleEndianTests32", dataProviderClass = IOTestCases.class)
+    public void checkByteArrayLittleEndian(Integer testInt, byte[] expected) {
+        List<Integer> ints = new ArrayList<>();
+        ints.add(testInt);
+
+        byte[] actual = byteArrayWritten(ints);
+        Assert.assertEquals(actual, expected);
+    }
+
+    // Combinatorial tests of 2 CramInt write methods x 3 CramInt read methods
 
     @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
-    public void runTest32(List<Integer> ints) throws IOException {
+    public void matchStreamRead(List<Integer> ints) throws IOException {
+        byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        for (int value : ints) {
-            CramInt.writeInt32(value, baos);
+        for (byte[] byteArray : inputs) {
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(byteArray)) {
+                for (int value : ints) {
+                    int fromStream = CramInt.readInt32(bais);
+                    Assert.assertEquals(fromStream, value, "Value did not match");
+                }
+            }
         }
+    }
 
-        byte[] bytes = baos.toByteArray();
+    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    public void matchBufferRead(List<Integer> ints) throws IOException {
+        byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ByteBuffer bb = ByteBuffer.wrap(bytes);
+        for (byte[] byteArray : inputs) {
+            ByteBuffer bb = ByteBuffer.wrap(byteArray);
 
-        // a manually-advanced byte buffer
-        final int manualBufferSize = 4;
-        int manualBufferOffset = 0;
-        byte[] manualBuffer = new byte[manualBufferSize];
-
-        byte[] manualWriteBuffer;
-
-        for (int value : ints) {
-            int fromStream = CramInt.int32(bais);
-            Assert.assertEquals(fromStream, value, "Value did not match");
-
-            int fromBuffer = CramInt.int32(bb);
-            Assert.assertEquals(fromBuffer, value, "Value did not match");
-
-            System.arraycopy(bytes, manualBufferOffset, manualBuffer, 0, manualBufferSize);
-            int fromManualBuffer = CramInt.int32(manualBuffer);
-            Assert.assertEquals(fromManualBuffer, value, "Value did not match");
-            manualBufferOffset += manualBufferSize;
-
-            manualWriteBuffer = CramInt.writeInt32(value);
-            int fromManualWriteBuffer = CramInt.int32(manualWriteBuffer);
-            Assert.assertEquals(fromManualWriteBuffer, value, "Value did not match");
+            for (int value : ints) {
+                int fromBuffer = CramInt.readInt32(bb);
+                Assert.assertEquals(fromBuffer, value, "Value did not match");
+            }
         }
+    }
 
-        baos.close();
-        bais.close();
+    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    public void matchByteArrayRead(List<Integer> ints) throws IOException {
+        byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
+
+        for (byte[] inputArray : inputs) {
+            final int bufSize = 4;
+            byte[] outBuf = new byte[bufSize];
+            int offset = 0;
+
+            for (int value : ints) {
+                System.arraycopy(inputArray, offset, outBuf, 0, bufSize);
+                int fromBuffer = CramInt.readInt32(outBuf);
+                Assert.assertEquals(fromBuffer, value, "Value did not match");
+                offset += bufSize;
+            }
+        }
     }
 }

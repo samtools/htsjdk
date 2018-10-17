@@ -15,14 +15,13 @@ public class CramIntArrayTest extends HtsjdkTest {
     public void runTest(List<Integer> ints) throws IOException {
 
         int[] inputArray = ints.stream().mapToInt(Integer::intValue).toArray();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        CramIntArray.write(inputArray, baos);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            CramIntArray.write(inputArray, baos);
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        int[] outputArray = CramIntArray.array(bais);
-        Assert.assertEquals(inputArray, outputArray, "Arrays did not match");
-
-        baos.close();
-        bais.close();
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
+                int[] outputArray = CramIntArray.array(bais);
+                Assert.assertEquals(inputArray, outputArray, "Arrays did not match");
+            }
+        }
     }
 }

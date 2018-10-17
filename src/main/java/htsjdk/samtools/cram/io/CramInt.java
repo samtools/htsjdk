@@ -17,7 +17,7 @@ public class CramInt {
      * @return an integer value read
      * @throws IOException as per java IO contract
      */
-    public static int int32(final InputStream inputStream) throws IOException {
+    public static int readInt32(final InputStream inputStream) throws IOException {
         return inputStream.read() | inputStream.read() << 8 | inputStream.read() << 16 | inputStream.read() << 24;
     }
 
@@ -27,7 +27,7 @@ public class CramInt {
      * @param data input stream to read from
      * @return an integer value read
      */
-    public static int int32(final byte[] data) {
+    public static int readInt32(final byte[] data) {
         if (data.length != 4)
             throw new IllegalArgumentException("Expecting a 4-byte integer. ");
         return (0xFF & data[0]) | ((0xFF & data[1]) << 8) | ((0xFF & data[2]) << 16) | ((0xFF & data[3]) << 24);
@@ -39,7 +39,7 @@ public class CramInt {
      * @param buffer {@link ByteBuffer} to read from
      * @return an integer value read from the buffer
      */
-    public static int int32(final ByteBuffer buffer) {
+    public static int readInt32(final ByteBuffer buffer) {
         return (0xFF & (int) buffer.get()) |
                 (0xFF & (int) buffer.get()) << 8 |
                 (0xFF & (int) buffer.get()) << 16 |
