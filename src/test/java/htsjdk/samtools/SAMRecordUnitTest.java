@@ -1218,7 +1218,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
         final String arrayTag = "XA";
         final SAMRecordSetBuilder samRecords = new SAMRecordSetBuilder();
-        samRecords.addFrag("Read",0,100, false);
+        samRecords.addFrag("Read", 0, 100, false);
         final SAMRecord record = samRecords.getRecords().iterator().next();
         record.setAttribute(arrayTag, emptyArray);
         checkArrayIsEmpty(arrayTag, record, arrayClass);
