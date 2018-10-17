@@ -29,6 +29,7 @@ import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.util.BinaryCodec;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -1187,31 +1188,27 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
     }
 
-    @DataProvider
-    public Object[][] getEmptyArrays() {
-        final String BAM = BamFileIoUtils.BAM_FILE_EXTENSION;
-        final String SAM = IOUtil.SAM_FILE_EXTENSION;
-        final String CRAM = CramIO.CRAM_FILE_EXTENSION;
+    private static Object[][] getEmptyArrays() {
         return new Object[][]{
-                {new int[0], int[].class, BAM},
-                {new short[0], short[].class, BAM},
-                {new byte[0], byte[].class, BAM},
-                {new float[0], float[].class, BAM},
-
-                {new int[0], int[].class, SAM},
-                {new short[0], short[].class, SAM},
-                {new byte[0], byte[].class, SAM},
-                {new float[0], float[].class, SAM},
-
-                {new int[0], int[].class, CRAM},
-                {new short[0], short[].class, CRAM},
-                {new byte[0], byte[].class, CRAM},
-                {new float[0], float[].class, CRAM},
-
+                {new int[0], int[].class},
+                {new short[0], short[].class},
+                {new byte[0], byte[].class},
+                {new float[0], float[].class},
         };
     }
 
-    @Test(dataProvider = "getEmptyArrays")
+    private static Object[][] getFileExtension(){
+        return new Object[][]{
+                {BamFileIoUtils.BAM_FILE_EXTENSION}, {IOUtil.SAM_FILE_EXTENSION}, {CramIO.CRAM_FILE_EXTENSION}
+        };
+    }
+
+    @DataProvider
+    public Object[][] getEmptyArraysAndExtensions(){
+        return TestNGUtils.cartesianProduct(getEmptyArrays(), getFileExtension());
+    }
+
+    @Test(dataProvider = "getEmptyArraysAndExtensions")
     public void testWriteSamWithEmptyArray(Object emptyArray, Class<?> arrayClass, String fileExtension) throws IOException {
         Assert.assertEquals(emptyArray.getClass(), arrayClass);
         Assert.assertEquals(Array.getLength(emptyArray), 0);

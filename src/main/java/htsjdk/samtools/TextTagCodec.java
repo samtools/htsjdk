@@ -44,6 +44,11 @@ public class TextTagCodec {
     // 3 fields for non-empty strings 2 fields if the string is empty.
     private static final int NUM_TAG_FIELDS = 3;
 
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    private static final short[] EMPTY_SHORT_ARRAY = new short[0];
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
+    private static final float[] EMPTY_FLOAT_ARRAY = new float[0];
+
     /**
      * This is really a local variable of decode(), but allocated here to reduce allocations.
      */
@@ -327,11 +332,19 @@ public class TextTagCodec {
     }
 
     private static Object createEmptyArray(char elementType) {
-        switch( Character.toLowerCase(elementType) ) {
-            case 'c': { return new byte[0]; }
-            case 's': { return new short[0]; }
-            case 'i': { return new int[0]; }
-            case 'f': { return new float[0]; }
+        switch ( elementType ) {
+            case 'c':
+            case 'C':
+                return EMPTY_BYTE_ARRAY;
+            case 's':
+            case 'S':
+                return EMPTY_SHORT_ARRAY;
+            case 'i':
+            case 'I':
+                return EMPTY_INT_ARRAY;
+            case 'f':
+                //note that F is not a valid option since there is no signed/unsigned float distinction
+                return EMPTY_FLOAT_ARRAY;
             default: { throw new SAMFormatException("Unrecognized array tag element type: " + elementType); }
         }
     }
