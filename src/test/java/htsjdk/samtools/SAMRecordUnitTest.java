@@ -42,6 +42,8 @@ import java.util.*;
 
 public class SAMRecordUnitTest extends HtsjdkTest {
 
+    private static final String ARRAY_TAG = "xa";
+
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
         return new Object[][] {
@@ -1175,17 +1177,14 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void test_setAttribute_empty_array() {
         final SAMFileHeader header = new SAMFileHeader();
-        final String arrayTag = "xa";
         final SAMRecord record = new SAMRecord(header);
-        Assert.assertNull(record.getStringAttribute(arrayTag));
-        record.setAttribute(arrayTag, new int[0]);
-        Assert.assertNotNull(record.getSignedIntArrayAttribute(arrayTag));
-        Assert.assertEquals(record.getSignedIntArrayAttribute(arrayTag),new int[0]);
-        record.getSAMString();
-        Assert.assertEquals(record.getAttribute(arrayTag), new char[0]);
-        record.setAttribute(arrayTag, null);
-        Assert.assertNull(record.getStringAttribute(arrayTag));
-
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
+        record.setAttribute(ARRAY_TAG, new int[0]);
+        Assert.assertNotNull(record.getSignedIntArrayAttribute(ARRAY_TAG));
+        Assert.assertEquals(record.getSignedIntArrayAttribute(ARRAY_TAG), new int[0]);
+        Assert.assertEquals(record.getAttribute(ARRAY_TAG), new char[0]);
+        record.setAttribute(ARRAY_TAG, null);
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
     }
 
     private static Object[][] getEmptyArrays() {
@@ -1197,7 +1196,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         };
     }
 
-    private static Object[][] getFileExtension(){
+    private static Object[][] getFileExtensions(){
         return new Object[][]{
                 {BamFileIoUtils.BAM_FILE_EXTENSION}, {IOUtil.SAM_FILE_EXTENSION}, {CramIO.CRAM_FILE_EXTENSION}
         };
@@ -1205,7 +1204,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getEmptyArraysAndExtensions(){
-        return TestNGUtils.cartesianProduct(getEmptyArrays(), getFileExtension());
+        return TestNGUtils.cartesianProduct(getEmptyArrays(), getFileExtensions());
     }
 
     @Test(dataProvider = "getEmptyArraysAndExtensions")
@@ -1213,12 +1212,11 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(emptyArray.getClass(), arrayClass);
         Assert.assertEquals(Array.getLength(emptyArray), 0);
 
-        final String arrayTag = "xa";
         final SAMRecordSetBuilder samRecords = new SAMRecordSetBuilder();
         samRecords.addFrag("Read", 0, 100, false);
         final SAMRecord record = samRecords.getRecords().iterator().next();
-        record.setAttribute(arrayTag, emptyArray);
-        checkArrayIsEmpty(arrayTag, record, arrayClass);
+        record.setAttribute(ARRAY_TAG, emptyArray);
+        checkArrayIsEmpty(ARRAY_TAG, record, arrayClass);
 
         final Path tmp = Files.createTempFile("tmp", fileExtension);
         IOUtil.deleteOnExit(tmp);
@@ -1237,7 +1235,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
             final SAMRecordIterator iterator = reader.iterator();
             Assert.assertTrue(iterator.hasNext());
             final SAMRecord recordFromDisk = iterator.next();
-            checkArrayIsEmpty(arrayTag, recordFromDisk, arrayClass);
+            checkArrayIsEmpty(ARRAY_TAG, recordFromDisk, arrayClass);
         }
     }
 
@@ -1247,6 +1245,4 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(attribute.getClass(), expectedClass);
         Assert.assertEquals(Array.getLength(attribute), 0);
     }
-
-
 }

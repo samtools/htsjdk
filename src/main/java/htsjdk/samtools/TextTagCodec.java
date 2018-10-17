@@ -45,8 +45,11 @@ public class TextTagCodec {
     private static final int NUM_TAG_FIELDS = 3;
 
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_BYTE_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_BYTE_ARRAY, true);
     private static final short[] EMPTY_SHORT_ARRAY = new short[0];
+    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_SHORT_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_SHORT_ARRAY, true);
     private static final int[] EMPTY_INT_ARRAY = new int[0];
+    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_INT_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_INT_ARRAY, true);
     private static final float[] EMPTY_FLOAT_ARRAY = new float[0];
 
     /**
@@ -57,7 +60,7 @@ public class TextTagCodec {
     /**
      * Convert in-memory representation of tag to SAM text representation.
      * @param tagName Two-character tag name.
-     * @param value Tag value as approriate Object subclass.
+     * @param value Tag value as appropriate Object subclass.
      * @return SAM text String representation, i.e. name:type:value
      */
     public String encode(final String tagName, Object value) {
@@ -76,7 +79,7 @@ public class TextTagCodec {
             // H should never happen anymore.
             value = StringUtil.bytesToHexString((byte[])value);
         } else if (tagType == 'B') {
-            value = getArrayType(value, false) + "," + encodeArrayValue(value);
+            value = getArrayType(value, false) + encodeArrayValue(value);
         } else if (tagType == 'i') {
             final long longVal = ((Number) value).longValue();
             // as the spec says: [-2^31, 2^32)
@@ -88,7 +91,7 @@ public class TextTagCodec {
         return sb.toString();
     }
 
-    private char getArrayType(final Object array, final boolean isUnsigned) {
+    private static char getArrayType(final Object array, final boolean isUnsigned) {
         final char type;
         final Class<?> componentType = array.getClass().getComponentType();
         if (componentType == Float.TYPE) {
@@ -102,13 +105,10 @@ public class TextTagCodec {
         return (isUnsigned? Character.toUpperCase(type): type);
     }
 
-    private String encodeArrayValue(final Object value) {
+    private static String encodeArrayValue(final Object value) {
         final int length = Array.getLength(value);
-        if (length == 0){
-            return "";
-        }
-        final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
-        for (int i = 1; i < length; ++i) {
+        final StringBuilder ret = new StringBuilder();
+        for (int i = 0; i < length; ++i) {
             ret.append(',');
             ret.append(Array.get(value, i).toString());
         }
@@ -116,7 +116,7 @@ public class TextTagCodec {
 
     }
 
-    private long[] widenToUnsigned(final Object array) {
+    private static long[] widenToUnsigned(final Object array) {
         final Class<?> componentType = array.getClass().getComponentType();
         final long mask;
         if (componentType == Byte.TYPE)    mask = 0xffL;
@@ -135,7 +135,7 @@ public class TextTagCodec {
             throw new IllegalArgumentException("Non-array passed to encodeUnsignedArray: " + array.getClass());
         }
         final long[] widened = widenToUnsigned(array);
-        return tagName + ":B:" + getArrayType(array, true) + "," + encodeArrayValue(widened);
+        return tagName + ":B:" + getArrayType(array, true) + encodeArrayValue(widened);
     }
 
     /**
@@ -183,7 +183,7 @@ public class TextTagCodec {
         };
     }
 
-    private Object convertStringToObject(final String type, final String stringVal) {
+    private static Object convertStringToObject(final String type, final String stringVal) {
         if (type.equals("Z")) {
             return stringVal;
         } else if (type.equals("A")) {
@@ -227,13 +227,11 @@ public class TextTagCodec {
         }
     }
 
-    private Object covertStringArrayToObject(final String stringVal) {
+    private static Object covertStringArrayToObject(final String stringVal) {
         final String[] elementTypeAndValue = new String[2];
 
         final int numberOfTokens = StringUtil.splitConcatenateExcessTokens(stringVal, elementTypeAndValue, ',');
-        if (!(numberOfTokens == 1 || numberOfTokens == 2)) {
-            throw new SAMFormatException("Tag of type B requires an element type");
-        }
+
         if (elementTypeAndValue[0].length() != 1) {
             throw new SAMFormatException("Unrecognized element type for array tag value: " + elementTypeAndValue[0]);
         }
@@ -334,14 +332,17 @@ public class TextTagCodec {
     private static Object createEmptyArray(char elementType) {
         switch ( elementType ) {
             case 'c':
-            case 'C':
                 return EMPTY_BYTE_ARRAY;
+            case 'C':
+                return EMPTY_UNSIGNED_BYTE_ARRAY;
             case 's':
-            case 'S':
                 return EMPTY_SHORT_ARRAY;
+            case 'S':
+                return EMPTY_UNSIGNED_SHORT_ARRAY;
             case 'i':
-            case 'I':
                 return EMPTY_INT_ARRAY;
+            case 'I':
+                return EMPTY_UNSIGNED_INT_ARRAY;
             case 'f':
                 //note that F is not a valid option since there is no signed/unsigned float distinction
                 return EMPTY_FLOAT_ARRAY;
