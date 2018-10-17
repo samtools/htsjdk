@@ -1175,7 +1175,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void test_setAttribute_empty_array() {
         final SAMFileHeader header = new SAMFileHeader();
-        final String arrayTag = "XA";
+        final String arrayTag = "xa";
         final SAMRecord record = new SAMRecord(header);
         Assert.assertNull(record.getStringAttribute(arrayTag));
         record.setAttribute(arrayTag, new int[0]);
