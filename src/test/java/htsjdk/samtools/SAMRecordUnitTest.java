@@ -1216,7 +1216,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         Assert.assertEquals(emptyArray.getClass(), arrayClass);
         Assert.assertEquals(Array.getLength(emptyArray), 0);
 
-        final String arrayTag = "XA";
+        final String arrayTag = "xa";
         final SAMRecordSetBuilder samRecords = new SAMRecordSetBuilder();
         samRecords.addFrag("Read", 0, 100, false);
         final SAMRecord record = samRecords.getRecords().iterator().next();
