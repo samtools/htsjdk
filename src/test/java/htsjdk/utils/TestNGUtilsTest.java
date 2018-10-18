@@ -1,5 +1,6 @@
 package htsjdk.utils;
 
+import htsjdk.HtsjdkTest;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -7,7 +8,7 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 
-public class TestNGUtilsUnitTest {
+public class TestNGUtilsTest extends HtsjdkTest {
 
     @DataProvider
     public Object[][] getArraysAndLists() {
