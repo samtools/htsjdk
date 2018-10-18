@@ -330,7 +330,7 @@ public class TextTagCodec {
     }
 
     private static Object createEmptyArray(char elementType) {
-        switch ( elementType ) {
+        switch (elementType) {
             case 'c':
                 return EMPTY_BYTE_ARRAY;
             case 'C':
