@@ -40,10 +40,10 @@ public class CramInt {
      * @return an integer value read from the buffer
      */
     public static int readInt32(final ByteBuffer buffer) {
-        return (0xFF & (int) buffer.get()) |
-                (0xFF & (int) buffer.get()) << 8 |
-                (0xFF & (int) buffer.get()) << 16 |
-                (0xFF & (int) buffer.get()) << 24;
+        return (0xFF & buffer.get()) |
+                (0xFF & buffer.get()) << 8 |
+                (0xFF & buffer.get()) << 16 |
+                (0xFF & buffer.get()) << 24;
     }
 
     /**
