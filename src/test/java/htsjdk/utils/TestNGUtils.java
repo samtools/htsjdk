@@ -46,19 +46,16 @@ public class TestNGUtils {
     /**
      * @return the cartesian product of two or more DataProviders than can be used as a new dataprovider
      */
-    public static Object[][] cartesianProduct(Object[][] ... dataProviders){
-        final List[] lists = Arrays.stream(dataProviders)
+    public static Object[][] cartesianProduct(Object[][]... dataProviders) {
+        List<List<List<Object>>> lists = Arrays.stream(dataProviders)
                 .map(TestNGUtils::nestedArraysToNestedLists)
-                .toArray(List[]::new);
-
-        @SuppressWarnings("unchecked")
+                .collect(Collectors.toList());
         final List<List<List<Object>>> product = Lists.cartesianProduct(lists);
         final List<List<Object>> mergeProduct = product.stream()
-                .map((List<List<Object>> list) -> {
-                    List<Object> result = new ArrayList<>();
-                    list.forEach(result::addAll);
-                    return result;
-                }).collect(Collectors.toList());
+                .map( l -> l.stream()
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList()))
+                .collect(Collectors.toList());
         return nestedListsToNestedArrays(mergeProduct);
     }
 
