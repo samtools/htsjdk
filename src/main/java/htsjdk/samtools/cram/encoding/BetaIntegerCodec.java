@@ -47,8 +47,8 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
 
     @Override
     public final long numberOfBits(final Integer value) {
-        if (value >= (1L << readNofBits))
-            throw new IllegalArgumentException("Value written is bigger then allowed: value=" + value
+        if (value + offset >= (1L << readNofBits))
+            throw new IllegalArgumentException("Value to be written is bigger then allowed: value=" + value
                     + ", max nof bits=" + readNofBits);
 
         return readNofBits;
