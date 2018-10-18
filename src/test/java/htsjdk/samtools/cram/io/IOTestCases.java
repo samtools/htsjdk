@@ -29,9 +29,9 @@ public class IOTestCases extends HtsjdkTest {
     }
 
     private static <T> Object[][] asDataProvider(List<T> list) {
-        Object[][] params = new Object[list.size()][] ;
-        for (int i=0; i<params.length; i++)
-            params[i] = new Object[]{list.get(i)} ;
+        Object[][] params = new Object[list.size()][];
+        for (int i = 0; i < params.length; i++)
+            params[i] = new Object[]{list.get(i)};
         return params;
     }
 
