@@ -344,7 +344,7 @@ public class TextTagCodec {
             case 'I':
                 return EMPTY_UNSIGNED_INT_ARRAY;
             case 'f':
-                //note that F is not a valid option since there is no signed/unsigned float distinction
+                // Note that F is not a valid option since there is no signed/unsigned float distinction.
                 return EMPTY_FLOAT_ARRAY;
             default: { throw new SAMFormatException("Unrecognized array tag element type: " + elementType); }
         }
