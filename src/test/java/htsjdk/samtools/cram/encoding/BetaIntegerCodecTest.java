@@ -74,5 +74,4 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         }
     }
 
-
 }
