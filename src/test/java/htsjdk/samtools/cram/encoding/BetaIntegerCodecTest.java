@@ -34,7 +34,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "tooManyBits", expectedExceptions = IllegalArgumentException.class)
-    public void testNofBits(int readNofBits, int offset, int value) throws IOException {
+    public void tooManyBitsTest(int readNofBits, int offset, int value) throws IOException {
         BitCodec<Integer> codec = new BetaIntegerCodec(offset, readNofBits);
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
