@@ -11,7 +11,7 @@ import java.util.List;
 
 public class CramIntArrayTest extends HtsjdkTest {
 
-    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
     public void runTest(List<Integer> ints) throws IOException {
 
         int[] inputArray = ints.stream().mapToInt(Integer::intValue).toArray();

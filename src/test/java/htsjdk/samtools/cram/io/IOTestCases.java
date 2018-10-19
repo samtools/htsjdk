@@ -35,8 +35,63 @@ public class IOTestCases extends HtsjdkTest {
         return params;
     }
 
-    static List<Integer> int32Tests() {
-        List<Integer> list = new ArrayList<Integer>();
+    private static List<Byte> byteTests() {
+        List<Byte> list = new ArrayList<>();
+
+        // basics:
+        list.add((byte)0);
+        list.add((byte)1);
+        list.add((byte)-1);
+
+        // scan with bits:
+        for (int i = 0; i < 7; i++) {
+            list.add((byte)((1 << i) - 2));
+            list.add((byte)((1 << i) - 1));
+            list.add((byte)(1 << i));
+            list.add((byte)(-(1 << i) + 2));
+            list.add((byte)(-(1 << i) + 1));
+            list.add((byte)-(1 << i));
+        }
+
+        // special cases:
+        list.add(Byte.MAX_VALUE);
+        list.add(Byte.MIN_VALUE);
+
+        return list;
+    }
+
+    @DataProvider(name = "testByteLists")
+    public static Object[][] testByteValues() {
+        List<Byte> byteTests = IOTestCases.byteTests();
+        List<Byte> shuffled = new ArrayList<>(byteTests);
+        Collections.shuffle(shuffled);
+
+        return new Object[][]{
+                {byteTests},
+                {shuffled}
+        };
+    }
+
+    @DataProvider(name = "testByteArrays")
+    public static Object[][] testByteArrayValues() {
+        List<Byte> byteTestsList = IOTestCases.byteTests();
+        List<Byte> shuffledList = new ArrayList<>(byteTestsList);
+        Collections.shuffle(shuffledList);
+
+        byte[] byteTests = new byte[byteTestsList.size()];
+        for(int i = 0; i < byteTestsList.size(); i++) byteTests[i] = byteTestsList.get(i);
+
+        byte[] shuffled = new byte[shuffledList.size()];
+        for(int i = 0; i < shuffledList.size(); i++) shuffled[i] = shuffledList.get(i);
+
+        return new Object[][]{
+                {byteTests},
+                {shuffled}
+        };
+    }
+
+    private static List<Integer> int32Tests() {
+        List<Integer> list = new ArrayList<>();
 
         // basics:
         list.add(0);
@@ -69,7 +124,7 @@ public class IOTestCases extends HtsjdkTest {
         return asDataProvider(IOTestCases.int32Tests());
     }
 
-    @DataProvider(name = "testInt32Arrays")
+    @DataProvider(name = "testInt32Lists")
     public static Object[][] testValues32() {
         List<Integer> int32Tests = IOTestCases.int32Tests();
         List<Integer> shuffled = new ArrayList<>(int32Tests);
@@ -81,8 +136,8 @@ public class IOTestCases extends HtsjdkTest {
         };
     }
 
-    static List<Long> int64Tests() {
-        List<Long> list = new ArrayList<Long>() ;
+    private static List<Long> int64Tests() {
+        List<Long> list = new ArrayList<>() ;
 
         // basics:
         list.add(0L);
@@ -121,7 +176,7 @@ public class IOTestCases extends HtsjdkTest {
         return asDataProvider(IOTestCases.int64Tests());
     }
 
-    @DataProvider(name = "testInt64Arrays")
+    @DataProvider(name = "testInt64Lists")
     public static Object[][] testValues64() {
         List<Long> int64Tests = IOTestCases.int64Tests();
         List<Long> shuffled = new ArrayList<>(int64Tests);

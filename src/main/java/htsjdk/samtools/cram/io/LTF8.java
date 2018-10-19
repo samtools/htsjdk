@@ -7,8 +7,14 @@ import java.io.OutputStream;
 
 /**
  * Methods to read and write LTF8 as per CRAM specs.
+ *
+ * LTF8 encodes longs as 1 to 9 bytes depending on the highest set bit.  See {@link ITF8} for more details.
  */
 public class LTF8 {
+
+    public static final int MAX_BYTES = 9;
+    public static final int MAX_BITS = 8 * MAX_BYTES;
+
     /**
      * Reads an unsigned long value from the input stream. The sign bit should be interpreted just as other bits in the value.
      *

@@ -58,7 +58,7 @@ public class CramIntTest extends HtsjdkTest {
 
     // Combinatorial tests of 2 CramInt write methods x 3 CramInt read methods
 
-    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
     public void matchStreamRead(List<Integer> ints) throws IOException {
         byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
 
@@ -72,7 +72,7 @@ public class CramIntTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
     public void matchBufferRead(List<Integer> ints) throws IOException {
         byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
 
@@ -86,7 +86,7 @@ public class CramIntTest extends HtsjdkTest {
         }
     }
 
-    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
+    @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
     public void matchByteArrayRead(List<Integer> ints) throws IOException {
         byte[][] inputs = {streamWritten(ints), byteArrayWritten(ints)};
 
