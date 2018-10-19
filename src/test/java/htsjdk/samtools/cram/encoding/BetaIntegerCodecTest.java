@@ -56,18 +56,19 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     public void testNbits(int nBits, int[] values) throws IOException {
         BitCodec<Integer> codec = new BetaIntegerCodec(0, nBits);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            try (BitOutputStream bos = new DefaultBitOutputStream(os)) {
-                for (int value: values) {
-                    codec.write(bos, value);
-                }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
+             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+
+            for (int value : values) {
+                codec.write(bos, value);
             }
 
             int[] actual = new int[values.length];
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                BitInputStream bis = new DefaultBitInputStream(is);
+            try (InputStream is = new ByteArrayInputStream(os.toByteArray());
+                 DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
+
                 for (int i = 0; i < values.length; i++)
-                    actual[i] = codec.read(bis);
+                    actual[i] = codec.read(dbis);
             }
 
             Assert.assertEquals(actual, values);
