@@ -12,18 +12,7 @@ import java.io.*;
 
 public class BetaIntegerCodecTest extends HtsjdkTest {
 
-    // test that the offsets enable the data series to be stored in N bits
-
-    @DataProvider(name = "basicTest")
-    public Object[][] basicTestData() {
-        return new Object[][] {
-                {8, -100, new int[]{100, 101, 102, (1<<8) + 98, (1<<8) + 99}},
-                {4, 10015, new int[]{-10015, -10014, -10001, -10000}},
-        };
-    }
-
-    @Test(dataProvider = "basicTest")
-    public void basicTest(int bitsPerValue, int offset, int[] values) throws IOException {
+    private void testCodec(int offset, int bitsPerValue, int[] values) throws IOException {
         BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
         try (ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -46,6 +35,21 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         }
     }
 
+    // test that the offsets enable the data series to be stored in N bits
+
+    @DataProvider(name = "basicTest")
+    public Object[][] basicTestData() {
+        return new Object[][] {
+                {8, -100, new int[]{100, 101, 102, (1<<8) + 98, (1<<8) + 99}},
+                {4, 10015, new int[]{-10015, -10014, -10001, -10000}},
+        };
+    }
+
+    @Test(dataProvider = "basicTest")
+    public void basicTest(int bitsPerValue, int offset, int[] values) throws IOException {
+        testCodec(offset, bitsPerValue, values);
+    }
+
     // test that values fit into N bits without offsets
 
     @DataProvider(name = "basicTestNoOffset")
@@ -58,26 +62,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "basicTestNoOffset")
     public void basicTestNoOffset(int bitsPerValue, int[] values) throws IOException {
-        BitCodec<Integer> codec = new BetaIntegerCodec(0, bitsPerValue);
-
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-             BitOutputStream bos = new DefaultBitOutputStream(os)) {
-
-            for (int value : values) {
-                codec.write(bos, value);
-            }
-
-            int[] actual = new int[values.length];
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray());
-                 DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
-
-                for (int i = 0; i < values.length; i++) {
-                    actual[i] = codec.read(dbis);
-                }
-            }
-
-            Assert.assertEquals(actual, values);
-        }
+        testCodec(0, bitsPerValue, values);
     }
 
     // sanity checks for bitsPerValue.  Must be > 0 and <= 32
