@@ -83,4 +83,13 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
             Assert.assertEquals(rec1.isSameSequence(rec2), isSame);
         }
     }
+
+    @Test
+    public void testSetAndCheckDescription(){
+        final SAMSequenceRecord record = new SAMSequenceRecord("Test", 1000);
+        Assert.assertNull(record.getDescription());
+        final String description = "A description.";
+        record.setDescription(description);
+        Assert.assertEquals(record.getDescription(), description);
+    }
 }
