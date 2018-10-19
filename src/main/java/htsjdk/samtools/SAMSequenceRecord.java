@@ -49,6 +49,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
     public static final String ASSEMBLY_TAG = "AS";
     public static final String URI_TAG = "UR";
     public static final String SPECIES_TAG = "SP";
+    public static final String DESCRIPTION_TAG = "DS";
 
     /** If one sequence has this length, and another sequence had a different length, isSameSequence will
      * not complain that they are different sequences. */
@@ -122,6 +123,10 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
 
     public String getMd5() { return (String) getAttribute(MD5_TAG); }
     public void setMd5(final String value) { setAttribute(MD5_TAG, value); }
+
+    @XmlAttribute(name="description")
+    public String getDescription() { return getAttribute(DESCRIPTION_TAG);}
+    public void setDescription(final String value) { setAttribute(DESCRIPTION_TAG, value);}
 
     /**
      * @return Index of this record in the sequence dictionary it lives in. 
