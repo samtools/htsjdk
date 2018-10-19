@@ -22,41 +22,53 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-
+/**
+ * Encodes integers by adding a constant offset value to a range of values in order to reduce
+ * the necessary number of bits needed to store each value.
+ *
+ * As a simple example, consider a data series with values all in the range 10,000 - 10,100.
+ * Choosing the offset -10,000 means every encoded value will be stored as 0 - 100,
+ * requiring only ceil(log2(100)) = 7 bits per value.
+ */
 class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     private final int offset;
-    private final int readNofBits;
-    private final long valueLimit;    // 1 << number of bits (max 32) so int is too small
+    private final int bitsPerValue;
+    private final long valueLimit;    // 1 << bitsPerValue (max 32) so int is too small
 
-    public BetaIntegerCodec(final int offset, final int readNofBits) {
-        if (readNofBits <= 0) {
-            throw new IllegalArgumentException("Number of bits must be positive");
+    /**
+     * Given integers to encode in the range MIN to MAX:
+     *
+     * @param offset the common value to be added to all values before storage.
+     *               Setting this to (-MIN) will ensure all stored values will be in the range (0 .. MAX - MIN)
+     * @param bitsPerValue the smallest value which will allow the largest stored value (MAX - MIN)
+     */
+    public BetaIntegerCodec(final int offset, final int bitsPerValue) {
+        if (bitsPerValue <= 0) {
+            throw new IllegalArgumentException("Number of bits per value must be positive");
         }
 
-        if (readNofBits > 32) {
-            throw new IllegalArgumentException("Number of bits must be 32 or lower");
+        if (bitsPerValue > 32) {
+            throw new IllegalArgumentException("Number of bits per value must be 32 or lower");
         }
 
         this.offset = offset;
-        this.readNofBits = readNofBits;
-        this.valueLimit = 1L << readNofBits;
+        this.bitsPerValue = bitsPerValue;
+        this.valueLimit = 1L << bitsPerValue;
     }
 
     @Override
     public final Integer read(final BitInputStream bitInputStream) throws IOException {
-        return bitInputStream.readBits(readNofBits) - offset;
-    }
-
-    @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
-        bitOutputStream.write(getAndCheckOffsetValue(value), readNofBits);
-        return readNofBits;
+        return bitInputStream.readBits(bitsPerValue) - offset;
     }
 
     private int getAndCheckOffsetValue(Integer value) {
         final int newValue = value + offset;
 
-        if (newValue >= valueLimit) {
+        if (newValue < 0) {
+            String negative = String.format("Value %s plus offset %s must be positive",
+                    value, offset);
+            throw new IllegalArgumentException(negative);
+        } else if (newValue >= valueLimit) {
             String tooBig = String.format("Value %s plus offset %s is greater than or equal to limit %s",
                     value, offset, valueLimit);
             throw new IllegalArgumentException(tooBig);
@@ -66,8 +78,16 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     }
 
     @Override
+    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+        bitOutputStream.write(getAndCheckOffsetValue(value), bitsPerValue);
+        // every value is encoded using the same number of bits
+        return bitsPerValue;
+    }
+
+    @Override
     public final long numberOfBits(final Integer value) {
-        return readNofBits;
+        // every value is encoded using the same number of bits
+        return bitsPerValue;
     }
 
     @Override
