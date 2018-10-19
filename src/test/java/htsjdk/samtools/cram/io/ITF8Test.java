@@ -11,7 +11,6 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,41 +33,7 @@ public class ITF8Test extends HtsjdkTest {
         testBAIS.reset();
     }
 
-
-    @DataProvider(name = "testITF8")
-    public static Object[][] testValues() {
-        List<Integer> list = new ArrayList<Integer>() ;
-
-        // basics:
-        list.add(0);
-        list.add(1);
-        list.add(127);
-        list.add(128);
-        list.add(255);
-        list.add(256);
-        list.add(-1);
-
-        // scan with bits:
-        for (int i = 0; i <= 32; i++) {
-            list.add((1 << i) - 2);
-            list.add((1 << i) - 1);
-            list.add(1 << i);
-            list.add((1 << i) + 1);
-            list.add((1 << i) + 1);
-        }
-
-        // special cases:
-        list.add(Integer.MAX_VALUE) ;
-        list.add(Integer.MIN_VALUE);
-        list.add(268435456);
-
-        Object[][] params = new Object[list.size()][] ;
-        for (int i=0; i<params.length; i++)
-            params[i] = new Object[]{list.get(i)} ;
-        return params;
-    }
-
-    @Test(dataProvider = "testITF8")
+    @Test(dataProvider = "testInt32", dataProviderClass = IOTestCases.class)
     public void testITF8(int value) throws IOException {
         int len = ITF8.writeUnsignedITF8(value, testBAOS);
         Assert.assertTrue(len <= (8 * 9));
