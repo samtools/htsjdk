@@ -1,7 +1,6 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
@@ -12,12 +11,19 @@ import org.testng.annotations.Test;
 import java.io.*;
 
 public class BetaIntegerCodecTest extends HtsjdkTest {
+
+    // Can't create a BetaIntegerCodec where readNofBits = 0
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void n0test() {
+        new BetaIntegerCodec(0, 0);
+    }
+
     @DataProvider(name = "tooManyBits")
     public Object[][] tooManyBits() {
         // tuples of readNofBits and offsets + values which are too big to store
         return new Object[][] {
                 // first with zero offset
-                {0, 0, 1},
                 {1, 0, (1 << 1)},
                 {2, 0, (1 << 2)},
                 {4, 0, (1 << 4)},
@@ -67,8 +73,9 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
             try (InputStream is = new ByteArrayInputStream(os.toByteArray());
                  DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
 
-                for (int i = 0; i < values.length; i++)
+                for (int i = 0; i < values.length; i++) {
                     actual[i] = codec.read(dbis);
+                }
             }
 
             Assert.assertEquals(actual, values);

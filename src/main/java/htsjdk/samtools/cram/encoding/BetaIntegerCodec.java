@@ -24,12 +24,18 @@ import java.io.IOException;
 
 
 class BetaIntegerCodec extends AbstractBitCodec<Integer> {
-    private int offset = 0;
+    private final int offset;
     private final int readNofBits;
+    private final int maxValue;
 
     public BetaIntegerCodec(final int offset, final int readNofBits) {
+        if (readNofBits <= 0) {
+            throw new IllegalArgumentException("Number of bits must be positive");
+        }
+
         this.offset = offset;
         this.readNofBits = readNofBits;
+        this.maxValue = (int)(1L << readNofBits);
     }
 
     @Override
@@ -39,18 +45,24 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
 
     @Override
     public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
-        final int nofBits = (int) numberOfBits(value);
-        final long newValue = value + offset;
-        bitOutputStream.write(newValue, nofBits);
-        return nofBits;
+        bitOutputStream.write(getAndCheckOffsetValue(value), readNofBits);
+        return readNofBits;
+    }
+
+    private int getAndCheckOffsetValue(Integer value) {
+        final int newValue = value + offset;
+
+        if (newValue >= maxValue) {
+            String tooBig = String.format("Value %s plus offset %s is bigger than allowed max value %s",
+                    value, offset, maxValue);
+            throw new IllegalArgumentException(tooBig);
+        }
+
+        return newValue;
     }
 
     @Override
     public final long numberOfBits(final Integer value) {
-        if (value + offset >= (1L << readNofBits))
-            throw new IllegalArgumentException("Value to be written is bigger then allowed: value=" + value
-                    + ", max nof bits=" + readNofBits);
-
         return readNofBits;
     }
 
