@@ -122,10 +122,9 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     public void overflow(int bitsPerValue, int offset, int value) throws IOException {
         BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            try (BitOutputStream bos = new DefaultBitOutputStream(os)) {
-                codec.write(bos, value);
-            }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
+             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+            codec.write(bos, value);
         }
     }
 
@@ -148,11 +147,9 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     public void negativeTest(int bitsPerValue, int offset, int value) throws IOException {
         BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            try (BitOutputStream bos = new DefaultBitOutputStream(os)) {
-                codec.write(bos, value);
-            }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
+             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+            codec.write(bos, value);
         }
     }
-
 }

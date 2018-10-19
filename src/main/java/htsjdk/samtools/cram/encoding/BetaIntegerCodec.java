@@ -45,9 +45,7 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     public BetaIntegerCodec(final int offset, final int bitsPerValue) {
         if (bitsPerValue <= 0) {
             throw new IllegalArgumentException("Number of bits per value must be positive");
-        }
-
-        if (bitsPerValue > 32) {
+        } else if (bitsPerValue > 32) {
             throw new IllegalArgumentException("Number of bits per value must be 32 or lower");
         }
 
@@ -61,7 +59,7 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
         return bitInputStream.readBits(bitsPerValue) - offset;
     }
 
-    private int getAndCheckOffsetValue(Integer value) {
+    private int getAndCheckOffsetValue(int value) {
         final int newValue = value + offset;
 
         if (newValue < 0) {
