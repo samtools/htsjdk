@@ -26,16 +26,20 @@ import java.io.IOException;
 class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     private final int offset;
     private final int readNofBits;
-    private final int maxValue;
+    private final long valueLimit;    // 1 << number of bits (max 32) so int is too small
 
     public BetaIntegerCodec(final int offset, final int readNofBits) {
         if (readNofBits <= 0) {
             throw new IllegalArgumentException("Number of bits must be positive");
         }
 
+        if (readNofBits > 32) {
+            throw new IllegalArgumentException("Number of bits must be 32 or lower");
+        }
+
         this.offset = offset;
         this.readNofBits = readNofBits;
-        this.maxValue = (int)(1L << readNofBits);
+        this.valueLimit = 1L << readNofBits;
     }
 
     @Override
@@ -52,9 +56,9 @@ class BetaIntegerCodec extends AbstractBitCodec<Integer> {
     private int getAndCheckOffsetValue(Integer value) {
         final int newValue = value + offset;
 
-        if (newValue >= maxValue) {
-            String tooBig = String.format("Value %s plus offset %s is bigger than allowed max value %s",
-                    value, offset, maxValue);
+        if (newValue >= valueLimit) {
+            String tooBig = String.format("Value %s plus offset %s is greater than or equal to limit %s",
+                    value, offset, valueLimit);
             throw new IllegalArgumentException(tooBig);
         }
 
