@@ -54,7 +54,7 @@ public class TestNGUtilsTest extends HtsjdkTest {
                                 Arrays.asList(3),
                                 Arrays.asList(4)
                         )
-                }
+                },
         };
     }
 
@@ -83,7 +83,8 @@ public class TestNGUtilsTest extends HtsjdkTest {
                 {new Object[][]{{1}, {2}, {3}}, new Object[][]{{'a', 'b'}, {'c', 'd'}},
                         new Object[][]{{1, 'a', 'b'}, {1, 'c', 'd'},
                                 {2, 'a', 'b'}, {2, 'c', 'd'},
-                                {3, 'a', 'b'}, {3, 'c', 'd'}}}
+                                {3, 'a', 'b'}, {3, 'c', 'd'}}},
+                {new Object[][]{ new Object[0], new Object[0], new Object[0]}}
         };
     }
 

@@ -44,13 +44,7 @@ public class TextTagCodec {
     // 3 fields for non-empty strings 2 fields if the string is empty.
     private static final int NUM_TAG_FIELDS = 3;
 
-    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
-    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_BYTE_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_BYTE_ARRAY, true);
-    private static final short[] EMPTY_SHORT_ARRAY = new short[0];
-    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_SHORT_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_SHORT_ARRAY, true);
-    private static final int[] EMPTY_INT_ARRAY = new int[0];
-    private static final TagValueAndUnsignedArrayFlag EMPTY_UNSIGNED_INT_ARRAY = new TagValueAndUnsignedArrayFlag(EMPTY_INT_ARRAY, true);
-    private static final float[] EMPTY_FLOAT_ARRAY = new float[0];
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     /**
      * This is really a local variable of decode(), but allocated here to reduce allocations.
@@ -237,12 +231,8 @@ public class TextTagCodec {
         }
 
         final char elementType = elementTypeAndValue[0].charAt(0);
-        if (numberOfTokens == 1) {
-            return createEmptyArray(elementType);
-        }
 
-        final String[] stringValues = elementTypeAndValue[1].split(",");
-        if (stringValues.length == 0) throw new SAMFormatException("Tag of type B should have at least one element");
+        final String[] stringValues = elementTypeAndValue[1] != null ? elementTypeAndValue[1].split(",") : EMPTY_STRING_ARRAY;
         if (elementType == 'f') {
             final float[] ret = new float[stringValues.length];
             for (int i = 0; i < stringValues.length; ++i) {
@@ -324,28 +314,6 @@ public class TextTagCodec {
                 if (isUnsigned) return new TagValueAndUnsignedArrayFlag(array, true);
                 else return array;
             }
-            default:
-                throw new SAMFormatException("Unrecognized array tag element type: " + elementType);
-        }
-    }
-
-    private static Object createEmptyArray(char elementType) {
-        switch (elementType) {
-            case 'c':
-                return EMPTY_BYTE_ARRAY;
-            case 'C':
-                return EMPTY_UNSIGNED_BYTE_ARRAY;
-            case 's':
-                return EMPTY_SHORT_ARRAY;
-            case 'S':
-                return EMPTY_UNSIGNED_SHORT_ARRAY;
-            case 'i':
-                return EMPTY_INT_ARRAY;
-            case 'I':
-                return EMPTY_UNSIGNED_INT_ARRAY;
-            case 'f':
-                // Note that F is not a valid option since there is no signed/unsigned float distinction.
-                return EMPTY_FLOAT_ARRAY;
             default:
                 throw new SAMFormatException("Unrecognized array tag element type: " + elementType);
         }
