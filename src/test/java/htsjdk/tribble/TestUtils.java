@@ -64,6 +64,4 @@ public class TestUtils {
         }
         return Files.copy(vcfPath, vcfDestination);
     }
-
-
 }

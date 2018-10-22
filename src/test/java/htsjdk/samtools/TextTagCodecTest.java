@@ -41,7 +41,6 @@ public class TextTagCodecTest extends HtsjdkTest {
                 ? textTagCodec.encode(tagName, array)
                 : textTagCodec.encodeUnsignedArray(tagName, array);
         Assert.assertEquals(encodedTag, expectedTag);
-
     }
 
     @DataProvider
