@@ -17,8 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanByteEncoding;
-import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanByteEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 /**
@@ -45,7 +45,7 @@ public class EncodingFactory {
                     case EXTERNAL:
                         return (Encoding<T>) new ExternalByteEncoding();
                     case HUFFMAN:
-                        return (Encoding<T>) new HuffmanByteEncoding();
+                        return (Encoding<T>) new CanonicalHuffmanByteEncoding();
                     case NULL:
                         return new NullEncoding<T>();
 
@@ -58,7 +58,7 @@ public class EncodingFactory {
             case INT:
                 switch (id) {
                     case HUFFMAN:
-                        return (Encoding<T>) new HuffmanIntegerEncoding();
+                        return (Encoding<T>) new CanonicalHuffmanIntegerEncoding();
                     case NULL:
                         return new NullEncoding<T>();
                     case EXTERNAL:

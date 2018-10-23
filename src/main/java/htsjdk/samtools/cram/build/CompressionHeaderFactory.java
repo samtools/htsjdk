@@ -23,7 +23,7 @@ import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
 import htsjdk.samtools.cram.encoding.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
-import htsjdk.samtools.cram.encoding.huffman.codec.HuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
 import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
@@ -422,21 +422,21 @@ public class CompressionHeaderFactory {
             case 'c':
             case 'C':
                 details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 1 }, new int[] { 0 }),
+                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 1 }, new int[] { 0 }),
                         ExternalByteEncoding.toParam(tagID));
                 return details;
             case 'I':
             case 'i':
             case 'f':
                 details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 4 }, new int[] { 0 }),
+                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 4 }, new int[] { 0 }),
                         ExternalByteEncoding.toParam(tagID));
                 return details;
 
             case 's':
             case 'S':
                 details.params = ByteArrayLenEncoding.toParam(
-                        HuffmanIntegerEncoding.toParam(new int[] { 2 }, new int[] { 0 }),
+                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 2 }, new int[] { 0 }),
                         ExternalByteEncoding.toParam(tagID));
                 return details;
             case 'Z':
@@ -445,7 +445,7 @@ public class CompressionHeaderFactory {
                 final boolean singleSize = stats.min == stats.max;
                 if (singleSize) {
                     details.params = ByteArrayLenEncoding.toParam(
-                            HuffmanIntegerEncoding.toParam(new int[] { stats.min }, new int[] { 0 }),
+                            CanonicalHuffmanIntegerEncoding.toParam(new int[] { stats.min }, new int[] { 0 }),
                             ExternalByteEncoding.toParam(tagID));
                     return details;
                 }
