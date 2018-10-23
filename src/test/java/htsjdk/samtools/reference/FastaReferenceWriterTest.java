@@ -395,9 +395,13 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
     public void testFastaOutputStreams() throws IOException, GeneralSecurityException, URISyntaxException {
         final File testOutputFile = File.createTempFile("fwr-test", ".random0.fasta");
         testOutputFile.deleteOnExit();
-        final File testIndexOutputFile = File.createTempFile("fwr-test", ".random1.fai");
+
+        final File testIndexOutputFile =
+                new File(testOutputFile.getParent(),testOutputFile.getName().replaceAll("fasta$","fai"));
         testIndexOutputFile.deleteOnExit();
-        final File testDictOutputFile = File.createTempFile("fwr-test", ".random2.dict");
+
+        final File testDictOutputFile =
+                new File(testOutputFile.getParent(),testOutputFile.getName().replaceAll("fasta$","dict"));
         testDictOutputFile.deleteOnExit();
 
         final SAMSequenceDictionary testDictionary = new SAMSequenceDictionary(
