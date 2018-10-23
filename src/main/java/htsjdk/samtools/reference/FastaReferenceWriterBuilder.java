@@ -195,18 +195,18 @@ public class FastaReferenceWriterBuilder {
         if (fastaFile == null && fastaOutput == null) {
             throw new IllegalArgumentException("Both fastaFile and fastaOutput were null. Please set one of them to be non-null.");
         }
-
-        if (indexFile == null && indexOutput == null) {
-            indexFile = defaultFaiFile(makeFaiOutput, fastaFile);
-        } else if (indexFile != null && indexOutput != null) {
-            throw new IllegalArgumentException("Both indexFile and indexOutput were non-null. Please set one of them to be null.");
+        if(fastaFile != null) {
+            if (indexFile == null && indexOutput == null) {
+                indexFile = defaultFaiFile(makeFaiOutput, fastaFile);
+            } else if (indexFile != null && indexOutput != null) {
+                throw new IllegalArgumentException("Both indexFile and indexOutput were non-null. Please set one of them to be null.");
+            }
+            if (dictFile == null && dictOutput == null) {
+                dictFile = defaultDictFile(makeDictOutput, fastaFile);
+            } else if (dictFile != null && dictOutput != null) {
+                throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
+            }
         }
-        if (dictFile == null && dictOutput == null) {
-            dictFile = defaultDictFile(makeDictOutput, fastaFile);
-        } else if (dictFile != null && dictOutput != null) {
-            throw new IllegalArgumentException("Both dictFile and dictOutput were non-null. Please set one of them to be null.");
-        }
-
         // checkout bases-perline first, so that files are not created if failure;
         checkBasesPerLine(basesPerLine);
 
