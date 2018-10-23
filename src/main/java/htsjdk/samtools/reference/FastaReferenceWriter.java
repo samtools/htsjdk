@@ -178,9 +178,9 @@ public final class FastaReferenceWriter implements AutoCloseable {
      * <p>
      * </p>
      *
-     * @param fastaOutput the output fasta file path.
-     * @param indexOutput the output stream to the index file, if requested, {@code null} if none should be generated.
-     * @param dictOutput  the output stream to the dictFile, if requested, {@code null} if none should be generated.
+     * @param fastaOutput the (uncompressed) output fasta file path.
+     * @param indexOutput the (uncompressed) output stream to the index file, if requested, {@code null} if none should be generated.
+     * @param dictOutput  the (uncompressed) output stream to the dictFile, if requested, {@code null} if none should be generated.
      * @throws IllegalArgumentException if {@code fastaFile} is {@code null} or {@code basesPerLine} is 0 or negative.
      */
     protected FastaReferenceWriter(final int basesPerLine,
@@ -234,7 +234,6 @@ public final class FastaReferenceWriter implements AutoCloseable {
             }
         }
         return description;
-
     }
 
     /**

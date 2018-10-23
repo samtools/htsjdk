@@ -62,6 +62,8 @@ public class ReferenceSequenceFileFactory {
         add(".txt.gz");
     }};
 
+    public static final String FASTA_INDEX_EXTENSION = ".fai";
+
     /**
      * Attempts to determine the type of the reference file and return an instance
      * of ReferenceSequenceFile that is appropriate to read it.  Sequence names
@@ -255,6 +257,6 @@ public class ReferenceSequenceFileFactory {
      * @param fastaFile the reference sequence file path.
      */
     public static Path getFastaIndexFileName(Path fastaFile) {
-        return fastaFile.resolveSibling(fastaFile.getFileName() + ".fai");
+        return fastaFile.resolveSibling(fastaFile.getFileName() + FASTA_INDEX_EXTENSION);
     }
 }
