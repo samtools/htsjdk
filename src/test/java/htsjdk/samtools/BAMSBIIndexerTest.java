@@ -40,9 +40,10 @@ import java.util.List;
 
 public class BAMSBIIndexerTest extends HtsjdkTest {
     private static final File TEST_DATA_DIR = new File("src/test/resources/htsjdk/samtools");
+    private static final File CRAM_TEST_DATA_DIR = new File(TEST_DATA_DIR, "cram");
     private static final File BAM_FILE = new File(TEST_DATA_DIR, "example.bam");
     private static final File EMPTY_BAM_FILE = new File(TEST_DATA_DIR, "empty.bam");
-    private static final File LARGE_BAM_FILE = new File(TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.ch20.1m-1m1k.NA12878.bam");
+    private static final File LARGE_BAM_FILE = new File(CRAM_TEST_DATA_DIR, "CEUTrio.HiSeq.WGS.b37.NA12878.20.first.8000.bam");
 
     @Test
     public void testEmptyBam() throws Exception {
@@ -78,10 +79,7 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         final List<Chunk> chunks = index.split(bamFileSize / 10);
         Assert.assertTrue(chunks.size() > 1);
 
-        final SamReader samReader = SamReaderFactory.makeDefault()
-                .validationStringency(ValidationStringency.SILENT)
-                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(LARGE_BAM_FILE);
-        final List<SAMRecord> allReads = Iterables.slurp(samReader);
+        final List<SAMRecord> allReads = getReads(LARGE_BAM_FILE);
 
         final List<SAMRecord> allReadsFromChunks = new ArrayList<>();
         for (final Chunk chunk : chunks) {
@@ -113,19 +111,20 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         return SBIIndex.load(new ByteArrayInputStream(out.toByteArray()));
     }
 
-    private SBIIndex fromSAMRecords(final File bamFile, final long granularity) {
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        final SBIIndexWriter indexWriter = new SBIIndexWriter(out, granularity);
+    private SBIIndex fromSAMRecords(final File bamFile, final long granularity) throws IOException {
         final BAMFileReader bamFileReader = bamFileReader(bamFile);
-        final CloseableIterator<SAMRecord> iterator = bamFileReader.getIterator();
-        while (iterator.hasNext()) {
-            processAlignment(indexWriter, iterator.next());
+        try (CloseableIterator<SAMRecord> iterator = bamFileReader.getIterator();
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            final SBIIndexWriter indexWriter = new SBIIndexWriter(out, granularity);
+            while (iterator.hasNext()) {
+                processAlignment(indexWriter, iterator.next());
+            }
+            indexWriter.finish(bamFileReader.getVirtualFilePointer(), bamFile.length());
+            return SBIIndex.load(new ByteArrayInputStream(out.toByteArray()));
         }
-        indexWriter.finish(bamFileReader.getVirtualFilePointer(), bamFile.length());
-        return SBIIndex.load(new ByteArrayInputStream(out.toByteArray()));
     }
 
-    public void processAlignment(final SBIIndexWriter indexWriter, final SAMRecord rec) {
+    private void processAlignment(final SBIIndexWriter indexWriter, final SAMRecord rec) {
         final SAMFileSource source = rec.getFileSource();
         if (source == null) {
             throw new SAMException("No source (virtual file offsets); needed for indexing on BAM Record " + rec);
@@ -146,6 +145,14 @@ public class BAMSBIIndexerTest extends HtsjdkTest {
         try (CloseableIterator<SAMRecord> iterator = bamFileReader(bamFile).getIterator(new BAMFileSpan(chunk))) {
             Assert.assertTrue(iterator.hasNext());
             return iterator.next();
+        }
+    }
+
+    private List<SAMRecord> getReads(final File bamFile) throws IOException {
+        try (SamReader samReader = SamReaderFactory.makeDefault()
+                .validationStringency(ValidationStringency.SILENT)
+                .enable(SamReaderFactory.Option.INCLUDE_SOURCE_IN_RECORDS).open(bamFile)) {
+            return Iterables.slurp(samReader);
         }
     }
 
