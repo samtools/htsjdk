@@ -114,6 +114,9 @@ public class FastaReferenceWriterTest extends HtsjdkTest {
 
         try (FastaReferenceWriter writer = new FastaReferenceWriterBuilder().setFastaFile(testOutput).setMakeFaiOutput(false).setMakeDictOutput(false).build()) {
             writer.startSequence("seq1", invalidBpl);
+        } catch (final IllegalArgumentException e) {
+            Files.delete(testOutput);
+            throw e;
         } finally {
             Assert.assertFalse(Files.exists(testOutput));
         }
