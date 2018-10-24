@@ -47,7 +47,7 @@ public class TestNGUtils {
      * Combine two or more Dataproviders by taking the cartesian product of the their test cases.
      *
      * Note:  In the case of a an empty provider, the result will be the product of the non-empty providers.
-     * This isdifferent from the traditional definition of the cartesian product.
+     * This is different from the traditional definition of the cartesian product.
      * @return the cartesian product of two or more DataProviders than can be used as a new dataprovider
      */
     public static Object[][] cartesianProduct(Object[][]... dataProviders) {
