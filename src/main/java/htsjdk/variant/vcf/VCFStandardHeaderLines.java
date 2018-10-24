@@ -158,6 +158,7 @@ public class VCFStandardHeaderLines {
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY,        VCFHeaderLineCount.G,         VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_ALLELE_DEPTHS, VCFHeaderLineCount.R,         VCFHeaderLineType.Integer, "Allelic depths for the ref and alt alleles in the order listed"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_FILTER_KEY,    VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String,  "Genotype-level filter"));
+        registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_SET_KEY,          1,                            VCFHeaderLineType.Integer, "Phasing set (typically the position of the first variant in the set)"));
         registerStandard(new VCFFormatHeaderLine(VCFConstants.PHASE_QUALITY_KEY,      1,                            VCFHeaderLineType.Float,   "Read-backed phasing quality"));
 
         // INFO lines
