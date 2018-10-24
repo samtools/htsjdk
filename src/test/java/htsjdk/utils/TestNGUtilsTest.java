@@ -147,5 +147,4 @@ public class TestNGUtilsTest extends HtsjdkTest {
         final Object[][] product = TestNGUtils.cartesianProduct(expected);
         assertNestedArraysEqual(product, expected);
     }
-
 }
