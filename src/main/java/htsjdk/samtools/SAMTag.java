@@ -31,14 +31,18 @@ public enum SAMTag {
     AS,
     BC,
     BQ,
+    BZ,
+    CB,
     CC,
     CG,
     CM,
     CO,
     CP,
     CQ,
+    CR,
     CS,
     CT,
+    CY,
     E2,
     FI,
     FS,
@@ -55,6 +59,7 @@ public enum SAMTag {
     IH,
     MC,
     MF, // for backwards compatibility
+    MI,
     MD,
     MQ,
     NH,
@@ -64,20 +69,29 @@ public enum SAMTag {
     OC,
     OF,
     OR,
+    OX,
     PG,
     PQ,
     PT,
     PU,
     QT,
     Q2,
+    QX,
     R2,
     RG,
+
+    /**
+     * @deprecated use BC instead
+     */
+    @Deprecated
     RT,
+
+    RX,
     S2, // for backwards compatibility
     SA,
     SM,
     SQ, // for backwards compatibility
     TC,
     U2,
-    UQ
-}
+    UQ,
+    }
