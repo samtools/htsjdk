@@ -528,7 +528,7 @@ public class ValidateSamFileTest extends HtsjdkTest {
         }
 
         // Test an unacceptable version
-        testHeaderVersion("1.6", false);
+        testHeaderVersion("1.7", false);
     }
 
     @Test(enabled = false)
