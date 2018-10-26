@@ -23,15 +23,10 @@
  */
 package htsjdk.samtools;
 
-import htsjdk.samtools.util.AsciiWriter;
 import htsjdk.samtools.util.RuntimeIOException;
+import org.apache.commons.compress.utils.Charsets;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 
 /**
  * Writer for text-format SAM files.
@@ -98,11 +93,15 @@ public class SAMTextWriter extends SAMFileWriterImpl {
         if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
         try {
             this.file = file;
-            this.out = new AsciiWriter(new FileOutputStream(file));
+            this.out = getBufferedWriter(new FileOutputStream(file));
         } catch (final IOException e) {
             throw new RuntimeIOException(e);
         }
         this.samFlagFieldOutput = samFlagFieldOutput;
+    }
+
+    private static BufferedWriter getBufferedWriter(OutputStream out) {
+        return new BufferedWriter(new OutputStreamWriter(out, Charsets.UTF_8), Defaults.NON_ZERO_BUFFER_SIZE);
     }
 
     /**
@@ -113,7 +112,7 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     public SAMTextWriter(final OutputStream stream, final SamFlagField samFlagFieldOutput) {
         if (samFlagFieldOutput == null) throw new IllegalArgumentException("Sam flag field was null");
         this.file = null;
-        this.out = new AsciiWriter(stream);
+        this.out = getBufferedWriter(stream);
         this.samFlagFieldOutput = samFlagFieldOutput;
     }
 

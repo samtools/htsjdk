@@ -1,0 +1,3 @@
+@HD	VN:1.5	GO:none	SO:unsorted
+@SQ	SN:chrW	LN:1000	AS:wg19	UR:whales.fasta	M5:d2ed829b8a1628d16cbeee88e88e39eb	SP:Whale	DS:🐳
+@RG	ID:1	SM:sample1	PL:ILLUMINA

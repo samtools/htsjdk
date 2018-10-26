@@ -24,10 +24,17 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.BufferedLineReader;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.LineReader;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
@@ -81,6 +88,28 @@ public class SAMSequenceRecordTest extends HtsjdkTest {
             rec1.setMd5(md5One);
             rec1.setSequenceIndex(index1);
             Assert.assertEquals(rec1.isSameSequence(rec2), isSame);
+        }
+    }
+
+    @Test
+    public void testDPWithUTF8() throws IOException {
+        try(SamReader reader = SamReaderFactory.make().open(new File("src/test/resources/htsjdk/samtools/sam-header-with-unicode.sam"))){
+            final SAMFileHeader fileHeader = reader.getFileHeader();
+            final SAMSequenceRecord chrW = fileHeader.getSequence("chrW");
+            final String normalWhaleUnicode = "\uD83D\uDC0B";
+            Assert.assertEquals(chrW.getDescription(), normalWhaleUnicode);
+            final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
+            writerFactory.setCreateIndex(false);
+            writerFactory.setCreateMd5File(false);
+            final String spoutyWhaleUnicode = "\uD83D\uDC33";
+            chrW.setDescription(spoutyWhaleUnicode);
+            Assert.assertEquals(chrW.getDescription(), spoutyWhaleUnicode);
+            final Path output = Paths.get("whale.sam"); //Files.createTempFile("testHeader", ".sam");
+            //IOUtil.deleteOnExit(output);
+            try(final SAMFileWriter writer = writerFactory.makeWriter(fileHeader, true, output,(Path) null)){
+                // do nothing, just write the header
+            }
+            Assert.assertEquals(Files.readAllBytes(output), Files.readAllBytes(IOUtil.getPath("src/test/resources/htsjdk/samtools/sam-header-with-unicode-spouty.sam")));
         }
     }
 }
