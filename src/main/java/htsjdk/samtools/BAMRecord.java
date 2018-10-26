@@ -310,7 +310,7 @@ public class BAMRecord extends SAMRecord {
      * extracts the CIGAR from the CG tag and places it into the (in memory) cigar.
      */
     private void extractCigarFromCGAttribute(final Cigar sentinelCigar) throws IllegalStateException {
-        final int[] cigarFromCG = (int[]) getAttribute(SAMTagUtil.getSingleton().CG);
+        final int[] cigarFromCG = (int[]) getAttribute(SAMTagUtil.CG);
 
         if (cigarFromCG == null) return;
 
@@ -353,7 +353,7 @@ public class BAMRecord extends SAMRecord {
         initializeCigar(decodedCigar);
 
         // remove CG attribute.
-        setAttribute(SAMTagUtil.getSingleton().CG, null);
+        setAttribute(SAMTagUtil.CG, null);
     }
 
     /**

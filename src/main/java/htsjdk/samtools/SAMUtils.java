@@ -1127,7 +1127,7 @@ public final class SAMUtils {
         if (record == null) throw new IllegalArgumentException("record is null");
         if (record.getHeader() == null) throw new IllegalArgumentException("record.getHeader() is null");
         /* extract value of SA tag */
-        final Object saValue = record.getAttribute(SAMTagUtil.getSingleton().SA);
+        final Object saValue = record.getAttribute(SAMTagUtil.SA);
         if (saValue == null) return Collections.emptyList();
         if (!(saValue instanceof String)) throw new SAMException(
                 "Expected a String for attribute 'SA' but got " + saValue.getClass() + ". Record: " + record);
@@ -1220,7 +1220,7 @@ public final class SAMUtils {
             /* fill NM */
             try {
                 if (!commaStrs[5].equals("*")) {
-                    otherRec.setAttribute(SAMTagUtil.getSingleton().NM, Integer.parseInt(commaStrs[5]));
+                    otherRec.setAttribute(SAMTagUtil.NM, Integer.parseInt(commaStrs[5]));
                 }
             } catch (final NumberFormatException err) {
                 throw new SAMException("bad NM in " + semiColonStr + ". Record: " + record, err);

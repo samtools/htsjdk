@@ -35,7 +35,7 @@ public class SAMBinaryTagAndUnsignedArrayValue extends SAMBinaryTagAndValue {
         if (!value.getClass().isArray() || value instanceof float[]) {
             throw new IllegalArgumentException("Attribute type " + value.getClass() +
                     " cannot be encoded as an unsigned array. Tag: " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
+                    SAMTagUtil.makeStringTag(tag));
         }
     }
 

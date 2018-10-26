@@ -33,62 +33,105 @@ import htsjdk.samtools.util.StringUtil;
  *
  * @author alecw@broadinstitute.org
  */
-public class SAMTagUtil {
+public final class SAMTagUtil {
+
+    /**
+     * This constructor is public despite being a utility class for backwards compatibility reasons.
+     */
+    public SAMTagUtil(){}
 
     // Standard tags pre-computed for convenience
-    public final short RG = makeBinaryTag(SAMTag.RG.name());
-    public final short LB = makeBinaryTag(SAMTag.LB.name());
-    public final short PU = makeBinaryTag(SAMTag.PU.name());
-    public final short PG = makeBinaryTag(SAMTag.PG.name());
-    public final short AS = makeBinaryTag(SAMTag.AS.name());
-    public final short SQ = makeBinaryTag(SAMTag.SQ.name());
-    public final short MQ = makeBinaryTag(SAMTag.MQ.name());
-    public final short NM = makeBinaryTag(SAMTag.NM.name());
-    public final short H0 = makeBinaryTag(SAMTag.H0.name());
-    public final short H1 = makeBinaryTag(SAMTag.H1.name());
-    public final short H2 = makeBinaryTag(SAMTag.H2.name());
-    public final short UQ = makeBinaryTag(SAMTag.UQ.name());
-    public final short PQ = makeBinaryTag(SAMTag.PQ.name());
-    public final short NH = makeBinaryTag(SAMTag.NH.name());
-    public final short IH = makeBinaryTag(SAMTag.IH.name());
-    public final short HI = makeBinaryTag(SAMTag.HI.name());
-    public final short MD = makeBinaryTag(SAMTag.MD.name());
-    public final short CS = makeBinaryTag(SAMTag.CS.name());
-    public final short CQ = makeBinaryTag(SAMTag.CQ.name());
-    public final short CM = makeBinaryTag(SAMTag.CM.name());
-    public final short R2 = makeBinaryTag(SAMTag.R2.name());
-    public final short Q2 = makeBinaryTag(SAMTag.Q2.name());
-    public final short S2 = makeBinaryTag(SAMTag.S2.name());
-    public final short CC = makeBinaryTag(SAMTag.CC.name());
-    public final short CP = makeBinaryTag(SAMTag.CP.name());
-    public final short SM = makeBinaryTag(SAMTag.SM.name());
-    public final short AM = makeBinaryTag(SAMTag.AM.name());
-    public final short MF = makeBinaryTag(SAMTag.MF.name());
-    public final short E2 = makeBinaryTag(SAMTag.E2.name());
-    public final short U2 = makeBinaryTag(SAMTag.U2.name());
-    public final short OQ = makeBinaryTag(SAMTag.OQ.name());
-    public final short FZ = makeBinaryTag(SAMTag.FZ.name());
-    public final short SA = makeBinaryTag(SAMTag.SA.name());
-    public final short MC = makeBinaryTag(SAMTag.MC.name());
-    public final short CG = makeBinaryTag(SAMTag.CG.name());
+    public static final short AM = SAMTag.AM.getBinaryTag();
+    public static final short AS = SAMTag.AS.getBinaryTag();
+    public static final short BC = SAMTag.BC.getBinaryTag();
+    public static final short BQ = SAMTag.BQ.getBinaryTag();
+    public static final short BZ = SAMTag.BZ.getBinaryTag();
+    public static final short CB = SAMTag.CB.getBinaryTag();
+    public static final short CC = SAMTag.CC.getBinaryTag();
+    public static final short CG = SAMTag.CG.getBinaryTag();
+    public static final short CM = SAMTag.CM.getBinaryTag();
+    public static final short CO = SAMTag.CO.getBinaryTag();
+    public static final short CP = SAMTag.CP.getBinaryTag();
+    public static final short CQ = SAMTag.CQ.getBinaryTag();
+    public static final short CR = SAMTag.CR.getBinaryTag();
+    public static final short CS = SAMTag.CS.getBinaryTag();
+    public static final short CT = SAMTag.CT.getBinaryTag();
+    public static final short CY = SAMTag.CY.getBinaryTag();
+    public static final short E2 = SAMTag.E2.getBinaryTag();
+    public static final short FI = SAMTag.FI.getBinaryTag();
+    public static final short FS = SAMTag.FS.getBinaryTag();
+    public static final short FT = SAMTag.FT.getBinaryTag();
+    public static final short FZ = SAMTag.FZ.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short GC = SAMTag.GC.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short GS = SAMTag.GS.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short GQ = SAMTag.GQ.getBinaryTag();
+    public static final short LB = SAMTag.LB.getBinaryTag();
+    public static final short H0 = SAMTag.H0.getBinaryTag();
+    public static final short H1 = SAMTag.H1.getBinaryTag();
+    public static final short H2 = SAMTag.H2.getBinaryTag();
+    public static final short HI = SAMTag.HI.getBinaryTag();
+    public static final short IH = SAMTag.IH.getBinaryTag();
+    public static final short MC = SAMTag.MC.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short MF = SAMTag.MF.getBinaryTag();
+    public static final short MI = SAMTag.MI.getBinaryTag();
+    public static final short MD = SAMTag.MD.getBinaryTag();
+    public static final short MQ = SAMTag.MQ.getBinaryTag();
+    public static final short NH = SAMTag.NH.getBinaryTag();
+    public static final short NM = SAMTag.NM.getBinaryTag();
+    public static final short OQ = SAMTag.OQ.getBinaryTag();
+    public static final short OP = SAMTag.OP.getBinaryTag();
+    public static final short OC = SAMTag.OC.getBinaryTag();
+    public static final short OF = SAMTag.OF.getBinaryTag();
+    public static final short OR = SAMTag.OR.getBinaryTag();
+    public static final short OX = SAMTag.OX.getBinaryTag();
+    public static final short PG = SAMTag.PG.getBinaryTag();
+    public static final short PQ = SAMTag.PQ.getBinaryTag();
+    public static final short PT = SAMTag.PT.getBinaryTag();
+    public static final short PU = SAMTag.PU.getBinaryTag();
+    public static final short QT = SAMTag.QT.getBinaryTag();
+    public static final short Q2 = SAMTag.Q2.getBinaryTag();
+    public static final short QX = SAMTag.QX.getBinaryTag();
+    public static final short R2 = SAMTag.R2.getBinaryTag();
+    public static final short RG = SAMTag.RG.getBinaryTag();
+    /** @deprecated use BC instead */
+    @Deprecated
+    public static final short RT = SAMTag.RT.getBinaryTag();
+    public static final short RX = SAMTag.RX.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short S2 = SAMTag.S2.getBinaryTag();
+    public static final short SA = SAMTag.SA.getBinaryTag();
+    public static final short SM = SAMTag.SM.getBinaryTag();
+    /** @deprecated reserved tag for backwards compatibility only */
+    @Deprecated
+    public static final short SQ = SAMTag.SQ.getBinaryTag();
+    public static final short TC = SAMTag.TC.getBinaryTag();
+    public static final short U2 = SAMTag.U2.getBinaryTag();
+    public static final short UQ = SAMTag.UQ.getBinaryTag();
 
-    private static SAMTagUtil singleton;
+    private static final SAMTagUtil singleton = new SAMTagUtil();
 
     // Cache of already-converted tags.  Should speed up SAM text generation.
     // Not synchronized because race condition is not a problem.
-    private final String[] stringTags = new String[Short.MAX_VALUE];
+    private static final String[] stringTags = new String[Short.MAX_VALUE];
 
     /**
      * Despite the fact that this class has state, it should be thread-safe because the cache
      * gets filled with the same values by any thread.
+     * @deprecated All methods on this class have been made static, use them directly
      */
+    @Deprecated
     public static SAMTagUtil getSingleton() {
-        if (singleton == null) {
-            singleton = new SAMTagUtil();
-        }
         return singleton;
     }
-
 
     /**
      * Convert from String representation of tag name to short representation.
@@ -96,7 +139,7 @@ public class SAMTagUtil {
      * @param tag 2-character String representation of a tag name.
      * @return Tag name packed as 2 ASCII bytes in a short.
      */
-    public short makeBinaryTag(final String tag) {
+    public static short makeBinaryTag(final String tag) {
         if (tag.length() != 2) {
             throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
         }
@@ -109,7 +152,7 @@ public class SAMTagUtil {
      * @param tag Tag name packed as 2 ASCII bytes in a short.
      * @return 2-character String representation of a tag name.
      */
-    public String makeStringTag(final short tag) {
+    public static String makeStringTag(final short tag) {
         String ret = stringTags[tag];
         if (ret == null) {
             final byte[] stringConversionBuf = new byte[2];

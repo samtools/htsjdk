@@ -206,7 +206,7 @@ public class Slice {
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty value passed for tag " + tag);
         }
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
+        setAttribute(SAMTagUtil.makeBinaryTag(tag), value);
     }
 
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
@@ -216,7 +216,7 @@ public class Slice {
         if (Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
+        setAttribute(SAMTagUtil.makeBinaryTag(tag), value, true);
     }
 
     void setAttribute(final short tag, final Object value) {

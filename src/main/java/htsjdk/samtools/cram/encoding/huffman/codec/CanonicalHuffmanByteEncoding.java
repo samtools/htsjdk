@@ -49,12 +49,14 @@ public class CanonicalHuffmanByteEncoding implements Encoding<Byte> {
             buf = ByteBuffer.allocate(values.length * 8);
 
         ITF8.writeUnsignedITF8(values.length, buf);
-        for (final byte value : values)
+        for (final byte value : values) {
             buf.put(value);
+        }
 
         ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (final int value : bitLengths)
+        for (final int value : bitLengths) {
             ITF8.writeUnsignedITF8(value, buf);
+        }
 
         buf.flip();
         final byte[] array = new byte[buf.limit()];
@@ -71,8 +73,9 @@ public class CanonicalHuffmanByteEncoding implements Encoding<Byte> {
 
         size = ITF8.readUnsignedITF8(buf);
         bitLengths = new int[size];
-        for (int i = 0; i < size; i++)
+        for (int i = 0; i < size; i++) {
             bitLengths[i] = ITF8.readUnsignedITF8(buf);
+        }
     }
 
     @Override

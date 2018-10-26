@@ -19,7 +19,6 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMFormatException;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecord.SAMTagAndValue;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.SAMUtils;
@@ -63,7 +62,7 @@ public class ReadTag implements Comparable<ReadTag> {
 
         keyType3BytesAsInt = id;
 
-        code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
+        code = SAMTagUtil.makeBinaryTag(this.key);
     }
 
     private ReadTag(final String key, final char type, final Object value) {
@@ -87,7 +86,7 @@ public class ReadTag implements Comparable<ReadTag> {
         keyType3Bytes = this.key + this.type;
         keyType3BytesAsInt = nameType3BytesToInt(this.key, this.type);
 
-        code = SAMTagUtil.getSingleton().makeBinaryTag(this.key);
+        code = SAMTagUtil.makeBinaryTag(this.key);
     }
 
     public static int name3BytesToInt(final byte[] name) {

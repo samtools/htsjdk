@@ -33,7 +33,7 @@ public class ContentDigests {
         final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
         SAMBinaryTagAndValue binaryTag = binaryTags;
         while (binaryTag != null) {
-            final String tagID = SAMTagUtil.getSingleton().makeStringTag(
+            final String tagID = SAMTagUtil.makeStringTag(
                     binaryTag.tag);
             final KNOWN_DIGESTS hash;
             try {
@@ -131,7 +131,7 @@ public class ContentDigests {
             this.digest = digest;
             this.series = series;
             this.tagID = tagID;
-            this.tagCode = SAMTagUtil.getSingleton().makeBinaryTag(tagID);
+            this.tagCode = SAMTagUtil.makeBinaryTag(tagID);
         }
 
         void add(final SAMRecord record) {

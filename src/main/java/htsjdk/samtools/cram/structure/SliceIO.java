@@ -66,7 +66,7 @@ class SliceIO {
 
             SAMBinaryTagAndValue tags = slice.sliceTags;
             while (tags != null) {
-                log.debug(String.format("Found slice tag: %s", SAMTagUtil.getSingleton().makeStringTag(tags.tag)));
+                log.debug(String.format("Found slice tag: %s", SAMTagUtil.makeStringTag(tags.tag)));
                 tags = tags.getNext();
             }
         }
@@ -95,7 +95,7 @@ class SliceIO {
                 final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCoded);
                 SAMBinaryTagAndValue samBinaryTagAndValue = slice.sliceTags;
                 do {
-                    log.debug("Writing slice tag: " + SAMTagUtil.getSingleton().makeStringTag(samBinaryTagAndValue.tag));
+                    log.debug("Writing slice tag: " + SAMTagUtil.makeStringTag(samBinaryTagAndValue.tag));
                     binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
                 } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
                 // BinaryCodec doesn't seem to cache things.

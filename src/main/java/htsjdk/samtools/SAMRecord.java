@@ -163,6 +163,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     /**
      * Tags that are known to need the reverse complement if the read is reverse complemented.
      */
+    @SuppressWarnings("deprecated")
     public static List<String> TAGS_TO_REVERSE_COMPLEMENT = Arrays.asList(SAMTag.E2.name(), SAMTag.SQ.name());
 
     /**
@@ -868,7 +869,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws ClassCastException if RG tag does not have a String value.
      */
     public SAMReadGroupRecord getReadGroup() {
-        final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
+        final String rgId = (String)getAttribute(SAMTagUtil.RG);
         if (rgId == null || getHeader() == null) {
             return null;
         } else {
@@ -1162,7 +1163,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return Appropriately typed tag value, or null if the requested tag is not present.
      */
     public Object getAttribute(final String tag) {
-        return getAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag));
+        return getAttribute(SAMTagUtil.makeBinaryTag(tag));
     }
 
     /**
@@ -1196,7 +1197,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
-        return getUnsignedIntegerAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag));
+        return getUnsignedIntegerAttribute(SAMTagUtil.makeBinaryTag(tag));
     }
 
     /**
@@ -1219,11 +1220,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 return lValue;
             } else {
                 throw new SAMException("Unsigned integer value of tag " +
-                        SAMTagUtil.getSingleton().makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
+                        SAMTagUtil.makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
             }
         } else {
             throw new SAMException("Unexpected attribute value data type " + value.getClass() + " for tag " +
-                    SAMTagUtil.getSingleton().makeStringTag(tag));
+                    SAMTagUtil.makeStringTag(tag));
         }
     }
 
@@ -1374,7 +1375,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws SAMException if the tag is not present.
      */
     public boolean isUnsignedArrayAttribute(final String tag) {
-        final SAMBinaryTagAndValue tmp = this.mAttributes.find(SAMTagUtil.getSingleton().makeBinaryTag(tag));
+        final SAMBinaryTagAndValue tmp = this.mAttributes.find(SAMTagUtil.makeBinaryTag(tag));
         if (tmp != null) return tmp.isUnsignedArray();
         throw new SAMException("Tag " + tag + " is not present in this SAMRecord");
     }
@@ -1419,7 +1420,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * String values are not validated to ensure that they conform to SAM spec.
      */
     public void setAttribute(final String tag, final Object value) {
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
+        setAttribute(SAMTagUtil.makeBinaryTag(tag), value);
     }
 
     /**
@@ -1435,7 +1436,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         if (Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value, true);
+        setAttribute(SAMTagUtil.makeBinaryTag(tag), value, true);
     }
 
     /**
@@ -1556,8 +1557,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         SAMBinaryTagAndValue binaryAttributes = getBinaryAttributes();
         final List<SAMTagAndValue> ret = new ArrayList<>();
         while (binaryAttributes != null) {
-            ret.add(new SAMTagAndValue(SAMTagUtil.getSingleton().makeStringTag(binaryAttributes.tag),
-                    binaryAttributes.value));
+            ret.add(new SAMTagAndValue(SAMTagUtil.makeStringTag(binaryAttributes.tag),
+                                       binaryAttributes.value));
             binaryAttributes = binaryAttributes.getNext();
         }
         return ret;
@@ -1769,8 +1770,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         buffer.append(field);
     }
 
-    private String formatTagValue(final short tag, final Object value) {
-        final String tagString = SAMTagUtil.getSingleton().makeStringTag(tag);
+    private static String formatTagValue(final short tag, final Object value) {
+        final String tagString = SAMTagUtil.makeStringTag(tag);
         if (value == null || value instanceof String) {
             return tagString + ":Z:" + value;
         } else if (value instanceof Integer || value instanceof Long ||
@@ -2062,7 +2063,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 */
         }
         // Validate the RG ID is found in header
-        final String rgId = (String)getAttribute(SAMTagUtil.getSingleton().RG);
+        final String rgId = (String)getAttribute(SAMTagUtil.RG);
         if (rgId != null && getHeader() != null && getHeader().getReadGroup(rgId) == null) {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
@@ -2077,10 +2078,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
         // TODO(mccowan): Is this asking "is this the primary alignment"?
         if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
-            final Object fz = getAttribute(SAMTagUtil.getSingleton().FZ);
+            final Object fz = getAttribute(SAMTagUtil.FZ);
             if (fz == null) {
-                final String cq = (String)getAttribute(SAMTagUtil.getSingleton().CQ);
-                final String cs = (String)getAttribute(SAMTagUtil.getSingleton().CS);
+                final String cq = (String)getAttribute(SAMTagUtil.CQ);
+                final String cs = (String)getAttribute(SAMTagUtil.CS);
                 if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
                     if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,

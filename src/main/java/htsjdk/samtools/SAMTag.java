@@ -48,9 +48,15 @@ public enum SAMTag {
     FS,
     FT,
     FZ,
-    GC, // for backwards compatibility
+    /** for backwards compatibility only */
+    @Deprecated
+    GC,
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
     GS, // for backwards compatibility
-    GQ, // for backwards compatibility
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
+    GQ,
     LB,
     H0,
     H1,
@@ -58,7 +64,9 @@ public enum SAMTag {
     HI,
     IH,
     MC,
-    MF, // for backwards compatibility
+    /** @deprecated  for backwards compatibility only */
+    @Deprecated
+    MF,
     MI,
     MD,
     MQ,
@@ -79,19 +87,33 @@ public enum SAMTag {
     QX,
     R2,
     RG,
-
     /**
-     * @deprecated use BC instead
+     * @deprecated use BC instead, for backwards compatibilty only
      */
     @Deprecated
     RT,
-
     RX,
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
     S2, // for backwards compatibility
     SA,
     SM,
+    /** @deprecated  for backwards compatibility only */
+    @Deprecated
     SQ, // for backwards compatibility
     TC,
     U2,
-    UQ,
+    UQ;
+
+    private final short shortValue = SAMTagUtil.makeBinaryTag(this.name());
+
+    /**
+     * Get the binary representation of this tag name.
+     * @see SAMTagUtil#makeBinaryTag(String)
+     *
+     * @return the binary representation of this tag name
+     */
+    public short getBinaryTag(){
+        return this.shortValue;
     }
+}

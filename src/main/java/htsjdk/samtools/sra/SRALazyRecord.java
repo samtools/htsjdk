@@ -210,7 +210,7 @@ public class SRALazyRecord extends SAMRecord {
     static
     {
         lazyAttributeTags = new HashMap<Short, LazyAttribute>();
-        lazyAttributeTags.put(SAMTagUtil.getSingleton().RG, LazyAttribute.RG);
+        lazyAttributeTags.put(SAMTagUtil.RG, LazyAttribute.RG);
     }
 
     public SRALazyRecord(final SAMFileHeader header, SRAAccession accession, ReadCollection run, AlignmentIterator alignmentIterator, String readId, String alignmentId) {
@@ -673,7 +673,7 @@ public class SRALazyRecord extends SAMRecord {
 
     @Override
     public boolean isUnsignedArrayAttribute(final String tag) {
-        Short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag(tag);
+        Short binaryTag = SAMTagUtil.makeBinaryTag(tag);
         LazyAttribute attr = lazyAttributeTags.get(binaryTag);
         if (attr != null && !initializedAttributes.contains(attr)) {
             getAttribute(binaryTag);

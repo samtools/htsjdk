@@ -204,7 +204,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(SAMUtils.getOtherCanonicalAlignments(record).size(),0);
 
 
-        record.setAttribute(SAMTagUtil.getSingleton().SA,
+        record.setAttribute(SAMTagUtil.SA,
                 "2,500,+,3S2=1X2=2S,60,1;" +
                 "1,191,-,8M2S,60,*;");
 
@@ -233,7 +233,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(other.getAlignmentStart(),500);
         Assert.assertFalse(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
-        Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),1);
+        Assert.assertEquals(other.getAttribute(SAMTagUtil.NM),1);
         Assert.assertEquals(other.getCigarString(),"3S2=1X2=2S");
         Assert.assertEquals(other.getInferredInsertSize(),0);
 
@@ -244,7 +244,7 @@ public class SAMUtilsTest extends HtsjdkTest {
         Assert.assertEquals(other.getAlignmentStart(),191);
         Assert.assertTrue(other.getReadNegativeStrandFlag());
         Assert.assertEquals(other.getMappingQuality(), 60);
-        Assert.assertEquals(other.getAttribute(SAMTagUtil.getSingleton().NM),null);
+        Assert.assertEquals(other.getAttribute(SAMTagUtil.NM),null);
         Assert.assertEquals(other.getCigarString(),"8M2S");
         Assert.assertEquals(other.getInferredInsertSize(),-91);//100(mate) - 191(other)
     }

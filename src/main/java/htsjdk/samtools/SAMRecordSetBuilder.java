@@ -203,7 +203,7 @@ public class SAMRecordSetBuilder implements Iterable<SAMRecord> {
      */
     public void addRecord(final SAMRecord record) {
         if (record.getReadPairedFlag() && !record.getMateUnmappedFlag() &&
-                null == record.getAttribute(SAMTagUtil.getSingleton().MC)) {
+                null == record.getAttribute(SAMTagUtil.MC)) {
             throw new SAMException("Mate Cigar tag (MC) not found in: " + record.getReadName());
         }
         this.records.add(record);

@@ -39,7 +39,7 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
 
     @Test(dataProvider="allowedAttributeTypes")
     public void test_isAllowedConstructor(final Object value) {
-        Assert.assertNotNull(new SAMBinaryTagAndValue(SAMTagUtil.getSingleton().makeBinaryTag("UI"), value));
+        Assert.assertNotNull(new SAMBinaryTagAndValue(SAMTagUtil.makeBinaryTag("UI"), value));
     }
 
     @DataProvider(name="notAllowedAttributeTypes")
@@ -61,7 +61,7 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
 
     @Test(dataProvider="notAllowedAttributeTypes", expectedExceptions=IllegalArgumentException.class)
     public void test_isNotAllowedConstructor(final Object value) {
-        new SAMBinaryTagAndValue(SAMTagUtil.getSingleton().makeBinaryTag("ZZ"), value);
+        new SAMBinaryTagAndValue(SAMTagUtil.makeBinaryTag("ZZ"), value);
     }
 
     @DataProvider(name="allowedUnsignedArrayTypes")
@@ -75,7 +75,7 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
 
     @Test(dataProvider="allowedUnsignedArrayTypes")
     public void test_isAllowedUnsignedArrayAttribute(final Object value) {
-        final short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+        final short binaryTag = SAMTagUtil.makeBinaryTag("UI");
         Assert.assertNotNull(new SAMBinaryTagAndUnsignedArrayValue(binaryTag, value));
     }
 
@@ -89,13 +89,13 @@ public class SAMBinaryTagAndValueUnitTest extends HtsjdkTest {
 
     @Test(dataProvider="notAllowedUnsignedArrayTypes", expectedExceptions=IllegalArgumentException.class)
     public void test_isNotAllowedUnsignedArrayAttribute(final Object value) {
-        final short binaryTag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+        final short binaryTag = SAMTagUtil.makeBinaryTag("UI");
         new SAMBinaryTagAndUnsignedArrayValue(binaryTag, value);
     }
 
     @DataProvider(name="hashCopyEquals")
     public Object[][] hashCopyEquals() {
-        final short tag = SAMTagUtil.getSingleton().makeBinaryTag("UI");
+        final short tag = SAMTagUtil.makeBinaryTag("UI");
         return new Object[][] {
                 {new SAMBinaryTagAndValue(tag, new String("a string")), new SAMBinaryTagAndValue(tag, new String("a string")), true, true},
                 {new SAMBinaryTagAndValue(tag, new String("a string")), new SAMBinaryTagAndValue(tag, new String("different string")), false, false},
