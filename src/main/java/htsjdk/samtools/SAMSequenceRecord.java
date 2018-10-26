@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
 public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
-    private String mSequenceName = null; // Value must be interned() if it's ever set/modified
+    private final String mSequenceName; // Value must be interned() if it's ever set/modified
     private int mSequenceIndex = -1;
     private int mSequenceLength = 0;
     public static final String SEQUENCE_NAME_TAG = "SN";
@@ -69,15 +69,10 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
                                                 SPECIES_TAG));
 
     // Split on any whitespace
-    private static Pattern SEQUENCE_NAME_SPLITTER = Pattern.compile("\\s");
+    private static final Pattern SEQUENCE_NAME_SPLITTER = Pattern.compile("\\s");
     // These are the chars matched by \\s.
-    private static char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
+    private static final char[] WHITESPACE_CHARS = {' ', '\t', '\n', '\013', '\f', '\r'}; // \013 is vertical tab
 
-    /** a (private) empty constructor is required for JAXB.XML-serialisation */
-    @SuppressWarnings("unused")
-    private SAMSequenceRecord() {
-    }
-    
     /**
      * @deprecated Use {@link #SAMSequenceRecord(String, int)} instead.
      * sequenceLength is required for the object to be considered valid.
@@ -94,22 +89,13 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             }
             validateSequenceName(name);
             mSequenceName = name.intern();
+        } else {
+            mSequenceName = null;
         }
         mSequenceLength = sequenceLength;
     }
 
     public String getSequenceName() { return mSequenceName; }
-   
-    /* this private method is used by XML serialization */
-    @SuppressWarnings("unused")
-    private void setSequenceName(final String name) {
-        if (name != null) {
-            mSequenceName = name.intern();
-        }
-        else {
-            mSequenceName = null;
-        }
-    }
 
     public int getSequenceLength() { return mSequenceLength; }
     public void setSequenceLength(final int value) { mSequenceLength = value; }
@@ -155,14 +141,6 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         }
 
         return true;
-    }
-
-    private URI makeURI(final String s) throws URISyntaxException {
-        URI uri = new URI(s);
-        if (uri.getScheme() == null) {
-            uri = new URI("file", uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), uri.getFragment());
-        }
-        return uri;
     }
 
     @Override
