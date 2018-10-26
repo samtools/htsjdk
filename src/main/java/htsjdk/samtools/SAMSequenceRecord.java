@@ -23,9 +23,7 @@
  */
 package htsjdk.samtools;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlValue;
+
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,7 +36,7 @@ import java.util.regex.Pattern;
 /**
  * Header information about a reference sequence.  Corresponds to @SQ header record in SAM text header.
  */
-@XmlRootElement(name="Reference")
+
 public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Cloneable
 {
     public static final long serialVersionUID = 1L; // AbstractSAMHeaderRecord implements Serializable
@@ -99,8 +97,7 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
         }
         mSequenceLength = sequenceLength;
     }
-    
-    @XmlValue
+
     public String getSequenceName() { return mSequenceName; }
    
     /* this private method is used by XML serialization */
@@ -113,27 +110,22 @@ public class SAMSequenceRecord extends AbstractSAMHeaderRecord implements Clonea
             mSequenceName = null;
         }
     }
-    
-    @XmlAttribute(name="length")
+
     public int getSequenceLength() { return mSequenceLength; }
     public void setSequenceLength(final int value) { mSequenceLength = value; }
 
-    @XmlAttribute(name="assembly")
     public String getAssembly() { return (String) getAttribute(ASSEMBLY_TAG); }
     public void setAssembly(final String value) { setAttribute(ASSEMBLY_TAG, value); }
 
-    @XmlAttribute(name="species")
     public String getSpecies() { return (String) getAttribute(SPECIES_TAG); }
     public void setSpecies(final String value) { setAttribute(SPECIES_TAG, value); }
 
-    @XmlAttribute(name="md5")
     public String getMd5() { return (String) getAttribute(MD5_TAG); }
     public void setMd5(final String value) { setAttribute(MD5_TAG, value); }
 
     /**
      * @return Index of this record in the sequence dictionary it lives in. 
      */
-    @XmlAttribute(name="index")
     public int getSequenceIndex() { return mSequenceIndex; }
 
     // Private state used only by SAM implementation.
