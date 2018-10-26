@@ -26,11 +26,7 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.Iso8601Date;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Header information about a read group.
@@ -51,6 +47,13 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
     public static final String PLATFORM_MODEL_TAG = "PM";
     public static final String PLATFORM_UNIT_TAG = "PU";
     public static final String READ_GROUP_SAMPLE_TAG = "SM";
+    public static final String BARCODE_TAG = "BC";
+
+    /**
+     * The recommended separator for the {@link #BARCODE_TAG} when there are multiple bar codes associated with this read group.
+     */
+    public static final String BARCODE_SEPARATOR = "-";
+
 
     /* Platform values for the @RG-PL tag */
     public enum PlatformValue {
@@ -63,7 +66,7 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
             new HashSet<String>(Arrays.asList(READ_GROUP_ID_TAG, SEQUENCING_CENTER_TAG, DESCRIPTION_TAG,
                     DATE_RUN_PRODUCED_TAG, FLOW_ORDER_TAG, KEY_SEQUENCE_TAG, LIBRARY_TAG,
                     PROGRAM_GROUP_TAG, PREDICTED_MEDIAN_INSERT_SIZE_TAG, PLATFORM_TAG, PLATFORM_MODEL_TAG,
-                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG));
+                    PLATFORM_UNIT_TAG, READ_GROUP_SAMPLE_TAG, BARCODE_TAG));
 
     public SAMReadGroupRecord(final String id) { mReadGroupId = id; }
 
@@ -89,6 +92,36 @@ public class SAMReadGroupRecord extends AbstractSAMHeaderRecord
 
     public String getPlatform() { return getAttribute(PLATFORM_TAG); }
     public void setPlatform(final String platform) { setAttribute(PLATFORM_TAG, platform); }
+
+    /**
+     * @return the List of barcodes associated with this read group or null
+     */
+    public List<String> getBarcodes() {
+        final String barcodeString = getAttribute(BARCODE_TAG);
+        if (barcodeString == null) {
+            return null;
+        } else if (barcodeString.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            return Arrays.asList(barcodeString.split(BARCODE_SEPARATOR));
+        }
+    }
+
+    /**
+     * Set the barcodes associated with this ReadGroup.
+     * Note that an input of null results in unsetting the attribute while an empty list is set as a tag with an empty value.
+     * @param barcodes a list of barcodes to associate with this read group
+     */
+    public void setBarcodes(List<String> barcodes) {
+        if (barcodes == null) {
+            setAttribute(BARCODE_TAG, null);
+        } else {
+            if (barcodes.stream().anyMatch(String::isEmpty)) {
+                throw new IllegalArgumentException("A barcode must not be an empty String");
+            }
+           setAttribute(BARCODE_TAG, String.join(BARCODE_SEPARATOR, barcodes));
+        }
+    }
 
     public Date getRunDate() {
         final String dt = getAttribute(DATE_RUN_PRODUCED_TAG);
