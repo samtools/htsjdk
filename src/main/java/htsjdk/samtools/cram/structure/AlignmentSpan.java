@@ -2,6 +2,8 @@ package htsjdk.samtools.cram.structure;
 
 import htsjdk.samtools.SAMRecord;
 
+import java.util.Objects;
+
 /**
  * A span of reads on a single reference.
  */
@@ -88,5 +90,22 @@ public class AlignmentSpan {
 
     public int getCount() {
         return count;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+
+        AlignmentSpan that = (AlignmentSpan)obj;
+
+        return this.start == that.start &&
+                this.span == that.span &&
+                this.count == that.count;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(start, span, count);
     }
 }

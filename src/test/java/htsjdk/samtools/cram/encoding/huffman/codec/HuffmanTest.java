@@ -69,7 +69,6 @@ public class HuffmanTest extends HtsjdkTest {
     public void testHuffmanByteHelper() throws IOException {
         int size = 1000000;
 
-        long time5 = System.nanoTime();
         HuffmanParamsCalculator cal = new HuffmanParamsCalculator();
         for (byte i = 33; i < 33 + 15; i++) {
             cal.add(i);

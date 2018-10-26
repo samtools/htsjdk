@@ -46,13 +46,6 @@ public class Container {
     // slices found in the container:
     public Slice[] slices;
 
-    // for performance measurement:
-    public long buildHeaderTime;
-    public long buildSlicesTime;
-    public long writeTime;
-    public long parseTime;
-    public long readTime;
-
     // for indexing:
     /**
      * Container start in the stream.
