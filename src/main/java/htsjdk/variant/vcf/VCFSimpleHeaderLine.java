@@ -126,4 +126,8 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     public String getID() {
         return name;
     }
-}
+	
+    public String getGenericFields() {
+	return genericFields;    
+    }	    
+ }
