@@ -1,8 +1,8 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeEOFException;
 import htsjdk.samtools.util.RuntimeIOException;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -27,7 +27,7 @@ public class LTF8 {
         try {
             final int b1 = inputStream.read();
             if (b1 == -1)
-                throw new EOFException();
+                throw new RuntimeEOFException();
 
             if ((b1 & 128) == 0)
                 return b1;

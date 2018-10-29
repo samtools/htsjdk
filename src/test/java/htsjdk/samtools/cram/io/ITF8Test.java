@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.io;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.util.RuntimeEOFException;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -99,7 +100,7 @@ public class ITF8Test extends HtsjdkTest {
         Assert.assertEquals(value, n);
     }
 
-    @Test(expectedExceptions = EOFException.class)
+    @Test(expectedExceptions = RuntimeEOFException.class)
     public void emptyStreamTest() throws IOException {
         try (InputStream emptyStream = new ByteArrayInputStream(new byte[0])) {
             ITF8.readUnsignedITF8(emptyStream);
