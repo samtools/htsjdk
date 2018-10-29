@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.io;
 
+import htsjdk.samtools.util.RuntimeIOException;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,29 +46,33 @@ public class ITF8 {
      *
      * @param inputStream the stream to read from
      * @return the value read
-     * @throws IOException as per java IO contract
      */
-    public static int readUnsignedITF8(final InputStream inputStream) throws IOException {
-        final int b1 = inputStream.read();
-        if (b1 == -1)
-            throw new EOFException();
+    public static int readUnsignedITF8(final InputStream inputStream) {
+        try {
+            final int b1 = inputStream.read();
+            if (b1 == -1)
+                throw new EOFException();
 
-        if ((b1 & 128) == 0)
-            return b1;
+            if ((b1 & 128) == 0)
+                return b1;
 
-        if ((b1 & 64) == 0)
-            return ((b1 & 127) << 8) | inputStream.read();
+            if ((b1 & 64) == 0)
+                return ((b1 & 127) << 8) | inputStream.read();
 
-        if ((b1 & 32) == 0) {
-            final int b2 = inputStream.read();
-            final int b3 = inputStream.read();
-            return ((b1 & 63) << 16) | b2 << 8 | b3;
+            if ((b1 & 32) == 0) {
+                final int b2 = inputStream.read();
+                final int b3 = inputStream.read();
+                return ((b1 & 63) << 16) | b2 << 8 | b3;
+            }
+
+            if ((b1 & 16) == 0)
+                return ((b1 & 31) << 24) | inputStream.read() << 16 | inputStream.read() << 8 | inputStream.read();
+
+            return ((b1 & 15) << 28) | inputStream.read() << 20 | inputStream.read() << 12 | inputStream.read() << 4 | (15 & inputStream.read());
         }
-
-        if ((b1 & 16) == 0)
-            return ((b1 & 31) << 24) | inputStream.read() << 16 | inputStream.read() << 8 | inputStream.read();
-
-        return ((b1 & 15) << 28) | inputStream.read() << 20 | inputStream.read() << 12 | inputStream.read() << 4 | (15 & inputStream.read());
+        catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     /**
@@ -117,46 +123,49 @@ public class ITF8 {
      * @param value the value to be written out
      * @param outputStream    the stream to write to
      * @return number of bits written
-     * @throws IOException as per java IO contract
      */
-    public static int writeUnsignedITF8(final int value, final OutputStream outputStream) throws IOException {
-        if ((value >>> 7) == 0) {
-            // no control bits
-            outputStream.write(value);
-            return 8;
-        }
+    public static int writeUnsignedITF8(final int value, final OutputStream outputStream) {
+        try {
+            if ((value >>> 7) == 0) {
+                // no control bits
+                outputStream.write(value);
+                return 8;
+            }
 
-        if ((value >>> 14) == 0) {
-            // 1 control bit
-            outputStream.write(((value >> 8) | 0x80));
+            if ((value >>> 14) == 0) {
+                // 1 control bit
+                outputStream.write(((value >> 8) | 0x80));
+                outputStream.write((value & 0xFF));
+                return 16;
+            }
+
+            if ((value >>> 21) == 0) {
+                // 2 control bits
+                outputStream.write(((value >> 16) | 0xC0));
+                outputStream.write(((value >> 8) & 0xFF));
+                outputStream.write((value & 0xFF));
+                return 24;
+            }
+
+            if ((value >>> 28) == 0) {
+                // 3 control bits
+                outputStream.write(((value >> 24) | 0xE0));
+                outputStream.write(((value >> 16) & 0xFF));
+                outputStream.write(((value >> 8) & 0xFF));
+                outputStream.write((value & 0xFF));
+                return 32;
+            }
+
+            // 4 control bits
+            outputStream.write(((value >> 28) | 0xF0));
+            outputStream.write(((value >> 20) & 0xFF));
+            outputStream.write(((value >> 12) & 0xFF));
+            outputStream.write(((value >> 4) & 0xFF));
             outputStream.write((value & 0xFF));
-            return 16;
+            return 40;
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
         }
-
-        if ((value >>> 21) == 0) {
-            // 2 control bits
-            outputStream.write(((value >> 16) | 0xC0));
-            outputStream.write(((value >> 8) & 0xFF));
-            outputStream.write((value & 0xFF));
-            return 24;
-        }
-
-        if ((value >>> 28) == 0) {
-            // 3 control bits
-            outputStream.write(((value >> 24) | 0xE0));
-            outputStream.write(((value >> 16) & 0xFF));
-            outputStream.write(((value >> 8) & 0xFF));
-            outputStream.write((value & 0xFF));
-            return 32;
-        }
-
-        // 4 control bits
-        outputStream.write(((value >> 28) | 0xF0));
-        outputStream.write(((value >> 20) & 0xFF));
-        outputStream.write(((value >> 12) & 0xFF));
-        outputStream.write(((value >> 4) & 0xFF));
-        outputStream.write((value & 0xFF));
-        return 40;
     }
 
     /**

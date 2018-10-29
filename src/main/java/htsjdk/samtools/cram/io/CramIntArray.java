@@ -15,7 +15,7 @@ public class CramIntArray {
      * @return array of integers from the input stream
      * @throws IOException as per java IO contract
      */
-    public static int[] array(final InputStream inputStream) throws IOException {
+    public static int[] array(final InputStream inputStream) {
         final int size = ITF8.readUnsignedITF8(inputStream);
         final int[] array = new int[size];
         for (int i = 0; i < size; i++)
@@ -32,7 +32,7 @@ public class CramIntArray {
      * @return the number of bits written out
      * @throws IOException as per java IO contract
      */
-    public static int write(final int[] array, final OutputStream outputStream) throws IOException {
+    public static int write(final int[] array, final OutputStream outputStream) {
         int length = ITF8.writeUnsignedITF8(array.length, outputStream);
         for (final int intValue : array) length += ITF8.writeUnsignedITF8(intValue, outputStream);
 
