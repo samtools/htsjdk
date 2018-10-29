@@ -36,8 +36,8 @@ import java.nio.ByteBuffer;
  */
 public class ITF8 {
 
-    public static final int MAX_BYTES = 5;
-    public static final int MAX_BITS = 8 * MAX_BYTES;
+    static final int MAX_BYTES = 5;
+    static final int MAX_BITS = 8 * MAX_BYTES;
 
     /**
      * Reads an unsigned (32 bit) integer from an {@link InputStream}. The sign bit should be interpreted as a value bit.

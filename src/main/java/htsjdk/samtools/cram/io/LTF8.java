@@ -12,8 +12,8 @@ import java.io.OutputStream;
  */
 public class LTF8 {
 
-    public static final int MAX_BYTES = 9;
-    public static final int MAX_BITS = 8 * MAX_BYTES;
+    static final int MAX_BYTES = 9;
+    static final int MAX_BITS = 8 * MAX_BYTES;
 
     /**
      * Reads an unsigned long value from the input stream. The sign bit should be interpreted just as other bits in the value.
