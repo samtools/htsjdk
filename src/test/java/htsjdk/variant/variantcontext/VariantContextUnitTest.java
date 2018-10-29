@@ -1566,7 +1566,7 @@ public class VariantContextUnitTest extends VariantBaseTest {
 
         // add end attribute to context
         context = builder
-                .attribute("END", 10)
+                .attribute("END", snpLocStop)
                 .make();
         Assert.assertTrue(context.isRefOnlyBlock());
 
