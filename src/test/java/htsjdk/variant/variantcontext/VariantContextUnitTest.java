@@ -1553,6 +1553,43 @@ public class VariantContextUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testRefOnlyBlock(){
+        VariantContextBuilder builder = new VariantContextBuilder();
+
+        // create a context with the only alt allele being symbolic and no "END" attribute
+        VariantContext context = builder
+                .source("test")
+                .loc(snpLoc, snpLocStart, snpLocStop)
+                .alleles("A", "<*>")
+                .make();
+        Assert.assertFalse(context.isRefOnlyBlock());
+
+        // add end attribute to context
+        context = builder
+                .attribute("END", 10)
+                .make();
+        Assert.assertTrue(context.isRefOnlyBlock());
+
+        // use a different symbolic alt allele
+        context = builder
+                .alleles("A", "<NON_REF>")
+                .make();
+        Assert.assertTrue(context.isRefOnlyBlock());
+
+        // add a second alt allele to the context
+        context = builder
+                .alleles("A", "G", "<*>")
+                .make();
+        Assert.assertFalse(context.isRefOnlyBlock());
+
+        // context with no symbolic alt allele
+        context = builder
+                .alleles("A", "G")
+                .make();
+        Assert.assertFalse(context.isRefOnlyBlock());
+    }
+
+    @Test
     public void testGetAttributeAsIntList() {
         final VariantContext context = basicBuilder
                 .attribute("Empty", new int[0])
