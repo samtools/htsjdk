@@ -15,18 +15,18 @@ import java.util.List;
 public class ExternalIntegerCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
-    public void codecTest(List<Integer> values) throws IOException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            BitCodec<Integer> writeCodec = new ExternalIntegerCodec(os, null);
+    public void codecTest(final List<Integer> values) throws IOException {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            final BitCodec<Integer> writeCodec = new ExternalIntegerCodec(os, null);
 
-            for (int value : values) {
+            for (final int value : values) {
                 // this parameter is not used - the external block is set in the constructor
                 writeCodec.write(null, value);
             }
 
-            List<Integer> actual = new ArrayList<>(values.size());
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                BitCodec<Integer> readCodec = new ExternalIntegerCodec(null, is);
+            final List<Integer> actual = new ArrayList<>(values.size());
+            try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
+                final BitCodec<Integer> readCodec = new ExternalIntegerCodec(null, is);
 
                 for (int i = 0; i < values.size(); i++) {
                     // this parameter is not used - the external block is set in the constructor

@@ -12,18 +12,18 @@ import java.util.List;
 public class ExternalByteCodecTest extends HtsjdkTest {
 
     @Test(dataProvider = "testByteLists", dataProviderClass = IOTestCases.class)
-    public void codecTest(List<Byte> values) throws IOException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            BitCodec<Byte> writeCodec = new ExternalByteCodec(os, null);
+    public void codecTest(final List<Byte> values) throws IOException {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            final BitCodec<Byte> writeCodec = new ExternalByteCodec(os, null);
 
-            for (byte value : values) {
+            for (final byte value : values) {
                 // this parameter is not used - the external block is set in the constructor
                 writeCodec.write(null, value);
             }
 
-            List<Byte> actual = new ArrayList<>(values.size());
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                BitCodec<Byte> readCodec = new ExternalByteCodec(null, is);
+            final List<Byte> actual = new ArrayList<>(values.size());
+            try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
+                final BitCodec<Byte> readCodec = new ExternalByteCodec(null, is);
 
                 for (int i = 0; i < values.size(); i++) {
                     // this parameter is not used - the external block is set in the constructor
@@ -37,8 +37,8 @@ public class ExternalByteCodecTest extends HtsjdkTest {
 
     @Test(expectedExceptions = RuntimeException.class)
     public void readWithLength() throws IOException {
-        try (InputStream is = new ByteArrayInputStream(new byte[0])) {
-            BitCodec<Byte> readCodec = new ExternalByteCodec(null, is);
+        try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
+            final BitCodec<Byte> readCodec = new ExternalByteCodec(null, is);
 
             // this parameter is not used - the external block is set in the constructor
             readCodec.read(null, 1);

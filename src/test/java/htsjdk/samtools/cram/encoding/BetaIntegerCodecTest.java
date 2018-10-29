@@ -12,19 +12,19 @@ import java.io.*;
 
 public class BetaIntegerCodecTest extends HtsjdkTest {
 
-    private void testCodec(int offset, int bitsPerValue, int[] values) throws IOException {
-        BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
+    private void testCodec(final int offset, final int bitsPerValue, final int[] values) throws IOException {
+        final BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
+             final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
-            for (int value : values) {
+            for (final int value : values) {
                 codec.write(bos, value);
             }
 
-            int[] actual = new int[values.length];
-            try (InputStream is = new ByteArrayInputStream(os.toByteArray());
-                 DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
+            final int[] actual = new int[values.length];
+            try (final InputStream is = new ByteArrayInputStream(os.toByteArray());
+                 final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
 
                 for (int i = 0; i < values.length; i++) {
                     actual[i] = codec.read(dbis);
@@ -46,7 +46,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "basicTest")
-    public void basicTest(int bitsPerValue, int offset, int[] values) throws IOException {
+    public void basicTest(final int bitsPerValue, final int offset, final int[] values) throws IOException {
         testCodec(offset, bitsPerValue, values);
     }
 
@@ -61,7 +61,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "basicTestNoOffset")
-    public void basicTestNoOffset(int bitsPerValue, int[] values) throws IOException {
+    public void basicTestNoOffset(final int bitsPerValue, final int[] values) throws IOException {
         testCodec(0, bitsPerValue, values);
     }
 
@@ -77,7 +77,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "bitsPerValue", expectedExceptions = IllegalArgumentException.class)
-    public void bitsPerValue(int bitsPerValue) {
+    public void bitsPerValue(final int bitsPerValue) {
         new BetaIntegerCodec(0, bitsPerValue);
     }
 
@@ -104,11 +104,11 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "overflow", expectedExceptions = IllegalArgumentException.class)
-    public void overflow(int bitsPerValue, int offset, int value) throws IOException {
-        BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
+    public void overflow(final int bitsPerValue, final int offset, final int value) throws IOException {
+        final BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
+             final BitOutputStream bos = new DefaultBitOutputStream(os)) {
             codec.write(bos, value);
         }
     }
@@ -129,11 +129,11 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
     }
 
     @Test(dataProvider = "negativeTest", expectedExceptions = IllegalArgumentException.class)
-    public void negativeTest(int bitsPerValue, int offset, int value) throws IOException {
-        BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
+    public void negativeTest(final int bitsPerValue, final int offset, final int value) throws IOException {
+        final BitCodec<Integer> codec = new BetaIntegerCodec(offset, bitsPerValue);
 
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-             BitOutputStream bos = new DefaultBitOutputStream(os)) {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
+             final BitOutputStream bos = new DefaultBitOutputStream(os)) {
             codec.write(bos, value);
         }
     }
