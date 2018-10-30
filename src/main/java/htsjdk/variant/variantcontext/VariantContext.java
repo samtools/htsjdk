@@ -1684,11 +1684,13 @@ public class VariantContext implements Feature, Serializable {
 
     /**
      *
-     * @return whether the variant context meets the requirements to be a REF-only block
+     * @return whether the variant context meets the requirements to be a REF-only block or not
      *
      */
     public boolean isRefOnlyBlock(){
-        return getAlternateAlleles().size() == 1 && getAlternateAllele(0).isSymbolic() && getAttribute(VCFConstants.END_KEY) != null;
+        return getAlternateAlleles().size() == 1
+                && getAlternateAllele(0).isValidRefBlockAllele()
+                && getAttribute(VCFConstants.END_KEY) != null;
     }
 
     public boolean hasSymbolicAlleles() {

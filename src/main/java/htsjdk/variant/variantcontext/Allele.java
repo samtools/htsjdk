@@ -134,6 +134,8 @@ public class Allele implements Comparable<Allele>, Serializable {
     /** A generic static NON_REF allele for use */
     public final static String NON_REF_STRING = "<NON_REF>";
 
+    public final static String UNSPECIFIED_ALTERNATE_ALLELE_STRING = "<*>";
+
     // no public way to create an allele
     protected Allele(final byte[] bases, final boolean isRef) {
         // null alleles are no longer allowed
@@ -198,6 +200,7 @@ public class Allele implements Comparable<Allele>, Serializable {
     public final static Allele SPAN_DEL = new Allele(SPAN_DEL_STRING, false);
     public final static Allele NO_CALL = new Allele(NO_CALL_STRING, false);
     public final static Allele NON_REF_ALLELE = new Allele(NON_REF_STRING, false);
+    public final static Allele UNSPECIFIED_ALTERNATE_ALLELE = new Allele(UNSPECIFIED_ALTERNATE_ALLELE_STRING, false);
 
     // for simple deletion, e.g. "ALT==<DEL>" (note that the spec allows, for now at least, alt alleles like <DEL:ME>)
     public final static Allele SV_SIMPLE_DEL = StructuralVariantType.DEL.toSymbolicAltAllele();
@@ -557,5 +560,12 @@ public class Allele implements Comparable<Allele>, Serializable {
     private static boolean firstIsPrefixOfSecond(final Allele a1, final Allele a2) {
         String a1String = a1.getBaseString();
         return a2.getBaseString().substring(0, a1String.length()).equals(a1String);
+    }
+
+    /**
+     *  @return true if Allele is either "<NON_REF>" or "<*>"
+     */
+    public boolean isValidRefBlockAllele() {
+        return this.equals(Allele.NON_REF_ALLELE) || this.equals(Allele.UNSPECIFIED_ALTERNATE_ALLELE);
     }
 }

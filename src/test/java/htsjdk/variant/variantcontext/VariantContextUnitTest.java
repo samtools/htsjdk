@@ -1552,41 +1552,28 @@ public class VariantContextUnitTest extends VariantBaseTest {
         }
     }
 
-    @Test
-    public void testRefOnlyBlock(){
-        VariantContextBuilder builder = new VariantContextBuilder();
+    @DataProvider(name = "refOnlyBlockData")
+    public Object[][] refOnlyBlockData() {
+        List<Object[]> tests = new ArrayList<>();
 
-        // create a context with the only alt allele being symbolic and no "END" attribute
-        VariantContext context = builder
-                .source("test")
-                .loc(snpLoc, snpLocStart, snpLocStop)
-                .alleles("A", "<*>")
-                .make();
-        Assert.assertFalse(context.isRefOnlyBlock());
+        tests.add(new Object[]{Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), false, false});
+        tests.add(new Object[]{Arrays.asList(Aref, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, true});
+        tests.add(new Object[]{Arrays.asList(Aref, Allele.NON_REF_ALLELE), true, true});
+        tests.add(new Object[]{Arrays.asList(Aref, C, Allele.UNSPECIFIED_ALTERNATE_ALLELE), true, false});
+        tests.add(new Object[]{Arrays.asList(Aref, C), false, false});
 
-        // add end attribute to context
-        context = builder
-                .attribute("END", snpLocStop)
-                .make();
-        Assert.assertTrue(context.isRefOnlyBlock());
+        return tests.toArray(new Object[][]{});
+    }
 
-        // use a different symbolic alt allele
-        context = builder
-                .alleles("A", "<NON_REF>")
-                .make();
-        Assert.assertTrue(context.isRefOnlyBlock());
-
-        // add a second alt allele to the context
-        context = builder
-                .alleles("A", "G", "<*>")
-                .make();
-        Assert.assertFalse(context.isRefOnlyBlock());
-
-        // context with no symbolic alt allele
-        context = builder
-                .alleles("A", "G")
-                .make();
-        Assert.assertFalse(context.isRefOnlyBlock());
+    @Test(dataProvider = "refOnlyBlockData")
+    public void testRefOnlyBlock(List<Allele> alleles, boolean addEndAttribute, boolean isRefBlock){
+        // create a context builder/context based on inputs provided
+        final VariantContextBuilder builder =
+                new VariantContextBuilder("test", snpLoc,snpLocStart, snpLocStop, alleles);
+        if (addEndAttribute){
+            builder.attribute("END", 10);
+        }
+        Assert.assertEquals(builder.make().isRefOnlyBlock(), isRefBlock);
     }
 
     @Test
