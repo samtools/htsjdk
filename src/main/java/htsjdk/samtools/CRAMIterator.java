@@ -72,7 +72,7 @@ public class CRAMIterator implements SAMRecordIterator {
 
     /**
      * `samRecordIndex` only used when validation is not `SILENT`
-     * (for tracking numbers of invalid records(if it's present) and to use it in exception's message)
+     * (for identification by the validator which records are invalid)
      */
     private long samRecordIndex;
     private ArrayList<CramCompressionRecord> cramRecords;
