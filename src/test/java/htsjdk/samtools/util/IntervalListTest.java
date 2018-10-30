@@ -482,7 +482,7 @@ public class IntervalListTest extends HtsjdkTest {
         final File compIntervalFile = new File(compInterval);
 
         final IntervalList compList = IntervalList.fromFile(compIntervalFile);
-        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.fromVcf(vcfFile)) : VCFFileReader.fromVcf(vcfFile);
+        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcfFile.toPath())) : VCFFileReader.toIntervalList(vcfFile.toPath());
 
         compList.getHeader().getSequenceDictionary().assertSameDictionary(list.getHeader().getSequenceDictionary());
 
@@ -513,7 +513,7 @@ public class IntervalListTest extends HtsjdkTest {
         final File compIntervalFile = new File(compInterval);
 
         final IntervalList compList = IntervalList.fromFile(compIntervalFile);
-        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.fromVcf(vcfFile)) : VCFFileReader.fromVcf(vcfFile);
+        final IntervalList list = invertVCF ? IntervalList.invert(VCFFileReader.toIntervalList(vcfFile.toPath())) : VCFFileReader.toIntervalList(vcfFile.toPath());
 
         compList.getHeader().getSequenceDictionary().assertSameDictionary(list.getHeader().getSequenceDictionary());
 
@@ -661,6 +661,6 @@ public class IntervalListTest extends HtsjdkTest {
     public void testContigsAbsentInHeader() {
         String vcf = "src/test/resources/htsjdk/samtools/intervallist/IntervalListFromVCFNoContigLines.vcf";
         final File vcfFile = new File(vcf);
-        VCFFileReader.fromVcf(vcfFile);
+        VCFFileReader.toIntervalList(vcfFile.toPath());
     }
 }

@@ -1236,4 +1236,12 @@ public final class SAMUtils {
         }
         return alignments;
     }
+
+    /**
+     * Checks if reference sequence is compatible with BAI indexing format.
+     * @param sequence reference sequence.
+     */
+    public static boolean isReferenceSequenceCompatibleWithBAI(final SAMSequenceRecord sequence) {
+        return sequence.getSequenceLength() > GenomicIndexUtil.BIN_GENOMIC_SPAN;
+    }
 }

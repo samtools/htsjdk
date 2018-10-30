@@ -19,6 +19,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileSystem;
@@ -59,6 +60,13 @@ public class IndexTest extends HtsjdkTest {
         Assert.assertTrue(allSize >= Math.max(leftSize,rightSize), "Expected size of joint query " + allSize + " to be at least >= max of left " + leftSize + " and right queries " + rightSize);
     }
 
+    @Test()
+    public void testLoadFromStream() throws IOException {
+        LinearIndex index = (LinearIndex)IndexFactory.loadIndex(MassiveIndexFile.getAbsolutePath(), new FileInputStream(MassiveIndexFile));
+        List<String> sequenceNames = index.getSequenceNames();
+        Assert.assertEquals(sequenceNames.size(), 1);
+        Assert.assertEquals(sequenceNames.get(0), CHR);
+    }
 
     @DataProvider(name = "writeIndexData")
     public Object[][] writeIndexData() {

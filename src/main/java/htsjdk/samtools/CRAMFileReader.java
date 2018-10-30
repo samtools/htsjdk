@@ -466,6 +466,32 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
             iterator.setFileSource(enabled ? reader : null);
     }
 
+    /**
+     * Prepare to iterate through SAMRecords that match the intersection of the given intervals and chunk boundaries.
+     * @param intervals the intervals to restrict reads to
+     * @param contained if <code>true</code>, return records that are strictly
+     *                  contained in the intervals, otherwise return records that overlap
+     * @param filePointers file pointer pairs corresponding to chunk boundaries for the
+     *                     intervals
+     */
+    public CloseableIterator<SAMRecord> createIndexIterator(final QueryInterval[] intervals,
+                                                            final boolean contained,
+                                                            final long[] filePointers) {
+        return new CRAMIntervalIterator(intervals, contained, filePointers);
+    }
+
+    // convert queries -> merged BAMFileSpan -> coordinate array
+    private static long[] coordinatesFromQueryIntervals(BAMIndex index, QueryInterval[] queries) {
+        ArrayList<BAMFileSpan> spanList = new ArrayList<>(1);
+        Arrays.asList(queries).forEach(qi -> spanList.add(index.getSpanOverlapping(qi.referenceIndex, qi.start, qi.end)));
+        BAMFileSpan spanArray[] = new BAMFileSpan[spanList.size()];
+        for (int i = 0; i < spanList.size(); i++) {
+            spanArray[i] = spanList.get(i);
+        }
+
+        return BAMFileSpan.merge(spanArray).toCoordinateArray();
+    }
+
     private class CRAMIntervalIterator extends BAMQueryMultipleIntervalsIteratorFilter
             implements CloseableIterator<SAMRecord> {
 
@@ -475,9 +501,12 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
         SAMRecord nextRec = null;
 
         public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained) {
+            this(queries, contained, coordinatesFromQueryIntervals(getIndex(), queries));
+        }
+
+        public CRAMIntervalIterator(final QueryInterval[] queries, final boolean contained, final long[] coordinates) {
             super(queries, contained);
 
-            long[] coordinates = coordinatesFromQueryIntervals(getIndex(), queries);
             if (coordinates != null && coordinates.length != 0) {
                 try {
                     unfilteredIterator = new CRAMIterator(
@@ -491,18 +520,6 @@ public class CRAMFileReader extends SamReader.ReaderImplementation implements Sa
                 }
                 getNextRecord(); // advance to the first record that matches the filter criteria
             }
-        }
-
-        // convert queries -> merged BAMFileSpan -> coordinate array
-        private long[] coordinatesFromQueryIntervals(BAMIndex index, QueryInterval[] queries) {
-            ArrayList<BAMFileSpan> spanList = new ArrayList<>(1);
-            Arrays.asList(queries).forEach(qi -> spanList.add(mIndex.getSpanOverlapping(qi.referenceIndex, qi.start, qi.end)));
-            BAMFileSpan spanArray[] = new BAMFileSpan[spanList.size()];
-            for (int i = 0; i < spanList.size(); i++) {
-                spanArray[i] = spanList.get(i);
-            }
-
-            return BAMFileSpan.merge(spanArray).toCoordinateArray();
         }
 
         @Override

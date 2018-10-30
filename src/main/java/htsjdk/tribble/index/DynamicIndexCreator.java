@@ -24,6 +24,7 @@
 
 package htsjdk.tribble.index;
 
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.index.interval.IntervalIndexCreator;
@@ -65,7 +66,7 @@ public class DynamicIndexCreator extends TribbleIndexCreator {
     }
 
     public DynamicIndexCreator(final File inputFile, final IndexFactory.IndexBalanceApproach iba) {
-        this(inputFile.toPath(), iba);
+        this(IOUtil.toPath(inputFile), iba);
     }
 
     @Override

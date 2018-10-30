@@ -31,15 +31,17 @@ import htsjdk.samtools.util.BlockCompressedOutputStream;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Md5CalculatingOutputStream;
 import htsjdk.samtools.util.RuntimeIOException;
-import htsjdk.tribble.AbstractFeatureReader;
 import htsjdk.tribble.index.IndexCreator;
 import htsjdk.tribble.index.tabix.TabixFormat;
 import htsjdk.tribble.index.tabix.TabixIndexCreator;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.EnumSet;
 
 /*
@@ -104,6 +106,7 @@ import java.util.EnumSet;
 public class VariantContextWriterBuilder {
     public static final EnumSet<Options> DEFAULT_OPTIONS = EnumSet.of(Options.INDEX_ON_THE_FLY);
     public static final EnumSet<Options> NO_OPTIONS = EnumSet.noneOf(Options.class);
+    private static final OpenOption[] EMPTY_OPEN_OPTION_ARRAY = new OpenOption[0];
 
     public enum OutputType {
         UNSPECIFIED,
@@ -119,7 +122,7 @@ public class VariantContextWriterBuilder {
 
     private SAMSequenceDictionary refDict = null;
     private OutputType outType = OutputType.UNSPECIFIED;
-    private File outFile = null;
+    private Path outPath = null;
     private OutputStream outStream = null;
     private IndexCreator idxCreator = null;
     private int bufferSize = Defaults.BUFFER_SIZE;
@@ -154,9 +157,20 @@ public class VariantContextWriterBuilder {
      * @return this <code>VariantContextWriterBuilder</code>
      */
     public VariantContextWriterBuilder setOutputFile(final File outFile) {
-        this.outFile = outFile;
+        return setOutputPath(IOUtil.toPath(outFile));
+    }
+
+    /**
+     * Set the output file for the next <code>VariantContextWriter</code> created by this builder.
+     * Determines file type implicitly from the filename.
+     *
+     * @param outPath the file the <code>VariantContextWriter</code> will write to
+     * @return this <code>VariantContextWriterBuilder</code>
+     */
+    public VariantContextWriterBuilder setOutputPath(final Path outPath) {
+        this.outPath = outPath;
         this.outStream = null;
-        this.outType = determineOutputTypeFromFile(outFile);
+        this.outType = determineOutputTypeFromFile(outPath);
         return this;
     }
 
@@ -181,7 +195,7 @@ public class VariantContextWriterBuilder {
         if (!FILE_TYPES.contains(outType))
             throw new IllegalArgumentException("Must choose a file type, not other output types.");
 
-        if (this.outFile == null || this.outStream != null)
+        if (this.outPath == null || this.outStream != null)
             throw new IllegalArgumentException("Cannot set a file type if the output is not to a file.");
 
         this.outType = outType;
@@ -197,7 +211,7 @@ public class VariantContextWriterBuilder {
      */
     public VariantContextWriterBuilder setOutputVCFStream(final OutputStream outStream) {
         this.outStream = outStream;
-        this.outFile = null;
+        this.outPath = null;
         this.outType = OutputType.VCF_STREAM;
         return this;
     }
@@ -211,7 +225,7 @@ public class VariantContextWriterBuilder {
      */
     public VariantContextWriterBuilder setOutputBCFStream(final OutputStream outStream) {
         this.outStream = outStream;
-        this.outFile = null;
+        this.outPath = null;
         this.outType = OutputType.BCF_STREAM;
         return this;
     }
@@ -384,16 +398,33 @@ public class VariantContextWriterBuilder {
         return this.options.contains(option);
     }
 
+
     /**
      * Validate and build the <code>VariantContextWriter</code>.
      *
-     * @return the <code>VariantContextWriter</code> as specified by previous method calls
+     * @return the <code>VariantContextWriter</code> as specified by previous method calls.
      * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
      * @throws IllegalArgumentException if no output file or stream is specified.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
      * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
      */
     public VariantContextWriter build() {
+        return build(EMPTY_OPEN_OPTION_ARRAY);
+    }
+
+    /**
+     * Validate and build the <code>VariantContextWriter</code>.
+     *
+     * @param openOptions options to use when opening the underlying output stream.
+     *
+     * @return the <code>VariantContextWriter</code> as specified by previous method calls,
+     *         optionally applying the specified OpenOptions.
+     * @throws RuntimeIOException if the writer is configured to write to a file, and the corresponding path does not exist.
+     * @throws IllegalArgumentException if no output file or stream is specified.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and no reference dictionary is provided.
+     * @throws IllegalArgumentException if <code>Options.INDEX_ON_THE_FLY</code> is specified and a stream output is specified.
+     */
+    public VariantContextWriter build(OpenOption... openOptions) {
         VariantContextWriter writer = null;
 
         // don't allow FORCE_BCF to modify the outType state
@@ -410,13 +441,14 @@ public class VariantContextWriterBuilder {
         OutputStream outStreamFromFile = this.outStream;
         if (FILE_TYPES.contains(this.outType) || (STREAM_TYPES.contains(this.outType) && this.outStream == null)) {
             try {
-                outStreamFromFile = IOUtil.maybeBufferOutputStream(new FileOutputStream(outFile), bufferSize);
+                outStreamFromFile = IOUtil.maybeBufferOutputStream(Files.newOutputStream(outPath, openOptions), bufferSize);
             } catch (final FileNotFoundException e) {
-                throw new RuntimeIOException("File not found: " + outFile, e);
+                throw new RuntimeIOException("File not found: " + outPath, e);
+            } catch (final IOException e) {
+                throw new RuntimeIOException("File not found: " + outPath, e);
             }
-
             if (createMD5)
-                outStreamFromFile = new Md5CalculatingOutputStream(outStreamFromFile, new File(outFile.getAbsolutePath() + ".md5"));
+                outStreamFromFile = new Md5CalculatingOutputStream(outStreamFromFile, IOUtil.addExtension(outPath, ".md5"));
         }
 
         switch (typeToBuild) {
@@ -426,7 +458,7 @@ public class VariantContextWriterBuilder {
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
                     throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
 
-                writer = createVCFWriter(outFile, outStreamFromFile);
+                writer = createVCFWriter(outPath, outStreamFromFile);
                 break;
             case BLOCK_COMPRESSED_VCF:
                 if (refDict == null)
@@ -434,13 +466,14 @@ public class VariantContextWriterBuilder {
                 else
                     idxCreator = new TabixIndexCreator(refDict, TabixFormat.VCF);
 
-                writer = createVCFWriter(outFile, new BlockCompressedOutputStream(outStreamFromFile, outFile));
+                writer = createVCFWriter(
+                    outPath, new BlockCompressedOutputStream(outStreamFromFile, outPath));
                 break;
             case BCF:
                 if ((refDict == null) && (options.contains(Options.INDEX_ON_THE_FLY)))
                     throw new IllegalArgumentException("A reference dictionary is required for creating Tribble indices on the fly");
 
-                writer = createBCFWriter(outFile, outStreamFromFile);
+                writer = createBCFWriter(outPath, outStreamFromFile);
                 break;
             case VCF_STREAM:
                 if (options.contains(Options.INDEX_ON_THE_FLY))
@@ -467,22 +500,45 @@ public class VariantContextWriterBuilder {
      * written to. Will attempt to determine using the logical filename; if that fails it will
      * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
      * but is neither a file or directory then VCF_STREAM is returned.
+     *
+     * @param file A file whose {@link OutputType} we want to infer
+     * @return The file's {@link OutputType}. Never {@code null}.
      */
-    protected static OutputType determineOutputTypeFromFile(final File f) {
-        if (isBCF(f)) {
+     public static OutputType determineOutputTypeFromFile(final File file) {
+        return determineOutputTypeFromFile(file.toPath());
+     }
+
+    /**
+     * Attempts to determine the type of file/data to write based on the File path being
+     * written to. Will attempt to determine using the logical filename; if that fails it will
+     * attempt to resolve any symlinks and try again.  If that fails, and the output file exists
+     * but is neither a file or directory then VCF_STREAM is returned.
+     *
+     * @param path A file whose {@link OutputType} we want to infer
+     * @return The file's {@link OutputType}. Never {@code null}.
+     */
+    public static OutputType determineOutputTypeFromFile(final Path path) {
+        if (isBCF(path)) {
             return OutputType.BCF;
-        } else if (isCompressedVCF(f)) {
+        } else if (isCompressedVCF(path)) {
             return OutputType.BLOCK_COMPRESSED_VCF;
-        } else if (isVCF(f)) {
+        } else if (isVCF(path)) {
             return OutputType.VCF;
         }
         else {
             // See if we have a special file (device, named pipe, etc.)
-            final File canonical = new File(IOUtil.getFullCanonicalPath(f));
-            if (!canonical.equals(f)) {
-                return determineOutputTypeFromFile(canonical);
+            try {
+                final Path canonicalPath = path.toRealPath();
+                if (!canonicalPath.equals(path)) {
+                    return determineOutputTypeFromFile(canonicalPath);
+                }
+            } catch (java.nio.file.NoSuchFileException nsf) {
+                // toRealPath failed because the "real" file couldn't be found.
+                // We do nothing, just continue with the original path.
+            } catch (IOException x) {
+                throw new RuntimeIOException(x);
             }
-            else if (f.exists() && !f.isFile() && !f.isDirectory()) {
+            if (Files.exists(path) && !Files.isRegularFile(path) && !Files.isDirectory(path)) {
                 return OutputType.VCF_STREAM;
             } else {
                 return OutputType.UNSPECIFIED;
@@ -490,31 +546,31 @@ public class VariantContextWriterBuilder {
         }
     }
 
-    private static boolean isVCF(final File outFile) {
-        return outFile != null && outFile.getName().endsWith(IOUtil.VCF_FILE_EXTENSION);
+    private static boolean isVCF(final Path outPath) {
+        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.VCF_FILE_EXTENSION);
     }
 
-    private static boolean isBCF(final File outFile) {
-        return outFile != null && outFile.getName().endsWith(IOUtil.BCF_FILE_EXTENSION);
+    private static boolean isBCF(final Path outPath) {
+        return outPath != null && outPath.getFileName().toString().endsWith(IOUtil.BCF_FILE_EXTENSION);
     }
 
-    private static boolean isCompressedVCF(final File outFile) {
-        if (outFile == null)
+    private static boolean isCompressedVCF(final Path outPath) {
+        if (outPath == null)
             return false;
 
-        return AbstractFeatureReader.hasBlockCompressedExtension(outFile);
+        return IOUtil.hasBlockCompressedExtension(outPath);
     }
 
-    private VariantContextWriter createVCFWriter(final File writerFile, final OutputStream writerStream) {
+    private VariantContextWriter createVCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
-            return new VCFWriter(writerFile, writerStream, refDict,
+            return new VCFWriter(writerPath, writerStream, refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
                     options.contains(Options.WRITE_FULL_FORMAT_FIELD));
         }
         else {
-            return new VCFWriter(writerFile, writerStream, refDict, idxCreator,
+            return new VCFWriter(writerPath, writerStream, refDict, idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES),
                     options.contains(Options.ALLOW_MISSING_FIELDS_IN_HEADER),
@@ -522,14 +578,14 @@ public class VariantContextWriterBuilder {
         }
     }
 
-    private VariantContextWriter createBCFWriter(final File writerFile, final OutputStream writerStream) {
+    private VariantContextWriter createBCFWriter(final Path writerPath, final OutputStream writerStream) {
         if (idxCreator == null) {
-            return new BCF2Writer(writerFile, writerStream, refDict,
+            return new BCF2Writer(writerPath, writerStream, refDict,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES));
         }
         else {
-            return new BCF2Writer(writerFile, writerStream, refDict, idxCreator,
+            return new BCF2Writer(writerPath, writerStream, refDict, idxCreator,
                     options.contains(Options.INDEX_ON_THE_FLY),
                     options.contains(Options.DO_NOT_WRITE_GENOTYPES));
         }

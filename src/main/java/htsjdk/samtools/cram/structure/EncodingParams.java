@@ -18,6 +18,8 @@
 package htsjdk.samtools.cram.structure;
 
 
+import htsjdk.samtools.util.StringUtil;
+
 import java.util.Arrays;
 
 public class EncodingParams {
@@ -33,7 +35,7 @@ public class EncodingParams {
 
     @Override
     public String toString() {
-        return id.name() + ":" + javax.xml.bind.DatatypeConverter.printHexBinary(Arrays.copyOfRange(params, 0, Math.max(20, params.length)));
+        return id.name() + ":" + StringUtil.bytesToHexString(Arrays.copyOfRange(params, 0, Math.max(20, params.length)));
     }
 
 }

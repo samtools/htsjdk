@@ -198,6 +198,11 @@ public class SAMTextWriter extends SAMFileWriterImpl {
         }
     }
 
+    @Override
+    protected void writeHeader(final SAMFileHeader header) {
+        new SAMTextHeaderCodec().encode(out, header);
+    }
+
     /**
      * Do any required flushing here.
      */

@@ -26,8 +26,10 @@ package htsjdk.samtools;
 
 import htsjdk.samtools.util.CoordMath;
 import htsjdk.samtools.util.Locatable;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
+import htsjdk.samtools.util.BinaryCodec;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -104,6 +106,8 @@ import java.util.*;
  * @author mishali.naik@intel.com
  */
 public class SAMRecord implements Cloneable, Locatable, Serializable {
+    private final static Log LOG = Log.getInstance(SAMRecord.class);
+
     public static final long serialVersionUID = 1L;
 
     /**
@@ -831,6 +835,12 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         return getCigar().numCigarElements();
     }
 
+    /**
+     * For setting the Cigar string when changed. Note that this nulls the
+     * indexing bin, which would need to be recomputed on write (if needed).
+     * To avoid clobbering the indexing bin, use {@link #initializeCigar}
+     *
+     */
     public void setCigar(final Cigar cigar) {
         initializeCigar(cigar);
         // Change to cigar could change alignmentEnd, and thus indexing bin
@@ -838,7 +848,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * For setting the Cigar string when BAMRecord has decoded it.  Use this rather than setCigar()
+     * For setting the Cigar string when BAMRecord has decoded it.
+     * Use this rather than {@link #setCigar}
      * so that indexing bin doesn't get clobbered.
      */
     protected void initializeCigar(final Cigar cigar) {
@@ -975,14 +986,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     * @return whether the alignment is secondary (an alternative alignment of the read).
      */
     public boolean isSecondaryAlignment() {
         return (mFlags & SAMFlag.SECONDARY_ALIGNMENT.flag) != 0;
     }
 
     /**
-     * the alignment is supplementary (TODO: further explanation?).
+     * @return whether the alignment is supplementary (a split alignment such as a chimeric alignment).
      */
     public boolean getSupplementaryAlignmentFlag() {
         return (mFlags & SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag) != 0;
@@ -1080,14 +1091,14 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     /**
-     * the alignment is secondary (a read having slipt hits have multiple alignment records).
+     * set whether this alignment is secondary (an alternative alignment of the read).
      */
     public void setSecondaryAlignment(final boolean flag) {
         setFlag(flag, SAMFlag.SECONDARY_ALIGNMENT.flag);
     }
 
     /**
-     * the alignment is supplementary (TODO: further explanation?).
+     * set whether this alignment is supplementary (a split alignment such as a chimeric alignment).
      */
     public void setSupplementaryAlignmentFlag(final boolean flag) {
         setFlag(flag, SAMFlag.SUPPLEMENTARY_ALIGNMENT.flag);
@@ -1408,9 +1419,6 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * String values are not validated to ensure that they conform to SAM spec.
      */
     public void setAttribute(final String tag, final Object value) {
-        if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
-            throw new IllegalArgumentException("Empty value passed for tag " + tag);
-        }
         setAttribute(SAMTagUtil.getSingleton().makeBinaryTag(tag), value);
     }
 
@@ -1484,6 +1492,8 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 
     /**
      * Replace any existing attributes with the given linked item.
+     *
+     * NOTE: this method is intended to only be called from subclasses.
      */
     protected void setAttributes(final SAMBinaryTagAndValue attributes) {
         mAttributes = attributes;
@@ -1501,7 +1511,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      */
     @Override
     public String getContig() {
-        if( getReadUnmappedFlag()) {
+        if (getReadUnmappedFlag()) {
             return null;
         } else {
             return getReferenceName();
@@ -1579,6 +1589,24 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             alignmentEnd = alignmentStart + 1;
         }
         return GenomicIndexUtil.regionToBin(alignmentStart, alignmentEnd);
+    }
+
+
+    /**
+     * Gets indexing bin if it is present otherwise compute it.
+     * @param alignment to compute indexing bin for.
+     * @return indexing bin.
+     */
+    public int computeIndexingBinIfAbsent(final SAMRecord alignment) {
+        if (alignment.getIndexingBin() != null) {
+            return alignment.getIndexingBin();
+        } else {
+            return getUshort(alignment.computeIndexingBin());
+        }
+    }
+
+    private int getUshort(int value) {
+        return value & (int) BinaryCodec.MAX_USHORT;
     }
 
     /**
@@ -2083,13 +2111,25 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (this.getAlignmentStart() != NO_ALIGNMENT_START && this.getIndexingBin() != null &&
-                this.computeIndexingBin() != this.getIndexingBin()) {
-            if (ret == null) ret = new ArrayList<>();
-            ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
-                    "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
-                    getReadName()));
-            if (firstOnly) return ret;
+        if (this.getAlignmentStart() != NO_ALIGNMENT_START) {
+            final SAMSequenceRecord sequence = getHeader() != null ? getHeader().getSequence(getReferenceName()) : null;
+            if (sequence != null && SAMUtils.isReferenceSequenceCompatibleWithBAI(sequence)) {
+                if (getValidationStringency() != ValidationStringency.SILENT) {
+                    if (getReferenceName() != null) {
+                        LOG.warn(String.format("%s reference length is too large for BAM bin field. %s record bin field value is incorrect.",
+                                getReferenceName(), getReadName()));
+                    } else {
+                        LOG.warn(String.format("Reference length is too large for BAM bin field. %s record bin field value is incorrect.",
+                                getReadName()));
+                    }
+                }
+            } else if (isIndexingBinNotEqualsComputedBin()) {
+                if (ret == null) ret = new ArrayList<>();
+                ret.add(new SAMValidationError(SAMValidationError.Type.INVALID_INDEXING_BIN,
+                        "bin field of BAM record does not equal value computed based on alignment start and end, and length of sequence to which read is aligned",
+                        getReadName()));
+                if (firstOnly) return ret;
+            }
         }
 
         if (getMateReferenceName().equals(SAMRecord.NO_ALIGNMENT_REFERENCE_NAME) &&
@@ -2101,7 +2141,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             if (firstOnly) return ret;
         }
 
-        if (getCigar().getReadLength() != 0 && getCigar().getReadLength() != getReadLength()) {
+        if (getReadLength() != 0 && getCigar().getReadLength() != 0 && getCigar().getReadLength() != getReadLength()) {
             if (ret == null) ret = new ArrayList<>();
             ret.add(new SAMValidationError(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH,
                     "CIGAR covers " + getCigar().getReadLength() + " bases but the sequence is " + getReadLength() + " read bases ",
@@ -2122,6 +2162,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             return null;
         }
         return ret;
+    }
+
+    private boolean isIndexingBinNotEqualsComputedBin() {
+        return this.getIndexingBin() != null && this.computeIndexingBin() != this.getIndexingBin();
     }
 
     /**
@@ -2264,7 +2308,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
             builder.append(" unmapped read.");
         }
         else {
-            builder.append(" aligned read.");
+            builder.append(String.format(" aligned to %s:%d-%d.", getContig(), getAlignmentStart(), getAlignmentEnd()));
         }
 
         return builder.toString();

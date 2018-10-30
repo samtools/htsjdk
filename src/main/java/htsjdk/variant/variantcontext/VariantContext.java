@@ -25,6 +25,7 @@
 
 package htsjdk.variant.variantcontext;
 
+import htsjdk.samtools.util.Locatable;
 import htsjdk.tribble.Feature;
 import htsjdk.tribble.TribbleException;
 import htsjdk.tribble.util.ParsingUtils;
@@ -215,7 +216,6 @@ import java.util.stream.Collectors;
  *     asking for a fully decoded version of the VC.
  * <!-- </s3> -->
  *
- * @author depristo
  */
 public class VariantContext implements Feature, Serializable {
     public static final long serialVersionUID = 1L;
@@ -1448,32 +1448,35 @@ public class VariantContext implements Feature, Serializable {
     }
 
     public String toStringDecodeGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                this.getGenotypes());
+                this.getGenotypes(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     private String toStringUnparsedGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s GT=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
                 ParsingUtils.sortedString(this.getAttributes()),
-                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData());
+                ((LazyGenotypesContext)this.genotypes).getUnparsedGenotypeData(),
+                String.join(",", commonInfo.getFilters()));
     }
 
     public String toStringWithoutGenotypes() {
-        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s",
+        return String.format("[VC %s @ %s Q%s of type=%s alleles=%s attr=%s filters=%s",
                 getSource(), contig + ":" + (start - stop == 0 ? start : start + "-" + stop),
                 hasLog10PError() ? String.format("%.2f", getPhredScaledQual()) : ".",
                 this.getType(),
                 ParsingUtils.sortList(this.getAlleles()),
-                ParsingUtils.sortedString(this.getAttributes()));
+                ParsingUtils.sortedString(this.getAttributes()),
+                String.join(",", commonInfo.getFilters()));
     }
 
     // protected basic manipulation routines
@@ -1719,12 +1722,20 @@ public class VariantContext implements Feature, Serializable {
                 .collect(Collectors.toCollection(() -> new ArrayList<>(alleles.size())));
     }
 
+    /**
+     * @deprecated 7/18 use {@link #getGLIndicesOfAlternateAllele(Allele)} instead
+     */
+    @Deprecated
     public int[] getGLIndecesOfAlternateAllele(Allele targetAllele) {
+       return getGLIndicesOfAlternateAllele(targetAllele);
+    }
+
+    public int[] getGLIndicesOfAlternateAllele(Allele targetAllele) {
         final int index = getAlleleIndex(targetAllele);
         if ( index == -1 ) throw new IllegalArgumentException("Allele " + targetAllele + " not in this VariantContex " + this);
-        return GenotypeLikelihoods.getPLIndecesOfAlleles(0, index);
+        return GenotypeLikelihoods.getPLIndicesOfAlleles(0, index);
     }
-    
+
     /** 
      * Search for the INFO=SVTYPE and return the type of Structural Variant 
      * @return the StructuralVariantType of null if there is no property SVTYPE 

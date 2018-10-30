@@ -420,6 +420,16 @@ public class ValidateSamFileTest extends HtsjdkTest {
         Assert.assertNotNull(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()));
         Assert.assertEquals(results.get(SAMValidationError.Type.CIGAR_MAPS_OFF_REFERENCE.getHistogramString()).getValue(), 1.0);
     }
+    
+    @Test
+    public void testCigarNoSeqValidation() throws Exception {
+        final SAMRecordSetBuilder samBuilder = new SAMRecordSetBuilder();
+        samBuilder.addFrag("name", 0, 1, false);
+        samBuilder.iterator().next().setReadBases(SAMRecord.NULL_SEQUENCE);
+        samBuilder.iterator().next().setBaseQualities(SAMRecord.NULL_SEQUENCE);
+        final Histogram<String> results = executeValidation(samBuilder.getSamReader(), null, IndexValidationStringency.EXHAUSTIVE);
+        Assert.assertNull(results.get(SAMValidationError.Type.MISMATCH_CIGAR_SEQ_LENGTH .getHistogramString()));
+    }
 
     @Test(expectedExceptions = SAMFormatException.class)
     public void testConflictingTags() throws Exception {
@@ -552,12 +562,6 @@ public class ValidateSamFileTest extends HtsjdkTest {
                         "@RG\tID:0\tSM:Hi,Mom!\n" +
                         "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
 
-        final String SOTagCorrectlyProcessTestData =
-                "@HD\tVN:1.0\tSO:NOTKNOWN\n" +
-                        "@SQ\tSN:chr1\tLN:101\n" +
-                        "@RG\tID:0\tSM:Hi,Mom!\n" +
-                        "E\t147\tchr1\t15\t255\t10M\t=\t2\t-30\tCAACAGAAGC\t)'.*.+2,))\tU2:Z:CAA";
-
         final String GOTagCorrectlyProcessTestData =
                 "@HD\tVN:1.0\tGO:NOTKNOWN\n" +
                         "@SQ\tSN:chr1\tLN:101\n" +
@@ -568,7 +572,6 @@ public class ValidateSamFileTest extends HtsjdkTest {
                 {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.E2_BASE_EQUALS_PRIMARY_BASE},
                 {E2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_E2_LENGTH},
                 {U2TagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.MISMATCH_READ_LENGTH_AND_U2_LENGTH},
-                {SOTagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE},
                 {GOTagCorrectlyProcessTestData.getBytes(), SAMValidationError.Type.HEADER_TAG_NON_CONFORMING_VALUE}
         };
     }

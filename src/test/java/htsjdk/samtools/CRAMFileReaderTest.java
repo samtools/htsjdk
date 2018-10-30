@@ -37,6 +37,7 @@ import java.io.InputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 
 /**
  * Additional tests for CRAMFileReader are in CRAMFileIndexTest
@@ -228,5 +229,15 @@ public class CRAMFileReaderTest extends HtsjdkTest {
         File indexFile = null;
         CRAMFileReader reader = new CRAMFileReader(CRAM_WITHOUT_CRAI, indexFile, REFERENCE, ValidationStringency.STRICT);
         reader.getIndex();
+    }
+
+    @Test
+    public void testCramIteratorWithoutCallingHasNextFirst() throws IOException {
+        final SAMRecordSetBuilder builder = new SAMRecordSetBuilder(false, SAMFileHeader.SortOrder.unsorted);
+        builder.addFrag("1", 0, 2, false);
+        final CRAMFileReader reader = CRAMTestUtils.writeAndReadFromInMemoryCram(builder);
+        final SAMRecordIterator iterator = reader.getIterator();
+        Assert.assertNotNull(iterator.next());
+        Assert.assertThrows(NoSuchElementException.class, iterator::next);
     }
 }

@@ -34,9 +34,7 @@ import htsjdk.samtools.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 
 import htsjdk.samtools.cram.CRAMException;
 
@@ -134,7 +132,6 @@ public class CRAMIterator implements SAMRecordIterator {
                 nextRecord = null;
                 return;
             }
-
             container = containerIterator.next();
             if (container.isEOF()) {
                 records.clear();
@@ -255,9 +252,7 @@ public class CRAMIterator implements SAMRecordIterator {
         if (!iterator.hasNext()) {
             try {
                 nextContainer();
-            } catch (IOException e) {
-                throw new SAMException(e);
-            } catch (IllegalAccessException e) {
+            } catch (IOException | IllegalAccessException e) {
                 throw new SAMException(e);
             }
         }
@@ -267,12 +262,19 @@ public class CRAMIterator implements SAMRecordIterator {
 
     @Override
     public SAMRecord next() {
-        SAMRecord samRecord = iterator.next();
-        if (validationStringency != ValidationStringency.SILENT) {
-            SAMUtils.processValidationErrors(samRecord.isValid(), samRecordIndex++, validationStringency);
-        }
+        if (hasNext()) {
 
-        return samRecord;
+            SAMRecord samRecord = iterator.next();
+
+            if (validationStringency != ValidationStringency.SILENT) {
+                SAMUtils.processValidationErrors(samRecord.isValid(), samRecordIndex++, validationStringency);
+            }
+
+            return samRecord;
+
+        } else {
+            throw new NoSuchElementException();
+        }
     }
 
     @Override
@@ -287,7 +289,8 @@ public class CRAMIterator implements SAMRecordIterator {
         try {
             if (countingInputStream != null)
                 countingInputStream.close();
-        } catch (final IOException e) { }
+        } catch (final IOException e) {
+        }
     }
 
     @Override
@@ -306,4 +309,5 @@ public class CRAMIterator implements SAMRecordIterator {
     public SAMFileHeader getSAMFileHeader() {
         return cramHeader.getSamFileHeader();
     }
+
 }

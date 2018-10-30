@@ -44,6 +44,8 @@ public class TextTagCodec {
     // 3 fields for non-empty strings 2 fields if the string is empty.
     private static final int NUM_TAG_FIELDS = 3;
 
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
     /**
      * This is really a local variable of decode(), but allocated here to reduce allocations.
      */
@@ -52,7 +54,7 @@ public class TextTagCodec {
     /**
      * Convert in-memory representation of tag to SAM text representation.
      * @param tagName Two-character tag name.
-     * @param value Tag value as approriate Object subclass.
+     * @param value Tag value as appropriate Object subclass.
      * @return SAM text String representation, i.e. name:type:value
      */
     public String encode(final String tagName, Object value) {
@@ -71,7 +73,7 @@ public class TextTagCodec {
             // H should never happen anymore.
             value = StringUtil.bytesToHexString((byte[])value);
         } else if (tagType == 'B') {
-            value = getArrayType(value, false) + "," + encodeArrayValue(value);
+            value = getArrayType(value, false) + encodeArrayValue(value);
         } else if (tagType == 'i') {
             final long longVal = ((Number) value).longValue();
             // as the spec says: [-2^31, 2^32)
@@ -83,7 +85,7 @@ public class TextTagCodec {
         return sb.toString();
     }
 
-    private char getArrayType(final Object array, final boolean isUnsigned) {
+    private static char getArrayType(final Object array, final boolean isUnsigned) {
         final char type;
         final Class<?> componentType = array.getClass().getComponentType();
         if (componentType == Float.TYPE) {
@@ -97,10 +99,10 @@ public class TextTagCodec {
         return (isUnsigned? Character.toUpperCase(type): type);
     }
 
-    private String encodeArrayValue(final Object value) {
-        final StringBuilder ret = new StringBuilder(Array.get(value, 0).toString());
+    private static String encodeArrayValue(final Object value) {
         final int length = Array.getLength(value);
-        for (int i = 1; i < length; ++i) {
+        final StringBuilder ret = new StringBuilder();
+        for (int i = 0; i < length; ++i) {
             ret.append(',');
             ret.append(Array.get(value, i).toString());
         }
@@ -108,7 +110,7 @@ public class TextTagCodec {
 
     }
 
-    private long[] widenToUnsigned(final Object array) {
+    private static long[] widenToUnsigned(final Object array) {
         final Class<?> componentType = array.getClass().getComponentType();
         final long mask;
         if (componentType == Byte.TYPE)    mask = 0xffL;
@@ -127,7 +129,7 @@ public class TextTagCodec {
             throw new IllegalArgumentException("Non-array passed to encodeUnsignedArray: " + array.getClass());
         }
         final long[] widened = widenToUnsigned(array);
-        return tagName + ":B:" + getArrayType(array, true) + "," + encodeArrayValue(widened);
+        return tagName + ":B:" + getArrayType(array, true) + encodeArrayValue(widened);
     }
 
     /**
@@ -175,7 +177,7 @@ public class TextTagCodec {
         };
     }
 
-    private Object convertStringToObject(final String type, final String stringVal) {
+    private static Object convertStringToObject(final String type, final String stringVal) {
         if (type.equals("Z")) {
             return stringVal;
         } else if (type.equals("A")) {
@@ -219,17 +221,18 @@ public class TextTagCodec {
         }
     }
 
-    private Object covertStringArrayToObject(final String stringVal) {
+    private static Object covertStringArrayToObject(final String stringVal) {
         final String[] elementTypeAndValue = new String[2];
-        if (StringUtil.splitConcatenateExcessTokens(stringVal, elementTypeAndValue, ',') != 2) {
-            throw new SAMFormatException("Tag of type B should have an element type followed by comma");
-        }
+
+        final int numberOfTokens = StringUtil.splitConcatenateExcessTokens(stringVal, elementTypeAndValue, ',');
+
         if (elementTypeAndValue[0].length() != 1) {
             throw new SAMFormatException("Unrecognized element type for array tag value: " + elementTypeAndValue[0]);
         }
+
         final char elementType = elementTypeAndValue[0].charAt(0);
-        final String[] stringValues = elementTypeAndValue[1].split(",");
-        if (stringValues.length == 0) throw new SAMFormatException("Tag of type B should have at least one element");
+
+        final String[] stringValues = elementTypeAndValue[1] != null ? elementTypeAndValue[1].split(",") : EMPTY_STRING_ARRAY;
         if (elementType == 'f') {
             final float[] ret = new float[stringValues.length];
             for (int i = 0; i < stringValues.length; ++i) {

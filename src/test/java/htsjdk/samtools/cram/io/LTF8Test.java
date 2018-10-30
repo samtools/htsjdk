@@ -9,7 +9,6 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,44 +32,7 @@ public class LTF8Test extends HtsjdkTest {
     }
 
 
-    @DataProvider(name = "testLTF8")
-    public static Object[][] testValues() {
-        List<Long> list = new ArrayList<Long>() ;
-
-        // basics:
-        list.add(0L);
-        list.add(0L);
-        list.add(1L);
-        list.add(127L);
-        list.add(128L);
-        list.add(255L);
-        list.add(256L);
-
-        // scan with bits:
-        for (int i = 0; i <= 64; i++) {
-            list.add((1L << i) - 2);
-            list.add((1L << i) - 1);
-            list.add(1L << i);
-            list.add((1L << i) + 1);
-            list.add((1L << i) + 1);
-        }
-
-        // special cases:
-        list.add(1125899906842622L) ;
-        list.add(1125899906842622L);
-        list.add(562949953421312L);
-        list.add(4294967296L);
-        list.add(268435456L);
-        list.add(2147483648L);
-        list.add(-1L);
-
-        Object[][] params = new Object[list.size()][] ;
-        for (int i=0; i<params.length; i++)
-            params[i] = new Object[]{list.get(i)} ;
-        return params;
-    }
-
-    @Test(dataProvider = "testLTF8")
+    @Test(dataProvider = "testInt64", dataProviderClass = IOTestCases.class)
     public void testLTF8(long value) throws IOException {
         int len = LTF8.writeUnsignedLTF8(value, ltf8TestBAOS);
         Assert.assertTrue(len <= (8 * 9));

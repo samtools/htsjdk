@@ -23,12 +23,7 @@
  */
 package htsjdk.samtools.util;
 
-import htsjdk.samtools.AlignmentBlock;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
+import htsjdk.samtools.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -137,7 +132,6 @@ public class SamLocusIterator extends AbstractLocusIterator<SamLocusIterator.Rec
             final CigarElement e = cigar.get(elementIndex);
             final CigarOperator operator = e.getOperator();
             if (operator.equals(CigarOperator.I)) {
-                System.err.println("");
                 // insertions are included in the previous base
                 accumulator.get(refBase - 1).addInserted(rec, readBase);
                 readBase += e.getLength();

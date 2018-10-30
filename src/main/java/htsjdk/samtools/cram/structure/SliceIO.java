@@ -22,7 +22,7 @@ import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.common.CramVersions;
-import htsjdk.samtools.cram.io.CramArray;
+import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.cram.io.LTF8;
@@ -54,7 +54,7 @@ class SliceIO {
         slice.globalRecordCounter = LTF8.readUnsignedLTF8(inputStream);
         slice.nofBlocks = ITF8.readUnsignedITF8(inputStream);
 
-        slice.contentIDs = CramArray.array(inputStream);
+        slice.contentIDs = CramIntArray.array(inputStream);
         slice.embeddedRefBlockContentID = ITF8.readUnsignedITF8(inputStream);
         slice.refMD5 = new byte[16];
         InputStreamUtils.readFully(inputStream, slice.refMD5, 0, slice.refMD5.length);
@@ -85,7 +85,7 @@ class SliceIO {
         int i = 0;
         for (final int id : slice.external.keySet())
             slice.contentIDs[i++] = id;
-        CramArray.write(slice.contentIDs, byteArrayOutputStream);
+        CramIntArray.write(slice.contentIDs, byteArrayOutputStream);
         ITF8.writeUnsignedITF8(slice.embeddedRefBlockContentID, byteArrayOutputStream);
         byteArrayOutputStream.write(slice.refMD5 == null ? new byte[16] : slice.refMD5);
 

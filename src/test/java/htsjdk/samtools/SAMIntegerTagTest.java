@@ -348,7 +348,7 @@ public class SAMIntegerTagTest extends HtsjdkTest {
                 w = new SAMFileWriterFactory().makeBAMWriter(header, false, baos);
                 break;
             case CRAM:
-                w = new SAMFileWriterFactory().makeCRAMWriter(header, baos, null);
+                w = new SAMFileWriterFactory().makeCRAMWriter(header, baos, (File) null);
                 break;
             default:
                 throw new RuntimeException("Unknown format: " + format);

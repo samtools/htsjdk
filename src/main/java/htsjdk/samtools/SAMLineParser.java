@@ -465,10 +465,9 @@ public class SAMLineParser {
     private void reportErrorParsingLine(final Exception e) {
         final String errorMessage = makeErrorString(e.getMessage());
         if (validationStringency == ValidationStringency.STRICT) {
-            throw new SAMFormatException(errorMessage);
+            throw new SAMFormatException(errorMessage, e);
         } else if (validationStringency == ValidationStringency.LENIENT) {
-            System.err
-                    .println("Ignoring SAM validation error due to lenient parsing:");
+            System.err.println("Ignoring SAM validation error due to lenient parsing:");
             System.err.println(errorMessage);
         }
     }

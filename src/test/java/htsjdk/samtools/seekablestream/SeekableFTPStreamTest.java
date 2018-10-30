@@ -36,6 +36,7 @@ import java.net.URL;
  * @author Jim Robinson
  * @since 10/3/11
  */
+@Test(groups = "ftp")
 public class SeekableFTPStreamTest extends HtsjdkTest {
 
 
@@ -44,13 +45,13 @@ public class SeekableFTPStreamTest extends HtsjdkTest {
     static byte[] expectedBytes = "abcdefghijklmnopqrstuvwxyz\n".getBytes();
     SeekableFTPStream stream;
 
-    @BeforeMethod
+    @BeforeMethod()
     public void setUp() throws IOException {
         stream = new SeekableFTPStream(new URL(urlString));
 
     }
 
-    @AfterMethod
+    @AfterMethod()
     public void tearDown() throws IOException {
         stream.close();
     }

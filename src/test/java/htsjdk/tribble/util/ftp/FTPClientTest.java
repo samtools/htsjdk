@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 * @author Jim Robinson
 * @since 10/3/11
 */
+@Test(groups="ftp")
 public class FTPClientTest extends HtsjdkTest {
 
     static String host = "ftp.broadinstitute.org";

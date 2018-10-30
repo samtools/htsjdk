@@ -15,14 +15,13 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
     private final int n;
     private final String verb;
     private final String noun;
-    private final long startTime = System.currentTimeMillis();
+    private long startTime;
     private final NumberFormat fmt = new DecimalFormat("#,###");
     private final NumberFormat timeFmt = new DecimalFormat("00");
-    private long processed = 0;
-    // Set to -1 until the first record is added
-    private long lastStartTime = -1;
-    private String lastChrom = null;
-    private int lastPos = 0;
+    private long processed;
+    private long lastStartTime;
+    private String lastChrom;
+    private int lastPos;
 
     /**
      * Construct an AbstractProgressLogger.
@@ -37,6 +36,7 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
         this.noun = noun;
         this.verb = verb;
         this.n = n;
+        reset();
     }
 
     /**
@@ -123,6 +123,16 @@ abstract public class AbstractProgressLogger implements ProgressLoggerInterface 
 
     /** Returns the number of seconds since progress tracking began. */
     public long getElapsedSeconds() { return (System.currentTimeMillis() - this.startTime) / 1000; }
+
+    /** Resets the start time to now and the number of records to zero. */
+    public void reset() {
+        startTime = System.currentTimeMillis();
+        processed = 0;
+        // Set to -1 until the first record is added
+        lastStartTime = -1;
+        lastChrom = null;
+        lastPos = 0;
+    }
 
     /** Left pads a string until it is at least the given length. */
     private String pad (String in, final int length) {

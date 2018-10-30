@@ -396,7 +396,7 @@ public class IntervalList implements Iterable<Interval> {
      * @return an IntervalList object that contains the headers and intervals from the file
      */
     public static IntervalList fromFile(final File file) {
-        return fromPath(file.toPath());
+        return fromPath(IOUtil.toPath(file));
     }
 
     /**

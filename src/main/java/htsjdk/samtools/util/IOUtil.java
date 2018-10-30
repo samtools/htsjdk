@@ -31,6 +31,7 @@ import htsjdk.samtools.seekablestream.SeekableFileStream;
 import htsjdk.samtools.seekablestream.SeekableHTTPStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.tribble.Tribble;
+import htsjdk.samtools.util.nio.DeleteOnExitPathHook;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -63,9 +64,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -103,6 +106,8 @@ public class IOUtil {
     public static final String SAM_FILE_EXTENSION = ".sam";
 
     public static final String DICT_FILE_EXTENSION = ".dict";
+
+    public static final Set<String> BLOCK_COMPRESSED_EXTENSIONS = Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(".gz", ".gzip", ".bgz", ".bgzf")));
 
     private static int compressionLevel = Defaults.COMPRESSION_LEVEL;
 
@@ -353,34 +358,12 @@ public class IOUtil {
     }
 
     /**
-     * Deletes on exit a path by creating a shutdown hook.
+     * Register a {@link Path} for deletion on JVM exit.
+     *
+     * @see DeleteOnExitPathHook
      */
     public static void deleteOnExit(final Path path) {
-        // add a shutdown hook to remove the path on exit
-        Runtime.getRuntime().addShutdownHook(new DeletePathThread(path));
-    }
-
-    /**
-     * WARNING: visible for testing. Do not use.
-     *
-     * Class for delete a path, used in a shutdown hook for delete on exit.
-     *
-     * @see #deleteOnExit(Path)
-     */
-    static final class DeletePathThread extends Thread {
-
-        private final Path path;
-
-        DeletePathThread(Path path) {this.path = path;}
-
-        @Override
-        public void run() {
-            try {
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                throw new RuntimeIOException(e);
-            }
-        }
+        DeleteOnExitPathHook.add(path);
     }
 
     /** Returns the name of the file minus the extension (i.e. text after the last "." in the filename). */
@@ -431,7 +414,7 @@ public class IOUtil {
      * @param file the file to check for readability
      */
     public static void assertFileIsReadable(final File file) {
-        assertFileIsReadable(file == null ? null : file.toPath());
+        assertFileIsReadable(toPath(file));
     }
 
     /**
@@ -538,7 +521,7 @@ public class IOUtil {
      * @param dir the dir to check for writability
      */
     public static void assertDirectoryIsWritable(final File dir) {
-        final Path asPath = (dir == null) ? null : dir.toPath();
+        final Path asPath = IOUtil.toPath(dir);
         assertDirectoryIsWritable(asPath);
     }
 
@@ -630,7 +613,7 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openFileForReading(final File file) {
-        return openFileForReading(file.toPath());
+        return openFileForReading(toPath(file));
     }
 
     /**
@@ -663,7 +646,7 @@ public class IOUtil {
      * @return the input stream to read from
      */
     public static InputStream openGzipFileForReading(final File file) {
-        return openGzipFileForReading(file.toPath());
+        return openGzipFileForReading(toPath(file));
     }
 
     /**
@@ -903,7 +886,7 @@ public class IOUtil {
 
     /** Checks that a file exists and is readable, and then returns a buffered reader for it. */
     public static BufferedReader openFileForBufferedReading(final File file) {
-        return openFileForBufferedReading(file.toPath());
+        return openFileForBufferedReading(toPath(file));
     }
 
     /** Checks that a path exists and is readable, and then returns a buffered reader for it. */
@@ -1154,6 +1137,16 @@ public class IOUtil {
         }).collect(Collectors.toList());
     }
 
+    /*
+     * Converts the File to a Path, preserving nullness.
+     *
+     * @param fileOrNull a File, or null
+     * @return           the corresponding Path (or null)
+     */
+    public static Path toPath(File fileOrNull) {
+        return (null == fileOrNull ? null : fileOrNull.toPath());
+    }
+
     /** Takes a list of Files and converts them to a list of Paths
      * Runs .toPath() on the contents of the input.
      *
@@ -1173,5 +1166,106 @@ public class IOUtil {
      */
     public static Path addExtension(Path path, String extension) {
         return path.resolveSibling(path.getFileName() + extension);
+    }
+
+    /**
+     * Checks if the provided path is block-compressed.
+     *
+     * <p>Note that using {@code checkExtension=true} would avoid the cost of opening the file, but
+     * if {@link #hasBlockCompressedExtension(String)} returns {@code false} this would not detect
+     * block-compressed files such BAM.
+     *
+     * @param path file to check if it is block-compressed.
+     * @param checkExtension if {@code true}, checks the extension before opening the file.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path, final boolean checkExtension) throws IOException {
+        if (checkExtension && !hasBlockCompressedExtension(path)) {
+            return false;
+        }
+        try (final InputStream stream = new BufferedInputStream(Files.newInputStream(path), Math.max(Defaults.BUFFER_SIZE, BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE))) {
+            return BlockCompressedInputStream.isValidFile(stream);
+        }
+    }
+
+    /**
+     * Checks if the provided path is block-compressed (including extension).
+     *
+     * <p>Note that block-compressed file extensions {@link #BLOCK_COMPRESSED_EXTENSIONS} are not
+     * checked by this method.
+     *
+     * @param path file to check if it is block-compressed.
+     * @return {@code true} if the file is block-compressed; {@code false} otherwise.
+     * @throws IOException if there is an I/O error.
+     */
+    public static boolean isBlockCompressed(final Path path) throws IOException {
+        return isBlockCompressed(path, false);
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param fileName string name for the file. May be an HTTP/S url.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final String fileName) {
+        String cleanedPath = stripQueryStringIfPathIsAnHttpUrl(fileName);
+        for (final String extension : BLOCK_COMPRESSED_EXTENSIONS) {
+            if (cleanedPath.toLowerCase().endsWith(extension))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a path ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param path object to extract the name from.
+     *
+     * @return {@code true} if the path has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension(final Path path) {
+        return hasBlockCompressedExtension(path.getFileName().toString());
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param file object to extract the name from.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final File file) {
+        return hasBlockCompressedExtension(file.getName());
+    }
+
+    /**
+     * Checks if a file ends in one of the {@link #BLOCK_COMPRESSED_EXTENSIONS}.
+     *
+     * @param uri file as an URI.
+     *
+     * @return {@code true} if the file has a block-compressed extension; {@code false} otherwise.
+     */
+    public static boolean hasBlockCompressedExtension (final URI uri) {
+        String path = uri.getPath();
+        return hasBlockCompressedExtension(path);
+    }
+
+    /**
+     * Remove http query before checking extension
+     * Path might be a local file, in which case a '?' is a legal part of the filename.
+     * @param path a string representing some sort of path, potentially an http url
+     * @return path with no trailing queryString (ex: http://something.com/path.vcf?stuff=something => http://something.com/path.vcf)
+     */
+    private static String stripQueryStringIfPathIsAnHttpUrl(String path) {
+        if(path.startsWith("http://") || path.startsWith("https://")) {
+            int qIdx = path.indexOf('?');
+            if (qIdx > 0) {
+                return path.substring(0, qIdx);
+            }
+        }
+        return path;
     }
 }

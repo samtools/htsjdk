@@ -25,17 +25,24 @@
 package htsjdk.samtools;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.build.CramIO;
 import htsjdk.samtools.util.BinaryCodec;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.TestUtil;
+import htsjdk.utils.TestNGUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 
 public class SAMRecordUnitTest extends HtsjdkTest {
+
+    private static final String ARRAY_TAG = "xa";
 
     @DataProvider(name = "serializationTestData")
     public Object[][] getSerializationTestData() {
@@ -566,6 +573,70 @@ public class SAMRecordUnitTest extends HtsjdkTest {
         sam.setAlignmentStart(0);
         List<SAMValidationError> validationErrors = sam.isValid(false);
         Assert.assertTrue(validationErrors != null && validationErrors.size() == 1);
+    }
+
+    @DataProvider
+    public Object [][] binFieldValidationData() {
+        return new Object[][]{
+                {1519, 4681, 51, 16571, false},
+                {1519, 4685, 51, 16571, true},
+                {16500, 4681, 51, 16571, true},
+                {100000, 4687, 1000, 500_000_000, false},
+                {300000000, 44, 1000000, 500_000_000, false},
+                {300000000, 100000, 1000000, 500_000_000, true},
+
+                {100000, 4681, 1000, 1000_000_000, false},
+                {100000, 4681, 10000, 2000_000_000, false},
+        };
+    }
+
+    @Test(dataProvider = "binFieldValidationData")
+    public void testBinFieldValidation(final int alignmentStart,
+                                       final int bin,
+                                       final int readLength,
+                                       final int referenceLength,
+                                       final boolean isErrorExpected) {
+        final SAMRecord sam = createSamRecordWithHeaderAndBin(alignmentStart, bin, readLength, referenceLength);
+
+        final List<SAMValidationError> errorList = sam.isValid(false);
+
+        final boolean hasError = Optional.ofNullable(errorList)
+                .map(Collection::stream)
+                .map(stream -> stream.anyMatch(error -> error.getType() == SAMValidationError.Type.INVALID_INDEXING_BIN))
+                .orElse(false);
+        Assert.assertEquals(hasError, isErrorExpected);
+    }
+
+    private SAMRecord createSamRecordWithHeaderAndBin(final int alignmentStart,
+                                                      final int bin,
+                                                      final int readLength,
+                                                      final int referenceLength) {
+        final SAMRecord rec = createSamRecord(alignmentStart, readLength);
+        rec.setIndexingBin(bin);
+
+        final String referenceName = "Sheila";
+        rec.setReferenceName(referenceName);
+
+        final SAMFileHeader header = createHeaderWithOneReference(referenceName, referenceLength);
+        rec.setHeader(header);
+
+        return rec;
+    }
+
+    private SAMRecord createSamRecord(final int alignmentStart, final int readLength) {
+        final SAMRecordSetBuilder recordsBuilder = new SAMRecordSetBuilder();
+        recordsBuilder.setReadLength(readLength);
+        return recordsBuilder.addFrag("test", 0, alignmentStart, false, false, readLength + "M", null, 2);
+    }
+
+    private SAMFileHeader createHeaderWithOneReference(final String referenceName, final int referenceLength) {
+        final SAMSequenceRecord sequenceRecord = new SAMSequenceRecord(referenceName, referenceLength);
+        final List<SAMSequenceRecord> records = Collections.singletonList(sequenceRecord);
+        final SAMSequenceDictionary dict = new SAMSequenceDictionary(records);
+        final SAMFileHeader header = new SAMFileHeader(dict);
+        final SAMReadGroupRecord groupRecord = new SAMReadGroupRecord("1");
+        header.setReadGroups(Collections.singletonList(groupRecord));
+        return header;
     }
 
     // ----------------- NULL header tests ---------------------
@@ -1101,5 +1172,77 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test(dataProvider = "attributeAccessTestData")
     public void testHasAttribute(final SAMRecord samRecord, final String tag, final boolean expectedHasAttribute) {
         Assert.assertEquals(samRecord.hasAttribute(tag), expectedHasAttribute);
+    }
+
+    @Test
+    public void test_setAttribute_empty_array() {
+        final SAMFileHeader header = new SAMFileHeader();
+        final SAMRecord record = new SAMRecord(header);
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
+        record.setAttribute(ARRAY_TAG, new int[0]);
+        Assert.assertNotNull(record.getSignedIntArrayAttribute(ARRAY_TAG));
+        Assert.assertEquals(record.getSignedIntArrayAttribute(ARRAY_TAG), new int[0]);
+        Assert.assertEquals(record.getAttribute(ARRAY_TAG), new char[0]);
+        record.setAttribute(ARRAY_TAG, null);
+        Assert.assertNull(record.getStringAttribute(ARRAY_TAG));
+    }
+
+    private static Object[][] getEmptyArrays() {
+        return new Object[][]{
+                {new int[0], int[].class},
+                {new short[0], short[].class},
+                {new byte[0], byte[].class},
+                {new float[0], float[].class},
+        };
+    }
+
+    private static Object[][] getFileExtensions(){
+        return new Object[][]{
+                {BamFileIoUtils.BAM_FILE_EXTENSION}, {IOUtil.SAM_FILE_EXTENSION}, {CramIO.CRAM_FILE_EXTENSION}
+        };
+    }
+
+    @DataProvider
+    public Object[][] getEmptyArraysAndExtensions(){
+        return TestNGUtils.cartesianProduct(getEmptyArrays(), getFileExtensions());
+    }
+
+    @Test(dataProvider = "getEmptyArraysAndExtensions")
+    public void testWriteSamWithEmptyArray(Object emptyArray, Class<?> arrayClass, String fileExtension) throws IOException {
+        Assert.assertEquals(emptyArray.getClass(), arrayClass);
+        Assert.assertEquals(Array.getLength(emptyArray), 0);
+
+        final SAMRecordSetBuilder samRecords = new SAMRecordSetBuilder();
+        samRecords.addFrag("Read", 0, 100, false);
+        final SAMRecord record = samRecords.getRecords().iterator().next();
+        record.setAttribute(ARRAY_TAG, emptyArray);
+        checkArrayIsEmpty(ARRAY_TAG, record, arrayClass);
+
+        final Path tmp = Files.createTempFile("tmp", fileExtension);
+        IOUtil.deleteOnExit(tmp);
+
+        final SAMFileWriterFactory writerFactory = new SAMFileWriterFactory()
+                .setCreateMd5File(false)
+                .setCreateIndex(false);
+        final Path reference = IOUtil.getPath("src/test/resources/htsjdk/samtools/one-contig.fasta");
+        try (final SAMFileWriter samFileWriter = writerFactory.makeWriter(samRecords.getHeader(), false, tmp, reference)) {
+            samFileWriter.addAlignment(record);
+        }
+
+        try (final SamReader reader = SamReaderFactory.makeDefault()
+                .referenceSequence(reference)
+                .open(tmp)) {
+            final SAMRecordIterator iterator = reader.iterator();
+            Assert.assertTrue(iterator.hasNext());
+            final SAMRecord recordFromDisk = iterator.next();
+            checkArrayIsEmpty(ARRAY_TAG, recordFromDisk, arrayClass);
+        }
+    }
+
+    private static void checkArrayIsEmpty(String arrayTag, SAMRecord recordFromDisk, Class<?> expectedClass) {
+        final Object attribute = recordFromDisk.getAttribute(arrayTag);
+        Assert.assertNotNull(attribute);
+        Assert.assertEquals(attribute.getClass(), expectedClass);
+        Assert.assertEquals(Array.getLength(attribute), 0);
     }
 }
