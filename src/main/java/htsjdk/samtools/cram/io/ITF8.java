@@ -221,7 +221,7 @@ public class ITF8 {
      * @return the bytes holding ITF8 representation of the value
      */
     public static byte[] writeUnsignedITF8(final int value) {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer buffer = ByteBuffer.allocate(MAX_BYTES);
         writeUnsignedITF8(value, buffer);
 
         buffer.flip();
