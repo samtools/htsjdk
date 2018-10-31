@@ -13,7 +13,6 @@ public class CramIntArray {
      *
      * @param inputStream the inputs stream to read from
      * @return array of integers from the input stream
-     * @throws IOException as per java IO contract
      */
     public static int[] array(final InputStream inputStream) {
         final int size = ITF8.readUnsignedITF8(inputStream);
@@ -30,7 +29,6 @@ public class CramIntArray {
      * @param array the array to be written
      * @param outputStream    the output stream to write to
      * @return the number of bits written out
-     * @throws IOException as per java IO contract
      */
     public static int write(final int[] array, final OutputStream outputStream) {
         int length = ITF8.writeUnsignedITF8(array.length, outputStream);
