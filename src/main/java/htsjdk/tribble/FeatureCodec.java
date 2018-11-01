@@ -156,4 +156,21 @@ public interface FeatureCodec<FEATURE_TYPE extends Feature, SOURCE> {
     default public TabixFormat getTabixFormat() {
         throw new TribbleException(this.getClass().getSimpleName() + "does not have defined tabix format");
     }
+
+    /**
+     * Codecs may override this method if they file that they recognize with {@link #canDecode(String)} is different than
+     * the file that contains the data they pars.
+     *
+     * This enables a class of codecs where the input file is a configuration that defines how to locate and handle the
+     * datafile.
+     *
+     * The default implementation returns the same path which was passed in.
+     *
+     * @param path the path to a file that this codec {@link #canDecode}
+     * @return the path to the data file that should be parsed by this codec to produce Features}.
+     * @throws TribbleException codecs may throw if they cannot decode the path.
+     */
+    default String getPathToDataFile(String path){
+        return path;
+    }
 }

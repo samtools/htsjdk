@@ -102,8 +102,9 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {
         try {
+
             // Test for tabix index
-            if (methods.isTabix(featureResource, indexResource)) {
+            if (methods.isTabix(codec.getPathToDataFile(featureResource), indexResource)) {
                 if ( ! (codec instanceof AsciiFeatureCodec) )
                     throw new TribbleException("Tabix indexed files only work with ASCII codecs, but received non-Ascii codec " + codec.getClass().getSimpleName());
                 return new TabixFeatureReader<>(featureResource, indexResource, (AsciiFeatureCodec) codec, wrapper, indexWrapper);
@@ -145,7 +146,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     protected AbstractFeatureReader(final String path, final FeatureCodec<T, SOURCE> codec,
                                     final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                     final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
-        this.path = path;
+        this.path = codec.getPathToDataFile(path);
         this.codec = codec;
         this.wrapper = wrapper;
         this.indexWrapper = indexWrapper;

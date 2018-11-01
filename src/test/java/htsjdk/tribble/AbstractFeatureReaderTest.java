@@ -6,6 +6,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.IOUtilTest;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -228,4 +229,45 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider
+    public Object[][] getVcfRedirects(){
+        return new Object[][]{
+          {"src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/vcf.redirect"},
+          {"src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/vcf.gz.redirect"}
+        };
+    }
+
+    @Test(dataProvider = "getVcfRedirects")
+    public void testRedirectCode(String vcfRedirect) throws IOException {
+        final VcfRedirectCodec vcfRedirectCodec = new VcfRedirectCodec();
+        final String vcf = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/test.vcf";
+        Assert.assertTrue(vcfRedirectCodec.canDecode(vcfRedirect));
+        try(FeatureReader<VariantContext> redirectReader = AbstractFeatureReader.getFeatureReader(vcfRedirect, vcfRedirectCodec, false);
+            FeatureReader<VariantContext> directReader = AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), false)){
+            Assert.assertEquals(redirectReader.getHeader().toString(), directReader.getHeader().toString());
+            final int redirectVcfSize = redirectReader.iterator().toList().size();
+            Assert.assertTrue( redirectVcfSize > 0, "iterator found " + redirectVcfSize + " records");
+            Assert.assertEquals(redirectVcfSize, directReader.iterator().toList().size());
+
+            final int redirectQuerySize = redirectReader.query("20", 1, 20000).toList().size();
+            Assert.assertTrue(redirectQuerySize > 0, "query found " + redirectVcfSize + " records");
+            Assert.assertEquals(redirectQuerySize, directReader.query("20", 1, 20000).toList().size() );
+        }
+    }
+
+    public static class VcfRedirectCodec extends VCFCodec{
+        @Override
+        public boolean canDecode(String potentialInput) {
+            return super.canDecode(this.getPathToDataFile(potentialInput));
+        }
+
+        @Override
+        public String getPathToDataFile(String path) {
+            try {
+                return Files.readAllLines(IOUtil.getPath(path)).get(0);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+    }
 }
