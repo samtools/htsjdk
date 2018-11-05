@@ -48,7 +48,7 @@ public enum SAMTag {
     FS,
     FT,
     FZ,
-    /** for backwards compatibility only */
+    /** @deprecated for backwards compatibility only */
     @Deprecated
     GC,
     /** @deprecated for backwards compatibility only */
