@@ -869,7 +869,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws ClassCastException if RG tag does not have a String value.
      */
     public SAMReadGroupRecord getReadGroup() {
-        final String rgId = (String)getAttribute(SAMTagUtil.RG);
+        final String rgId = (String)getAttribute(SAMTag.RG.getBinaryTag());
         if (rgId == null || getHeader() == null) {
             return null;
         } else {
@@ -2063,7 +2063,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
 */
         }
         // Validate the RG ID is found in header
-        final String rgId = (String)getAttribute(SAMTagUtil.RG);
+        final String rgId = (String)getAttribute(SAMTag.RG.getBinaryTag());
         if (rgId != null && getHeader() != null && getHeader().getReadGroup(rgId) == null) {
                 if (ret == null) ret = new ArrayList<>();
                 ret.add(new SAMValidationError(SAMValidationError.Type.READ_GROUP_NOT_FOUND,
@@ -2078,10 +2078,10 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         }
         // TODO(mccowan): Is this asking "is this the primary alignment"?
         if (this.getReadLength() == 0 && !this.isSecondaryAlignment()) {
-            final Object fz = getAttribute(SAMTagUtil.FZ);
+            final Object fz = getAttribute(SAMTag.FZ.getBinaryTag());
             if (fz == null) {
-                final String cq = (String)getAttribute(SAMTagUtil.CQ);
-                final String cs = (String)getAttribute(SAMTagUtil.CS);
+                final String cq = (String)getAttribute(SAMTag.CQ.getBinaryTag());
+                final String cs = (String)getAttribute(SAMTag.CS.getBinaryTag());
                 if (cq == null || cq.isEmpty() || cs == null || cs.isEmpty()) {
                     if (ret == null) ret = new ArrayList<>();
                     ret.add(new SAMValidationError(SAMValidationError.Type.EMPTY_READ,

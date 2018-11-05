@@ -142,10 +142,7 @@ public final class SAMTagUtil {
      * @return Tag name packed as 2 ASCII bytes in a short.
      */
     public static short makeBinaryTag(final String tag) {
-        if (tag.length() != 2) {
-            throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
-        }
-        return (short)(tag.charAt(1) << 8 | tag.charAt(0));
+        return SAMTag.makeBinaryTag(tag);
     }
 
     /**

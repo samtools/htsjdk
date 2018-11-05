@@ -27,13 +27,7 @@
 package htsjdk.samtools.sra;
 
 import gov.nih.nlm.ncbi.ngs.NGS;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTagUtil;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMBinaryTagAndValue;
-import htsjdk.samtools.SAMUtils;
-import htsjdk.samtools.SAMValidationError;
+import htsjdk.samtools.*;
 import htsjdk.samtools.util.Log;
 import ngs.ReadCollection;
 import ngs.AlignmentIterator;
@@ -210,7 +204,7 @@ public class SRALazyRecord extends SAMRecord {
     static
     {
         lazyAttributeTags = new HashMap<Short, LazyAttribute>();
-        lazyAttributeTags.put(SAMTagUtil.RG, LazyAttribute.RG);
+        lazyAttributeTags.put(SAMTag.RG.getBinaryTag(), LazyAttribute.RG);
     }
 
     public SRALazyRecord(final SAMFileHeader header, SRAAccession accession, ReadCollection run, AlignmentIterator alignmentIterator, String readId, String alignmentId) {

@@ -105,7 +105,20 @@ public enum SAMTag {
     U2,
     UQ;
 
-    private final short shortValue = SAMTagUtil.makeBinaryTag(this.name());
+    private final short shortValue = SAMTag.makeBinaryTag(this.name());;
+
+    /**
+     * Convert from String representation of tag name to short representation.
+     *
+     * @param tag 2-character String representation of a tag name.
+     * @return Tag name packed as 2 ASCII bytes in a short.
+     */
+    static short makeBinaryTag(String tag) {
+        if (tag.length() != 2) {
+            throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
+        }
+        return (short)(tag.charAt(1) << 8 | tag.charAt(0));
+    }
 
     /**
      * Get the binary representation of this tag name.
