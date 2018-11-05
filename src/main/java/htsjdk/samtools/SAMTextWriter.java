@@ -43,7 +43,6 @@ public class SAMTextWriter extends SAMFileWriterImpl {
     // For error reporting only.
     private final File file;
     private final TextTagCodec tagCodec = new TextTagCodec();
-    private final SAMTagUtil tagUtil = new SAMTagUtil();
 
     private final SamFlagField samFlagFieldOutput;
     
