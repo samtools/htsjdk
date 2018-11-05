@@ -36,8 +36,9 @@ import htsjdk.samtools.util.StringUtil;
 public final class SAMTagUtil {
 
     /**
-     * This constructor is public despite being a utility class for backwards compatibility reasons.
+     * @deprecated This constructor is public despite being a utility class for backwards compatibility reasons.
      */
+    @Deprecated
     public SAMTagUtil(){}
 
     // Standard tags pre-computed for convenience
