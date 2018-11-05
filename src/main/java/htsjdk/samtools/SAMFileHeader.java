@@ -41,7 +41,7 @@ public class SAMFileHeader extends AbstractSAMHeaderRecord
     public static final String SORT_ORDER_TAG = "SO";
     public static final String GROUP_ORDER_TAG = "GO";
     public static final String CURRENT_VERSION = "1.6";
-    public static final Set<String> ACCEPTABLE_VERSIONS = CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5", "1.6");
+    public static final Set<String> ACCEPTABLE_VERSIONS = CollectionUtil.makeSet("1.0", "1.3", "1.4", "1.5", CURRENT_VERSION );
 
     private SortOrder sortOrder = null;
     private GroupOrder groupOrder = null;
