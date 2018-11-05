@@ -118,7 +118,7 @@ public final class SAMTagUtil {
     public static final short U2 = SAMTag.U2.getBinaryTag();
     public static final short UQ = SAMTag.UQ.getBinaryTag();
 
-    private static final SAMTagUtil singleton = new SAMTagUtil();
+    private static final SAMTagUtil SINGLETON = new SAMTagUtil();
 
     // Cache of already-converted tags.  Should speed up SAM text generation.
     // Not synchronized because race condition is not a problem.
