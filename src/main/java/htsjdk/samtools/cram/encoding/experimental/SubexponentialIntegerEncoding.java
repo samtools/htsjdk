@@ -15,8 +15,9 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
@@ -26,16 +27,17 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class GammaIntegerEncoding implements Encoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.GAMMA;
+public class SubexponentialIntegerEncoding extends ExperimentalEncoding<Integer> {
+    private static final EncodingID ENCODING_ID = EncodingID.SUBEXPONENTIAL;
     private int offset;
+    private int k;
 
-    public GammaIntegerEncoding() {
-        this(0);
+    public SubexponentialIntegerEncoding() {
     }
 
-    public GammaIntegerEncoding(final int offset) {
+    public SubexponentialIntegerEncoding(final int offset, final int k) {
         this.offset = offset;
+        this.k = k;
     }
 
     @Override
@@ -43,31 +45,35 @@ public class GammaIntegerEncoding implements Encoding<Integer> {
         return ENCODING_ID;
     }
 
-    public static EncodingParams toParam(final int offset) {
-        final GammaIntegerEncoding gammaIntegerEncoding = new GammaIntegerEncoding();
-        gammaIntegerEncoding.offset = offset;
-        return new EncodingParams(ENCODING_ID, gammaIntegerEncoding.toByteArray());
+    public static EncodingParams toParam(final int offset, final int k) {
+        final SubexponentialIntegerEncoding subexponentialIntegerEncoding = new SubexponentialIntegerEncoding();
+        subexponentialIntegerEncoding.offset = offset;
+        subexponentialIntegerEncoding.k = k;
+        return new EncodingParams(ENCODING_ID, subexponentialIntegerEncoding.toByteArray());
     }
 
     @Override
     public byte[] toByteArray() {
         final ByteBuffer buffer = ByteBuffer.allocate(10);
         ITF8.writeUnsignedITF8(offset, buffer);
+        ITF8.writeUnsignedITF8(k, buffer);
         buffer.flip();
-        final byte[] array = new byte[buffer.limit()];
-        buffer.get(array);
-        return array;
+        final byte[] bytes = new byte[buffer.limit()];
+        buffer.get(bytes);
+        return bytes;
     }
 
     @Override
     public void fromByteArray(final byte[] data) {
-        offset = ITF8.readUnsignedITF8(data);
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        offset = ITF8.readUnsignedITF8(buffer);
+        k = ITF8.readUnsignedITF8(buffer);
     }
 
     @Override
     public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
                                         final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new GammaIntegerCodec(offset);
+        return new SubexponentialIntegerCodec(offset, k);
     }
 
 }

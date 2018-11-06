@@ -15,7 +15,7 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
@@ -23,61 +23,72 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-class GolombRiceIntegerCodec extends AbstractBitCodec<Integer> {
-    private final int m;
-    private final int log2m;
-    private final long mask;
-    private boolean quotientBit = false;
+class SubexponentialIntegerCodec extends ExperimentalCodec<Integer> {
     private int offset = 0;
+    private int k = 2;
+    private boolean unaryBit = true;
 
-    public GolombRiceIntegerCodec(final int offset, final int log2m) {
-        this.log2m = log2m;
-        m = 1 << log2m;
-        this.quotientBit = true;
+    SubexponentialIntegerCodec(final int offset, final int k) {
         this.offset = offset;
-        mask = ~(~0 << log2m);
+        this.k = k;
+        this.unaryBit = true;
     }
 
     @Override
     public final Integer read(final BitInputStream bitInputStream) throws IOException {
+        int u = 0;
+        while (bitInputStream.readBit() == unaryBit)
+            u++;
 
-        int unary = 0;
-        while (bitInputStream.readBit() == quotientBit)
-            unary++;
+        final int b;
+        final int n;
+        if (u == 0) {
+            b = k;
+            n = bitInputStream.readBits(b);
+        } else {
+            b = u + k - 1;
+            n = (1 << b) | bitInputStream.readBits(b);
+        }
 
-        final int remainder = bitInputStream.readBits(log2m);
-
-        final int result = unary * m + remainder;
-        return result - offset;
+        return n - offset;
     }
 
     @Override
     public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
-        final long newValue = value + offset;
-        final long quotient = newValue >>> log2m;
-        if (quotient > 0x7fffffffL)
-            for (long i = 0; i < quotient; i++)
-                bitOutputStream.write(quotientBit);
+        if (value + offset < 0)
+            throw new IllegalArgumentException("Value is less then offset: " + value);
 
-        else if (quotient > 0) {
-            final int qi = (int) quotient;
-            for (int i = 0; i < qi; i++)
-                bitOutputStream.write(quotientBit);
+        final long newValue = value + offset;
+        final int b;
+        final int u;
+        if (newValue < (1L << k)) {
+            b = k;
+            u = 0;
+        } else {
+            b = (int) (Math.log(newValue) / Math.log(2));
+            u = b - k + 1;
         }
-        bitOutputStream.write(!quotientBit);
-        final long remainder = newValue & mask;
-        long reminderMask = 1 << (log2m - 1);
-        for (int i = log2m - 1; i >= 0; i--) {
-            final long b = remainder & reminderMask;
-            bitOutputStream.write(b != 0L);
-            reminderMask >>>= 1;
-        }
-        return quotient + 1 + log2m;
+
+        bitOutputStream.write(unaryBit, u);
+        bitOutputStream.write(!unaryBit);
+
+        bitOutputStream.write(newValue, b);
+        return u + 1 + b;
     }
 
     @Override
     public final long numberOfBits(final Integer value) {
-        return (value + offset) / m + 1 + log2m;
+        final long newValue = value + offset;
+        final long b;
+        final long u;
+        if (newValue < (1L << k)) {
+            b = k;
+            u = 0;
+        } else {
+            b = (long) Math.floor(Math.log(newValue) / Math.log(2));
+            u = b - k + 1;
+        }
+        return u + 1 + b;
     }
 
     @Override

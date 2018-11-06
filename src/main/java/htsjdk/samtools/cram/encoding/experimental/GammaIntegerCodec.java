@@ -15,17 +15,17 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-class GammaIntegerCodec extends AbstractBitCodec<Integer> {
+class GammaIntegerCodec extends ExperimentalCodec<Integer> {
     private int offset = 0;
 
-    public GammaIntegerCodec(final int offset) {
+    GammaIntegerCodec(final int offset) {
         this.offset = offset;
     }
 

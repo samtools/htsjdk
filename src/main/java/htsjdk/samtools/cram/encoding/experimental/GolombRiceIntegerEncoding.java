@@ -15,8 +15,9 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
@@ -26,12 +27,12 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class GolombLongEncoding implements Encoding<Long> {
-    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
-    private int m;
+public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
+    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB_RICE;
     private int offset;
+    private int m;
 
-    public GolombLongEncoding() {
+    public GolombRiceIntegerEncoding() {
     }
 
     @Override
@@ -40,10 +41,10 @@ public class GolombLongEncoding implements Encoding<Long> {
     }
 
     public static EncodingParams toParam(final int offset, final int m) {
-        final GolombLongEncoding golombLongEncoding = new GolombLongEncoding();
-        golombLongEncoding.offset = offset;
-        golombLongEncoding.m = m;
-        return new EncodingParams(ENCODING_ID, golombLongEncoding.toByteArray());
+        final GolombRiceIntegerEncoding golombRiceIntegerEncoding = new GolombRiceIntegerEncoding();
+        golombRiceIntegerEncoding.offset = offset;
+        golombRiceIntegerEncoding.m = m;
+        return new EncodingParams(ENCODING_ID, golombRiceIntegerEncoding.toByteArray());
     }
 
     @Override
@@ -65,9 +66,9 @@ public class GolombLongEncoding implements Encoding<Long> {
     }
 
     @Override
-    public BitCodec<Long> buildCodec(final Map<Integer, InputStream> inputMap,
-                                     final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
-        return new GolombLongCodec(offset, m);
+    public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        return new GolombRiceIntegerCodec(offset, m);
     }
 
 }

@@ -15,7 +15,7 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
@@ -23,7 +23,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 import java.io.IOException;
 
 
-class GolombLongCodec extends AbstractBitCodec<Long> {
+class GolombLongCodec extends ExperimentalCodec<Long> {
     private int m;
     private boolean quotientBit = true;
     private long offset = 0L;

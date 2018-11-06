@@ -15,8 +15,9 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.experimental;
 
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
@@ -26,7 +27,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class GolombIntegerEncoding implements Encoding<Integer> {
+public class GolombIntegerEncoding extends ExperimentalEncoding<Integer> {
     private static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
     private int m;
     private int offset;
