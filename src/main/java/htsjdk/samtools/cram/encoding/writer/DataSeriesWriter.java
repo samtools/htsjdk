@@ -55,7 +55,7 @@ public class DataSeriesWriter<T> {
                             final BitOutputStream bitOutputStream,
                             final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
 
-        final Encoding<T> encoding = EncodingFactory.initializeEncoding(valueType, params);
+        final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
         this.codec = encoding.buildCodec(null, outputMap);
         this.bitOutputStream = bitOutputStream;

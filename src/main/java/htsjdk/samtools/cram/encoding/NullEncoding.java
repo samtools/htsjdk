@@ -19,33 +19,18 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.util.Map;
 
-public class NullEncoding<T> implements Encoding<T> {
-    private static final EncodingID ENCODING_ID = EncodingID.NULL;
-
+public class NullEncoding<T> extends Encoding<T> {
     public NullEncoding() {
-    }
-
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
-    }
-
-    public static EncodingParams toParam() {
-        return new EncodingParams(ENCODING_ID, new NullEncoding().toByteArray());
+        super(EncodingID.NULL);
     }
 
     @Override
     public byte[] toByteArray() {
         return new byte[]{};
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
     }
 
     @Override

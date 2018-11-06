@@ -22,7 +22,6 @@ import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanByteEncoding;
 import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 /**
  * A helper class to instantiate an appropriate {@link htsjdk.samtools.cram.encoding.Encoding}
@@ -32,23 +31,24 @@ import htsjdk.samtools.cram.structure.EncodingParams;
  */
 @SuppressWarnings("unchecked")
 public class EncodingFactory {
-
     /**
      * Create an encoding for the data series type and encoding id.
      * @param valueType data type of the values to be produced/consumed by the encoding
      * @param id encoding id used for data serialization
+     * @param params encoding initialization values
      * @param <T> encoding object type, like Integer or String.
      * @return a new encoding with the requested parameters
      */
-    static <T> Encoding<T> createEncoding(final DataSeriesType valueType,
-                                          final EncodingID id) {
+    public static <T> Encoding<T> createEncoding(final DataSeriesType valueType,
+                                                 final EncodingID id,
+                                                 final byte[] params) {
         switch (valueType) {
             case BYTE:
                 switch (id) {
                     case EXTERNAL:
-                        return (Encoding<T>) new ExternalByteEncoding();
+                        return (Encoding<T>) ExternalByteEncoding.fromParams(params);
                     case HUFFMAN:
-                        return (Encoding<T>) new CanonicalHuffmanByteEncoding();
+                        return (Encoding<T>) CanonicalHuffmanByteEncoding.fromParams(params);
                     case NULL:
                         return new NullEncoding<T>();
 
@@ -61,21 +61,21 @@ public class EncodingFactory {
             case INT:
                 switch (id) {
                     case HUFFMAN:
-                        return (Encoding<T>) new CanonicalHuffmanIntegerEncoding();
+                        return (Encoding<T>) CanonicalHuffmanIntegerEncoding.fromParams(params);
                     case NULL:
                         return new NullEncoding<T>();
                     case EXTERNAL:
-                        return (Encoding<T>) new ExternalIntegerEncoding();
+                        return (Encoding<T>) ExternalIntegerEncoding.fromParams(params);
                     case GOLOMB:
-                        return (Encoding<T>) new GolombIntegerEncoding();
+                        return (Encoding<T>) GolombIntegerEncoding.fromParams(params);
                     case GOLOMB_RICE:
-                        return (Encoding<T>) new GolombRiceIntegerEncoding();
+                        return (Encoding<T>) GolombRiceIntegerEncoding.fromParams(params);
                     case BETA:
-                        return (Encoding<T>) new BetaIntegerEncoding();
+                        return (Encoding<T>) BetaIntegerEncoding.fromParams(params);
                     case GAMMA:
-                        return (Encoding<T>) new GammaIntegerEncoding();
+                        return (Encoding<T>) GammaIntegerEncoding.fromParams(params);
                     case SUBEXPONENTIAL:
-                        return (Encoding<T>) new SubexponentialIntegerEncoding();
+                        return (Encoding<T>) SubexponentialIntegerEncoding.fromParams(params);
 
                     default:
                         break;
@@ -87,9 +87,9 @@ public class EncodingFactory {
                     case NULL:
                         return new NullEncoding<T>();
                     case GOLOMB:
-                        return (Encoding<T>) new GolombLongEncoding();
+                        return (Encoding<T>) GolombLongEncoding.fromParams(params);
                     case EXTERNAL:
-                        return (Encoding<T>) new ExternalLongEncoding();
+                        return (Encoding<T>) ExternalLongEncoding.fromParams(params);
 
                     default:
                         break;
@@ -101,11 +101,11 @@ public class EncodingFactory {
                     case NULL:
                         return new NullEncoding<T>();
                     case BYTE_ARRAY_LEN:
-                        return (Encoding<T>) new ByteArrayLenEncoding();
+                        return (Encoding<T>) ByteArrayLenEncoding.fromParams(params);
                     case BYTE_ARRAY_STOP:
-                        return (Encoding<T>) new ByteArrayStopEncoding();
+                        return (Encoding<T>) ByteArrayStopEncoding.fromParams(params);
                     case EXTERNAL:
-                        return (Encoding<T>) new ExternalByteArrayEncoding();
+                        return (Encoding<T>) ExternalByteArrayEncoding.fromParams(params);
 
                     default:
                         break;
@@ -116,36 +116,7 @@ public class EncodingFactory {
                 break;
         }
 
-        return null;
-    }
-
-    /**
-     * Create and initialize an encoding for the data series type and encoding parameters.
-     * @param valueType data type of the values to be produced/consumed by the encoding
-     * @param id encoding id used for data serialization
-     * @param params encoding initialization values
-     * @param <T> encoding object type, like Integer or String.
-     * @return a new encoding with the requested parameters
-     */
-    public static <T> Encoding<T> initializeEncoding(final DataSeriesType valueType, final EncodingID id, final byte[] params) {
-        final Encoding<T> encoding = createEncoding(valueType, id);
-        if (encoding == null) {
-            throw new IllegalArgumentException("Encoding not found: value type="
-                    + valueType.name() + ", encoding id=" + id.name());
-        }
-
-        encoding.fromByteArray(params);
-        return encoding;
-    }
-
-    /**
-     * Create and initialize an encoding for the data series type and encoding parameters.
-     * @param valueType data type of the values to be produced/consumed by the encoding
-     * @param params encoding ID and initialization values
-     * @param <T> encoding object type, like Integer or String.
-     * @return a new encoding with the requested parameters
-     */
-    public static <T> Encoding<T> initializeEncoding(final DataSeriesType valueType, final EncodingParams params) {
-        return initializeEncoding(valueType, params.id, params.params);
+        throw new IllegalArgumentException("Encoding not found: value type="
+                + valueType.name() + ", encoding id=" + id.name());
     }
 }

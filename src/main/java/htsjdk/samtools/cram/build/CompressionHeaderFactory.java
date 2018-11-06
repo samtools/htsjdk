@@ -18,11 +18,7 @@
 package htsjdk.samtools.cram.build;
 
 import htsjdk.samtools.cram.common.MutableInt;
-import htsjdk.samtools.cram.encoding.ByteArrayLenEncoding;
-import htsjdk.samtools.cram.encoding.ByteArrayStopEncoding;
-import htsjdk.samtools.cram.encoding.ExternalByteEncoding;
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
-import htsjdk.samtools.cram.encoding.ExternalIntegerEncoding;
+import htsjdk.samtools.cram.encoding.*;
 import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.rans.RANS;
 import htsjdk.samtools.cram.encoding.readfeatures.ReadFeature;
@@ -402,12 +398,24 @@ public class CompressionHeaderFactory {
     }
 
     /**
+     * Used by buildEncodingForTag to create a ByteArrayLenEncoding with CanonicalHuffmanIntegerEncoding and
+     * ExternalByteArrayEncoding sub-encodings
+     *
+     * @param huffmanValue the single value used as the Canonical Huffman value parameter
+     * @param tagID the ID of the tag
+     * @return EncodingParams a complete description of the result Encoding
+     */
+    private EncodingParams buildHuffmanEncoding(final int huffmanValue, final int tagID) {
+        return new ByteArrayLenEncoding(
+                new CanonicalHuffmanIntegerEncoding(new int[] { huffmanValue }, new int[] { 0 }),
+                new ExternalByteArrayEncoding(tagID)).toParam();
+    }
+
+    /**
      * Build an encoding for a specific tag for given records.
      *
-     * @param records
-     *            CRAM records holding the tags
-     * @param tagID
-     *            an integer id of the tag
+     * @param records CRAM records holding the tags
+     * @param tagID an integer id of the tag
      * @return an encoding for the tag
      */
     private EncodingDetails buildEncodingForTag(final List<CramCompressionRecord> records, final int tagID) {
@@ -421,37 +429,31 @@ public class CompressionHeaderFactory {
             case 'A':
             case 'c':
             case 'C':
-                details.params = ByteArrayLenEncoding.toParam(
-                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 1 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildHuffmanEncoding(1, tagID);
                 return details;
+
             case 'I':
             case 'i':
             case 'f':
-                details.params = ByteArrayLenEncoding.toParam(
-                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 4 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildHuffmanEncoding(4, tagID);
                 return details;
 
             case 's':
             case 'S':
-                details.params = ByteArrayLenEncoding.toParam(
-                        CanonicalHuffmanIntegerEncoding.toParam(new int[] { 2 }, new int[] { 0 }),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = buildHuffmanEncoding(2, tagID);
                 return details;
+
             case 'Z':
             case 'B':
                 final ByteSizeRange stats = geByteSizeRangeOfTagValues(records, tagID);
                 final boolean singleSize = stats.min == stats.max;
                 if (singleSize) {
-                    details.params = ByteArrayLenEncoding.toParam(
-                            CanonicalHuffmanIntegerEncoding.toParam(new int[] { stats.min }, new int[] { 0 }),
-                            ExternalByteEncoding.toParam(tagID));
+                    details.params = buildHuffmanEncoding(stats.min, tagID);
                     return details;
                 }
 
                 if (type == 'Z') {
-                    details.params = ByteArrayStopEncoding.toParam((byte) '\t', tagID);
+                    details.params = new ByteArrayStopEncoding((byte) '\t', tagID).toParam();
                     return details;
                 }
 
@@ -459,13 +461,14 @@ public class CompressionHeaderFactory {
                 if (stats.min > minSize_threshold_ForByteArrayStopEncoding) {
                     final int unusedByte = getUnusedByte(data);
                     if (unusedByte > ALL_BYTES_USED) {
-                        details.params = ByteArrayStopEncoding.toParam((byte) unusedByte, tagID);
+                        details.params = new ByteArrayStopEncoding((byte) unusedByte, tagID).toParam();
                         return details;
                     }
                 }
 
-                details.params = ByteArrayLenEncoding.toParam(ExternalIntegerEncoding.toParam(tagID),
-                        ExternalByteEncoding.toParam(tagID));
+                details.params = new ByteArrayLenEncoding(
+                        new ExternalIntegerEncoding(tagID),
+                        new ExternalByteArrayEncoding(tagID)).toParam();
                 return details;
             default:
                 throw new IllegalArgumentException("Unknown tag type: " + (char) type);
@@ -502,31 +505,31 @@ public class CompressionHeaderFactory {
 
         private void addExternalByteArrayStopTabGzipEncoding(final DataSeries dataSeries) {
             addExternalEncoding(dataSeries,
-                    ByteArrayStopEncoding.toParam((byte) '\t', dataSeries.getExternalBlockContentId()),
+                    new ByteArrayStopEncoding((byte) '\t', dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
         private void addExternalIntegerEncoding(final DataSeries dataSeries, final ExternalCompressor compressor) {
             addExternalEncoding(dataSeries,
-                    ExternalIntegerEncoding.toParam(dataSeries.getExternalBlockContentId()),
+                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     compressor);
         }
 
         private void addExternalIntegerGzipEncoding(final DataSeries dataSeries) {
             addExternalEncoding(dataSeries,
-                    ExternalIntegerEncoding.toParam(dataSeries.getExternalBlockContentId()),
+                    new ExternalIntegerEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
         private void addExternalByteGzipEncoding(final DataSeries dataSeries) {
             addExternalEncoding(dataSeries,
-                    ExternalByteEncoding.toParam(dataSeries.getExternalBlockContentId()),
+                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createGZIP());
         }
 
         private void addExternalByteRansOrderOneEncoding(final DataSeries dataSeries) {
             addExternalEncoding(dataSeries,
-                    ExternalByteEncoding.toParam(dataSeries.getExternalBlockContentId()),
+                    new ExternalByteEncoding(dataSeries.getExternalBlockContentId()).toParam(),
                     ExternalCompressor.createRANS(RANS.ORDER.ONE));
         }
 

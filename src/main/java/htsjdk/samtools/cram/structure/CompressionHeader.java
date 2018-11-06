@@ -164,7 +164,7 @@ public class CompressionHeader {
             final int mapSize = ITF8.readUnsignedITF8(buffer);
             encodingMap = new TreeMap<>();
             for (final DataSeries dataSeries : DataSeries.values())
-                encodingMap.put(dataSeries, NullEncoding.toParam());
+                encodingMap.put(dataSeries, new NullEncoding().toParam());
 
             for (int i = 0; i < mapSize; i++) {
                 final String dataSeriesAbbreviation = new String(new byte[]{buffer.get(), buffer.get()});

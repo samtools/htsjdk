@@ -21,55 +21,37 @@ import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GolombIntegerEncoding extends ExperimentalEncoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.GOLOMB;
-    private int m;
-    private int offset;
+    private final int offset;
+    private final int m;
 
-    public GolombIntegerEncoding() {
+    private GolombIntegerEncoding(final int offset, final int m) {
+        super(EncodingID.GOLOMB);
+        this.offset = offset;
+        this.m = m;
     }
 
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
-    }
-
-    public static EncodingParams toParam(final int m) {
-        final GolombIntegerEncoding golombIntegerEncoding = new GolombIntegerEncoding();
-        golombIntegerEncoding.m = m;
-        golombIntegerEncoding.offset = 0;
-        return new EncodingParams(ENCODING_ID, golombIntegerEncoding.toByteArray());
-    }
-
-    public static EncodingParams toParam(final int m, final int offset) {
-        final GolombIntegerEncoding e = new GolombIntegerEncoding();
-        e.m = m;
-        e.offset = offset;
-        return new EncodingParams(ENCODING_ID, e.toByteArray());
+    public static GolombIntegerEncoding fromParams(final byte[] data) {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final int offset = ITF8.readUnsignedITF8(buffer);
+        final int m = ITF8.readUnsignedITF8(buffer);
+        return new GolombIntegerEncoding(offset, m);
     }
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(m, buffer);
         buffer.flip();
         final byte[] array = new byte[buffer.limit()];
         buffer.get(array);
         return array;
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
-        offset = ITF8.readUnsignedITF8(buffer);
-        m = ITF8.readUnsignedITF8(buffer);
     }
 
     @Override

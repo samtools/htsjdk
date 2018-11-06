@@ -21,48 +21,32 @@ import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class GammaIntegerEncoding extends ExperimentalEncoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.GAMMA;
-    private int offset;
+    private final int offset;
 
-    public GammaIntegerEncoding() {
-        this(0);
-    }
-
-    public GammaIntegerEncoding(final int offset) {
+    private GammaIntegerEncoding(final int offset) {
+        super(EncodingID.GAMMA);
         this.offset = offset;
     }
 
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
-    }
-
-    public static EncodingParams toParam(final int offset) {
-        final GammaIntegerEncoding gammaIntegerEncoding = new GammaIntegerEncoding();
-        gammaIntegerEncoding.offset = offset;
-        return new EncodingParams(ENCODING_ID, gammaIntegerEncoding.toByteArray());
+    public static GammaIntegerEncoding fromParams(final byte[] data) {
+        final int offset = ITF8.readUnsignedITF8(data);
+        return new GammaIntegerEncoding(offset);
     }
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES);
         ITF8.writeUnsignedITF8(offset, buffer);
         buffer.flip();
         final byte[] array = new byte[buffer.limit()];
         buffer.get(array);
         return array;
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
-        offset = ITF8.readUnsignedITF8(data);
     }
 
     @Override

@@ -22,7 +22,6 @@ import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -30,63 +29,59 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
-public class CanonicalHuffmanIntegerEncoding implements Encoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.HUFFMAN;
-    private int[] bitLengths;
-    private int[] values;
-    private final ByteBuffer buf = ByteBuffer.allocate(1024 * 10);
+public class CanonicalHuffmanIntegerEncoding extends Encoding<Integer> {
+    private final int[] values;
+    private final int[] bitLengths;
 
-    public CanonicalHuffmanIntegerEncoding() {
+    public CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths) {
+        super(EncodingID.HUFFMAN);
+        this.values = values;
+        this.bitLengths = bitLengths;
     }
 
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
+    public static CanonicalHuffmanIntegerEncoding fromParams(final byte[] data) {
+        final ByteBuffer buf = ByteBuffer.wrap(data);
+
+        final int valueSize = ITF8.readUnsignedITF8(buf);
+        final int[] values = new int[valueSize];
+        for (int i = 0; i < valueSize; i++) {
+            values[i] = ITF8.readUnsignedITF8(buf);
+        }
+
+        final int lengthSize = ITF8.readUnsignedITF8(buf);
+        final int[] bitLengths = new int[lengthSize];
+        for (int i = 0; i < lengthSize; i++) {
+            bitLengths[i] = ITF8.readUnsignedITF8(buf);
+        }
+
+        return new CanonicalHuffmanIntegerEncoding(values, bitLengths);
     }
 
     @Override
     public byte[] toByteArray() {
-        buf.clear();
+        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
+
         ITF8.writeUnsignedITF8(values.length, buf);
-        for (final int value : values)
+        for (final int value : values) {
             ITF8.writeUnsignedITF8(value, buf);
+        }
 
         ITF8.writeUnsignedITF8(bitLengths.length, buf);
-        for (final int value : bitLengths)
+        for (final int value : bitLengths) {
             ITF8.writeUnsignedITF8(value, buf);
+        }
 
         buf.flip();
         final byte[] array = new byte[buf.limit()];
         buf.get(array);
+
         return array;
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
-        final ByteBuffer buf = ByteBuffer.wrap(data);
-        int size = ITF8.readUnsignedITF8(buf);
-        values = new int[size];
-
-        for (int i = 0; i < size; i++)
-            values[i] = ITF8.readUnsignedITF8(buf);
-
-        size = ITF8.readUnsignedITF8(buf);
-        bitLengths = new int[size];
-        for (int i = 0; i < size; i++)
-            bitLengths[i] = ITF8.readUnsignedITF8(buf);
     }
 
     @Override
     public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
                                         final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         return new CanonicalHuffmanIntegerCodec(values, bitLengths);
-    }
-
-    public static EncodingParams toParam(final int[] bfValues, final int[] bfBitLens) {
-        final CanonicalHuffmanIntegerEncoding e = new CanonicalHuffmanIntegerEncoding();
-        e.values = bfValues;
-        e.bitLengths = bfBitLens;
-        return new EncodingParams(ENCODING_ID, e.toByteArray());
     }
 
     @Override

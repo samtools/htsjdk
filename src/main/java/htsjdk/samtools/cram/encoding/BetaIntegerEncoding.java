@@ -20,53 +20,37 @@ package htsjdk.samtools.cram.encoding;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class BetaIntegerEncoding implements Encoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.BETA;
-    private int offset;
-    private int bitLimit;
+public class BetaIntegerEncoding extends Encoding<Integer> {
+    private final int offset;
+    private final int bitLimit;
 
-    public BetaIntegerEncoding() {
-    }
-
-    public BetaIntegerEncoding(final int offset, final int bitLimit) {
+    BetaIntegerEncoding(final int offset, final int bitLimit) {
+        super(EncodingID.BETA);
         this.offset = offset;
         this.bitLimit = bitLimit;
     }
 
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
-    }
-
-    public static EncodingParams toParam(final int offset, final int bitLimit) {
-        final BetaIntegerEncoding encoding = new BetaIntegerEncoding();
-        encoding.offset = offset;
-        encoding.bitLimit = bitLimit;
-        return new EncodingParams(ENCODING_ID, encoding.toByteArray());
+    static BetaIntegerEncoding fromParams(final byte[] data) {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final int offset = ITF8.readUnsignedITF8(buffer);
+        final int bitLimit = ITF8.readUnsignedITF8(buffer);
+        return new BetaIntegerEncoding(offset, bitLimit);
     }
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(bitLimit, buffer);
         buffer.flip();
         final byte[] array = new byte[buffer.limit()];
         buffer.get(array);
         return array;
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
-        offset = ITF8.readUnsignedITF8(buffer);
-        bitLimit = ITF8.readUnsignedITF8(buffer);
     }
 
     @Override

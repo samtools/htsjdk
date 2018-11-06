@@ -13,7 +13,7 @@ public class DataSeriesWriterTest extends HtsjdkTest {
     public static Object[][] negativeConstructor() {
         return new Object[][] {
                 // mismatch type and encoding
-                {DataSeriesType.BYTE, BetaIntegerEncoding.toParam(0, 8)}
+                {DataSeriesType.BYTE, new BetaIntegerEncoding(0, 8).toParam()}
         };
     }
 

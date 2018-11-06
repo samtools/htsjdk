@@ -20,32 +20,26 @@ package htsjdk.samtools.cram.encoding;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.util.Map;
 
-public class ExternalByteEncoding implements Encoding<Byte> {
-    private static final EncodingID encodingId = EncodingID.EXTERNAL;
-    private int contentId = -1;
+public class ExternalByteEncoding extends Encoding<Byte> {
+    private final int contentId;
 
-    public ExternalByteEncoding() {
+    public ExternalByteEncoding(final int contentId) {
+        super(EncodingID.EXTERNAL);
+        this.contentId = contentId;
     }
 
-    public static EncodingParams toParam(final int contentId) {
-        final ExternalByteEncoding externalByteEncoding = new ExternalByteEncoding();
-        externalByteEncoding.contentId = contentId;
-        return new EncodingParams(encodingId, externalByteEncoding.toByteArray());
+    static ExternalByteEncoding fromParams(byte[] params) {
+        final int contentId = ITF8.readUnsignedITF8(params);
+        return new ExternalByteEncoding(contentId);
     }
 
     @Override
     public byte[] toByteArray() {
         return ITF8.writeUnsignedITF8(contentId);
-    }
-
-    @Override
-    public void fromByteArray(final byte[] data) {
-        contentId = ITF8.readUnsignedITF8(data);
     }
 
     @Override
@@ -55,10 +49,4 @@ public class ExternalByteEncoding implements Encoding<Byte> {
         final ExposedByteArrayOutputStream outputStream = outputMap == null ? null : outputMap.get(contentId);
         return new ExternalByteCodec(outputStream, inputStream);
     }
-
-    @Override
-    public EncodingID id() {
-        return encodingId;
-    }
-
 }

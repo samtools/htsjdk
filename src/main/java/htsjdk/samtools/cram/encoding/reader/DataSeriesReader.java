@@ -50,7 +50,7 @@ public class DataSeriesReader<T> {
                             final BitInputStream bitInputStream,
                             final Map<Integer, InputStream> inputMap) {
 
-        final Encoding<T> encoding = EncodingFactory.initializeEncoding(valueType, params);
+        final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
         this.codec = encoding.buildCodec(inputMap, null);
         this.bitInputStream = bitInputStream;

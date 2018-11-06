@@ -21,53 +21,39 @@ import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 public class SubexponentialIntegerEncoding extends ExperimentalEncoding<Integer> {
-    private static final EncodingID ENCODING_ID = EncodingID.SUBEXPONENTIAL;
-    private int offset;
-    private int k;
+    private final int offset;
+    private final int k;
 
-    public SubexponentialIntegerEncoding() {
-    }
-
-    public SubexponentialIntegerEncoding(final int offset, final int k) {
+    private SubexponentialIntegerEncoding(final int offset, final int k) {
+        super(EncodingID.SUBEXPONENTIAL);
         this.offset = offset;
         this.k = k;
     }
 
-    @Override
-    public EncodingID id() {
-        return ENCODING_ID;
-    }
-
-    public static EncodingParams toParam(final int offset, final int k) {
-        final SubexponentialIntegerEncoding subexponentialIntegerEncoding = new SubexponentialIntegerEncoding();
-        subexponentialIntegerEncoding.offset = offset;
-        subexponentialIntegerEncoding.k = k;
-        return new EncodingParams(ENCODING_ID, subexponentialIntegerEncoding.toByteArray());
+    public static SubexponentialIntegerEncoding fromParams(final byte[] data) {
+        final ByteBuffer buffer = ByteBuffer.wrap(data);
+        final int offset = ITF8.readUnsignedITF8(buffer);
+        final int k = ITF8.readUnsignedITF8(buffer);
+        return new SubexponentialIntegerEncoding(offset, k);
     }
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buffer = ByteBuffer.allocate(10);
+        final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
+
         ITF8.writeUnsignedITF8(offset, buffer);
         ITF8.writeUnsignedITF8(k, buffer);
         buffer.flip();
         final byte[] bytes = new byte[buffer.limit()];
         buffer.get(bytes);
-        return bytes;
-    }
 
-    @Override
-    public void fromByteArray(final byte[] data) {
-        final ByteBuffer buffer = ByteBuffer.wrap(data);
-        offset = ITF8.readUnsignedITF8(buffer);
-        k = ITF8.readUnsignedITF8(buffer);
+        return bytes;
     }
 
     @Override

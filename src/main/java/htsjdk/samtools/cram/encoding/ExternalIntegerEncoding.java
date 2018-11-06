@@ -20,22 +20,21 @@ package htsjdk.samtools.cram.encoding;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.util.Map;
 
-public class ExternalIntegerEncoding implements Encoding<Integer> {
-    private static final EncodingID encodingId = EncodingID.EXTERNAL;
-    private int contentId = -1;
+public class ExternalIntegerEncoding extends Encoding<Integer> {
+    private final int contentId;
 
-    public ExternalIntegerEncoding() {
+    public ExternalIntegerEncoding(final int contentId) {
+        super(EncodingID.EXTERNAL);
+        this.contentId = contentId;
     }
 
-    public static EncodingParams toParam(final int contentId) {
-        final ExternalIntegerEncoding externalIntegerEncoding = new ExternalIntegerEncoding();
-        externalIntegerEncoding.contentId = contentId;
-        return new EncodingParams(encodingId, externalIntegerEncoding.toByteArray());
+    static ExternalIntegerEncoding fromParams(byte[] params) {
+        final int contentId = ITF8.readUnsignedITF8(params);
+        return new ExternalIntegerEncoding(contentId);
     }
 
     @Override
@@ -44,21 +43,11 @@ public class ExternalIntegerEncoding implements Encoding<Integer> {
     }
 
     @Override
-    public void fromByteArray(final byte[] data) {
-        contentId = ITF8.readUnsignedITF8(data);
-    }
-
-    @Override
     public BitCodec<Integer> buildCodec(final Map<Integer, InputStream> inputMap,
                                         final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
         final InputStream inputStream = inputMap == null ? null : inputMap.get(contentId);
         final ExposedByteArrayOutputStream outputStream = outputMap == null ? null : outputMap.get(contentId);
         return new ExternalIntegerCodec(outputStream, inputStream);
-    }
-
-    @Override
-    public EncodingID id() {
-        return encodingId;
     }
 
 }

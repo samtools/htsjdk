@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.EncodingParams;
 
 import java.io.InputStream;
 import java.util.Map;
@@ -30,15 +31,24 @@ import java.util.Map;
  *
  * @param <T> data series type
  */
-public interface Encoding<T> {
+public abstract class Encoding<T> {
+    private final EncodingID ENCODING_ID;
 
-    EncodingID id();
+    protected Encoding (final EncodingID id) {
+        ENCODING_ID = id;
+    }
 
-    byte[] toByteArray();
+    public EncodingID id() {
+        return ENCODING_ID;
+    }
 
-    void fromByteArray(byte[] data);
+    public EncodingParams toParam() {
+        return new EncodingParams(id(), toByteArray());
+    }
 
-    BitCodec<T> buildCodec(Map<Integer, InputStream> inputMap,
-                           Map<Integer, ExposedByteArrayOutputStream> outputMap);
+    public abstract byte[] toByteArray();
+
+    public abstract BitCodec<T> buildCodec(Map<Integer, InputStream> inputMap,
+                                           Map<Integer, ExposedByteArrayOutputStream> outputMap);
 
 }
