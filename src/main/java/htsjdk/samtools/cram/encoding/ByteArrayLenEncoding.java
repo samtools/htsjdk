@@ -84,21 +84,17 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
     public void fromByteArray(final byte[] data) {
         final ByteBuffer buffer = ByteBuffer.wrap(data);
 
-        final EncodingFactory encodingFactory = new EncodingFactory();
-
         final EncodingID lenID = EncodingID.values()[buffer.get()];
-        lenEncoding = encodingFactory.createEncoding(DataSeriesType.INT, lenID);
         int length = ITF8.readUnsignedITF8(buffer);
         byte[] bytes = new byte[length];
         buffer.get(bytes);
-        lenEncoding.fromByteArray(bytes);
+        lenEncoding = EncodingFactory.initializeEncoding(DataSeriesType.INT, lenID, bytes);
 
         final EncodingID byteID = EncodingID.values()[buffer.get()];
-        byteEncoding = encodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID);
         length = ITF8.readUnsignedITF8(buffer);
         bytes = new byte[length];
         buffer.get(bytes);
-        byteEncoding.fromByteArray(bytes);
+        byteEncoding = EncodingFactory.initializeEncoding(DataSeriesType.BYTE_ARRAY, byteID, bytes);
     }
 
     @Override

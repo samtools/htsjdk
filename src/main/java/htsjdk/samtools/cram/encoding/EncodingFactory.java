@@ -22,6 +22,7 @@ import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanByteEncoding;
 import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
+import htsjdk.samtools.cram.structure.EncodingParams;
 
 /**
  * A helper class to instantiate an appropriate {@link htsjdk.samtools.cram.encoding.Encoding}
@@ -39,7 +40,7 @@ public class EncodingFactory {
      * @param <T> encoding object type, like Integer or String.
      * @return a new encoding with the requested parameters
      */
-    public <T> Encoding<T> createEncoding(final DataSeriesType valueType,
+    static <T> Encoding<T> createEncoding(final DataSeriesType valueType,
                                           final EncodingID id) {
         switch (valueType) {
             case BYTE:
@@ -116,5 +117,35 @@ public class EncodingFactory {
         }
 
         return null;
+    }
+
+    /**
+     * Create and initialize an encoding for the data series type and encoding parameters.
+     * @param valueType data type of the values to be produced/consumed by the encoding
+     * @param id encoding id used for data serialization
+     * @param params encoding initialization values
+     * @param <T> encoding object type, like Integer or String.
+     * @return a new encoding with the requested parameters
+     */
+    public static <T> Encoding<T> initializeEncoding(final DataSeriesType valueType, final EncodingID id, final byte[] params) {
+        final Encoding<T> encoding = createEncoding(valueType, id);
+        if (encoding == null) {
+            throw new IllegalArgumentException("Encoding not found: value type="
+                    + valueType.name() + ", encoding id=" + id.name());
+        }
+
+        encoding.fromByteArray(params);
+        return encoding;
+    }
+
+    /**
+     * Create and initialize an encoding for the data series type and encoding parameters.
+     * @param valueType data type of the values to be produced/consumed by the encoding
+     * @param params encoding ID and initialization values
+     * @param <T> encoding object type, like Integer or String.
+     * @return a new encoding with the requested parameters
+     */
+    public static <T> Encoding<T> initializeEncoding(final DataSeriesType valueType, final EncodingParams params) {
+        return initializeEncoding(valueType, params.id, params.params);
     }
 }

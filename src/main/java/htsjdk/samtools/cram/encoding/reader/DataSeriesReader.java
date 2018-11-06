@@ -50,14 +50,7 @@ public class DataSeriesReader<T> {
                             final BitInputStream bitInputStream,
                             final Map<Integer, InputStream> inputMap) {
 
-        final EncodingFactory f = new EncodingFactory();
-        final Encoding<T> encoding = f.createEncoding(valueType, params.id);
-        if (encoding == null) {
-            throw new IllegalArgumentException("Encoding not found: value type="
-                    + valueType.name() + ", encoding id=" + params.id.name());
-        }
-
-        encoding.fromByteArray(params.params);
+        final Encoding<T> encoding = EncodingFactory.initializeEncoding(valueType, params);
 
         this.codec = encoding.buildCodec(inputMap, null);
         this.bitInputStream = bitInputStream;

@@ -55,14 +55,7 @@ public class DataSeriesWriter<T> {
                             final BitOutputStream bitOutputStream,
                             final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
 
-        final EncodingFactory f = new EncodingFactory();
-        final Encoding<T> encoding = f.createEncoding(valueType, params.id);
-        if (encoding == null) {
-            throw new IllegalArgumentException("Encoding not found: value type="
-                    + valueType.name() + ", encoding id=" + params.id.name());
-        }
-
-        encoding.fromByteArray(params.params);
+        final Encoding<T> encoding = EncodingFactory.initializeEncoding(valueType, params);
 
         this.codec = encoding.buildCodec(null, outputMap);
         this.bitOutputStream = bitOutputStream;
