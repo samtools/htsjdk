@@ -11,15 +11,15 @@ import java.util.List;
 
 public class CramIntArrayTest extends HtsjdkTest {
 
-    @Test(dataProvider = "testInt32Arrays", dataProviderClass = IOTestCases.class)
-    public void runTest(List<Integer> ints) throws IOException {
+    @Test(dataProvider = "testInt32Lists", dataProviderClass = IOTestCases.class)
+    public void runTest(final List<Integer> ints) throws IOException {
 
-        int[] inputArray = ints.stream().mapToInt(Integer::intValue).toArray();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+        final int[] inputArray = ints.stream().mapToInt(Integer::intValue).toArray();
+        try (final ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             CramIntArray.write(inputArray, baos);
 
-            try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
-                int[] outputArray = CramIntArray.array(bais);
+            try (final ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
+                final int[] outputArray = CramIntArray.array(bais);
                 Assert.assertEquals(inputArray, outputArray, "Arrays did not match");
             }
         }

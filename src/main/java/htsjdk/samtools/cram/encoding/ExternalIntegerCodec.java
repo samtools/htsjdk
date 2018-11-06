@@ -61,12 +61,7 @@ class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
 
     @Override
     public long numberOfBits(final Integer value) {
-        try {
-            return ITF8.writeUnsignedITF8(value, nullOutputStream);
-        } catch (final IOException e) {
-            // this should never happened but still:
-            throw new RuntimeException(e);
-        }
+        return ITF8.writeUnsignedITF8(value, nullOutputStream);
     }
 
     @Override

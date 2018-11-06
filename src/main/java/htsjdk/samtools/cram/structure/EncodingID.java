@@ -46,7 +46,7 @@ public enum EncodingID {
      */
     BYTE_ARRAY_STOP,
     /**
-     * http://en.wikipedia.org/wiki/Beta_Code
+     * Binary coding with sufficient leading 0 bits to store each value with the same length
      */
     BETA,
     /**
