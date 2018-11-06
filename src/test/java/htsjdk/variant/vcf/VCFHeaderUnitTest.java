@@ -260,6 +260,16 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
     }
 
     @Test
+    public void testVCFSimpleHeaderLineGenericFieldGetter() {
+        VCFHeader header = createHeader(VCF4headerStrings);
+        List<VCFFilterHeaderLine> filters = header.getFilterLines();
+        VCFFilterHeaderLine filterHeaderLine = filters.get(0);
+        Map<String,String> genericFields = filterHeaderLine.getGenericFields();
+        Assert.assertEquals(genericFields.get("ID"),"NoQCALL");
+        Assert.assertEquals(genericFields.get("Description"),"Variant called by Dindel but not confirmed by QCALL");
+    }
+
+    @Test
     public void testVCFHeaderAddOtherLine() {
         final VCFHeader header = getHiSeqVCFHeader();
         final VCFHeaderLine otherLine = new VCFHeaderLine("TestOtherLine", "val");
