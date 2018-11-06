@@ -47,11 +47,11 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
                                          final EncodingParams byteParams) {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
-            byteArrayOutputStream.write((byte) lenParams.id.ordinal());
+            byteArrayOutputStream.write((byte) lenParams.id.getSpecId());
             ITF8.writeUnsignedITF8(lenParams.params.length, byteArrayOutputStream);
             byteArrayOutputStream.write(lenParams.params);
 
-            byteArrayOutputStream.write((byte) byteParams.id.ordinal());
+            byteArrayOutputStream.write((byte) byteParams.id.getSpecId());
             ITF8.writeUnsignedITF8(byteParams.params.length, byteArrayOutputStream);
             byteArrayOutputStream.write(byteParams.params);
         } catch (final IOException e) {
@@ -64,12 +64,12 @@ public class ByteArrayLenEncoding implements Encoding<byte[]> {
     public byte[] toByteArray() {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try {
-            byteArrayOutputStream.write((byte) lenEncoding.id().ordinal());
+            byteArrayOutputStream.write((byte) lenEncoding.id().getSpecId());
             final byte[] lenBytes = lenEncoding.toByteArray();
             ITF8.writeUnsignedITF8(lenBytes.length, byteArrayOutputStream);
             byteArrayOutputStream.write(lenBytes);
 
-            byteArrayOutputStream.write((byte) byteEncoding.id().ordinal());
+            byteArrayOutputStream.write((byte) byteEncoding.id().getSpecId());
             final byte[] byteBytes = byteEncoding.toByteArray();
             ITF8.writeUnsignedITF8(byteBytes.length, byteArrayOutputStream);
             byteArrayOutputStream.write(byteBytes);
