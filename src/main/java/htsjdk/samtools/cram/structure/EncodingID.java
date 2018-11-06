@@ -65,7 +65,7 @@ public enum EncodingID {
     private final int specId;
 
     /**
-     * The encodings specified by the CRAM spec
+     * The encodings specified by Section 3 of the CRAM spec
      * @param id the number assigned to each encoding in the CRAM spec
      */
     EncodingID(final int id) {

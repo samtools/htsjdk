@@ -283,8 +283,8 @@ public class Block {
         if (!isCompressed()) compress();
         if (!isUncompressed()) uncompress();
 
-        outputStream.write(getMethod().ordinal());
-        outputStream.write(getContentType().ordinal());
+        outputStream.write(getMethod().getSpecValue());
+        outputStream.write(getContentType().getSpecTypeId());
 
         ITF8.writeUnsignedITF8(getContentId(), outputStream);
         ITF8.writeUnsignedITF8(compressedContentSize, outputStream);

@@ -18,5 +18,23 @@
 package htsjdk.samtools.cram.structure;
 
 public enum BlockCompressionMethod {
-    RAW, GZIP, BZIP2, LZMA, RANS
+    RAW(0),
+    GZIP(1),
+    BZIP2(2),
+    LZMA(3),
+    RANS(4);
+
+    private final int specValue;
+
+    /**
+     * The block compression methods specified by Section 8 of the CRAM spec
+     * @param value the number assigned to each block compression method in the CRAM spec
+     */
+    BlockCompressionMethod(final int value) {
+        specValue = value;
+    }
+
+    public int getSpecValue() {
+        return specValue;
+    }
 }
