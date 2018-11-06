@@ -25,6 +25,7 @@
 
 package htsjdk.variant.vcf;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,8 +127,12 @@ public class VCFSimpleHeaderLine extends VCFHeaderLine implements VCFIDHeaderLin
     public String getID() {
         return name;
     }
-	
-    public String getGenericFields() {
-	return genericFields;    
-    }	    
+
+
+    /**
+     * @return a map of all pairs of fields and values in this header line
+     */
+    public Map<String, String> getGenericFields() {
+        return Collections.unmodifiableMap(genericFields);
+    }
  }
