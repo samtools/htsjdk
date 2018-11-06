@@ -18,47 +18,64 @@
 package htsjdk.samtools.cram.structure;
 
 /**
- * Encoding ID as defined in the CRAM specs. These are basically ways to serialize a data series.
+ * Encoding ID as specified by Section 3 of the CRAM spec. These are basically ways to serialize a data series.
  */
 public enum EncodingID {
     /**
      * "Do nothing" encoding. Should throw an exception when trying reading or writing with this encoding.
      */
-    NULL,
+    NULL(0),
     /**
      * Shove the data into a byte array for compressing later with a generic compressor like GZIP.
      */
-    EXTERNAL,
+    EXTERNAL(1),
     /**
      * 'naf said: http://en.wikipedia.org/wiki/Golomb_coding
      */
-    GOLOMB,
+    GOLOMB(2),
     /**
      * http://en.wikipedia.org/wiki/Huffman_coding
      */
-    HUFFMAN,
+    HUFFMAN(3),
     /**
      * A byte array serialized as [length][elements]
      */
-    BYTE_ARRAY_LEN,
+    BYTE_ARRAY_LEN(4),
     /**
      * A byte array serialized as [elements][stop]
      */
-    BYTE_ARRAY_STOP,
+    BYTE_ARRAY_STOP(5),
     /**
      * Binary coding with sufficient leading 0 bits to store each value with the same length
      */
-    BETA,
+    BETA(6),
     /**
      * Subexponential codes, see the CRAM specs for details.
      */
-    SUBEXPONENTIAL,
+    SUBEXPONENTIAL(7),
     /**
      * A variant of GOLOMB encoding: http://en.wikipedia.org/wiki/Golomb_coding
      */
-    GOLOMB_RICE,
+    GOLOMB_RICE(8),
     /**
      * http://en.wikipedia.org/wiki/Elias_gamma_coding
      */
-    GAMMA
+    GAMMA(9);
+
+    private final int id;
+
+    /**
+     * The encodings specified by Section 3 of the CRAM spec
+     * @param id the number assigned to each encoding in the CRAM spec
+     */
+    EncodingID(final int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return the number assigned to each encoding in the CRAM spec
+     */
+    public int getId() {
+        return id;
+    }
 }
