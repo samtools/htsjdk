@@ -18,7 +18,7 @@
 package htsjdk.samtools.cram.structure;
 
 /**
- * Encoding ID as defined in the CRAM specs. These are basically ways to serialize a data series.
+ * Encoding ID as specified by Section 3 of the CRAM spec. These are basically ways to serialize a data series.
  */
 public enum EncodingID {
     /**
@@ -62,17 +62,17 @@ public enum EncodingID {
      */
     GAMMA(9);
 
-    private final int specId;
+    private final int id;
 
     /**
      * The encodings specified by Section 3 of the CRAM spec
      * @param id the number assigned to each encoding in the CRAM spec
      */
     EncodingID(final int id) {
-        specId = id;
+        this.id = id;
     }
 
-    public int getSpecId() {
-        return specId;
+    public int getId() {
+        return id;
     }
 }

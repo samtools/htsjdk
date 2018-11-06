@@ -17,6 +17,9 @@
  */
 package htsjdk.samtools.cram.structure;
 
+/**
+ * The block content types specified by Section 8.1 of the CRAM spec
+ */
 public enum BlockContentType {
     FILE_HEADER(0),
     COMPRESSION_HEADER(1),
@@ -25,17 +28,17 @@ public enum BlockContentType {
     EXTERNAL(4),
     CORE(5);
 
-    private final int specTypeId;
+    private final int contentTypeId;
 
     /**
-     * The block content type IDs specified by Section 8.1 of the CRAM spec
-     * @param id the number assigned to each content type ID in the CRAM spec
+     * The block content types specified by Section 8.1 of the CRAM spec
+     * @param id the ID assigned to each content type in the CRAM spec
      */
     BlockContentType(final int id) {
-        specTypeId = id;
+        contentTypeId = id;
     }
 
-    public int getSpecTypeId() {
-        return specTypeId;
+    public int getContentTypeId() {
+        return contentTypeId;
     }
 }

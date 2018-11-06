@@ -264,7 +264,7 @@ public class CompressionHeader {
                 mapBuffer.put((byte) encodingKey.name().charAt(1));
 
                 final EncodingParams params = encodingMap.get(encodingKey);
-                mapBuffer.put((byte) (0xFF & params.id.getSpecId()));
+                mapBuffer.put((byte) (0xFF & params.id.getId()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
                 mapBuffer.put(params.params);
             }
@@ -283,7 +283,7 @@ public class CompressionHeader {
                 ITF8.writeUnsignedITF8(encodingKey, mapBuffer);
 
                 final EncodingParams params = tMap.get(encodingKey);
-                mapBuffer.put((byte) (0xFF & params.id.getSpecId()));
+                mapBuffer.put((byte) (0xFF & params.id.getId()));
                 ITF8.writeUnsignedITF8(params.params.length, mapBuffer);
                 mapBuffer.put(params.params);
             }
