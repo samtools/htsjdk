@@ -37,6 +37,9 @@ public enum BlockCompressionMethod {
         methodId = id;
     }
 
+    /**
+     * @return the number assigned to each block compression method in the CRAM spec
+     */
     public int getMethodId() {
         return methodId;
     }

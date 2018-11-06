@@ -38,6 +38,9 @@ public enum BlockContentType {
         contentTypeId = id;
     }
 
+    /**
+     * @return the ID assigned to each content type in the CRAM spec
+     */
     public int getContentTypeId() {
         return contentTypeId;
     }

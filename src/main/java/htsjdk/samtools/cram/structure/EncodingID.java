@@ -72,6 +72,9 @@ public enum EncodingID {
         this.id = id;
     }
 
+    /**
+     * @return the number assigned to each encoding in the CRAM spec
+     */
     public int getId() {
         return id;
     }
