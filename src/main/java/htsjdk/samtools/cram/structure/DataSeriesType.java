@@ -15,7 +15,7 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.structure;
 
 /**
  * Data series types known to CRAM.

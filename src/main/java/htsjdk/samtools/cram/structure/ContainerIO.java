@@ -73,9 +73,10 @@ public class ContainerIO {
     @SuppressWarnings("SameParameterValue")
     private static Container readContainer(final int major, final InputStream inputStream, final int fromSlice, int howManySlices) throws IOException {
 
-        final long time1 = System.nanoTime();
         final Container container = readContainerHeader(major, inputStream);
-        if (container.isEOF()) return container;
+        if (container.isEOF()) {
+            return container;
+        }
 
         final Block block = Block.readFromInputStream(major, inputStream);
         if (block.getContentType() != BlockContentType.COMPRESSION_HEADER)
@@ -100,10 +101,7 @@ public class ContainerIO {
 
         calculateSliceOffsetsAndSizes(container);
 
-        final long time2 = System.nanoTime();
-
         log.debug("READ CONTAINER: " + container.toString());
-        container.readTime = time2 - time1;
 
         return container;
     }
@@ -165,7 +163,6 @@ public class ContainerIO {
             }
         }
 
-        final long time1 = System.nanoTime();
         final ExposedByteArrayOutputStream byteArrayOutputStream = new ExposedByteArrayOutputStream();
 
         final Block block = new Block();
@@ -203,10 +200,7 @@ public class ContainerIO {
         outputStream.write(byteArrayOutputStream.getBuffer(), 0, byteArrayOutputStream.size());
         length += byteArrayOutputStream.size();
 
-        final long time2 = System.nanoTime();
-
         log.debug("CONTAINER WRITTEN: " + container.toString());
-        container.writeTime = time2 - time1;
 
         return length;
     }

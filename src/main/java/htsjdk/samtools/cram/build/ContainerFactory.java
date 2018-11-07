@@ -21,8 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.cram.digest.ContentDigests;
 import htsjdk.samtools.cram.encoding.ExternalCompressor;
-import htsjdk.samtools.cram.encoding.writer.DataWriterFactory;
-import htsjdk.samtools.cram.encoding.writer.Writer;
+import htsjdk.samtools.cram.encoding.writer.CramRecordWriter;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.Block;
@@ -60,12 +59,10 @@ public class ContainerFactory {
                              final SubstitutionMatrix substitutionMatrix)
             throws IllegalArgumentException, IllegalAccessException,
             IOException {
-        // get stats, create compression header and slices
-        final long time1 = System.nanoTime();
-        final CompressionHeader header = new CompressionHeaderFactory().build(records,
-                substitutionMatrix, samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate);
-        header.APDelta = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
-        final long time2 = System.nanoTime();
+
+        // sets header APDelta
+        final boolean coordinateSorted = samFileHeader.getSortOrder() == SAMFileHeader.SortOrder.coordinate;
+        final CompressionHeader header = new CompressionHeaderFactory().build(records, substitutionMatrix, coordinateSorted);
 
         header.readNamesIncluded = preserveReadNames;
 
@@ -78,7 +75,6 @@ public class ContainerFactory {
         container.bases = 0;
         container.blockCount = 0;
 
-        final long time3 = System.nanoTime();
         long lastGlobalRecordCounter = container.globalRecordCounter;
         for (int i = 0; i < records.size(); i += recordsPerSlice) {
             final List<CramCompressionRecord> sliceRecords = records.subList(i,
@@ -94,13 +90,8 @@ public class ContainerFactory {
                 container.sequenceId = slice.sequenceId;
         }
 
-        final long time4 = System.nanoTime();
-
         container.slices = slices.toArray(new Slice[slices.size()]);
         calculateAlignmentBoundaries(container);
-
-        container.buildHeaderTime = time2 - time1;
-        container.buildSlicesTime = time4 - time3;
 
         globalRecordCounter += records.size();
         return container;
@@ -131,7 +122,6 @@ public class ContainerFactory {
             map.put(id, new ExposedByteArrayOutputStream());
         }
 
-        final DataWriterFactory dataWriterFactory = new DataWriterFactory();
         final ExposedByteArrayOutputStream bitBAOS = new ExposedByteArrayOutputStream();
         final DefaultBitOutputStream bitOutputStream = new DefaultBitOutputStream(bitBAOS);
 
@@ -175,13 +165,8 @@ public class ContainerFactory {
             slice.alignmentSpan = maxAlEnd - minAlStart + 1;
         }
 
-        final Writer writer = dataWriterFactory.buildWriter(bitOutputStream, map, header, slice.sequenceId);
-        int prevAlStart = slice.alignmentStart;
-        for (final CramCompressionRecord record : records) {
-            record.alignmentDelta = record.alignmentStart - prevAlStart;
-            prevAlStart = record.alignmentStart;
-            writer.write(record);
-        }
+        final CramRecordWriter writer = new CramRecordWriter(bitOutputStream, map, header, slice.sequenceId);
+        writer.writeCramCompressionRecords(records, slice.alignmentStart);
 
         bitOutputStream.close();
         slice.coreBlock = Block.buildNewCore(bitBAOS.toByteArray());

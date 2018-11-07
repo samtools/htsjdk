@@ -6,7 +6,7 @@ import htsjdk.samtools.cram.encoding.readfeatures.Substitution;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.cram.structure.EncodingID;
-import htsjdk.samtools.cram.structure.EncodingKey;
+import htsjdk.samtools.cram.structure.DataSeries;
 import htsjdk.samtools.cram.structure.ReadTag;
 import htsjdk.samtools.cram.structure.SubstitutionMatrix;
 import org.testng.Assert;
@@ -22,7 +22,7 @@ public class CompressionHeaderFactoryTest extends HtsjdkTest {
     @Test
     public void testAllEncodingsPresent() {
         final CompressionHeader header = new CompressionHeaderFactory().build(new ArrayList<>(), new SubstitutionMatrix(new long[256][256]), true);
-        for (final EncodingKey key : EncodingKey.values()) {
+        for (final DataSeries key : DataSeries.values()) {
             switch (key) {
                 // skip test marks and unused series:
                 case TV_TestMark:

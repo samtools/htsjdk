@@ -1,19 +1,15 @@
 package htsjdk.samtools.cram;
 
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.CRAMBAIIndexer;
 import htsjdk.samtools.CRAMCRAIIndexer;
-import htsjdk.samtools.cram.encoding.reader.DataReaderFactory;
-import htsjdk.samtools.cram.encoding.reader.RefSeqIdReader;
-import htsjdk.samtools.cram.io.DefaultBitInputStream;
+import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.structure.*;
 import htsjdk.samtools.seekablestream.SeekableMemoryStream;
 import htsjdk.samtools.seekablestream.SeekableStream;
 import htsjdk.samtools.ValidationStringency;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,7 +19,6 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import java.util.List;
@@ -97,41 +92,8 @@ public class CRAIIndex {
             final long containerOffset,
             final int[] landmarks)
     {
-        final DataReaderFactory dataReaderFactory = new DataReaderFactory();
-        final Map<Integer, InputStream> inputMap = new HashMap<>();
-        for (final Integer exId : slice.external.keySet()) {
-            inputMap.put(exId, new ByteArrayInputStream(slice.external.get(exId).getRawContent()));
-        }
+        final Map<Integer, AlignmentSpan> spans = slice.getMultiRefAlignmentSpans(header, ValidationStringency.DEFAULT_STRINGENCY);
 
-        final RefSeqIdReader reader = new RefSeqIdReader(
-                slice.sequenceId,
-                slice.alignmentStart,
-                ValidationStringency.DEFAULT_STRINGENCY);
-        dataReaderFactory.buildReader(
-                reader,
-                new DefaultBitInputStream(new ByteArrayInputStream(slice.coreBlock.getRawContent())),
-                inputMap,
-                header,
-                slice.sequenceId
-        );
-        reader.APDelta = header.APDelta;
-
-        for (int i = 0; i < slice.nofRecords; i++) {
-            final CramCompressionRecord record = new CramCompressionRecord();
-            record.sliceIndex = slice.index;
-            record.index = i;
-
-            reader.read();
-
-            if (record.sequenceId == slice.sequenceId) {
-                record.sequenceId = slice.sequenceId;
-            }
-            else if (record.sequenceId == SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX) {
-                record.sequenceName = SAMRecord.NO_ALIGNMENT_REFERENCE_NAME;
-            }
-        }
-
-        Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
         List<CRAIEntry> entries = new ArrayList<>(spans.size());
         for (int seqId : spans.keySet()) {
             CRAIEntry e = new CRAIEntry();

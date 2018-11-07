@@ -19,11 +19,12 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanByteEncoding;
 import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
+import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 /**
  * A helper class to instantiate an appropriate {@link htsjdk.samtools.cram.encoding.Encoding}
- * for a given {@link htsjdk.samtools.cram.encoding.DataSeriesType} and
+ * for a given {@link DataSeriesType} and
  * {@link htsjdk.samtools.cram.encoding.Encoding}.
  * Also useful to hide encoding implementations.
  */
