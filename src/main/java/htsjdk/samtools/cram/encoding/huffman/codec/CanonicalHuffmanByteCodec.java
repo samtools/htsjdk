@@ -17,13 +17,13 @@
  */
 package htsjdk.samtools.cram.encoding.huffman.codec;
 
-import htsjdk.samtools.cram.encoding.AbstractBitCodec;
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-class CanonicalHuffmanByteCodec extends AbstractBitCodec<Byte> {
+class CanonicalHuffmanByteCodec implements BitCodec<Byte> {
     private final HuffmanByteHelper helper;
 
     /*
@@ -59,12 +59,5 @@ class CanonicalHuffmanByteCodec extends AbstractBitCodec<Byte> {
     @Override
     public Byte read(final BitInputStream bitInputStream, final int length) throws IOException {
         throw new RuntimeException("Not implemented");
-    }
-
-    @Override
-    public void readInto(final BitInputStream bitInputStream, final byte[] array, final int offset,
-                         final int valueLen) throws IOException {
-        for (int i = 0; i < valueLen; i++)
-            array[offset + i] = helper.read(bitInputStream);
     }
 }

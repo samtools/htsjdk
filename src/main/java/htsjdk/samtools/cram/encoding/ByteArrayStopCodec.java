@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ByteArrayStopCodec extends AbstractBitCodec<byte[]> {
+public class ByteArrayStopCodec implements BitCodec<byte[]> {
 
     private final int stop;
     private final InputStream inputStream;

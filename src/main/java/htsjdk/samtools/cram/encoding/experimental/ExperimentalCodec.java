@@ -1,9 +1,9 @@
 package htsjdk.samtools.cram.encoding.experimental;
 
-import htsjdk.samtools.cram.encoding.AbstractBitCodec;
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.util.Log;
 
-abstract class ExperimentalCodec<T> extends AbstractBitCodec<T> {
+abstract class ExperimentalCodec<T> implements BitCodec<T> {
     private static final Log log = Log.getInstance(ExperimentalCodec.class);
 
     ExperimentalCodec() {

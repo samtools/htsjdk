@@ -30,7 +30,7 @@ import java.io.IOException;
  * Choosing the offset -10,000 means every encoded value will be stored as 0 - 100,
  * requiring only ceil(log2(100)) = 7 bits per value.
  */
-class BetaIntegerCodec extends AbstractBitCodec<Integer> {
+class BetaIntegerCodec implements BitCodec<Integer> {
     private final int offset;
     private final int bitsPerValue;
     private final long valueLimit;    // 1 << bitsPerValue (max 32) so int is too small

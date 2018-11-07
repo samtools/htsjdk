@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
+class ExternalByteArrayCodec implements BitCodec<byte[]> {
     private final OutputStream outputStream;
     private final InputStream inputStream;
 
@@ -37,24 +37,6 @@ class ExternalByteArrayCodec extends AbstractBitCodec<byte[]> {
     @Override
     public byte[] read(final BitInputStream bitInputStream, final int length) throws IOException {
         return InputStreamUtils.readFully(inputStream, length);
-    }
-
-    @Override
-    public void readInto(final BitInputStream bitInputStream, final byte[] array, final int offset,
-                         final int valueLen) throws IOException {
-        InputStreamUtils.readFully(inputStream, array, offset, valueLen);
-    }
-
-    @Override
-    public void skip(final BitInputStream bitInputStream) throws IOException {
-        //noinspection ResultOfMethodCallIgnored
-        inputStream.skip(1);
-    }
-
-    @Override
-    public void skip(final BitInputStream bitInputStream, final int length) throws IOException {
-        //noinspection ResultOfMethodCallIgnored
-        inputStream.skip(length);
     }
 
     @Override

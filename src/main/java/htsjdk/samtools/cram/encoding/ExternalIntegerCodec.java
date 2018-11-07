@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 
-class ExternalIntegerCodec extends AbstractBitCodec<Integer> {
+class ExternalIntegerCodec implements BitCodec<Integer> {
     private final OutputStream outputStream;
     private final InputStream inputStream;
     private final OutputStream nullOutputStream = new OutputStream() {

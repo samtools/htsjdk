@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 
-class ExternalByteCodec extends AbstractBitCodec<Byte> {
+class ExternalByteCodec implements BitCodec<Byte> {
     private final OutputStream outputStream;
     private final InputStream inputStream;
 
@@ -54,11 +54,5 @@ class ExternalByteCodec extends AbstractBitCodec<Byte> {
     @Override
     public Byte read(final BitInputStream bitInputStream, final int length) throws IOException {
         throw new RuntimeException("Not implemented.");
-    }
-
-    @Override
-    public void readInto(final BitInputStream bitInputStream, final byte[] array, final int offset,
-                         final int valueLen) throws IOException {
-        InputStreamUtils.readFully(inputStream, array, offset, valueLen);
     }
 }

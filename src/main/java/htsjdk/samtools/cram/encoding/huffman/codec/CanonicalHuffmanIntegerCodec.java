@@ -17,14 +17,14 @@
  */
 package htsjdk.samtools.cram.encoding.huffman.codec;
 
-import htsjdk.samtools.cram.encoding.AbstractBitCodec;
+import htsjdk.samtools.cram.encoding.BitCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
 
-class CanonicalHuffmanIntegerCodec extends AbstractBitCodec<Integer> {
+class CanonicalHuffmanIntegerCodec implements BitCodec<Integer> {
     private final HuffmanIntHelper helper;
 
     /*

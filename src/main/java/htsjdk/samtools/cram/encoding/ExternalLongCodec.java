@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 
-class ExternalLongCodec extends AbstractBitCodec<Long> {
+class ExternalLongCodec implements BitCodec<Long> {
     private final OutputStream outputStream;
     private final InputStream inputStream;
 

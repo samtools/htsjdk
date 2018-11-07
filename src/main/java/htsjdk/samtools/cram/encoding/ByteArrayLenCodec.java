@@ -5,7 +5,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-class ByteArrayLenCodec extends AbstractBitCodec<byte[]> {
+class ByteArrayLenCodec implements BitCodec<byte[]> {
     private final BitCodec<Integer> lenCodec;
     private final BitCodec<byte[]> byteCodec;
 
