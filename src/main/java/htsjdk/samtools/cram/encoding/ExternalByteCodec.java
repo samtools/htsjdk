@@ -19,7 +19,6 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.InputStreamUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,14 +40,8 @@ class ExternalByteCodec implements BitCodec<Byte> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final Byte object) throws IOException {
+    public void write(final BitOutputStream bitOutputStream, final Byte object) throws IOException {
         outputStream.write(object);
-        return 8;
-    }
-
-    @Override
-    public long numberOfBits(final Byte object) {
-        return 8;
     }
 
     @Override

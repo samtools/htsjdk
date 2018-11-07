@@ -40,14 +40,8 @@ class ExternalByteArrayCodec implements BitCodec<byte[]> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final byte[] object) throws IOException {
+    public void write(final BitOutputStream bitOutputStream, final byte[] object) throws IOException {
         outputStream.write(object);
-        return numberOfBits(object);
-    }
-
-    @Override
-    public long numberOfBits(final byte[] object) {
-        return object.length * 8;
     }
 
     @Override

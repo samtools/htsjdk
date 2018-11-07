@@ -42,7 +42,7 @@ class GammaIntegerCodec extends ExperimentalCodec<Integer> {
     }
 
     @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+    public final void write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
         if (value + offset < 1)
             throw new IllegalArgumentException("Gamma codec handles only positive values: " + value);
 
@@ -52,16 +52,6 @@ class GammaIntegerCodec extends ExperimentalCodec<Integer> {
             bitOutputStream.write(0L, betaCodeLength - 1);
 
         bitOutputStream.write(newValue, betaCodeLength);
-        return betaCodeLength * 2 - 1;
-    }
-
-    @Override
-    public final long numberOfBits(final Integer value) {
-        final long newValue = value + offset;
-        if (newValue < 1)
-            throw new RuntimeException("Invalid valid: " + newValue);
-        final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
-        return betaCodeLength * 2 - 1;
     }
 
     @Override

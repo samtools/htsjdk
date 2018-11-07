@@ -28,17 +28,10 @@ class ByteArrayLenCodec implements BitCodec<byte[]> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final byte[] object)
+    public void write(final BitOutputStream bitOutputStream, final byte[] object)
             throws IOException {
-        long length = lenCodec.write(bitOutputStream, object.length);
-        length += byteCodec.write(bitOutputStream, object);
-        return length;
-    }
-
-    @Override
-    public long numberOfBits(final byte[] object) {
-        return lenCodec.numberOfBits(object.length)
-                + byteCodec.numberOfBits(object);
+        lenCodec.write(bitOutputStream, object.length);
+        byteCodec.write(bitOutputStream, object);
     }
 
 }

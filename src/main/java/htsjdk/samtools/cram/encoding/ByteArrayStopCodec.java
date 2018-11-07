@@ -37,16 +37,10 @@ public class ByteArrayStopCodec implements BitCodec<byte[]> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final byte[] object)
+    public void write(final BitOutputStream bitOutputStream, final byte[] object)
             throws IOException {
         outputStream.write(object);
         outputStream.write(stop);
-        return object.length + 1;
-    }
-
-    @Override
-    public long numberOfBits(final byte[] object) {
-        return object.length + 1;
     }
 
 }

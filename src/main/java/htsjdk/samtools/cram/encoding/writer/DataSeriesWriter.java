@@ -65,11 +65,10 @@ public class DataSeriesWriter<T> {
      * Write out a single value or an array, depending on the Encoding.
      *
      * @param value data to be written
-     * @return number of bits written
      * @throws IOException as per java IO contract
      */
-    public long writeData(final T value) throws IOException {
-        return codec.write(bitOutputStream, value);
+    void writeData(final T value) throws IOException {
+        codec.write(bitOutputStream, value);
     }
 
 }

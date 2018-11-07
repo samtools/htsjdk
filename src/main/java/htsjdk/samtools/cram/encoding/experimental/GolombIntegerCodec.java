@@ -55,7 +55,7 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
     }
 
     @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value)
+    public final void write(final BitOutputStream bitOutputStream, final Integer value)
             throws IOException {
         final int newValue = value + offset;
         final int quotient = newValue / m;
@@ -74,23 +74,6 @@ class GolombIntegerCodec extends ExperimentalCodec<Integer> {
                     ceiling);
             length += ceiling;
         }
-        return length;
-    }
-
-    @Override
-    public final long numberOfBits(final Integer value) {
-        final int newValue = value + offset;
-        final int quotient = newValue / m;
-        final int reminder = newValue % m;
-        final int ceiling = (int) (Math.log(m) / Math.log(2) + 1);
-        int l = quotient + 1;
-
-        if (reminder < Math.pow(2, ceiling) - m)
-            l += ceiling - 1;
-        else
-            l += ceiling;
-
-        return l;
     }
 
     @Override

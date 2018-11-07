@@ -45,17 +45,11 @@ class ExternalLongCodec implements BitCodec<Long> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, Long value) throws IOException {
+    public void write(final BitOutputStream bitOutputStream, Long value) throws IOException {
         for (int i = 0; i < 8; i++) {
             outputStream.write((int) (value & 0xFF));
             value >>>= 8;
         }
-        return 64;
-    }
-
-    @Override
-    public long numberOfBits(final Long object) {
-        return 8;
     }
 
     @Override

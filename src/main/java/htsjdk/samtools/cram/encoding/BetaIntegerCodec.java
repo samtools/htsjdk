@@ -76,16 +76,8 @@ class BetaIntegerCodec implements BitCodec<Integer> {
     }
 
     @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+    public final void write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
         bitOutputStream.write(getAndCheckOffsetValue(value), bitsPerValue);
-        // every value is encoded using the same number of bits
-        return bitsPerValue;
-    }
-
-    @Override
-    public final long numberOfBits(final Integer value) {
-        // every value is encoded using the same number of bits
-        return bitsPerValue;
     }
 
     @Override

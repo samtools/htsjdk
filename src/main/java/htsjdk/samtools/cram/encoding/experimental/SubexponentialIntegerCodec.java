@@ -54,7 +54,7 @@ class SubexponentialIntegerCodec extends ExperimentalCodec<Integer> {
     }
 
     @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+    public final void write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
         if (value + offset < 0)
             throw new IllegalArgumentException("Value is less then offset: " + value);
 
@@ -73,22 +73,6 @@ class SubexponentialIntegerCodec extends ExperimentalCodec<Integer> {
         bitOutputStream.write(!unaryBit);
 
         bitOutputStream.write(newValue, b);
-        return u + 1 + b;
-    }
-
-    @Override
-    public final long numberOfBits(final Integer value) {
-        final long newValue = value + offset;
-        final long b;
-        final long u;
-        if (newValue < (1L << k)) {
-            b = k;
-            u = 0;
-        } else {
-            b = (long) Math.floor(Math.log(newValue) / Math.log(2));
-            u = b - k + 1;
-        }
-        return u + 1 + b;
     }
 
     @Override

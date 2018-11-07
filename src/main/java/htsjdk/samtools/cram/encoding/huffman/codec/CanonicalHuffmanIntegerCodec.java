@@ -41,15 +41,8 @@ class CanonicalHuffmanIntegerCodec implements BitCodec<Integer> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final Integer object) throws IOException {
-        return helper.write(bitOutputStream, object);
-    }
-
-    @Override
-    public long numberOfBits(final Integer object) {
-        final HuffmanBitCode bitCode;
-        bitCode = helper.codes.get(object);
-        return bitCode.bitLength;
+    public void write(final BitOutputStream bitOutputStream, final Integer object) throws IOException {
+        helper.write(bitOutputStream, object);
     }
 
     @Override

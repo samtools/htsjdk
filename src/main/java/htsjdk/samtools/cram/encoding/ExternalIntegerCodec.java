@@ -55,13 +55,8 @@ class ExternalIntegerCodec implements BitCodec<Integer> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
-        return ITF8.writeUnsignedITF8(value, outputStream);
-    }
-
-    @Override
-    public long numberOfBits(final Integer value) {
-        return ITF8.writeUnsignedITF8(value, nullOutputStream);
+    public void write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+        ITF8.writeUnsignedITF8(value, outputStream);
     }
 
     @Override

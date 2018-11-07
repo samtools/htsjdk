@@ -52,16 +52,7 @@ public interface BitCodec<T> {
      * Write an object into the bit stream
      * @param bitOutputStream the output bit stream to write to
      * @param object the object to write
-     * @return the number of bits written out
      * @throws IOException as per java IO contract
      */
-    long write(BitOutputStream bitOutputStream, T object) throws IOException;
-
-    /**
-     * Calculate the number of bits that the object would take in bit serialized form.
-     * @param object an object
-     * @return the number of bits
-     */
-    long numberOfBits(T object);
-
+    void write(BitOutputStream bitOutputStream, T object) throws IOException;
 }

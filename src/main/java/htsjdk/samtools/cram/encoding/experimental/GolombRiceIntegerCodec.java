@@ -52,7 +52,7 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
     }
 
     @Override
-    public final long write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
+    public final void write(final BitOutputStream bitOutputStream, final Integer value) throws IOException {
         final long newValue = value + offset;
         final long quotient = newValue >>> log2m;
         if (quotient > 0x7fffffffL)
@@ -72,12 +72,6 @@ class GolombRiceIntegerCodec extends ExperimentalCodec<Integer> {
             bitOutputStream.write(b != 0L);
             reminderMask >>>= 1;
         }
-        return quotient + 1 + log2m;
-    }
-
-    @Override
-    public final long numberOfBits(final Integer value) {
-        return (value + offset) / m + 1 + log2m;
     }
 
     @Override

@@ -40,20 +40,8 @@ class CanonicalHuffmanByteCodec implements BitCodec<Byte> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final Byte object) throws IOException {
-        return helper.write(bitOutputStream, object);
-    }
-
-    @Override
-    public long numberOfBits(final Byte object) {
-        final HuffmanBitCode bitCode;
-        try {
-            //noinspection SuspiciousMethodCalls
-            bitCode = helper.codes.get(object);
-            return bitCode.bitLength;
-        } catch (final NullPointerException e) {
-            throw new RuntimeException("Value " + object + " not found.", e);
-        }
+    public void write(final BitOutputStream bitOutputStream, final Byte object) throws IOException {
+        helper.write(bitOutputStream, object);
     }
 
     @Override

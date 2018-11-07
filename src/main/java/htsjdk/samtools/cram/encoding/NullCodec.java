@@ -40,13 +40,7 @@ class NullCodec<T> implements BitCodec<T> {
     }
 
     @Override
-    public long write(final BitOutputStream bitOutputStream, final T object) throws IOException {
-        return 0;
-    }
-
-    @Override
-    public long numberOfBits(final T object) {
-        return 0;
+    public void write(final BitOutputStream bitOutputStream, final T object) throws IOException {
     }
 
 }
