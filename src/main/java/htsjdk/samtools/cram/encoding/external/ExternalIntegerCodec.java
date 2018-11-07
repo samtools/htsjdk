@@ -9,31 +9,36 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p/>
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
+ * distributed under the License inputStream distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.external;
 
-class NullCodec<T> implements CramCodec<T> {
-    private final T defaultValue = null;
+import htsjdk.samtools.cram.io.ITF8;
 
-    public NullCodec() {
+import java.io.InputStream;
+import java.io.OutputStream;
+
+class ExternalIntegerCodec extends ExternalCodec<Integer> {
+    public ExternalIntegerCodec(final InputStream inputStream, final OutputStream outputStream) {
+        super(inputStream, outputStream);
     }
 
     @Override
-    public T read() {
-        return defaultValue;
+    public Integer read() {
+        return ITF8.readUnsignedITF8(inputStream);
     }
 
     @Override
-    public T read(final int length) {
-        return defaultValue;
+    public void write(final Integer value) {
+        ITF8.writeUnsignedITF8(value, outputStream);
     }
 
     @Override
-    public void write(final T object) {
+    public Integer read(final int length) {
+        throw new RuntimeException("Not implemented.");
     }
 }

@@ -17,7 +17,7 @@
  */
 package htsjdk.samtools.cram.encoding.writer;
 
-import htsjdk.samtools.cram.encoding.BitCodec;
+import htsjdk.samtools.cram.encoding.CramCodec;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
@@ -39,8 +39,7 @@ import java.util.Map;
  * @param <T> data type of the series to be written.
  */
 public class DataSeriesWriter<T> {
-    private final BitCodec<T> codec;
-    private final BitOutputStream bitOutputStream;
+    private final CramCodec<T> codec;
 
     /**
      * Initialize a Data Series writer
@@ -57,18 +56,16 @@ public class DataSeriesWriter<T> {
 
         final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildCodec(null, outputMap);
-        this.bitOutputStream = bitOutputStream;
+        this.codec = encoding.buildCodec(null, bitOutputStream, null, outputMap);
     }
 
     /**
      * Write out a single value or an array, depending on the Encoding.
      *
      * @param value data to be written
-     * @throws IOException as per java IO contract
      */
-    void writeData(final T value) throws IOException {
-        codec.write(bitOutputStream, value);
+    void writeData(final T value) {
+        codec.write(value);
     }
 
 }

@@ -15,25 +15,14 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-class NullCodec<T> implements CramCodec<T> {
-    private final T defaultValue = null;
+class HuffmanNode<T> extends HuffmanTree<T> {
+    public final HuffmanTree<T> left, right;
 
-    public NullCodec() {
-    }
-
-    @Override
-    public T read() {
-        return defaultValue;
-    }
-
-    @Override
-    public T read(final int length) {
-        return defaultValue;
-    }
-
-    @Override
-    public void write(final T object) {
+    public HuffmanNode(final HuffmanTree<T> left, final HuffmanTree<T> right) {
+        super(left.frequency + right.frequency);
+        this.left = left;
+        this.right = right;
     }
 }

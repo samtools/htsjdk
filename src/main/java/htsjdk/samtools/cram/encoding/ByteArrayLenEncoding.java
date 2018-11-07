@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.DataSeriesType;
@@ -76,11 +78,13 @@ public class ByteArrayLenEncoding extends Encoding<byte[]> {
     }
 
     @Override
-    public BitCodec<byte[]> buildCodec(final Map<Integer, InputStream> inputMap,
-                                       final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public CramCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
+                                       final BitOutputStream coreBlockOutputStream,
+                                       final Map<Integer, InputStream> externalBlockInputMap,
+                                       final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
         return new ByteArrayLenCodec(
-                lenEncoding.buildCodec(inputMap, outputMap),
-                byteEncoding.buildCodec(inputMap, outputMap));
+                lenEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap),
+                byteEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap));
     }
 
 }

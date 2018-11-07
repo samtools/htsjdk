@@ -1,6 +1,7 @@
 package htsjdk.samtools.cram.encoding;
 
 import htsjdk.HtsjdkTest;
+import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingParams;

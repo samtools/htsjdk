@@ -15,25 +15,15 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.encoding.core.huffmanUtils;
 
-class NullCodec<T> implements CramCodec<T> {
-    private final T defaultValue = null;
-
-    public NullCodec() {
-    }
-
-    @Override
-    public T read() {
-        return defaultValue;
-    }
+class HuffmanBitCode {
+    int bitCode;
+    int bitLength;
+    int value;
 
     @Override
-    public T read(final int length) {
-        return defaultValue;
-    }
-
-    @Override
-    public void write(final T object) {
+    public String toString() {
+        return value + ":\t" + Integer.toBinaryString(bitCode).substring(32 - bitLength) + " " + bitCode;
     }
 }

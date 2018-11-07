@@ -17,6 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding;
 
+import htsjdk.samtools.cram.io.BitInputStream;
+import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
@@ -27,7 +29,7 @@ import java.util.Map;
 /**
  * An interface to describe how a data series is encoded.
  * It also has methods to serialize/deserialize to/from byte array and a method to construct
- * a {@link htsjdk.samtools.cram.encoding.BitCodec} instance.
+ * a {@link htsjdk.samtools.cram.encoding.CramCodec} instance.
  *
  * @param <T> data series type
  */
@@ -48,7 +50,9 @@ public abstract class Encoding<T> {
 
     public abstract byte[] toByteArray();
 
-    public abstract BitCodec<T> buildCodec(Map<Integer, InputStream> inputMap,
-                                           Map<Integer, ExposedByteArrayOutputStream> outputMap);
+    public abstract CramCodec<T> buildCodec(BitInputStream coreBlockInputStream,
+                                            BitOutputStream coreBlockOutputStream,
+                                            Map<Integer, InputStream> externalBlockInputMap,
+                                            Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap);
 
 }

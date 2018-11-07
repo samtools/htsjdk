@@ -17,9 +17,11 @@
  */
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.encoding.experimental.*;
-import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanByteEncoding;
-import htsjdk.samtools.cram.encoding.huffman.codec.CanonicalHuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
+import htsjdk.samtools.cram.encoding.core.experimental.*;
+import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanByteEncoding;
+import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
+import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
 
@@ -103,6 +105,7 @@ public class EncodingFactory {
                     case BYTE_ARRAY_LEN:
                         return (Encoding<T>) ByteArrayLenEncoding.fromParams(params);
                     case BYTE_ARRAY_STOP:
+                        // NOTE: this is an EXTERNAL encoding, as mandated by the spec
                         return (Encoding<T>) ByteArrayStopEncoding.fromParams(params);
                     case EXTERNAL:
                         return (Encoding<T>) ExternalByteArrayEncoding.fromParams(params);

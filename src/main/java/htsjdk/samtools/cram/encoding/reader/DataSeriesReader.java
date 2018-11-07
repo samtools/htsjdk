@@ -17,14 +17,13 @@
  */
 package htsjdk.samtools.cram.encoding.reader;
 
-import htsjdk.samtools.cram.encoding.BitCodec;
+import htsjdk.samtools.cram.encoding.CramCodec;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -34,8 +33,7 @@ import java.util.Map;
  * @param <T> data type of the series to be read.
  */
 public class DataSeriesReader<T> {
-    private final BitCodec<T> codec;
-    private final BitInputStream bitInputStream;
+    private final CramCodec<T> codec;
 
     /**
      * Initialize a Data Series reader
@@ -52,27 +50,24 @@ public class DataSeriesReader<T> {
 
         final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildCodec(inputMap, null);
-        this.bitInputStream = bitInputStream;
+        this.codec = encoding.buildCodec(bitInputStream, null, inputMap, null);
     }
 
     /**
      * Read a single object
      * @return an object or a primitive value read
-     * @throws IOException as per java IO contract
      */
-    public T readData() throws IOException {
-        return codec.read(bitInputStream);
+    public T readData() {
+        return codec.read();
     }
 
     /**
      * Read an array of specified length. Normally this is a byte array. The intent here is optimization: reading an array may be faster than reading elements one by one.
      * @param length the length of the array to be read
      * @return the array of objects
-     * @throws IOException as per java IO contract
      */
-    public T readDataArray(final int length) throws IOException {
-        return codec.read(bitInputStream, length);
+    public T readDataArray(final int length) {
+        return codec.read(length);
     }
 
 }

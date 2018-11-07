@@ -1,37 +1,31 @@
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.io.BitInputStream;
-import htsjdk.samtools.cram.io.BitOutputStream;
+class ByteArrayLenCodec implements CramCodec<byte[]> {
+    private final CramCodec<Integer> lenCodec;
+    private final CramCodec<byte[]> byteCodec;
 
-import java.io.IOException;
-
-class ByteArrayLenCodec implements BitCodec<byte[]> {
-    private final BitCodec<Integer> lenCodec;
-    private final BitCodec<byte[]> byteCodec;
-
-    public ByteArrayLenCodec(final BitCodec<Integer> lenCodec,
-                             final BitCodec<byte[]> byteCodec) {
+    public ByteArrayLenCodec(final CramCodec<Integer> lenCodec,
+                             final CramCodec<byte[]> byteCodec) {
         super();
         this.lenCodec = lenCodec;
         this.byteCodec = byteCodec;
     }
 
     @Override
-    public byte[] read(final BitInputStream bitInputStream) throws IOException {
-        final int length = lenCodec.read(bitInputStream);
-        return byteCodec.read(bitInputStream, length);
+    public byte[] read() {
+        final int length = lenCodec.read();
+        return byteCodec.read(length);
     }
 
     @Override
-    public byte[] read(final BitInputStream bitInputStream, final int length) throws IOException {
+    public byte[] read(final int length) {
         throw new RuntimeException("Not implemented.");
     }
 
     @Override
-    public void write(final BitOutputStream bitOutputStream, final byte[] object)
-            throws IOException {
-        lenCodec.write(bitOutputStream, object.length);
-        byteCodec.write(bitOutputStream, object);
+    public void write(final byte[] object) {
+        lenCodec.write(object.length);
+        byteCodec.write(object);
     }
 
 }
