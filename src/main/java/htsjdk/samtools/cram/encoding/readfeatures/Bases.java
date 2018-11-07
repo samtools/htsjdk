@@ -19,6 +19,7 @@ package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class Bases implements Serializable, ReadFeature {
 
@@ -59,18 +60,24 @@ public class Bases implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof Bases))
-            return false;
-
-        final Bases bases = (Bases) obj;
-
-        return position == bases.position && !Arrays.equals(this.bases, bases.bases);
-
+    public String toString() {
+        return getClass().getSimpleName() + "[" + "position=" + position + "; bases=" + new String(bases) + "] ";
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + "position=" + position + "; bases=" + new String(bases) + "] ";
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Bases bases1 = (Bases) o;
+        return position == bases1.position &&
+                Arrays.equals(bases, bases1.bases);
+    }
+
+    @Override
+    public int hashCode() {
+
+        int result = Objects.hash(position);
+        result = 31 * result + Arrays.hashCode(bases);
+        return result;
     }
 }

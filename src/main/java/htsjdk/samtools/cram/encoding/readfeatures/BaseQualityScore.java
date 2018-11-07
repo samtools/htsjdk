@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A read feature representing a single quality score in a read.
@@ -58,20 +59,23 @@ public class BaseQualityScore implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof BaseQualityScore))
-            return false;
-
-        final BaseQualityScore v = (BaseQualityScore) obj;
-
-        return position == v.position && qualityScore == v.qualityScore;
-
-    }
-
-    @Override
     public String toString() {
         return new StringBuilder().append((char) operator).append('@')
                 .append(position).append('#').appendCodePoint(qualityScore).toString();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BaseQualityScore that = (BaseQualityScore) o;
+        return position == that.position &&
+                qualityScore == that.qualityScore;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(position, qualityScore);
+    }
 }

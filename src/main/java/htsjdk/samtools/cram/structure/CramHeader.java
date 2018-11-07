@@ -21,6 +21,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.cram.common.Version;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * A starting object when dealing with CRAM files. A {@link CramHeader} holds 2 things: 1. File format definition, including content id and
@@ -86,24 +87,6 @@ public final class CramHeader {
 
 
     /**
-     * Checks if content of a header is the same as this one.
-     * @param obj another header to compare to
-     * @return true if versions, ids and SAM file header are exactly the same, false otherwise
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == null) return false;
-        if (!(obj instanceof CramHeader)) return false;
-
-        final CramHeader header = (CramHeader) obj;
-
-        if (getVersion().major != header.getVersion().major) return false;
-        //noinspection SimplifiableIfStatement
-        if (getVersion().minor != header.getVersion().minor) return false;
-        return Arrays.equals(id, header.id) && getSamFileHeader().equals(header.getSamFileHeader());
-    }
-
-    /**
      * Get the {@link SAMFileHeader} object associated with this CRAM file header.
      * @return the SAM file header
      */
@@ -120,4 +103,22 @@ public final class CramHeader {
     }
 
     public void setVersion(final Version version) { this.version = version; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CramHeader that = (CramHeader) o;
+        return Objects.equals(version, that.version) &&
+                Arrays.equals(id, that.id) &&
+                Objects.equals(samFileHeader, that.samFileHeader);
+    }
+
+    @Override
+    public int hashCode() {
+
+        int result = Objects.hash(version, samFileHeader);
+        result = 31 * result + Arrays.hashCode(id);
+        return result;
+    }
 }

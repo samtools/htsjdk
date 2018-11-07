@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A read feature representing a single insert base.
@@ -53,17 +54,6 @@ public class InsertBase implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof InsertBase))
-            return false;
-
-        final InsertBase insertBase = (InsertBase) obj;
-
-        return position == insertBase.position && base == insertBase.base;
-
-    }
-
-    @Override
     public String toString() {
         return new StringBuilder().append((char) operator).append('@')
                 .append(position).append('\\').appendCodePoint(base).toString();
@@ -75,5 +65,20 @@ public class InsertBase implements Serializable, ReadFeature {
 
     public void setBase(final byte base) {
         this.base = base;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InsertBase that = (InsertBase) o;
+        return position == that.position &&
+                base == that.base;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(position, base);
     }
 }

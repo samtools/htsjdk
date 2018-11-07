@@ -1,5 +1,7 @@
 package htsjdk.samtools.cram.common;
 
+import java.util.Objects;
+
 /**
  * A class to represent a version information, 3 number: major, minor and build number.
  */
@@ -44,20 +46,23 @@ public class Version implements Comparable<Version> {
         return build - o.build;
     }
 
-    /**
-     * Check if another version is exactly the same as this one.
-     *
-     * @param obj another version object
-     * @return true if both versions are the same, false otherwise.
-     */
-    @Override
-    public boolean equals(final Object obj) {
-        if (obj == null || !(obj instanceof Version)) return false;
-        final Version version = (Version) obj;
-        return major == version.major && minor == version.minor;
-    }
-
     public boolean compatibleWith(final Version version) {
         return compareTo(version) >= 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Version version = (Version) o;
+        return major == version.major &&
+                minor == version.minor &&
+                build == version.build;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(major, minor, build);
     }
 }

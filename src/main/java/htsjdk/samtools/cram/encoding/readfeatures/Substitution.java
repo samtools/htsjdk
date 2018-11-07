@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A substitution event captured in read coordinates. It is characterized by position in read, read base and reference base.
@@ -96,28 +97,24 @@ public class Substitution implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof Substitution))
-            return false;
-
-        final Substitution substitution = (Substitution) obj;
-
-        if (position != substitution.position)
-            return false;
-
-        if ((code != substitution.code) & (code == NO_CODE || substitution.code == NO_CODE)) {
-            return false;
-        }
-
-        if (code > NO_CODE && substitution.code > NO_CODE) {
-            if (referenceBase != substitution.referenceBase) return false;
-            if (base != substitution.base) return false;
-        }
-        return true;
+    public String toString() {
+        return String.valueOf((char) operator) + '@' + position + '\\' + (char) base + (char) referenceBase;
     }
 
     @Override
-    public String toString() {
-        return String.valueOf((char) operator) + '@' + position + '\\' + (char) base + (char) referenceBase;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Substitution that = (Substitution) o;
+        return position == that.position &&
+                base == that.base &&
+                referenceBase == that.referenceBase &&
+                code == that.code;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(position, base, referenceBase, code);
     }
 }

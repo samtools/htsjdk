@@ -18,6 +18,7 @@
 package htsjdk.samtools.cram.encoding.readfeatures;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * A read feature representing a reference skip similar to {@link htsjdk.samtools.CigarOperator#N}.
@@ -61,18 +62,22 @@ public class RefSkip implements Serializable, ReadFeature {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof RefSkip))
-            return false;
-
-        final RefSkip refSkip = (RefSkip) obj;
-
-        return position == refSkip.position && length == refSkip.length;
-
+    public String toString() {
+        return String.valueOf((char) operator) + '@' + position + '+' + length;
     }
 
     @Override
-    public String toString() {
-        return String.valueOf((char) operator) + '@' + position + '+' + length;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RefSkip refSkip = (RefSkip) o;
+        return position == refSkip.position &&
+                length == refSkip.length;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(position, length);
     }
 }
