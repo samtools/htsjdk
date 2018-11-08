@@ -1,0 +1,32 @@
+#Force all files to use *nix style line endings
+text eol=lf
+
+## Explicitly declare text files that can be normalized to native line endings on checkout.
+
+*.java text
+*.gradle text
+*.md text
+*.sam text
+*.dict text
+*.vcf text
+
+## Files that are binary and should not be modified
+
+# Text files that are indexable and thus should be treated as binary
+*.fasta binary
+*.fa binary
+
+*.bam binary
+*.bai binary
+*.bcf binary
+*.bgz binary
+*.bgzf
+*.cram binary
+*.crai binary
+*.fai binary
+*.gz binary
+*.gzi binary
+*.gzip binary
+*.sbi binary
+*.tbi binary
+
