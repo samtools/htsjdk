@@ -19,7 +19,7 @@ package htsjdk.samtools.cram.encoding.reader;
 
 import htsjdk.samtools.cram.encoding.CramCodec;
 import htsjdk.samtools.cram.structure.DataSeriesType;
-import htsjdk.samtools.cram.encoding.Encoding;
+import htsjdk.samtools.cram.encoding.CramEncoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
@@ -48,7 +48,7 @@ public class DataSeriesReader<T> {
                             final BitInputStream bitInputStream,
                             final Map<Integer, InputStream> inputMap) {
 
-        final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
+        final CramEncoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
         this.codec = encoding.buildReadCodec(bitInputStream, inputMap);
     }

@@ -18,7 +18,7 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.samtools.cram.encoding.CramCodec;
-import htsjdk.samtools.cram.encoding.Encoding;
+import htsjdk.samtools.cram.encoding.CramEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
@@ -26,11 +26,10 @@ import htsjdk.samtools.cram.structure.EncodingID;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-public class ExternalByteArrayEncoding extends Encoding<byte[]> {
+public class ExternalByteArrayEncoding extends CramEncoding<byte[]> {
     private final int contentId;
 
     public ExternalByteArrayEncoding(final int contentId) {

@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
-public class NullEncoding<T> extends Encoding<T> {
+public class NullEncoding<T> extends CramEncoding<T> {
     public NullEncoding() {
         super(EncodingID.NULL);
     }

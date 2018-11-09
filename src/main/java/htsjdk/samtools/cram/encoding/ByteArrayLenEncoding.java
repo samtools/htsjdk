@@ -26,15 +26,14 @@ import htsjdk.samtools.cram.structure.EncodingID;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ByteArrayLenEncoding extends Encoding<byte[]> {
-    private final Encoding<Integer> lenEncoding;
-    private final Encoding<byte[]> byteEncoding;
+public class ByteArrayLenEncoding extends CramEncoding<byte[]> {
+    private final CramEncoding<Integer> lenEncoding;
+    private final CramEncoding<byte[]> byteEncoding;
 
-    public ByteArrayLenEncoding(final Encoding<Integer> lenEncoding, final Encoding<byte[]> byteEncoding) {
+    public ByteArrayLenEncoding(final CramEncoding<Integer> lenEncoding, final CramEncoding<byte[]> byteEncoding) {
         super(EncodingID.BYTE_ARRAY_LEN);
         this.lenEncoding = lenEncoding;
         this.byteEncoding = byteEncoding;
@@ -47,13 +46,13 @@ public class ByteArrayLenEncoding extends Encoding<byte[]> {
         final int lenLength = ITF8.readUnsignedITF8(buffer);
         final byte[] lenBytes = new byte[lenLength];
         buffer.get(lenBytes);
-        final Encoding<Integer> lenEncoding = EncodingFactory.createEncoding(DataSeriesType.INT, lenID, lenBytes);
+        final CramEncoding<Integer> lenEncoding = EncodingFactory.createEncoding(DataSeriesType.INT, lenID, lenBytes);
 
         final EncodingID byteID = EncodingID.values()[buffer.get()];
         final int byteLength = ITF8.readUnsignedITF8(buffer);
         final byte[] byteBytes = new byte[byteLength];
         buffer.get(byteBytes);
-        final Encoding<byte[]> byteEncoding = EncodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
+        final CramEncoding<byte[]> byteEncoding = EncodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
 
         return new ByteArrayLenEncoding(lenEncoding, byteEncoding);
     }

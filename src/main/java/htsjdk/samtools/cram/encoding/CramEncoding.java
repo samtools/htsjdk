@@ -33,10 +33,10 @@ import java.util.Map;
  *
  * @param <T> data series type
  */
-public abstract class Encoding<T> {
+public abstract class CramEncoding<T> {
     private final EncodingID ENCODING_ID;
 
-    protected Encoding (final EncodingID id) {
+    protected CramEncoding(final EncodingID id) {
         ENCODING_ID = id;
     }
 

@@ -18,7 +18,7 @@
 package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CramCodec;
-import htsjdk.samtools.cram.encoding.Encoding;
+import htsjdk.samtools.cram.encoding.CramEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
@@ -31,7 +31,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
-public class CanonicalHuffmanIntegerEncoding extends Encoding<Integer> {
+public class CanonicalHuffmanIntegerEncoding extends CramEncoding<Integer> {
     private final int[] values;
     private final int[] bitLengths;
 
