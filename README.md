@@ -49,12 +49,9 @@ Example gradle usage from the htsjdk root directory:
  ```
  ./gradlew test
 
- ./gradlew test -Dtest.single=TestClassName
+ ./gradlew test --tests AlleleUnitTest
 
- ./gradlew test --tests htsjdk.variant.variantcontext.AlleleUnitTest
- ./gradlew test --tests "*AlleleUnitTest"
-
- ./gradlew test --tests "*AlleleUnitTest" --debug-jvm
+ ./gradlew test --tests AlleleUnitTest --debug-jvm
  ```
 
 - run tests and collect coverage information (report will be in `build/reports/jacoco/test/html/index.html`)
