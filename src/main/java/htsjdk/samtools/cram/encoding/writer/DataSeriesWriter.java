@@ -23,10 +23,9 @@ import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.encoding.EncodingFactory;
 import htsjdk.samtools.cram.encoding.reader.DataSeriesReader;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
 /**
@@ -52,7 +51,7 @@ public class DataSeriesWriter<T> {
     public DataSeriesWriter(final DataSeriesType valueType,
                             final EncodingParams params,
                             final BitOutputStream bitOutputStream,
-                            final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+                            final Map<Integer, ByteArrayOutputStream> outputMap) {
 
         final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 

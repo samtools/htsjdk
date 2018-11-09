@@ -4,7 +4,6 @@ import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.cram.encoding.reader.MultiRefSliceAlignmentSpanReader;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.AlignmentSpan;
 import htsjdk.samtools.cram.structure.CompressionHeader;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
@@ -13,6 +12,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -72,7 +72,7 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final CompressionHeader header = createHeader(initialRecords, sorted);
 
         final int refId = Slice.MULTI_REFERENCE;
-        final Map<Integer, ExposedByteArrayOutputStream> outputMap = createOutputMap(header);
+        final Map<Integer, ByteArrayOutputStream> outputMap = createOutputMap(header);
         final byte[] written = write(initialRecords, header, refId, outputMap);
 
         final Map<Integer, InputStream> inputMap = createInputMap(outputMap);

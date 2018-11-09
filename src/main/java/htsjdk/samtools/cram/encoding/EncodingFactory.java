@@ -105,7 +105,7 @@ public class EncodingFactory {
                     case BYTE_ARRAY_LEN:
                         return (Encoding<T>) ByteArrayLenEncoding.fromParams(params);
                     case BYTE_ARRAY_STOP:
-                        // NOTE: this is an EXTERNAL encoding, as mandated by the spec
+                        // NOTE: this uses an external block, as mandated by the spec
                         return (Encoding<T>) ByteArrayStopEncoding.fromParams(params);
                     case EXTERNAL:
                         return (Encoding<T>) ExternalByteArrayEncoding.fromParams(params);

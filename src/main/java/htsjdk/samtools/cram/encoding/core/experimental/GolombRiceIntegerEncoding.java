@@ -20,11 +20,11 @@ package htsjdk.samtools.cram.encoding.core.experimental;
 import htsjdk.samtools.cram.encoding.CramCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -60,7 +60,7 @@ public class GolombRiceIntegerEncoding extends ExperimentalEncoding<Integer> {
     public CramCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
                                          final BitOutputStream coreBlockOutputStream,
                                          final Map<Integer, InputStream> externalBlockInputMap,
-                                         final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
+                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         return new GolombRiceIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset, m);
     }
 

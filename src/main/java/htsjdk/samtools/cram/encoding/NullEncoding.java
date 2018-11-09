@@ -19,10 +19,10 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
 public class NullEncoding<T> extends Encoding<T> {
@@ -39,7 +39,7 @@ public class NullEncoding<T> extends Encoding<T> {
     public CramCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
                                    final BitOutputStream coreBlockOutputStream,
                                    final Map<Integer, InputStream> externalBlockInputMap,
-                                   final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
+                                   final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         return new NullCodec<>();
     }
 

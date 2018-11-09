@@ -17,7 +17,6 @@
  */
 package htsjdk.samtools.cram.encoding.core;
 
-import htsjdk.samtools.cram.encoding.core.CoreBitCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 

@@ -19,10 +19,10 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.cram.structure.EncodingParams;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -53,13 +53,13 @@ public abstract class Encoding<T> {
     public abstract CramCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
                                             final BitOutputStream coreBlockOutputStream,
                                             final Map<Integer, InputStream> externalBlockInputMap,
-                                            final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap);
+                                            final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap);
 
     public CramCodec<T> buildReadCodec(final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap) {
         return buildCodec(bitInputStream, null, inputMap, null);
     }
 
-    public CramCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+    public CramCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ByteArrayOutputStream> outputMap) {
         return buildCodec(null, bitOutputStream, null, outputMap);
     }
 }

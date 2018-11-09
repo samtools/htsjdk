@@ -1,9 +1,7 @@
 package htsjdk.samtools.cram.encoding.external;
 
+import java.io.*;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
     private final int stop;

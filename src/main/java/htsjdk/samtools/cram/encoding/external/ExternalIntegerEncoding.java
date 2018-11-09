@@ -21,11 +21,12 @@ import htsjdk.samtools.cram.encoding.CramCodec;
 import htsjdk.samtools.cram.encoding.Encoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
-import htsjdk.samtools.cram.io.ExposedByteArrayOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.util.Map;
 
 public class ExternalIntegerEncoding extends Encoding<Integer> {
@@ -50,9 +51,9 @@ public class ExternalIntegerEncoding extends Encoding<Integer> {
     public CramCodec<Integer> buildCodec(final BitInputStream coreBlockInputStream,
                                          final BitOutputStream coreBlockOutputStream,
                                          final Map<Integer, InputStream> externalBlockInputMap,
-                                         final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
+                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
         final InputStream inputStream = externalBlockInputMap == null ? null : externalBlockInputMap.get(contentId);
-        final ExposedByteArrayOutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(contentId);
+        final OutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(contentId);
         return new ExternalIntegerCodec(inputStream, outputStream);
     }
 
