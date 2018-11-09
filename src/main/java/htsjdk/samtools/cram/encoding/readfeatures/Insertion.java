@@ -70,14 +70,13 @@ public class Insertion implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Insertion insertion = (Insertion) o;
+        final Insertion insertion = (Insertion) o;
         return position == insertion.position &&
                 Arrays.equals(sequence, insertion.sequence);
     }
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(position);
         result = 31 * result + Arrays.hashCode(sequence);
         return result;

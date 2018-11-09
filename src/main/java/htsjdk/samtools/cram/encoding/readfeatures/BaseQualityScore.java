@@ -75,7 +75,6 @@ public class BaseQualityScore implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, qualityScore);
     }
 }

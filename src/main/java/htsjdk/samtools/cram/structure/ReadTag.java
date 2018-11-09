@@ -475,7 +475,7 @@ public class ReadTag implements Comparable<ReadTag> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ReadTag readTag = (ReadTag) o;
+        final ReadTag readTag = (ReadTag) o;
         return keyType3BytesAsInt == readTag.keyType3BytesAsInt &&
                 type == readTag.type &&
                 code == readTag.code &&
@@ -488,7 +488,6 @@ public class ReadTag implements Comparable<ReadTag> {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(key, keyAndType, keyType3Bytes, keyType3BytesAsInt, type, value, code, index);
     }
 }

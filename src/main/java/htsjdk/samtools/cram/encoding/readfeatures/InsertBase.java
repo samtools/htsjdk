@@ -78,7 +78,6 @@ public class InsertBase implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, base);
     }
 }

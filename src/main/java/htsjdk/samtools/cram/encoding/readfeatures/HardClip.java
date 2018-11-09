@@ -76,7 +76,6 @@ public class HardClip implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, length);
     }
 }

@@ -105,7 +105,7 @@ public class Substitution implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Substitution that = (Substitution) o;
+        final Substitution that = (Substitution) o;
         return position == that.position &&
                 base == that.base &&
                 referenceBase == that.referenceBase &&
@@ -114,7 +114,6 @@ public class Substitution implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, base, referenceBase, code);
     }
 }

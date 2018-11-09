@@ -108,7 +108,7 @@ public final class CramHeader {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CramHeader that = (CramHeader) o;
+        final CramHeader that = (CramHeader) o;
         return Objects.equals(version, that.version) &&
                 Arrays.equals(id, that.id) &&
                 Objects.equals(samFileHeader, that.samFileHeader);
@@ -116,7 +116,6 @@ public final class CramHeader {
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(version, samFileHeader);
         result = 31 * result + Arrays.hashCode(id);
         return result;

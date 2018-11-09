@@ -70,14 +70,13 @@ public class Padding implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Padding padding = (Padding) o;
+        final Padding padding = (Padding) o;
         return position == padding.position &&
                 length == padding.length;
     }
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, length);
     }
 }

@@ -71,14 +71,13 @@ public class SoftClip implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SoftClip softClip = (SoftClip) o;
+        final SoftClip softClip = (SoftClip) o;
         return position == softClip.position &&
                 Arrays.equals(sequence, softClip.sequence);
     }
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(position);
         result = 31 * result + Arrays.hashCode(sequence);
         return result;

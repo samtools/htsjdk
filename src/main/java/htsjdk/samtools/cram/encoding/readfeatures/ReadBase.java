@@ -81,7 +81,7 @@ public class ReadBase implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ReadBase readBase = (ReadBase) o;
+        final ReadBase readBase = (ReadBase) o;
         return position == readBase.position &&
                 base == readBase.base &&
                 qualityScore == readBase.qualityScore;
@@ -89,7 +89,6 @@ public class ReadBase implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, base, qualityScore);
     }
 }

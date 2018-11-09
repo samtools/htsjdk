@@ -75,7 +75,6 @@ public class Bases implements Serializable, ReadFeature {
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(position);
         result = 31 * result + Arrays.hashCode(bases);
         return result;

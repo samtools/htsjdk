@@ -70,14 +70,13 @@ public class RefSkip implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        RefSkip refSkip = (RefSkip) o;
+        final RefSkip refSkip = (RefSkip) o;
         return position == refSkip.position &&
                 length == refSkip.length;
     }
 
     @Override
     public int hashCode() {
-
         return Objects.hash(position, length);
     }
 }

@@ -71,14 +71,13 @@ public class Scores implements Serializable, ReadFeature {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Scores scores1 = (Scores) o;
+        final Scores scores1 = (Scores) o;
         return position == scores1.position &&
                 Arrays.equals(scores, scores1.scores);
     }
 
     @Override
     public int hashCode() {
-
         int result = Objects.hash(position);
         result = 31 * result + Arrays.hashCode(scores);
         return result;
