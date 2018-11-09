@@ -52,6 +52,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     //wrapper which skips the first byte of a file and leaves the rest unchanged
     private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
+    public static final String REDIRECTING_CODEC_TEST_FILES = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/redirectingCodecTest/";
 
     /**
      * Asserts readability and correctness of VCF over HTTP.  The VCF is indexed and requires and index.
@@ -232,16 +233,20 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
     @DataProvider
     public Object[][] getVcfRedirects(){
         return new Object[][]{
-          {"src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/vcf.redirect"},
-          {"src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/vcf.gz.redirect"}
+          {REDIRECTING_CODEC_TEST_FILES + "vcf.redirect"},
+          {REDIRECTING_CODEC_TEST_FILES + "vcf.gz.redirect"}
         };
     }
 
+    /**
+     * Test a codec that uses {@link FeatureCodec#getPathToDataFile(String)} in order to specify a data file that's
+     * different than the file it identifies with {@link FeatureCodec#canDecode}).
+     */
     @Test(dataProvider = "getVcfRedirects")
-    public void testRedirectCode(String vcfRedirect) throws IOException {
+    public void testCodecWithGetPathToDataFile(String vcfRedirect) throws IOException {
         final VcfRedirectCodec vcfRedirectCodec = new VcfRedirectCodec();
-        final String vcf = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/test.vcf";
-        Assert.assertTrue(vcfRedirectCodec.canDecode(vcfRedirect));
+        final String vcf = REDIRECTING_CODEC_TEST_FILES + "dataFiles/test.vcf";
+        Assert.assertTrue(vcfRedirectCodec.canDecode(vcfRedirect), "should have been able to decode " + vcfRedirect);
         try(FeatureReader<VariantContext> redirectReader = AbstractFeatureReader.getFeatureReader(vcfRedirect, vcfRedirectCodec, false);
             FeatureReader<VariantContext> directReader = AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), false)){
             Assert.assertEquals(redirectReader.getHeader().toString(), directReader.getHeader().toString());
@@ -255,7 +260,10 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         }
     }
 
-    public static class VcfRedirectCodec extends VCFCodec{
+    /**
+     * codec which redirects to another location after reading the input file
+     */
+    private static class VcfRedirectCodec extends VCFCodec{
         @Override
         public boolean canDecode(String potentialInput) {
             return super.canDecode(this.getPathToDataFile(potentialInput));
