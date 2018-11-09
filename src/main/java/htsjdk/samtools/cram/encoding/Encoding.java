@@ -50,9 +50,16 @@ public abstract class Encoding<T> {
 
     public abstract byte[] toByteArray();
 
-    public abstract CramCodec<T> buildCodec(BitInputStream coreBlockInputStream,
-                                            BitOutputStream coreBlockOutputStream,
-                                            Map<Integer, InputStream> externalBlockInputMap,
-                                            Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap);
+    public abstract CramCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
+                                            final BitOutputStream coreBlockOutputStream,
+                                            final Map<Integer, InputStream> externalBlockInputMap,
+                                            final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap);
 
+    public CramCodec<T> buildReadCodec(final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap) {
+        return buildCodec(bitInputStream, null, inputMap, null);
+    }
+
+    public CramCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ExposedByteArrayOutputStream> outputMap) {
+        return buildCodec(null, bitOutputStream, null, outputMap);
+    }
 }

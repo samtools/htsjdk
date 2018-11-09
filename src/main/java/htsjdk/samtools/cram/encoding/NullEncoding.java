@@ -40,7 +40,7 @@ public class NullEncoding<T> extends Encoding<T> {
                                    final BitOutputStream coreBlockOutputStream,
                                    final Map<Integer, InputStream> externalBlockInputMap,
                                    final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
-        return new NullCodec<T>();
+        return new NullCodec<>();
     }
 
 }

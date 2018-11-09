@@ -56,7 +56,7 @@ public class DataSeriesWriter<T> {
 
         final Encoding<T> encoding = EncodingFactory.createEncoding(valueType, params.id, params.params);
 
-        this.codec = encoding.buildCodec(null, bitOutputStream, null, outputMap);
+        this.codec = encoding.buildWriteCodec(bitOutputStream, outputMap);
     }
 
     /**

@@ -79,9 +79,9 @@ public class ByteArrayLenEncoding extends Encoding<byte[]> {
 
     @Override
     public CramCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
-                                       final BitOutputStream coreBlockOutputStream,
-                                       final Map<Integer, InputStream> externalBlockInputMap,
-                                       final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
+                                        final BitOutputStream coreBlockOutputStream,
+                                        final Map<Integer, InputStream> externalBlockInputMap,
+                                        final Map<Integer, ExposedByteArrayOutputStream> externalBlockOutputMap) {
         return new ByteArrayLenCodec(
                 lenEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap),
                 byteEncoding.buildCodec(coreBlockInputStream, coreBlockOutputStream, externalBlockInputMap, externalBlockOutputMap));
