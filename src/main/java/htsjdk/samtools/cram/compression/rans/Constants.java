@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.encoding.rans;
+package htsjdk.samtools.cram.compression.rans;
 
 class Constants {
     static final int TF_SHIFT = 12;

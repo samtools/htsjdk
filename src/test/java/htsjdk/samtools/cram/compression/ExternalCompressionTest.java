@@ -1,7 +1,8 @@
-package htsjdk.samtools.cram.io;
+package htsjdk.samtools.cram.compression;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.encoding.rans.RANS;
+import htsjdk.samtools.cram.compression.ExternalCompression;
+import htsjdk.samtools.cram.compression.rans.RANS;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

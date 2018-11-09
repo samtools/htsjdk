@@ -1,6 +1,6 @@
-package htsjdk.samtools.cram.encoding.rans;
+package htsjdk.samtools.cram.compression.rans;
 
-import htsjdk.samtools.cram.encoding.rans.Encoding.RansEncSymbol;
+import htsjdk.samtools.cram.compression.rans.Encoding.RansEncSymbol;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

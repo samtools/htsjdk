@@ -1,4 +1,4 @@
-package htsjdk.samtools.cram.encoding.rans;
+package htsjdk.samtools.cram.compression.rans;
 
 import java.nio.ByteBuffer;
 

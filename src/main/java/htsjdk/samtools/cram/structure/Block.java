@@ -21,7 +21,7 @@ import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.CRC32InputStream;
 import htsjdk.samtools.cram.io.CRC32OutputStream;
 import htsjdk.samtools.cram.io.CramInt;
-import htsjdk.samtools.cram.io.ExternalCompression;
+import htsjdk.samtools.cram.compression.ExternalCompression;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;
 

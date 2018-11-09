@@ -17,7 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.cram.encoding.ExternalCompressor;
+import htsjdk.samtools.cram.compression.ExternalCompressor;
 import htsjdk.samtools.cram.encoding.NullEncoding;
 import htsjdk.samtools.cram.io.ITF8;
 import htsjdk.samtools.cram.io.InputStreamUtils;

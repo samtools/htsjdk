@@ -1,6 +1,7 @@
-package htsjdk.samtools.cram.io;
+package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.encoding.rans.RANS;
+import htsjdk.samtools.cram.compression.rans.RANS;
+import htsjdk.samtools.cram.io.InputStreamUtils;
 import htsjdk.samtools.util.IOUtil;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;

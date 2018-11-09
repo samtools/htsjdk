@@ -1,7 +1,6 @@
-package htsjdk.samtools.cram.encoding;
+package htsjdk.samtools.cram.compression;
 
-import htsjdk.samtools.cram.encoding.rans.RANS.ORDER;
-import htsjdk.samtools.cram.io.ExternalCompression;
+import htsjdk.samtools.cram.compression.rans.RANS.ORDER;
 import htsjdk.samtools.cram.structure.BlockCompressionMethod;
 
 import java.io.IOException;
