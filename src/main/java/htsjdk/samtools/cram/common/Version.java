@@ -50,6 +50,12 @@ public class Version implements Comparable<Version> {
         return compareTo(version) >= 0;
     }
 
+    /**
+     * Check if another version is exactly the same as this one.
+     *
+     * @param o another version object
+     * @return true if both versions are the same, false otherwise.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
