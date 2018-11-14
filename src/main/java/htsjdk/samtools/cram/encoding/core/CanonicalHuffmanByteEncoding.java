@@ -32,11 +32,13 @@ import java.util.Map;
 public class CanonicalHuffmanByteEncoding extends CramEncoding<Byte> {
     private final byte[] values;
     private final int[] bitLengths;
+    private final ByteBuffer buf;
 
     private CanonicalHuffmanByteEncoding(final byte[] values, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
         this.values = values;
         this.bitLengths = bitLengths;
+        this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
     }
 
     public static CanonicalHuffmanByteEncoding fromParams(final byte[] data) {
@@ -57,8 +59,7 @@ public class CanonicalHuffmanByteEncoding extends CramEncoding<Byte> {
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
-
+        buf.clear();
         ITF8.writeUnsignedITF8(values.length, buf);
         for (final byte value : values) {
             buf.put(value);

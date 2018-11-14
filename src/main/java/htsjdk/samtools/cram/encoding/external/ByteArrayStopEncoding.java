@@ -33,11 +33,13 @@ import java.util.Map;
 public class ByteArrayStopEncoding extends CramEncoding<byte[]> {
     private final byte stopByte;
     private final int externalId;
+    private final ByteBuffer buf;
 
     public ByteArrayStopEncoding(final byte stopByte, final int externalId) {
         super(EncodingID.BYTE_ARRAY_STOP);
         this.stopByte = stopByte;
         this.externalId = externalId;
+        this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES + 1);
     }
 
     public static ByteArrayStopEncoding fromParams(final byte[] data) {
@@ -50,7 +52,8 @@ public class ByteArrayStopEncoding extends CramEncoding<byte[]> {
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES + 1);
+        buf.clear();
+
         buf.order(ByteOrder.LITTLE_ENDIAN);
         buf.put(stopByte);
         ITF8.writeUnsignedITF8(externalId, buf);

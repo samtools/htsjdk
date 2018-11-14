@@ -34,11 +34,13 @@ import java.util.Objects;
 public class CanonicalHuffmanIntegerEncoding extends CramEncoding<Integer> {
     private final int[] values;
     private final int[] bitLengths;
+    private final ByteBuffer buf;
 
     public CanonicalHuffmanIntegerEncoding(final int[] values, final int[] bitLengths) {
         super(EncodingID.HUFFMAN);
         this.values = values;
         this.bitLengths = bitLengths;
+        this.buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
     }
 
     public static CanonicalHuffmanIntegerEncoding fromParams(final byte[] data) {
@@ -61,7 +63,7 @@ public class CanonicalHuffmanIntegerEncoding extends CramEncoding<Integer> {
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buf = ByteBuffer.allocate(ITF8.MAX_BYTES * (values.length + bitLengths.length));
+        buf.clear();
 
         ITF8.writeUnsignedITF8(values.length, buf);
         for (final int value : values) {
