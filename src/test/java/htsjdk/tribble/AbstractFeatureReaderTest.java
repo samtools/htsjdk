@@ -6,6 +6,7 @@ import htsjdk.HtsjdkTest;
 import htsjdk.samtools.FileTruncatedException;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.IOUtilTest;
+import htsjdk.samtools.util.RuntimeIOException;
 import htsjdk.samtools.util.TestUtil;
 import htsjdk.tribble.bed.BEDCodec;
 import htsjdk.tribble.bed.BEDFeature;
@@ -51,6 +52,7 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
 
     //wrapper which skips the first byte of a file and leaves the rest unchanged
     private static final Function<SeekableByteChannel, SeekableByteChannel> WRAPPER = SkippingByteChannel::new;
+    public static final String REDIRECTING_CODEC_TEST_FILES = "src/test/resources/htsjdk/tribble/AbstractFeatureReaderTest/redirectingCodecTest/";
 
     /**
      * Asserts readability and correctness of VCF over HTTP.  The VCF is indexed and requires and index.
@@ -228,4 +230,52 @@ public class AbstractFeatureReaderTest extends HtsjdkTest {
         }
     }
 
+    @DataProvider
+    public Object[][] getVcfRedirects(){
+        return new Object[][]{
+          {REDIRECTING_CODEC_TEST_FILES + "vcf.redirect"},
+          {REDIRECTING_CODEC_TEST_FILES + "vcf.gz.redirect"}
+        };
+    }
+
+    /**
+     * Test a codec that uses {@link FeatureCodec#getPathToDataFile(String)} in order to specify a data file that's
+     * different than the file it identifies with {@link FeatureCodec#canDecode}).
+     */
+    @Test(dataProvider = "getVcfRedirects")
+    public void testCodecWithGetPathToDataFile(String vcfRedirect) throws IOException {
+        final VcfRedirectCodec vcfRedirectCodec = new VcfRedirectCodec();
+        final String vcf = REDIRECTING_CODEC_TEST_FILES + "dataFiles/test.vcf";
+        Assert.assertTrue(vcfRedirectCodec.canDecode(vcfRedirect), "should have been able to decode " + vcfRedirect);
+        try(FeatureReader<VariantContext> redirectReader = AbstractFeatureReader.getFeatureReader(vcfRedirect, vcfRedirectCodec, false);
+            FeatureReader<VariantContext> directReader = AbstractFeatureReader.getFeatureReader(vcf, new VCFCodec(), false)){
+            Assert.assertEquals(redirectReader.getHeader().toString(), directReader.getHeader().toString());
+            final int redirectVcfSize = redirectReader.iterator().toList().size();
+            Assert.assertTrue( redirectVcfSize > 0, "iterator found " + redirectVcfSize + " records");
+            Assert.assertEquals(redirectVcfSize, directReader.iterator().toList().size());
+
+            final int redirectQuerySize = redirectReader.query("20", 1, 20000).toList().size();
+            Assert.assertTrue(redirectQuerySize > 0, "query found " + redirectVcfSize + " records");
+            Assert.assertEquals(redirectQuerySize, directReader.query("20", 1, 20000).toList().size() );
+        }
+    }
+
+    /**
+     * codec which redirects to another location after reading the input file
+     */
+    private static class VcfRedirectCodec extends VCFCodec{
+        @Override
+        public boolean canDecode(String potentialInput) {
+            return super.canDecode(this.getPathToDataFile(potentialInput));
+        }
+
+        @Override
+        public String getPathToDataFile(String path) {
+            try {
+                return Files.readAllLines(IOUtil.getPath(path)).get(0);
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+    }
 }

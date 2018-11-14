@@ -77,7 +77,7 @@ public class TabixFeatureReader<T extends Feature, SOURCE> extends AbstractFeatu
                               final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                               final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws IOException {
         super(featureFile, codec, wrapper, indexWrapper);
-        tabixReader = new TabixReader(featureFile, indexFile, wrapper, indexWrapper);
+        tabixReader = new TabixReader(this.path, indexFile, wrapper, indexWrapper);
         sequenceNames = new ArrayList<>(tabixReader.getChromosomes());
         readHeader();
     }

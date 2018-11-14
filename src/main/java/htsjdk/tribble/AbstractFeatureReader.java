@@ -43,8 +43,11 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     // the logging destination for this source
     //private final static Logger log = Logger.getLogger("BasicFeatureSource");
 
-    // the path to underlying data source
+    /**
+     * The path to underlying data file, this must be the input path converted with {@link FeatureCodec#getPathToDataFile(String)}
+     */
     String path;
+
 
     // a wrapper to apply to the raw stream of the Feature file to allow features like prefetching and caching to be injected
     final Function<SeekableByteChannel, SeekableByteChannel> wrapper;
@@ -102,8 +105,12 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
      */
     public static <FEATURE extends Feature, SOURCE> AbstractFeatureReader<FEATURE, SOURCE> getFeatureReader(final String featureResource, String indexResource, final FeatureCodec<FEATURE, SOURCE> codec, final boolean requireIndex, Function<SeekableByteChannel, SeekableByteChannel> wrapper, Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) throws TribbleException {
         try {
-            // Test for tabix index
-            if (methods.isTabix(featureResource, indexResource)) {
+
+            // Test for tabix index.
+            // Note that we use pathToDataFile here when determining the file type, but featureResource when constructing the readers.
+            // This is because the reader's constructor will convert the path and it needs to be converted exactly once.
+            final String pathToDataFile = codec.getPathToDataFile(featureResource);
+            if (methods.isTabix(pathToDataFile, indexResource)) {
                 if ( ! (codec instanceof AsciiFeatureCodec) )
                     throw new TribbleException("Tabix indexed files only work with ASCII codecs, but received non-Ascii codec " + codec.getClass().getSimpleName());
                 return new TabixFeatureReader<>(featureResource, indexResource, (AsciiFeatureCodec) codec, wrapper, indexWrapper);
@@ -145,7 +152,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
     protected AbstractFeatureReader(final String path, final FeatureCodec<T, SOURCE> codec,
                                     final Function<SeekableByteChannel, SeekableByteChannel> wrapper,
                                     final Function<SeekableByteChannel, SeekableByteChannel> indexWrapper) {
-        this.path = path;
+        this.path = codec.getPathToDataFile(path);
         this.codec = codec;
         this.wrapper = wrapper;
         this.indexWrapper = indexWrapper;
