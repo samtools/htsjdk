@@ -31,12 +31,19 @@ import java.util.Map;
 
 public class BetaIntegerEncoding extends CramEncoding<Integer> {
     private final int offset;
-    private final int bitLimit;
+    private final int bitsPerValue;
 
-    public BetaIntegerEncoding(final int offset, final int bitLimit) {
+    public BetaIntegerEncoding(final int offset, final int bitsPerValue) {
         super(EncodingID.BETA);
+
+        if (bitsPerValue <= 0) {
+            throw new IllegalArgumentException("Number of bits per value must be positive");
+        } else if (bitsPerValue > 32) {
+            throw new IllegalArgumentException("Number of bits per value must be 32 or lower");
+        }
+
         this.offset = offset;
-        this.bitLimit = bitLimit;
+        this.bitsPerValue = bitsPerValue;
     }
 
     public static BetaIntegerEncoding fromParams(final byte[] data) {
@@ -50,7 +57,7 @@ public class BetaIntegerEncoding extends CramEncoding<Integer> {
     public byte[] toByteArray() {
         final ByteBuffer buffer = ByteBuffer.allocate(ITF8.MAX_BYTES * 2);
         ITF8.writeUnsignedITF8(offset, buffer);
-        ITF8.writeUnsignedITF8(bitLimit, buffer);
+        ITF8.writeUnsignedITF8(bitsPerValue, buffer);
         buffer.flip();
         final byte[] array = new byte[buffer.limit()];
         buffer.get(array);
@@ -62,7 +69,7 @@ public class BetaIntegerEncoding extends CramEncoding<Integer> {
                                          final BitOutputStream coreBlockOutputStream,
                                          final Map<Integer, InputStream> externalBlockInputMap,
                                          final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        return new BetaIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset, bitLimit);
+        return new BetaIntegerCodec(coreBlockInputStream, coreBlockOutputStream, offset, bitsPerValue);
     }
 
 }

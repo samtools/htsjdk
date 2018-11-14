@@ -17,7 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding.external;
 
-import java.io.IOException;
+import htsjdk.samtools.cram.io.LTF8;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -28,28 +29,12 @@ class ExternalLongCodec extends ExternalCodec<Long> {
 
     @Override
     public Long read() {
-        long result = 0;
-        try {
-            for (int i = 0; i < 8; i++) {
-                result <<= 8;
-                result |= inputStream.read();
-            }
-            return result;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return LTF8.readUnsignedLTF8(inputStream);
     }
 
     @Override
-    public void write(Long value) {
-        try {
-            for (int i = 0; i < 8; i++) {
-                outputStream.write((int) (value & 0xFF));
-                value >>>= 8;
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void write(final Long value) {
+        LTF8.writeUnsignedLTF8(value, outputStream);
     }
 
     @Override

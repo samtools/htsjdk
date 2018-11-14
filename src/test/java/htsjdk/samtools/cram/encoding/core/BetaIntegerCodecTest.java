@@ -66,22 +66,6 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         testCodec(0, bitsPerValue, values);
     }
 
-    // sanity checks for bitsPerValue.  Must be > 0 and <= 32
-
-    @DataProvider(name = "bitsPerValue")
-    public Object[][] bitsPerValueData() {
-        return new Object[][] {
-                {0},
-                {-1},
-                {33}
-        };
-    }
-
-    @Test(dataProvider = "bitsPerValue", expectedExceptions = IllegalArgumentException.class)
-    public void bitsPerValue(final int bitsPerValue) {
-        new BetaIntegerCodec(null, null, 0, bitsPerValue);
-    }
-
     // throw Exceptions when offsets + values are too big to store in N bits
 
     @DataProvider(name = "overflow")

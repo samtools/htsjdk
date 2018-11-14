@@ -17,8 +17,9 @@ public class ByteArrayStopCodec extends ExternalCodec<byte[]> {
         int b;
         readingBAOS.reset();
         try {
-            while ((b = inputStream.read()) != -1 && b != stop)
+            while ((b = inputStream.read()) != -1 && b != stop) {
                 readingBAOS.write(b);
+            }
 
             return readingBAOS.toByteArray();
         } catch (IOException e) {

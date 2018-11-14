@@ -30,11 +30,11 @@ import java.io.OutputStream;
 import java.util.Map;
 
 public class ExternalLongEncoding extends CramEncoding<Long> {
-    private final int contentId;
+    private final int externalBlockContentId;
 
-    private ExternalLongEncoding(final int contentId) {
+    ExternalLongEncoding(final int externalBlockContentId) {
         super(EncodingID.EXTERNAL);
-        this.contentId = contentId;
+        this.externalBlockContentId = externalBlockContentId;
     }
 
     public static ExternalLongEncoding fromParams(byte[] params) {
@@ -44,7 +44,7 @@ public class ExternalLongEncoding extends CramEncoding<Long> {
 
     @Override
     public byte[] toByteArray() {
-        return ITF8.writeUnsignedITF8(contentId);
+        return ITF8.writeUnsignedITF8(externalBlockContentId);
     }
 
     @Override
@@ -52,8 +52,8 @@ public class ExternalLongEncoding extends CramEncoding<Long> {
                                       final BitOutputStream coreBlockOutputStream,
                                       final Map<Integer, InputStream> externalBlockInputMap,
                                       final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
-        final InputStream inputStream = externalBlockInputMap == null ? null : externalBlockInputMap.get(contentId);
-        final OutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(contentId);
+        final InputStream inputStream = externalBlockInputMap == null ? null : externalBlockInputMap.get(externalBlockContentId);
+        final OutputStream outputStream = externalBlockOutputMap == null ? null : externalBlockOutputMap.get(externalBlockContentId);
         return new ExternalLongCodec(inputStream, outputStream);
     }
 }
