@@ -23,8 +23,8 @@ public class CramRecordWriterReaderTest extends CramRecordTestHelper {
                                        final CompressionHeader header,
                                        final int refId,
                                        final Map<Integer, InputStream> inputMap) throws IOException {
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(dataBytes)) {
-            final BitInputStream bis = new DefaultBitInputStream(is);
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(dataBytes);
+            final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final CramRecordReader reader = new CramRecordReader(bis, inputMap, header, refId, ValidationStringency.DEFAULT_STRINGENCY);
             final CramCompressionRecord recordToRead = new CramCompressionRecord();

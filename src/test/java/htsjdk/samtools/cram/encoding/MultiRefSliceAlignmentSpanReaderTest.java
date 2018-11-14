@@ -76,8 +76,8 @@ public class MultiRefSliceAlignmentSpanReaderTest extends CramRecordTestHelper {
         final byte[] written = write(initialRecords, header, refId, outputMap);
 
         final Map<Integer, InputStream> inputMap = createInputMap(outputMap);
-        try (final ByteArrayInputStream is = new ByteArrayInputStream(written)) {
-            final BitInputStream bis = new DefaultBitInputStream(is);
+        try (final ByteArrayInputStream is = new ByteArrayInputStream(written);
+            final BitInputStream bis = new DefaultBitInputStream(is)) {
 
             final MultiRefSliceAlignmentSpanReader reader = new MultiRefSliceAlignmentSpanReader(bis, inputMap, header, ValidationStringency.DEFAULT_STRINGENCY, 0, initialRecords.size());
             final Map<Integer, AlignmentSpan> spans = reader.getReferenceSpans();
