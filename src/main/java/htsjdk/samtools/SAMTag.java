@@ -31,22 +31,32 @@ public enum SAMTag {
     AS,
     BC,
     BQ,
+    BZ,
+    CB,
     CC,
     CG,
     CM,
     CO,
     CP,
     CQ,
+    CR,
     CS,
     CT,
+    CY,
     E2,
     FI,
     FS,
     FT,
     FZ,
-    GC, // for backwards compatibility
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
+    GC,
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
     GS, // for backwards compatibility
-    GQ, // for backwards compatibility
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
+    GQ,
     LB,
     H0,
     H1,
@@ -54,7 +64,10 @@ public enum SAMTag {
     HI,
     IH,
     MC,
-    MF, // for backwards compatibility
+    /** @deprecated  for backwards compatibility only */
+    @Deprecated
+    MF,
+    MI,
     MD,
     MQ,
     NH,
@@ -64,20 +77,56 @@ public enum SAMTag {
     OC,
     OF,
     OR,
+    OX,
     PG,
     PQ,
     PT,
     PU,
     QT,
     Q2,
+    QX,
     R2,
     RG,
+    /**
+     * @deprecated use BC instead, for backwards compatibilty only
+     */
+    @Deprecated
     RT,
+    RX,
+    /** @deprecated for backwards compatibility only */
+    @Deprecated
     S2, // for backwards compatibility
     SA,
     SM,
+    /** @deprecated  for backwards compatibility only */
+    @Deprecated
     SQ, // for backwards compatibility
     TC,
     U2,
-    UQ
+    UQ;
+
+    private final short shortValue = SAMTag.makeBinaryTag(this.name());;
+
+    /**
+     * Convert from String representation of tag name to short representation.
+     *
+     * @param tag 2-character String representation of a tag name.
+     * @return Tag name packed as 2 ASCII bytes in a short.
+     */
+    static short makeBinaryTag(String tag) {
+        if (tag.length() != 2) {
+            throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
+        }
+        return (short)(tag.charAt(1) << 8 | tag.charAt(0));
+    }
+
+    /**
+     * Get the binary representation of this tag name.
+     * @see SAMTagUtil#makeBinaryTag(String)
+     *
+     * @return the binary representation of this tag name
+     */
+    public short getBinaryTag(){
+        return this.shortValue;
+    }
 }

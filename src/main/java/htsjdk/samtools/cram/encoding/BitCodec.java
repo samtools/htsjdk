@@ -26,7 +26,6 @@ import java.io.IOException;
  * An interface that defines requirements for serializing/deserializing objects into and from a bit stream.
  *
  * @param <T> data series type to be read or written
- * @noinspection UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier, UnnecessaryInterfaceModifier
  */
 public interface BitCodec<T> {
 
