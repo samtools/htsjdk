@@ -34,6 +34,7 @@ public class CanonicalHuffmanIntegerEncoding implements Encoding<Integer> {
     private static final EncodingID ENCODING_ID = EncodingID.HUFFMAN;
     private int[] bitLengths;
     private int[] values;
+    private final ByteBuffer buf = ByteBuffer.allocate(1024 * 10);
 
     public CanonicalHuffmanIntegerEncoding() {
     }
@@ -45,7 +46,6 @@ public class CanonicalHuffmanIntegerEncoding implements Encoding<Integer> {
 
     @Override
     public byte[] toByteArray() {
-        final ByteBuffer buf = ByteBuffer.allocate(1024 * 10);
         buf.clear();
         ITF8.writeUnsignedITF8(values.length, buf);
         for (final int value : values)
