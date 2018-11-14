@@ -108,7 +108,7 @@ public abstract class AbstractFeatureReader<T extends Feature, SOURCE> implement
 
             // Test for tabix index.
             // Note that we use pathToDataFile here when determining the file type, but featureResource when constructing the readers.
-            // This is because the readers constructor will convert the path and it needs to be converted exactly once.
+            // This is because the reader's constructor will convert the path and it needs to be converted exactly once.
             final String pathToDataFile = codec.getPathToDataFile(featureResource);
             if (methods.isTabix(pathToDataFile, indexResource)) {
                 if ( ! (codec instanceof AsciiFeatureCodec) )
