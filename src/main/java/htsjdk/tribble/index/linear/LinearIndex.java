@@ -30,11 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Index defined by dividing the genome by chromosome, then each chromosome into bins of fixed width (in
@@ -311,6 +307,11 @@ public class LinearIndex extends AbstractIndex {
                     && nFeatures == other.nFeatures
                     && name.equals(other.name)
                     && blocks.equals(other.blocks);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(binWidth, longestFeature, nFeatures, name, blocks);
         }
 
         /**

@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 public class CanonicalHuffmanIntegerEncoding implements Encoding<Integer> {
     private static final EncodingID ENCODING_ID = EncodingID.HUFFMAN;
@@ -89,12 +90,19 @@ public class CanonicalHuffmanIntegerEncoding implements Encoding<Integer> {
     }
 
     @Override
-    public boolean equals(final Object obj) {
-        if (obj instanceof CanonicalHuffmanIntegerEncoding) {
-            final CanonicalHuffmanIntegerEncoding foe = (CanonicalHuffmanIntegerEncoding) obj;
-            return Arrays.equals(bitLengths, foe.bitLengths) && Arrays.equals(values, foe.values);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CanonicalHuffmanIntegerEncoding that = (CanonicalHuffmanIntegerEncoding) o;
+        return Arrays.equals(bitLengths, that.bitLengths) &&
+                Arrays.equals(values, that.values);
+    }
 
-        }
-        return false;
+    @Override
+    public int hashCode() {
+
+        int result = Arrays.hashCode(bitLengths);
+        result = 31 * result + Arrays.hashCode(values);
+        return result;
     }
 }

@@ -97,7 +97,7 @@ public class AlignmentSpan {
         if (this == obj) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
 
-        AlignmentSpan that = (AlignmentSpan)obj;
+        final AlignmentSpan that = (AlignmentSpan)obj;
 
         return this.start == that.start &&
                 this.span == that.span &&
