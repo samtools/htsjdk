@@ -157,9 +157,9 @@ public class SAMTextWriter extends SAMFileWriterImpl {
                 out.write(FIELD_SEPARATOR);
                 final String encodedTag;
                 if (attribute.isUnsignedArray()) {
-                    encodedTag = tagCodec.encodeUnsignedArray(SAMTagUtil.makeStringTag(attribute.tag), attribute.value);
+                    encodedTag = tagCodec.encodeUnsignedArray(SAMTag.makeStringTag(attribute.tag), attribute.value);
                 } else {
-                    encodedTag = tagCodec.encode(SAMTagUtil.makeStringTag(attribute.tag), attribute.value);
+                    encodedTag = tagCodec.encode(SAMTag.makeStringTag(attribute.tag), attribute.value);
                 }
                 out.write(encodedTag);
                 attribute = attribute.getNext();

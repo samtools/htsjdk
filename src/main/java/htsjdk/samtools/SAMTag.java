@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.StringUtil;
+
 /**
  * The standard tags for a SAM record that are defined in the SAM spec.
  */
@@ -105,7 +107,11 @@ public enum SAMTag {
     U2,
     UQ;
 
-    private final short shortValue = SAMTag.makeBinaryTag(this.name());;
+    // Cache of already-converted tags.  Should speed up SAM text generation.
+    // Not synchronized because race condition is not a problem.
+    private static final String[] stringTags = new String[Short.MAX_VALUE];
+
+    private final short shortValue = SAMTag.makeBinaryTag(this.name());
 
     /**
      * Convert from String representation of tag name to short representation.
@@ -113,7 +119,7 @@ public enum SAMTag {
      * @param tag 2-character String representation of a tag name.
      * @return Tag name packed as 2 ASCII bytes in a short.
      */
-    static short makeBinaryTag(String tag) {
+    public static short makeBinaryTag(String tag) {
         if (tag.length() != 2) {
             throw new IllegalArgumentException("String tag does not have length() == 2: " + tag);
         }
@@ -121,8 +127,26 @@ public enum SAMTag {
     }
 
     /**
+     * Convert from short representation of tag name to String representation.
+     *
+     * @param tag Tag name packed as 2 ASCII bytes in a short.
+     * @return 2-character String representation of a tag name.
+     */
+    public static String makeStringTag(final short tag) {
+        String ret = stringTags[tag];
+        if (ret == null) {
+            final byte[] stringConversionBuf = new byte[2];
+            stringConversionBuf[0] = (byte)(tag & 0xff);
+            stringConversionBuf[1] = (byte)((tag >> 8) & 0xff);
+            ret = StringUtil.bytesToString(stringConversionBuf);
+            stringTags[tag] = ret;
+        }
+        return ret;
+    }
+
+    /**
      * Get the binary representation of this tag name.
-     * @see SAMTagUtil#makeBinaryTag(String)
+     * @see SAMTag#makeBinaryTag(String)
      *
      * @return the binary representation of this tag name
      */

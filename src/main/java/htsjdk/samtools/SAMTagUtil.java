@@ -27,21 +27,17 @@ import htsjdk.samtools.util.StringUtil;
 
 /**
  * Facility for converting between String and short representation of a SAM tag.  short representation
- * is used by Htsjdk internally and is much more efficient.  Callers are encouraged to obtain the short
+ * is used by HTSJDK internally and is much more efficient.  Callers are encouraged to obtain the short
  * value for a tag of interest once, and then use the SAMRecord attribute API that takes shorts rather than
  * Strings.
  *
  * Tags that are defined by the SAM spec are included in the enum {@link SAMTag} along with their precomputed short tag.
  *
  * @author alecw@broadinstitute.org
+ * @deprecated as of 11/2018, the functions in this class have been absorbed by the {@link SAMTag} enum.
  */
-public final class SAMTagUtil {
-
-    /**
-     * @deprecated This constructor is public despite being a utility class for backwards compatibility reasons.
-     */
-    @Deprecated
-    public SAMTagUtil(){}
+@Deprecated
+public class SAMTagUtil {
 
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short AM = SAMTag.AM.getBinaryTag();
@@ -85,14 +81,12 @@ public final class SAMTagUtil {
     @Deprecated public final short FT = SAMTag.FT.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short FZ = SAMTag.FZ.getBinaryTag();
-
-    /** @deprecated reserved tag for backwards compatibility only */
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short GC = SAMTag.GC.getBinaryTag();
-    /** @deprecated reserved tag for backwards compatibility only */
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short GS = SAMTag.GS.getBinaryTag();
-    /** @deprecated reserved tag for backwards compatibility only */
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short GQ = SAMTag.GQ.getBinaryTag();
-
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short LB = SAMTag.LB.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
@@ -107,10 +101,8 @@ public final class SAMTagUtil {
     @Deprecated public final short IH = SAMTag.IH.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short MC = SAMTag.MC.getBinaryTag();
-
-    /** @deprecated reserved tag for backwards compatibility only */
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short MF = SAMTag.MF.getBinaryTag();
-
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short MI = SAMTag.MI.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
@@ -151,27 +143,18 @@ public final class SAMTagUtil {
     @Deprecated public final short R2 = SAMTag.R2.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short RG = SAMTag.RG.getBinaryTag();
-
-    /** @deprecated use BC instead */
-    @Deprecated
-    public final short RT = SAMTag.RT.getBinaryTag();
-
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
+    @Deprecated public final short RT = SAMTag.RT.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short RX = SAMTag.RX.getBinaryTag();
-    /** @deprecated reserved tag for backwards compatibility only */
-
-    @Deprecated
-    public final short S2 = SAMTag.S2.getBinaryTag();
-
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
+    @Deprecated public final short S2 = SAMTag.S2.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short SA = SAMTag.SA.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short SM = SAMTag.SM.getBinaryTag();
-
-    /** @deprecated reserved tag for backwards compatibility only */
-    @Deprecated
-    public final short SQ = SAMTag.SQ.getBinaryTag();
-
+    /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
+    @Deprecated public final short SQ = SAMTag.SQ.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short TC = SAMTag.TC.getBinaryTag();
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
@@ -179,17 +162,12 @@ public final class SAMTagUtil {
     /** @deprecated use {@link SAMTag#getBinaryTag()} instead. */
     @Deprecated public final short UQ = SAMTag.UQ.getBinaryTag();
 
-    @Deprecated
     private static final SAMTagUtil SINGLETON = new SAMTagUtil();
-
-    // Cache of already-converted tags.  Should speed up SAM text generation.
-    // Not synchronized because race condition is not a problem.
-    private static final String[] stringTags = new String[Short.MAX_VALUE];
 
     /**
      * Despite the fact that this class has state, it should be thread-safe because the cache
      * gets filled with the same values by any thread.
-     * @deprecated All methods on this class have been made static, use them directly. Instead of using the constants in this class use {@link SAMTag#getBinaryTag()}.
+     * @deprecated use the static methods in {@link SAMTag} instead
      */
     @Deprecated
     public static SAMTagUtil getSingleton() {
@@ -201,8 +179,10 @@ public final class SAMTagUtil {
      *
      * @param tag 2-character String representation of a tag name.
      * @return Tag name packed as 2 ASCII bytes in a short.
+     * @deprecated u
      */
-    public static short makeBinaryTag(final String tag) {
+    @Deprecated
+    public short makeBinaryTag(final String tag) {
         return SAMTag.makeBinaryTag(tag);
     }
 
@@ -211,16 +191,10 @@ public final class SAMTagUtil {
      *
      * @param tag Tag name packed as 2 ASCII bytes in a short.
      * @return 2-character String representation of a tag name.
+     * @deprecated use {@link SAMTag#makeStringTag(short)} instead
      */
-    public static String makeStringTag(final short tag) {
-        String ret = stringTags[tag];
-        if (ret == null) {
-            final byte[] stringConversionBuf = new byte[2];
-            stringConversionBuf[0] = (byte)(tag & 0xff);
-            stringConversionBuf[1] = (byte)((tag >> 8) & 0xff);
-            ret = StringUtil.bytesToString(stringConversionBuf);
-            stringTags[tag] = ret;
-        }
-        return ret;
+    @Deprecated
+    public String makeStringTag(final short tag) {
+      return SAMTag.makeStringTag(tag);
     }
 }

@@ -335,7 +335,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
     @Test
     public void test_getUnsignedIntegerAttribute_valid() {
         final String stringTag = "UI";
-        final short binaryTag = SAMTagUtil.makeBinaryTag(stringTag);
+        final short binaryTag = SAMTag.makeBinaryTag(stringTag);
         SAMFileHeader header = new SAMFileHeader();
         SAMRecord record = new SAMRecord(header);
         Assert.assertNull(record.getUnsignedIntegerAttribute(stringTag));
@@ -374,7 +374,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
      */
     @Test
     public void test_getUnsignedIntegerAttribute_valid_alternative() {
-        final short tag = SAMTagUtil.makeBinaryTag("UI");
+        final short tag = SAMTag.makeBinaryTag("UI");
         SAMFileHeader header = new SAMFileHeader();
         SAMRecord record;
 
@@ -457,7 +457,7 @@ public class SAMRecordUnitTest extends HtsjdkTest {
 
     @Test
     public void test_setAttribute_null_removes_tag() {
-        final short tag = SAMTagUtil.makeBinaryTag("UI");
+        final short tag = SAMTag.makeBinaryTag("UI");
         SAMFileHeader header = new SAMFileHeader();
         SAMRecord record = new SAMRecord(header);
         Assert.assertNull(record.getUnsignedIntegerAttribute(tag));

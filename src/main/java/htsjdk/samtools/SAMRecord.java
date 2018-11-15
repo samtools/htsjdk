@@ -1163,7 +1163,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @return Appropriately typed tag value, or null if the requested tag is not present.
      */
     public Object getAttribute(final String tag) {
-        return getAttribute(SAMTagUtil.makeBinaryTag(tag));
+        return getAttribute(SAMTag.makeBinaryTag(tag));
     }
 
     /**
@@ -1197,7 +1197,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws {@link htsjdk.samtools.SAMException} if the value is out of range for a 32-bit unsigned value, or not a Number
      */
     public Long getUnsignedIntegerAttribute(final String tag) throws SAMException {
-        return getUnsignedIntegerAttribute(SAMTagUtil.makeBinaryTag(tag));
+        return getUnsignedIntegerAttribute(SAMTag.makeBinaryTag(tag));
     }
 
     /**
@@ -1220,11 +1220,11 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
                 return lValue;
             } else {
                 throw new SAMException("Unsigned integer value of tag " +
-                        SAMTagUtil.makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
+                        SAMTag.makeStringTag(tag) + " is out of bounds for a 32-bit unsigned integer: " + lValue);
             }
         } else {
             throw new SAMException("Unexpected attribute value data type " + value.getClass() + " for tag " +
-                    SAMTagUtil.makeStringTag(tag));
+                    SAMTag.makeStringTag(tag));
         }
     }
 
@@ -1375,7 +1375,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * @throws SAMException if the tag is not present.
      */
     public boolean isUnsignedArrayAttribute(final String tag) {
-        final SAMBinaryTagAndValue tmp = this.mAttributes.find(SAMTagUtil.makeBinaryTag(tag));
+        final SAMBinaryTagAndValue tmp = this.mAttributes.find(SAMTag.makeBinaryTag(tag));
         if (tmp != null) return tmp.isUnsignedArray();
         throw new SAMException("Tag " + tag + " is not present in this SAMRecord");
     }
@@ -1420,7 +1420,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * String values are not validated to ensure that they conform to SAM spec.
      */
     public void setAttribute(final String tag, final Object value) {
-        setAttribute(SAMTagUtil.makeBinaryTag(tag), value);
+        setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
     /**
@@ -1436,7 +1436,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         if (Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        setAttribute(SAMTagUtil.makeBinaryTag(tag), value, true);
+        setAttribute(SAMTag.makeBinaryTag(tag), value, true);
     }
 
     /**
@@ -1557,7 +1557,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
         SAMBinaryTagAndValue binaryAttributes = getBinaryAttributes();
         final List<SAMTagAndValue> ret = new ArrayList<>();
         while (binaryAttributes != null) {
-            ret.add(new SAMTagAndValue(SAMTagUtil.makeStringTag(binaryAttributes.tag),
+            ret.add(new SAMTagAndValue(SAMTag.makeStringTag(binaryAttributes.tag),
                                        binaryAttributes.value));
             binaryAttributes = binaryAttributes.getNext();
         }
@@ -1771,7 +1771,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
     }
 
     private static String formatTagValue(final short tag, final Object value) {
-        final String tagString = SAMTagUtil.makeStringTag(tag);
+        final String tagString = SAMTag.makeStringTag(tag);
         if (value == null || value instanceof String) {
             return tagString + ":Z:" + value;
         } else if (value instanceof Integer || value instanceof Long ||

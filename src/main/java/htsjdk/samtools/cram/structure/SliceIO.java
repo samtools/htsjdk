@@ -17,10 +17,7 @@
  */
 package htsjdk.samtools.cram.structure;
 
-import htsjdk.samtools.BinaryTagCodec;
-import htsjdk.samtools.SAMBinaryTagAndValue;
-import htsjdk.samtools.SAMTagUtil;
-import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.*;
 import htsjdk.samtools.cram.common.CramVersions;
 import htsjdk.samtools.cram.io.CramIntArray;
 import htsjdk.samtools.cram.io.ITF8;
@@ -66,7 +63,7 @@ class SliceIO {
 
             SAMBinaryTagAndValue tags = slice.sliceTags;
             while (tags != null) {
-                log.debug(String.format("Found slice tag: %s", SAMTagUtil.makeStringTag(tags.tag)));
+                log.debug(String.format("Found slice tag: %s", SAMTag.makeStringTag(tags.tag)));
                 tags = tags.getNext();
             }
         }
@@ -95,7 +92,7 @@ class SliceIO {
                 final BinaryTagCodec binaryTagCodec = new BinaryTagCodec(binaryCoded);
                 SAMBinaryTagAndValue samBinaryTagAndValue = slice.sliceTags;
                 do {
-                    log.debug("Writing slice tag: " + SAMTagUtil.makeStringTag(samBinaryTagAndValue.tag));
+                    log.debug("Writing slice tag: " + SAMTag.makeStringTag(samBinaryTagAndValue.tag));
                     binaryTagCodec.writeTag(samBinaryTagAndValue.tag, samBinaryTagAndValue.value, samBinaryTagAndValue.isUnsignedArray());
                 } while ((samBinaryTagAndValue = samBinaryTagAndValue.getNext()) != null);
                 // BinaryCodec doesn't seem to cache things.
