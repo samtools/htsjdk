@@ -179,7 +179,7 @@ public class SAMTagUtil {
      *
      * @param tag 2-character String representation of a tag name.
      * @return Tag name packed as 2 ASCII bytes in a short.
-     * @deprecated u
+     * @deprecated use {@link SAMTag#makeBinaryTag(String) instead}
      */
     @Deprecated
     public short makeBinaryTag(final String tag) {
