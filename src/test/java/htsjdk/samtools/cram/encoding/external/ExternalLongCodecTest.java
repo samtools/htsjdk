@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.encoding.CramCodec;
+import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.IOTestCases;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -18,7 +18,7 @@ public class ExternalLongCodecTest extends HtsjdkTest {
     @Test(dataProvider = "testInt64Lists", dataProviderClass = IOTestCases.class)
     public void codecTest(final List<Long> values) throws IOException {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CramCodec<Long> writeCodec = new ExternalLongCodec(null, os);
+            final CRAMCodec<Long> writeCodec = new ExternalLongCodec(null, os);
 
             for (final long value : values) {
                 writeCodec.write(value);
@@ -26,7 +26,7 @@ public class ExternalLongCodecTest extends HtsjdkTest {
 
             final List<Long> actual = new ArrayList<>(values.size());
             try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final CramCodec<Long> readCodec = new ExternalLongCodec(is, null);
+                final CRAMCodec<Long> readCodec = new ExternalLongCodec(is, null);
 
                 for (int i = 0; i < values.size(); i++) {
                     actual.add(readCodec.read());

@@ -1,11 +1,11 @@
 package htsjdk.samtools.cram.encoding;
 
-class ByteArrayLenCodec implements CramCodec<byte[]> {
-    private final CramCodec<Integer> lenCodec;
-    private final CramCodec<byte[]> byteCodec;
+class ByteArrayLenCodec implements CRAMCodec<byte[]> {
+    private final CRAMCodec<Integer> lenCodec;
+    private final CRAMCodec<byte[]> byteCodec;
 
-    public ByteArrayLenCodec(final CramCodec<Integer> lenCodec,
-                             final CramCodec<byte[]> byteCodec) {
+    public ByteArrayLenCodec(final CRAMCodec<Integer> lenCodec,
+                             final CRAMCodec<byte[]> byteCodec) {
         super();
         this.lenCodec = lenCodec;
         this.byteCodec = byteCodec;

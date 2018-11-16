@@ -26,9 +26,9 @@ import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;
 
 /**
- * A helper class to instantiate an appropriate {@link CramEncoding}
+ * A helper class to instantiate an appropriate {@link CRAMEncoding}
  * for a given {@link DataSeriesType} and
- * {@link CramEncoding}.
+ * {@link CRAMEncoding}.
  * Also useful to hide encoding implementations.
  */
 @SuppressWarnings("unchecked")
@@ -41,16 +41,16 @@ public class EncodingFactory {
      * @param <T> encoding object type, like Integer or String.
      * @return a new encoding with the requested parameters
      */
-    public static <T> CramEncoding<T> createEncoding(final DataSeriesType valueType,
+    public static <T> CRAMEncoding<T> createEncoding(final DataSeriesType valueType,
                                                      final EncodingID id,
                                                      final byte[] params) {
         switch (valueType) {
             case BYTE:
                 switch (id) {
                     case EXTERNAL:
-                        return (CramEncoding<T>) ExternalByteEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ExternalByteEncoding.fromParams(params);
                     case HUFFMAN:
-                        return (CramEncoding<T>) CanonicalHuffmanByteEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) CanonicalHuffmanByteEncoding.fromParams(params);
                     case NULL:
                         return new NullEncoding<T>();
 
@@ -63,21 +63,21 @@ public class EncodingFactory {
             case INT:
                 switch (id) {
                     case HUFFMAN:
-                        return (CramEncoding<T>) CanonicalHuffmanIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) CanonicalHuffmanIntegerEncoding.fromParams(params);
                     case NULL:
                         return new NullEncoding<T>();
                     case EXTERNAL:
-                        return (CramEncoding<T>) ExternalIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ExternalIntegerEncoding.fromParams(params);
                     case GOLOMB:
-                        return (CramEncoding<T>) GolombIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) GolombIntegerEncoding.fromParams(params);
                     case GOLOMB_RICE:
-                        return (CramEncoding<T>) GolombRiceIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) GolombRiceIntegerEncoding.fromParams(params);
                     case BETA:
-                        return (CramEncoding<T>) BetaIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) BetaIntegerEncoding.fromParams(params);
                     case GAMMA:
-                        return (CramEncoding<T>) GammaIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) GammaIntegerEncoding.fromParams(params);
                     case SUBEXPONENTIAL:
-                        return (CramEncoding<T>) SubexponentialIntegerEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) SubexponentialIntegerEncoding.fromParams(params);
 
                     default:
                         break;
@@ -89,9 +89,9 @@ public class EncodingFactory {
                     case NULL:
                         return new NullEncoding<T>();
                     case GOLOMB:
-                        return (CramEncoding<T>) GolombLongEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) GolombLongEncoding.fromParams(params);
                     case EXTERNAL:
-                        return (CramEncoding<T>) ExternalLongEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ExternalLongEncoding.fromParams(params);
 
                     default:
                         break;
@@ -103,12 +103,12 @@ public class EncodingFactory {
                     case NULL:
                         return new NullEncoding<T>();
                     case BYTE_ARRAY_LEN:
-                        return (CramEncoding<T>) ByteArrayLenEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ByteArrayLenEncoding.fromParams(params);
                     case BYTE_ARRAY_STOP:
                         // NOTE: this uses an external block, as mandated by the spec
-                        return (CramEncoding<T>) ByteArrayStopEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ByteArrayStopEncoding.fromParams(params);
                     case EXTERNAL:
-                        return (CramEncoding<T>) ExternalByteArrayEncoding.fromParams(params);
+                        return (CRAMEncoding<T>) ExternalByteArrayEncoding.fromParams(params);
 
                     default:
                         break;

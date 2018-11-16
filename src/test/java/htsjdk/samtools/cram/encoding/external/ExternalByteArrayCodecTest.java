@@ -1,8 +1,7 @@
 package htsjdk.samtools.cram.encoding.external;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.encoding.CramCodec;
-import htsjdk.samtools.cram.encoding.external.ExternalByteArrayCodec;
+import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.IOTestCases;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -15,12 +14,12 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
     public void codecTest(final byte[] values) throws IOException {
 
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            final CramCodec<byte[]> writeCodec = new ExternalByteArrayCodec(null, os);
+            final CRAMCodec<byte[]> writeCodec = new ExternalByteArrayCodec(null, os);
 
             writeCodec.write(values);
 
             try (final InputStream is = new ByteArrayInputStream(os.toByteArray())) {
-                final CramCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
+                final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
                 final byte[] actual = readCodec.read(values.length);
                 Assert.assertEquals(actual, values);
@@ -31,7 +30,7 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
     @Test(expectedExceptions = RuntimeException.class)
     public void readWithoutLength() throws IOException {
         try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
-            final CramCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
+            final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
             readCodec.read();
         }
@@ -40,7 +39,7 @@ public class ExternalByteArrayCodecTest extends HtsjdkTest {
     @Test(expectedExceptions = RuntimeException.class)
     public void readTooMuch() throws IOException {
         try (final InputStream is = new ByteArrayInputStream(new byte[0])) {
-            final CramCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
+            final CRAMCodec<byte[]> readCodec = new ExternalByteArrayCodec(is, null);
 
             readCodec.read(1);
         }

@@ -17,7 +17,7 @@
  */
 package htsjdk.samtools.cram.encoding;
 
-class NullCodec<T> implements CramCodec<T> {
+class NullCodec<T> implements CRAMCodec<T> {
     private final T defaultValue = null;
 
     public NullCodec() {

@@ -1,10 +1,10 @@
 package htsjdk.samtools.cram.encoding.core.experimental;
 
-import htsjdk.samtools.cram.encoding.CramEncoding;
+import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.structure.EncodingID;
 import htsjdk.samtools.util.Log;
 
-abstract class ExperimentalEncoding<T> extends CramEncoding<T> {
+abstract class ExperimentalEncoding<T> extends CRAMEncoding<T> {
     ExperimentalEncoding(final EncodingID encodingID) {
         super(encodingID);
 

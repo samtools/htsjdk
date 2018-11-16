@@ -20,20 +20,20 @@ public class ByteArrayLenCodecTest extends HtsjdkTest {
 
             // arbitrary choice here: any Integer, byte[] codec pair will do
 
-            final CramCodec<Integer> lenWriteCodec = new BetaIntegerCodec(null, coreBitOS, 0, 8);
-            final CramCodec<byte[]> valWriteCodec = new ExternalByteArrayCodec(null, externalOS);
+            final CRAMCodec<Integer> lenWriteCodec = new BetaIntegerCodec(null, coreBitOS, 0, 8);
+            final CRAMCodec<byte[]> valWriteCodec = new ExternalByteArrayCodec(null, externalOS);
 
-            final CramCodec<byte[]> writeCodec = new ByteArrayLenCodec(lenWriteCodec, valWriteCodec);
+            final CRAMCodec<byte[]> writeCodec = new ByteArrayLenCodec(lenWriteCodec, valWriteCodec);
             writeCodec.write(values);
 
             try (final ByteArrayInputStream coreIS = new ByteArrayInputStream(coreOS.toByteArray());
                  final BitInputStream coreBitIS = new DefaultBitInputStream(coreIS);
                  final ByteArrayInputStream externalIS = new ByteArrayInputStream(externalOS.toByteArray())) {
 
-                final CramCodec<Integer> lenReadCodec = new BetaIntegerCodec(coreBitIS, null, 0, 8);
-                final CramCodec<byte[]> valReadCodec = new ExternalByteArrayCodec(externalIS, null);
+                final CRAMCodec<Integer> lenReadCodec = new BetaIntegerCodec(coreBitIS, null, 0, 8);
+                final CRAMCodec<byte[]> valReadCodec = new ExternalByteArrayCodec(externalIS, null);
 
-                final CramCodec<byte[]> readCodec = new ByteArrayLenCodec(lenReadCodec, valReadCodec);
+                final CRAMCodec<byte[]> readCodec = new ByteArrayLenCodec(lenReadCodec, valReadCodec);
 
                 final byte[] actual = readCodec.read();
                 Assert.assertEquals(actual, values);

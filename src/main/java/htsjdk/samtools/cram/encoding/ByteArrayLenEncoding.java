@@ -29,11 +29,11 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class ByteArrayLenEncoding extends CramEncoding<byte[]> {
-    private final CramEncoding<Integer> lenEncoding;
-    private final CramEncoding<byte[]> byteEncoding;
+public class ByteArrayLenEncoding extends CRAMEncoding<byte[]> {
+    private final CRAMEncoding<Integer> lenEncoding;
+    private final CRAMEncoding<byte[]> byteEncoding;
 
-    public ByteArrayLenEncoding(final CramEncoding<Integer> lenEncoding, final CramEncoding<byte[]> byteEncoding) {
+    public ByteArrayLenEncoding(final CRAMEncoding<Integer> lenEncoding, final CRAMEncoding<byte[]> byteEncoding) {
         super(EncodingID.BYTE_ARRAY_LEN);
         this.lenEncoding = lenEncoding;
         this.byteEncoding = byteEncoding;
@@ -46,13 +46,13 @@ public class ByteArrayLenEncoding extends CramEncoding<byte[]> {
         final int lenLength = ITF8.readUnsignedITF8(buffer);
         final byte[] lenBytes = new byte[lenLength];
         buffer.get(lenBytes);
-        final CramEncoding<Integer> lenEncoding = EncodingFactory.createEncoding(DataSeriesType.INT, lenID, lenBytes);
+        final CRAMEncoding<Integer> lenEncoding = EncodingFactory.createEncoding(DataSeriesType.INT, lenID, lenBytes);
 
         final EncodingID byteID = EncodingID.values()[buffer.get()];
         final int byteLength = ITF8.readUnsignedITF8(buffer);
         final byte[] byteBytes = new byte[byteLength];
         buffer.get(byteBytes);
-        final CramEncoding<byte[]> byteEncoding = EncodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
+        final CRAMEncoding<byte[]> byteEncoding = EncodingFactory.createEncoding(DataSeriesType.BYTE_ARRAY, byteID, byteBytes);
 
         return new ByteArrayLenEncoding(lenEncoding, byteEncoding);
     }
@@ -77,7 +77,7 @@ public class ByteArrayLenEncoding extends CramEncoding<byte[]> {
     }
 
     @Override
-    public CramCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
+    public CRAMCodec<byte[]> buildCodec(final BitInputStream coreBlockInputStream,
                                         final BitOutputStream coreBlockOutputStream,
                                         final Map<Integer, InputStream> externalBlockInputMap,
                                         final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {

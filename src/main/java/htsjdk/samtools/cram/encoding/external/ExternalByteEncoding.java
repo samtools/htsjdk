@@ -17,8 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding.external;
 
-import htsjdk.samtools.cram.encoding.CramCodec;
-import htsjdk.samtools.cram.encoding.CramEncoding;
+import htsjdk.samtools.cram.encoding.CRAMCodec;
+import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
@@ -29,7 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.util.Map;
 
-public class ExternalByteEncoding extends CramEncoding<Byte> {
+public class ExternalByteEncoding extends CRAMEncoding<Byte> {
     private final int externalBlockContentId;
 
     public ExternalByteEncoding(final int externalBlockContentId) {
@@ -48,7 +48,7 @@ public class ExternalByteEncoding extends CramEncoding<Byte> {
     }
 
     @Override
-    public CramCodec<Byte> buildCodec(final BitInputStream coreBlockInputStream,
+    public CRAMCodec<Byte> buildCodec(final BitInputStream coreBlockInputStream,
                                       final BitOutputStream coreBlockOutputStream,
                                       final Map<Integer, InputStream> externalBlockInputMap,
                                       final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {

@@ -2,7 +2,6 @@ package htsjdk.samtools.cram.encoding;
 
 import htsjdk.HtsjdkTest;
 import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
-import htsjdk.samtools.cram.encoding.external.ByteArrayStopEncoding;
 import htsjdk.samtools.cram.encoding.external.ExternalByteArrayEncoding;
 import htsjdk.samtools.cram.structure.EncodingID;
 import org.testng.Assert;
@@ -57,8 +56,8 @@ public class ByteArrayLenEncodingTest extends HtsjdkTest {
     public void paramsTest(final int offset, final int bitsPerValue, final int externalBlockContentId, final byte[] expected) {
         // arbitrary choice here: any Integer, byte[] encoding pair will do
 
-        final CramEncoding<Integer> constructedLength = new BetaIntegerEncoding(offset, bitsPerValue);
-        final CramEncoding<byte[]> constructedValues = new ExternalByteArrayEncoding(externalBlockContentId);
+        final CRAMEncoding<Integer> constructedLength = new BetaIntegerEncoding(offset, bitsPerValue);
+        final CRAMEncoding<byte[]> constructedValues = new ExternalByteArrayEncoding(externalBlockContentId);
         final ByteArrayLenEncoding constructed = new ByteArrayLenEncoding(constructedLength, constructedValues);
         Assert.assertEquals(constructed.toByteArray(), expected);
 

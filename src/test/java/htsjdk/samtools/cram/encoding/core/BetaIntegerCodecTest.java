@@ -1,7 +1,7 @@
 package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.HtsjdkTest;
-import htsjdk.samtools.cram.encoding.CramCodec;
+import htsjdk.samtools.cram.encoding.CRAMCodec;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.DefaultBitInputStream;
 import htsjdk.samtools.cram.io.DefaultBitOutputStream;
@@ -17,7 +17,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
-            final CramCodec<Integer> writeCodec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
+            final CRAMCodec<Integer> writeCodec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
             for (final int value : values) {
                 writeCodec.write(value);
             }
@@ -26,7 +26,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
             try (final InputStream is = new ByteArrayInputStream(os.toByteArray());
                  final DefaultBitInputStream dbis = new DefaultBitInputStream(is)) {
 
-                final CramCodec<Integer> readCodec = new BetaIntegerCodec(dbis, null, offset, bitsPerValue);
+                final CRAMCodec<Integer> readCodec = new BetaIntegerCodec(dbis, null, offset, bitsPerValue);
                 for (int i = 0; i < values.length; i++) {
                     actual[i] = readCodec.read();
                 }
@@ -93,7 +93,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
-            final CramCodec<Integer> codec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
+            final CRAMCodec<Integer> codec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
             codec.write(value);
         }
     }
@@ -118,7 +118,7 @@ public class BetaIntegerCodecTest extends HtsjdkTest {
         try (final ByteArrayOutputStream os = new ByteArrayOutputStream();
              final BitOutputStream bos = new DefaultBitOutputStream(os)) {
 
-            final CramCodec<Integer> codec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
+            final CRAMCodec<Integer> codec = new BetaIntegerCodec(null, bos, offset, bitsPerValue);
             codec.write(value);
         }
     }

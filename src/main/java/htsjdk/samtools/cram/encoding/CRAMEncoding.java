@@ -29,14 +29,14 @@ import java.util.Map;
 /**
  * An interface to describe how a data series is encoded.
  * It also has methods to serialize/deserialize to/from byte array and a method to construct
- * a {@link htsjdk.samtools.cram.encoding.CramCodec} instance.
+ * a {@link CRAMCodec} instance.
  *
  * @param <T> data series type
  */
-public abstract class CramEncoding<T> {
+public abstract class CRAMEncoding<T> {
     private final EncodingID ENCODING_ID;
 
-    protected CramEncoding(final EncodingID id) {
+    protected CRAMEncoding(final EncodingID id) {
         ENCODING_ID = id;
     }
 
@@ -50,16 +50,16 @@ public abstract class CramEncoding<T> {
 
     public abstract byte[] toByteArray();
 
-    public abstract CramCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
+    public abstract CRAMCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
                                             final BitOutputStream coreBlockOutputStream,
                                             final Map<Integer, InputStream> externalBlockInputMap,
                                             final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap);
 
-    public CramCodec<T> buildReadCodec(final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap) {
+    public CRAMCodec<T> buildReadCodec(final BitInputStream bitInputStream, final Map<Integer, InputStream> inputMap) {
         return buildCodec(bitInputStream, null, inputMap, null);
     }
 
-    public CramCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ByteArrayOutputStream> outputMap) {
+    public CRAMCodec<T> buildWriteCodec(final BitOutputStream bitOutputStream, final Map<Integer, ByteArrayOutputStream> outputMap) {
         return buildCodec(null, bitOutputStream, null, outputMap);
     }
 }

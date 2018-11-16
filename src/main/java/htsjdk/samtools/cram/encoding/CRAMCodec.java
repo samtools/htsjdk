@@ -5,7 +5,7 @@ package htsjdk.samtools.cram.encoding;
  *
  * @param <T> data series type to be read or written
  */
-public interface CramCodec<T> {
+public interface CRAMCodec<T> {
     /**
      * Read a single object from the stream
      *

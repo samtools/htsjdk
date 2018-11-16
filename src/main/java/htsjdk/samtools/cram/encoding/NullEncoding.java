@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
-public class NullEncoding<T> extends CramEncoding<T> {
+public class NullEncoding<T> extends CRAMEncoding<T> {
     public NullEncoding() {
         super(EncodingID.NULL);
     }
@@ -36,7 +36,7 @@ public class NullEncoding<T> extends CramEncoding<T> {
     }
 
     @Override
-    public CramCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
+    public CRAMCodec<T> buildCodec(final BitInputStream coreBlockInputStream,
                                    final BitOutputStream coreBlockOutputStream,
                                    final Map<Integer, InputStream> externalBlockInputMap,
                                    final Map<Integer, ByteArrayOutputStream> externalBlockOutputMap) {
