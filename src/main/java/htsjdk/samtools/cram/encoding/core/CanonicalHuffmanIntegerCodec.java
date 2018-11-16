@@ -23,7 +23,7 @@ import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-class CanonicalHuffmanIntegerCodec extends CoreBitCodec<Integer> {
+class CanonicalHuffmanIntegerCodec extends CoreCodec<Integer> {
     private final HuffmanIntHelper helper;
 
     /*

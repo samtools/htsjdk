@@ -1,11 +1,11 @@
 package htsjdk.samtools.cram.encoding.core.experimental;
 
-import htsjdk.samtools.cram.encoding.core.CoreBitCodec;
+import htsjdk.samtools.cram.encoding.core.CoreCodec;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.util.Log;
 
-abstract class ExperimentalCodec<T> extends CoreBitCodec<T> {
+abstract class ExperimentalCodec<T> extends CoreCodec<T> {
     ExperimentalCodec(final BitInputStream coreBlockInputStream,
                       final BitOutputStream coreBlockOutputStream) {
         super(coreBlockInputStream, coreBlockOutputStream);
