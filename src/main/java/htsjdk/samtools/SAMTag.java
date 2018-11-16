@@ -146,7 +146,7 @@ public enum SAMTag {
 
     /**
      * Get the binary representation of this tag name.
-     * @see SAMTag#makeBinaryTag(String)
+     * @see #makeBinaryTag(String)
      *
      * @return the binary representation of this tag name
      */
