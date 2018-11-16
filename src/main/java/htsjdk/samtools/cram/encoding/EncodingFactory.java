@@ -51,8 +51,6 @@ public class EncodingFactory {
                         return (CRAMEncoding<T>) ExternalByteEncoding.fromParams(params);
                     case HUFFMAN:
                         return (CRAMEncoding<T>) CanonicalHuffmanByteEncoding.fromParams(params);
-                    case NULL:
-                        return new NullEncoding<T>();
 
                     default:
                         break;
@@ -64,8 +62,6 @@ public class EncodingFactory {
                 switch (id) {
                     case HUFFMAN:
                         return (CRAMEncoding<T>) CanonicalHuffmanIntegerEncoding.fromParams(params);
-                    case NULL:
-                        return new NullEncoding<T>();
                     case EXTERNAL:
                         return (CRAMEncoding<T>) ExternalIntegerEncoding.fromParams(params);
                     case GOLOMB:
@@ -86,8 +82,6 @@ public class EncodingFactory {
 
             case LONG:
                 switch (id) {
-                    case NULL:
-                        return new NullEncoding<T>();
                     case GOLOMB:
                         return (CRAMEncoding<T>) GolombLongEncoding.fromParams(params);
                     case EXTERNAL:
@@ -100,8 +94,6 @@ public class EncodingFactory {
 
             case BYTE_ARRAY:
                 switch (id) {
-                    case NULL:
-                        return new NullEncoding<T>();
                     case BYTE_ARRAY_LEN:
                         return (CRAMEncoding<T>) ByteArrayLenEncoding.fromParams(params);
                     case BYTE_ARRAY_STOP:
