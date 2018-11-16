@@ -17,10 +17,8 @@
  */
 package htsjdk.samtools.cram.encoding;
 
-import htsjdk.samtools.cram.encoding.core.BetaIntegerEncoding;
+import htsjdk.samtools.cram.encoding.core.*;
 import htsjdk.samtools.cram.encoding.core.experimental.*;
-import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanByteEncoding;
-import htsjdk.samtools.cram.encoding.core.CanonicalHuffmanIntegerEncoding;
 import htsjdk.samtools.cram.encoding.external.*;
 import htsjdk.samtools.cram.structure.DataSeriesType;
 import htsjdk.samtools.cram.structure.EncodingID;

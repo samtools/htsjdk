@@ -15,9 +15,10 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding.core.experimental;
+package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
+import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
@@ -28,10 +29,10 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class GammaIntegerEncoding extends ExperimentalEncoding<Integer> {
+public class GammaIntegerEncoding extends CRAMEncoding<Integer> {
     private final int offset;
 
-    private GammaIntegerEncoding(final int offset) {
+    GammaIntegerEncoding(final int offset) {
         super(EncodingID.GAMMA);
         this.offset = offset;
     }

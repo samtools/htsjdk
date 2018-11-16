@@ -15,9 +15,10 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding.core.experimental;
+package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.encoding.CRAMCodec;
+import htsjdk.samtools.cram.encoding.CRAMEncoding;
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 import htsjdk.samtools.cram.io.ITF8;
@@ -28,12 +29,17 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-public class SubexponentialIntegerEncoding extends ExperimentalEncoding<Integer> {
+public class SubexponentialIntegerEncoding extends CRAMEncoding<Integer> {
     private final int offset;
     private final int k;
 
-    private SubexponentialIntegerEncoding(final int offset, final int k) {
+    SubexponentialIntegerEncoding(final int offset, final int k) {
         super(EncodingID.SUBEXPONENTIAL);
+
+        if (k < 0) {
+            throw new IllegalArgumentException("k parameter must not be negative");
+        }
+
         this.offset = offset;
         this.k = k;
     }

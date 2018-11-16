@@ -15,37 +15,45 @@
  * limitations under the License.
  * ****************************************************************************
  */
-package htsjdk.samtools.cram.encoding.core.experimental;
+package htsjdk.samtools.cram.encoding.core;
 
 import htsjdk.samtools.cram.io.BitInputStream;
 import htsjdk.samtools.cram.io.BitOutputStream;
 
 import java.io.IOException;
 
-class GammaIntegerCodec extends ExperimentalCodec<Integer> {
-    private final int offset;
+class SubexponentialIntegerCodec extends CoreCodec<Integer> {
+    final private int offset;
+    final private int k;
 
-    GammaIntegerCodec(final BitInputStream coreBlockInputStream,
-                      final BitOutputStream coreBlockOutputStream,
-                      final int offset) {
+    SubexponentialIntegerCodec(final BitInputStream coreBlockInputStream,
+                               final BitOutputStream coreBlockOutputStream,
+                               final int offset, final int k) {
         super(coreBlockInputStream, coreBlockOutputStream);
-
         this.offset = offset;
+        this.k = k;
     }
 
     @Override
     public final Integer read() {
-        int length = 1;
-        final boolean lenCodingBit = false;
-
+        int u = 0;
         try {
-            while (coreBlockInputStream.readBit() == lenCodingBit) {
-                length++;
+            while (coreBlockInputStream.readBit()) {
+                u++;
             }
 
-            final int readBits = coreBlockInputStream.readBits(length - 1);
-            final int value = readBits | 1 << (length - 1);
-            return value - offset;
+            final int b;
+            final int n;
+
+            if (u == 0) {
+                b = k;
+                n = coreBlockInputStream.readBits(b);
+            } else {
+                b = u + k - 1;
+                n = (1 << b) | coreBlockInputStream.readBits(b);
+            }
+
+            return n - offset;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -53,19 +61,28 @@ class GammaIntegerCodec extends ExperimentalCodec<Integer> {
 
     @Override
     public final void write(final Integer value) {
-        if (value + offset < 1) {
-            throw new IllegalArgumentException("Gamma codec handles only positive values: " + value);
+        if (value + offset < 0) {
+            throw new IllegalArgumentException("Value is less then offset: " + value);
         }
 
         final long newValue = value + offset;
-        final int betaCodeLength = 1 + (int) (Math.log(newValue) / Math.log(2));
+        final int b;
+        final int u;
+        if (newValue < (1L << k)) {
+            b = k;
+            u = 0;
+        } else {
+            b = (int) (Math.log(newValue) / Math.log(2));
+            u = b - k + 1;
+        }
 
         try {
-            if (betaCodeLength > 1) {
-                coreBlockOutputStream.write(0L, betaCodeLength - 1);
-            }
+            // write 'u' 1 bits followed by a 0 bit
+            coreBlockOutputStream.write(true, u);
+            coreBlockOutputStream.write(false);
 
-            coreBlockOutputStream.write(newValue, betaCodeLength);
+            // write only the 'b' lowest bits of newValue
+            coreBlockOutputStream.write(newValue, b);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -75,4 +92,5 @@ class GammaIntegerCodec extends ExperimentalCodec<Integer> {
     public Integer read(final int length) {
         throw new RuntimeException("Not implemented.");
     }
+
 }
