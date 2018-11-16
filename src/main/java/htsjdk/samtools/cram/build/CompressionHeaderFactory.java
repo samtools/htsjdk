@@ -349,7 +349,7 @@ public class CompressionHeaderFactory {
         return baosForTagValues.toByteArray();
     }
 
-    static ByteSizeRange geByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
+    static ByteSizeRange getByteSizeRangeOfTagValues(final List<CramCompressionRecord> records, final int tagID) {
         final byte type = getTagType(tagID);
         final ByteSizeRange stats = new ByteSizeRange();
         for (final CramCompressionRecord record : records) {
@@ -406,13 +406,13 @@ public class CompressionHeaderFactory {
      * Used by buildEncodingForTag to create a ByteArrayLenEncoding with CanonicalHuffmanIntegerEncoding and
      * ExternalByteArrayEncoding sub-encodings
      *
-     * @param huffmanValue the single value used as the Canonical Huffman value parameter
+     * @param tagValueSize the size of the tag value, to be Huffman encoded
      * @param tagID the ID of the tag
      * @return EncodingParams a complete description of the result Encoding
      */
-    private EncodingParams buildHuffmanEncoding(final int huffmanValue, final int tagID) {
+    private EncodingParams buildTagEncodingForSize(final int tagValueSize, final int tagID) {
         return new ByteArrayLenEncoding(
-                new CanonicalHuffmanIntegerEncoding(new int[] { huffmanValue }, new int[] { 0 }),
+                new CanonicalHuffmanIntegerEncoding(new int[] { tagValueSize }, new int[] { 0 }),
                 new ExternalByteArrayEncoding(tagID)).toParam();
     }
 
@@ -434,26 +434,26 @@ public class CompressionHeaderFactory {
             case 'A':
             case 'c':
             case 'C':
-                details.params = buildHuffmanEncoding(1, tagID);
+                details.params = buildTagEncodingForSize(1, tagID);
                 return details;
 
             case 'I':
             case 'i':
             case 'f':
-                details.params = buildHuffmanEncoding(4, tagID);
+                details.params = buildTagEncodingForSize(4, tagID);
                 return details;
 
             case 's':
             case 'S':
-                details.params = buildHuffmanEncoding(2, tagID);
+                details.params = buildTagEncodingForSize(2, tagID);
                 return details;
 
             case 'Z':
             case 'B':
-                final ByteSizeRange stats = geByteSizeRangeOfTagValues(records, tagID);
+                final ByteSizeRange stats = getByteSizeRangeOfTagValues(records, tagID);
                 final boolean singleSize = stats.min == stats.max;
                 if (singleSize) {
-                    details.params = buildHuffmanEncoding(stats.min, tagID);
+                    details.params = buildTagEncodingForSize(stats.min, tagID);
                     return details;
                 }
 
