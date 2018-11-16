@@ -2,7 +2,7 @@ package htsjdk.samtools.cram.digest;
 
 import htsjdk.samtools.SAMBinaryTagAndValue;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTagUtil;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.cram.structure.CramCompressionRecord;
 import htsjdk.samtools.util.Log;
 
@@ -33,7 +33,7 @@ public class ContentDigests {
         final List<Digester> digesters = new LinkedList<ContentDigests.Digester>();
         SAMBinaryTagAndValue binaryTag = binaryTags;
         while (binaryTag != null) {
-            final String tagID = SAMTagUtil.makeStringTag(
+            final String tagID = SAMTag.makeStringTag(
                     binaryTag.tag);
             final KNOWN_DIGESTS hash;
             try {
@@ -131,7 +131,7 @@ public class ContentDigests {
             this.digest = digest;
             this.series = series;
             this.tagID = tagID;
-            this.tagCode = SAMTagUtil.makeBinaryTag(tagID);
+            this.tagCode = SAMTag.makeBinaryTag(tagID);
         }
 
         void add(final SAMRecord record) {

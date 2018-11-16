@@ -59,7 +59,7 @@ public class SAMBinaryTagAndValue implements Serializable {
         }
         if (!isAllowedAttributeValue(value)) {
             throw new IllegalArgumentException("Attribute type " + value.getClass() + " not supported. Tag: " +
-                    SAMTagUtil.makeStringTag(tag));
+                    SAMTag.makeStringTag(tag));
         }
         this.tag = tag;
         this.value = value;

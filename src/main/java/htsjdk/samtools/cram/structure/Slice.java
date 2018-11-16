@@ -185,7 +185,7 @@ public class Slice {
 
     /**
      * Get tag value attached to the slice.
-     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
      * @return a value of the tag
      */
     public Object getAttribute(final short tag) {
@@ -199,14 +199,14 @@ public class Slice {
 
     /**
      * Set a value for the tag.
-     * @param tag tag ID as a short integer as returned by {@link htsjdk.samtools.SAMTagUtil#makeBinaryTag(java.lang.String)}
+     * @param tag tag ID as a short integer as returned by {@link SAMTag#makeBinaryTag(String)}
      * @param value tag value
      */
     public void setAttribute(final String tag, final Object value) {
         if (value != null && value.getClass().isArray() && Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty value passed for tag " + tag);
         }
-        setAttribute(SAMTagUtil.makeBinaryTag(tag), value);
+        setAttribute(SAMTag.makeBinaryTag(tag), value);
     }
 
     public void setUnsignedArrayAttribute(final String tag, final Object value) {
@@ -216,7 +216,7 @@ public class Slice {
         if (Array.getLength(value) == 0) {
             throw new IllegalArgumentException("Empty array passed to setUnsignedArrayAttribute for tag " + tag);
         }
-        setAttribute(SAMTagUtil.makeBinaryTag(tag), value, true);
+        setAttribute(SAMTag.makeBinaryTag(tag), value, true);
     }
 
     void setAttribute(final short tag, final Object value) {
