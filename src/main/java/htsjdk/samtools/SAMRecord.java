@@ -2136,7 +2136,7 @@ public class SAMRecord implements Cloneable, Locatable, Serializable {
      * Sets a marker providing the source reader for this file and the position in the file from which the read originated.
      * @param fileSource source of the given file.
      */
-    protected void setFileSource(final SAMFileSource fileSource) {
+    public void setFileSource(final SAMFileSource fileSource) {
         mFileSource = fileSource;
     }
 

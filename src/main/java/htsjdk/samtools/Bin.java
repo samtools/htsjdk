@@ -23,6 +23,8 @@
  */
 package htsjdk.samtools;
 
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -159,5 +161,23 @@ public class Bin implements Comparable<Bin> {
      */
     public Chunk getLastChunk(){
         return lastChunk;
+    }
+
+    /**
+     * Return a new bin shifted by a given (non-virtual) offset.
+     *
+     * @param offset the offset in bytes
+     * @return a new bin shifted by the given offset
+     * @see BlockCompressedFilePointerUtil#shift(long, long)
+     */
+    Bin shift(final long offset) {
+        final List<Chunk> chunkList = new ArrayList<>();
+        for (Chunk chunk : getChunkList()) {
+            chunkList.add(chunk.shift(offset));
+        }
+        final Bin newBin = new Bin(referenceSequence, binNumber);
+        newBin.setChunkList(chunkList);
+        newBin.setLastChunk(chunkList.get(chunkList.size() - 1));
+        return newBin;
     }
 }

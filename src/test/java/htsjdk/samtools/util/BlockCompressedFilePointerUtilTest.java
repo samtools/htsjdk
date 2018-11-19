@@ -89,6 +89,25 @@ public class BlockCompressedFilePointerUtilTest extends HtsjdkTest {
                 {0L, BlockCompressedFilePointerUtil.MAX_OFFSET+1}
         };
     }
+
+    @Test(dataProvider = "shiftInputs")
+    public void shiftTest(long blockAddress, int blockOffset) {
+        final long shift = 100;
+        long virtualFilePointer = makeFilePointer(blockAddress, blockOffset);
+        long shiftedVfp = BlockCompressedFilePointerUtil.shift(virtualFilePointer, shift);
+        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockAddress(shiftedVfp), BlockCompressedFilePointerUtil.getBlockAddress(virtualFilePointer) + shift);
+        Assert.assertEquals(BlockCompressedFilePointerUtil.getBlockOffset(shiftedVfp), BlockCompressedFilePointerUtil.getBlockOffset(virtualFilePointer));
+    }
+
+    @DataProvider(name="shiftInputs")
+    public Object[][]  shiftInputs() {
+        return new Object[][]{
+                {0L, 0},
+                {0L, BlockCompressedFilePointerUtil.MAX_OFFSET},
+                {1L << 46, 0},
+                {1L << 46, BlockCompressedFilePointerUtil.MAX_OFFSET}
+        };
+    }
 }
 
 /******************************************************************/
