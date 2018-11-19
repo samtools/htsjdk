@@ -111,7 +111,7 @@ public class CompressionHeaderFactory {
         builder.addExternalIntegerGzipEncoding(DataSeries.TC_TagCount);
         builder.addExternalIntegerEncoding(DataSeries.TL_TagIdList, ExternalCompressor.createGZIP());
         builder.addExternalIntegerGzipEncoding(DataSeries.TN_TagNameAndType);
-        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.TS_InsetSize);
+        builder.addExternalIntegerRansOrderOneEncoding(DataSeries.TS_InsertSize);
 
         builder.setTagIdDictionary(buildTagIdDictionary(records));
 

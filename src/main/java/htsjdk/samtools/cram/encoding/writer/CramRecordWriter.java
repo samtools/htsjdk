@@ -112,7 +112,7 @@ public class CramRecordWriter {
         mateBitFlagsCodec =                     createDataWriter(DataSeries.MF_MateBitFlags);
         nextFragmentReferenceSequenceIDCodec =  createDataWriter(DataSeries.NS_NextFragmentReferenceSequenceID);
         nextFragmentAlignmentStart =            createDataWriter(DataSeries.NP_NextFragmentAlignmentStart);
-        templateSize =                          createDataWriter(DataSeries.TS_InsetSize);
+        templateSize =                          createDataWriter(DataSeries.TS_InsertSize);
         tagIdListCodec =                        createDataWriter(DataSeries.TL_TagIdList);
         refIdCodec =                            createDataWriter(DataSeries.RI_RefId);
         refSkipCodec =                          createDataWriter(DataSeries.RS_RefSkip);

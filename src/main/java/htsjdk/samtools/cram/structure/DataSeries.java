@@ -30,37 +30,66 @@ import java.util.stream.Stream;
  * Represents a specific CRAM record data series and its associated type and unique Content ID
  */
 public enum DataSeries {
-    AP_AlignmentPositionOffset          (DataSeriesType.INT,        "AP",  1),
-    BA_Base                             (DataSeriesType.BYTE,       "BA",  2),
-    BB_bases                            (DataSeriesType.BYTE_ARRAY, "BB",  3),
-    BF_BitFlags                         (DataSeriesType.INT,        "BF",  4),
-    BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS",  5),
-    CF_CompressionBitFlags              (DataSeriesType.BYTE,       "CF",  6),
-    DL_DeletionLength                   (DataSeriesType.INT,        "DL",  7),
-    FC_FeatureCode                      (DataSeriesType.BYTE,       "FC",  8),
-    FN_NumberOfReadFeatures             (DataSeriesType.INT,        "FN",  9),
-    FP_FeaturePosition                  (DataSeriesType.INT,        "FP", 10),
-    HC_HardClip                         (DataSeriesType.INT,        "HC", 11),
-    IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 12),
-    MF_MateBitFlags                     (DataSeriesType.BYTE,       "MF", 13),
-    MQ_MappingQualityScore              (DataSeriesType.INT,        "MQ", 14),
-    NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF", 15),
-    NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 16),
-    NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 17),
-    PD_padding                          (DataSeriesType.INT,        "PD", 18),
-    QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 19),
-    QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 20),
-    RG_ReadGroup                        (DataSeriesType.INT,        "RG", 21),
-    RI_RefId                            (DataSeriesType.INT,        "RI", 22),
-    RL_ReadLength                       (DataSeriesType.INT,        "RL", 23),
-    RN_ReadName                         (DataSeriesType.BYTE_ARRAY, "RN", 24),
-    RS_RefSkip                          (DataSeriesType.INT,        "RS", 25),
-    SC_SoftClip                         (DataSeriesType.BYTE_ARRAY, "SC", 26),
-    TC_TagCount                         (DataSeriesType.INT,        "TC", 27),
-    TL_TagIdList                        (DataSeriesType.INT,        "TL", 28),
-    TM_TestMark                         (DataSeriesType.INT,        "TM", 29),
-    TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 30),
-    TS_InsetSize                        (DataSeriesType.INT,        "TS", 31),
+
+    // in rough encoding/decoding order, by group
+
+    // Main
+
+    BF_BitFlags                         (DataSeriesType.INT,        "BF",  1),
+    CF_CompressionBitFlags              (DataSeriesType.BYTE,       "CF",  2),
+
+    // Positional
+
+    RI_RefId                            (DataSeriesType.INT,        "RI",  3),
+    RL_ReadLength                       (DataSeriesType.INT,        "RL",  4),
+    AP_AlignmentPositionOffset          (DataSeriesType.INT,        "AP",  5),
+    RG_ReadGroup                        (DataSeriesType.INT,        "RG",  6),
+
+    // Read Name
+
+    RN_ReadName                         (DataSeriesType.BYTE_ARRAY, "RN",  7),
+
+    // Mate Record
+
+    NF_RecordsToNextFragment            (DataSeriesType.INT,        "NF",  8),
+    MF_MateBitFlags                     (DataSeriesType.BYTE,       "MF",  9),
+    NS_NextFragmentReferenceSequenceID  (DataSeriesType.INT,        "NS", 10),
+    NP_NextFragmentAlignmentStart       (DataSeriesType.INT,        "NP", 11),
+    TS_InsertSize                       (DataSeriesType.INT,        "TS", 12),
+
+    // Auxiliary Tags
+
+    TL_TagIdList                        (DataSeriesType.INT,        "TL", 13),
+    TC_TagCount                         (DataSeriesType.INT,        "TC", 14),
+    TN_TagNameAndType                   (DataSeriesType.INT,        "TN", 15),
+
+    // Mapped Reads
+
+    MQ_MappingQualityScore              (DataSeriesType.INT,        "MQ", 16),
+
+    // Read Feature Records
+
+    FN_NumberOfReadFeatures             (DataSeriesType.INT,        "FN", 17),
+    FP_FeaturePosition                  (DataSeriesType.INT,        "FP", 18),
+    FC_FeatureCode                      (DataSeriesType.BYTE,       "FC", 19),
+
+    // Read Feature Codes
+
+    BB_bases                            (DataSeriesType.BYTE_ARRAY, "BB", 20),
+    QQ_scores                           (DataSeriesType.BYTE_ARRAY, "QQ", 21),
+    BA_Base                             (DataSeriesType.BYTE,       "BA", 22),
+    QS_QualityScore                     (DataSeriesType.BYTE,       "QS", 23),
+    BS_BaseSubstitutionCode             (DataSeriesType.BYTE,       "BS", 24),
+    IN_Insertion                        (DataSeriesType.BYTE_ARRAY, "IN", 25),
+    DL_DeletionLength                   (DataSeriesType.INT,        "DL", 26),
+    RS_RefSkip                          (DataSeriesType.INT,        "RS", 27),
+    SC_SoftClip                         (DataSeriesType.BYTE_ARRAY, "SC", 28),
+    PD_padding                          (DataSeriesType.INT,        "PD", 29),
+    HC_HardClip                         (DataSeriesType.INT,        "HC", 30),
+
+    // For Testing Only
+
+    TM_TestMark                         (DataSeriesType.INT,        "TM", 31),
     TV_TestMark                         (DataSeriesType.INT,        "TV", 32);
 
     private final DataSeriesType type;

@@ -125,7 +125,7 @@ public class CramRecordReader {
         mateBitFlagCodec =              createDataReader(DataSeries.MF_MateBitFlags);
         mateReferenceIdCodec =          createDataReader(DataSeries.NS_NextFragmentReferenceSequenceID);
         mateAlignmentStartCodec =       createDataReader(DataSeries.NP_NextFragmentAlignmentStart);
-        insertSizeCodec =               createDataReader(DataSeries.TS_InsetSize);
+        insertSizeCodec =               createDataReader(DataSeries.TS_InsertSize);
         tagIdListCodec =                createDataReader(DataSeries.TL_TagIdList);
         refIdCodec =                    createDataReader(DataSeries.RI_RefId);
         refSkipCodec =                  createDataReader(DataSeries.RS_RefSkip);
