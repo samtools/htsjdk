@@ -58,7 +58,7 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file
      */
     public BAMIndexer(final Path output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
     }
 
     /**
@@ -76,7 +76,18 @@ public class BAMIndexer {
      * @param fileHeader header for the corresponding bam file.
      */
     public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader) {
-        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output));
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), true);
+    }
+
+    /**
+     * Prepare to index a BAM.
+     *
+     * @param output     Index will be written here.  output will be closed when finish() method is called.
+     * @param fileHeader header for the corresponding bam file.
+     * @param fillInUninitializedValues TODO
+     */
+    public BAMIndexer(final OutputStream output, final SAMFileHeader fileHeader, final boolean fillInUninitializedValues) {
+        this(fileHeader, numRefs -> new BinaryBAMIndexWriter(numRefs, output), fillInUninitializedValues);
     }
 
     /*
@@ -86,7 +97,7 @@ public class BAMIndexer {
      * @param  createWrite a lambda that, given an Integer numReferences value, will create a BinaryBAMIndexWriter
      *                     with that value and an appropriate output.
       */
-    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter) {
+    private BAMIndexer(final SAMFileHeader fileHeader, Function<Integer, BinaryBAMIndexWriter> createWriter, final boolean fillInUninitializedValues) {
         if (fileHeader.getSortOrder() != SAMFileHeader.SortOrder.coordinate) {
             if (fileHeader.getSortOrder() == SAMFileHeader.SortOrder.unsorted) {
                 log.warn("For indexing, the BAM file is required to be coordinate sorted. Attempting to index \"unsorted\" BAM file.");
@@ -96,7 +107,7 @@ public class BAMIndexer {
             }
         }
         numReferences = fileHeader.getSequenceDictionary().size();
-        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary());
+        indexBuilder = new BAMIndexBuilder(fileHeader.getSequenceDictionary(), fillInUninitializedValues);
         outputWriter = createWriter.apply(numReferences);
     }
 
@@ -186,6 +197,8 @@ public class BAMIndexer {
 
         private final SAMSequenceDictionary sequenceDictionary;
 
+        private final boolean fillInUninitializedValues;
+
         private BinningIndexBuilder binningIndexBuilder;
 
         private int currentReference = -1;
@@ -193,8 +206,9 @@ public class BAMIndexer {
         // information in meta data
         private final BAMIndexMetaData indexStats = new BAMIndexMetaData();
 
-        BAMIndexBuilder(final SAMSequenceDictionary sequenceDictionary) {
+        BAMIndexBuilder(final SAMSequenceDictionary sequenceDictionary, final boolean fillInUninitializedValues) {
             this.sequenceDictionary = sequenceDictionary;
+            this.fillInUninitializedValues = fillInUninitializedValues;
             if (!sequenceDictionary.isEmpty()) startNewReference();
         }
 
@@ -280,7 +294,7 @@ public class BAMIndexer {
             // it helps keep track of no-coordinate read count (which shouldn't be stored in this class anyway).
             indexStats.newReference();
             binningIndexBuilder = new BinningIndexBuilder(currentReference,
-                    sequenceDictionary.getSequence(currentReference).getSequenceLength());
+                    sequenceDictionary.getSequence(currentReference).getSequenceLength(), fillInUninitializedValues);
         }
     }
 
